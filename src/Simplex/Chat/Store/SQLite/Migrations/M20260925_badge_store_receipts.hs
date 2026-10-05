@@ -7,7 +7,8 @@ import Database.SQLite.Simple.QQ (sql)
 
 -- | invoice_id is null for a receipt naming one another row holds: the transaction still has to be
 -- creditable, and its reference identifies it. provider and transaction_ref are null until a receipt
--- arrives, and distinct NULLs let several rows await one at once.
+-- arrives, and distinct NULLs let several rows await one at once. payment is held from the receipt's
+-- arrival until the service credits or refuses it; a refused row keeps its refusal in credit_error.
 m20260925_badge_store_receipts :: Query
 m20260925_badge_store_receipts =
   [sql|
@@ -21,6 +22,10 @@ CREATE TABLE badge_store_receipts(
   purchase_priv_key BLOB NOT NULL,
   master_key BLOB NOT NULL,
   created_at TEXT NOT NULL,
+  payment TEXT,
+  next_attempt_at TEXT,
+  retry_delay INTEGER,
+  credit_error TEXT,
   UNIQUE(provider, transaction_ref)
 ) STRICT;
 

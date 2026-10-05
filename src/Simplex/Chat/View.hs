@@ -484,6 +484,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtServiceReplySent (AgentConnId cId) -> [plain $ "service reply sent, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   CEvtBadgeChanged u st -> ttyUser u $ viewUserBadgeState st
   CEvtBadgeAlert u alert -> ttyUser u $ viewBadgeAlert alert
+  CEvtStorePurchaseSettled u -> ttyUser u ["store purchase settled"]
   CEvtContactRequestRejected u Contact {localDisplayName = c} _reason -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
@@ -1865,8 +1866,12 @@ viewBadgeAlert :: BadgeAlert -> [StyledString]
 viewBadgeAlert BadgeAlert {kind, date} = [plain $ "badge alert: " <> textEncode kind <> " " <> day date]
 
 viewOpenStorePurchase :: OpenStorePurchase -> StyledString
-viewOpenStorePurchase OpenStorePurchase {invoiceId, transactionRef} =
-  plain $ "store purchase open: invoice " <> fromMaybe "none" invoiceId <> maybe "" (", transaction " <>) transactionRef
+viewOpenStorePurchase OpenStorePurchase {invoiceId, transactionRef, creditError} =
+  plain $
+    "store purchase open: invoice "
+      <> fromMaybe "none" invoiceId
+      <> maybe "" (", transaction " <>) transactionRef
+      <> maybe "" ((", not credited: " <>) . safeDecodeUtf8 . strEncode) creditError
 
 viewBadgeLedger :: [StatementEntry] -> [StyledString]
 viewBadgeLedger [] = ["no ledger entries"]

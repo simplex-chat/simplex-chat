@@ -283,12 +283,14 @@ data BadgeState = BadgeState
   }
   deriving (Show)
 
--- | One of a profile's open store purchases, neither credited nor closed. The app matches invoiceId
--- against the transactions its store still holds; transactionRef is set once a receipt arrived.
--- Neither reference is a secret: Apple's is the transaction id, Google's is a hash of the token.
+-- | One of a profile's store purchases that no receipt has reached yet, or whose receipt is held until
+-- the service credits it; transactionRef is set once a receipt arrived. Neither reference is a secret:
+-- Apple's is the transaction id, Google's is a hash of the token. creditError is set only while the
+-- held receipt's last attempt failed in a way that cannot clear on its own.
 data OpenStorePurchase = OpenStorePurchase
   { invoiceId :: Maybe Text,
-    transactionRef :: Maybe Text
+    transactionRef :: Maybe Text,
+    creditError :: Maybe BadgeIssueFailure
   }
   deriving (Show)
 

@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Badges
@@ -19,11 +20,17 @@ module Simplex.Chat.Store.Badges
     clearShownBadge,
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
-    getBadgeStoreReceiptUserId,
-    attachBadgeStoreReceipt,
-    getOpenStorePurchases,
-    getBadgeStoreReceipt,
+    StoreReceipt (..),
+    StoreReceiptStatus (..),
+    HeldStoreReceipt (..),
+    holdStoreReceipt,
     createBadgeStoreReceipt,
+    getOpenStorePurchases,
+    getDueStoreReceipts,
+    getNextStoreReceiptAttempt,
+    deferStoreReceipt,
+    refuseStoreReceipt,
+    deleteUnfundedStoreReceipts,
     deleteBadgeStash,
     createStashBadgePurchase,
     getStashBadgePurchase,
@@ -45,11 +52,12 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
-import Data.Time.Clock (UTCTime, addUTCTime, nominalDay)
+import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), OpenStorePurchase (..))
+import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types
@@ -105,80 +113,157 @@ createBadgeCodeRedemption db g User {userId} code now = do
   redemptionId <- insertedRowId db
   pure BadgeStash {stashRef = BSRCodeRedemption redemptionId, purchaseKey, purchasePrivKey, masterKey}
 
--- | A store transaction belongs to the store account, not to a profile, so its stash is looked up
--- across profiles: presented under another, it still reaches the service as the key it was credited to.
-getBadgeStoreReceiptUserId :: DB.Connection -> StoreTransactionRef -> IO (Maybe UserId)
-getBadgeStoreReceiptUserId db StoreTransactionRef {provider, transactionRef} =
-  maybeFirstRow fromOnly $
-    DB.query db "SELECT user_id FROM badge_store_receipts WHERE provider = ? AND transaction_ref = ?" (provider, transactionRef)
+-- | A store receipt as the record has it: held until the service credits or refuses it.
+data StoreReceipt = StoreReceipt
+  { receiptId :: Int64,
+    ownerId :: UserId,
+    status :: StoreReceiptStatus
+  }
 
--- | The profile a receipt belongs to, attaching it to the record created when Buy was tapped. A
--- transaction already attached stays with its record, whose keys the service may have credited.
-attachBadgeStoreReceipt :: DB.Connection -> Maybe Text -> StoreTransactionRef -> IO (Maybe UserId)
-attachBadgeStoreReceipt db invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} =
-  getBadgeStoreReceiptUserId db txRef >>= \case
-    Just userId -> pure $ Just userId
-    Nothing -> fmap join . forM invoiceId_ $ \invoiceId -> do
-      userId_ <-
-        maybeFirstRow fromOnly $
-          DB.query db "SELECT user_id FROM badge_store_receipts WHERE invoice_id = ? AND transaction_ref IS NULL" (Only invoiceId)
-      forM_ userId_ $ \_ ->
+data StoreReceiptStatus
+  = RSHeld
+  | RSCredited {badgePurchaseId :: Int64}
+  | RSRefused {refusal :: Maybe BadgeIssueFailure}
+
+-- | A store transaction belongs to the store account, not to a profile, so it is found across profiles and
+-- stays with the record whose keys the service may have credited. A new one goes to the record created when
+-- Buy was tapped, or else to the presenting profile. 'True' when this hand-over is the one that held it.
+holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe (StoreReceipt, Bool))
+holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
+  getStoreReceipt db txRef >>= \case
+    Just r@StoreReceipt {receiptId} -> do
+      -- a settled record stays settled, so a hand-over landing just after its credit cannot hold it again
+      DB.execute db "UPDATE badge_store_receipts SET payment = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL" (paymentJSON, receiptId)
+      pure $ Just (r, False)
+    Nothing -> do
+      forM_ invoiceId_ $ \invoiceId ->
         DB.execute
           db
-          "UPDATE badge_store_receipts SET provider = ?, transaction_ref = ? WHERE invoice_id = ?"
-          (provider, transactionRef, invoiceId)
-      pure userId_
-
-getOpenStorePurchases :: DB.Connection -> User -> UTCTime -> IO [OpenStorePurchase]
-getOpenStorePurchases db User {userId} now =
-  map (uncurry OpenStorePurchase)
-    <$> DB.query
-      db
-      [sql|
-        SELECT r.invoice_id, r.transaction_ref
-        FROM badge_store_receipts r
-        WHERE r.user_id = ? AND (r.transaction_ref IS NOT NULL OR r.created_at > ?)
-          AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_store_receipt_id = r.badge_store_receipt_id)
-        ORDER BY r.badge_store_receipt_id
-      |]
-      (userId, receiptDueSince)
+          "UPDATE badge_store_receipts SET provider = ?, transaction_ref = ?, payment = ?, next_attempt_at = ? WHERE invoice_id = ? AND transaction_ref IS NULL"
+          (provider, transactionRef, paymentJSON, now, invoiceId)
+      getStoreReceipt db txRef >>= \case
+        Just r -> pure $ Just (r, True)
+        Nothing -> do
+          insertReceipt
+          -- read back rather than trusted: a concurrent hand-over of the same transaction may have inserted first
+          fmap (,True) <$> getStoreReceipt db txRef
   where
-    -- a record with no receipt is dropped after a week: longer than an Ask to Buy approval or a Play slow
-    -- payment can take, and those are the only waits that still need it. One a receipt reached is paid for.
-    receiptDueSince = addUTCTime (negate $ 7 * nominalDay) now
+    paymentJSON = safeDecodeUtf8 . LB.toStrict $ J.encode payment
+    insertReceipt = do
+      (purchaseKey, purchasePrivKey) <- atomically $ C.generateKeyPair g
+      BadgeMasterKey mk <- generateMasterKey g
+      -- an invoice id another record holds is not repeated: this record is then keyed by its transaction alone
+      invoiceId' <- fmap join . forM invoiceId_ $ \invoiceId -> do
+        taken <- DB.query db "SELECT badge_store_receipt_id FROM badge_store_receipts WHERE invoice_id = ?" (Only invoiceId) :: IO [Only Int64]
+        pure $ if null taken then Just invoiceId else Nothing
+      DB.execute
+        db
+        [sql|
+          INSERT INTO badge_store_receipts
+            (user_id, invoice_id, provider, transaction_ref, payment, next_attempt_at, purchase_key, purchase_priv_key, master_key, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
+          ON CONFLICT DO NOTHING
+        |]
+        ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, now))
 
-getBadgeStoreReceipt :: DB.Connection -> User -> StoreTransactionRef -> IO (Maybe BadgeStash)
-getBadgeStoreReceipt db User {userId} StoreTransactionRef {provider, transactionRef} =
-  maybeFirstRow (toBadgeStash BSRStoreReceipt) $
+-- | held is a CASE because in Postgres a comparison is boolean, which BoolInt rejects.
+getStoreReceipt :: DB.Connection -> StoreTransactionRef -> IO (Maybe StoreReceipt)
+getStoreReceipt db StoreTransactionRef {provider, transactionRef} =
+  maybeFirstRow toStoreReceipt $
     DB.query
       db
       [sql|
-        SELECT badge_store_receipt_id, purchase_key, purchase_priv_key, master_key
-        FROM badge_store_receipts
-        WHERE user_id = ? AND provider = ? AND transaction_ref = ?
+        SELECT r.badge_store_receipt_id, r.user_id, (CASE WHEN r.payment IS NULL THEN 0 ELSE 1 END), p.badge_purchase_id, r.credit_error
+        FROM badge_store_receipts r
+        LEFT JOIN badge_purchases p ON p.badge_store_receipt_id = r.badge_store_receipt_id
+        WHERE r.provider = ? AND r.transaction_ref = ?
       |]
-      (userId, provider, transactionRef)
+      (provider, transactionRef)
+  where
+    toStoreReceipt (receiptId, ownerId, BI held, purchaseId_, refusal) =
+      StoreReceipt {receiptId, ownerId, status = if held then RSHeld else maybe (RSRefused refusal) RSCredited purchaseId_}
 
--- | An invoice id another record already holds is not repeated: the record is then keyed by its transaction alone.
-createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> Maybe StoreTransactionRef -> UTCTime -> IO BadgeStash
-createBadgeStoreReceipt db g User {userId} invoiceId_ txRef_ now = do
+-- | The record made when Buy is tapped, before any receipt: the store echoes its invoice id.
+createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Text -> UTCTime -> IO ()
+createBadgeStoreReceipt db g User {userId} invoiceId now = do
   (purchaseKey, purchasePrivKey) <- atomically $ C.generateKeyPair g
-  masterKey@(BadgeMasterKey mk) <- generateMasterKey g
-  invoiceId' <- fmap join . forM invoiceId_ $ \invoiceId -> do
-    taken <- DB.query db "SELECT badge_store_receipt_id FROM badge_store_receipts WHERE invoice_id = ?" (Only invoiceId) :: IO [Only Int64]
-    pure $ if null taken then Just invoiceId else Nothing
-  let (provider_, transactionRef_) = case txRef_ of
-        Just StoreTransactionRef {provider, transactionRef} -> (Just provider, Just transactionRef)
-        Nothing -> (Nothing, Nothing)
+  BadgeMasterKey mk <- generateMasterKey g
   DB.execute
     db
     [sql|
-      INSERT INTO badge_store_receipts (user_id, invoice_id, provider, transaction_ref, purchase_key, purchase_priv_key, master_key, created_at)
-      VALUES (?,?,?,?,?,?,?,?)
+      INSERT INTO badge_store_receipts (user_id, invoice_id, purchase_key, purchase_priv_key, master_key, created_at)
+      VALUES (?,?,?,?,?,?)
     |]
-    ((userId, invoiceId', provider_, transactionRef_) :. (purchaseKey, purchasePrivKey, Binary mk, now))
-  storeReceiptId <- insertedRowId db
-  pure BadgeStash {stashRef = BSRStoreReceipt storeReceiptId, purchaseKey, purchasePrivKey, masterKey}
+    (userId, invoiceId, purchaseKey, purchasePrivKey, Binary mk, now)
+
+-- | No receipt yet, or one held: a credited or refused record is settled and not listed.
+getOpenStorePurchases :: DB.Connection -> User -> IO [OpenStorePurchase]
+getOpenStorePurchases db User {userId} =
+  map toOpenStorePurchase
+    <$> DB.query
+      db
+      [sql|
+        SELECT invoice_id, transaction_ref, credit_error
+        FROM badge_store_receipts
+        WHERE user_id = ? AND (transaction_ref IS NULL OR payment IS NOT NULL)
+        ORDER BY badge_store_receipt_id
+      |]
+      (Only userId)
+  where
+    toOpenStorePurchase (invoiceId, transactionRef, creditError) = OpenStorePurchase {invoiceId, transactionRef, creditError}
+
+data HeldStoreReceipt = HeldStoreReceipt
+  { receiptId :: Int64,
+    stash :: BadgeStash,
+    payment :: Text,
+    retryDelay :: Maybe Int64
+  }
+
+-- | Due only from next_attempt_at, so a pass a signal starts cannot send a deferred receipt early.
+getDueStoreReceipts :: DB.Connection -> UserId -> UTCTime -> IO [HeldStoreReceipt]
+getDueStoreReceipts db userId now =
+  map toHeld
+    <$> DB.query
+      db
+      [sql|
+        SELECT badge_store_receipt_id, purchase_key, purchase_priv_key, master_key, payment, retry_delay
+        FROM badge_store_receipts
+        WHERE user_id = ? AND payment IS NOT NULL AND next_attempt_at <= ?
+        ORDER BY next_attempt_at
+      |]
+      (userId, now)
+  where
+    toHeld (stashRow@(receiptId, _, _, _) :. (payment, retryDelay)) =
+      HeldStoreReceipt {receiptId, stash = toBadgeStash BSRStoreReceipt stashRow, payment, retryDelay}
+
+getNextStoreReceiptAttempt :: DB.Connection -> UserId -> IO (Maybe UTCTime)
+getNextStoreReceiptAttempt db userId =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT MIN(next_attempt_at) FROM badge_store_receipts WHERE user_id = ? AND payment IS NOT NULL" (Only userId)
+
+deferStoreReceipt :: DB.Connection -> Int64 -> UTCTime -> Maybe Int64 -> BadgeIssueFailure -> IO ()
+deferStoreReceipt db receiptId nextAttemptAt retryDelay failure =
+  DB.execute
+    db
+    "UPDATE badge_store_receipts SET next_attempt_at = ?, retry_delay = ?, credit_error = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL"
+    (nextAttemptAt, retryDelay, failure, receiptId)
+
+-- | Kept rather than deleted, so that a later hand-over of the same transaction is answered from the record.
+refuseStoreReceipt :: DB.Connection -> Int64 -> BadgeIssueFailure -> IO ()
+refuseStoreReceipt db receiptId refusal =
+  DB.execute db "UPDATE badge_store_receipts SET payment = NULL, credit_error = ? WHERE badge_store_receipt_id = ?" (refusal, receiptId)
+
+-- | A held record is paid for and a credited one is referenced by its purchase, so neither is deleted.
+deleteUnfundedStoreReceipts :: DB.Connection -> UTCTime -> IO ()
+deleteUnfundedStoreReceipts db createdBefore =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM badge_store_receipts
+      WHERE payment IS NULL AND created_at < ?
+        AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_store_receipt_id = badge_store_receipts.badge_store_receipt_id)
+    |]
+    (Only createdBefore)
 
 toBadgeStash :: (Int64 -> BadgeStashRef) -> (Int64, C.PublicKeyEd25519, C.PrivateKeyEd25519, Binary ByteString) -> BadgeStash
 toBadgeStash ref (stashId, purchaseKey, purchasePrivKey, Binary mk) =
@@ -210,7 +295,9 @@ deleteBadgeStash db BadgeStash {stashRef} = case stashRef of
 -- | 'False' when the stash already funded a purchase here: the service replays the credential it
 -- issued, and that must add no purchase and leave the shown badge alone.
 createStashBadgePurchase :: DB.Connection -> User -> BadgeStash -> BadgeCredential -> UTCTime -> IO (Int64, Bool)
-createStashBadgePurchase db User {userId} stash credential now =
+createStashBadgePurchase db User {userId} stash credential now = do
+  -- the credit settles a held receipt in the transaction that stores its purchase, a replay included
+  forM_ storeReceiptId_ $ \storeReceiptId -> DB.execute db "UPDATE badge_store_receipts SET payment = NULL WHERE badge_store_receipt_id = ?" (Only storeReceiptId)
   getStashBadgePurchase db stash >>= \case
     Just purchaseId -> pure (purchaseId, False)
     Nothing -> do

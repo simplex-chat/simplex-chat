@@ -328,6 +328,7 @@ data ChatController = ChatController
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     -- one badge worker per user: badge state is per profile, and one profile must not stall another
     badgeWorkers :: TMap UserId (SessionVar BadgeWorker),
+    storeReceiptWorkers :: TMap UserId (SessionVar BadgeWorker),
     badgeSeq :: TVar Int,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,
@@ -660,7 +661,7 @@ data ChatCommand
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
-  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- redeem an App Store or Google Play purchase; without an invoice id it is credited by transaction reference
+  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
   | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
   | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
@@ -994,6 +995,7 @@ data ChatEvent
   | CEvtServiceReplySent {connectionId :: AgentConnId}
   | CEvtBadgeChanged {user :: User, badgeState :: Maybe BadgeState} -- badge state changed, including a renewal that arrived without a command
   | CEvtBadgeAlert {user :: User, badgeAlert :: BadgeAlert}
+  | CEvtStorePurchaseSettled {user :: User} -- a held store receipt was credited or refused, so its store transaction can be finished
   | CEvtContactRequestRejected {user :: User, contact :: Contact, rejectionReason :: Maybe ContactRejectionReason}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}

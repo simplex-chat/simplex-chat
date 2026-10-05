@@ -992,6 +992,10 @@ CREATE TABLE badge_store_receipts(
   purchase_priv_key BLOB NOT NULL,
   master_key BLOB NOT NULL,
   created_at TEXT NOT NULL,
+  payment TEXT,
+  next_attempt_at TEXT,
+  retry_delay INTEGER,
+  credit_error TEXT,
   UNIQUE(provider, transaction_ref)
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(

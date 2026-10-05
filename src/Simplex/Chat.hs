@@ -195,6 +195,7 @@ newChatController
         deliveryJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
         badgeWorkers <- TM.emptyIO
+        storeReceiptWorkers <- TM.emptyIO
         badgeSeq <- newTVarIO 0
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
@@ -243,6 +244,7 @@ newChatController
               deliveryJobWorkers,
               relayRequestWorkers,
               badgeWorkers,
+              storeReceiptWorkers,
               badgeSeq,
               relayGroupLinkChecksAsync,
               webPreviewState,

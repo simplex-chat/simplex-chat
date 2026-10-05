@@ -8,7 +8,8 @@ import Text.RawString.QQ (r)
 
 -- | invoice_id is null for a receipt naming one another row holds: the transaction still has to be
 -- creditable, and its reference identifies it. provider and transaction_ref are null until a receipt
--- arrives, and distinct NULLs let several rows await one at once.
+-- arrives, and distinct NULLs let several rows await one at once. payment is held from the receipt's
+-- arrival until the service credits or refuses it; a refused row keeps its refusal in credit_error.
 m20260925_badge_store_receipts :: Text
 m20260925_badge_store_receipts =
   [r|
@@ -22,6 +23,10 @@ CREATE TABLE badge_store_receipts(
   purchase_priv_key BYTEA NOT NULL,
   master_key BYTEA NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
+  payment TEXT,
+  next_attempt_at TIMESTAMPTZ,
+  retry_delay BIGINT,
+  credit_error TEXT,
   UNIQUE(provider, transaction_ref)
 );
 
