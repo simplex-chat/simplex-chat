@@ -103,16 +103,18 @@ final class BadgeStore: ObservableObject {
 
     @Published private var state: LoadState = .notLoaded
     private var products: [String: Product] = [:]
-    // one-time transactions the store holds unfinished: each is a payment taken and not yet credited
+    // transactions this run has started presenting and not finished - filled by claim, not by reading the
+    // store, so it is empty at launch until the sweep reaches each one
     @Published private var unfinished: [UInt64: BadgeStoreReceipt] = [:]
     // core's open store purchases for the profile they were read for: core knows whose a purchase is
     @Published private var storePurchases: (userId: Int64, purchases: [OpenStorePurchase])? = nil
-    // invoices whose purchase this session is still waiting on the store for
+    // invoices this run has an open store sheet for, and whose interactive presentation has not returned
     @Published private var buying: Set<String> = []
     // kept for this run only: StoreKit lists no deferred purchase, and a declined one delivers nothing
     // by invoice id, so a pending purchase shows only under the profile whose record it names
     @Published private var waitingForApproval: Set<String> = []
-    // until the store has been asked once, a purchase made while the app was not running is unknown
+    // set when the first sweep has returned, which is after every held transaction has been presented
+    // over the network - until then a purchase made while the app was not running is unknown
     @Published private var reconciledOnce = false
     // whether the purchase the user started waits on the presentation, so its outcome is shown whoever claimed it
     private var presenting: [UInt64: Bool] = [:]

@@ -150,15 +150,17 @@ object BadgeStore {
   private val state = mutableStateOf(LoadState.NotLoaded)
   // snapshot state so a composable reading only the products still recomposes when they arrive
   private val products = mutableStateOf<Map<BadgeStoreProductId, BadgeProduct>>(emptyMap())
-  // one-time purchases the store holds unfinished: each is a payment taken and not yet credited
+  // purchases this run has started presenting and not finished - filled by claim, not by reading the
+  // store, so it is empty at launch until the sweep reaches each one
   private val unfinished = mutableStateOf<Map<String, BadgeStoreReceipt>>(emptyMap())
   // core's open store purchases for the profile they were read for: core knows whose a purchase is
   private val storePurchases = mutableStateOf<Triple<Long?, Long, List<OpenStorePurchase>>?>(null)
-  // invoices whose purchase this session is still waiting on the store for
+  // invoices this run has an open store sheet for, and whose interactive presentation has not returned
   private val buying = mutableStateOf<Set<String>>(emptySet())
   // by invoice id, so a pending purchase shows only under the profile whose record it names
   private val waitingForApproval = mutableStateOf<Set<String>>(emptySet())
-  // until the store has been asked once, a purchase made while the app was not running is unknown
+  // set when the first sweep has returned or failed, which is after every held purchase has been presented
+  // over the network - until then a purchase made while the app was not running is unknown
   private val reconciledOnce = mutableStateOf(false)
   // whether the purchase the user started waits on the presentation, so its outcome is shown whoever claimed it;
   // read and written on the main thread only

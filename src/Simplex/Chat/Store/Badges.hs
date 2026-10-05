@@ -123,8 +123,8 @@ attachBadgeStoreReceipt db invoiceId_ txRef@StoreTransactionRef {provider, trans
       userId_ <-
         maybeFirstRow fromOnly $
           DB.query db "SELECT user_id FROM badge_store_receipts WHERE invoice_id = ? AND transaction_ref IS NULL" (Only invoiceId)
-      -- a closed record is reopened: new keys for a paid transaction would be refused as receipt_used,
-      -- and the badge the old keys were credited with would be lost
+      -- a closed record is reopened so the purchase stays on the profile that paid: only a record no
+      -- receipt has reached can be closed, so its keys were never sent and nothing was credited to them
       forM_ userId_ $ \_ ->
         DB.execute
           db
