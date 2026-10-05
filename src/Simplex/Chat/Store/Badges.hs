@@ -150,7 +150,7 @@ holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provid
   where
     paymentJSON = safeDecodeUtf8 . LB.toStrict $ J.encode payment
     insertReceipt = do
-      (purchaseKey, purchasePrivKey) <- atomically $ C.generateKeyPair g
+      (purchaseKey, purchasePrivKey) <- atomically (C.generateKeyPair g) :: IO C.KeyPairEd25519
       BadgeMasterKey mk <- generateMasterKey g
       -- an invoice id another record holds is not repeated: this record is then keyed by its transaction alone
       invoiceId' <- fmap join . forM invoiceId_ $ \invoiceId -> do
@@ -186,7 +186,7 @@ getStoreReceipt db StoreTransactionRef {provider, transactionRef} =
 -- | The record made when Buy is tapped, before any receipt: the store echoes its invoice id.
 createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Text -> UTCTime -> IO ()
 createBadgeStoreReceipt db g User {userId} invoiceId now = do
-  (purchaseKey, purchasePrivKey) <- atomically $ C.generateKeyPair g
+  (purchaseKey, purchasePrivKey) <- atomically (C.generateKeyPair g) :: IO C.KeyPairEd25519
   BadgeMasterKey mk <- generateMasterKey g
   DB.execute
     db

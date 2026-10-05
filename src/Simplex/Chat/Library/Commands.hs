@@ -5490,8 +5490,8 @@ creditStoreReceipt userId HeldStoreReceipt {receiptId, stash = stash@BadgeStash 
     defer failure retryAfter = do
       ri <- asks $ badgeRetryInterval . config
       now <- badgeNow
-      let (wait, retryDelay') = storeReceiptRetry ri failure retryAfter retryDelay
-      withStore' $ \db -> deferStoreReceipt db receiptId (wait `addUTCTime` now) retryDelay' failure
+      let (delay, retryDelay') = storeReceiptRetry ri failure retryAfter retryDelay
+      withStore' $ \db -> deferStoreReceipt db receiptId (delay `addUTCTime` now) retryDelay' failure
 
 -- | The service's retryAfter when given; otherwise a failure that can clear grows its own delay, and any
 -- other waits a day. Unlike a renewal, an answered internal grows too: a buyer is watching the purchase.
