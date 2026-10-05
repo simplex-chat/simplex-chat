@@ -15,7 +15,7 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_, poll)
+import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
@@ -1796,6 +1796,9 @@ testSubscribeAppNSE :: HasCallStack => TestParams -> IO ()
 testSubscribeAppNSE ps =
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
+      let ChatController {agentAsync} = chatController alice
+      Just (_, Just subscribed) <- readTVarIO agentAsync
+      wait subscribed
       withTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" $ \nseAlice -> do
         alice ##> "/_app suspend 1"
         alice <### ["ok", "chat suspended"]

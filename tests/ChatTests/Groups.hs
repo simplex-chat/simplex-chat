@@ -10211,10 +10211,21 @@ testChannelBlockMemberSigned ps =
             r2 `shouldEndWith` "(signed)"
 
 checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
-checkMemberRow cc name expectedRole = do
-  roles <- withCCTransaction cc $ \db ->
-    DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
-  map (\(Only r) -> r) roles `shouldBe` maybeToList expectedRole
+checkMemberRow cc name expectedRole = memberRoles cc name `shouldReturn` maybeToList expectedRole
+
+waitMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
+waitMemberRow cc name expectedRole = go (50 :: Int)
+  where
+    expected = maybeToList expectedRole
+    go n = do
+      roles <- memberRoles cc name
+      if roles == expected || n == 0
+        then roles `shouldBe` expected
+        else threadDelay 100000 >> go (n - 1)
+
+memberRoles :: TestCC -> T.Text -> IO [T.Text]
+memberRoles cc name =
+  map (\(Only r) -> r) <$> withCCTransaction cc (\db -> DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name))
 
 -- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to
 -- find a member by id on a subscriber that only knows it by member-id hash (e.g. after roster recovery).
@@ -11275,8 +11286,7 @@ testChannelRosterMultipartReassembly ps =
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
           -- dan reassembles the multi-chunk roster from the served snapshot (arrives async)
-          threadDelay 1000000
-          checkMemberRow dan "cath" (Just "moderator")
+          waitMemberRow dan "cath" (Just "moderator")
   where
     cfg = testCfg {fileChunkSize = 30}
 
