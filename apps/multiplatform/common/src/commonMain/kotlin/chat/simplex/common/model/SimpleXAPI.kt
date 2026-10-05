@@ -32,6 +32,7 @@ import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
+import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -215,6 +216,7 @@ class AppPreferences {
   val encryptedSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE, null)
   val initializationVectorSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE, null)
   val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null)
+  val shouldDeleteDatabaseBackups = mkBoolPreference(SHARED_PREFS_SHOULD_DELETE_DATABASE_BACKUPS, false)
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
@@ -487,6 +489,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE = "EncryptedSelfDestructPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE = "InitializationVectorSelfDestructPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
+    private const val SHARED_PREFS_SHOULD_DELETE_DATABASE_BACKUPS = "ShouldDeleteDatabaseBackups"
     private const val SHARED_PREFS_NEW_DATABASE_INITIALIZED = "NewDatabaseInitialized"
     private const val SHARED_PREFS_SHOULD_IMPORT_APP_SETTINGS = "ShouldImportAppSettings"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
@@ -686,6 +689,10 @@ object ChatController {
       }
       apiStartChat()
       appPrefs.chatStopped.set(false)
+      if (appPrefs.shouldDeleteDatabaseBackups.get()) {
+        deleteDatabaseBackups()
+        appPrefs.shouldDeleteDatabaseBackups.set(false)
+      }
     } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
@@ -941,7 +948,7 @@ object ChatController {
       val r = json.decodeFromString<API>(rStr)
       if (log) {
         Log.d(TAG, "sendCmd response type ${r.responseType}")
-        if (r is API.Result && (r.res is CR.Response || r.res is CR.Invalid)) {
+        if (r is API.Result && ((r.res is CR.Response && !r.res.type.startsWith("call")) || r.res is CR.Invalid)) {
           Log.d(TAG, "sendCmd response json $rStr")
         }
         chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
@@ -958,7 +965,7 @@ object ChatController {
     } else {
       val r = json.decodeFromString<API>(rStr)
       Log.d(TAG, "chatRecvMsg: ${r.responseType}")
-      if (r is API.Result && (r.res is CR.Response || r.res is CR.Invalid)) Log.d(TAG, "chatRecvMsg json: $rStr")
+      if (r is API.Result && ((r.res is CR.Response && !r.res.type.startsWith("call")) || r.res is CR.Invalid)) Log.d(TAG, "chatRecvMsg json: $rStr")
       r
     }
   }
@@ -3364,21 +3371,13 @@ object ChatController {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation.copy(remoteHostId = rhId))
       }
       is CR.CallOffer -> {
-        // TODO askConfirmation?
-        // TODO check encryption is compatible
         withCall(r, r.contact) { call ->
-          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, sharedKey = r.sharedKey)
-          val useRelay = appPrefs.webrtcPolicyRelay.get()
-          val iceServers = getIceServers()
-          Log.d(TAG, ".callOffer iceServers $iceServers")
-          chatModel.callCommand.add(WCallCommand.Offer(
-            offer = r.offer.rtcSession,
-            iceCandidates = r.offer.rtcIceCandidates,
-            media = r.callType.media,
-            aesKey = r.sharedKey,
-            iceServers = iceServers,
-            relay = useRelay
-          ))
+          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, hasSharedKey = r.sharedKey != null)
+          if (r.askConfirmation) {
+            showUnencryptedCallAlert(call) { processCallOffer(r) }
+          } else {
+            processCallOffer(r)
+          }
         }
       }
       is CR.CallAnswer -> {
@@ -3632,6 +3631,39 @@ object ChatController {
     } else {
       Log.d(TAG, "processReceivedMsg: ignoring ${r.responseType}, not in call with the contact ${contact.id}")
     }
+  }
+
+  private fun processCallOffer(r: CR.CallOffer) {
+    val useRelay = appPrefs.webrtcPolicyRelay.get()
+    val iceServers = getIceServers()
+    chatModel.callCommand.add(WCallCommand.Offer(
+      offer = r.offer.rtcSession,
+      iceCandidates = r.offer.rtcIceCandidates,
+      media = r.callType.media,
+      aesKey = r.sharedKey,
+      iceServers = iceServers,
+      relay = useRelay
+    ))
+  }
+
+  private fun showUnencryptedCallAlert(call: Call, onContinue: () -> Unit) {
+    // the call may have ended, or a new one started with the same contact, while the alert was shown
+    fun offerPending(): Boolean {
+      val c = chatModel.activeCall.value
+      return c != null && c.remoteHostId == call.remoteHostId && c.contact.id == call.contact.id && c.callState == CallState.OfferReceived
+    }
+    val endCall = { if (offerPending()) withBGApi { chatModel.callManager.endCall(call) } }
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.call_not_encrypted_title),
+      text = generalGetString(MR.strings.call_not_encrypted_desc).format(call.contact.displayName),
+      confirmText = generalGetString(MR.strings.call_service_notification_end_call),
+      onConfirm = { endCall() },
+      dismissText = generalGetString(MR.strings.continue_to_next_step),
+      onDismiss = { if (offerPending()) onContinue() },
+      onDismissRequest = { endCall() },
+      destructive = true,
+      parseHtml = false
+    )
   }
 
   suspend fun leaveGroup(rh: Long?, groupId: Long) {
@@ -7215,9 +7247,9 @@ sealed class CR {
     is SndStandaloneFileComplete -> withUser(user, rcvURIs.size.toString())
     is SndFileError -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
     is SndFileWarning -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
-    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"
-    is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
-    is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
+    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations.map { it.copy(sharedKey = null) })}"
+    is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: ${callInvitation.callType}"
+    is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
     is CallExtraInfo -> withUser(user, "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}")
     is CallEnded -> withUser(user, "contact: ${contact.id}")

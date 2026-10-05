@@ -93,7 +93,7 @@
     <string name="connect_plan_already_joining_the_group">Se alătură deja grupului!</string>
     <string name="notifications_mode_service">Mereu pornit</string>
     <string name="connect__a_new_random_profile_will_be_shared">Un nou profil aleatoriu va fi distribuit.</string>
-    <string name="keychain_is_storing_securely">Android Keystore este folosit pentru a stoca în siguranță parola. Acest lucru permite funcționarea serviciului de notificări.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s este folosit pentru a stoca în siguranță parola. Acest lucru permite funcționarea serviciului de notificări.</string>
     <string name="rcv_group_and_other_events">și %d alte evenimente</string>
     <string name="answer_call">Răspunde la apel</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore va fi folosit pentru a stoca în siguranță parola după ce repornești aplicația sau schimbi parola — acest lucru va permite primirea de notificări.</string>

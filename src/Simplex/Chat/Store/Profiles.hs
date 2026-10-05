@@ -77,6 +77,7 @@ module Simplex.Chat.Store.Profiles
     createCall,
     deleteCalls,
     getCalls,
+    expireCalls,
     createCommand,
     setCommandConnId,
     deleteCommand,
@@ -103,6 +104,7 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Simplex.Chat.Badges (LocalBadge, localBadgeToRow)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
@@ -126,7 +128,7 @@ import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
@@ -1083,6 +1085,26 @@ getCalls db =
   where
     toCall :: (ContactId, CallId, Text, ChatItemId, CallState, UTCTime) -> Call
     toCall (contactId, callId, callUUID, chatItemId, callState, callTs) = Call {contactId, callId, callUUID, chatItemId, callState, callTs}
+
+-- only received call invitations are stored, so their chat items are pending and become missed
+expireCalls :: DB.Connection -> UTCTime -> IO ()
+expireCalls db cutoffTs = do
+  itemIds :: [ChatItemId] <- map fromOnly <$> DB.query db "DELETE FROM calls WHERE call_ts < ? RETURNING chat_item_id" (Only cutoffTs)
+  currentTs <- getCurrentTime
+  let content = CIRcvCall CISCallMissed 0
+      contentText = ciContentToText content
+  unless (null itemIds) $
+#if defined(dbPostgres)
+    DB.execute
+      db
+      "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id IN ?"
+      (content, contentText, currentTs, In itemIds)
+#else
+    DB.executeMany
+      db
+      "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?"
+      (map (content,contentText,currentTs,) itemIds)
+#endif
 
 createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
 createCommand db User {userId} connId commandFunction = do

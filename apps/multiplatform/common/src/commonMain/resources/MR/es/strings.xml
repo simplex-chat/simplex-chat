@@ -51,7 +51,7 @@
     <string name="users_delete_all_chats_deleted">Se eliminarán todos los chats y mensajes. ¡No puede deshacerse!</string>
     <string name="accept_feature">Aceptar</string>
     <string name="allow_to_send_disappearing">Se permiten mensajes temporales.</string>
-    <string name="keychain_is_storing_securely">Android Keystore se usará para almacenar la frase de contraseña de forma segura - permite que el servicio de notificaciones funcione.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s se usará para almacenar la frase de contraseña de forma segura - permite que el servicio de notificaciones funcione.</string>
     <string name="users_add">Añadir perfil</string>
     <string name="color_primary">Color</string>
     <string name="allow_your_contacts_irreversibly_delete">Permites que tus contactos eliminan irreversiblemente los mensajes enviados. (24 horas)</string>

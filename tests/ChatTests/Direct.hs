@@ -33,7 +33,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServ
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -105,6 +105,8 @@ chatDirectTests = do
     it "connect, fully asynchronous (when clients are never simultaneously online)" $ testFullAsyncFast
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
+    it "negotiate call between current and v1 clients" testNegotiateCallV1
+    it "mark expired call invitation missed on restore" testExpireCallInvitation
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
 #if !defined(dbPostgres)
@@ -1369,6 +1371,65 @@ testNegotiateCall =
       ws@(_ : _) | "(0" `isPrefixOf` last ws -> unwords $ init ws
       _ -> s
 
+testCfgCallV1 :: ChatConfig
+testCfgCallV1 = testCfg {callVRange = callInitialVRange}
+
+currentCall :: TestCC -> ContactId -> IO Call
+currentCall cc ctId = M.lookup ctId <$> readTVarIO (currentCalls $ chatController cc) >>= maybe (fail "no current call") pure
+
+callRowCount :: TestCC -> IO Int
+callRowCount cc = do
+  [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM calls"
+  pure n
+
+inviteToCall :: HasCallStack => TestCC -> TestCC -> IO ()
+inviteToCall alice bob = do
+  alice ##> ("/_call invite @2 " <> serialize testCallType)
+  alice <## "ok"
+  bob <## "alice wants to connect with you via WebRTC video call (e2e encrypted)"
+  repeatM_ 3 $ getTermLine bob
+
+testNegotiateCallV1 :: TestParams -> IO ()
+testNegotiateCallV1 =
+  runTestCfg2 testCfg testCfgCallV1 $ \alice bob -> do
+    connectUsers alice bob
+    inviteToCall alice bob
+    Call {callState = CallInvitationSent {localDhPrivKey = Just alicePrivKey}} <- currentCall alice 2
+    Call {callState = CallInvitationReceived {localDhPubKey = Just bobPubKey, sharedKey = Just bobKey, callVersion}} <- currentCall bob 2
+    callVersion `shouldBe` Just initialCallVersion
+    bobKey `shouldBe` C.Key (C.dhBytes' $ C.dh' bobPubKey alicePrivKey)
+    bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
+    bob <## "ok"
+    alice <## "bob accepted your WebRTC video call (e2e encrypted)"
+    repeatM_ 3 $ getTermLine alice
+    Call {callState = CallOfferReceived {sharedKey = aliceKey}} <- currentCall alice 2
+    aliceKey `shouldBe` Just bobKey
+    alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
+    alice <## "ok"
+    bob <## "alice continued the WebRTC call"
+    repeatM_ 3 $ getTermLine bob
+    bob ##> "/_call end @2"
+    bob <## "ok"
+    alice <## "call with bob ended"
+
+testExpireCallInvitation :: HasCallStack => TestParams -> IO ()
+testExpireCallInvitation ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      inviteToCall alice bob
+      callRowCount bob `shouldReturn` 1
+    withTestChat ps "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      Call {callState = CallInvitationReceived {}} <- currentCall bob 2
+      callRowCount bob `shouldReturn` 1
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: calling...")])
+    withTestChatCfg ps testCfg {callInvitationTTL = 0} "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      M.member 2 <$> readTVarIO (currentCalls $ chatController bob) `shouldReturn` False
+      callRowCount bob `shouldReturn` 0
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
+
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =
   withNewTestChat ps "bob" bobProfile $ \bob ->
@@ -1492,19 +1553,25 @@ testMaintenanceModeWithFiles ps = withXFTPServer ps $ do
 
       threadDelay 500000
 
+      let backupDBs = [tmpPath ps <> "/alice_chat.db.bak", tmpPath ps <> "/alice_agent.db.bak"]
+      forM_ backupDBs $ \f -> B.writeFile f ""
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
+      let exportedDBs = [tmpPath ps <> "/alice_chat.db.exported", tmpPath ps <> "/alice_agent.db.exported"]
+      forM_ exportedDBs $ \f -> B.writeFile f ""
       alice ##> "/_db delete"
       alice <## "ok"
       -- cannot start chat after delete
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
       doesDirectoryExist aliceFiles `shouldReturn` False
+      forM_ exportedDBs $ \f -> doesFileExist f `shouldReturn` False
       alice ##> ("/_db import {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
       B.readFile (aliceFiles </> "test.jpg") `shouldReturn` src
+      forM_ backupDBs $ \f -> doesFileExist f `shouldReturn` False
     -- works after full restart
     withTestChat ps "alice" $ \alice -> testChatWorking alice bob
   where

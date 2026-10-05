@@ -6647,6 +6647,10 @@ Error: SQLite3 returned ErrorError while attempting to perform prepare "explain 
 Query: DELETE FROM app_settings
 Plan:
 
+Query: DELETE FROM calls WHERE call_ts < ? RETURNING chat_item_id
+Plan:
+SCAN calls
+
 Query: DELETE FROM calls WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
@@ -7378,6 +7382,14 @@ Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_suppo
 Plan:
 SCAN chat_items
 
+Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '!2 SB-8H8V3-PF8CV-PQMA2-A54M3!%'
+Plan:
+SCAN chat_items
+
+Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '!2 SB-Y14GX-Z83KW-0E3PK-DEN7X!%'
+Plan:
+SCAN chat_items
+
 Query: SELECT chat_item_id FROM chat_items WHERE item_text LIKE '%' || ? || '%' ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SCAN chat_items
@@ -7485,6 +7497,10 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT contact_request_id FROM contact_requests WHERE user_id = ? AND local_display_name = ?
 Plan:
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1 (user_id=? AND local_display_name=?)
+
+Query: SELECT count(1) FROM calls
+Plan:
+SCAN calls USING COVERING INDEX idx_calls_contact_id
 
 Query: SELECT count(1) FROM chat_items WHERE chat_item_id > ?
 Plan:
@@ -7676,6 +7692,10 @@ Query: SELECT note_folder_id FROM note_folders WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 
+Query: SELECT purchase_key FROM badge_code_redemptions
+Plan:
+SCAN badge_code_redemptions
+
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -7795,6 +7815,10 @@ SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
 Plan:
