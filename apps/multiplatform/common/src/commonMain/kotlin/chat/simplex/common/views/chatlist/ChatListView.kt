@@ -859,7 +859,6 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                   val localChats = result.connectionPlan.localChats
                   upsertChats(rhId, localChats)
                   searchChatFilteredBySimplexLink.value = localChats.map { it.id }.toSet()
-                  if (!result.offerLookup) connectNameCandidate.value = null
                 }
               } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {

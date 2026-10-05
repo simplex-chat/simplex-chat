@@ -982,9 +982,11 @@ CREATE TABLE badge_code_redemptions(
   UNIQUE(user_id, code)
 ) STRICT;
 CREATE TABLE simplex_names(
-  simplex_domain TEXT NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  simplex_domain TEXT NOT NULL,
   registration TEXT NOT NULL,
-  resolved_at TEXT NOT NULL
+  resolved_at TEXT NOT NULL,
+  PRIMARY KEY(user_id, simplex_domain)
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1549,7 +1551,6 @@ CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
 CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
   badge_code_redemption_id
 );
-CREATE INDEX idx_simplex_names_resolved_at ON simplex_names(resolved_at);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

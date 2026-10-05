@@ -15,18 +15,15 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Monad.Reader (runReaderT)
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Data.Maybe (listToMaybe, mapMaybe)
+import Data.Maybe (maybeToList)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import NameResolver
-import Simplex.Chat.Controller (ChatResponse (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), NamePrice (..), NameWarning (..))
-import Simplex.Chat.Library.Commands (execChatCommand', nameLinkOrWarning, parseChatCommand, setNameWarning)
+import Simplex.Chat.Controller (ChatConfig (..), ChatResponse (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), NamePrice (..), NameWarning (..))
+import Simplex.Chat.Library.Commands (execChatCommand', nameRecordOrWarning, parseChatCommand)
 import Simplex.Chat.Messages (AChatInfo (..), ChatInfo (..))
 import Simplex.Chat.Types (Contact (..), GroupInfo (..))
-import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), USDCents (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
@@ -58,20 +55,20 @@ chatNamesTests = do
     it "known chat and own name, the name's new link cannot be fetched" testPlanKnownNameLinkFailed
     it "own channel expired, joined channel moved to a new channel, new channel joined" testPlanChannelNameMoved
     it "joined channel moved to a channel with no relays" testPlanChannelNameMovedNoRelays
-    it "no local chat, the channel has no relays, the contact is planned" testPlanNameChannelNoRelays
+    it "no local chat, the channel has no relays" testPlanNameChannelNoRelays
     it "known chats, the name's link differs only in its key hash" testPlanNameLinkKeyHash
     it "local chats, and whether a lookup can show more" testPlanLocalChats
     it "bare name, the other kind's chat moved, offered" testPlanNameOtherKindMoved
     it "bare name, the other kind is a business chat" testPlanNameOtherKindBusiness
-    it "known chat, the name is requested again after a day" testPlanKnownNameStale
-    it "no local chat, the name is requested again after 5 minutes" testPlanNameResolvedEveryCall
+    it "known chat, resolved on every call" testPlanKnownNameStale
+    it "no local chat, resolved on every call" testPlanNameResolvedEveryCall
     it "own name, expired" testPlanOwnNameExpired
     it "own name, now available" testPlanOwnNameAvailable
     it "the request failed" testPlanNameResolverFailed
+    it "name resolved less than a minute ago" testPlanNameCached
     it "resolve=never: local hit and miss" testPlanNameResolveNever
   describe "name warnings" $ do
-    it "link or warning for a name with no local chat" $ \_ -> testNameLinkOrWarning
-    it "warning for own name" $ \_ -> testOwnNameWarning
+    it "registration record or warning" $ \_ -> testNameRecordOrWarning
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
 testConnectByName ps = withSmpServerAndNames $ \reg ->
@@ -189,7 +186,7 @@ testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
         bob <## "use #team <message> to send messages" -- no "SimpleX name" line: status stays unknown
         bob ##> "/_connect plan 1 #team.simplex"
         knownTeamPlan bob
-        planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` (["team"], False)
+        planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` ["team"]
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -275,6 +272,7 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
         alice <## "new contact address set"
         alice ##> "/_connect plan 1 team.simplex"
         alice <## "group link: own link for group #team"
+        alice <## "You can also connect to @team.simplex in direct chat"
         bob ##> "/_connect plan 1 team.simplex"
         bob <## "group link: ok to connect via relays"
         _ <- getTermLine bob
@@ -296,23 +294,12 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
         bob <## "SimpleX name: #team (verified)"
         bob <## "use #team <message> to send messages"
         bob <## "You can also connect to @team.simplex in direct chat"
-        setNamesStale bob
-        bob ##> "/_connect plan 1 team.simplex"
-        knownTeamPlan bob
-        bob <## "You can also connect to @team.simplex in direct chat"
         bob ##> "/_connect plan 1 #team.simplex resolve=all"
         knownTeamPlan bob
-        bob ##> "/_connect plan 1 team.simplex"
-        knownTeamPlan bob
-        bob <## "You can also connect to @team.simplex in direct chat"
         bob ##> "/_connect plan 1 team.simplex resolve=all"
         knownTeamPlan bob
         bob <## "You can also connect to @team.simplex in direct chat"
         registerName reg teamName (contactNameRecord "team.simplex" (T.pack contactLink))
-        setNamesStale bob
-        bob ##> "/_connect plan 1 team.simplex"
-        knownTeamPlan bob
-        bob <## "You can also connect to @team.simplex in direct chat"
         bob ##> "/_connect plan 1 team.simplex"
         knownTeamPlan bob
         bob <## "You can also connect to @team.simplex in direct chat"
@@ -341,7 +328,6 @@ testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
         registerName reg acmeName (contactAndChannelNameRecord "acme.simplex" (T.pack contactLink) (T.pack channelLink))
         alice ##> "/_set domain 1 acme.simplex"
         alice <## "new contact address set"
-        setNamesStale bob
         bob ##> "/_connect plan 1 acme.simplex"
         bob <## "contact address: ok to connect"
         _ <- getTermLine bob -- contact short link data (JSON, printed in test view)
@@ -392,10 +378,6 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
         bob ##> "/_connect plan 1 @biz.simplex"
         bob <## "business address: known business #alice"
         bob <## "use #alice <message> to send messages"
-        setNamesStale bob
-        bob ##> "/_connect plan 1 @biz.simplex"
-        bob <## "business address: known business #alice"
-        bob <## "use #alice <message> to send messages"
         bob <##. "SimpleX name biz.simplex expired on "
         -- the business's verified domain survives the handshake and is shown in group info
         bob ##> "/i #alice"
@@ -437,22 +419,22 @@ planExistingChat TestCC {chatController = cc} cmd = do
   cmd' <- either fail pure $ parseChatCommand cmd
   r <- execChatCommand' cmd' 0 `runReaderT` cc
   case r of
-    Right CRConnectionPlan {connectionPlan = CPContactAddress CAPOk {} _ localChats} -> pure $ chatName =<< listToMaybe localChats
-    Right CRConnectionPlan {connectionPlan = CPGroupLink GLPOk {} _ localChats} -> pure $ chatName =<< listToMaybe localChats
+    Right CRConnectionPlan {connectionPlan = CPContactAddress CAPOk {} _ existingChat_} -> pure $ chatName =<< existingChat_
+    Right CRConnectionPlan {connectionPlan = CPGroupLink GLPOk {} _ existingChat_} -> pure $ chatName =<< existingChat_
     _ -> fail $ "unexpected response: " <> show r
 
-planLocal :: TestCC -> ByteString -> IO ([String], Bool)
+planLocal :: TestCC -> ByteString -> IO [String]
 planLocal TestCC {chatController = cc} cmd = do
   cmd' <- either fail pure $ parseChatCommand cmd
   r <- execChatCommand' cmd' 0 `runReaderT` cc
   case r of
-    Right CRConnectionPlan {connectionPlan, offerLookup} -> pure (mapMaybe chatName $ planChats connectionPlan, offerLookup)
+    Right CRConnectionPlan {connectionPlan = CPContactAddress cap _ existingChat_} -> pure $ maybeToList (case cap of CAPKnown Contact {localDisplayName} -> Just (T.unpack localDisplayName); _ -> Nothing) <> maybeToList (chatName =<< existingChat_)
+    Right CRConnectionPlan {connectionPlan = CPGroupLink glp _ existingChat_} -> pure $ maybeToList (groupName glp) <> maybeToList (chatName =<< existingChat_)
     _ -> fail $ "unexpected response: " <> show r
-
-planChats :: ConnectionPlan -> [AChatInfo]
-planChats CPContactAddress {localChats} = localChats
-planChats CPGroupLink {localChats} = localChats
-planChats _ = []
+  where
+    groupName GLPKnown {groupInfo = GroupInfo {localDisplayName}} = Just $ T.unpack localDisplayName
+    groupName GLPOwnLink {groupInfo = GroupInfo {localDisplayName}} = Just $ T.unpack localDisplayName
+    groupName _ = Nothing
 
 chatName :: AChatInfo -> Maybe String
 chatName (AChatInfo _ (DirectChat Contact {localDisplayName})) = Just $ T.unpack localDisplayName
@@ -471,9 +453,6 @@ connectBobByName alice bob = do
   concurrently_
     (bob <## "alice (Alice): contact is connected")
     (alice <## "bob (Bob): contact is connected")
-
-setNamesStale :: TestCC -> IO ()
-setNamesStale cc = withCCTransaction cc $ \db -> DB.execute_ db "UPDATE simplex_names SET resolved_at = datetime('now', '-2 days')"
 
 testPrepareNameNotClaimed :: HasCallStack => TestParams -> IO ()
 testPrepareNameNotClaimed ps = withSmpServerAndNames $ \reg ->
@@ -512,7 +491,6 @@ testPlanKnownNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameAvailable = withAliceName $ \reg _r alice bob -> do
   connectBobByName alice bob
   unregisterName reg aliceSimplexName
-  setNamesStale bob
   bob ##> "/_connect plan 1 @alice.simplex resolve=all"
   knownAlicePlan bob
   bob <## "SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
@@ -524,7 +502,6 @@ testPlanKnownNameReserved :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
   connectBobByName alice bob
   registerName reg aliceSimplexName (emptyRecord "alice.simplex")
-  setNamesStale bob
   bob ##> "/_connect plan 1 @alice.simplex resolve=all"
   knownAlicePlan bob
   alice ##> "/_connect plan 1 @alice.simplex"
@@ -532,6 +509,7 @@ testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
   registerExpiredName reg aliceSimplexName (emptyRecord "alice.simplex")
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
+  bob <##. "SimpleX name alice.simplex expired on "
   registerReservedName reg aliceSimplexName NRRTrademark
   bob ##> "/_connect plan 1 @alice.simplex resolve=all"
   knownAlicePlan bob
@@ -551,10 +529,12 @@ testPlanKnownNameResolverFailed = withAliceName $ \reg _r alice bob -> do
   failNameResolution reg aliceSimplexName
   bob ##> "/_connect plan 1 @alice.simplex resolve=all"
   knownAlicePlan bob
+  bob <## "SimpleX name from cache"
   bob ##> "/_connect plan 1 alice.simplex resolve=all"
   knownAlicePlan bob
+  bob <## "SimpleX name from cache"
   alice ##> "/_connect plan 1 @alice.simplex"
-  alice .<## "smpErr = NAME {nameErr = RESOLVER {resolverErr = \"HTTP 500\"}}}"
+  alice <## "contact address: own address"
 
 testPlanKnownNameStale :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameStale = withAliceName $ \reg aliceRecord alice bob -> do
@@ -562,18 +542,8 @@ testPlanKnownNameStale = withAliceName $ \reg aliceRecord alice bob -> do
   registerExpiredName reg aliceSimplexName aliceRecord
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
-  setNamesStale bob
-  bob ##> "/_connect plan 1 @alice.simplex"
-  knownAlicePlan bob
   bob <##. "SimpleX name alice.simplex expired on "
   registerName reg aliceSimplexName aliceRecord
-  bob ##> "/_connect plan 1 @alice.simplex"
-  knownAlicePlan bob
-  bob <##. "SimpleX name alice.simplex expired on "
-  setNamesStale bob
-  bob ##> "/_connect plan 1 @alice.simplex"
-  knownAlicePlan bob
-  registerExpiredName reg aliceSimplexName aliceRecord
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
 
@@ -586,10 +556,6 @@ testPlanNameResolvedEveryCall = withAliceName $ \reg aliceRecord _alice bob -> d
   bob <## "contact address: ok to connect"
   _ <- getTermLine bob
   registerExpiredName reg aliceSimplexName aliceRecord
-  bob ##> "/_connect plan 1 @alice.simplex"
-  bob <## "contact address: ok to connect"
-  _ <- getTermLine bob
-  setNamesStale bob
   bob ##> "/_connect plan 1 @alice.simplex"
   bob <## "SimpleX name alice.simplex: nothing to connect to"
   bob <##. "SimpleX name alice.simplex expired on "
@@ -612,7 +578,6 @@ testPlanNameResolveNever :: HasCallStack => TestParams -> IO ()
 testPlanNameResolveNever = withAliceName $ \reg _r alice bob -> do
   connectBobByName alice bob
   unregisterName reg aliceSimplexName
-  setNamesStale bob
   bob ##> "/_connect plan 1 alice.simplex resolve=never"
   knownAlicePlan bob
   alice ##> "/_connect plan 1 @alice.simplex resolve=never"
@@ -643,7 +608,6 @@ testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
       alice <## "contact address: ok to connect, address changed"
       _ <- getTermLine alice
       planExistingChat alice "/_connect plan 1 @alice.simplex" `shouldReturn` Nothing
-      setNamesStale bob
       bob ##> "/_connect plan 1 @alice.simplex"
       bob <## "contact address: ok to connect, address changed"
       _ <- getTermLine bob
@@ -691,7 +655,6 @@ testPlanKnownNameMovedToKnownChat ps = withSmpServerAndNames $ \reg ->
       concurrently_
         (bob <## "cath (Catherine): contact is connected")
         (cath <## "bob (Bob): contact is connected")
-      setNamesStale bob
       bob ##> "/_connect plan 1 @alice.simplex"
       bob <## "contact address: known contact cath"
       bob <## "SimpleX name: @alice.simplex (verified)"
@@ -716,8 +679,32 @@ testPlanNameResolverFailed = withAliceName $ \reg _r _alice bob -> do
   failNameResolution reg brokenName
   bob ##> "/_connect plan 1 broken.simplex"
   bob .<## "smpErr = NAME {nameErr = RESOLVER {resolverErr = \"HTTP 500\"}}}"
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "contact address: ok to connect"
+  _ <- getTermLine bob
+  failNameResolution reg aliceSimplexName
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "contact address: ok to connect"
+  _ <- getTermLine bob
+  bob <## "SimpleX name from cache"
   where
     brokenName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "broken" [])
+
+testPlanNameCached :: HasCallStack => TestParams -> IO ()
+testPlanNameCached ps = withSmpServerAndNames $ \reg ->
+  testChatCfg2 testCfg {nameCacheTTL = 60} aliceProfile bobProfile (test reg) ps
+  where
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      _ <- setAliceName reg alice
+      bob ##> "/_connect plan 1 @alice.simplex"
+      bob <## "contact address: ok to connect"
+      _ <- getTermLine bob
+      unregisterName reg aliceSimplexName
+      bob ##> "/_connect plan 1 alice.simplex"
+      bob <## "contact address: ok to connect"
+      _ <- getTermLine bob
+      bob <## "SimpleX name from cache"
 
 testPlanKnownNameLinkFailed :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameLinkFailed ps = withSmpServerAndNames $ \reg ->
@@ -734,7 +721,7 @@ testPlanKnownNameLinkFailed ps = withSmpServerAndNames $ \reg ->
       bob ##> "/_connect plan 1 @alice.simplex resolve=all"
       knownAlicePlan bob
       alice ##> "/_connect plan 1 @alice.simplex"
-      alice <##. "error: "
+      alice <## "contact address: own address"
       cath ##> "/_connect plan 1 @alice.simplex"
       cath <##. "error: "
 
@@ -753,7 +740,7 @@ testPlanChannelNameMoved ps = withSmpServerAndNames $ \reg ->
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
-        planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` (["team"], True)
+        planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` ["team"]
         registerExpiredName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
         alice ##> "/c #team.simplex"
         alice <## "group link: own link for group #team"
@@ -808,9 +795,7 @@ testPlanChannelNameMovedNoRelays ps = withSmpServerAndNames $ \reg ->
         bob ##> ("/_connect plan 1 " <> shortLink2)
         bob <## "group link: channel has no active relays, please try to join later"
         bob ##> "/_connect plan 1 #team.simplex resolve=all"
-        bob <## "group link: known group #team"
-        bob <## "SimpleX name: #team (verified)"
-        bob <## "use #team <message> to send messages"
+        bob <## "group link: channel has no active relays, please try to join later"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -831,23 +816,15 @@ testPlanNameChannelNoRelays ps = withSmpServerAndNames $ \reg ->
         alice <## "#team: cath left the group (signed)"
         threadDelay 100000
         bob ##> "/_connect plan 1 #team.simplex"
-        bob <## "SimpleX name team.simplex is not included in the connection link's profile"
-        bob ##> "/_connect plan 1 team.simplex"
-        bob <## "SimpleX name team.simplex is not included in the connection link's profile"
-        alice ##> "/public group access #team domain=team.simplex"
-        alice <## "updated public group access: domain=team.simplex"
-        threadDelay 100000
-        bob ##> "/_connect plan 1 #team.simplex"
         bob <## "group link: channel has no active relays, please try to join later"
         bob ##> "/_connect plan 1 team.simplex"
         bob <## "group link: channel has no active relays, please try to join later"
         bob <## "You can also connect to @team.simplex in direct chat"
         alice ##> "/_set domain 1 team.simplex"
         alice <## "new contact address set"
-        bob ##> "/_connect plan 1 team.simplex"
+        bob ##> "/_connect plan 1 @team.simplex"
         bob <## "contact address: ok to connect"
         _ <- getTermLine bob
-        bob <## "You can also join channel #team"
         bob ##> "/_connect plan 1 @nobody.simplex resolve=never"
         bob <## "no matching chat found, name resolution is disabled"
   where
@@ -856,43 +833,31 @@ testPlanNameChannelNoRelays ps = withSmpServerAndNames $ \reg ->
 testPlanNameLinkKeyHash :: HasCallStack => TestParams -> IO ()
 testPlanNameLinkKeyHash = withTeamChats $ \reg contactLink channelLink _alice bob -> do
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink <> "?c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI") (T.pack channelLink))
-  setNamesStale bob
   bob ##> "/_connect plan 1 team.simplex"
   knownTeamPlan bob
+  bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
   knownTeamPlan bob
 
 testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
-  setNamesStale bob
-  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` (["team", "alice"], True)
-  planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` (["team"], True)
-  planLocal bob "/_connect plan 1 @team.simplex resolve=never" `shouldReturn` (["alice"], True)
+  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` ["team", "alice"]
+  planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` ["team"]
+  planLocal bob "/_connect plan 1 @team.simplex resolve=never" `shouldReturn` ["alice"]
   bob ##> "/_connect plan 1 team.simplex"
   knownTeamPlan bob
-  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` (["team", "alice"], False)
+  bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 @team.simplex"
   bob <## "contact address: known contact alice"
   bob <## "SimpleX name: @team.simplex (verified)"
   bob <## "use @alice <message> to send messages"
-  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` (["team", "alice"], False)
-  registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack $ otherLink contactLink) (T.pack channelLink))
-  setNamesStale bob
-  bob ##> "/_connect plan 1 team.simplex"
-  knownTeamPlan bob
-  bob <## "You can also connect to @team.simplex in direct chat"
-  bob ##> "/_connect plan 1 #team.simplex resolve=never"
-  knownTeamPlan bob
-  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` (["team", "alice"], False)
   registerExpiredName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
   bob ##> "/_connect plan 1 team.simplex"
   knownTeamPlan bob
-  bob <## "You can also connect to @team.simplex in direct chat"
-  bob ##> "/_connect plan 1 #team.simplex resolve=never"
-  knownTeamPlan bob
-  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` (["team", "alice"], False)
-  planLocal alice "/_connect plan 1 team.simplex resolve=never" `shouldReturn` (["team"], True)
-  planLocal alice "/_connect plan 1 @team.simplex resolve=never" `shouldReturn` ([], True)
+  bob <##. "SimpleX name team.simplex expired on "
+  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` ["team", "alice"]
+  planLocal alice "/_connect plan 1 team.simplex resolve=never" `shouldReturn` ["team"]
+  planLocal alice "/_connect plan 1 @team.simplex resolve=never" `shouldReturn` []
 
 otherLink :: String -> String
 otherLink l = case break (== '#') l of
@@ -921,7 +886,6 @@ testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice
   alice ##> "/ad"
   (contactLink2, _) <- getContactLinks alice True
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink2) (T.pack channelLink))
-  setNamesStale bob
   bob ##> "/_connect plan 1 team.simplex"
   knownTeamPlan bob
   bob <## "You can also connect to @team.simplex in direct chat"
@@ -971,17 +935,10 @@ testPlanNameOtherKindBusiness ps = withSmpServerAndNames $ \reg ->
               cath <## "#biz: bob joined the group"
           , alice <### [EndsWith "(Bob) in the channel"]
           ]
-        setNamesStale bob
-        planLocal bob "/_connect plan 1 biz.simplex resolve=never" `shouldReturn` (["biz", "alice"], True)
-        bob ##> "/_connect plan 1 biz.simplex"
-        knownBizPlan bob
-        planLocal bob "/_connect plan 1 biz.simplex resolve=never" `shouldReturn` (["biz", "alice"], False)
-        registerName reg bizName (contactAndChannelNameRecord "biz.simplex" (T.pack $ otherLink contactLink) (T.pack channelLink))
-        setNamesStale bob
+        planLocal bob "/_connect plan 1 biz.simplex resolve=never" `shouldReturn` ["biz", "alice"]
         bob ##> "/_connect plan 1 biz.simplex"
         knownBizPlan bob
         bob <## "You can also connect to @biz.simplex in direct chat"
-        planLocal bob "/_connect plan 1 biz.simplex resolve=never" `shouldReturn` (["biz", "alice"], False)
   where
     bizName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "biz" [])
     knownBizPlan cc = do
@@ -1029,42 +986,24 @@ withTeamChats test ps = withSmpServerAndNames $ \reg ->
           ]
         test reg contactLink channelLink alice bob
 
-testNameLinkOrWarning :: IO ()
-testNameLinkOrWarning = do
-  linkOrWarning NTContact (registered Nothing Nothing contactRecord) `shouldBe` Right contactLink
-  linkOrWarning NTContact (registered (Just 1100) Nothing contactRecord) `shouldBe` Right contactLink
-  linkOrWarning NTPublicGroup (registered Nothing Nothing channelRecord) `shouldBe` Right channelLink
-  linkOrWarning NTPublicGroup (registered Nothing Nothing contactRecord) `shouldBe` Left NWNoValidLink
-  linkOrWarning NTContact (NRRegistered Nothing Nothing (Just NRRCommunity) contactRecord) `shouldBe` Right contactLink
-  linkOrWarning NTContact (registered (Just 900) (Just 2000) contactRecord) `shouldBe` Left (NWExpired (utc 900) (Just $ utc 2000))
-  linkOrWarning NTContact (registered (Just 900) Nothing contactRecord) `shouldBe` Left (NWExpired (utc 900) Nothing)
-  linkOrWarning NTContact (registered (Just 800) (Just 900) contactRecord) `shouldBe` Left (NWExpired (utc 800) Nothing)
-  linkOrWarning NTContact (NRAvailable $ pricing 5 M.empty) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 2000) 2)
-  linkOrWarning NTContact (NRAvailable $ pricing 3 (M.fromList [(5, USDCents 5000)])) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 10000) 2)
-  linkOrWarning NTContact (NRAvailable $ pricing 6 M.empty) `shouldBe` Left NWNotRegistered
-  linkOrWarning NTContact (NRReserved NRRCommunity) `shouldBe` Left NWReservedForCommunity
-  linkOrWarning NTContact (NRReserved NRRTrademark) `shouldBe` Left NWNotRegistered
+testNameRecordOrWarning :: IO ()
+testNameRecordOrWarning = do
+  recordOrWarning (registered Nothing Nothing record) `shouldBe` Right record
+  recordOrWarning (registered (Just 1100) Nothing record) `shouldBe` Right record
+  recordOrWarning (NRRegistered Nothing Nothing (Just NRRCommunity) record) `shouldBe` Right record
+  recordOrWarning (registered (Just 900) (Just 2000) record) `shouldBe` Left (NWExpired (utc 900) (Just $ utc 2000))
+  recordOrWarning (registered (Just 900) Nothing record) `shouldBe` Left (NWExpired (utc 900) Nothing)
+  recordOrWarning (registered (Just 800) (Just 900) record) `shouldBe` Left (NWExpired (utc 800) Nothing)
+  recordOrWarning (NRAvailable $ pricing 5 M.empty) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 2000) 2)
+  recordOrWarning (NRAvailable $ pricing 3 (M.fromList [(5, USDCents 5000)])) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 10000) 2)
+  recordOrWarning (NRAvailable $ pricing 6 M.empty) `shouldBe` Left NWNotRegistered
+  recordOrWarning (NRReserved NRRCommunity) `shouldBe` Left NWReservedForCommunity
+  recordOrWarning (NRReserved NRRTrademark) `shouldBe` Left NWNotRegistered
   where
-    linkOrWarning nameType = nameLinkOrWarning (RoundedSystemTime 1000) (SimplexNameInfo nameType (SimplexDomain TLDSimplex "alice" []))
+    recordOrWarning = nameRecordOrWarning (RoundedSystemTime 1000) (SimplexDomain TLDSimplex "alice" [])
     registered expires graceUntil = NRRegistered (RoundedSystemTime <$> expires) (RoundedSystemTime <$> graceUntil) Nothing
     pricing minLabelLength registrationPrices = NamePricing {registrationPrices, basePrice = USDCents 1000, minLabelLength}
-    contactRecord = contactNameRecord "alice.simplex" contactLinkStr
-    channelRecord = channelNameRecord "alice.simplex" channelLinkStr
-    contactLink = either error id $ strDecode $ encodeUtf8 contactLinkStr
-    channelLink = either error id $ strDecode $ encodeUtf8 channelLinkStr
-    contactLinkStr = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
-    channelLinkStr = "simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w"
-
-testOwnNameWarning :: IO ()
-testOwnNameWarning = do
-  ownWarning (NWExpired (utc 900) Nothing) `shouldBe` Just (NWOwnExpired (utc 900) Nothing)
-  ownWarning (NWAvailable price) `shouldBe` Just (NWOwnAvailable price)
-  ownWarning NWReservedForCommunity `shouldBe` Just NWReservedForCommunity
-  ownWarning NWNotRegistered `shouldBe` Nothing
-  ownWarning NWNoValidLink `shouldBe` Nothing
-  where
-    ownWarning w = nameWarning_ $ setNameWarning w $ CPContactAddress CAPOwnLink Nothing []
-    price = NamePrice (USDCents 2000) 2
+    record = contactNameRecord "alice.simplex" "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
 
 utc :: Int64 -> UTCTime
 utc = roundedToUTCTime . RoundedSystemTime

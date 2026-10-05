@@ -853,7 +853,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connLink: CreatedConnLink?, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan, offerLookup: Bool)
+    case connectionPlan(user: UserRef, connLink: CreatedConnLink?, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan, nameCached: Bool)
     case newPreparedChat(user: UserRef, chat: ChatData)
     case contactUserChanged(user: UserRef, fromContact: Contact, newUser: UserRef, toContact: Contact)
     case groupUserChanged(user: UserRef, fromGroup: GroupInfo, newUser: UserRef, toGroup: GroupInfo)
@@ -977,7 +977,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .invitation(u, connLinkInvitation, connection): return withUser(u, "connLinkInvitation: \(connLinkInvitation)\nconnection: \(connection)")
         case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
         case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\nnewUserId: \(String(describing: newUser.userId))")
-        case let .connectionPlan(u, connLink, _, _, connectionPlan, _): return withUser(u, "connLink: \(String(describing: connLink))\nconnectionPlan: \(String(describing: connectionPlan))")
+        case let .connectionPlan(u, connLink, _, _, connectionPlan, nameCached): return withUser(u, "connLink: \(String(describing: connLink))\nconnectionPlan: \(String(describing: connectionPlan))\nnameCached: \(nameCached)")
         case let .newPreparedChat(u, chat): return withUser(u, String(describing: chat))
         case let .contactUserChanged(u, fromContact, newUser, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\nnewUserId: \(String(describing: newUser.userId))\ntoContact: \(String(describing: toContact))")
         case let .groupUserChanged(u, fromGroup, newUser, toGroup): return withUser(u, "fromGroup: \(String(describing: fromGroup))\nnewUserId: \(String(describing: newUser.userId))\ntoGroup: \(String(describing: toGroup))")
@@ -1448,7 +1448,6 @@ struct ConnectionPlanResult {
     var planSimplexName: SimplexNameInfo?
     var otherSimplexName: SimplexNameInfo?
     var connectionPlan: ConnectionPlan
-    var offerLookup: Bool
 }
 
 // APIConnectPlan resolution scope; .never is local-store-only (no network), used for per-keystroke name search
@@ -1460,15 +1459,27 @@ enum PlanResolveMode: String {
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan, nameWarning_: NameWarning?, localChats: [ChatInfo])
-    case groupLink(groupLinkPlan: GroupLinkPlan, nameWarning_: NameWarning?, localChats: [ChatInfo])
+    case contactAddress(contactAddressPlan: ContactAddressPlan, nameWarning_: NameWarning?, existingChat_: ChatInfo?)
+    case groupLink(groupLinkPlan: GroupLinkPlan, nameWarning_: NameWarning?, existingChat_: ChatInfo?)
     case nameNotConnectable(simplexDomain: SimplexDomain, nameWarning: NameWarning)
     case error(chatError: ChatError)
 
     var localChats: [ChatInfo] {
         switch self {
-        case let .contactAddress(_, _, localChats), let .groupLink(_, _, localChats): localChats
-        default: []
+        case let .contactAddress(plan, _, existingChat_):
+            let chat: ChatInfo? = switch plan {
+            case let .connectingProhibit(contact), let .known(contact), let .contactViaAddress(contact): .direct(contact: contact)
+            default: nil
+            }
+            return [chat, existingChat_].compactMap { $0 }
+        case let .groupLink(plan, _, existingChat_):
+            let groupInfo: GroupInfo? = switch plan {
+            case let .ownLink(groupInfo), let .known(groupInfo): groupInfo
+            case let .connectingProhibit(groupInfo_): groupInfo_
+            default: nil
+            }
+            return [groupInfo.map { .group(groupInfo: $0, groupChatScope: nil) }, existingChat_].compactMap { $0 }
+        default: return []
         }
     }
 }

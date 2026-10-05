@@ -1638,6 +1638,7 @@ ALTER TABLE test_chat_schema.settings ALTER COLUMN settings_id ADD GENERATED ALW
 
 
 CREATE TABLE test_chat_schema.simplex_names (
+    user_id bigint NOT NULL,
     simplex_domain text NOT NULL,
     registration text NOT NULL,
     resolved_at timestamp with time zone NOT NULL
@@ -2112,7 +2113,7 @@ ALTER TABLE ONLY test_chat_schema.settings
 
 
 ALTER TABLE ONLY test_chat_schema.simplex_names
-    ADD CONSTRAINT simplex_names_pkey PRIMARY KEY (simplex_domain);
+    ADD CONSTRAINT simplex_names_pkey PRIMARY KEY (user_id, simplex_domain);
 
 
 
@@ -2925,10 +2926,6 @@ CREATE INDEX idx_settings_user_id ON test_chat_schema.settings USING btree (user
 
 
 
-CREATE INDEX idx_simplex_names_resolved_at ON test_chat_schema.simplex_names USING btree (resolved_at);
-
-
-
 CREATE INDEX idx_smp_servers_user_id ON test_chat_schema.protocol_servers USING btree (user_id);
 
 
@@ -3658,6 +3655,11 @@ ALTER TABLE ONLY test_chat_schema.sent_probes
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.simplex_names
+    ADD CONSTRAINT simplex_names_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
 
 
 

@@ -862,7 +862,6 @@ struct ChatListSearchBar: View {
                                 let localChats = result.connectionPlan.localChats
                                 upsertChats(localChats)
                                 searchChatFilteredBySimplexLink = Set(localChats.map { $0.id })
-                                if !result.offerLookup { connectNameCandidate = nil }
                             }
                         }
                     } else if t != "" {
