@@ -145,10 +145,8 @@ This file is generated automatically.
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
-- [NamePricing](#namepricing)
-- [NameRecord](#namerecord)
-- [NameRegistration](#nameregistration)
-- [NameReservedReason](#namereservedreason)
+- [NamePrice](#nameprice)
+- [NameWarning](#namewarning)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -1874,17 +1872,17 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
-- nameRegistration_: [NameRegistration](#nameregistration)?
+- nameWarning_: [NameWarning](#namewarning)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
-- nameRegistration_: [NameRegistration](#nameregistration)?
+- nameWarning_: [NameWarning](#namewarning)?
 
 NameNotConnectable:
 - type: "nameNotConnectable"
 - simplexDomain: [SimplexDomain](#simplexdomain)
-- nameRegistration: [NameRegistration](#nameregistration)
+- nameWarning: [NameWarning](#namewarning)
 
 Error:
 - type: "error"
@@ -3119,63 +3117,49 @@ RESOLVER:
 
 ---
 
-## NamePricing
+## NamePrice
 
 **Record type**:
-- registrationPrices: {int : int64}
-- basePrice: int64
-- minLabelLength: int
+- amount: int64
+- years: int
 
 
 ---
 
-## NameRecord
-
-**Record type**:
-- name: string
-- nickname: string
-- website: string
-- location: string
-- simplexContact: [string]
-- simplexChannel: [string]
-- eth: string?
-- btc: string?
-- xmr: string?
-- dot: string?
-- owner: string
-- resolver: string
-
-
----
-
-## NameRegistration
+## NameWarning
 
 **Discriminated union type**:
 
-Registered:
-- type: "registered"
-- expires: int64?
-- graceUntil: int64?
-- reservedReason_: [NameReservedReason](#namereservedreason)?
-- nameRecord: [NameRecord](#namerecord)
+Expired:
+- type: "expired"
+- expiredAt: UTCTime
+- graceUntil: UTCTime?
+
+OwnExpired:
+- type: "ownExpired"
+- expiredAt: UTCTime
+- graceUntil: UTCTime?
 
 Available:
 - type: "available"
-- pricing: [NamePricing](#namepricing)
+- price: [NamePrice](#nameprice)
 
-Reserved:
-- type: "reserved"
-- reservedReason: [NameReservedReason](#namereservedreason)
+NoLongerRegistered:
+- type: "noLongerRegistered"
+- price: [NamePrice](#nameprice)
 
+OwnAvailable:
+- type: "ownAvailable"
+- price: [NamePrice](#nameprice)
 
----
+ReservedForCommunity:
+- type: "reservedForCommunity"
 
-## NameReservedReason
+NotRegistered:
+- type: "notRegistered"
 
-**Enum type**:
-- "internal"
-- "trademark"
-- "community"
+NoValidLink:
+- type: "noValidLink"
 
 
 ---
@@ -3293,9 +3277,9 @@ count=<count>
 ## PlanResolveMode
 
 **Enum type**:
+- "all"
 - "unknown"
 - "never"
-- "all"
 
 
 ---

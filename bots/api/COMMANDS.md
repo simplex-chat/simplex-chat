@@ -1563,6 +1563,8 @@ ConnectionPlan: Connection link information.
 - planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
+- localChats: [[ChatInfo](./TYPES.md#chatinfo)]
+- offerLookup: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -1672,6 +1674,8 @@ ConnectionPlan: Connection link information.
 - planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
+- localChats: [[ChatInfo](./TYPES.md#chatinfo)]
+- offerLookup: bool
 
 SentInvitationToContact: Invitation sent to contact (when connecting via SimpleX name to a known contact address)..
 - type: "sentInvitationToContact"

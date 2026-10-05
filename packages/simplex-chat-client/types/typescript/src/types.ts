@@ -2138,19 +2138,19 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
-    nameRegistration_?: NameRegistration
+    nameWarning_?: NameWarning
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
-    nameRegistration_?: NameRegistration
+    nameWarning_?: NameWarning
   }
 
   export interface NameNotConnectable extends Interface {
     type: "nameNotConnectable"
     simplexDomain: SimplexDomain
-    nameRegistration: NameRegistration
+    nameWarning: NameWarning
   }
 
   export interface Error extends Interface {
@@ -3398,62 +3398,74 @@ export namespace NameErrorType {
   }
 }
 
-export interface NamePricing {
-  registrationPrices: {[key: number]: number} // int : int64
-  basePrice: number // int64
-  minLabelLength: number // int
+export interface NamePrice {
+  amount: number // int64
+  years: number // int
 }
 
-export interface NameRecord {
-  name: string
-  nickname: string
-  website: string
-  location: string
-  simplexContact: string[]
-  simplexChannel: string[]
-  eth?: string
-  btc?: string
-  xmr?: string
-  dot?: string
-  owner: string
-  resolver: string
-}
+export type NameWarning = 
+  | NameWarning.Expired
+  | NameWarning.OwnExpired
+  | NameWarning.Available
+  | NameWarning.NoLongerRegistered
+  | NameWarning.OwnAvailable
+  | NameWarning.ReservedForCommunity
+  | NameWarning.NotRegistered
+  | NameWarning.NoValidLink
 
-export type NameRegistration = 
-  | NameRegistration.Registered
-  | NameRegistration.Available
-  | NameRegistration.Reserved
-
-export namespace NameRegistration {
-  export type Tag = "registered" | "available" | "reserved"
+export namespace NameWarning {
+  export type Tag = 
+    | "expired"
+    | "ownExpired"
+    | "available"
+    | "noLongerRegistered"
+    | "ownAvailable"
+    | "reservedForCommunity"
+    | "notRegistered"
+    | "noValidLink"
 
   interface Interface {
     type: Tag
   }
 
-  export interface Registered extends Interface {
-    type: "registered"
-    expires?: number // int64
-    graceUntil?: number // int64
-    reservedReason_?: NameReservedReason
-    nameRecord: NameRecord
+  export interface Expired extends Interface {
+    type: "expired"
+    expiredAt: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
+  }
+
+  export interface OwnExpired extends Interface {
+    type: "ownExpired"
+    expiredAt: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
   }
 
   export interface Available extends Interface {
     type: "available"
-    pricing: NamePricing
+    price: NamePrice
   }
 
-  export interface Reserved extends Interface {
-    type: "reserved"
-    reservedReason: NameReservedReason
+  export interface NoLongerRegistered extends Interface {
+    type: "noLongerRegistered"
+    price: NamePrice
   }
-}
 
-export enum NameReservedReason {
-  Internal = "internal",
-  Trademark = "trademark",
-  Community = "community",
+  export interface OwnAvailable extends Interface {
+    type: "ownAvailable"
+    price: NamePrice
+  }
+
+  export interface ReservedForCommunity extends Interface {
+    type: "reservedForCommunity"
+  }
+
+  export interface NotRegistered extends Interface {
+    type: "notRegistered"
+  }
+
+  export interface NoValidLink extends Interface {
+    type: "noValidLink"
+  }
 }
 
 export type NetworkError = 
@@ -3575,9 +3587,9 @@ export interface PendingContactConnection {
 }
 
 export enum PlanResolveMode {
+  All = "all",
   Unknown = "unknown",
   Never = "never",
-  All = "all",
 }
 
 export interface PrefEnabled {

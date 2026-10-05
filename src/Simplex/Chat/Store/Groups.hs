@@ -47,7 +47,9 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
+    getNameChats,
     getGroupDomainResolution,
+    setGroupDomainStale,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -2744,13 +2746,30 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
       safeDeleteLDN db user localDisplayName
 
 setGroupDomainVerified :: DB.Connection -> User -> GroupInfo -> Bool -> Maybe UTCTime -> IO GroupInfo
-setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified expiresAt = do
+setGroupDomainVerified db User {userId} g@GroupInfo {groupId, businessChat} verified expiresAt = do
   currentTs <- getCurrentTime
+  when verified $ do
+    domain_ <- maybeFirstRow fromOnly $ DB.query db "SELECT gp.group_domain FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE g.user_id = ? AND g.group_id = ? AND gp.group_domain IS NOT NULL" (userId, groupId)
+    forM_ domain_ $ unverifyNameChats db userId (if isJust businessChat then NTContact else NTPublicGroup)
   DB.execute
     db
     "UPDATE groups SET group_domain_verified = ?, group_domain_resolved_at = ?, group_domain_expires_at = ? WHERE user_id = ? AND group_id = ?"
     (BI verified, currentTs, expiresAt, userId, groupId)
   pure g {groupDomainVerified = Just verified}
+
+getNameChats :: DB.Connection -> StoreCxt -> User -> SimplexNameType -> SimplexDomain -> IO ([Contact], [GroupInfo])
+getNameChats db cxt user@User {userId} nameType domain = do
+  cts <- case nameType of
+    NTContact -> ids "SELECT ct.contact_id FROM contacts ct JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id WHERE ct.user_id = ? AND cp.contact_domain = ? AND ct.deleted = 0" >>= fmap rights . mapM (runExceptT . getContact db cxt user)
+    NTPublicGroup -> pure []
+  gs <- ids (groupsQuery <> businessCond) >>= fmap rights . mapM (runExceptT . getGroupInfo db cxt user)
+  pure (cts, gs)
+  where
+    ids q = map fromOnly <$> DB.query db q (userId, domain)
+    groupsQuery = "SELECT g.group_id FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE g.user_id = ? AND gp.group_domain = ?"
+    businessCond = case nameType of
+      NTContact -> " AND g.business_chat IS NOT NULL"
+      NTPublicGroup -> " AND g.business_chat IS NULL"
 
 getGroupDomainResolution :: DB.Connection -> User -> GroupInfo -> IO (Maybe (UTCTime, Maybe UTCTime))
 getGroupDomainResolution db User {userId} GroupInfo {groupId} =
@@ -2759,6 +2778,10 @@ getGroupDomainResolution db User {userId} GroupInfo {groupId} =
       db
       "SELECT group_domain_resolved_at, group_domain_expires_at FROM groups WHERE user_id = ? AND group_id = ? AND group_domain_resolved_at IS NOT NULL"
       (userId, groupId)
+
+setGroupDomainStale :: DB.Connection -> User -> GroupInfo -> IO ()
+setGroupDomainStale db User {userId} GroupInfo {groupId} =
+  DB.execute db "UPDATE groups SET group_domain_resolved_at = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 -- A business group has no publicGroup claim, so the domain it was connected by (from its address) is written
 -- directly to group_domain and marked verified, so it is found by the local name search (getGroupToConnect).
