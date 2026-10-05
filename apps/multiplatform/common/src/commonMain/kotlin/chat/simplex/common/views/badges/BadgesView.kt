@@ -30,7 +30,7 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
         // holds the purchase screens' slot, so a consumable cannot be bought twice
         BadgesPurchaseStateView(purchaseState.title, purchaseState.message, onDismiss = close)
       } else if (checkingPurchases) {
-        BadgesPurchaseStateView(MR.strings.badges_checking_purchases_title, MR.strings.badges_checking_purchases_body, onDismiss = close)
+        BadgesPurchaseStateView(MR.strings.badges_checking_purchases_title, null, onDismiss = close)
       } else {
         BadgesSupportSimplexView(modalManager, unwindToDepth)
       }

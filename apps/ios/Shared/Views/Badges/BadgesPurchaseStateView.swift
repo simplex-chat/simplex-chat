@@ -12,7 +12,7 @@ struct BadgesPurchaseStateView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) private var dismiss
     let title: LocalizedStringKey
-    let message: LocalizedStringKey
+    var message: LocalizedStringKey? = nil
     var showsAsSheet: Bool = false
 
     var body: some View {
@@ -38,10 +38,12 @@ struct BadgesPurchaseStateView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(message)
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+            if let message {
+                Text(message)
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Spacer()
 

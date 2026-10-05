@@ -143,8 +143,8 @@ getOpenStorePurchases db User {userId} now =
       |]
       (userId, receiptDueSince)
   where
-    -- a week outlasts an Ask to Buy request (24 hours) and a Play slow payment (days), whose waiting screen
-    -- needs the record; one a receipt reached is paid for, so it is listed until its badge arrives
+    -- a record with no receipt is dropped after a week: longer than an Ask to Buy approval or a Play slow
+    -- payment can take, and those are the only waits that still need it. One a receipt reached is paid for.
     receiptDueSince = addUTCTime (negate $ 7 * nominalDay) now
 
 getBadgeStoreReceipt :: DB.Connection -> User -> StoreTransactionRef -> IO (Maybe BadgeStash)

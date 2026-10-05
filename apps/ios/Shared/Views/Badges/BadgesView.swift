@@ -31,7 +31,7 @@ struct BadgesView: View {
                 BadgesPurchaseStateView(title: purchaseState.title, message: purchaseState.message, showsAsSheet: showsAsSheet)
                     .transition(.opacity)
             } else if store.checkingPurchases {
-                BadgesPurchaseStateView(title: "Checking your purchases", message: "Purchases not yet delivered are checked first.", showsAsSheet: showsAsSheet)
+                BadgesPurchaseStateView(title: "Checking your purchases", showsAsSheet: showsAsSheet)
                     .transition(.opacity)
             } else {
                 BadgesSupportSimplexView(showsAsSheet: showsAsSheet)

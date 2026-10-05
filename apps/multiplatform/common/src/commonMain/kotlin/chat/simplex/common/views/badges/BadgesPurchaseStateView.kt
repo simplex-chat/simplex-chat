@@ -16,7 +16,7 @@ import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
 @Composable
-fun BadgesPurchaseStateView(title: StringResource, message: StringResource, onDismiss: () -> Unit) {
+fun BadgesPurchaseStateView(title: StringResource, message: StringResource?, onDismiss: () -> Unit) {
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -32,12 +32,14 @@ fun BadgesPurchaseStateView(title: StringResource, message: StringResource, onDi
       modifier = Modifier.fillMaxWidth()
     )
 
-    Text(
-      stringResource(message),
-      style = MaterialTheme.typography.body1,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
-    )
+    if (message != null) {
+      Text(
+        stringResource(message),
+        style = MaterialTheme.typography.body1,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+      )
+    }
 
     Spacer(Modifier.weight(1f))
 
