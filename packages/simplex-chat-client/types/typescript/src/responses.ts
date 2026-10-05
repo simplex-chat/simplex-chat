@@ -211,7 +211,6 @@ export namespace CR {
     planSimplexName?: T.SimplexNameInfo
     otherSimplexName?: T.SimplexNameInfo
     connectionPlan: T.ConnectionPlan
-    localChats: T.ChatInfo[]
     offerLookup: boolean
   }
 

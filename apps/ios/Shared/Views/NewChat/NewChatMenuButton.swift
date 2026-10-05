@@ -447,11 +447,10 @@ struct ContactsListSearchBar: View {
                 searchText = ""
                 searchFocussed = false
             },
-            filterChats: { chats in
-                guard chats.allSatisfy({ $0.contact != nil }) else { return false }
-                searchChatFilteredBySimplexLink = chats.first?.id
-                return true
-            }
+            chatsFilter: ChatsFilter(
+                accepts: { chats in !chats.isEmpty && chats.allSatisfy { $0.contact != nil } },
+                show: { chats in searchChatFilteredBySimplexLink = chats.first?.id }
+            )
         )
     }
 }

@@ -856,8 +856,9 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                 val inProgress = mutableStateOf(false) // background search: no spinner, no error alerts
                 val result = chatModel.controller.apiConnectPlan(rhId, candidate, PlanResolveMode.PRMNever, inProgress = inProgress)
                 if (result != null) {
-                  addMissingChats(rhId, result.localChats)
-                  searchChatFilteredBySimplexLink.value = result.localChats.map { it.id }.toSet()
+                  val localChats = result.connectionPlan.localChats
+                  upsertChats(rhId, localChats)
+                  searchChatFilteredBySimplexLink.value = localChats.map { it.id }.toSet()
                   if (!result.offerLookup) connectNameCandidate.value = null
                 }
               } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
@@ -888,10 +889,10 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      filterChats = { chats ->
-        searchChatFilteredBySimplexLink.value = chats.map { it.id }.toSet()
-        true
-      },
+      chatsFilter = ChatsFilter(
+        accepts = { chats -> chats.isNotEmpty() },
+        show = { chats -> searchChatFilteredBySimplexLink.value = chats.map { it.id }.toSet() }
+      ),
       close = null,
       cleanup = cleanup,
     )

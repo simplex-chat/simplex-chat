@@ -774,7 +774,7 @@ struct ChatListSearchBar: View {
                     name: candidate,
                     searchFocussed: $searchFocussed,
                     dismiss: false,
-                    filterChats: filterChats
+                    chatsFilter: chatsFilter
                 )
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
@@ -818,7 +818,7 @@ struct ChatListSearchBar: View {
                     name: candidate,
                     searchFocussed: $searchFocussed,
                     dismiss: false,
-                    filterChats: filterChats
+                    chatsFilter: chatsFilter
                 )
             }
         }
@@ -859,8 +859,9 @@ struct ChatListSearchBar: View {
                             let result = await apiConnectPlan(connLink: candidate, resolveMode: .never, inProgress: BoxedValue(false))
                             if Task.isCancelled { return }
                             if let result {
-                                addMissingChats(result.localChats)
-                                _ = filterChats(result.localChats)
+                                let localChats = result.connectionPlan.localChats
+                                upsertChats(localChats)
+                                searchChatFilteredBySimplexLink = Set(localChats.map { $0.id })
                                 if !result.offerLookup { connectNameCandidate = nil }
                             }
                         }
@@ -906,13 +907,15 @@ struct ChatListSearchBar: View {
                 searchText = ""
                 searchFocussed = false
             },
-            filterChats: filterChats
+            chatsFilter: chatsFilter
         )
     }
 
-    private func filterChats(_ chats: [ChatInfo]) -> Bool {
-        searchChatFilteredBySimplexLink = Set(chats.map { $0.id })
-        return true
+    private var chatsFilter: ChatsFilter {
+        ChatsFilter(
+            accepts: { !$0.isEmpty },
+            show: { chats in searchChatFilteredBySimplexLink = Set(chats.map { $0.id }) }
+        )
     }
 }
 
@@ -924,7 +927,7 @@ struct ConnectByNameRow: View {
     var name: String
     @FocusState.Binding var searchFocussed: Bool
     var dismiss: Bool
-    var filterChats: (([ChatInfo]) -> Bool)? = nil
+    var chatsFilter: ChatsFilter? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -942,7 +945,7 @@ struct ConnectByNameRow: View {
                 name,
                 theme: theme,
                 dismiss: dismiss,
-                filterChats: filterChats
+                chatsFilter: chatsFilter
             )
         }
     }

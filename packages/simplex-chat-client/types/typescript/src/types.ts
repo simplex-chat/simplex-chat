@@ -2139,12 +2139,14 @@ export namespace ConnectionPlan {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
     nameWarning_?: NameWarning
+    localChats: ChatInfo[]
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
     nameWarning_?: NameWarning
+    localChats: ChatInfo[]
   }
 
   export interface NameNotConnectable extends Interface {

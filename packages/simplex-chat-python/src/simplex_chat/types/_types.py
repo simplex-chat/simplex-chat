@@ -1482,11 +1482,13 @@ class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
     nameWarning_: NotRequired["NameWarning"]
+    localChats: list["ChatInfo"]
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
     nameWarning_: NotRequired["NameWarning"]
+    localChats: list["ChatInfo"]
 
 class ConnectionPlan_nameNotConnectable(TypedDict):
     type: Literal["nameNotConnectable"]

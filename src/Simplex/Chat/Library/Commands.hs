@@ -1962,7 +1962,7 @@ processChatCommand cxt nm = \case
         (_, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
-          Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData Nothing Nothing
+          Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData Nothing
           _ -> pure gInfo
         when (memberRole' (membership gInfo) /= GROwner && memberCurrent (membership gInfo)) $
           withGroupLock "syncSubscriberRelays" groupId $
@@ -2179,9 +2179,8 @@ processChatCommand cxt nm = \case
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
   APIConnectPlan userId (Just ct) resolveMode linkOwnerSig_ -> withUserId userId $ \user -> do
-    (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct resolveMode linkOwnerSig_ Nothing
-    (localChats, offerLookup) <- planLocalChats user ct plan
-    pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan localChats offerLookup
+    (ccLink, planSimplexName, otherSimplexName, plan, offerLookup) <- connectPlan user ct resolveMode linkOwnerSig_
+    pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan offerLookup
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
@@ -2196,7 +2195,7 @@ processChatCommand cxt nm = \case
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
             (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing domain_
-            forM_ domain_ $ nameChatsUpdated user NTContact
+            forM_ domain_ $ \d -> unverifyOtherNameChats user (SimplexNameInfo NTContact d) (ChatRef CTGroup (groupId' gInfo) Nothing)
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -2209,8 +2208,8 @@ processChatCommand cxt nm = \case
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
-        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId (True <$ domain_)
-        forM_ domain_ $ nameChatsUpdated user NTContact
+        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId (isJust domain_)
+        forM_ domain_ $ \d -> unverifyOtherNameChats user (SimplexNameInfo NTContact d) (ChatRef CTDirect (contactId' ct) Nothing)
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
@@ -2223,11 +2222,11 @@ processChatCommand cxt nm = \case
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
-    let GroupShortLinkData {groupProfile = GroupProfile {description, publicGroup}} = groupSLinkData
-        domain_ = if verifiedDomain == (claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) then verifiedDomain else Nothing
+    let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
+        domain_ = if verifiedDomain == groupClaim gp then verifiedDomain else Nothing
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId domain_
-    forM_ domain_ $ nameChatsUpdated user NTPublicGroup
+    forM_ domain_ $ \d -> unverifyOtherNameChats user (SimplexNameInfo NTPublicGroup d) (ChatRef CTGroup (groupId' gInfo) Nothing)
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2409,20 +2408,20 @@ processChatCommand cxt nm = \case
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito (Just ct) -> withUser $ \user -> do
-    let con m cReq = pure (Just (ACCL m (CCLink cReq Nothing)), Nothing, Nothing, CPInvitationLink (ILPOk Nothing Nothing))
-    (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct PRMUnknown Nothing Nothing `catchAllErrors` \e -> case ct of
+    let con m cReq = pure (Just (ACCL m (CCLink cReq Nothing)), Nothing, Nothing, CPInvitationLink (ILPOk Nothing Nothing), False)
+    (ccLink, planSimplexName, otherSimplexName, plan, offerLookup) <- connectPlan user ct PRMUnknown Nothing `catchAllErrors` \e -> case ct of
       ACTarget m (CTFullContact cReq) -> con m cReq
       ACTarget m (CTInv (CLFull cReq)) -> con m cReq
       _ -> throwError e
-    connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan =<< planLocalChats user ct plan
+    connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan offerLookup
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIVerifyContactDomain contactId -> withUser $ \user -> do
     ct@Contact {profile = LocalProfile {contactDomain}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
     domain <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
     (verified, reason) <- verifyEntityDomain user nm NTContact domain connLink_
-    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v Nothing <* setContactDomainStale db user ct) verified
-    when (verified == Just True) $ nameChatsUpdated user NTContact $ claimDomain domain
+    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v) verified
+    when (verified == Just True) $ unverifyOtherNameChats user (SimplexNameInfo NTContact $ claimDomain domain) (ChatRef CTDirect contactId Nothing)
     pure $ CRContactDomainVerified user ct' reason
   APIVerifyGroupDomain groupId -> withUser $ \user -> do
     g@GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
@@ -2436,8 +2435,8 @@ processChatCommand cxt nm = \case
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
         Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered")
         Left e -> throwError e
-    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified Nothing <* setGroupDomainStale db user g
-    when verified $ nameChatsUpdated user NTPublicGroup $ claimDomain claim
+    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified
+    when verified $ unverifyOtherNameChats user (SimplexNameInfo NTPublicGroup $ claimDomain claim) (ChatRef CTGroup groupId Nothing)
     pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}, groupDirectInv} <- withFastStore $ \db -> getContact db cxt user contactId
@@ -2455,8 +2454,8 @@ processChatCommand cxt nm = \case
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
       throwError e
   ConnectSimplex incognito -> withUser $ \user -> do
-    plan <- contactRequestPlan user adminContactReq Nothing Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing False) Nothing)
-    connectWithPlan user incognito (Just (ACCL SCMContact (CCLink adminContactReq Nothing))) Nothing Nothing plan ([], False)
+    plan <- contactRequestPlan user adminContactReq Nothing Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing False) Nothing [])
+    connectWithPlan user incognito (Just (ACCL SCMContact (CCLink adminContactReq Nothing))) Nothing Nothing plan False
   DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
   ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
   APIListContacts userId -> withUserId userId $ \user ->
@@ -4124,8 +4123,8 @@ processChatCommand cxt nm = \case
       -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
       gInfo' <- withStore $ \db -> do
         g <- updateGroupProfile db user gInfo p'
-        if domainVerified then liftIO $ setGroupDomainVerified db user g True Nothing else pure g
-      when domainVerified $ forM_ (publicGroup p' >>= publicGroupAccess >>= groupDomainClaim) $ nameChatsUpdated user NTPublicGroup . claimDomain
+        if domainVerified then liftIO $ setGroupDomainVerified db user g True else pure g
+      when domainVerified $ forM_ (groupClaim p') $ \d -> unverifyOtherNameChats user (SimplexNameInfo NTPublicGroup d) (ChatRef CTGroup (groupId' gInfo) Nothing)
       msg <- case businessChat of
         Just BusinessChatInfo {businessId} -> do
           ms <- withStore' $ \db -> getGroupMembers db cxt user gInfo'
@@ -4407,13 +4406,13 @@ processChatCommand cxt nm = \case
             pure (gId, chatSettings)
         _ -> throwCmdError "not supported"
       processChatCommand cxt nm $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
-    connectPlan :: User -> AConnectTarget -> PlanResolveMode -> Maybe LinkOwnerSig -> Maybe NameRegistration -> CM (Maybe ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan)
-    connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ _ = case cLink of
+    connectPlan :: User -> AConnectTarget -> PlanResolveMode -> Maybe LinkOwnerSig -> CM (Maybe ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan, Bool)
+    connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ = case cLink of
       CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing Nothing
       CLShort l -> do
         let l' = serverShortLink l
         knownLinkPlans l' >>= \case
-          Just (createdLink, p) -> pure (Just createdLink, Nothing, Nothing, p)
+          Just (createdLink, p) -> pure (Just createdLink, Nothing, Nothing, p, False)
           Nothing -> do
             (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
             contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
@@ -4428,290 +4427,260 @@ processChatCommand cxt nm = \case
             Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db cxt user l'
         invitationReqAndPlan cReq sLnk_ cld ov = do
           plan <- invitationRequestPlan user cReq cld ov `catchAllErrors` (pure . CPError)
-          pure (Just (ACCL SCMInvitation (CCLink cReq sLnk_)), Nothing, Nothing,  plan)
-    connectPlan user (ACTarget SCMContact ct) resolveMode sig_ nameReg_ = case ct of
+          pure (Just (ACCL SCMInvitation (CCLink cReq sLnk_)), Nothing, Nothing,  plan, False)
+    connectPlan user (ACTarget SCMContact ct) resolveMode sig_ = case ct of
       CTDomain d -> do
-        channel_ <- knownGroupPlans user $ CTName channelName
-        contact_ <- knownContactPlans user $ CTName contactName
-        let match_ = (channelName,) <$> channel_ <|> (contactName,) <$> contact_
-            allFresh = maybe False snd channel_ && maybe False snd contact_
-        case match_ of
-          Just (ni, ((l, p), _)) | resolveMode == PRMNever || (resolveMode == PRMUnknown && allFresh) -> pure (Just l, Just ni, Nothing, p)
-          Nothing | resolveMode == PRMNever -> throwChatError CENotResolvedLocally
-          _ ->
-            tryAllErrors (resolveNameRegistration user nm d) >>= \case
-              Left e -> case match_ of
-                Just (ni, ((l, p), _)) | knownChat p -> pure (Just l, Just ni, Nothing, p)
-                _ -> throwError e
-              Right reg -> do
-                now <- liftIO getSystemSeconds
-                let linkOrWarning ni = serverShortLink <$> nameLinkOrWarning now ni reg
-                    namePlanWith other ni = (\(l, planName, _, p) -> (l, planName, other, p)) <$> connectPlan user (nameTarget ni) resolveMode sig_ (Just reg)
-                    namePlan ni = namePlanWith (otherName ni) ni
-                    otherName SimplexNameInfo {nameType} = case nameType of
-                      NTPublicGroup -> newName contactName contact_
-                      NTContact -> newName channelName channel_
-                    newName ni known_ = case linkOrWarning ni of
-                      Right l' | not (any (isLinkOf l' . fst . fst) known_) -> Just ni
-                      _ -> Nothing
-                    contactPlanOr fallback = namePlanWith Nothing contactName `catchAllErrors` \_ -> fallback
-                    unjoinable (_, _, _, p) = case p of
-                      CPGroupLink GLPNoRelays {} _ -> True
-                      CPGroupLink GLPUpdateRequired {} _ -> True
-                      _ -> False
-                    otherKindResolved ((l, p), _) = case linkOrWarning contactName of
-                      Right l'
-                        | isLinkOf l' l -> confirmOther p
-                        | otherwise -> withFastStore' $ \db -> case p of
-                            CPContactAddress (CAPKnown ct') _ -> setContactDomainStale db user ct'
-                            CPGroupLink (GLPKnown g _ _ _) _ -> setGroupDomainStale db user g
-                            _ -> pure ()
-                      Left w | isNothing $ nameWarning_ $ setNameWarning w p -> confirmOther p
-                      _ -> pure ()
-                    confirmOther = \case
-                      CPContactAddress (CAPKnown ct') _ -> withFastStore' (\db -> void $ setContactDomainVerified db user ct' True (nameExpiresAt reg)) >> nameChatsUpdated user NTContact d
-                      CPGroupLink (GLPKnown g _ _ _) _ -> withFastStore' (\db -> void $ setGroupDomainVerified db user g True (nameExpiresAt reg)) >> nameChatsUpdated user NTContact d
-                      _ -> pure ()
-                when (isJust channel_) $ forM_ contact_ otherKindResolved
-                case match_ of
-                  Just (ni, _) -> namePlan ni
-                  Nothing -> case (linkOrWarning channelName, linkOrWarning contactName) of
-                    (Right _, Right _) ->
-                      (namePlan channelName >>= \r@(l, n, _, p) -> if unjoinable r then contactPlanOr (pure (l, n, Nothing, p)) else pure r)
-                        `catchAllErrors` \e -> contactPlanOr (throwError e)
-                    (Right _, Left _) -> namePlan channelName
-                    (Left _, Right _) -> namePlan contactName
-                    (Left w, Left _) -> pure (Nothing, Nothing, Nothing, CPNameNotConnectable d w)
+        channel_ <- knownPlans channelName
+        contact_ <- knownPlans contactName
+        let allFresh = maybe False snd channel_ && maybe False snd contact_
+        links_ <-
+          if resolveMode == PRMNever || (resolveMode == PRMUnknown && allFresh)
+            then pure Nothing
+            else Just <$> tryAllErrors (resolveNameLinks user nm d)
+        let liveLink SimplexNameInfo {nameType} = case links_ of
+              Just (Right links) -> eitherToMaybe $ kindLink nameType links
+              _ -> Nothing
+            kindPlan ni known_ = (ni,) <$> namePlan ni known_ links_
+        (ni@SimplexNameInfo {nameType}, (l, p)) <- case (channel_, contact_) of
+          (Just _, _) -> kindPlan channelName channel_
+          (_, Just _) -> kindPlan contactName contact_
+          _
+            | isJust (liveLink channelName) -> do
+                r <- tryAllErrors $ kindPlan channelName Nothing
+                case r of
+                  Right (_, (_, p')) | joinableNow p' -> liftEither r
+                  _ | isJust (liveLink contactName) -> kindPlan contactName Nothing `catchAllErrors` \_ -> liftEither r
+                  _ -> liftEither r
+            | otherwise -> kindPlan contactName Nothing
+        let (otherName, other_) = case nameType of
+              NTPublicGroup -> (contactName, contact_)
+              NTContact -> (channelName, channel_)
+            offered = case liveLink otherName of
+              Just ol | not (any (isLinkOf ol . fst . fst) other_) -> Just otherName
+              _ -> Nothing
+        pure (l, Just ni, offered, withLocalChats [channel_, contact_] p, not allFresh)
         where
           channelName = SimplexNameInfo NTPublicGroup d
           contactName = SimplexNameInfo NTContact d
-          nameTarget = ACTarget SCMContact . CTShortContact . CTName
       CTFullContact cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
-        pure (Just (ACCL SCMContact $ CCLink cReq Nothing), Nothing, Nothing, plan)
-      CTShortContact nl ->
-        (\(l, p) -> (l, simplexName_, Nothing, p)) <$> case ctType of
-          CCTContact -> knownContactPlans user nl' >>= shortLinkPlan confirmKnown resolvedPlan
-            where
-              confirmKnown expiresAt _ r@(_, p) = r <$ when (isJust simplexName_) (setKnownVerified expiresAt p)
-              resolvedPlan expiresAt l' = do
-                (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
-                contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
-                let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
-                    linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
-                    planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
-                    refreshContact ct' = case (planDomain, linkProfile_) of
-                      (Just _, Just p) -> updateContactFromLinkData user ct' p expiresAt
-                      _ -> pure ct'
-                forM_ planDomain $ \nameDomain ->
-                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
-                withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
-                  Just ct' | not (contactDeleted ct') -> do
-                    ct'' <- refreshContact ct'
-                    pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') Nothing)
-                  _ -> do
-                    let ContactLinkData _ UserContactData {owners} = cData
-                        ov = verifyLinkOwner rootKey owners l' sig_
-                    plan <- contactRequestPlan user cReq contactSLinkData_ ov
-                    case plan of
-                      CPContactAddress (CAPKnown ct') _ -> do
-                        ct'' <- refreshContact ct'
-                        pure (con l' cReq, CPContactAddress (CAPKnown ct'') Nothing)
-                      CPContactAddress (CAPContactViaAddress ct') _ -> do
-                        ct'' <- refreshContact ct'
-                        pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') Nothing)
-                      _ -> pure (con l' cReq, plan)
+        pure (Just (ACCL SCMContact $ CCLink cReq Nothing), Nothing, Nothing, withLocalChats [] plan, False)
+      CTShortContact (CTName ni) -> do
+        known_ <- knownPlans ni
+        (l, p) <- namePlan ni known_ Nothing
+        pure (l, Just ni, Nothing, withLocalChats [known_] p, not (maybe False snd known_))
+      CTShortContact (CTLink sl) -> do
+        (ccl, p) <- case ctType of
+          CCTContact ->
+            knownContactPlans (CTLink l') >>= \case
+              Just (r, _) -> pure r
+              Nothing -> notResolvedLocally >> contactLinkPlan Nothing l'
           CCTGroup -> groupShortLinkPlan
           CCTChannel -> groupShortLinkPlan
           CCTRelay -> throwCmdError "chat relay links are not supported in this version"
+        pure (Just ccl, Nothing, Nothing, withLocalChats [] p, False)
         where
-          (nl', simplexName_) = case nl of
-            CTLink sl -> (CTLink (serverShortLink sl), Nothing)
-            CTName ni -> (nl, Just ni)
-          ctType = case nl of
-            CTLink (CSLContact _ t _ _) -> t
-            CTName SimplexNameInfo {nameType = NTContact} -> CCTContact
-            CTName SimplexNameInfo {nameType = NTPublicGroup} -> CCTChannel
-          con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
-          setKnownVerified expiresAt p = do
-            verified <- case p of
-              CPContactAddress (CAPKnown ct') _ -> True <$ withFastStore' (\db -> setContactDomainVerified db user ct' True expiresAt)
-              CPGroupLink (GLPKnown g _ _ _) _ -> True <$ withFastStore' (\db -> setGroupDomainVerified db user g True expiresAt)
-              _ -> pure False
-            when verified $ forM_ simplexName_ $ \SimplexNameInfo {nameType, nameDomain} -> nameChatsUpdated user nameType nameDomain
-          shortLinkPlan ::
-            (Maybe UTCTime -> ShortLinkContact -> (ACreatedConnLink, ConnectionPlan) -> CM (ACreatedConnLink, ConnectionPlan)) ->
-            (Maybe UTCTime -> ShortLinkContact -> CM (ACreatedConnLink, ConnectionPlan)) ->
-            Maybe ((ACreatedConnLink, ConnectionPlan), Bool) ->
-            CM (Maybe ACreatedConnLink, ConnectionPlan)
-          shortLinkPlan confirmKnown resolvedPlan knownFresh_ = case nl' of
-            CTLink l -> first Just <$> case known_ of
-              Just r@(_, p)
-                | resolveMode == PRMAll && knownChat p -> confirmKnown Nothing l r
-                | otherwise -> pure r
-              Nothing -> do
-                when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
-                resolvedPlan Nothing l
-            CTName ni -> case knownFresh_ of
-              Just ((l, p), fresh) | resolveMode == PRMNever || (resolveMode == PRMUnknown && fresh) -> pure (Just l, p)
-              Nothing | resolveMode == PRMNever -> throwChatError CENotResolvedLocally
-              _ ->
-                tryAllErrors (maybe (resolveNameRegistration user nm (nameDomain ni)) pure nameReg_) >>= \case
-                  Left e -> first Just <$> knownChatOrThrow e
-                  Right reg -> do
-                    now <- liftIO getSystemSeconds
-                    case nameLinkOrWarning now ni reg of
-                      Right l' -> first Just <$> (linkPlan (nameExpiresAt reg) (serverShortLink l') `catchAllErrors` knownChatOrThrow)
-                      Left w -> case known_ of
-                        Just (l, p) -> do
-                          let p' = setNameWarning w p
-                          when (isNothing $ nameWarning_ p') $ setKnownVerified (nameExpiresAt reg) p'
-                          pure (Just l, p')
-                        Nothing -> pure (Nothing, CPNameNotConnectable (nameDomain ni) w)
-            where
-              known_ = fst <$> knownFresh_
-              knownChatOrThrow e = case known_ of
-                Just r@(_, p) | knownChat p -> pure r
-                _ -> throwError e
-              linkPlan expiresAt l' = case known_ of
-                Just r@(l, _)
-                  | isLinkOf l' l -> confirmKnown expiresAt l' r
-                  | otherwise ->
-                      ((\(l'', p) -> maybe r (l'',) $ setAddressChanged p) <$> resolvedPlan expiresAt l') `catchAllErrors` \case
-                        ChatError (CESimplexDomainNotReady _ SDEUnknownDomain) -> pure r
-                        e -> throwError e
-                Nothing -> resolvedPlan expiresAt l'
-          groupShortLinkPlan :: CM (Maybe ACreatedConnLink, ConnectionPlan)
-          groupShortLinkPlan = knownGroupPlans user nl' >>= shortLinkPlan confirmKnown resolvedGroupPlan
-            where
-              confirmKnown expiresAt l' = \case
-                (_, CPGroupLink (GLPKnown g _ _ _) _) -> resolveKnownGroup expiresAt l' g
-                r -> pure r
-              resolvedGroupPlan expiresAt l' = do
-                (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
-                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                let linkClaim = (\GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) =<< groupSLinkData_
-                    unjoinable plan = do
-                      forM_ simplexName_ $ \SimplexNameInfo {nameDomain} -> unless (linkClaim == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
-                      pure (con l' cReq, CPGroupLink (plan groupSLinkData_) Nothing)
-                if
-                  | not direct && unsupportedGroupType groupSLinkData_ -> unjoinable GLPUpdateRequired
-                  | not direct && null relays -> unjoinable GLPNoRelays
-                  | otherwise -> do
-                      let FixedLinkData {linkEntityId, rootKey} = fd
-                          linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
-                      let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
-                            fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
-                      case (B64UrlByteString <$> linkEntityId, profilePGId) of
-                        (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
-                        (Nothing, Nothing) -> pure ()
-                        _ -> throwChatError CEInvalidConnReq
-                      let ov = verifyLinkOwner rootKey owners l' sig_
-                          glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
-                          planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
-                      plan0 <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov glOwners
-                      -- a joined channel is found by link but not by name (its domain is not verified locally,
-                      -- e.g. an un-upgraded relay dropped the claim); refresh its profile from the fresh link
-                      -- data and mark it verified, so the check below passes and future by-name lookups match
-                      plan <- case (planDomain, plan0, groupSLinkData_) of
-                        (Just nameDomain, CPGroupLink (GLPKnown g u o os) _, Just sLinkData) ->
-                          (\(g', _) -> CPGroupLink (GLPKnown g' u o os) Nothing) <$> updateGroupFromLinkData user g sLinkData (Just nameDomain) expiresAt
-                        _ -> pure plan0
-                      forM_ planDomain $ \nameDomain ->
-                        let domain_ = (\GroupProfile {publicGroup} -> claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) =<< case plan of
-                              CPGroupLink (GLPOk _ (Just GroupShortLinkData {groupProfile}) _ _) _ -> Just groupProfile
-                              CPGroupLink (GLPKnown GroupInfo {groupProfile} _ _ _) _ -> Just groupProfile
-                              CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) _ -> Just groupProfile
-                              CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) _ -> Just groupProfile
-                              _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
-                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
-                      pure (con l' cReq, plan)
-              unsupportedGroupType = \case
-                Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
-                _ -> False
-              resolveKnownGroup expiresAt l' g = do
-                (FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners}), cReq) <- getShortLinkConnReq' nm user l'
-                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                let ov = verifyLinkOwner rk owners l' sig_
-                    glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
-                (g', updated) <- case groupSLinkData_ of
-                  Just sLinkData -> updateGroupFromLinkData user g sLinkData (nameDomain <$> simplexName_) expiresAt
-                  _ -> pure (g, False)
-                pure (con l' cReq, CPGroupLink (GLPKnown g' updated ov (ListDef glOwners)) Nothing)
+          l' = serverShortLink sl
+          ctType = case sl of CSLContact _ t _ _ -> t
+          groupShortLinkPlan =
+            knownGroupPlans (CTLink l') >>= \case
+              Just ((_, CPGroupLink (GLPKnown g _ _ _) _ _), _)
+                | resolveMode == PRMAll -> resolveKnownGroup Nothing l' g
+              Just (r, _) -> pure r
+              Nothing -> notResolvedLocally >> groupLinkPlan Nothing l'
       where
+        notResolvedLocally = when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
+        con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
+        verifyKnown :: SimplexNameInfo -> Maybe UTCTime -> ConnectionPlan -> CM ()
+        verifyKnown ni expiresAt = \case
+          CPContactAddress (CAPKnown ct') _ _ -> do
+            void $ withFastStore' $ \db -> setContactDomainResolved db user ct' expiresAt
+            unverifyOtherNameChats user ni (ChatRef CTDirect (contactId' ct') Nothing)
+          CPGroupLink (GLPKnown g _ _ _) _ _ -> do
+            void $ withFastStore' $ \db -> setGroupDomainResolved db user g expiresAt
+            unverifyOtherNameChats user ni (ChatRef CTGroup (groupId' g) Nothing)
+          _ -> pure ()
+        namePlan :: SimplexNameInfo -> Maybe ((ACreatedConnLink, ConnectionPlan), Bool) -> Maybe (Either ChatError NameLinks) -> CM (Maybe ACreatedConnLink, ConnectionPlan)
+        namePlan ni@SimplexNameInfo {nameType, nameDomain} knownFresh_ links_ = case knownFresh_ of
+          Just ((l, p), fresh) | resolveMode == PRMNever || (resolveMode == PRMUnknown && fresh) -> pure (Just l, p)
+          Nothing | resolveMode == PRMNever -> throwChatError CENotResolvedLocally
+          _ ->
+            maybe (tryAllErrors $ resolveNameLinks user nm nameDomain) pure links_ >>= \case
+              Left e -> first Just <$> knownChatOrThrow e
+              Right links@NameLinks {nameExpiresAt} -> case kindLink nameType links of
+                Right l' -> first Just <$> (linkPlan nameExpiresAt (serverShortLink l') `catchAllErrors` knownChatOrThrow)
+                Left w -> case known_ of
+                  Just (l, p) -> do
+                    let p' = setNameWarning w p
+                    when (isNothing $ nameWarning_ p') $ verifyKnown ni nameExpiresAt p'
+                    pure (Just l, p')
+                  Nothing -> pure (Nothing, CPNameNotConnectable nameDomain w)
+          where
+            known_ = fst <$> knownFresh_
+            knownChatOrThrow e = case known_ of
+              Just r@(_, p) | knownChat p -> pure r
+              _ -> throwError e
+            linkPlan expiresAt l' = case known_ of
+              Just r@(l, p)
+                | isLinkOf l' l -> case p of
+                    CPGroupLink (GLPKnown g _ _ _) _ _ | nameType == NTPublicGroup -> resolveKnownGroup resolved l' g
+                    _ -> r <$ verifyKnown ni expiresAt p
+                | otherwise ->
+                    ((\(l'', p') -> maybe r (l'',) $ setAddressChanged p') <$> kindLinkPlan resolved l') `catchAllErrors` \case
+                      ChatError (CESimplexDomainNotReady _ SDEUnknownDomain) -> pure r
+                      e -> throwError e
+              Nothing -> kindLinkPlan resolved l'
+              where
+                resolved = Just (ni, expiresAt)
+            kindLinkPlan = case nameType of
+              NTContact -> contactLinkPlan
+              NTPublicGroup -> groupLinkPlan
+        contactLinkPlan resolved l' = do
+          (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
+          contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
+          let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
+              linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
+              planDomain = nameDomain . fst <$> resolved
+              refreshContact ct' = case (resolved, linkProfile_) of
+                (Just (_, expiresAt), Just p) -> updateContactFromLinkData user ct' p expiresAt
+                _ -> pure ct'
+          forM_ planDomain $ \nameDomain ->
+            unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+          withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
+            Just ct' | not (contactDeleted ct') -> do
+              ct'' <- refreshContact ct'
+              pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') Nothing [])
+            _ -> do
+              let ContactLinkData _ UserContactData {owners} = cData
+                  ov = verifyLinkOwner rootKey owners l' sig_
+              plan <- contactRequestPlan user cReq contactSLinkData_ ov
+              case plan of
+                CPContactAddress (CAPKnown ct') _ _ -> do
+                  ct'' <- refreshContact ct'
+                  pure (con l' cReq, CPContactAddress (CAPKnown ct'') Nothing [])
+                CPContactAddress (CAPContactViaAddress ct') _ _ -> do
+                  ct'' <- refreshContact ct'
+                  pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') Nothing [])
+                _ -> pure (con l' cReq, plan)
+        groupLinkPlan resolved l' = do
+          (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
+          groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+          let planDomain = nameDomain . fst <$> resolved
+              linkClaim = (\GroupShortLinkData {groupProfile} -> groupClaim groupProfile) =<< groupSLinkData_
+              claimedPlan plan = do
+                forM_ planDomain $ \nameDomain -> unless (linkClaim == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                pure (con l' cReq, CPGroupLink (plan groupSLinkData_) Nothing [])
+          if
+            | not direct && unsupportedGroupType groupSLinkData_ -> claimedPlan GLPUpdateRequired
+            | not direct && null relays -> claimedPlan GLPNoRelays
+            | otherwise -> do
+                let FixedLinkData {linkEntityId, rootKey} = fd
+                    linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
+                let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
+                      fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
+                case (B64UrlByteString <$> linkEntityId, profilePGId) of
+                  (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
+                  (Nothing, Nothing) -> pure ()
+                  _ -> throwChatError CEInvalidConnReq
+                let ov = verifyLinkOwner rootKey owners l' sig_
+                    glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
+                plan0 <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov glOwners
+                -- a joined channel is found by link but not by name (its domain is not verified locally,
+                -- e.g. an un-upgraded relay dropped the claim); refresh its profile from the fresh link
+                -- data and mark it verified, so the check below passes and future by-name lookups match
+                plan <- case (resolved, plan0, groupSLinkData_) of
+                  (Just (SimplexNameInfo {nameDomain}, expiresAt), CPGroupLink (GLPKnown g u o os) _ _, Just sLinkData) ->
+                    (\(g', _) -> CPGroupLink (GLPKnown g' u o os) Nothing []) <$> updateGroupFromLinkData user g sLinkData (Just (nameDomain, expiresAt))
+                  _ -> pure plan0
+                forM_ planDomain $ \nameDomain ->
+                  let domain_ = groupClaim =<< case plan of
+                        CPGroupLink (GLPOk _ (Just GroupShortLinkData {groupProfile}) _ _) _ _ -> Just groupProfile
+                        CPGroupLink (GLPKnown GroupInfo {groupProfile} _ _ _) _ _ -> Just groupProfile
+                        CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) _ _ -> Just groupProfile
+                        CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) _ _ -> Just groupProfile
+                        _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
+                   in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                pure (con l' cReq, plan)
+        unsupportedGroupType = \case
+          Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
+          _ -> False
+        resolveKnownGroup resolved l' g = do
+          (FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners}), cReq) <- getShortLinkConnReq' nm user l'
+          groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+          let ov = verifyLinkOwner rk owners l' sig_
+              glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
+          (g', updated) <- case groupSLinkData_ of
+            Just sLinkData -> updateGroupFromLinkData user g sLinkData (first nameDomain <$> resolved)
+            _ -> pure (g, False)
+          pure (con l' cReq, CPGroupLink (GLPKnown g' updated ov (ListDef glOwners)) Nothing [])
+        knownPlans ni@SimplexNameInfo {nameType} = case nameType of
+          NTContact -> knownContactPlans (CTName ni)
+          NTPublicGroup -> knownGroupPlans (CTName ni)
+        knownContactPlans :: ContactNameOrLink -> CM (Maybe ((ACreatedConnLink, ConnectionPlan), Bool))
+        knownContactPlans nl = withFastStore $ \db ->
+          liftIO (getUserContactLinkViaTarget db user nl) >>= \case
+            Just UserContactLink {connLinkContact} -> pure $ Just ((ACCL SCMContact connLinkContact, CPContactAddress CAPOwnLink Nothing []), False)
+            Nothing ->
+              getContactToConnect db cxt user nl >>= \case
+                Just (ccl, ct')
+                  | contactDeleted ct' -> pure Nothing
+                  | otherwise -> do
+                      fresh <- liftIO $ resolvedRecently =<< getContactDomainResolution db user ct'
+                      pure $ Just ((ACCL SCMContact ccl, CPContactAddress (CAPKnown ct') Nothing []), fresh)
+                Nothing -> gPlan db =<< getGroupToConnect db cxt user nl
+        knownGroupPlans :: ContactNameOrLink -> CM (Maybe ((ACreatedConnLink, ConnectionPlan), Bool))
+        knownGroupPlans nl = withFastStore $ \db ->
+          liftIO (getGroupInfoViaUserTarget db cxt user nl) >>= \case
+            Just (ccl, g) -> pure $ Just ((ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g) Nothing []), False)
+            Nothing -> gPlan db =<< getGroupToConnect db cxt user nl
+        gPlan db = \case
+          Just (ccl, g) | not (memberRemoved (membership g)) -> do
+            fresh <- liftIO $ resolvedRecently =<< getGroupDomainResolution db user g
+            pure $ Just ((ACCL SCMContact ccl, CPGroupLink (GLPKnown g False Nothing (ListDef [])) Nothing []), fresh)
+          _ -> pure Nothing
+        resolvedRecently :: Maybe (UTCTime, Maybe UTCTime) -> IO Bool
+        resolvedRecently = \case
+          Just (resolvedAt, expiresAt_) -> do
+            now <- getCurrentTime
+            pure $ diffUTCTime now resolvedAt < nominalDay && maybe True (now <) expiresAt_
+          Nothing -> pure False
         knownChat = \case
-          CPContactAddress (CAPKnown _) _ -> True
-          CPGroupLink GLPKnown {} _ -> True
+          CPContactAddress (CAPKnown _) _ _ -> True
+          CPGroupLink GLPKnown {} _ _ -> True
           _ -> False
         isLinkOf :: ShortLinkContact -> ACreatedConnLink -> Bool
         isLinkOf l' = \case
           ACCL SCMContact (CCLink _ (Just sl)) -> sameShortLinkContact sl l'
           _ -> False
-    knownContactPlans :: User -> ContactNameOrLink -> CM (Maybe ((ACreatedConnLink, ConnectionPlan), Bool))
-    knownContactPlans user nl' = withFastStore $ \db ->
-      liftIO (getUserContactLinkViaTarget db user nl') >>= \case
-        Just UserContactLink {connLinkContact} -> pure $ Just ((ACCL SCMContact connLinkContact, CPContactAddress CAPOwnLink Nothing), False)
-        Nothing ->
-          getContactToConnect db cxt user nl' >>= \case
-            Just (ccl, ct')
-              | contactDeleted ct' -> pure Nothing
-              | otherwise -> do
-                  fresh <- liftIO $ resolvedRecently =<< getContactDomainResolution db user ct'
-                  pure $ Just ((ACCL SCMContact ccl, CPContactAddress (CAPKnown ct') Nothing), fresh)
-            Nothing -> gPlan user db =<< getGroupToConnect db cxt user nl'
-    knownGroupPlans :: User -> ContactNameOrLink -> CM (Maybe ((ACreatedConnLink, ConnectionPlan), Bool))
-    knownGroupPlans user nl' = withFastStore $ \db ->
-      liftIO (getGroupInfoViaUserTarget db cxt user nl') >>= \case
-        Just (ccl, g) -> pure $ Just ((ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g) Nothing), False)
-        Nothing -> gPlan user db =<< getGroupToConnect db cxt user nl'
-    gPlan user db = \case
-      Just (ccl, g) | not (memberRemoved (membership g)) -> do
-        fresh <- liftIO $ resolvedRecently =<< getGroupDomainResolution db user g
-        pure $ Just ((ACCL SCMContact ccl, CPGroupLink (GLPKnown g False Nothing (ListDef [])) Nothing), fresh)
-      _ -> pure Nothing
-    resolvedRecently :: Maybe (UTCTime, Maybe UTCTime) -> IO Bool
-    resolvedRecently = \case
-      Just (resolvedAt, expiresAt_) -> do
-        now <- getCurrentTime
-        pure $ diffUTCTime now resolvedAt < nominalDay && maybe True (now <) expiresAt_
-      Nothing -> pure False
-    -- the chats a plan is about, the planned one first, and whether looking the name up can show more than them
-    planLocalChats :: User -> AConnectTarget -> ConnectionPlan -> CM ([AChatInfo], Bool)
-    planLocalChats user ct plan = do
-      found <- nameLookups
-      let chats = nubBy (\(AChatInfo _ c) (AChatInfo _ c') -> chatInfoToRef c == chatInfoToRef c') $ mapMaybe planChat $ plan : map (snd . fst) (catMaybes found)
-      pure (chats, not $ all (maybe False snd) found)
-      where
-        nameLookups :: CM [Maybe ((ACreatedConnLink, ConnectionPlan), Bool)]
-        nameLookups = case ct of
-          ACTarget SCMContact (CTDomain d) -> sequence [knownGroupPlans user $ CTName $ SimplexNameInfo NTPublicGroup d, knownContactPlans user $ CTName $ SimplexNameInfo NTContact d]
-          ACTarget SCMContact (CTShortContact nl@(CTName SimplexNameInfo {nameType = NTContact})) -> (: []) <$> knownContactPlans user nl
-          ACTarget SCMContact (CTShortContact nl@(CTName SimplexNameInfo {nameType = NTPublicGroup})) -> (: []) <$> knownGroupPlans user nl
-          _ -> pure []
+        withLocalChats :: [Maybe ((ACreatedConnLink, ConnectionPlan), Bool)] -> ConnectionPlan -> ConnectionPlan
+        withLocalChats knowns p = case p of
+          CPContactAddress cap w_ _ -> CPContactAddress cap w_ chats
+          CPGroupLink glp w_ _ -> CPGroupLink glp w_ chats
+          _ -> p
+          where
+            chats = nubBy (\(AChatInfo _ c) (AChatInfo _ c') -> chatInfoToRef c == chatInfoToRef c') $ mapMaybe planChat $ p : map (snd . fst) (catMaybes knowns)
         planChat = \case
-          CPInvitationLink (ILPConnecting (Just ct')) -> directChat ct'
-          CPInvitationLink (ILPKnown ct') -> directChat ct'
-          CPContactAddress (CAPConnectingProhibit ct') _ -> directChat ct'
-          CPContactAddress (CAPKnown ct') _ -> directChat ct'
-          CPContactAddress (CAPContactViaAddress ct') _ -> directChat ct'
-          CPGroupLink (GLPOwnLink g) _ -> groupChat g
-          CPGroupLink (GLPConnectingProhibit (Just g)) _ -> groupChat g
-          CPGroupLink (GLPKnown g _ _ _) _ -> groupChat g
+          CPContactAddress (CAPConnectingProhibit ct') _ _ -> directChat ct'
+          CPContactAddress (CAPKnown ct') _ _ -> directChat ct'
+          CPContactAddress (CAPContactViaAddress ct') _ _ -> directChat ct'
+          CPGroupLink (GLPOwnLink g) _ _ -> groupChat g
+          CPGroupLink (GLPConnectingProhibit (Just g)) _ _ -> groupChat g
+          CPGroupLink (GLPKnown g _ _ _) _ _ -> groupChat g
           _ -> Nothing
         directChat = Just . AChatInfo SCTDirect . DirectChat
         groupChat g = Just $ AChatInfo SCTGroup $ GroupChat g Nothing
-    connectWithPlan :: User -> IncognitoEnabled -> Maybe ACreatedConnLink -> Maybe SimplexNameInfo -> Maybe SimplexNameInfo -> ConnectionPlan -> ([AChatInfo], Bool) -> CM ChatResponse
-    connectWithPlan user@User {userId} incognito ccLink_ planSimplexName otherSimplexName plan (localChats, offerLookup)
+    connectWithPlan :: User -> IncognitoEnabled -> Maybe ACreatedConnLink -> Maybe SimplexNameInfo -> Maybe SimplexNameInfo -> ConnectionPlan -> Bool -> CM ChatResponse
+    connectWithPlan user@User {userId} incognito ccLink_ planSimplexName otherSimplexName plan offerLookup
       | Just ccLink <- ccLink_, connectionPlanProceed plan = do
           case plan of CPError e -> eToView e; _ -> pure ()
           case plan of
-            CPContactAddress (CAPContactViaAddress Contact {contactId}) _ ->
+            CPContactAddress (CAPContactViaAddress Contact {contactId}) _ _ ->
               processChatCommand cxt nm $ APIConnectContactViaAddress userId incognito contactId
-            CPContactAddress (CAPOk (Just sld) _ _) _ | isJust vName -> connectContactViaName ccLink sld
-            CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _ _) _
+            CPContactAddress (CAPOk (Just sld) _ _) _ _ | isJust vName -> connectContactViaName ccLink sld
+            CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _ _) _ _
               | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
-      | otherwise = pure $ CRConnectionPlan user ccLink_ planSimplexName otherSimplexName plan localChats offerLookup
+      | otherwise = pure $ CRConnectionPlan user ccLink_ planSimplexName otherSimplexName plan offerLookup
       where
         vName = nameDomain <$> planSimplexName
         joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
@@ -4767,7 +4736,7 @@ processChatCommand cxt nm = \case
     contactRequestPlan user cReq cld ov = do
       let cReqSchemas = contactCReqSchemas cReq
           cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
-          plan p = pure $ CPContactAddress p Nothing
+          plan p = pure $ CPContactAddress p Nothing []
       withFastStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
         Just _ -> plan $ CAPOwnLink
         Nothing ->
@@ -4790,7 +4759,7 @@ processChatCommand cxt nm = \case
     groupJoinRequestPlan user cReq linkInfo gld ov glOwners = do
       let cReqSchemas = contactCReqSchemas cReq
           cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
-          plan p = pure $ CPGroupLink p Nothing
+          plan p = pure $ CPGroupLink p Nothing []
       withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db cxt user cReqSchemas) >>= \case
         Just g -> plan $ GLPOwnLink g
         Nothing -> do
@@ -4813,7 +4782,7 @@ processChatCommand cxt nm = \case
       | memberActive membership = plan $ GLPKnown gInfo False ov (ListDef glOwners)
       | otherwise = plan $ GLPOk linkInfo gld ov False
       where
-        plan p = pure $ CPGroupLink p Nothing
+        plan p = pure $ CPGroupLink p Nothing []
     contactCReqSchemas :: ConnReqContact -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas (CRContactUri crData e2e) =
       ( CRContactUri crData {crScheme = SSSimplex} e2e,
@@ -5215,36 +5184,50 @@ resolveNameRecord user nm domain =
     NRRegistered {nameRecord} -> pure nameRecord
     _ -> throwError $ chatErrorAgent $ SMP "" (NAME SMP.NOT_FOUND)
 
-nameExpiresAt :: NameRegistration -> Maybe UTCTime
-nameExpiresAt = \case
-  NRRegistered {expires} -> roundedToUTCTime <$> expires
-  _ -> Nothing
+data NameLinks = NameLinks
+  { nameContactLink :: Either NameWarning ShortLinkContact,
+    nameChannelLink :: Either NameWarning ShortLinkContact,
+    nameExpiresAt :: Maybe UTCTime
+  }
 
--- the name's link of this type, or the warning when there is no local chat for the name
-nameLinkOrWarning :: SystemSeconds -> SimplexNameInfo -> NameRegistration -> Either NameWarning ShortLinkContact
-nameLinkOrWarning now SimplexNameInfo {nameType, nameDomain = SimplexDomain {domain}} = \case
+resolveNameLinks :: User -> NetworkRequestMode -> SimplexDomain -> CM NameLinks
+resolveNameLinks user nm domain = do
+  now <- liftIO getSystemSeconds
+  nameLinks now domain <$> resolveNameRegistration user nm domain
+
+nameLinks :: SystemSeconds -> SimplexDomain -> NameRegistration -> NameLinks
+nameLinks now SimplexDomain {domain} = \case
   NRRegistered {expires = Just expires, graceUntil}
-    | expires < now -> Left $ NWExpired (roundedToUTCTime expires) (roundedToUTCTime <$> mfilter (now <=) graceUntil)
-  NRRegistered {nameRecord = NameRecord {nrSimplexContact, nrSimplexChannel}} ->
-    maybe (Left NWNoValidLink) Right $ case nameType of
-      NTContact -> firstNameLink CCTContact nrSimplexContact
-      NTPublicGroup -> firstNameLink CCTChannel nrSimplexChannel
+    | expires < now -> noLinks $ NWExpired (roundedToUTCTime expires) (roundedToUTCTime <$> mfilter (now <=) graceUntil)
+  NRRegistered {expires, nameRecord = NameRecord {nrSimplexContact, nrSimplexChannel}} ->
+    NameLinks
+      { nameContactLink = nameLink CCTContact nrSimplexContact,
+        nameChannelLink = nameLink CCTChannel nrSimplexChannel,
+        nameExpiresAt = roundedToUTCTime <$> expires
+      }
   NRAvailable {pricing = NamePricing {registrationPrices, basePrice, minLabelLength}}
     | labelLength >= minLabelLength ->
         let USDCents perYear = M.findWithDefault basePrice labelLength registrationPrices
-         in Left $ NWAvailable NamePrice {amount = USDCents (perYear * fromIntegral years), years}
-  NRReserved {reservedReason = NRRCommunity} -> Left NWReservedForCommunity
-  _ -> Left NWNotRegistered
+         in noLinks $ NWAvailable NamePrice {amount = USDCents (perYear * fromIntegral years), years}
+  NRReserved {reservedReason = NRRCommunity} -> noLinks NWReservedForCommunity
+  _ -> noLinks NWNotRegistered
   where
+    noLinks w = NameLinks (Left w) (Left w) Nothing
+    nameLink ctType = maybe (Left NWNoValidLink) Right . firstNameLink ctType
     labelLength = T.length domain
     years = 2
 
+kindLink :: SimplexNameType -> NameLinks -> Either NameWarning ShortLinkContact
+kindLink = \case
+  NTContact -> nameContactLink
+  NTPublicGroup -> nameChannelLink
+
 setNameWarning :: NameWarning -> ConnectionPlan -> ConnectionPlan
 setNameWarning w = \case
-  CPContactAddress CAPOwnLink _ -> CPContactAddress CAPOwnLink ownWarning
-  CPGroupLink p@GLPOwnLink {} _ -> CPGroupLink p ownWarning
-  CPContactAddress p _ -> CPContactAddress p chatWarning
-  CPGroupLink p _ -> CPGroupLink p chatWarning
+  CPContactAddress CAPOwnLink _ cs -> CPContactAddress CAPOwnLink ownWarning cs
+  CPGroupLink p@GLPOwnLink {} _ cs -> CPGroupLink p ownWarning cs
+  CPContactAddress p _ cs -> CPContactAddress p chatWarning cs
+  CPGroupLink p _ cs -> CPGroupLink p chatWarning cs
   p -> p
   where
     ownWarning = case w of
@@ -5260,15 +5243,21 @@ setNameWarning w = \case
 
 setAddressChanged :: ConnectionPlan -> Maybe ConnectionPlan
 setAddressChanged = \case
-  CPContactAddress (CAPOk cld ov _) w_ -> Just $ CPContactAddress (CAPOk cld ov True) w_
-  CPGroupLink (GLPOk li gld ov _) w_ -> Just $ CPGroupLink (GLPOk li gld ov True) w_
-  CPContactAddress CAPConnectingConfirmReconnect _ -> Nothing
-  CPContactAddress CAPConnectingProhibit {} _ -> Nothing
-  CPGroupLink GLPConnectingConfirmReconnect _ -> Nothing
-  CPGroupLink GLPConnectingProhibit {} _ -> Nothing
-  CPGroupLink GLPNoRelays {} _ -> Nothing
-  CPGroupLink GLPUpdateRequired {} _ -> Nothing
-  p -> Just p
+  CPContactAddress (CAPOk cld ov _) w_ cs -> Just $ CPContactAddress (CAPOk cld ov True) w_ cs
+  CPGroupLink (GLPOk li gld ov _) w_ cs -> Just $ CPGroupLink (GLPOk li gld ov True) w_ cs
+  CPContactAddress CAPConnectingConfirmReconnect _ _ -> Nothing
+  CPContactAddress CAPConnectingProhibit {} _ _ -> Nothing
+  CPGroupLink GLPConnectingConfirmReconnect _ _ -> Nothing
+  CPGroupLink GLPConnectingProhibit {} _ _ -> Nothing
+  p
+    | joinableNow p -> Just p
+    | otherwise -> Nothing
+
+joinableNow :: ConnectionPlan -> Bool
+joinableNow = \case
+  CPGroupLink GLPNoRelays {} _ _ -> False
+  CPGroupLink GLPUpdateRequired {} _ _ -> False
+  _ -> True
 
 verifyEntityDomain :: User -> NetworkRequestMode -> SimplexNameType -> SimplexDomainClaim -> Maybe AConnShortLink -> CM (Maybe Bool, Maybe Text)
 verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain, proof = proof_} connLink_ = case (proof_, connLink_) of

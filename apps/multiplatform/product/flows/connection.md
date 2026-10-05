@@ -58,9 +58,10 @@ suspend fun apiConnectPlan(rh: Long?, connLink: String, inProgress: MutableState
 
 ```kotlin
 sealed class ConnectionPlan {
+  open val localChats: List<ChatInfo> get() = emptyList()
   class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameWarning_: NameWarning? = null): ConnectionPlan()
-  class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameWarning_: NameWarning? = null): ConnectionPlan()
+  class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameWarning_: NameWarning? = null, override val localChats: List<ChatInfo> = emptyList()): ConnectionPlan()
+  class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameWarning_: NameWarning? = null, override val localChats: List<ChatInfo> = emptyList()): ConnectionPlan()
   class NameNotConnectable(val simplexDomain: SimplexDomain, val nameWarning: NameWarning): ConnectionPlan()
   class Error(val chatError: ChatError): ConnectionPlan()
 }
@@ -97,16 +98,18 @@ suspend fun planAndConnect(
   shortOrFullLink: String,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)? = null,
-  filterChats: ((List<ChatInfo>) -> Boolean)? = null,
+  chatsFilter: ChatsFilter? = null,
 ): CompletableDeferred<Boolean>
+
+class ChatsFilter(val accepts: (List<ChatInfo>) -> Boolean, val show: (List<ChatInfo>) -> Unit)
 ```
 
 1. A progress indicator is shown.
 2. `apiConnectPlan` is called to analyze the link.
 3. Based on the plan type, the appropriate UI is shown:
    - For a name warning (`nameWarning_`, or `NameNotConnectable`): show the name warning alert.
-   - For `Ok` plans: show the alert to connect, with the link's profile when it has one. When `addressChanged` is set, it says the name now leads to a new address or channel, and offers Open existing chat (the first of `localChats`) in place of Cancel unless `filterChats` shows them.
-   - For `Known`, `ContactViaAddress`, a contact's `ConnectingProhibit`, an invitation's `Connecting`, and a group's `OwnLink`: `filterChats` receives the response's `localChats`. If it shows them, no alert shows, except, for `Known`, `ContactViaAddress` and a group's `OwnLink`, the "also leads to" alert when the name also leads to the other kind (`otherSimplexName`); otherwise the plan's alert shows (for `Known`, to open the existing contact/group).
+   - For `Ok` plans: show the alert to connect, with the link's profile when it has one. When `addressChanged` is set, it says the name now leads to a new address or channel, and offers Open existing chat (the first of the plan's `localChats`) in place of Cancel, unless `chatsFilter` accepts them and shows them.
+   - For `Known`, `ContactViaAddress`, a contact's `ConnectingProhibit`, an invitation's `Connecting`, and a group's `OwnLink`: `chatsFilter` receives the plan's `localChats`, or an invitation's contact. If it accepts them, it shows them and no alert shows, except, for `Known`, `ContactViaAddress` and a group's `OwnLink`, the "also leads to" alert when the name also leads to the other kind (`otherSimplexName`); otherwise the plan's alert shows (for `Known`, to open the existing contact/group).
    - For a contact's or an invitation's `OwnLink`: show alert.
    - For `ConnectingConfirmReconnect`: show reconnect confirmation; for a group's `ConnectingProhibit`: show the prohibit alert.
 4. Returns a `CompletableDeferred<Boolean>` indicating success.

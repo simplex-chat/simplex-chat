@@ -52,9 +52,8 @@ module Simplex.Chat.Store.Direct
     getContactIdByName,
     updateContactProfile,
     setContactDomainVerified,
-    unverifyNameChats,
+    setContactDomainResolved,
     getContactDomainResolution,
-    setContactDomainStale,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -114,11 +113,11 @@ import Data.Type.Equality
 import Simplex.Chat.Badges (badgeToRow)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
+import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), SimplexNameType (..), UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexNameInfo (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -407,13 +406,13 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe Bool -> ExceptT StoreError IO Contact
-createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId verified_ = do
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Bool -> ExceptT StoreError IO Contact
+createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId nameResolved = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
   ct <- getContact db cxt user =<< createContact_ db cxt user p ctUserPreferences prepared "" currentTs
-  liftIO $ maybe (pure ct) (\v -> setContactDomainVerified db user ct v Nothing) verified_
+  liftIO $ if nameResolved then setContactDomainResolved db user ct Nothing else pure ct
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
@@ -593,33 +592,28 @@ updateContactProfile db cxt user@User {userId} c p' = do
             clearVerificationIfClaimChanged
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
 
-setContactDomainVerified :: DB.Connection -> User -> Contact -> Bool -> Maybe UTCTime -> IO Contact
-setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p@LocalProfile {contactDomain}} verified expiresAt = do
-  currentTs <- getCurrentTime
-  when verified $ forM_ contactDomain $ unverifyNameChats db userId NTContact . claimDomain
+setContactDomainVerified :: DB.Connection -> User -> Contact -> Bool -> IO Contact
+setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} verified = do
   DB.execute
     db
     [sql|
-      UPDATE contact_profiles SET contact_domain_verified = ?, contact_domain_resolved_at = ?, contact_domain_expires_at = ?
+      UPDATE contact_profiles SET contact_domain_verified = ?
       WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
     |]
-    (BI verified, currentTs, expiresAt, userId, contactId)
+    (BI verified, userId, contactId)
   pure (ct {profile = p {contactDomainVerified = Just verified}} :: Contact)
 
-unverifyNameChats :: DB.Connection -> UserId -> SimplexNameType -> SimplexDomain -> IO ()
-unverifyNameChats db userId nameType domain = case nameType of
-  NTContact -> do
-    DB.execute db "UPDATE contact_profiles SET contact_domain_verified = 0 WHERE user_id = ? AND contact_domain = ? AND contact_domain_verified = 1" (userId, domain)
-    unverifyGroups " AND business_chat IS NOT NULL"
-  NTPublicGroup -> unverifyGroups " AND business_chat IS NULL"
-  where
-    unverifyGroups businessCond = DB.execute db (unverifyGroupsQuery <> businessCond) (userId, domain)
-    unverifyGroupsQuery =
-      [sql|
-        UPDATE groups SET group_domain_verified = 0
-        WHERE user_id = ? AND group_domain_verified = 1
-          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE group_domain = ?)
-      |]
+setContactDomainResolved :: DB.Connection -> User -> Contact -> Maybe UTCTime -> IO Contact
+setContactDomainResolved db User {userId} ct@Contact {contactId, profile = p} expiresAt = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles SET contact_domain_verified = 1, contact_domain_resolved_at = ?, contact_domain_expires_at = ?
+      WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
+    |]
+    (currentTs, expiresAt, userId, contactId)
+  pure (ct {profile = p {contactDomainVerified = Just True}} :: Contact)
 
 getContactDomainResolution :: DB.Connection -> User -> Contact -> IO (Maybe (UTCTime, Maybe UTCTime))
 getContactDomainResolution db User {userId} Contact {profile = LocalProfile {profileId}} =
@@ -628,10 +622,6 @@ getContactDomainResolution db User {userId} Contact {profile = LocalProfile {pro
       db
       "SELECT contact_domain_resolved_at, contact_domain_expires_at FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ? AND contact_domain_resolved_at IS NOT NULL"
       (userId, profileId)
-
-setContactDomainStale :: DB.Connection -> User -> Contact -> IO ()
-setContactDomainStale db User {userId} Contact {profile = LocalProfile {profileId}} =
-  DB.execute db "UPDATE contact_profiles SET contact_domain_resolved_at = NULL WHERE user_id = ? AND contact_profile_id = ?" (userId, profileId)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do

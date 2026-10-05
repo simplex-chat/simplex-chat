@@ -1625,39 +1625,40 @@ updatePublicGroupData user gInfo gks
   | otherwise = pure gInfo
 
 -- must not resolve names here: a background link-data refresh would leak channel membership to the resolver
-updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> Maybe UTCTime -> CM (GroupInfo, Bool)
-updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_ expiresAt
+updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe (SimplexDomain, Maybe UTCTime) -> CM (GroupInfo, Bool)
+updateGroupFromLinkData user gInfo@GroupInfo {groupId, groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolved_
   | profileChanged || countChanged || verifyResolved = do
       cxt <- chatStoreCxt
-      g'' <- withStore $ \db -> do
+      r <- withStore $ \db -> do
         g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
         g' <- case publicGroupData of
           Just PublicGroupData {publicMemberCount} | countChanged ->
             setPublicMemberCount db cxt user g publicMemberCount
           _ -> pure g
-        if verifyResolved then liftIO $ setGroupDomainVerified db user g' True expiresAt else pure g'
-      toView $ CEvtGroupUpdated user gInfo g'' Nothing Nothing
-      when verifyResolved $ forM_ newClaim $ nameChatsUpdated user NTPublicGroup
-      pure (g'', profileChanged)
+        g'' <- if verifyResolved then liftIO $ setGroupDomainResolved db user g' (snd =<< resolved_) else pure g'
+        pure (g'', profileChanged)
+      when verifyResolved $ forM_ newClaim $ \d -> unverifyOtherNameChats user (SimplexNameInfo NTPublicGroup d) (ChatRef CTGroup groupId Nothing)
+      pure r
   | otherwise = pure (gInfo, False)
   where
     profileChanged = p /= groupProfile
     countChanged = case publicGroupData of
       Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
       _ -> False
-    groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
     newClaim = groupClaim groupProfile
-    verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
+    verifyResolved = isJust resolved_ && (fst <$> resolved_) == newClaim
+
+groupClaim :: GroupProfile -> Maybe SimplexDomain
+groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
 
 updateContactFromLinkData :: User -> Contact -> Profile -> Maybe UTCTime -> CM Contact
-updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim} expiresAt
+updateContactFromLinkData user ct@Contact {contactId, profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim} expiresAt
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
       ct'' <- withFastStore $ \db -> do
         ct' <- updateContactProfile db cxt user ct linkProfile
-        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True expiresAt else pure ct'
-      toView $ CEvtContactUpdated user ct ct''
-      when verifyChanged $ forM_ newClaim $ nameChatsUpdated user NTContact . claimDomain
+        if verifyChanged then liftIO $ setContactDomainResolved db user ct' expiresAt else pure ct'
+      when verifyChanged $ forM_ newClaim $ \c -> unverifyOtherNameChats user (SimplexNameInfo NTContact $ claimDomain c) (ChatRef CTDirect contactId Nothing)
       pure ct''
   | otherwise = pure ct
   where
@@ -1665,10 +1666,10 @@ updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {conta
     claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
     verifyChanged = contactDomainVerified /= Just True || claimChanged
 
-nameChatsUpdated :: User -> SimplexNameType -> SimplexDomain -> CM ()
-nameChatsUpdated user nameType domain = do
+unverifyOtherNameChats :: User -> SimplexNameInfo -> ChatRef -> CM ()
+unverifyOtherNameChats user ni verifiedChat = do
   cxt <- chatStoreCxt
-  (cts, gs) <- withStore' $ \db -> getNameChats db cxt user nameType domain
+  (cts, gs) <- withFastStore' $ \db -> unverifyNameChats db cxt user ni verifiedChat
   forM_ cts $ \ct -> toView $ CEvtContactUpdated user ct ct
   forM_ gs $ \g -> toView $ CEvtGroupUpdated user g g Nothing Nothing
 

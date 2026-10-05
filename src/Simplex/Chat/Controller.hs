@@ -887,7 +887,7 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connLink :: Maybe ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan, localChats :: [AChatInfo], offerLookup :: Bool}
+  | CRConnectionPlan {user :: User, connLink :: Maybe ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan, offerLookup :: Bool}
   | CRNewPreparedChat {user :: User, chat :: AChat}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
@@ -1154,8 +1154,8 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameWarning_ :: Maybe NameWarning}
-  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameWarning_ :: Maybe NameWarning}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameWarning_ :: Maybe NameWarning, localChats :: [AChatInfo]}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameWarning_ :: Maybe NameWarning, localChats :: [AChatInfo]}
   | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameWarning :: NameWarning}
   | CPError {chatError :: ChatError}
   deriving (Show)
@@ -1232,13 +1232,13 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap w_ -> case cap of
+  CPContactAddress cap w_ _ -> case cap of
     CAPOk {addressChanged} -> not addressChanged
     CAPOwnLink -> isNothing w_
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp w_ -> case glp of
+  CPGroupLink glp w_ _ -> case glp of
     GLPOk {addressChanged} -> not addressChanged
     GLPOwnLink _ -> isNothing w_
     GLPConnectingConfirmReconnect -> True
