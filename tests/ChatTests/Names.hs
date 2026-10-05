@@ -22,7 +22,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import NameResolver
 import Simplex.Chat.Controller (ChatResponse (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), NamePrice (..), NameWarning (..))
-import Simplex.Chat.Library.Commands (execChatCommand', kindLink, nameLinks, parseChatCommand, setNameWarning)
+import Simplex.Chat.Library.Commands (execChatCommand', nameLinkOrWarning, parseChatCommand, setNameWarning)
 import Simplex.Chat.Messages (AChatInfo (..), ChatInfo (..))
 import Simplex.Chat.Types (Contact (..), GroupInfo (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -1048,7 +1048,7 @@ testNameLinkOrWarning = do
   linkOrWarning NTContact (NRReserved NRRCommunity) `shouldBe` Left NWReservedForCommunity
   linkOrWarning NTContact (NRReserved NRRTrademark) `shouldBe` Left NWNotRegistered
   where
-    linkOrWarning nameType = kindLink nameType . nameLinks (RoundedSystemTime 1000) (SimplexDomain TLDSimplex "alice" [])
+    linkOrWarning nameType = nameLinkOrWarning (RoundedSystemTime 1000) (SimplexNameInfo nameType (SimplexDomain TLDSimplex "alice" []))
     registered expires graceUntil = NRRegistered (RoundedSystemTime <$> expires) (RoundedSystemTime <$> graceUntil) Nothing
     pricing minLabelLength registrationPrices = NamePricing {registrationPrices, basePrice = USDCents 1000, minLabelLength}
     contactRecord = contactNameRecord "alice.simplex" contactLinkStr

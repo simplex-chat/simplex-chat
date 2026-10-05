@@ -24,7 +24,7 @@ The canvas was reviewed against this model on 2026-09-28, story by story (§4).
 ## 1. Executive summary
 
 - **`NameWarning` replaces `NameRegistration` in the plan.** `CPContactAddress` and `CPGroupLink` have `nameWarning_ :: Maybe NameWarning`, and `CPNameNotConnectable` has `nameWarning :: NameWarning`. An app shows an alert exactly when the plan has a warning. It does not compare dates, lengths or registrations.
-- **Three pure functions decide the warning.** `nameLinks` computes the registration's link of each kind, or the warning when nothing is local, with the registration's expiry; `kindLink` selects one kind. `setNameWarning` maps the warning to the one for the user's own name or for a chat. Unit tests cover them.
+- **Two pure functions decide the warning.** One computes a registration's link, or the warning when nothing is local. The other maps that warning to the one for the user's own name or for a chat. Both are tested directly.
 - **A typed name (`@d`, `#d`) is planned for its kind only.**
   - A chat at the name's live link is confirmed.
   - A chat, own address or own channel at another link gives the new link's plan with `addressChanged` (3c), unless the new link does not claim the name, cannot be joined yet, or, for a chat, cannot be fetched (N12, N19, N35); another chat the user has at the new link is answered as that chat (N35).
@@ -172,29 +172,21 @@ data NamePrice = NamePrice {amount :: USDCents, years :: Int}
 - `NamePrice` is the price of the 2-year term (N3): the registry's per-year price for the label's length (or its base price), times `years = 2`.
 - The domain is not repeated. It is `planSimplexName`, or `simplexDomain` on `CPNameNotConnectable`.
 
-**Deciding the warning.** Pure functions, next to `setAddressChanged`:
+**Deciding the warning.** Two pure functions, next to `setAddressChanged`:
 
 ```haskell
-data NameLinks = NameLinks
-  { nameContactLink :: Either NameWarning ShortLinkContact,
-    nameChannelLink :: Either NameWarning ShortLinkContact,
-    nameExpiresAt :: Maybe UTCTime
-  }
-
-nameLinks :: SystemSeconds -> SimplexDomain -> NameRegistration -> NameLinks
-kindLink :: SimplexNameType -> NameLinks -> Either NameWarning ShortLinkContact
+nameLinkOrWarning :: SystemSeconds -> SimplexNameInfo -> NameRegistration -> Either NameWarning ShortLinkContact
 setNameWarning :: NameWarning -> ConnectionPlan -> ConnectionPlan
 ```
 
-- **`nameLinks`** returns the name's link of each kind, or the warning for nothing local (the "nothing" rows of §3), and, for a live registration, its expiry. The label length check moves from the apps into it. `resolveNameLinks` resolves the name and applies it.
-- **`kindLink`** selects the link or warning of one kind.
+- **`nameLinkOrWarning`** returns the name's link of the kind, or the warning for nothing local (the "nothing" rows of §3). The label length check moves from the apps into it.
 - **`setNameWarning`** sets the warning for the local plan, as one `case` over the plan constructors:
   - own: `NWExpired` becomes `NWOwnExpired`, `NWAvailable` becomes `NWOwnAvailable`, and `NWReservedForCommunity` stays (N13); the others become no warning;
   - a chat: `NWAvailable` becomes `NWNoLongerRegistered`, and `NWExpired` and `NWReservedForCommunity` stay; the others become no warning.
 
 ## 6. Plan logic, as a story per target
 
-**The local lookups.** Two functions, one per kind, in the `where` of `connectPlan`'s contact clause, used by the name and link paths:
+**The local lookups.** Two functions, one per kind, in the `where` of `connectPlan`'s short link branches, used by the name and link paths; the bare name path reaches them through `connectPlan` with `resolve=never`:
 - **the contact kind:** the own address, else a contact, else a business chat (`getGroupToConnect`, which matches `business_chat IS NOT NULL` for `@` names);
 - **the channel kind:** the own channel, else a joined or prepared channel.
 
@@ -205,10 +197,10 @@ Each returns the plan for what it finds, and whether it is fresh. It reads the c
 1. Look up the name's kind locally.
 2. With `resolve=never`, answer with what was found, or fail with `CENotResolvedLocally`.
 3. In the default mode, answer with a fresh chat.
-4. Resolve the name's links (`resolveNameLinks`), unless the bare name path passed them. If the request fails, answer with a chat, or fail.
-5. `kindLink` gives either:
+4. Resolve the registration, unless the bare name path passed it. If the request fails, answer with a chat, or fail.
+5. `nameLinkOrWarning` gives either:
    - **a link L:**
-     - own at L is answered as found, and a chat at L is confirmed (`setContactDomainResolved`, `setGroupDomainResolved`, or the channel's refresh from its link data);
+     - own at L is answered as found, and a chat at L is confirmed (`setContactDomainResolved`, `setGroupDomainResolved`);
      - otherwise the plan for L, with `addressChanged` if something was local; if L's profile does not claim the name, or L's channel has no relays or needs an app update, or a connection via L is in progress, or, for a chat, L's data cannot be fetched, and something was local, answer with it instead (N12, N19, N35); a chat the user has at L is answered as that chat (N35);
    - **a warning:** the local plan with `setNameWarning`, or `CPNameNotConnectable d` with the warning.
 
@@ -225,7 +217,7 @@ Each returns the plan for what it finds, and whether it is fresh. It reads the c
    - otherwise the channel if the name has a live channel link, falling back to the contact kind if that fails, has no relays or needs an app update, and the name has a live contact link (N29);
    - otherwise the contact kind if the name has a live contact link.
 
-   It is planned as the typed name, passing the resolved links. If the contact kind fails too, answer the channel's error or its plan (N29). With no kind to plan, answer `CPNameNotConnectable d` with the "nothing" warning.
+   It is planned as the typed name, passing the registration. If the contact kind fails too, answer the channel's error or its plan (N29). With no kind to plan, answer `CPNameNotConnectable d` with the "nothing" warning.
 6. Set `otherSimplexName` to the other kind's name if the name has a live link of it, unless the local lookup of that kind found something at that link (N22, N29).
 7. The other kind's chat is left as it is, and its own lookup re-resolves it once it is stale (N6, N28).
 
@@ -297,7 +289,7 @@ Decided:
 | N11 | Not registered (reserved for another reason, or too short), with a chat or own | not reported |
 | N12 | The new link does not claim the name, with a chat or own | the local one, no alert |
 | N15 | The request failed | with a chat: the chat, no alert; with own or nothing: the error alert |
-| N16 | Where the bare name's lookups and freshness are | the two local lookups are in the `where` of `connectPlan`'s contact clause and return freshness; the bare name path uses both |
+| N16 | Where the bare name's lookups and freshness are | the two local lookups are in the `where` of `connectPlan`'s short link branches; freshness is read for the chat each finds; the bare name path reaches both through `connectPlan` with `resolve=never` |
 | N17 | Name search (the chat list's "Connect to" row) | behaves as the canvas's search (1c): it passes the filters, so found chats stay filtered, dismissing keeps the search, 3c shows Cancel and 3e is the alert |
 | N18 | `/c` when the name moved (3c) or the own name has a warning | the plan is shown instead of connecting (`connectionPlanProceed`) |
 | N19 | A chat, and the name's link data cannot be fetched | the chat, no alert, as N15 |
@@ -324,7 +316,7 @@ Decided:
 ## 12. Tests
 
 - **Unit tests:**
-  - `nameLinks` with `kindLink`: one per "nothing" row of §3, plus the dateless, too-short, 2-year price and live-community cases;
+  - `nameLinkOrWarning`: one per "nothing" row of §3, plus the dateless, too-short, 2-year price and live-community cases;
   - `setNameWarning` for the own address (`CPContactAddress CAPOwnLink`).
 
   The chat rows need a `Contact` or `GroupInfo`, and are covered by CLI tests.
@@ -339,7 +331,7 @@ Decided:
 ## 13. Order of work
 
 1. Core:
-   - `NameWarning`, `NamePrice`, `nameLinks`, `kindLink` and `setNameWarning`, with their unit tests;
+   - `NameWarning`, `NamePrice`, `nameLinkOrWarning` and `setNameWarning`, with their unit tests;
    - the local lookups;
    - the typed name and bare name paths;
    - the View;
