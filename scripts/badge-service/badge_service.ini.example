@@ -36,6 +36,20 @@ session_minutes = 60
 waiting_seconds = 3
 idle_seconds = 60
 
+; optional; without it every App Store receipt is answered provider_not_configured, which the app retries later.
+; root_certificate is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer, in DER;
+; compose mounts only this ini, so mount the certificate read-only beside it.
+;[apple]
+;bundle_id = chat.simplex.app
+;root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+
+; optional; without it every Play receipt is answered provider_not_configured, which the app retries later.
+; service_account_file is the JSON key of a service account that may view this app's financial data in
+; Play Console; mount it read-only beside this ini, readable by the service's user alone.
+;[google]
+;package_name = chat.simplex.app
+;service_account_file = /etc/simplex-badge-service/play-service-account.json
+
 ; index is the one clients verify against; private_key is from `simplex-chat badge keygen`.
 ; To rotate, change both together, once clients trust the new index.
 [issuer]
@@ -47,5 +61,6 @@ private_key = replace-me
 [dev]
 chat_redeem = off
 ; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
-; verifying it, so anyone who can reach this service can mint badges
+; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
+; with this on beside an [apple] or [google] section.
 accept_unverified_store_receipts = off

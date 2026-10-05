@@ -23,7 +23,7 @@ module BadgeService.Service
 where
 
 import BadgeService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
-import BadgeService.Config (BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Log (logError, logInfo, logWarn)
 import BadgeService.Options
 import BadgeService.Poller (newPollerEnv, newReadHints, runPoller)
@@ -33,6 +33,8 @@ import BadgeService.Store
 import BadgeService.Store.Invoices (seedCatalog, truncateToSecond)
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import BadgeService.StoreReceipts
+import BadgeService.StoreReceipts.Apple (readAppleRoot, verifyAppleTransaction)
+import BadgeService.StoreReceipts.Google (playStoreVerifier)
 import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
@@ -87,8 +89,8 @@ data ServiceState = ServiceState
     storeVerifier :: StoreVerifier
   }
 
--- | No store verifier exists yet, so every store receipt not already credited is answered
--- provider_not_configured, terminal for the request: retrying cannot deploy one.
+-- | With no store verifier, which badge_service.ini configures, every store receipt not already credited
+-- is answered provider_not_configured.
 newServiceState :: IO ServiceState
 newServiceState = do
   serviceCC <- newEmptyTMVarIO
@@ -133,12 +135,20 @@ readConfigOrExit path =
     Left e -> putStrLn (path <> ": " <> e) >> exitFailure
     Right sc -> pure sc
 
-devStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
-devStoreVerifier serviceCfg env
-  | maybe False devAcceptUnverifiedStoreReceipts serviceCfg = do
-      logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
-      pure env {storeVerifier = mockStoreVerifier}
-  | otherwise = pure env
+-- | The config refuses the dev flag beside a real verifier, so only one of them applies.
+configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
+configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case serviceCfg of
+  Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True} -> do
+    logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
+    pure env {storeVerifier = mockStoreVerifier}
+  Just ServiceConfig {appleStore, playStore} -> do
+    apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificate} ->
+      (\root -> verifyAppleTransaction root aBundleId) <$> orExit (readAppleRoot aRootCertificate)
+    google <- forM playStore $ orExit . playStoreVerifier
+    pure env {storeVerifier = v {verifyApple = maybe (verifyApple v) Just apple, verifyGoogle = maybe (verifyGoogle v) Just google}}
+  Nothing -> pure env
+  where
+    orExit = (>>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure)
 
 badgeService :: BadgeServiceOpts -> ChatConfig -> ServiceState -> IO ()
 badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
@@ -153,7 +163,7 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
             preCmdHook = Just badgeCmdHook
           }
   when devRedeem $ logWarn "[dev] chat_redeem is on: /redeem over chat hands out credentials this service can link"
-  requestEnv <- devStoreVerifier serviceCfg env
+  requestEnv <- configureStoreVerifier serviceCfg env
   -- The reader must not block, since outputQ carries every chat event.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> do
     lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
@@ -196,7 +206,7 @@ badgeServiceCLI :: BadgeServiceOpts -> IO ()
 badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
-  env <- newServiceState >>= devStoreVerifier serviceCfg
+  env <- newServiceState >>= configureStoreVerifier serviceCfg
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
           atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)

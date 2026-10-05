@@ -15,13 +15,13 @@ where
 
 import Control.Exception (evaluate)
 import Data.Bifunctor (first)
-import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
+import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, isDigit, isPrint, isSpace)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..), StoreTransactionRef (..))
-import Simplex.Messaging.Util (catchOwn')
+import Simplex.Messaging.Util (catchOwn', tshow)
 import System.Timeout (timeout)
 
 -- | What a store vouches for about one completed transaction.
@@ -38,6 +38,8 @@ data VerifiedStoreTransaction = VerifiedStoreTransaction
   deriving (Eq, Show)
 
 -- | The reasons are for the service's log alone and must never quote the receipt.
+-- SRInvalid alone is terminal: the client drops the purchase's keys and nothing presents it again.
+-- So only a verdict no later attempt could change is SRInvalid; when in doubt, SRUnreachable.
 data StoreRefusal
   = SRInvalid Text -- a verdict that cannot change, and the client consumes the purchase: forged, malformed, another app's, refunded
   | SRPending -- a real purchase the store has not settled; it may yet
@@ -49,7 +51,8 @@ data StoreRefusal
 -- | Apple signs its receipt and ships the certificate chain in it, so it is verified with no network
 -- call; a Play token is opaque and must be asked about, which is why only that field is in IO.
 data StoreVerifier = StoreVerifier
-  { verifyApple :: Maybe (Text -> Either Text VerifiedStoreTransaction), -- the JWS; Left is why Apple did not sign it
+  { -- the JWS; every Left becomes SRInvalid, so a verifier that cannot reach a verdict throws instead
+    verifyApple :: Maybe (Text -> Either Text VerifiedStoreTransaction),
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token
     -- microseconds; requests are answered one at a time, so a verifier that does not finish holds up every other one
     verifyTimeout :: Int
@@ -76,7 +79,7 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, verifyTimeout} = \case
     -- whatever path a verifier builds from them
     | not (googleProductId productId) -> Just $ Left $ SRInvalid "not a Play product id"
     -- Play documents no token grammar, so this is our guess, and refusing to ask Play is not its verdict
-    | not (googleToken token) -> Just $ Left $ SRUnreachable "a Play token this service will not send"
+    | not (googleToken token) -> Just $ Left $ SRUnreachable $ "a Play token this service will not send: " <> tokenShape token
     | otherwise -> Just $ Right $ StoreReceipt (StoreTransactionRef PPGoogle (googlePurchaseRef token)) $ maybe unconfigured (\verify -> online $ verify productId token) verifyGoogle
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
@@ -99,3 +102,19 @@ googleProductId pid = case T.uncons pid of
 
 googleToken :: Text -> Bool
 googleToken t = not (T.null t) && T.length t <= 4096 && T.all (\x -> isAsciiLower x || isAsciiUpper x || isDigit x || x == '.' || x == '_' || x == '-') t
+
+-- | What the log may say about a token: its length and the kinds of character in it, never any of them.
+tokenShape :: Text -> Text
+tokenShape t = tshow (T.length t) <> " characters: " <> T.intercalate ", " [kind | (kind, isKind) <- kinds, T.any isKind t]
+  where
+    kinds =
+      [ ("lowercase", isAsciiLower),
+        ("uppercase", isAsciiUpper),
+        ("digits", isDigit),
+        ("'.'", (== '.')),
+        ("'_'", (== '_')),
+        ("'-'", (== '-')),
+        ("other printable ASCII", \c -> isAscii c && isPrint c && not (isAlphaNum c) && c `notElem` ("._-" :: String)),
+        ("whitespace or control", \c -> isSpace c || isControl c),
+        ("non-ASCII", not . isAscii)
+      ]

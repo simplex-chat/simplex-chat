@@ -444,6 +444,8 @@ executable simplex-badge-service
       BadgeService.Store.Invoices
       BadgeService.Store.Migrate
       BadgeService.StoreReceipts
+      BadgeService.StoreReceipts.Apple
+      BadgeService.StoreReceipts.Google
       BadgeService.StoreReceipts.Mock
       BadgeService.Waiters
       BadgeService.Web.Server
@@ -456,6 +458,9 @@ executable simplex-badge-service
     , base64-bytestring >=1.0 && <1.3
     , containers ==0.6.*
     , crypton ==0.34.*
+    , crypton-x509 ==1.7.*
+    , crypton-x509-store ==1.6.*
+    , crypton-x509-validation ==1.6.*
     , directory ==1.3.*
     , filepath ==1.4.*
     , http-client ==0.7.*
@@ -734,6 +739,8 @@ test-suite simplex-chat-test
       BadgeService.Store.Invoices
       BadgeService.Store.Migrate
       BadgeService.StoreReceipts
+      BadgeService.StoreReceipts.Apple
+      BadgeService.StoreReceipts.Google
       BadgeService.StoreReceipts.Mock
       BadgeService.Waiters
       BadgeService.Web.Server
@@ -742,8 +749,10 @@ test-suite simplex-chat-test
       Bots.BadgeService.CatalogTests
       Bots.BadgeService.ConfigTests
       Bots.BadgeService.FakeBTCPay
+      Bots.BadgeService.FakePlay
       Bots.BadgeService.FakeStore
       Bots.BadgeService.FakeStripe
+      Bots.BadgeService.StoreVerifierTests
       Bots.BadgeService.StripeTests
       Bots.BadgeService.WaitersTests
       Bots.BadgeService.WebTests
@@ -790,10 +799,14 @@ test-suite simplex-chat-test
     , composition ==1.0.*
     , containers ==0.6.*
     , crypton ==0.34.*
+    , crypton-x509 ==1.7.*
+    , crypton-x509-store ==1.6.*
+    , crypton-x509-validation ==1.6.*
     , deepseq ==1.4.*
     , directory ==1.3.*
     , filepath ==1.4.*
     , generic-random ==1.5.*
+    , hourglass ==0.2.*
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
     , http-types ==0.12.*

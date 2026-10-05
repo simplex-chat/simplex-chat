@@ -10,6 +10,8 @@ module BadgeService.Config
     SpeedPolicy (..),
     speedPolicyName,
     PollConfig (..),
+    AppleStoreConfig (..),
+    PlayStoreConfig (..),
     BadgeIssuerKey (..),
     ServiceConfig (..),
     defaultExpiryMinutes,
@@ -21,9 +23,11 @@ where
 
 import qualified Control.Exception as E
 import BadgeService.Log (logWarn)
+import Control.Monad (when)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -87,6 +91,20 @@ instance Show StripeConfig where
 data PollConfig = PollConfig {pWaitingSeconds :: Int, pIdleSeconds :: Int}
   deriving (Eq, Show)
 
+data AppleStoreConfig = AppleStoreConfig
+  { aBundleId :: Text,
+    aRootCertificate :: FilePath
+  }
+  deriving (Eq, Show)
+
+data PlayStoreConfig = PlayStoreConfig
+  { gPackageName :: Text,
+    gServiceAccountFile :: FilePath,
+    gApiHost :: Text,
+    gTokenUrl :: Text
+  }
+  deriving (Eq, Show)
+
 data BadgeIssuerKey = BadgeIssuerKey
   { keyIdx :: Int,
     secretKey :: BBSSecretKey
@@ -102,6 +120,8 @@ data ServiceConfig = ServiceConfig
     btcpay :: Maybe BTCPayConfig,
     stripe :: Maybe StripeConfig,
     poll :: PollConfig,
+    appleStore :: Maybe AppleStoreConfig,
+    playStore :: Maybe PlayStoreConfig,
     issuer :: Maybe BadgeIssuerKey,
     -- Local testing only; signs credentials with a master key this service can link.
     devChatRedeem :: Bool,
@@ -118,6 +138,12 @@ defaultStripeHost = "https://api.stripe.com"
 
 defaultSessionMinutes :: Int
 defaultSessionMinutes = 60
+
+defaultPlayApiHost :: Text
+defaultPlayApiHost = "https://androidpublisher.googleapis.com"
+
+defaultPlayTokenUrl :: Text
+defaultPlayTokenUrl = "https://oauth2.googleapis.com/token"
 
 -- | At most one day, so a card order expires long before the poller stops checking it at 72 hours.
 minSessionMinutes, maxSessionMinutes :: Int
@@ -157,6 +183,8 @@ knownSettings =
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
+    ("apple", ["bundle_id", "root_certificate"]),
+    ("google", ["package_name", "service_account_file"]),
     ("dev", ["chat_redeem", "accept_unverified_store_receipts"]),
     ("issuer", ["index", "private_key"])
   ]
@@ -190,14 +218,20 @@ parseConfig ini = do
   iss <- issuerSection
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
+  apple <- appleSection
+  google <- googleSection
   devRedeem <- bool "dev" "chat_redeem" False
   devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
+  when (devUnverifiedReceipts && (isJust apple || isJust google)) $
+    Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
   pure
     ServiceConfig
       { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
         btcpay = btc,
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
+        appleStore = apple,
+        playStore = google,
         issuer = iss,
         devChatRedeem = devRedeem,
         devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts
@@ -281,6 +315,18 @@ parseConfig ini = do
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost
           pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+    appleSection
+      | not (hasSection "apple") = Right Nothing
+      | otherwise = do
+          aBundleId <- required "apple" "bundle_id"
+          aRootCertificate <- T.unpack <$> required "apple" "root_certificate"
+          pure (Just AppleStoreConfig {aBundleId, aRootCertificate})
+    googleSection
+      | not (hasSection "google") = Right Nothing
+      | otherwise = do
+          gPackageName <- required "google" "package_name"
+          gServiceAccountFile <- T.unpack <$> required "google" "service_account_file"
+          pure (Just PlayStoreConfig {gPackageName, gServiceAccountFile, gApiHost = defaultPlayApiHost, gTokenUrl = defaultPlayTokenUrl})
     sessionMinutes = do
       v <- num "stripe" "session_minutes" defaultSessionMinutes
       if v >= minSessionMinutes && v <= maxSessionMinutes
