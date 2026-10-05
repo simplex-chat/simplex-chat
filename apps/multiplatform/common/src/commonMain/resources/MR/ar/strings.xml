@@ -43,7 +43,7 @@
     <string name="callstatus_accepted">قُبلت المكالمة</string>
     <string name="allow_calls_only_if">اسمح بالمكالمات فقط إذا سمحت جهة اتصالك بذلك.</string>
     <string name="allow_message_reactions_only_if">اسمح بردود الفعل على الرسائل فقط إذا سمحت جهة اتصالك بذلك.</string>
-    <string name="keychain_is_storing_securely">يتم استخدام Android Keystore لتخزين عبارة المرور بشكل آمن - فهو يسمح لخدمة الإشعارات بالعمل.</string>
+    <string name="keychain_is_storing_securely">يتم استخدام Android Keystore%s لتخزين عبارة المرور بشكل آمن - فهو يسمح لخدمة الإشعارات بالعمل.</string>
     <string name="empty_chat_profile_is_created">يتم إنشاء ملف تعريف دردشة فارغ بالاسم المقدم، ويفتح التطبيق كالمعتاد.</string>
     <string name="answer_call">أجب الاتصال</string>
     <string name="chat_preferences_always">دائمًا</string>

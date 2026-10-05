@@ -207,7 +207,7 @@ fun MainScreen() {
       SwitchingUsersView()
     }
 
-    if (unauthorized.value && !(chatModel.activeCallViewIsVisible.value && chatModel.showCallView.value)) {
+    if (unauthorized.value) {
       LaunchedEffect(Unit) {
         // With these constrains when user presses back button while on ChatList, activity destroys and shows auth request
         // while the screen moves to a launcher. Detect it and prevent showing the auth
@@ -221,7 +221,8 @@ fun MainScreen() {
         SplashView(true)
         ModalManager.fullscreen.showPasscodeInView()
       }
-    } else {
+    }
+    if (!unauthorized.value || chatModel.activeCallViewIsVisible.value) {
       if (chatModel.showCallView.value) {
         if (appPlatform.isAndroid) {
           LaunchedEffect(Unit) {
@@ -235,6 +236,8 @@ fun MainScreen() {
           ActiveCallView()
         }
       }
+    }
+    if (!unauthorized.value) {
       ModalManager.fullscreen.showOneTimePasscodeInView()
       AlertManager.privacySensitive.showInView()
       if (onboarding == OnboardingStage.OnboardingComplete) {

@@ -74,6 +74,10 @@ See [`getDocumentsDirectory()`](../SimpleXChat/FileUtils.swift#L47) and [`getGro
 
 The container choice is stored in `dbContainerGroupDefault` (`GroupDefaults`).
 
+### Backup Exclusion
+
+`isExcludedFromBackup` is set on both containers by [`excludeAppDataFromBackup()`](../SimpleXChat/FileUtils.swift#L69-L79), which is called from [`prepareForLaunch()`](../Shared/AppDelegate.swift#L124-L127) on each app launch. Files that the app, NSE and SE create or replace in these directories later are excluded as well.
+
 ---
 
 ## 3. Haskell Store Modules
@@ -130,6 +134,7 @@ Migration results are decoded in Swift as `DBMigrationResult`:
 - `.errorMigration(dbFile:, migrationError:)` -- migration failed
 - `.errorSQL(dbFile:, migrationSQLError:)` -- SQL error during migration
 - `.errorKeychain` -- keychain access failed
+- `.errorKeyGeneration` -- random database key generation failed
 - `.unknown(json:)` -- unrecognized response
 
 ---

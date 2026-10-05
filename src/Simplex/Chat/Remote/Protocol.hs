@@ -40,7 +40,8 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types (BoolDef (..))
-import Simplex.FileTransfer.Description (FileDigest (..))
+import Simplex.FileTransfer.Description (FileDigest (..), mb)
+import Simplex.Messaging.Compression (limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Lazy (LazyByteString)
@@ -180,7 +181,7 @@ sendRemoteCommand RemoteHostClient {httpClient, hostEncoding, encryption} file_ 
   encFile_ <- mapM (prepareEncryptedFile sfKN) file_
   let req = httpRequest encFile_ encCmd
   HTTP2Response {response, respBody} <- liftError' (RPEHTTP2 . tshow) $ sendRequestDirect httpClient req Nothing
-  (rfKN, header, getNext) <- parseDecryptHTTP2Body encryption response respBody
+  (rfKN, header, getNext) <- parseDecryptHTTP2Body maxResponseBodySize encryption response respBody
   rr <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecodeStrict header >>= JT.parseEither J.parseJSON . convertJSON hostEncoding localEncoding
   pure (rfKN, getNext, rr)
   where
@@ -273,9 +274,15 @@ encryptEncodeHTTP2Body corrId cmdKN RemoteCrypto {sessionCode, signatures, compr
     sign :: C.PrivateKeyEd25519 -> CH.Context SHA512 -> ByteString
     sign k = C.signatureBytes . C.sign' k . BA.convert . CH.hashFinalize
 
+maxCommandBodySize :: Int
+maxCommandBodySize = mb 64
+
+maxResponseBodySize :: Int
+maxResponseBodySize = mb 512
+
 -- | Parse and decrypt HTTP2 request/response
-parseDecryptHTTP2Body :: HTTP2BodyChunk a => RemoteCrypto -> a -> HTTP2Body -> ExceptT RemoteProtocolError IO (C.SbKeyNonce, ByteString, Int -> IO ByteString)
-parseDecryptHTTP2Body rc@RemoteCrypto {sessionCode, signatures, compression} hr HTTP2Body {bodyBuffer} = do
+parseDecryptHTTP2Body :: HTTP2BodyChunk a => Int -> RemoteCrypto -> a -> HTTP2Body -> ExceptT RemoteProtocolError IO (C.SbKeyNonce, ByteString, Int -> IO ByteString)
+parseDecryptHTTP2Body maxSize rc@RemoteCrypto {sessionCode, signatures, compression} hr HTTP2Body {bodyBuffer} = do
   (corrId, ct) <- getBody
   (cmdKN, rfKN) <- ExceptT $ atomically $ getRemoteRcvKeys rc corrId
   s <- liftError PRERemoteControl $ RC.rcDecryptBody cmdKN ct
@@ -287,7 +294,7 @@ parseDecryptHTTP2Body rc@RemoteCrypto {sessionCode, signatures, compression} hr 
       corrIdStr <- liftIO $ getNext 4
       ctLenStr <- liftIO $ getNext 4
       let ctLen = decodeWord32 ctLenStr
-      when (ctLen > fromIntegral (maxBound :: Int)) $ throwError RPEInvalidSize
+      when (ctLen > fromIntegral maxSize) $ throwError RPEInvalidSize
       chunks <- liftIO $ getLazy $ fromIntegral ctLen
       let hc = CH.hashUpdates (CH.hashInit @SHA512) [corrIdStr, ctLenStr]
           hc' = CH.hashUpdates hc chunks
@@ -330,8 +337,5 @@ parseDecryptHTTP2Body rc@RemoteCrypto {sessionCode, signatures, compression} hr 
     getNext sz = getBuffered bodyBuffer sz Nothing $ getBodyChunk hr
     decompress :: LazyByteString -> ExceptT RemoteProtocolError IO ByteString
     decompress s
-      | compression = case Z1.decompress $ LB.toStrict s of
-          Z1.Error e -> throwError $ RPEInvalidBody e
-          Z1.Skip -> pure B.empty
-          Z1.Decompress s' -> pure s'
+      | compression = liftEitherWith RPEInvalidBody $ limitDecompress' maxSize $ LB.toStrict s
       | otherwise = pure $ LB.toStrict s

@@ -147,7 +147,7 @@
     <string name="network_smp_proxy_mode_always_description">Brug altid privat routing.</string>
     <string name="always_use_relay">Brug altid relæ</string>
     <string name="rcv_group_and_other_events">og %d andre begivenheder</string>
-    <string name="keychain_is_storing_securely">Android Keystore bruges til sikkert at opbevare adgangssæt - det giver Notification Service mulighed for at arbejde.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s bruges til sikkert at opbevare adgangssæt - det giver Notification Service mulighed for at arbejde.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore vil blive brugt til sikkert at gemme adgangssæt, når du genstarter appen eller skifter adgangssætning - det giver mulighed for at modtage meddelelser.</string>
     <string name="empty_chat_profile_is_created">En tom chatprofil med det angivne navn oprettes, og appen åbnes som sædvanligt.</string>
     <string name="connect__a_new_random_profile_will_be_shared">En ny tilfældig profil deles.</string>

@@ -148,7 +148,7 @@
     <string name="allow_irreversible_message_deletion_only_if">대화 상대가 허용하는 경우에만 영구적인 메시지 삭제를 허용합니다. (24 시간)</string>
     <string name="all_your_contacts_will_remain_connected">모든 대화 상대가 연결된 상태로 유지됩니다.</string>
     <string name="notifications_mode_service">항상 켜기</string>
-    <string name="keychain_is_storing_securely">Android 암호 저장소는 암호를 안전하게 저장하는 데 사용됩니다 - 알림 서비스가 작동할 수 있습니다.</string>
+    <string name="keychain_is_storing_securely">Android 암호 저장소%s는 암호를 안전하게 저장하는 데 사용됩니다 - 알림 서비스가 작동할 수 있습니다.</string>
     <string name="keychain_allows_to_receive_ntfs">앱을 다시 시작하거나 암호를 변경한 후 Android 암호 저장소를 사용하여 암호를 안전하게 저장합니다. - 알림을 받을 수 있습니다.</string>
     <string name="notifications_mode_off_desc">앱이 실행 중일 때만 알림을 받을 수 있으며, 백그라운드 서비스는 시작되지 않습니다.</string>
     <string name="full_backup">앱 데이터 백업</string>

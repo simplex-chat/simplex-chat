@@ -94,7 +94,7 @@
     <string name="full_backup">備份應用程式資料</string>
     <string name="settings_section_title_icon">應用程式圖示</string>
     <string name="chat_database_imported">已匯入對話資料庫</string>
-    <string name="keychain_is_storing_securely">Android 金鑰庫是用於安全地儲存密碼 - 確保通知推送服務的運作。</string>
+    <string name="keychain_is_storing_securely">Android 金鑰庫%s是用於安全地儲存密碼 - 確保通知推送服務的運作。</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>請注意</b>：如果你忘記了密碼你將不能再次復原或修改密碼。]]></string>
     <string name="keychain_allows_to_receive_ntfs">當你重新啟動應用程式或修改密碼後， Android 金鑰庫將用來安全地儲存密碼 - 將允許接收訊息通知。</string>
     <string name="chat_is_stopped_indication">聊天已停止</string>

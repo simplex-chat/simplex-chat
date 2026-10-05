@@ -1,5 +1,6 @@
 package chat.simplex.common.platform
 
+import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.chatlist.acceptContactRequest
@@ -96,6 +97,7 @@ abstract class NtfManager {
   }
 
   fun acceptCallAction(chatId: ChatId) {
+    AppLock.recheckAuthState()
     chatModel.clearOverlays.value = true
     val invitation = chatModel.callInvitations[chatId]
     if (invitation == null) {

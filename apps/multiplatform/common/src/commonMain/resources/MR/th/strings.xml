@@ -23,7 +23,7 @@
     <string name="color_primary_variant">เน้นสีเพิ่มเติม</string>
     <string name="settings_section_title_icon">ไอคอนแอป</string>
     <string name="v5_0_app_passcode">รหัสผ่านแอป</string>
-    <string name="keychain_is_storing_securely">Android Keystore ใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัย - ซึ่งจะช่วยให้บริการแจ้งเตือนทำงานได้</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s ใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัย - ซึ่งจะช่วยให้บริการแจ้งเตือนทำงานได้</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore จะถูกใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัยหลังจากที่คุณรีสตาร์ทแอปหรือเปลี่ยนรหัสผ่าน - ซึ่งจะอนุญาตให้รับบริการแจ้งเตือนได้</string>
     <string name="app_version_code">รุ่นแอป: %s</string>
     <string name="full_backup">การสํารองข้อมูลแอป</string>

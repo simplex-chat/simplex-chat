@@ -78,7 +78,7 @@
     <string name="allow_your_contacts_to_send_voice_messages">Позволи на вашите контакти да изпращат гласови съобщения.</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Всички ваши контакти ще останат свързани. Актуализацията на профила ще бъде изпратена до вашите контакти.</string>
     <string name="notifications_mode_service">Винаги включен</string>
-    <string name="keychain_is_storing_securely">Android Keystore се използва за сигурно съхраняване на паролата - тоа позволява на услугата за известия да работи.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s се използва за сигурно съхраняване на паролата - тоа позволява на услугата за известия да работи.</string>
     <string name="empty_chat_profile_is_created">Създаен беше празен профил за чат с предоставеното име и приложението се отвари както обикновено.</string>
     <string name="notifications_mode_off_desc">Приложението може да получава известия само когато работи, няма да се стартира услуга във фонов режим</string>
     <string name="settings_section_title_icon">Икона на приложението</string>

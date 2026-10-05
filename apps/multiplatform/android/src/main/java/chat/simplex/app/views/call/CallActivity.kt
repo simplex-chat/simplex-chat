@@ -36,6 +36,7 @@ import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
+import chat.simplex.common.AppLock
 import chat.simplex.common.helpers.applyAppLocale
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -342,7 +343,10 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
       chatModel.activeCallInvitation.value = null
       ntfManager.cancelCallNotification()
     },
-    acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
+    acceptCall = {
+      AppLock.recheckAuthState()
+      cm.acceptIncomingCall(invitation = invitation)
+    },
     openApp = {
       val intent = Intent(context, MainActivity::class.java)
         .setAction(NtfManager.OpenChatAction)
@@ -376,8 +380,12 @@ fun IncomingCallLockScreenAlertLayout(
     IncomingCallInfo(invitation, chatModel)
     Spacer(Modifier.fillMaxHeight().weight(1f))
     if (callOnLockScreen == CallOnLockScreen.ACCEPT) {
-      ProfileImage(size = 192.dp, image = invitation.contact.profile.image)
-      Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
+      if (chatModel.controller.appPrefs.notificationPreviewMode.get() == NotificationPreviewMode.HIDDEN.name) {
+        ProfileImage(size = 192.dp)
+      } else {
+        ProfileImage(size = 192.dp, image = invitation.contact.profile.image)
+        Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
+      }
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
         LockScreenCallButton(stringResource(MR.strings.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
