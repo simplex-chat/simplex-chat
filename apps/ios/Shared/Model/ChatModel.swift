@@ -727,7 +727,7 @@ final class ChatModel: ObservableObject {
         }
         // add to current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            _ = _upsertChatItem(ciIM, cInfo, cItem)
+            _ = _upsertChatItem(ciIM, cInfo, cItem, add: true)
         }
     }
 
@@ -757,10 +757,12 @@ final class ChatModel: ObservableObject {
     func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         // update chat list
         var itemAdded: Bool = false
+        var lastItemId: Int64 = 0
         if cInfo.groupChatScope() == nil {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
-                    if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                    lastItemId = pItem.id
+                    if pItem.id == cItem.id || (chatId == cInfo.id && cItem.id > pItem.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
                         chat.chatItems = [cItem]
                     }
                 } else {
@@ -776,12 +778,14 @@ final class ChatModel: ObservableObject {
         }
         // update current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            itemAdded = _upsertChatItem(ciIM, cInfo, cItem)
+            // an update of an earlier item that is not loaded is not added, it is shown when loaded
+            let add = cItem.id > max(lastItemId, ciIM.reversedChatItems.lazy.map(\.id).max() ?? 0)
+            itemAdded = _upsertChatItem(ciIM, cInfo, cItem, add: add)
         }
         return itemAdded
     }
 
-    private func _upsertChatItem(_ ciIM: ItemsModel, _ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+    private func _upsertChatItem(_ ciIM: ItemsModel, _ cInfo: ChatInfo, _ cItem: ChatItem, add: Bool) -> Bool {
         if let i = getChatItemIndex(ciIM, cItem) {
             let oldStatus = ciIM.reversedChatItems[i].meta.itemStatus
             let newStatus = cItem.meta.itemStatus
@@ -792,12 +796,14 @@ final class ChatModel: ObservableObject {
             _updateChatItem(ciIM: ciIM, at: i, with: ci)
             ChatItemDummyModel.shared.sendUpdate() // TODO [knocking] review what's this
             return false
-        } else {
+        } else if add {
             ciIM.reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
             ciIM.chatState.itemAdded((cItem.id, cItem.isRcvNew), hasLiveDummy ? 1 : 0)
             ciIM.itemAdded = true
             ChatItemDummyModel.shared.sendUpdate()
             return true
+        } else {
+            return false
         }
 
         func itemAnimation() -> Animation? {
