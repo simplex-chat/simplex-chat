@@ -3,6 +3,8 @@ package chat.simplex.common
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.dataDir
+import chat.simplex.common.platform.desktopPlatform
+import com.sun.jna.NativeLibrary
 import java.io.IOException
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
@@ -55,6 +57,7 @@ fun acquireSingleInstance(appLink: String?): Boolean {
       return true
     }
     LockResult.Taken -> {
+      if (desktopPlatform.isWindows()) allowPrimaryForeground()
       signalRunningInstance(dataDir.toPath(), appLink)
       // a signal still present after 1 s means the running instance is hung, so the user decides
       val deadline = System.currentTimeMillis() + 1000
@@ -161,6 +164,20 @@ internal fun takeSignal(dir: Path): ShowSignal? {
     deleteSignalFile(taken)
   }
   return ShowSignal(bytes?.toString(Charsets.UTF_8)?.takeIf(::isAcceptedAppLink))
+}
+
+// Win32 ASFW_ANY lets every process take the foreground
+private const val ASFW_ANY = -1
+
+// Windows lets only the foreground process raise a window; the launching browser passed that right to this process.
+private fun allowPrimaryForeground() {
+  val allowed = try {
+    NativeLibrary.getInstance("user32").getFunction("AllowSetForegroundWindow").invokeInt(arrayOf<Any>(ASFW_ANY)) != 0
+  } catch (e: UnsatisfiedLinkError) {
+    Log.w(TAG, "single-instance: AllowSetForegroundWindow unavailable: ${e.message}")
+    return
+  }
+  if (!allowed) Log.w(TAG, "single-instance: AllowSetForegroundWindow refused")
 }
 
 private fun showSingleInstanceAlert(): Boolean {
