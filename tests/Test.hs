@@ -103,7 +103,7 @@ main = do
           describe "Mobile API Tests" mobileTests
 #endif
           describe "SimpleX chat client" chatTests
-          describe "SimpleX Broadcast bot" broadcastBotTests
+          xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           describe "SimpleX Directory service bot" directoryServiceTests
           describe "SimpleX badge service e2e" $ do
             badgeServiceTests

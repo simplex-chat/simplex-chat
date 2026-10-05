@@ -67,7 +67,7 @@ import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
-import System.Directory (createDirectoryIfMissing, listDirectory, removeDirectoryRecursive, removePathForcibly)
+import System.Directory (createDirectoryIfMissing, listDirectory, removePathForcibly)
 import System.FilePath ((</>))
 import qualified System.Terminal as C
 import System.Terminal.Internal (Command (..), Terminal (..), VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
@@ -507,8 +507,10 @@ enableNamesRole TestCC {chatController = cc} = do
 withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
-    (createDirectoryIfMissing False "tests/tmp" >> listDirectory "tests/tmp" >>= mapM_ (removePathForcibly . ("tests/tmp" </>)))
-    (removeDirectoryRecursive "tests/tmp")
+    (createDirectoryIfMissing False "tests/tmp" >> clearTmp)
+    clearTmp
+  where
+    clearTmp = listDirectory "tests/tmp" >>= mapM_ (removePathForcibly . ("tests/tmp" </>))
 
 newPortBases :: IO (TVar [Int])
 newPortBases = newTVarIO [7000, 7010 .. 8990]

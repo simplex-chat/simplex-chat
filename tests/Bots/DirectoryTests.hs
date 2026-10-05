@@ -11,6 +11,7 @@ import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent.STM (atomically, peekTQueue)
 import Control.Exception (finally)
 import Control.Monad (forM_, when, void)
 import qualified Data.Aeson as J
@@ -32,6 +33,7 @@ import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), 
 import Simplex.Messaging.Version
 import NameResolver
 import System.FilePath ((</>))
+import System.Timeout (timeout)
 import Test.Hspec hiding (it)
 
 directoryServiceTests :: SpecWith TestParams
@@ -185,8 +187,8 @@ testDirectoryService ps =
         notifySuperUser_ superUser bob "PSA" "Privacy, Security & Anonymity" Nothing 1 1
         -- putStrLn "*** update profile before approval - new approval code"
         updateGroupProfile bob "Welcome!"
-        groupUpdatedHidden superUser bob "PSA" ""
-        notifySuperUser_ superUser bob "PSA" "Privacy, Security & Anonymity" (Just "Welcome!") 1 2
+        groupUpdatedHidden superUser bob "PSA" "" $
+          notifySuperUser_ superUser bob "PSA" "Privacy, Security & Anonymity" (Just "Welcome!") 1 2
         -- putStrLn "*** try approving with the old registration code"
         bob #> "@'SimpleX Directory' /approve 1:PSA 1"
         bob <# "'SimpleX Directory'> > /approve 1:PSA 1"
@@ -472,8 +474,8 @@ testSearchByLink ps =
       memberGroupListing superUser bob 1 "privacy" "Privacy" 2 "active"
       -- content change hides the group from user search, admin still finds it by link
       setWelcomeMessage bob [] "Welcome!"
-      groupUpdatedHidden superUser bob "privacy" ""
-      notifySuperUser_ superUser bob "privacy" "Privacy" (Just "Welcome!") 1 1
+      groupUpdatedHidden superUser bob "privacy" "" $
+        notifySuperUser_ superUser bob "privacy" "Privacy" (Just "Welcome!") 1 1
       bob #> ("@'SimpleX Directory' " <> link)
       bob <# ("'SimpleX Directory'> > " <> link)
       bob <## "      No groups found."
@@ -874,7 +876,7 @@ testNotSentApprovalBadRoles ps =
         bob <## "#privacy: you changed the role of 'SimpleX Directory' to member (signed)"
         bob ##> "/gp privacy privacy Privacy!"
         bob <## "description changed to: Privacy!"
-        groupUpdatedHidden superUser bob "privacy" ""
+        groupUpdatedHidden superUser bob "privacy" "" $ pure ()
         bob <# "'SimpleX Directory'> You must grant directory service admin role to register the group"
         bob ##> "/mr privacy 'SimpleX Directory' admin"
         bob <## "#privacy: you changed the role of 'SimpleX Directory' to admin (signed)"
@@ -930,8 +932,7 @@ testRegOwnerChangedProfile ps =
         cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         cath <## "use @'SimpleX Directory' <message> to send messages"
         groupNotFound cath "privacy"
-        superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated."
-        reapproveGroup 3 superUser bob
+        reapproveGroup 3 superUser bob ""
         groupFoundN 3 cath "privacy"
 
 testAnotherOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
@@ -952,8 +953,7 @@ testAnotherOwnerChangedProfile ps =
         bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath!"
         bob <## "It is hidden from the directory until approved."
         groupNotFound cath "privacy"
-        superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath."
-        reapproveGroup 3 superUser bob
+        reapproveGroup 3 superUser bob " by cath"
         groupFoundN 3 cath "privacy"
 
 testNotConnectedOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
@@ -973,8 +973,7 @@ testNotConnectedOwnerChangedProfile ps =
           bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath!"
           bob <## "It is hidden from the directory until approved."
           groupNotFound dan "privacy"
-          superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath."
-          reapproveGroup 3 superUser bob
+          reapproveGroup 3 superUser bob " by cath"
           groupFoundN 3 dan "privacy"
 
 testRegOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
@@ -987,8 +986,8 @@ testRegOwnerRemovedLink ps =
         addCathAsOwner bob cath
         -- setting the welcome message requires re-approval
         setWelcomeMessage bob [cath] "Welcome!"
-        groupUpdatedHidden superUser bob "privacy" ""
-        reapproveGroup_ 3 superUser bob (Just "Welcome!")
+        groupUpdatedHidden superUser bob "privacy" "" $ reapprovalRequested 3 superUser (Just "Welcome!")
+        void $ approveRegistration_ superUser bob "privacy" 1 1 1
         -- adding the link keeps the group listed
         gLink <- getGroupLinkFromBot bob
         setWelcomeMessage bob [cath] ("Welcome! Link to join the group privacy: " <> gLink)
@@ -1014,8 +1013,8 @@ testAnotherOwnerRemovedLink ps =
         cath <## "use @'SimpleX Directory' <message> to send messages"
         -- setting the welcome message requires re-approval
         setWelcomeMessage cath [bob] "Welcome!"
-        groupUpdatedHidden superUser bob "privacy" " by cath"
-        reapproveGroup_ 3 superUser bob (Just "Welcome!")
+        groupUpdatedHidden superUser bob "privacy" " by cath" $ reapprovalRequested 3 superUser (Just "Welcome!")
+        void $ approveRegistration_ superUser bob "privacy" 1 1 1
         -- another owner adds the link - the group remains listed
         gLink <- getGroupLinkFromBot bob
         setWelcomeMessage cath [bob] ("Welcome! Link to join the group privacy: " <> gLink)
@@ -1037,9 +1036,9 @@ testNotConnectedOwnerRemovedLink ps =
           addCathAsOwner bob cath
           -- setting the welcome message requires re-approval
           setWelcomeMessage cath [bob] "Welcome!"
-          groupUpdatedHidden superUser bob "privacy" " by cath"
+          groupUpdatedHidden superUser bob "privacy" " by cath" $ reapprovalRequested 3 superUser (Just "Welcome!")
           groupNotFound dan "privacy"
-          reapproveGroup_ 3 superUser bob (Just "Welcome!")
+          void $ approveRegistration_ superUser bob "privacy" 1 1 1
           -- the not connected owner adds the link - the group remains listed
           gLink <- getGroupLinkFromBot bob
           setWelcomeMessage cath [bob] ("Welcome! Link to join the group privacy: " <> gLink)
@@ -1125,8 +1124,8 @@ testDuplicateProhibitWhenUpdated ps =
         cath <## "changed to #security (Security)"
         cath <# "'SimpleX Directory'> The group ID 1 (security) is updated!"
         cath <## "It is hidden from the directory until approved."
-        superUser <# "'SimpleX Directory'> The group ID 2 (security) is updated."
-        notifySuperUser_ superUser cath "security" "Security" Nothing 2 2
+        noticeAndRequest superUser "'SimpleX Directory'> The group ID 2 (security) is updated." $
+          notifySuperUser_ superUser cath "security" "Security" Nothing 2 2
         void $ approveRegistration_ superUser cath "security" 2 1 2
         groupFound bob "security"
         groupFound cath "security"
@@ -1197,13 +1196,13 @@ testListUserGroups promote ps =
           bob <## "description removed"
           cath <## "bob updated group #privacy: (signed)"
           cath <## "description removed"
-          groupUpdatedHidden superUser bob "privacy" ""
-          superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
-          superUser <## "privacy"
-          superUser <## "3 members"
-          superUser <## ""
-          superUser <## "To approve send:"
-          superUser <# "'SimpleX Directory'> /approve 1:privacy 1 promote=on"
+          groupUpdatedHidden superUser bob "privacy" "" $ do
+            superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
+            superUser <## "privacy"
+            superUser <## "3 members"
+            superUser <## ""
+            superUser <## "To approve send:"
+            superUser <# "'SimpleX Directory'> /approve 1:privacy 1 promote=on"
           checkListings webDir ["security"] []
           superUser #> "@'SimpleX Directory' /approve 1:privacy 1"
           superUser <# "'SimpleX Directory'> > /approve 1:privacy 1"
@@ -1739,11 +1738,14 @@ groupListing_ su owner_ gId n fn count status = do
   su <## ("Status: " <> status)
   su <## ("/'role " <> show gId <> "', /'filter " <> show gId <> "'")
 
-reapproveGroup :: HasCallStack => Int -> TestCC -> TestCC -> IO ()
-reapproveGroup count superUser bob = reapproveGroup_ count superUser bob Nothing
+reapproveGroup :: HasCallStack => Int -> TestCC -> TestCC -> String -> IO ()
+reapproveGroup count superUser bob byMember = do
+  noticeAndRequest superUser ("'SimpleX Directory'> The group ID 1 (privacy) is updated" <> byMember <> ".") $
+    reapprovalRequested count superUser Nothing
+  void $ approveRegistration_ superUser bob "privacy" 1 1 1
 
-reapproveGroup_ :: HasCallStack => Int -> TestCC -> TestCC -> Maybe String -> IO ()
-reapproveGroup_ count superUser bob welcome_ = do
+reapprovalRequested :: HasCallStack => Int -> TestCC -> Maybe String -> IO ()
+reapprovalRequested count superUser welcome_ = do
   superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
   superUser <##. "privacy ("
   forM_ welcome_ $ \welcome -> do
@@ -1753,10 +1755,6 @@ reapproveGroup_ count superUser bob welcome_ = do
   superUser <## ""
   superUser <## "To approve send:"
   superUser <# "'SimpleX Directory'> /approve 1:privacy 1"
-  superUser #> "@'SimpleX Directory' /approve 1:privacy 1"
-  superUser <# "'SimpleX Directory'> > /approve 1:privacy 1"
-  superUser <## "      Group approved!"
-  void $ groupApprovedNotification bob "privacy" 1
 
 addCathAsOwner :: HasCallStack => TestCC -> TestCC -> IO ()
 addCathAsOwner bob cath = do
@@ -1902,11 +1900,22 @@ groupApprovedNotification u n ugId = do
   u <## ("/'link " <> show ugId <> "' - to view group link.")
   dropStrPrefix "'SimpleX Directory'> " . dropTime <$> getTermLine u
 
-groupUpdatedHidden :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
-groupUpdatedHidden superUser u n byMember = do
+groupUpdatedHidden :: HasCallStack => TestCC -> TestCC -> String -> String -> IO () -> IO ()
+groupUpdatedHidden superUser u n byMember approvalRequest = do
   u <# ("'SimpleX Directory'> The group ID 1 (" <> n <> ") is updated" <> byMember <> "!")
   u <## "It is hidden from the directory until approved."
-  superUser <# ("'SimpleX Directory'> The group ID 1 (" <> n <> ") is updated" <> byMember <> ".")
+  noticeAndRequest superUser ("'SimpleX Directory'> The group ID 1 (" <> n <> ") is updated" <> byMember <> ".") approvalRequest
+
+noticeAndRequest :: HasCallStack => TestCC -> String -> IO () -> IO ()
+noticeAndRequest su notice request = do
+  noticeFirst <- (notice ==) . dropTime <$> peekTermLine su
+  if noticeFirst
+    then su <# notice >> request
+    else request >> su <# notice
+
+peekTermLine :: HasCallStack => TestCC -> IO String
+peekTermLine cc =
+  20000000 `timeout` atomically (peekTQueue $ termQ cc) >>= maybe (error "no output for 20 seconds") pure
 
 groupUpdatedListed :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
 groupUpdatedListed superUser u n byMember = do
@@ -2151,15 +2160,15 @@ testRegisterChannelViaCard ps =
         bob <## "It is hidden from the directory until approved."
         relay <## "bob updated group #news: (signed)"
         relay <## "description changed to: News and Updates"
-        superUser <# "'SimpleX Directory'> The channel ID 1 (news) is updated."
-        superUser <# ("'SimpleX Directory'> bob submitted the channel ID 1:")
-        superUser <## "news (News and Updates)"
-        superUser <##. "Link to join channel: "
-        superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "2 subscribers"
-        superUser <## ""
-        superUser <## "To approve send:"
-        superUser <# "'SimpleX Directory'> /approve 1:news 1"
+        noticeAndRequest superUser "'SimpleX Directory'> The channel ID 1 (news) is updated." $ do
+          superUser <# ("'SimpleX Directory'> bob submitted the channel ID 1:")
+          superUser <## "news (News and Updates)"
+          superUser <##. "Link to join channel: "
+          superUser <## "You need SimpleX Chat app v6.5 to join."
+          superUser <## "2 subscribers"
+          superUser <## ""
+          superUser <## "To approve send:"
+          superUser <# "'SimpleX Directory'> /approve 1:news 1"
         -- re-approve after profile update
         let approve2 = "/approve 1:news 1"
         superUser #> ("@'SimpleX Directory' " <> approve2)
