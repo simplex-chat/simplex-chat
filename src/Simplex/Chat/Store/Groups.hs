@@ -231,7 +231,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Badges (BadgeProof, BadgeProofKind (..), BadgeRow, ProofPresHeader, acceptedProof, badgeProofToRow, badgeToRow)
+import Simplex.Chat.Badges (BadgeProof, BadgeRow, ProofPresHeader, acceptedProof, badgeProofToRow, badgeToRow)
 import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
@@ -3475,7 +3475,7 @@ setMemberBadgeProof :: DB.Connection -> GroupMember -> Maybe ProofPresHeader -> 
 setMemberBadgeProof db m@GroupMember {groupMemberId} presHeader_ Profile {badge} = case badge of
   Just b | not (acceptedProof presHeader_ b) -> pure m
   _ -> do
-    DB.execute db "DELETE FROM file_badge_proofs WHERE group_member_id = ?" (Only groupMemberId)
+    DB.execute db "DELETE FROM group_member_badge_proofs WHERE group_member_id = ?" (Only groupMemberId)
     forM_ badge $ createMemberBadgeProof db groupMemberId
     pure m {memberBadgeProof = NoJSON badge}
 
@@ -3484,8 +3484,8 @@ createMemberBadgeProof db groupMemberId badge = do
   currentTs <- getCurrentTime
   DB.execute
     db
-    "INSERT INTO file_badge_proofs (group_member_id, proof_kind, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
-    ((groupMemberId, BPKMember) :. badgeProofToRow badge :. (currentTs, currentTs))
+    "INSERT INTO group_member_badge_proofs (group_member_id, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+    (Only groupMemberId :. badgeProofToRow badge :. (currentTs, currentTs))
 
 getXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO Bool
 getXGrpLinkMemReceived db mId =

@@ -143,18 +143,16 @@ instance TextEncoding BadgeStatus where
 
 -- Badge proof kind - a file has at most one proof of each kind
 
-data BadgeProofKind = BPKInvitation | BPKDescription | BPKMember
+data BadgeProofKind = BPKInvitation | BPKDescription
   deriving (Eq, Show)
 
 instance TextEncoding BadgeProofKind where
   textEncode = \case
     BPKInvitation -> "inv"
     BPKDescription -> "descr"
-    BPKMember -> "member"
   textDecode = \case
     "inv" -> Just BPKInvitation
     "descr" -> Just BPKDescription
-    "member" -> Just BPKMember
     _ -> Nothing
 
 -- Disclosed badge content (BBS messages 1, 2, 3)

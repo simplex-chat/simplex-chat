@@ -18,7 +18,7 @@ The changes:
 5. Forwarding a file above the forwarder's limit is refused with an alert before the forwarding sheet opens, and again, for the chosen destination, before anything is uploaded.
 6. A received file keeps its two proofs, so a file re-sent to a new member as part of history keeps them; the sender's own files get fresh proofs from the credential.
 
-Two new columns on `files`, and a new table `file_badge_proofs` holding the invitation proof and the description proof of a file, kept for history. The same table holds the proof of a group member, forwarded in channel introductions. A new column on `connections`, the request header of a prepared connection. The relay invitation includes the channel's public group id and the owner's member key. In simplexmq: the hash of the fields shared by all descriptions of one upload, the verification codes of a connection, links and invitations before link data is signed, and the minimum SMP version raised to 15.
+Two new columns on `files`, and a new table `file_badge_proofs` holding the invitation proof and the description proof of a file, kept for history. A new table `group_member_badge_proofs` holding the proof a member presented in a group, forwarded in channel introductions. A new column on `connections`, the request header of a prepared connection. The relay invitation includes the channel's public group id and the owner's member key. In simplexmq: the hash of the fields shared by all descriptions of one upload, the verification codes of a connection, links and invitations before link data is signed, and the minimum SMP version raised to 15.
 
 ## Terms
 
@@ -518,37 +518,27 @@ ALTER TABLE connections ADD COLUMN pres_header BLOB;
 
 **11. Member proofs** — `Badges.hs`, `Types.hs`, `Types/Preferences.hs`, `Store/Shared.hs`, `Store/Groups.hs`, `Store/Connections.hs`, `Internal.hs`, `Subscriber.hs`
 
-A member's accepted proof is stored on the membership, in `file_badge_proofs`, and forwarded in channel introductions. The badge in the profile row is kept for display.
+A member's accepted proof is stored on the membership, in `group_member_badge_proofs`, and forwarded in channel introductions. The badge in the profile row is kept for display: the profile row of a member linked to a contact is the contact's.
 
 Migration `M20260925_badge_bindings`, after the statement of item 6, SQLite:
 
 ```sql
-PRAGMA writable_schema=1;
-
-UPDATE sqlite_master
-SET sql = replace(sql, 'file_id INTEGER NOT NULL REFERENCES files', 'file_id INTEGER REFERENCES files')
-WHERE name = 'file_badge_proofs' AND type = 'table';
-
-PRAGMA writable_schema=RESET;
-
-ALTER TABLE file_badge_proofs ADD COLUMN group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE;
-
-CREATE UNIQUE INDEX idx_file_badge_proofs_group_member_id ON file_badge_proofs(group_member_id);
+CREATE TABLE group_member_badge_proofs(
+  group_member_id INTEGER PRIMARY KEY REFERENCES group_members ON DELETE CASCADE,
+  badge_proof BLOB NOT NULL,
+  badge_pres_header BLOB NOT NULL,
+  badge_key_idx INTEGER NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_expiry TEXT NOT NULL,
+  badge_extra TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
 ```
 
-Postgres:
+Postgres: `BIGINT`, `BYTEA` and `TIMESTAMPTZ`. Both schema dumps and `chat_query_plans.txt` are updated.
 
-```sql
-ALTER TABLE file_badge_proofs ALTER COLUMN file_id DROP NOT NULL;
-
-ALTER TABLE file_badge_proofs ADD COLUMN group_member_id BIGINT REFERENCES group_members ON DELETE CASCADE;
-
-CREATE UNIQUE INDEX idx_file_badge_proofs_group_member_id ON file_badge_proofs(group_member_id);
-```
-
-In the down migration, member rows are deleted before `file_id` is `NOT NULL` again. Both schema dumps and `chat_query_plans.txt` are updated.
-
-- A member row has `group_member_id` set, `file_id` NULL, and `proof_kind` `member`: `BPKMember` in `BadgeProofKind`. It is ignored by `getFileBadgeProofs`.
+- One row per member, keyed by the member id, as `rcv_files` is keyed by the file id.
 - `MaybeBadgeProofRow` and `maybeRowToBadgeProof` in `Badges.hs`: the six proof columns of a `LEFT JOIN`.
 - `PrefsJSON` is generalised:
 
@@ -561,7 +551,7 @@ In the down migration, member rows are deleted before `file_id` is `NOT NULL` ag
   The field is omitted by `ToJSON`; `NoJSON Nothing` is returned by `FromJSON`. `NoJSON` is used at the construction sites.
 - `GroupMember` gains `memberBadgeProof :: NoJSON BadgeProof`. It is removed from the bot API docs: `removeField "memberBadgeProof" $ sti @GroupMember`.
 - Reads:
-  - The proof columns are selected by `groupMemberQuery` after the connection columns, with `LEFT JOIN file_badge_proofs bp ON bp.group_member_id = m.group_member_id`; the field is set by `toContactMember`.
+  - The proof columns are selected by `groupMemberQuery` after the connection columns, with `LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id`; the field is set by `toContactMember`.
   - They are selected the same way by the member read of `getConnectionEntity` (`Connections.hs:145-194`); the field is set by `toGroupAndMember`.
   - `NoJSON Nothing` is set by `toGroupMember`, for the membership, chat item members and quoted members.
 - Writes, for a received profile:

@@ -816,7 +816,7 @@ groupMemberQuery =
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
-    LEFT JOIN file_badge_proofs bp ON bp.group_member_id = m.group_member_id
+    LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
   |]
 
 toContactMember :: UTCTime -> StoreCxt -> User -> (GroupMemberRow :. MaybeConnectionRow :. MaybeBadgeProofRow) -> GroupMember

@@ -875,7 +875,7 @@ ALTER TABLE test_chat_schema.extra_xftp_file_descriptions ALTER COLUMN extra_fil
 
 CREATE TABLE test_chat_schema.file_badge_proofs (
     badge_proof_id bigint NOT NULL,
-    file_id bigint,
+    file_id bigint NOT NULL,
     proof_kind text NOT NULL,
     badge_proof bytea NOT NULL,
     badge_pres_header bytea NOT NULL,
@@ -884,8 +884,7 @@ CREATE TABLE test_chat_schema.file_badge_proofs (
     badge_expiry timestamp with time zone NOT NULL,
     badge_extra text NOT NULL,
     created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL,
-    group_member_id bigint
+    updated_at timestamp with time zone NOT NULL
 );
 
 
@@ -942,6 +941,20 @@ ALTER TABLE test_chat_schema.files ALTER COLUMN file_id ADD GENERATED ALWAYS AS 
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.group_member_badge_proofs (
+    group_member_id bigint NOT NULL,
+    badge_proof bytea NOT NULL,
+    badge_pres_header bytea NOT NULL,
+    badge_key_idx bigint NOT NULL,
+    badge_type text NOT NULL,
+    badge_expiry timestamp with time zone NOT NULL,
+    badge_extra text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
 );
 
 
@@ -1940,6 +1953,11 @@ ALTER TABLE ONLY test_chat_schema.files
 
 
 
+ALTER TABLE ONLY test_chat_schema.group_member_badge_proofs
+    ADD CONSTRAINT group_member_badge_proofs_pkey PRIMARY KEY (group_member_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.group_member_intros
     ADD CONSTRAINT group_member_intros_pkey PRIMARY KEY (group_member_intro_id);
 
@@ -2627,10 +2645,6 @@ CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON test_chat_schema.extra_
 
 
 CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON test_chat_schema.file_badge_proofs USING btree (file_id, proof_kind);
-
-
-
-CREATE UNIQUE INDEX idx_file_badge_proofs_group_member_id ON test_chat_schema.file_badge_proofs USING btree (group_member_id);
 
 
 
@@ -3330,11 +3344,6 @@ ALTER TABLE ONLY test_chat_schema.file_badge_proofs
 
 
 
-ALTER TABLE ONLY test_chat_schema.file_badge_proofs
-    ADD CONSTRAINT file_badge_proofs_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY test_chat_schema.files
     ADD CONSTRAINT files_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES test_chat_schema.contacts(contact_id) ON DELETE CASCADE;
 
@@ -3412,6 +3421,11 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.users
     ADD CONSTRAINT fk_users_display_names FOREIGN KEY (user_id, local_display_name) REFERENCES test_chat_schema.display_names(user_id, local_display_name) ON UPDATE CASCADE ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_member_badge_proofs
+    ADD CONSTRAINT group_member_badge_proofs_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 

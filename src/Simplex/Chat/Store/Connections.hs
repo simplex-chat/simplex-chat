@@ -183,7 +183,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
                 JOIN group_profiles gp USING (group_profile_id)
                 JOIN group_members mu ON g.group_id = mu.group_id
                 JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-                LEFT JOIN file_badge_proofs bp ON bp.group_member_id = m.group_member_id
+                LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
                 WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
                   AND mu.member_status NOT IN (?,?,?)
               |]

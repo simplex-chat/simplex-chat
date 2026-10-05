@@ -10,35 +10,23 @@ m20260925_badge_bindings =
   [sql|
 ALTER TABLE connections ADD COLUMN pres_header BLOB;
 
-PRAGMA writable_schema=1;
-
-UPDATE sqlite_master
-SET sql = replace(sql, 'file_id INTEGER NOT NULL REFERENCES files', 'file_id INTEGER REFERENCES files')
-WHERE name = 'file_badge_proofs' AND type = 'table';
-
-PRAGMA writable_schema=RESET;
-
-ALTER TABLE file_badge_proofs ADD COLUMN group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE;
-
-CREATE UNIQUE INDEX idx_file_badge_proofs_group_member_id ON file_badge_proofs(group_member_id);
+CREATE TABLE group_member_badge_proofs(
+  group_member_id INTEGER PRIMARY KEY REFERENCES group_members ON DELETE CASCADE,
+  badge_proof BLOB NOT NULL,
+  badge_pres_header BLOB NOT NULL,
+  badge_key_idx INTEGER NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_expiry TEXT NOT NULL,
+  badge_extra TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
 |]
 
 down_m20260925_badge_bindings :: Query
 down_m20260925_badge_bindings =
   [sql|
-DROP INDEX idx_file_badge_proofs_group_member_id;
-
-DELETE FROM file_badge_proofs WHERE group_member_id IS NOT NULL;
-
-ALTER TABLE file_badge_proofs DROP COLUMN group_member_id;
-
-PRAGMA writable_schema=1;
-
-UPDATE sqlite_master
-SET sql = replace(sql, 'file_id INTEGER REFERENCES files', 'file_id INTEGER NOT NULL REFERENCES files')
-WHERE name = 'file_badge_proofs' AND type = 'table';
-
-PRAGMA writable_schema=RESET;
+DROP TABLE group_member_badge_proofs;
 
 ALTER TABLE connections DROP COLUMN pres_header;
 |]
