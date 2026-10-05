@@ -4653,9 +4653,6 @@ MasterExists:
 BadMnemonic:
 - type: "badMnemonic"
 
-HiddenProfile:
-- type: "hiddenProfile"
-
 AccountBound:
 - type: "accountBound"
 

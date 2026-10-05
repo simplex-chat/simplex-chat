@@ -91,7 +91,6 @@ walletTests = do
   it "does not bind the next account after an import" testWalletImport
   it "the wallet, the accounts and the counter persist across a restart" testWalletPersists
   it "deletes the wallet, and a new one can be created" testWalletDelete
-  it "does not bind an account to a hidden profile" testWalletHiddenProfile
   it "exports only an account the profile holds" testWalletExportNotHeld
   it "rejects an account index at or above 2^31 on every command" testWalletIndexTooLarge
 
@@ -272,19 +271,6 @@ testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet bind 1"
   alice `accountBound` "1"
-
-testWalletHiddenProfile :: HasCallStack => TestParams -> IO ()
-testWalletHiddenProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> "/_wallet create new"
-  alice <## "wallet, next account 1, no accounts for this profile"
-  alice ##> "/create user alisa"
-  showActiveUser alice "alisa"
-  alice ##> "/hide user my_password"
-  alice <## "current user alisa:"
-  alice <## "messages are hidden (use /tail to view)"
-  alice <## "profile is hidden"
-  alice ##> "/_wallet bind 2"
-  alice <## "wallet: an account cannot be bound to a hidden profile"
 
 testWalletExportNotHeld :: HasCallStack => TestParams -> IO ()
 testWalletExportNotHeld ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do

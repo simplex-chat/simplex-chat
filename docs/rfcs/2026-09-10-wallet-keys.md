@@ -14,7 +14,6 @@ Out of scope of this doc: buying a name, the names protocol, the registrar, sign
 2. Giving away one account key gives away that account and nothing else, whatever else the recipient has.
 3. No extended public key links two accounts.
 4. Key material is generated or imported only by an explicit command, never at startup, and keys are derived only by the command that uses them.
-5. A hidden profile owns nothing on chain, so nothing on chain is linked to it.
 
 The master phrase derives every account and an account secret controls one account; no export covers anything in between, such as "this profile's accounts", because the profile is not an input to the derivation.
 
@@ -31,7 +30,7 @@ master seed               the only key material to back up
 └── m/44'/60'/n'/0/0      account n, n >= 0
 ```
 
-An account index is BIP-44's own account level, which [Ledger Live](https://github.com/LedgerHQ/ledger-live-common/blob/HEAD/docs/derivation.md) also varies and calls an account, so the master phrase imported into another wallet derives the same addresses. Other wallets reach an account above 0 only by entering the path, in a wallet that accepts one such as MEW, Rabby or Frame, or with the exported account key (known limit 7).
+An account index is BIP-44's own account level, which [Ledger Live](https://github.com/LedgerHQ/ledger-live-common/blob/HEAD/docs/derivation.md) also varies and calls an account, so the master phrase imported into another wallet derives the same addresses. Other wallets reach an account above 0 only by entering the path, in a wallet that accepts one such as MEW, Rabby or Frame, or with the exported account key (known limit 6).
 
 The tests pin the derivation against the standard `abandon ... about` test mnemonic, which is 12 words, with an empty BIP-39 passphrase. Addresses are in [EIP-55](https://eips.ethereum.org/EIPS/eip-55) mixed case.
 
@@ -46,7 +45,7 @@ The alternative is one account owning several names. A name's owner address is p
 
 ### Why the account level is hardened
 
-The alternative is BIP-44's ordinary address level, `m/44'/60'/0'/0/n`, which is what MetaMask enumerates and is therefore the friendlier path. It is not hardened, and [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) has a known weakness there: the extended public key of a parent, together with one non-hardened child's private key, yields the parent private key and from it every sibling. An exported account key is one half, and any wallet that enumerates accounts produces the other. The two levels below an account are not hardened, so the two halves together reveal the extended private key at the account level, m/44'/60'/n'; nothing else is derived under an account by this app and the account level itself is hardened, so they reveal no other account's key, except under account 0 where other wallets derive (known limit 7). This satisfies objectives 2 and 3, and it is worth the loss of MetaMask's default path.
+The alternative is BIP-44's ordinary address level, `m/44'/60'/0'/0/n`, which is what MetaMask enumerates and is therefore the friendlier path. It is not hardened, and [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) has a known weakness there: the extended public key of a parent, together with one non-hardened child's private key, yields the parent private key and from it every sibling. An exported account key is one half, and any wallet that enumerates accounts produces the other. The two levels below an account are not hardened, so the two halves together reveal the extended private key at the account level, m/44'/60'/n'; nothing else is derived under an account by this app and the account level itself is hardened, so they reveal no other account's key, except under account 0 where other wallets derive (known limit 6). This satisfies objectives 2 and 3, and it is worth the loss of MetaMask's default path.
 
 ### Why 24 words
 
@@ -58,7 +57,7 @@ An account is bound to at most one chat profile, and a profile to any number of 
 
 Accounts are allocated in order and never reused, because an account the device no longer tracks still owns whatever it holds. An account can remain unbound. Nothing is bound when a profile is created; an account is bound on first use, when the user buys a name for a profile, so a device on which the user neither buys anything nor requests an address has never derived an account key.
 
-An account cannot be bound to a hidden profile, so no name can be bought for a hidden profile. Two things would leak: the master derives every account, so whoever can use any profile can also derive a hidden profile's account keys; and a name is written into the profile's own database row and listed across the device, while a hidden profile is a filter on what is shown, not encryption. Closing either requires changes in the profiles and in the name record, not in the key layout. Incognito is a property of a connection in this app rather than of a profile, so there is nothing at this level to reject; the random profile of an incognito connection is not a chat profile, so it cannot hold an account.
+A hidden profile binds accounts like any other profile. Hiding a profile filters what is shown and encrypts nothing, and the master derives every account, so whoever can use any profile on the device can derive a hidden profile's account keys. Incognito is a property of a connection in this app rather than of a profile; the random profile of an incognito connection is not a chat profile, so it cannot hold an account.
 
 ## Commands
 
@@ -89,7 +88,7 @@ BIP-32 marks an index as hardened by setting its top bit, so account 2^31 would 
 
 `address` reads the counter without changing it, so two calls return the same address, and it derives an address for an account the database has no row for, which a device that lost its database requires. One address per call is sufficient: a caller that scans the tree calls it in a loop.
 
-`export account` is rejected unless the profile holds the account, so every exported key belongs to a bound account, which `bind` without an index does not return again, except on a database restored from a backup (known limit 9). An export is a copy, not a transfer: the device still derives the key, so two parties can act as the owner until whatever the account holds is transferred on chain. Signing is not in this change; when it is added it is a command here that returns a signature, not `export account` followed by signing elsewhere. `delete` leaves whatever the accounts own on chain, recoverable only from the phrase.
+`export account` is rejected unless the profile holds the account, so every exported key belongs to a bound account, which `bind` without an index does not return again, except on a database restored from a backup (known limit 8). An export is a copy, not a transfer: the device still derives the key, so two parties can act as the owner until whatever the account holds is transferred on chain. Signing is not in this change; when it is added it is a command here that returns a signature, not `export account` followed by signing elsewhere. `delete` leaves whatever the accounts own on chain, recoverable only from the phrase.
 
 ```haskell
 data WalletAddress = WalletAddress {accountIndex :: AccountIndex, keyPath :: Text, address :: Address}
@@ -99,7 +98,6 @@ data WalletError
   = WENoMaster        -- the device has no master entropy
   | WEMasterExists    -- create, when the device already has one
   | WEBadMnemonic     -- wrong word count, wrong word, or bad checksum
-  | WEHiddenProfile   -- bind, on a hidden profile
   | WEAccountBound    -- bind, on an account another profile holds
   | WEAccountNotHeld  -- export account, on an account the profile does not hold
   | WECounterUnknown  -- the counter is not set yet, after an import
@@ -148,7 +146,7 @@ The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is
 
 - **Someone with the database file.** Gets everything, now and later: the stored entropy is the master phrase in another encoding, so an archive exported to move devices contains every key on the device. No export granularity protects against a file copy. On SQLite the connection sets `secure_delete`, so a deleted row's pages are zeroed; the journal and any copy already made are not.
 - **A wallet the master phrase is imported into.** Enumerating BIP-44 accounts computes account extended public keys, and some wallets send them to a vendor, which gives that vendor every account on the device at once, across every profile. That is what an account for each name otherwise prevents.
-- **Whoever answers the recovery scan.** Receives every address the scan derives from the phrase, in one sequence of requests, so it can link every account on the device, across profiles, and recognise addresses that own nothing yet, which is where future accounts will be. `address` derives an address for any index directly from the master, so a caller can enumerate hidden profiles' addresses too. This is the largest privacy cost of the design.
+- **Whoever answers the recovery scan.** Receives every address the scan derives from the phrase, in one sequence of requests, so it can link every account on the device, across profiles, and recognise addresses that own nothing yet, which is where future accounts will be. This is the largest privacy cost of the design.
 - **A paired device.** Wallet commands are allowed from a paired device like other chat commands: `export master` returns the whole wallet, `create mnemonic=` on a device that has no seed imports a phrase that the paired device sends, and `delete` deletes the master entropy, which may have no other copy.
 - **Someone reading the logs.** The core logs no command and no response, so a phrase passed to `create` is not written to any log. On Postgres the client inlines parameters into the statement text, so server-side statement logging records the inserted entropy.
 - **A page open in the user's browser.** The websocket server in `apps/simplex-chat/Server.hs`, which runs only with `--chat-server-port` and listens on 127.0.0.1, accepts any local connection, requires no token and checks no `Origin`, and websockets are not bound by the same origin policy, so any page loaded while that server runs can send `export master` and read the response. It also prints every command it receives, that phrase included. Both are properties of that server, which this change makes a more valuable target, and closing them requires changes to that server rather than to the wallet.
@@ -159,11 +157,10 @@ The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is
 2. **The phrase alone does not restore a device.** Until the scan is implemented, an imported phrase gives a device its keys and no way to find what they own.
 3. **The scan's design is not decided.** Finding the names an address owns is not a query a registry answers on chain, so it requires the registrar or an indexer, and that choice determines which party observes the scan. The length of the run of empty accounts that ends the scan is not yet decided, and the user must be able to extend the scan.
 4. **The same phrase on two devices collides.** The counter is stored in one database, so both devices bind the same account and each treats it as free. Sharing the counter requires a backup both devices can read.
-5. **A profile hidden after an account was bound to it keeps its accounts.** The check runs at bind time only.
-6. **Account indexes are not dense.** An account can be bound and never used, and a run of empty accounts ends the scan, so an account after a gap can be missed.
-7. **Account 0 is left to other wallets.** MetaMask, Ledger Live and Trezor Suite present `m/44'/60'/0'/0/0` first and hand a browser the extended public key of its address level, so with a phrase used in one of them the export of account 0 exposes that wallet's accounts. A generated wallet therefore starts its counter at 1, and account 0 is bound or exported only when asked for with `account=0`. In turn, BIP-44 discovery in those wallets stops at the empty account 0, so they reach this app's accounts only by path or exported key. If an account ever pays for anything, whatever funds it links accounts on chain.
-8. **Nothing records which layout a seed was used with.** Another wallet may have derived accounts from the phrase at paths this doc does not describe.
-9. **`bind` on a restored database can return an account that is already in use.** Its counter can be below the highest index used, and nothing detects that, so a name can be bought with an account that already owns one until the scan resets the counter.
+5. **Account indexes are not dense.** An account can be bound and never used, and a run of empty accounts ends the scan, so an account after a gap can be missed.
+6. **Account 0 is left to other wallets.** MetaMask, Ledger Live and Trezor Suite present `m/44'/60'/0'/0/0` first and hand a browser the extended public key of its address level, so with a phrase used in one of them the export of account 0 exposes that wallet's accounts. A generated wallet therefore starts its counter at 1, and account 0 is bound or exported only when asked for with `account=0`. In turn, BIP-44 discovery in those wallets stops at the empty account 0, so they reach this app's accounts only by path or exported key. If an account ever pays for anything, whatever funds it links accounts on chain.
+7. **Nothing records which layout a seed was used with.** Another wallet may have derived accounts from the phrase at paths this doc does not describe.
+8. **`bind` on a restored database can return an account that is already in use.** Its counter can be below the highest index used, and nothing detects that, so a name can be bought with an account that already owns one until the scan resets the counter.
 
 ## Main files
 
@@ -179,6 +176,6 @@ The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is
 
 1. **Vectors.** The two addresses above are derived from `abandon ... about`, as is account 0's secret, pinned to the value another wallet shows for it. A 24 word phrase imported through the command derives a pinned address end to end, so a change of path fails here rather than in a release, and the account a command names is the account whose key is returned.
 2. **Isolation.** Ten accounts' addresses are all different, and the paths of accounts 0 and 7 have a hardened account component.
-3. **Rejections.** A second generate; a phrase with a bad checksum; `bind`, `delete` and `export master` on a device with no wallet; `bind` on a hidden profile, on an account another profile holds, and on an imported master whose counter is unknown; `export account` for an account the profile does not hold; `bind` without an index once the counter has passed 2^31 - 1; an index of 2^31 or more is rejected as a bad command on `address`, `bind` and `export account` alike.
+3. **Rejections.** A second generate; a phrase with a bad checksum; `bind`, `delete` and `export master` on a device with no wallet; `bind` on an account another profile holds, and on an imported master whose counter is unknown; `export account` for an account the profile does not hold; `bind` without an index once the counter has passed 2^31 - 1; an index of 2^31 or more is rejected as a bad command on `address`, `bind` and `export account` alike.
 4. **Binding and reads.** Several accounts are bound to one profile, each `bind` returns the account it bound, and that profile's accounts can be exported; binding an account by index moves the counter past it so the next one does not collide, and never moves it back; `bind account=<n>` binds an account after an import; an account left unbound by deleting its profile is bound to another profile; and two consecutive `address` calls return the same address without changing the counter, and derive an address for an account with no row.
 5. **Encoding and persistence.** An account secret whose first byte is zero is rendered with 64 hex digits; the wallet, its accounts, the counter and the phrase persist across a restart; and deleting the wallet deletes its accounts and resets the counter.

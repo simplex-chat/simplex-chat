@@ -3731,9 +3731,6 @@ class WalletError_masterExists(TypedDict):
 class WalletError_badMnemonic(TypedDict):
     type: Literal["badMnemonic"]
 
-class WalletError_hiddenProfile(TypedDict):
-    type: Literal["hiddenProfile"]
-
 class WalletError_accountBound(TypedDict):
     type: Literal["accountBound"]
 
@@ -3750,14 +3747,13 @@ WalletError = (
     WalletError_noMaster
     | WalletError_masterExists
     | WalletError_badMnemonic
-    | WalletError_hiddenProfile
     | WalletError_accountBound
     | WalletError_accountNotHeld
     | WalletError_counterUnknown
     | WalletError_accountsExhausted
 )
 
-WalletError_Tag = Literal["noMaster", "masterExists", "badMnemonic", "hiddenProfile", "accountBound", "accountNotHeld", "counterUnknown", "accountsExhausted"]
+WalletError_Tag = Literal["noMaster", "masterExists", "badMnemonic", "accountBound", "accountNotHeld", "counterUnknown", "accountsExhausted"]
 
 class XFTPErrorType_BLOCK(TypedDict):
     type: Literal["BLOCK"]

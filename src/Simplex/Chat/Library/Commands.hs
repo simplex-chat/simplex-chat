@@ -1515,8 +1515,7 @@ processChatCommand cxt nm = \case
     created <- withFastStore' $ \db -> createWallet db entropy nextAccount
     unless created $ throwWalletError WEMasterExists
     pure $ CRWallet user (Just $ WalletInfo [] nextAccount)
-  APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user@User {viewPwdHash} -> do
-    when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
+  APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user -> do
     (entropy, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
     CRWalletAddress user . snd <$> walletAccount entropy n
   APIGetWalletAddress accountIdx_ -> withUser $ \user -> do

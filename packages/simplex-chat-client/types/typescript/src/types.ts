@@ -5311,7 +5311,6 @@ export type WalletError =
   | WalletError.NoMaster
   | WalletError.MasterExists
   | WalletError.BadMnemonic
-  | WalletError.HiddenProfile
   | WalletError.AccountBound
   | WalletError.AccountNotHeld
   | WalletError.CounterUnknown
@@ -5322,7 +5321,6 @@ export namespace WalletError {
     | "noMaster"
     | "masterExists"
     | "badMnemonic"
-    | "hiddenProfile"
     | "accountBound"
     | "accountNotHeld"
     | "counterUnknown"
@@ -5342,10 +5340,6 @@ export namespace WalletError {
 
   export interface BadMnemonic extends Interface {
     type: "badMnemonic"
-  }
-
-  export interface HiddenProfile extends Interface {
-    type: "hiddenProfile"
   }
 
   export interface AccountBound extends Interface {

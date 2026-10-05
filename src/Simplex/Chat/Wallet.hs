@@ -48,7 +48,6 @@ data WalletError
   = WENoMaster
   | WEMasterExists
   | WEBadMnemonic
-  | WEHiddenProfile
   | WEAccountBound
   | WEAccountNotHeld
   | WECounterUnknown
