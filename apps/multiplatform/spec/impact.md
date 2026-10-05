@@ -415,6 +415,10 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `DesktopApp.kt` | PC1, PC2, PC3 | High | Desktop Compose window — window lifecycle, crash recovery |
 | `StoreWindowState.kt` | — | Low | Window position/size persistence |
+| `AppLinks.kt` | — | Medium | `simplexchat:` links from launch arguments and macOS Apple Events |
+| `SingleInstance.kt` | — | Medium | Single-instance lock; forwards a second launch and its link to the running app |
+| `WindowActivation.kt` | — | Low | `_NET_ACTIVE_WINDOW` request that raises the window on X11 and XWayland |
+| `platform/AppLinkScheme.desktop.kt` | — | Medium | Runtime `simplexchat:` scheme registration (Windows HKCU, AppImage desktop entry) |
 | `model/NtfManager.desktop.kt` | PC18 | Medium | Desktop system tray notification display |
 | `platform/AppCommon.desktop.kt` | PC1 through PC31 | Medium | Desktop app initialization actual declarations |
 | `platform/SimplexService.desktop.kt` | PC18 | Low | Desktop background receiver (no foreground service) |

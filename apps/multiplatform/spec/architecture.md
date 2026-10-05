@@ -222,20 +222,28 @@ Lifecycle callbacks in `SimplexApp` (implements `LifecycleEventObserver`):
 
 ### Desktop
 
-Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L21)
+Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26)
 
 ```
-main()
+main(args)
+  +-- appLinkFromArgs(args)              // A simplexchat: link passed by the OS
+  +-- acquireSingleInstance(appLink)     // Or forward the link to the running instance and exit
+  +-- appOpenUrl = appLink               // Stored before the watcher can forward a newer link
+  +-- startShowFileWatcher()             // Only while holding the single-instance lock
   +-- initHaskell()                      // Load native lib from resources dir, call initHS()
   |     +-- System.load(libapp-lib.so/dll/dylib)
   |     +-- initHS()
   +-- runMigrations()
   +-- setupUpdateChecker()
   +-- initApp()                          // Set ntfManager, applyAppLocale, initChatControllerOnStart
+  +-- registerAppLinkScheme()            // Background thread, per-OS registration and detection
+  +-- installOpenUriHandler()            // macOS only: links arrive as Apple Events
   +-- showApp()                          // Compose window with AppScreen()
 ```
 
 [`showApp()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L33) creates a Compose `Window` with error recovery -- if a crash occurs, it closes the offending modal/view and re-opens the window.
+
+[`showWindow()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L258) un-minimizes and raises the window when a second launch or a link reaches the running app. On Linux it also sends `_NET_ACTIVE_WINDOW` through [`requestX11Activation()`](../common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt#L17), because wlroots compositors such as Sway ignore the raise that AWT's `toFront()` sends under XWayland. On Windows the second process, which the browser left holding the foreground right, calls `AllowSetForegroundWindow` before it signals so that the running instance may raise its window. During a crash restart `showWindow()` skips the disposed window, so it does not come back; the new window opens visible.
 
 [`initApp()`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppCommon.desktop.kt#L21) sets the `ntfManager` implementation (desktop notifications via `NtfManager` in `common/model/`) and calls `initChatControllerOnStart()`.
 
@@ -341,8 +349,8 @@ Examples from platform files:
 
 [`PlatformInterface`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L15) is an interface with default no-op implementations. It is assigned at runtime by each platform entry point:
 
-- **Android**: assigned in [`SimplexApp.initMultiplatform()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L187) (line 187)
-- **Desktop**: assigned in [`Main.kt initHaskell()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L50) (line 50)
+- **Android**: assigned in [`SimplexApp.initMultiplatform()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L193)
+- **Desktop**: assigned in [`Main.kt initHaskell()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L59)
 
 The global variable is declared at [`Platform.kt line 50`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L50):
 ```kotlin
@@ -417,6 +425,8 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | SimplexService.kt | [`android/src/main/java/chat/simplex/app/SimplexService.kt`](../android/src/main/java/chat/simplex/app/SimplexService.kt) | Android foreground service |
 | Main.kt | [`desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt) | Desktop `main()` |
 | DesktopApp.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt) | `showApp()`, `SimplexWindowState` |
+| SingleInstance.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt) | `acquireSingleInstance()`, `startShowFileWatcher()`, signal file hand-over |
+| WindowActivation.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt) | `requestX11Activation()`, `sendActivation()`, `activationEvent()` |
 
 ### Theme
 

@@ -13,6 +13,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
+8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 
 ---
 
@@ -289,3 +290,34 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 - GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.
+
+---
+
+## GAP-08: Desktop: App Link Registration
+
+**Severity:** Low
+**Category:** Platform
+**Platform:** Desktop only
+
+### Description
+
+Desktop registers the `simplexchat:` scheme so the badge page can return to the app. The registration has known limits:
+
+- Uninstalling or deleting the app leaves the per-user registration behind: the HKCU key on Windows and the hidden AppImage desktop entry on Linux. A later link then points at a missing program. On Windows, if the app was installed into a folder other users can write to (for example a custom folder at the root of `C:\`), another user could put a program at that path and have it run on the next link; the default Program Files install is not affected. This risk is accepted.
+- A Flatpak counts as registered without a check, as it cannot query the host's default handler. It works only once the Flathub release pins a commit with the desktop file's MimeType line and its wrapper passes `"$@"` to the app.
+- On macOS a second copy of the app does not forward a link to the running one; macOS delivers the link to the running bundle itself.
+- The link arrives as a command-line argument, which other local users can read through `/proc` on Linux. This risk is accepted.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt` -- registration and its result for the badge page
+- `common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt` -- forwarding to a running instance
+
+### Impact
+
+A stale registration or an unregistered Flatpak sends the user back to a link that opens nothing; the badge page's *Show code* and the Redeem code screen remain.
+
+### Recommendation
+
+1. Remove the registration in an uninstaller where one exists (MSI), and on AppImage when the entry's file is gone.
+2. Removing the command-line exposure needs the page to encrypt the code to a key the app passes in the URL fragment.
