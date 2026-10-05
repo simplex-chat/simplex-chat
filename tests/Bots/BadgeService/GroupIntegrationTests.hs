@@ -1214,11 +1214,13 @@ deleteItem cc citemId = do
 -- The member must have received the message before the command can find it.
 moderateBotItem :: HasCallStack => TestCC -> Text -> IO ()
 moderateBotItem member body = do
-  void (pollUntil (queryFirst (chatController member) received) :: IO Int64)
+  void (pollUntil received :: IO Int64)
   send member ("\\\\ #" <> groupName <> " @" <> botName <> " " <> T.unpack header)
   where
     header = T.takeWhile (/= '\n') body
-    received = "SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '" <> T.unpack header <> "%'"
+    received =
+      withTransaction (chatStore $ chatController member) $ \db ->
+        listToMaybe . map fromOnly <$> DB.query db "SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE ? || '%'" (Only header)
 
 waitModeratedItem :: HasCallStack => ChatController -> Int64 -> IO (Int, Maybe Int64, Text)
 waitModeratedItem cc citemId =
