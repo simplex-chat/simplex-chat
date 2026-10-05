@@ -91,7 +91,7 @@ main = do
       describe "Random servers" randomServersTests
 #if !defined(dbPostgres)
       around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ describe "names tests" chatNamesTests
-      around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ xdescribe'' "SimpleX Directory names" directoryNameTests
+      around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ describe "SimpleX Directory names" directoryNameTests
 #endif
 #if defined(dbPostgres)
       around (testBracket portBases)
@@ -103,9 +103,9 @@ main = do
           describe "Mobile API Tests" mobileTests
 #endif
           describe "SimpleX chat client" chatTests
-          xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
-          xdescribe'' "SimpleX Directory service bot" directoryServiceTests
-          xdescribe'' "SimpleX badge service e2e" $ do
+          describe "SimpleX Broadcast bot" broadcastBotTests
+          describe "SimpleX Directory service bot" directoryServiceTests
+          describe "SimpleX badge service e2e" $ do
             badgeServiceTests
             describe "managed group" badgeGroupIntegrationTests
           describe "Remote session" remoteTests
