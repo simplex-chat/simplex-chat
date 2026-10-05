@@ -504,9 +504,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               profileToSend <- case gInfo_ of
                 Just (GIK gInfo _) -> presentUserBadge user incognitoProfile (groupPresHeader gInfo) $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-                Nothing -> do
-                  presHeader <- sndPresHeader presHeader_
-                  presentUserBadge user incognitoProfile (Just presHeader) $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
+                Nothing -> presentUserBadge user incognitoProfile presHeader_ $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn'' confId gInfo_ $ XInfo profileToSend ((\(GIK _ gks) -> groupMemberKey gks) <$> gInfo_)
         INFO pqSupport connInfo -> do
@@ -625,8 +623,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               ct' <- processContactProfileUpdate ct presHeader_ profile False `catchAllErrors` const (pure ct)
               -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-              presHeader <- sndPresHeader presHeader_
-              p <- presentUserBadge user incognitoProfile (Just presHeader) $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
+              p <- presentUserBadge user incognitoProfile presHeader_ $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
               allowAgentConnectionAsync user conn'' confId Nothing $ XInfo p Nothing
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do

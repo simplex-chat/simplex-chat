@@ -293,7 +293,7 @@ An address is a contact address, a business address, or a group link. The link k
 
 ### 14.1 Agent: verification codes
 
-Merged in simplexmq `5294b7d8`.
+Merged in simplexmq `5294b7d8`, except the ratchet stored by `newConnToAcceptDR`, its use in `startJoinInvitationDR`, and their tests.
 
 **Second verification code.** `RatchetInitParams` gains `rcVerifyCodePQ` and `Ratchet` gains `rcVCPQ :: Maybe Str`. The code is derived in `pqX3dh` with a separate HKDF over the same inputs, info `SimpleXVerifyCode`, 32 bytes; the ratchet keys and `rcAD` are unchanged. The code is exported keying material over every handshake input, the KEM included — the fourth of the paper's mitigations. A ratchet created before this change is decoded with `rcVCPQ = Nothing`, and its code is set at the next ratchet resync. The chat uses the AD code, `codeAD`, for the security code and for badge bindings; `codePQ` is stored.
 
@@ -331,11 +331,11 @@ data ContactRequestBinding = CRBRatchet ConnVerifyCodes | CRBRequest ByteString
 - `CRContactUri` with ratchet keys: the same, from the address keys.
 - `CRContactUri` without keys: the x3dh keys are generated and stored (`generateRcvE2EParams`, `createRatchetX3dhKeys`); the binding is `CRBRequest (sha256 (smpEncode (k1, k2, kem, senderId)))` — the request's public keys and the queue id from the link's `SMPQueueUri`.
 
-The same pair is returned by `prepareConnectionToAccept`: for `CRInvitation` the ratchet is created from the invitation's keys, for `CRInvitationDR` the ratchet stored in the invitation is used. In `startJoinInvitation` the ratchet is read before one is created, as in the contact path and its retry branch; in `createConnReq` the x3dh keys are read before they are generated, as in `mkJoinInvitation`. The stored ratchet is used by async joins and accepts. The prepare step is local.
+The same pair is returned by `prepareConnectionToAccept`: for `CRInvitation` the ratchet is created from the invitation's keys, for `CRInvitationDR` the ratchet in the invitation is stored with the connection by `newConnToAcceptDR`. In `startJoinInvitation` and `startJoinInvitationDR` the stored ratchet is used, and a ratchet is created only for a connection without one, as in the contact path and its retry branch; in `createConnReq` the x3dh keys are read before they are generated, as in `mkJoinInvitation`. The stored ratchet is used by async joins and accepts. The prepare step is local.
 
 **Events.** A `ContactRequestBinding` field in `REQ`: `CRBRequest` in `smpInvitation`, computed from the received `CRInvitationUri` and the queue of the request; `CRBRatchet` in `smpContactRequest`, from the ratchet initialised there. `CONF` and `INFO` are unchanged: the receiver's ratchet is stored before the notification, so its codes are available to `getConnectionVerifyCodes`.
 
-**Tests.** `DoubleRatchetTests`: the parties agree on `rcVerifyCodePQ`, a substituted KEM key makes it differ while `assocData` matches, and a ratchet stored before the change decodes with `rcVCPQ = Nothing`. `FunctionalAPITests`: both peers get the same codes, and codes cleared from a row are recomputed and saved on the next read.
+**Tests.** `DoubleRatchetTests`: the parties agree on `rcVerifyCodePQ`, a substituted KEM key makes it differ while `assocData` matches, and a ratchet stored before the change decodes with `rcVCPQ = Nothing`. `FunctionalAPITests`: both peers get the same codes, and codes cleared from a row are recomputed and saved on the next read. For an address with ratchet keys, the codes of the requester's prepare step, of `REQ`, of the acceptor's prepare step and of the stored ratchet are equal before `acceptContact`; an accept of a prepared connection without a ratchet is completed by `acceptContact`.
 
 ### 14.2 Agent: links before link data
 
@@ -399,7 +399,7 @@ prepareConnShortLink :: AgentClient -> ConnId -> Maybe CRClientData -> AE (ConnS
 
 ### 14.3 Chat
 
-In implementation order. At every direct send, a `Nothing` from `connPresHeader`, a header missing from the `connsPresHeaders` map, and a retry without a stored request header are replaced with `PHTest` by `sndPresHeader`. At a send into a group, no badge is presented for a `Nothing` from `groupPresHeader`.
+In implementation order. A badge is presented only with a header: no badge is presented at a direct send for a connection without codes or for a retry without a stored request header, and at a send into a group for a `Nothing` from `groupPresHeader`. An agent error is returned as a chat error.
 
 **1. Headers** — `Badges.hs`
 
@@ -449,9 +449,8 @@ With `Nothing`, no badge is presented. A badge is presented only when `presentsU
 - `memberPresHeader :: GroupInfo -> MemberId -> Maybe C.PublicKeyEd25519 -> Maybe ProofPresHeader` — `PHChat (encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId, key)))` in a channel, `PHChat (encodeChatBinding CBGroup (smpEncode (memberId, key)))` in a p2p group, `Nothing` without a key
 - `memberInfoPresHeader :: GroupInfo -> MemberInfo -> Maybe ProofPresHeader` — in a channel `memberPresHeader` of the id and key in the `MemberInfo`; `Nothing` in a p2p group
 - `relayInvPresHeader :: GroupRelayInvitation -> Maybe ProofPresHeader` — the channel header of the owner's id and key in the invitation (item 12)
-- `sndPresHeader :: Maybe ProofPresHeader -> CM ProofPresHeader` — the header, or `PHTest` of 16 random bytes for `Nothing`
-- `connPresHeader :: Connection -> CM (Maybe ProofPresHeader)` — `directPresHeader . CRBRatchet` of `getConnectionVerifyCodes`; `Nothing` on error
-- `connsPresHeaders :: [Connection] -> CM (Map ConnId ProofPresHeader)` — the same from `getConnectionsVerifyCodes`
+- `connPresHeader :: Connection -> CM (Maybe ProofPresHeader)` — `connsPresHeaders` of one connection
+- `connsPresHeaders :: [Connection] -> CM (Map ConnId ProofPresHeader)` — `directPresHeader . CRBRatchet` of `getConnectionsVerifyCodes`; the map includes the connections with codes
 
 **5. The binding from prepare steps**
 
@@ -476,24 +475,24 @@ ALTER TABLE connections ADD COLUMN pres_header BLOB;
 
 **7. Direct sends**
 
-- `joinContact` (`Commands.hs:3979`): the request header, `ProofPresHeader`, is a parameter, set in `connect'`, `joinPreparedConn'` and `connectContactViaAddress` — the `prepareContact` header for a new connection, the stored header for a retry. The badge is presented with `groupPresHeader` in a relay group, and with the request header otherwise.
-- `connectViaInvitation` (`Commands.hs:3801-3833`) and `connectMemberContact` (`:3388-3415`): the prepare binding for a new connection; `connPresHeader` for a prepared one.
-- `joinMemberContactAsync` (`Subscriber.hs:3947`): the header is a parameter, set in `xGrpDirectInv` to the `prepareAgentJoin` header.
-- `acceptContactRequest` (`Internal.hs:974-1005`): the prepare binding for a new connection; `connPresHeader` for an existing one.
-- `acceptContactRequestAsync` (`Internal.hs:1007-1026`): the profile is built after `prepareAgentAccept`, from its header.
-- `CONF` replies (`Subscriber.hs:509` direct case, `:628`) and `updateContactPrefs` (`Commands.hs:4108`): `connPresHeader`.
-- `sendUpdateToContacts` (`Commands.hs:4039-4077`) and `presentUserBadgeToContacts` (`:5212-5228`): one `connsPresHeaders` call per command, when `presentsUserBadge` holds.
+- `joinContact` (`Commands.hs:3982`): the request header, `Maybe ProofPresHeader`, is a parameter, set in `connect'`, `joinPreparedConn'` and `connectContactViaAddress` — the `prepareContact` header for a new connection, the stored header for a retry. The badge is presented with `groupPresHeader` in a relay group, and with the request header otherwise.
+- `connectViaInvitation` (`Commands.hs:3808-3845`) and `connectMemberContact` (`:3395-3422`): the prepare binding for a new connection; `connPresHeader` for a prepared one.
+- `joinMemberContactAsync` (`Subscriber.hs:3956`): the header is a parameter, set in `xGrpDirectInv` to the `prepareAgentJoin` header.
+- `acceptContactRequest` (`Internal.hs:984-1014`): the prepare binding for a new connection; `connPresHeader` for an existing one.
+- `acceptContactRequestAsync` (`Internal.hs:1016-1035`): the profile is built after `prepareAgentAccept`, from its header.
+- `CONF` replies (`Subscriber.hs:507` direct case, `:626`) and `updateContactPrefs` (`Commands.hs:4099`): `connPresHeader`.
+- `sendUpdateToContacts` (`Commands.hs:4043-4082`) and `presentUserBadgeToContacts` (`:5216-5231`): one `connsPresHeaders` call per command, when `presentsUserBadge` holds.
 
 **8. Direct receipts**
 
-- `REQ` (`Subscriber.hs:1404`): `directPresHeader` of the `REQ` binding is a parameter of `profileContactRequest`, passed to `createOrUpdateContactRequest` and to `acceptGroupJoinRequestAsync`.
-- `processContactProfileUpdate` (`Subscriber.hs:2771`) and `saveConnInfo` (`:3180`, for `createDirectContact`): the header is a parameter, `connPresHeader` of the connection, read by the caller. In the direct case, the badge in the `CONF` reply is presented with the same header.
+- `REQ` (`Subscriber.hs:1403`): `directPresHeader` of the `REQ` binding is a parameter of `profileContactRequest`, passed to `createOrUpdateContactRequest` and to `acceptGroupJoinRequestAsync`.
+- `processContactProfileUpdate` (`Subscriber.hs:2767`) and `saveConnInfo` (`:3189`, for `createDirectContact`): the header is a parameter, `connPresHeader` of the connection, read by the caller. In the direct case, the badge in the `CONF` reply is presented with the same header.
 
 **9. Groups**
 
-- `groupPresHeader` at every send into a group: `Commands.hs:3998` (`joinContact`, relay group), `:4329`; `Subscriber.hs:506` group case, `:642`, `:836`, `:978`, `:1260`, and `membershipHandshakeProfile` (`:3379-3384`) for `:799`, `:850` and `:3366`; `Internal.hs:2530` (`encodeXGrpAcpt`) and `:2715`.
-- `acceptGroupJoinRequestAsync` (`Internal.hs:1028`): the expected header is a new parameter, passed to `createJoiningMember` and `updateMemberProfile` — in `memberJoinRequestViaRelay`, `memberPresHeader` of the joining member's id and the key in `XMember` when the message signature is verified with it. `Nothing` is passed to `createJoiningMember` in `acceptGroupJoinSendRejectAsync`.
-- Host `INFO` with `XInfo` (`Subscriber.hs:865-872`): after `storeMemberKey`, the profile is stored by `processMemberProfileUpdate` with `signedMemberPresHeader`, under the member's key.
+- `groupPresHeader` at every send into a group: `Commands.hs:4002` (`joinContact`, relay group), `:4332`; `Subscriber.hs:506` group case, `:639`, `:833`, `:975`, `:1257`, and `membershipHandshakeProfile` (`:3388-3393`) for `:796`, `:847` and `:3375`; `Internal.hs:2535` (`encodeXGrpAcpt`) and `:2719`.
+- `acceptGroupJoinRequestAsync` (`Internal.hs:1037`): the expected header is a new parameter, passed to `createJoiningMember` and `updateMemberProfile` — in `memberJoinRequestViaRelay`, `memberPresHeader` of the joining member's id and the key in `XMember` when the message signature is verified with it. `Nothing` is passed to `createJoiningMember` in `acceptGroupJoinSendRejectAsync`.
+- Host `INFO` with `XInfo` (`Subscriber.hs:862-869`): after `storeMemberKey`, the profile is stored by `processMemberProfileUpdate` with `signedMemberPresHeader`, under the member's key.
 - The profile is also stored by `processMemberProfileUpdate` when the received proof is accepted and differs from the stored member proof in its header or its disclosed information, and when a profile without a proof is received for a member with a stored proof.
 - Introductions:
   - In `memberInfo` (`Internal.hs:1335`) the stored proof (item 11) is included when `acceptedProof` holds under `memberPresHeader` of the member's id and stored key in a channel, and under `Nothing` in a p2p group: in a p2p group only a `PHTest` proof is included.
@@ -589,7 +588,7 @@ Postgres: `BIGINT`, `BYTEA` and `TIMESTAMPTZ`. Both schema dumps and `chat_query
 - Channel: a relay invitation with an owner key that differs from the link data is failed by the relay, and the relay stays invited (`testChannelAddRelayOwnerKeyMismatch`).
 - Link data: the badge is shown from an invitation link under `PHLink`, an address, and an address that gets its first short link.
 
-`PHTest` is still sent by released clients and, through `sndPresHeader`, on a retry of a connection prepared before this change.
+`PHTest` proofs are generated only by released clients. For a connection prepared by a released client and joined after the update, the badge is presented only when its ratchet was stored by an earlier attempt; a retried request to an address prepared by a released client is sent without a badge.
 
 ## Out of scope
 

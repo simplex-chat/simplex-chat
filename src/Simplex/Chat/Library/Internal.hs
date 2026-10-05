@@ -988,13 +988,13 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
       pqSup' = pqSup `CR.pqSupportAnd` pqSupport
   cxt <- chatStoreCxt
   let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-  (ct, conn, incognitoProfile, presHeader) <- case contactId_ of
+  (ct, conn, incognitoProfile, presHeader_) <- case contactId_ of
     Nothing -> do
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
       (connId, binding) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
       (ct, conn) <- withStore' $ \db ->
         createContactFromRequest db user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
-      pure (ct, conn, incognitoProfile, directPresHeader binding)
+      pure (ct, conn, incognitoProfile, Just $ directPresHeader binding)
     Just contactId -> do
       ct <- withFastStore $ \db -> getContact db cxt user contactId
       case contactConn ct of
@@ -1005,12 +1005,11 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
           conn <- withStore' $ \db -> do
             forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
             createAcceptedContactConn db user userContactLinkId_ contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
-          pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile, directPresHeader binding)
+          pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile, Just $ directPresHeader binding)
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
-          presHeader <- sndPresHeader =<< connPresHeader conn
-          pure (ct, conn, ExistingIncognito <$> incognitoProfile, presHeader)
-  profileToSend <- presentUserBadge user incognitoProfile (Just presHeader) $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
+          (ct, conn, ExistingIncognito <$> incognitoProfile,) <$> connPresHeader conn
+  profileToSend <- presentUserBadge user incognitoProfile presHeader_ $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
   (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
@@ -2281,14 +2280,11 @@ relayInvPresHeader :: GroupRelayInvitation -> Maybe ProofPresHeader
 relayInvPresHeader GroupRelayInvitation {fromMember = MemberIdRole {memberId}, publicGroupId, fromMemberKey} =
   (\gId (MemberKey k) -> PHChat $ encodeChatBinding CBGroup $ smpEncode (gId, memberId, k)) <$> publicGroupId <*> fromMemberKey
 
-sndPresHeader :: Maybe ProofPresHeader -> CM ProofPresHeader
-sndPresHeader = maybe (PHTest <$> drgRandomBytes 16) pure
-
 connPresHeader :: Connection -> CM (Maybe ProofPresHeader)
-connPresHeader conn = eitherToMaybe <$> tryAllErrors (directPresHeader . CRBRatchet <$> withAgent (`getConnectionVerifyCodes` aConnId conn))
+connPresHeader conn = M.lookup (aConnId conn) <$> connsPresHeaders [conn]
 
 connsPresHeaders :: [Connection] -> CM (Map ConnId ProofPresHeader)
-connsPresHeaders conns = either (const M.empty) (M.map (directPresHeader . CRBRatchet)) <$> tryAllErrors (withAgent (`getConnectionsVerifyCodes` map aConnId conns))
+connsPresHeaders conns = M.map (directPresHeader . CRBRatchet) <$> withAgent (`getConnectionsVerifyCodes` map aConnId conns)
 
 -- receiving side of contact/invitation link data: verify the badge proof from the link profile
 -- and set the crypto-free display badge for the UI (the raw proof stays in profile for APIPrepareContact)

@@ -272,7 +272,14 @@ maxSndXFTPFileSize lims now = \case
 -- presentation, not bound to any context.
 -- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
 
-data ProofPresHeaderTag = PHTestTag | PHChatTag | PHFileInvTag | PHFileDescrTag | PHRequestTag | PHLinkTag | PHUnknownTag Char
+data ProofPresHeaderTag
+  = PHTestTag -- random nonce: released clients
+  | PHChatTag -- direct chat ratchet, group member key
+  | PHFileInvTag -- file invitation
+  | PHFileDescrTag -- file description
+  | PHRequestTag -- request to address without ratchet keys
+  | PHLinkTag -- invitation and address link data
+  | PHUnknownTag Char -- tags of newer versions
 
 instance StrEncoding ProofPresHeaderTag where
   strEncode = B.singleton . \case
