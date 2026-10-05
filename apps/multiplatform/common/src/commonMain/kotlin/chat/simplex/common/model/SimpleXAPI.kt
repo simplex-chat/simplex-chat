@@ -3371,20 +3371,13 @@ object ChatController {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation.copy(remoteHostId = rhId))
       }
       is CR.CallOffer -> {
-        // TODO askConfirmation?
-        // TODO check encryption is compatible
         withCall(r, r.contact) { call ->
           chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, hasSharedKey = r.sharedKey != null)
-          val useRelay = appPrefs.webrtcPolicyRelay.get()
-          val iceServers = getIceServers()
-          chatModel.callCommand.add(WCallCommand.Offer(
-            offer = r.offer.rtcSession,
-            iceCandidates = r.offer.rtcIceCandidates,
-            media = r.callType.media,
-            aesKey = r.sharedKey,
-            iceServers = iceServers,
-            relay = useRelay
-          ))
+          if (r.askConfirmation) {
+            showUnencryptedCallAlert(call) { processCallOffer(r) }
+          } else {
+            processCallOffer(r)
+          }
         }
       }
       is CR.CallAnswer -> {
@@ -3638,6 +3631,39 @@ object ChatController {
     } else {
       Log.d(TAG, "processReceivedMsg: ignoring ${r.responseType}, not in call with the contact ${contact.id}")
     }
+  }
+
+  private fun processCallOffer(r: CR.CallOffer) {
+    val useRelay = appPrefs.webrtcPolicyRelay.get()
+    val iceServers = getIceServers()
+    chatModel.callCommand.add(WCallCommand.Offer(
+      offer = r.offer.rtcSession,
+      iceCandidates = r.offer.rtcIceCandidates,
+      media = r.callType.media,
+      aesKey = r.sharedKey,
+      iceServers = iceServers,
+      relay = useRelay
+    ))
+  }
+
+  private fun showUnencryptedCallAlert(call: Call, onContinue: () -> Unit) {
+    // the call may have ended, or a new one started with the same contact, while the alert was shown
+    fun offerPending(): Boolean {
+      val c = chatModel.activeCall.value
+      return c != null && c.remoteHostId == call.remoteHostId && c.contact.id == call.contact.id && c.callState == CallState.OfferReceived
+    }
+    val endCall = { if (offerPending()) withBGApi { chatModel.callManager.endCall(call) } }
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.call_not_encrypted_title),
+      text = generalGetString(MR.strings.call_not_encrypted_desc).format(call.contact.displayName),
+      confirmText = generalGetString(MR.strings.call_service_notification_end_call),
+      onConfirm = { endCall() },
+      dismissText = generalGetString(MR.strings.continue_to_next_step),
+      onDismiss = { if (offerPending()) onContinue() },
+      onDismissRequest = { endCall() },
+      destructive = true,
+      parseHtml = false
+    )
   }
 
   suspend fun leaveGroup(rh: Long?, groupId: Long) {
