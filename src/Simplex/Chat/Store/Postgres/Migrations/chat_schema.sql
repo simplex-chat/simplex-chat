@@ -2672,11 +2672,11 @@ CREATE INDEX idx_group_members_contact_profile_id ON test_chat_schema.group_memb
 
 
 
-CREATE INDEX idx_group_members_group_id ON test_chat_schema.group_members USING btree (user_id, group_id);
-
-
-
 CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON test_chat_schema.group_members USING btree (group_id, index_in_group);
+
+
+
+CREATE INDEX idx_group_members_group_id_member_role ON test_chat_schema.group_members USING btree (user_id, group_id, member_role);
 
 
 

@@ -5891,7 +5891,7 @@ Query:
                   )
               
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=?)
 LIST SUBQUERY 1
 SCAN chat_items USING COVERING INDEX idx_chat_items_group_member_id
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
@@ -6074,7 +6074,7 @@ Query:
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
@@ -6094,7 +6094,7 @@ Query:
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role = ?
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=? AND member_role=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
@@ -6114,7 +6114,7 @@ Query:
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?)
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=? AND member_role=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
@@ -6134,7 +6134,7 @@ Query:
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=? AND member_role=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
@@ -6154,7 +6154,7 @@ Query:
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=? AND member_role=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
@@ -6927,7 +6927,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 
 Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
-SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=?)
 SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
@@ -7590,11 +7590,11 @@ SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?
 Plan:
-SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH group_members USING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND member_category = ?
 Plan:
-SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH group_members USING INDEX idx_group_members_group_id_member_role (user_id=? AND group_id=?)
 
 Query: SELECT group_member_id, member_category FROM group_members WHERE user_id = ? AND group_id = ? AND member_id = ?
 Plan:

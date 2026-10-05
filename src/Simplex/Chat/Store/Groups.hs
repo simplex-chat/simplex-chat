@@ -1238,7 +1238,7 @@ getGroupMemberViaMemberId_ db User {userId} groupId memberId =
 getGroupMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
   currentTs <- getCurrentTime
-  map (toContactMember currentTs cxt user)
+  sortOn groupMemberId' . map (toContactMember currentTs cxt user)
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
@@ -1275,7 +1275,7 @@ getSupportScopeMembersByIndexes db cxt user gInfo scopeGMId indexesInGroup = do
 getGroupModerators :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupModerators db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
   currentTs <- getCurrentTime
-  map (toContactMember currentTs cxt user)
+  sortOn groupMemberId' . map (toContactMember currentTs cxt user)
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
@@ -1287,7 +1287,7 @@ getGroupModerators db cxt user@User {userId, userContactId} GroupInfo {groupId} 
 getGroupRosterMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupRosterMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
   currentTs <- getCurrentTime
-  filter memberCurrent . map (toContactMember currentTs cxt user)
+  sortOn groupMemberId' . filter memberCurrent . map (toContactMember currentTs cxt user)
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
@@ -1298,7 +1298,7 @@ getGroupRosterMembers db cxt user@User {userId, userContactId} GroupInfo {groupI
 getGroupAdminsMods :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupAdminsMods db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
   currentTs <- getCurrentTime
-  filter memberCurrent . map (toContactMember currentTs cxt user)
+  sortOn groupMemberId' . filter memberCurrent . map (toContactMember currentTs cxt user)
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?)")
@@ -2896,7 +2896,7 @@ getGroupIdByName db User {userId} gName =
 getGroupMemberIdByName :: DB.Connection -> User -> GroupId -> ContactName -> ExceptT StoreError IO GroupMemberId
 getGroupMemberIdByName db User {userId} groupId groupMemberName =
   ExceptT . firstRow fromOnly (SEGroupMemberNameNotFound groupId groupMemberName) $
-    DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?" (userId, groupId, groupMemberName)
+    sortOn fromOnly <$> DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?" (userId, groupId, groupMemberName)
 
 getActiveMembersByName :: DB.Connection -> StoreCxt -> User -> ContactName -> ExceptT StoreError IO [(GroupInfo, GroupMember)]
 getActiveMembersByName db cxt user@User {userId} groupMemberName = do
