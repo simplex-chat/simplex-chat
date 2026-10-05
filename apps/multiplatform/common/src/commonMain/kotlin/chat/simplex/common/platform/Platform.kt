@@ -30,7 +30,7 @@ interface PlatformInterface {
   fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}
-  fun androidRestartNetworkObserver() {}
+  fun restartNetworkObserver() {}
   fun androidCreateActiveCallState(): Closeable = Closeable { }
   fun androidIsXiaomiDevice(): Boolean = false
   // Requests the Google Play account country into [androidPlayStoreCountry]

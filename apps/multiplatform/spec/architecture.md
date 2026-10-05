@@ -342,7 +342,7 @@ Examples from platform files:
 [`PlatformInterface`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L15) is an interface with default no-op implementations. It is assigned at runtime by each platform entry point:
 
 - **Android**: assigned in [`SimplexApp.initMultiplatform()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L187) (line 187)
-- **Desktop**: assigned in [`Main.kt initHaskell()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L50) (line 50)
+- **Desktop**: assigned in [`Main.kt initHaskell()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L51) (line 51)
 
 The global variable is declared at [`Platform.kt line 50`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L50):
 ```kotlin
@@ -366,7 +366,7 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | `androidStartCallActivity(acceptCall, rhId, chatId)` | no-op | Launch `CallActivity` |
 | `androidPictureInPictureAllowed()` | `true` | Check PiP permission via AppOps |
 | `androidCallEnded()` | no-op | Destroy call WebView |
-| `androidRestartNetworkObserver()` | no-op | Restart `NetworkObserver` |
+| `restartNetworkObserver()` | no-op | Restart `NetworkObserver` (Android and Desktop) |
 | `androidCreateActiveCallState()` | empty `Closeable` | Create `ActiveCallState` |
 | `androidIsXiaomiDevice()` | `false` | Check device brand |
 | `androidApiLevel` | `null` | `Build.VERSION.SDK_INT` |
