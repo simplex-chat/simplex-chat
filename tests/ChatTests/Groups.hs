@@ -9933,6 +9933,7 @@ testChannelLinkAfterProfileUpdate ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          waitQueuedLinkUpdates alice
 
           -- owner updates channel profile
           alice ##> "/gp team my_team My team description"
@@ -9967,6 +9968,7 @@ testChannelLinkAfterWelcomeUpdate ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          waitQueuedLinkUpdates alice
 
           -- owner updates channel welcome message
           alice ##> "/set welcome #team welcome to team"
@@ -10005,6 +10007,7 @@ testChannelOwnerKeyAfterLinkUpdate ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          waitQueuedLinkUpdates alice
 
           threadDelay 100000
 
@@ -10226,6 +10229,16 @@ waitMemberRow cc name expectedRole = go (50 :: Int)
 memberRoles :: TestCC -> T.Text -> IO [T.Text]
 memberRoles cc name =
   map (\(Only r) -> r) <$> withCCTransaction cc (\db -> DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name))
+
+waitQueuedLinkUpdates :: HasCallStack => TestCC -> IO ()
+waitQueuedLinkUpdates cc = go (100 :: Int)
+  where
+    go n = do
+      [[queued]] <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'" :: IO [[Int]]
+      if queued == 0 || n == 0
+        then queued `shouldBe` 0
+        else threadDelay 100000 >> go (n - 1)
 
 -- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to
 -- find a member by id on a subscriber that only knows it by member-id hash (e.g. after roster recovery).
