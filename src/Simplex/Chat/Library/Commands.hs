@@ -5242,7 +5242,11 @@ redeemBadgeCode nm user@User {userId} codeText = do
   (present_, redeemed) <- withEntityLock "badgeRedeem" (CLBadgeUser userId) $ do
     stash_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
     stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeCodeRedemption db g user codeSent now
-    redeemBadgeStash nm user sendTarget stash BSCRedeemBadgeCode {masterKey, code = codeSent} terminalCodeError
+    requestBadgeStash nm user sendTarget stash BSCRedeemBadgeCode {masterKey, code = codeSent} >>= \case
+      Left (errCode, _) -> do
+        when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db user codeSent
+        throwRedeemError $ BREServiceError errCode
+      Right redeemed -> pure redeemed
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
   pure redeemed
@@ -5266,7 +5270,9 @@ handOverStoreReceipt presentingUser echoedInvoiceId payment = do
     withStore' (\db -> holdStoreReceipt db g presentingUser echoedInvoiceId txRef payment now)
       >>= maybe (throwChatError $ CEInternalError "store receipt was not recorded") pure
   owner <- withStore $ \db -> getUser db ownerId
-  answer <- case status of
+  -- before the answer, which can throw: no later hand-over of this receipt signals, and a spare signal costs an empty pass
+  when newlyHeld $ lift $ startStoreReceiptWork owner
+  case status of
     RSHeld -> badgeStateResponse owner
     RSCredited {badgePurchaseId} -> do
       cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
@@ -5274,9 +5280,6 @@ handOverStoreReceipt presentingUser echoedInvoiceId payment = do
       CRBadgeRedeemed owner (OwnBadge cred (mkBadgeStatus now (Just True) info)) False <$> getUserBadgeState owner
     RSRefused {refusal = Just BIFServiceError {code}} -> throwRedeemError $ BREServiceError code
     RSRefused {} -> throwChatError $ CEInternalError "store purchase refused for no recorded reason"
-  -- after the answer is read, so it shows the receipt held whatever the worker does next
-  when newlyHeld $ lift $ startStoreReceiptWork owner
-  pure answer
 
 -- | The receipt will never be credited to its key; any other refusal may pass on a retry.
 storeReceiptRefused :: BadgeServiceErrorCode -> Bool
@@ -5307,16 +5310,8 @@ requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeem
 refuseWhileBadgeHeld :: User -> CM ()
 refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
 
--- | One attempt to turn a stash into a badge, dropping the stash only on a refusal no retry can fix.
-redeemBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> (BadgeServiceErrorCode -> Bool) -> CM (Maybe User, ChatResponse)
-redeemBadgeStash nm user sendTarget stash request stashDead =
-  requestBadgeStash nm user sendTarget stash request >>= \case
-    Left (errCode, _) -> do
-      when (stashDead errCode) $ withStore' (`deleteBadgeStash` stash)
-      throwRedeemError $ BREServiceError errCode
-    Right redeemed -> pure redeemed
-
--- | A refusal is answered rather than thrown, with the service's retryAfter.
+-- | One attempt to turn a stash into a badge. A refusal is answered rather than thrown, with the
+-- service's retryAfter.
 requestBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (Maybe User, ChatResponse))
 requestBadgeStash nm user sendTarget stash@BadgeStash {purchaseKey, purchasePrivKey} request = do
   let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request}
@@ -5469,14 +5464,14 @@ creditStoreReceipt userId HeldStoreReceipt {receiptId, stash = stash@BadgeStash 
         | storeReceiptRefused code -> SRORefused <$ withStore' (\db -> refuseStoreReceipt db receiptId $ serviceFailure code retryAfter)
         | otherwise -> SRODeferred <$ defer (serviceFailure code retryAfter) retryAfter
       Left e -> SRODeferred <$ defer (badgeIssueFailure e) Nothing
-  -- only a settlement is announced: the app answers it with a sweep, which signals this worker
+  -- only a settlement is announced, and the app's sweep in answer signals this worker only for a newly held receipt, so it cannot loop
   case outcome of
     SROCredited present_ -> do
-      -- outside the badge lock: the chat lock must not be taken under it
-      mapM_ presentUserBadgeToContacts present_
       user <- withStore $ \db -> getUser db userId
       toView . CEvtBadgeChanged user =<< getUserBadgeState user
       toView $ CEvtStorePurchaseSettled user
+      -- last, so a failed broadcast cannot lose the settlement; outside the badge lock, as it takes the chat lock
+      mapM_ presentUserBadgeToContacts present_
     SRORefused -> withStore (`getUser` userId) >>= toView . CEvtStorePurchaseSettled
     SRODeferred -> pure ()
   where
@@ -5682,6 +5677,8 @@ badgeIssueFailure e = case e of
     | otherwise -> BIFUnexpected {message = tshow agentError}
   ChatError (CECommandError m) -> BIFUnexpected {message = T.pack m}
   ChatError (CEInternalError m) -> BIFUnexpected {message = T.pack m}
+  ChatError (CEBadgeRedeemError BREUnknownKeyIndex) -> BIFInvalidCredential
+  ChatError (CEBadgeRedeemError BRECredentialNotVerified) -> BIFInvalidCredential
   _ -> BIFUnexpected {message = tshow e}
 
 -- | Whether a failure can clear on its own, which decides whether the alert waits for the shown

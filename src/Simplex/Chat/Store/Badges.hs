@@ -31,7 +31,7 @@ module Simplex.Chat.Store.Badges
     deferStoreReceipt,
     refuseStoreReceipt,
     deleteUnfundedStoreReceipts,
-    deleteBadgeStash,
+    deleteBadgeCodeRedemption,
     createStashBadgePurchase,
     getStashBadgePurchase,
     storeBadgeIssuance,
@@ -226,10 +226,11 @@ getDueStoreReceipts db userId now =
     <$> DB.query
       db
       [sql|
-        SELECT badge_store_receipt_id, purchase_key, purchase_priv_key, master_key, payment, retry_delay
-        FROM badge_store_receipts
-        WHERE user_id = ? AND payment IS NOT NULL AND next_attempt_at <= ?
-        ORDER BY next_attempt_at
+        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.payment, r.retry_delay
+        FROM badge_store_receipts r
+        JOIN users u ON u.user_id = r.user_id
+        WHERE r.user_id = ? AND r.payment IS NOT NULL AND r.next_attempt_at <= ? AND u.shown_badge_id IS NULL
+        ORDER BY r.next_attempt_at
       |]
       (userId, now)
   where
@@ -239,7 +240,15 @@ getDueStoreReceipts db userId now =
 getNextStoreReceiptAttempt :: DB.Connection -> UserId -> IO (Maybe UTCTime)
 getNextStoreReceiptAttempt db userId =
   fmap join . maybeFirstRow fromOnly $
-    DB.query db "SELECT MIN(next_attempt_at) FROM badge_store_receipts WHERE user_id = ? AND payment IS NOT NULL" (Only userId)
+    DB.query
+      db
+      [sql|
+        SELECT MIN(r.next_attempt_at)
+        FROM badge_store_receipts r
+        JOIN users u ON u.user_id = r.user_id
+        WHERE r.user_id = ? AND r.payment IS NOT NULL AND u.shown_badge_id IS NULL
+      |]
+      (Only userId)
 
 deferStoreReceipt :: DB.Connection -> Int64 -> UTCTime -> Maybe Int64 -> BadgeIssueFailure -> IO ()
 deferStoreReceipt db receiptId nextAttemptAt retryDelay failure =
@@ -269,28 +278,18 @@ toBadgeStash :: (Int64 -> BadgeStashRef) -> (Int64, C.PublicKeyEd25519, C.Privat
 toBadgeStash ref (stashId, purchaseKey, purchasePrivKey, Binary mk) =
   BadgeStash {stashRef = ref stashId, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk}
 
--- | Drop a stash whose funding the service refused for good, unless a purchase already came from
--- it - badge_purchases references its row.
-deleteBadgeStash :: DB.Connection -> BadgeStash -> IO ()
-deleteBadgeStash db BadgeStash {stashRef} = case stashRef of
-  BSRCodeRedemption redemptionId ->
-    DB.execute
-      db
-      [sql|
-        DELETE FROM badge_code_redemptions
-        WHERE badge_code_redemption_id = ?
-          AND NOT EXISTS (SELECT 1 FROM badge_purchases WHERE badge_code_redemption_id = ?)
-      |]
-      (redemptionId, redemptionId)
-  BSRStoreReceipt storeReceiptId ->
-    DB.execute
-      db
-      [sql|
-        DELETE FROM badge_store_receipts
-        WHERE badge_store_receipt_id = ?
-          AND NOT EXISTS (SELECT 1 FROM badge_purchases WHERE badge_store_receipt_id = ?)
-      |]
-      (storeReceiptId, storeReceiptId)
+-- | Drop the keys stashed for a code the service refused for good, unless a purchase already came
+-- from them - badge_purchases references their row.
+deleteBadgeCodeRedemption :: DB.Connection -> User -> Text -> IO ()
+deleteBadgeCodeRedemption db User {userId} code =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM badge_code_redemptions
+      WHERE user_id = ? AND code = ?
+        AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_code_redemption_id = badge_code_redemptions.badge_code_redemption_id)
+    |]
+    (userId, code)
 
 -- | 'False' when the stash already funded a purchase here: the service replays the credential it
 -- issued, and that must add no purchase and leave the shown badge alone.

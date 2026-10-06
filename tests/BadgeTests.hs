@@ -36,7 +36,7 @@ import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types (BadgeIssueFailure (..))
 import Simplex.Chat (defaultChatConfig)
-import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
+import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
 import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, storeTransactionRef)
 import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
@@ -713,6 +713,8 @@ testIssueFailureClassification = do
   failureFor timeout `shouldBe` BIFNetwork {agentError = tshow timeout}
   failureFor auth `shouldBe` BIFUnexpected {message = tshow auth}
   badgeIssueFailure (ChatError (CECommandError "unexpected badge service response")) `shouldBe` BIFUnexpected {message = "unexpected badge service response"}
+  badgeIssueFailure (ChatError (CEBadgeRedeemError BREUnknownKeyIndex)) `shouldBe` BIFInvalidCredential
+  badgeIssueFailure (ChatError (CEBadgeRedeemError BRECredentialNotVerified)) `shouldBe` BIFInvalidCredential
 
 -- A refusal the service marks transient is not worth a word before the credential lapses. Internal
 -- comes without retryAfter so that a failing service is not pressed, not because the fault is

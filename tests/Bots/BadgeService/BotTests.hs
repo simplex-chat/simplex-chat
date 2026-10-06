@@ -140,7 +140,7 @@ badgeServiceTests = do
     it "should keep a refusal on the record, and hold a pending receipt until it settles" testPurchaseStash
     it "should keep a receipt credited to another key as refused" testPurchaseStashReceiptUsed
     it "should hold a Play token the service will not send to Play" testPurchaseUnsentPlayToken
-    it "should hold a store receipt while a badge is held, deferring it with nothing sent" testPurchaseWhileBadgeHeld
+    it "should hold a store receipt while a badge is held, without attempting it" testPurchaseWhileBadgeHeld
     it "should answer a receipt handed over under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
     it "should credit a purchase first handed over under another profile to that profile" testPurchaseStrandedUnderOtherProfile
     it "should credit a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
@@ -150,7 +150,7 @@ badgeServiceTests = do
     it "should attach a late receipt to its record, and credit the profile that created it" testInvoiceLateReceipt
     it "should list a record however old until a receipt reaching it is settled" testInvoiceAgedOut
     it "should refuse an invoice with no service configured or while a badge is held, creating no record" testInvoiceRefusedBeforeCharge
-    it "should hold a receipt for an invoice while a badge is held, deferring it with nothing sent" testInvoiceWhileBadgeHeld
+    it "should hold a receipt for an invoice while a badge is held, without attempting it" testInvoiceWhileBadgeHeld
     it "should list only the asking profile's open store purchases" testInvoiceStateOtherProfile
     it "should credit a receipt the store could not verify once its retryAfter has passed, with no second hand-over" testStoreReceiptRetried
     it "should send nothing for a deferred receipt handed over again before it is due" testStoreReceiptNotSentEarly
@@ -1777,17 +1777,15 @@ testPurchaseUnsentPlayToken ps =
 
 testPurchaseWhileBadgeHeld :: HasCallStack => TestParams -> IO ()
 testPurchaseWhileBadgeHeld ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsClock, bsController = cc} ->
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       code <- issueCode cc BTSupporter 1
       redeemFirstBadge alice code
-      since <- testClockTime bsClock
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       alice <##. "1: supporter"
       storePurchaseOpen alice ""
-      (at, failure) <- waitStoreReceiptDeferred (chatController alice) since
-      failure `shouldSatisfy` T.isPrefixOf "unexpected "
-      at `shouldSatisfy` (> addUTCTime (nominalDay - 60) since)
+      (alice </)
+      storeReceiptErrors (chatController alice) `shouldReturn` [Nothing]
       heldStoreReceipts (chatController alice) `shouldReturn` 1
       rowCount cc "sx_badge_service_payments" `shouldReturn` 0
 
@@ -1951,17 +1949,16 @@ testInvoiceRefusedBeforeCharge ps = do
 
 testInvoiceWhileBadgeHeld :: HasCallStack => TestParams -> IO ()
 testInvoiceWhileBadgeHeld ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsClock, bsController = cc} ->
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       invoiceId <- createInvoice alice 1
       code <- issueCode cc BTSupporter 1
       redeemFirstBadge alice code
-      since <- testClockTime bsClock
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
       alice <##. "1: supporter"
       alice <##. ("store purchase open: invoice " <> invoiceId <> ", transaction ")
-      (_, failure) <- waitStoreReceiptDeferred (chatController alice) since
-      failure `shouldSatisfy` T.isPrefixOf "unexpected "
+      (alice </)
+      storeReceiptErrors (chatController alice) `shouldReturn` [Nothing]
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
       heldStoreReceipts (chatController alice) `shouldReturn` 1
       rowCount cc "sx_badge_service_payments" `shouldReturn` 0
@@ -2095,17 +2092,16 @@ testStoreReceiptCleanup ps =
       alice <## ("store purchase open: invoice " <> unpaid)
       storePurchaseOpen alice ""
       alice <## "store purchase settled"
-      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
-      alice <## ("store purchase open: invoice " <> unpaid)
-      storePurchaseOpen alice ""
-      storePurchaseCredited alice "" "1: supporter"
-      -- held behind the badge credited above, so it stays held whatever the store says
       since <- testClockTime bsClock
-      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
-      alice <##. "1: supporter"
+      alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" googleUnreachableToken))
       alice <## ("store purchase open: invoice " <> unpaid)
       storePurchaseOpen alice ""
       _ <- waitStoreReceiptDeferred (chatController alice) since
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
+      alice <## ("store purchase open: invoice " <> unpaid)
+      storePurchaseOpen alice ""
+      storePurchaseOpen alice ""
+      storePurchaseCredited alice "" "1: supporter"
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack unpaid), False), (1, Nothing, True), (1, Nothing, True), (1, Nothing, True)]
       -- a month on, the record no receipt reached and the refusal go; the credited and the held one stay
       testClockTime bsClock >>= setClockAt bsClock . addUTCTime (31 * nominalDay)
@@ -2164,6 +2160,11 @@ waitStoreReceiptRows cc n = loop (100 :: Int)
     loop i = do
       rows <- storeReceiptRows cc
       if length rows == n then pure rows else threadDelay 50000 >> loop (i - 1)
+
+storeReceiptErrors :: ChatController -> IO [Maybe Text]
+storeReceiptErrors ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    map fromOnly <$> DB.query_ db "SELECT credit_error FROM badge_store_receipts ORDER BY badge_store_receipt_id"
 
 heldStoreReceipts :: ChatController -> IO Int
 heldStoreReceipts ChatController {chatStore} =
