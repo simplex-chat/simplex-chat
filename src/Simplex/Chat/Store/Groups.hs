@@ -3106,9 +3106,9 @@ associateContactWithMemberRecord
         [sql|
           UPDATE group_members
           SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
-          WHERE user_id = ? AND ((group_id = ? AND group_member_id = ?) OR contact_id = ?)
+          WHERE (user_id = ? AND group_id = ? AND group_member_id = ?) OR (user_id = ? AND contact_id = ?)
         |]
-        (contactId, memLDN, memProfileId, currentTs, userId, groupId, groupMemberId, contactId)
+        (contactId, memLDN, memProfileId, currentTs, userId, groupId, groupMemberId, userId, contactId)
       DB.execute
         db
         [sql|
