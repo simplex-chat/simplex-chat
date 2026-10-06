@@ -240,17 +240,4 @@ class SingleInstanceTest {
 
   private fun fileNames(dir: Path): List<String> =
     Files.list(dir).use { files -> files.map { it.fileName.toString() }.sorted().toList() }
-
-  private fun withTempDir(block: (Path) -> Unit) {
-    val tmp = Files.createTempDirectory("simplex-singleinstance-test")
-    try {
-      block(tmp)
-    } finally {
-      Files.walk(tmp).use { paths ->
-        paths.sorted(Comparator.reverseOrder()).forEach {
-          try { Files.delete(it) } catch (_: java.io.IOException) {}
-        }
-      }
-    }
-  }
 }
