@@ -889,10 +889,8 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      chatsFilter = ChatsFilter(
-        accepts = { chats -> chats.isNotEmpty() },
-        show = { chats -> searchChatFilteredBySimplexLink.value = chats.map { it.id }.toSet() }
-      ),
+      filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
+      filterKnownGroup = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
       close = null,
       cleanup = cleanup,
     )
@@ -987,6 +985,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
+  val showLocalChats: (List<ChatInfo>) -> Unit = { localChats -> searchChatFilteredBySimplexLink.value += localChats.map { it.id } }
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
@@ -1020,10 +1019,10 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
             Divider()
             // bottom toolbar: search bar below, so on desktop the connect row goes below the tags
-            TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
+            TagsOrConnectByName(searchText, connectNameCandidate, showLocalChats) { candidate ->
               TagsView(searchText)
               Divider()
-              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null, showLocalChats = showLocalChats)
             }
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
@@ -1031,8 +1030,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
           // top toolbar: search bar above, so on desktop the connect row goes above the tags
-          TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
-            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+          TagsOrConnectByName(searchText, connectNameCandidate, showLocalChats) { candidate ->
+            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null, showLocalChats = showLocalChats)
             Divider()
             TagsView(searchText)
           }
@@ -1171,18 +1170,19 @@ internal fun nameSearchCandidate(str: String): String? {
 private fun TagsOrConnectByName(
   searchText: MutableState<TextFieldValue>,
   connectNameCandidate: MutableState<String?>,
+  showLocalChats: (List<ChatInfo>) -> Unit,
   desktopView: @Composable (candidate: String) -> Unit,
 ) {
   val candidate = connectNameCandidate.value
   when {
     candidate == null -> TagsView(searchText)
-    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null, showLocalChats = showLocalChats)
     else -> desktopView(candidate)
   }
 }
 
 @Composable
-internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldValue>, connectNameCandidate: MutableState<String?>, close: (() -> Unit)?) {
+internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldValue>, connectNameCandidate: MutableState<String?>, close: (() -> Unit)?, showLocalChats: ((List<ChatInfo>) -> Unit)? = null) {
   val view = LocalMultiplatformView()
   Row(
     Modifier
@@ -1198,6 +1198,7 @@ internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldVa
               searchText.value = TextFieldValue()
               connectNameCandidate.value = null
             },
+            showLocalChats = showLocalChats,
           )
         }
       }

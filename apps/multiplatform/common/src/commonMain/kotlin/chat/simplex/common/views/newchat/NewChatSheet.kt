@@ -598,10 +598,7 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      chatsFilter = ChatsFilter(
-        accepts = { chats -> chats.isNotEmpty() && chats.all { it is ChatInfo.Direct } },
-        show = { chats -> searchChatFilteredBySimplexLink.value = chats.map { it.id }.toSet() }
-      ),
+      filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
       close = close,
       cleanup = cleanup,
     )

@@ -34,7 +34,9 @@ suspend fun planAndConnect(
   linkOwnerSig: LinkOwnerSig? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)? = null,
-  chatsFilter: ChatsFilter? = null,
+  filterKnownContact: ((Contact) -> Unit)? = null,
+  filterKnownGroup: ((GroupInfo) -> Unit)? = null,
+  showLocalChats: ((List<ChatInfo>) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
   when (val target = strConnectTarget(shortOrFullLink.trim())) {
     is ConnectTarget.Link -> {
@@ -57,7 +59,7 @@ suspend fun planAndConnect(
     inProgress.value = false
     cleanup?.invoke()
   }
-  return planAndConnectTask(rhId, shortOrFullLink, linkOwnerSig, close, cleanup, chatsFilter, inProgress)
+  return planAndConnectTask(rhId, shortOrFullLink, linkOwnerSig, close, cleanup, filterKnownContact, filterKnownGroup, showLocalChats, inProgress)
 }
 
 private fun nameDate(t: Instant): String =
@@ -151,7 +153,9 @@ private suspend fun planAndConnectTask(
   linkOwnerSig: LinkOwnerSig? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)? = null,
-  chatsFilter: ChatsFilter? = null,
+  filterKnownContact: ((Contact) -> Unit)? = null,
+  filterKnownGroup: ((GroupInfo) -> Unit)? = null,
+  showLocalChats: ((List<ChatInfo>) -> Unit)? = null,
   inProgress: MutableState<Boolean>
 ): CompletableDeferred<Boolean> {
   val completable = CompletableDeferred<Boolean>()
@@ -171,9 +175,8 @@ private suspend fun planAndConnectTask(
     val (connectionLink, planSimplexName, otherSimplexName, connectionPlan) = result
     val localChats = connectionPlan.localChats
     upsertChats(rhId, localChats)
-    val otherFilter = chatsFilter?.let { f -> ChatsFilter(accepts = { f.accepts(localChats + it) }, show = { f.show(localChats + it) }) }
-    val showLocalChats = chatsFilter?.accepts(localChats) == true
-    val openExisting: (() -> Unit)? = if (showLocalChats) null else localChats.firstOrNull()?.let { chatInfo -> { openChat_(chatModel, rhId, close, Chat(remoteHostId = rhId, chatInfo = chatInfo, chatItems = emptyList())) } }
+    showLocalChats?.invoke(localChats)
+    val openExisting: (() -> Unit)? = localChats.firstOrNull()?.let { chatInfo -> { openChat_(chatModel, rhId, close, Chat(remoteHostId = rhId, chatInfo = chatInfo, chatItems = emptyList())) } }
     val target = strConnectTarget(shortOrFullLink.trim())
     val linkText = if (target is ConnectTarget.Link) "<br><br><u>${target.linkText}</u>" else ""
     // the name can also resolve to the other kind; its type picks the verb, its short form the label and target
@@ -189,7 +192,6 @@ private suspend fun planAndConnectTask(
       else -> null to null
     }
     if (nameWarning != null && nameDomain != null) {
-      if (showLocalChats) chatsFilter?.show(localChats)
       showNameWarningAlert(rhId, nameDomain, nameWarning, openExisting, cleanup)
       return completable
     }
@@ -235,9 +237,8 @@ private suspend fun planAndConnectTask(
           Log.d(TAG, "planAndConnect, .InvitationLink, .Connecting")
           val contact = connectionPlan.invitationLinkPlan.contact_
           if (contact != null) {
-            val chats = listOf(ChatInfo.Direct(contact))
-            if (chatsFilter != null && chatsFilter.accepts(chats)) {
-              chatsFilter.show(chats)
+            if (filterKnownContact != null) {
+              filterKnownContact(contact)
             } else {
               showOpenKnownContactAlert(chatModel, rhId, close, contact)
               cleanup()
@@ -254,9 +255,8 @@ private suspend fun planAndConnectTask(
         is InvitationLinkPlan.Known -> {
           Log.d(TAG, "planAndConnect, .InvitationLink, .Known")
           val contact = connectionPlan.invitationLinkPlan.contact
-          val chats = listOf(ChatInfo.Direct(contact))
-          if (chatsFilter != null && chatsFilter.accepts(chats)) {
-            chatsFilter.show(chats)
+          if (filterKnownContact != null) {
+            filterKnownContact(contact)
           } else {
             showOpenKnownContactAlert(chatModel, rhId, close, contact)
             cleanup()
@@ -267,7 +267,6 @@ private suspend fun planAndConnectTask(
         is ContactAddressPlan.Ok ->
           if (connectionPlan.contactAddressPlan.contactSLinkData_ != null) {
             Log.d(TAG, "planAndConnect, .ContactAddress, .Ok, short link data present")
-            if (showLocalChats) chatsFilter?.show(localChats)
             showPrepareContactAlert(
               rhId,
               connectionLink,
@@ -279,8 +278,7 @@ private suspend fun planAndConnectTask(
               addressChanged = connectionPlan.contactAddressPlan.addressChanged,
               openExistingChat = openExisting?.let { open -> { open(); cleanup() } },
               close,
-              cleanup,
-              otherFilter
+              cleanup
             )
           } else {
             Log.d(TAG, "planAndConnect, .ContactAddress, .Ok, no short link data")
@@ -293,7 +291,6 @@ private suspend fun planAndConnectTask(
               ownerVerification = connectionPlan.contactAddressPlan.ownerVerification,
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
-              chatsFilter = otherFilter,
             )
           }
         ContactAddressPlan.OwnLink -> {
@@ -306,7 +303,6 @@ private suspend fun planAndConnectTask(
             cleanup = cleanup,
             connectOtherButton = connectOtherButton,
             connectOtherLink = connectOtherLink,
-            chatsFilter = otherFilter,
           )
         }
         ContactAddressPlan.ConnectingConfirmReconnect -> {
@@ -319,27 +315,25 @@ private suspend fun planAndConnectTask(
             cleanup = cleanup,
             connectOtherButton = connectOtherButton,
             connectOtherLink = connectOtherLink,
-            chatsFilter = otherFilter,
           )
         }
         is ContactAddressPlan.ConnectingProhibit -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .ConnectingProhibit")
           val contact = connectionPlan.contactAddressPlan.contact
-          if (showLocalChats) {
-            chatsFilter?.show(localChats)
+          if (filterKnownContact != null) {
+            filterKnownContact(contact)
           } else {
-            showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink, chatsFilter = otherFilter)
+            showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
             cleanup()
           }
         }
         is ContactAddressPlan.Known -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .Known")
           val contact = connectionPlan.contactAddressPlan.contact
-          if (showLocalChats) {
-            chatsFilter?.show(localChats)
-            if (otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, otherSimplexName, connectOtherButton, close, cleanup, otherFilter)
+          if (filterKnownContact != null) {
+            filterKnownContact(contact)
           } else {
-            showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink, chatsFilter = otherFilter)
+            showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
             cleanup()
           }
         }
@@ -348,11 +342,10 @@ private suspend fun planAndConnectTask(
           val contact = connectionPlan.contactAddressPlan.contact
           // the contact is already prepared in the store, so open the existing chat instead of sending a new
           // connection request
-          if (showLocalChats) {
-            chatsFilter?.show(localChats)
-            if (otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, otherSimplexName, connectOtherButton, close, cleanup, otherFilter)
+          if (filterKnownContact != null) {
+            filterKnownContact(contact)
           } else {
-            showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink, chatsFilter = otherFilter)
+            showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
             cleanup()
           }
         }
@@ -361,7 +354,6 @@ private suspend fun planAndConnectTask(
         is GroupLinkPlan.Ok ->
           if (connectionPlan.groupLinkPlan.groupSLinkData_ != null) {
             Log.d(TAG, "planAndConnect, .GroupLink, .Ok, short link data present")
-            if (showLocalChats) chatsFilter?.show(localChats)
             showPrepareGroupAlert(
               rhId,
               connectionLink,
@@ -374,8 +366,7 @@ private suspend fun planAndConnectTask(
               addressChanged = connectionPlan.groupLinkPlan.addressChanged,
               openExistingChat = openExisting?.let { open -> { open(); cleanup() } },
               close,
-              cleanup,
-              otherFilter
+              cleanup
             )
           } else {
             Log.d(TAG, "planAndConnect, .GroupLink, .Ok, no short link data")
@@ -388,17 +379,15 @@ private suspend fun planAndConnectTask(
               ownerVerification = connectionPlan.groupLinkPlan.ownerVerification,
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
-              chatsFilter = otherFilter,
             )
           }
         is GroupLinkPlan.OwnLink -> {
           Log.d(TAG, "planAndConnect, .GroupLink, .OwnLink")
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo
-          if (showLocalChats) {
-            chatsFilter?.show(localChats)
-            if (otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, otherSimplexName, connectOtherButton, close, cleanup, otherFilter)
+          if (filterKnownGroup != null) {
+            filterKnownGroup(groupInfo)
           } else {
-            ownGroupLinkConfirmConnect(chatModel, rhId, connectionLink, linkText, connectionPlan, groupInfo, close, cleanup, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink, chatsFilter = otherFilter)
+            ownGroupLinkConfirmConnect(chatModel, rhId, connectionLink, linkText, connectionPlan, groupInfo, close, cleanup, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
           }
         }
         GroupLinkPlan.ConnectingConfirmReconnect -> {
@@ -411,7 +400,6 @@ private suspend fun planAndConnectTask(
             cleanup = cleanup,
             connectOtherButton = connectOtherButton,
             connectOtherLink = connectOtherLink,
-            chatsFilter = otherFilter,
           )
         }
         is GroupLinkPlan.ConnectingProhibit -> {
@@ -441,11 +429,10 @@ private suspend fun planAndConnectTask(
         is GroupLinkPlan.Known -> {
           Log.d(TAG, "planAndConnect, .GroupLink, .Known")
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo
-          if (showLocalChats) {
-            chatsFilter?.show(localChats)
-            if (otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, otherSimplexName, connectOtherButton, close, cleanup, otherFilter)
+          if (filterKnownGroup != null) {
+            filterKnownGroup(groupInfo)
           } else {
-            showOpenKnownGroupAlert(chatModel, rhId, close, groupInfo, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink, chatsFilter = otherFilter)
+            showOpenKnownGroupAlert(chatModel, rhId, close, groupInfo, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
             cleanup()
           }
         }
@@ -453,7 +440,6 @@ private suspend fun planAndConnectTask(
           Log.d(TAG, "planAndConnect, .GroupLink, .NoRelays")
           val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
           if (groupSLinkData != null) {
-            if (showLocalChats) chatsFilter?.show(localChats)
             AlertManager.privacySensitive.showOpenChatAlert(
               profileName = groupSLinkData.groupProfile.displayName,
               profileFullName = groupSLinkData.groupProfile.fullName,
@@ -482,7 +468,6 @@ private suspend fun planAndConnectTask(
           Log.d(TAG, "planAndConnect, .GroupLink, .UpdateRequired")
           val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
           if (groupSLinkData != null) {
-            if (showLocalChats) chatsFilter?.show(localChats)
             AlertManager.privacySensitive.showOpenChatAlert(
               profileName = groupSLinkData.groupProfile.displayName,
               profileFullName = groupSLinkData.groupProfile.fullName,
@@ -579,7 +564,6 @@ fun askCurrentOrIncognitoProfileAlert(
   ownerVerification: OwnerVerification? = null,
   connectOtherButton: String? = null,
   connectOtherLink: String? = null,
-  chatsFilter: ChatsFilter? = null,
 ) {
   val fullText = listOfNotNull(text, ownerVerificationMessage(ownerVerification)).joinToString("\n\n").ifEmpty { null }
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
@@ -607,7 +591,7 @@ fun askCurrentOrIncognitoProfileAlert(
         if (connectOtherButton != null && connectOtherLink != null) {
           SectionItemView({
             AlertManager.privacySensitive.hideAlert()
-            withBGApi { planAndConnect(rhId, connectOtherLink, close = close, cleanup = cleanup, chatsFilter = chatsFilter) }
+            withBGApi { planAndConnect(rhId, connectOtherLink, close = close, cleanup = cleanup) }
           }) {
             Text(connectOtherButton, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           }
@@ -624,8 +608,6 @@ fun askCurrentOrIncognitoProfileAlert(
     hostDevice = hostDevice(rhId),
   )
 }
-
-class ChatsFilter(val accepts: (List<ChatInfo>) -> Boolean, val show: (List<ChatInfo>) -> Unit)
 
 suspend fun upsertChats(rhId: Long?, chats: List<ChatInfo>) = withContext(Dispatchers.Main) {
   chats.forEach {
@@ -650,7 +632,7 @@ val alertProfileImageSize = 138.dp
 private fun nameWithDomain(name: String, planSimplexName: SimplexNameInfo?): String =
   name + (planSimplexName?.let { " (${it.shortStr})" } ?: "")
 
-private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, contact: Contact, planSimplexName: SimplexNameInfo? = null, connectOtherButton: String? = null, connectOtherLink: String? = null, chatsFilter: ChatsFilter? = null) {
+private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, contact: Contact, planSimplexName: SimplexNameInfo? = null, connectOtherButton: String? = null, connectOtherLink: String? = null) {
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = contact.profile.displayName,
     profileFullName = contact.profile.fullName,
@@ -669,7 +651,7 @@ private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: 
       openKnownContact(chatModel, rhId, close, contact)
     },
     connectOtherButton = connectOtherButton,
-    onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, chatsFilter = chatsFilter) } } },
+    onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close) } } },
     onDismiss = null
   )
 }
@@ -696,7 +678,6 @@ fun ownGroupLinkConfirmConnect(
   planSimplexName: SimplexNameInfo? = null,
   connectOtherButton: String? = null,
   connectOtherLink: String? = null,
-  chatsFilter: ChatsFilter? = null,
 ) {
   if (groupInfo.useRelays) {
     AlertManager.privacySensitive.showAlertDialogButtonsColumn(
@@ -714,7 +695,7 @@ fun ownGroupLinkConfirmConnect(
           if (connectOtherButton != null && connectOtherLink != null) {
             SectionItemView({
               AlertManager.privacySensitive.hideAlert()
-              withBGApi { planAndConnect(rhId, connectOtherLink, close = close, cleanup = cleanup, chatsFilter = chatsFilter) }
+              withBGApi { planAndConnect(rhId, connectOtherLink, close = close, cleanup = cleanup) }
             }) {
               Text(connectOtherButton, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
             }
@@ -777,7 +758,7 @@ fun ownGroupLinkConfirmConnect(
   }
 }
 
-private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, groupInfo: GroupInfo, planSimplexName: SimplexNameInfo? = null, connectOtherButton: String? = null, connectOtherLink: String? = null, chatsFilter: ChatsFilter? = null) {
+private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, groupInfo: GroupInfo, planSimplexName: SimplexNameInfo? = null, connectOtherButton: String? = null, connectOtherLink: String? = null) {
   val subscriberCount = if (groupInfo.useRelays) groupInfo.groupSummary.publicMemberCount?.let { subscriberCountStr(it) } else null
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = groupInfo.groupProfile.displayName,
@@ -817,7 +798,7 @@ private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: ((
       openKnownGroup(chatModel, rhId, close, groupInfo)
     },
     connectOtherButton = connectOtherButton,
-    onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, chatsFilter = chatsFilter) } } },
+    onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close) } } },
     onDismiss = null
   )
 }
@@ -843,8 +824,7 @@ fun showPrepareContactAlert(
   addressChanged: Boolean = false,
   openExistingChat: (() -> Unit)? = null,
   close: (() -> Unit)?,
-  cleanup: (() -> Unit)?,
-  chatsFilter: ChatsFilter? = null
+  cleanup: (() -> Unit)?
 ) {
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = contactShortLinkData.profile.displayName,
@@ -881,35 +861,11 @@ fun showPrepareContactAlert(
       }
     },
     connectOtherButton = connectOtherButton,
-    onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup, chatsFilter = chatsFilter) } } },
+    onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
     dismissText = generalGetString(if (openExistingChat != null) MR.strings.connect_plan_open_existing_chat else MR.strings.cancel_verb),
     onDismissButton = openExistingChat,
     onDismiss = {
       cleanup?.invoke()
-    }
-  )
-}
-
-private fun showOtherNameAlert(rhId: Long?, otherSimplexName: SimplexNameInfo, connectOtherButton: String, close: (() -> Unit)?, cleanup: (() -> Unit)?, chatsFilter: ChatsFilter?) {
-  AlertManager.privacySensitive.showAlertDialogButtonsColumn(
-    title = String.format(
-      generalGetString(if (otherSimplexName.nameType == SimplexNameType.publicGroup) MR.strings.simplex_name_also_leads_to_channel else MR.strings.simplex_name_also_leads_to_contact),
-      otherSimplexName.nameDomain.fullDomainName,
-      otherSimplexName.shortStr
-    ),
-    hostDevice = hostDevice(rhId),
-    buttons = {
-      Column {
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          withBGApi { planAndConnect(rhId, otherSimplexName.shortStr, close = close, cleanup = cleanup, chatsFilter = chatsFilter) }
-        }) {
-          Text(connectOtherButton, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({ AlertManager.privacySensitive.hideAlert() }) {
-          Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-      }
     }
   )
 }
@@ -926,8 +882,7 @@ fun showPrepareGroupAlert(
   addressChanged: Boolean = false,
   openExistingChat: (() -> Unit)? = null,
   close: (() -> Unit)?,
-  cleanup: (() -> Unit)?,
-  chatsFilter: ChatsFilter? = null
+  cleanup: (() -> Unit)?
 ) {
   val isChannel = !(groupShortLinkInfo?.direct ?: true)
   val subscriberCount = if (isChannel) groupShortLinkData.publicGroupData?.publicMemberCount?.let { subscriberCountStr(it) } else null
@@ -973,7 +928,7 @@ fun showPrepareGroupAlert(
       }
     },
     connectOtherButton = connectOtherButton,
-    onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup, chatsFilter = chatsFilter) } } },
+    onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
     dismissText = generalGetString(if (openExistingChat != null) MR.strings.connect_plan_open_existing_chat else MR.strings.cancel_verb),
     onDismissButton = openExistingChat,
     onDismiss = {

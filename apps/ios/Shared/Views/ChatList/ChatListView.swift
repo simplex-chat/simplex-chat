@@ -775,7 +775,8 @@ struct ChatListSearchBar: View {
                     searchText: $searchText,
                     connectNameCandidate: $connectNameCandidate,
                     searchFocussed: $searchFocussed,
-                    dismiss: false
+                    dismiss: false,
+                    showLocalChats: showLocalChats
                 )
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
@@ -820,7 +821,8 @@ struct ChatListSearchBar: View {
                     searchText: $searchText,
                     connectNameCandidate: $connectNameCandidate,
                     searchFocussed: $searchFocussed,
-                    dismiss: false
+                    dismiss: false,
+                    showLocalChats: showLocalChats
                 )
             }
         }
@@ -911,15 +913,13 @@ struct ChatListSearchBar: View {
                 searchText = ""
                 searchFocussed = false
             },
-            chatsFilter: chatsFilter
+            filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
+            filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
         )
     }
 
-    private var chatsFilter: ChatsFilter {
-        ChatsFilter(
-            accepts: { !$0.isEmpty },
-            show: { chats in searchChatFilteredBySimplexLink = Set(chats.map { $0.id }) }
-        )
+    private func showLocalChats(_ chats: [ChatInfo]) {
+        searchChatFilteredBySimplexLink.formUnion(chats.map { $0.id })
     }
 }
 
@@ -933,6 +933,7 @@ struct ConnectByNameRow: View {
     @Binding var connectNameCandidate: String?
     @FocusState.Binding var searchFocussed: Bool
     var dismiss: Bool
+    var showLocalChats: (([ChatInfo]) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -950,6 +951,7 @@ struct ConnectByNameRow: View {
                 name,
                 theme: theme,
                 dismiss: dismiss,
+                showLocalChats: showLocalChats,
                 onOpen: {
                     searchText = ""
                     connectNameCandidate = nil

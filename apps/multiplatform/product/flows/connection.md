@@ -58,14 +58,16 @@ suspend fun apiConnectPlan(rh: Long?, connLink: String, inProgress: MutableState
 
 ```kotlin
 sealed class ConnectionPlan {
-  open val localChats: List<ChatInfo> get() = emptyList()
+  val localChats: List<ChatInfo>
   class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameWarning_: NameWarning? = null, override val localChats: List<ChatInfo> = emptyList()): ConnectionPlan()
-  class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameWarning_: NameWarning? = null, override val localChats: List<ChatInfo> = emptyList()): ConnectionPlan()
+  class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameWarning_: NameWarning? = null, val existingChat_: ChatInfo? = null): ConnectionPlan()
+  class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameWarning_: NameWarning? = null, val existingChat_: ChatInfo? = null): ConnectionPlan()
   class NameNotConnectable(val simplexDomain: SimplexDomain, val nameWarning: NameWarning): ConnectionPlan()
   class Error(val chatError: ChatError): ConnectionPlan()
 }
 ```
+
+`localChats` is computed from the plan: its contact or group, then `existingChat_`.
 
 4. For `InvitationLinkPlan`:
    - `Ok`: Fresh invitation, safe to connect.
@@ -98,21 +100,23 @@ suspend fun planAndConnect(
   shortOrFullLink: String,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)? = null,
-  chatsFilter: ChatsFilter? = null,
+  filterKnownContact: ((Contact) -> Unit)? = null,
+  filterKnownGroup: ((GroupInfo) -> Unit)? = null,
+  showLocalChats: ((List<ChatInfo>) -> Unit)? = null,
 ): CompletableDeferred<Boolean>
-
-class ChatsFilter(val accepts: (List<ChatInfo>) -> Boolean, val show: (List<ChatInfo>) -> Unit)
 ```
 
 1. A progress indicator is shown.
 2. `apiConnectPlan` is called to analyze the link.
-3. Based on the plan type, the appropriate UI is shown:
-   - For a name warning (`nameWarning_`, or `NameNotConnectable`): show the name warning alert.
-   - For `Ok` plans: show the alert to connect, with the link's profile when it has one. When `addressChanged` is set, it says the name now leads to a new address or channel, and offers Open existing chat (the first of the plan's `localChats`) in place of Cancel, unless `chatsFilter` accepts them and shows them.
-   - For `Known`, `ContactViaAddress`, a contact's `ConnectingProhibit`, an invitation's `Connecting`, and a group's `OwnLink`: `chatsFilter` receives the plan's `localChats`, or an invitation's contact. If it accepts them, it shows them and no alert shows, except, for `Known`, `ContactViaAddress` and a group's `OwnLink`, the "also leads to" alert when the name also leads to the other kind (`otherSimplexName`); otherwise the plan's alert shows (for `Known`, to open the existing contact/group).
+3. The plan's `localChats` are added to or updated in the chat list, and passed to `showLocalChats`.
+4. Based on the plan type, the appropriate UI is shown:
+   - For a name warning (`nameWarning_`, or `NameNotConnectable`): the name warning alert, with Open existing chat when the plan has local chats.
+   - For `Ok` plans: the alert to connect, with the link's profile when it has one. When `addressChanged` is set, "<name> now leads to a new address" (or channel) is shown, and Cancel is replaced by Open existing chat (`existingChat_`).
+   - For `Known`, `ContactViaAddress`, a contact's `ConnectingProhibit`, an invitation's `Connecting`, and a group's `OwnLink`: the contact or group is passed to `filterKnownContact` or `filterKnownGroup` in place of the alert. Without a filter, the plan's alert is shown (for `Known`, to open the existing contact/group).
+   - When the plan has `otherSimplexName`, a button for the other kind is added to the connect, own link, reconnect and known chat alerts.
    - For a contact's or an invitation's `OwnLink`: show alert.
    - For `ConnectingConfirmReconnect`: show reconnect confirmation; for a group's `ConnectingProhibit`: show the prohibit alert.
-4. Returns a `CompletableDeferred<Boolean>` indicating success.
+5. Returns a `CompletableDeferred<Boolean>` indicating success.
 
 ### 2.3 Execute Connection
 
