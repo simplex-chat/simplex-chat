@@ -300,7 +300,6 @@ class AlertManager {
     connectOtherButton: String? = null,
     onConnectOther: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
-    onDismissButton: (() -> Unit)? = null,
     onDismiss: (() -> Unit)? = null,
   ) {
     showAlert {
@@ -414,7 +413,7 @@ class AlertManager {
                   }
                 }
                 TextButton(onClick = {
-                  (onDismissButton ?: onDismiss)?.invoke()
+                  onDismiss?.invoke()
                   hideAlert()
                 }, if (confirmText == null) Modifier.focusRequester(focusRequester) else Modifier) {
                   Text(dismissText)

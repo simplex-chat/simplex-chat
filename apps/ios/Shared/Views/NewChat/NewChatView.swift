@@ -1107,7 +1107,6 @@ private func showPrepareContactAlert(
     planSimplexName: SimplexNameInfo? = nil,
     connectOtherButton: String? = nil,
     connectOtherLink: String? = nil,
-    openExistingChat: (() -> Void)? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?,
@@ -1129,12 +1128,11 @@ private func showPrepareContactAlert(
         profileBadge: contactShortLinkData.localBadge,
         nameCaption: planSimplexName?.shortStr,
         theme: theme,
-        subtitle: openExistingChat != nil ? planSimplexName.map { String.localizedStringWithFormat(NSLocalizedString("%@ now leads to a new address.", comment: "alert subtitle"), $0.nameDomain.fullDomainName) } : nil,
         information: ownerVerificationMessage(ownerVerification),
-        cancelTitle: openExistingChat == nil ? NSLocalizedString("Cancel", comment: "new chat action") : NSLocalizedString("Open existing chat", comment: "alert action"),
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
         secondTitle: connectOtherButton,
-        onCancel: openExistingChat ?? { cleanup?() },
+        onCancel: { cleanup?() },
         onConfirm: {
             Task {
                 do {
@@ -1166,15 +1164,12 @@ private func showPrepareGroupAlert(
     planSimplexName: SimplexNameInfo? = nil,
     connectOtherButton: String? = nil,
     connectOtherLink: String? = nil,
-    openExistingChat: (() -> Void)? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?,
     onOpen: (() -> Void)? = nil
 ) {
     let isChannel = !(groupShortLinkInfo?.direct ?? true)
-    let channelChanged = openExistingChat != nil ? planSimplexName.map { String.localizedStringWithFormat(NSLocalizedString("%@ now leads to a new channel.", comment: "alert information"), $0.nameDomain.fullDomainName) } : nil
-    let information = [channelChanged, ownerVerificationMessage(ownerVerification)].compactMap { $0 }.joined(separator: "\n")
     let subscriberCount = groupShortLinkData.publicGroupData.map { "\($0.publicMemberCount) subscribers" }
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
@@ -1190,13 +1185,13 @@ private func showPrepareGroupAlert(
         nameCaption: planSimplexName?.shortStr,
         theme: theme,
         subtitle: isChannel ? subscriberCount : nil,
-        information: information.isEmpty ? nil : information,
-        cancelTitle: openExistingChat == nil ? NSLocalizedString("Cancel", comment: "new chat action") : NSLocalizedString("Open existing chat", comment: "alert action"),
+        information: ownerVerificationMessage(ownerVerification),
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: isChannel
-            ? (openExistingChat != nil ? NSLocalizedString("Open new channel", comment: "new chat action") : NSLocalizedString("Open channel", comment: "new chat action"))
+            ? NSLocalizedString("Open channel", comment: "new chat action")
             : NSLocalizedString("Open group", comment: "new chat action"),
         secondTitle: connectOtherButton,
-        onCancel: openExistingChat ?? { cleanup?() },
+        onCancel: { cleanup?() },
         onConfirm: {
             Task {
                 do {
@@ -1344,7 +1339,7 @@ private func showNameWarningAlert(
                 actions.append(UIAlertAction(title: action.title, style: .default) { _ in action.handler(); cleanup?() })
             }
             if let openExistingChat {
-                actions.append(UIAlertAction(title: NSLocalizedString("Open existing chat", comment: "alert action"), style: .default) { _ in openExistingChat() })
+                actions.append(UIAlertAction(title: NSLocalizedString("Open chat", comment: "new chat action"), style: .default) { _ in openExistingChat() })
             }
             actions.append(okCleanupAlertAction(cleanup: cleanup))
             return actions
@@ -1547,7 +1542,6 @@ func planAndConnect(
                                     planSimplexName: planSimplexName,
                                     connectOtherButton: connectOtherButton,
                                     connectOtherLink: connectOtherLink,
-                                    openExistingChat: openExisting,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup,
@@ -1640,7 +1634,6 @@ func planAndConnect(
                                     planSimplexName: planSimplexName,
                                     connectOtherButton: connectOtherButton,
                                     connectOtherLink: connectOtherLink,
-                                    openExistingChat: openExisting,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup,
@@ -1724,9 +1717,8 @@ func planAndConnect(
                                     theme: theme,
                                     subtitle: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert subtitle"),
                                     cancelTitle: NSLocalizedString("OK", comment: "alert button"),
-                                    confirmTitle: openExisting == nil ? nil : NSLocalizedString("Open existing chat", comment: "alert action"),
-                                    onCancel: { cleanup?() },
-                                    onConfirm: openExisting
+                                    confirmTitle: nil,
+                                    onCancel: { cleanup?() }
                                 )
                             } else {
                                 showAlert(
@@ -1752,9 +1744,8 @@ func planAndConnect(
                                     theme: theme,
                                     subtitle: NSLocalizedString("This group requires a newer version of the app. Please update the app to join.", comment: "alert subtitle"),
                                     cancelTitle: NSLocalizedString("OK", comment: "alert button"),
-                                    confirmTitle: openExisting == nil ? nil : NSLocalizedString("Open existing chat", comment: "alert action"),
-                                    onCancel: { cleanup?() },
-                                    onConfirm: openExisting
+                                    confirmTitle: nil,
+                                    onCancel: { cleanup?() }
                                 )
                             } else {
                                 showAlert(

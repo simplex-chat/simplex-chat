@@ -88,7 +88,7 @@ data NameChange
 ```
 
 - `NCLapsed`: the local plan, with the registry's warning (`plans/2026-09-28-name-warnings.md` §5).
-- `NCMoved`: the new link's plan; the name's link differs from the link of a local chat or own channel. This is state 3c. Only the move is expressed, as in the canvas's 3c ("bakery.simplex now leads to a new address"). It is the narrow form of the `nameOwnerChanged` field dropped in `f3bcd4a16`: owner identity is neither included, stored nor compared.
+- `NCMoved`: the new link's plan; the name's link differs from the link of a local chat or own channel. This is state 3c. Only the move is expressed, with the known chat; the apps show the new link's alert as in master and the known chat in the chat list filter. It is the narrow form of the `nameOwnerChanged` field dropped in `f3bcd4a16`: owner identity is neither included, stored nor compared.
 - `knownChat` is the contact, the business chat, the channel or the own channel.
 - A name that moved from the own address has no change: the new link's plan is returned as for a name with nothing local.
 

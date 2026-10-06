@@ -115,8 +115,8 @@ suspend fun planAndConnect(
 2. `apiConnectPlan` is called to analyze the link.
 3. The plan's `localChats` are added to or updated in the chat list, and passed to `showLocalChats`.
 4. Based on the plan type, the appropriate UI is shown:
-   - For a name warning (`NameChange.Lapsed`, or `NameNotConnectable`): the name warning alert, with Open existing chat when the plan has local chats.
-   - For `Ok` plans: the alert to connect, with the link's profile when it has one. With `NameChange.Moved`, "<name> now leads to a new address" (or channel) is shown, and Cancel is replaced by Open existing chat (`knownChat`).
+   - For a name warning (`NameChange.Lapsed`, or `NameNotConnectable`): the name warning alert, with Open chat when the plan has local chats.
+   - For `Ok` plans: the alert to connect, with the link's profile when it has one.
    - For `Known`, `ContactViaAddress`, a contact's `ConnectingProhibit`, an invitation's `Connecting`, and a group's `OwnLink`: the contact or group is passed to `filterKnownContact` or `filterKnownGroup` in place of the alert. Without a filter, the plan's alert is shown (for `Known`, to open the existing contact/group).
    - When the plan has `otherSimplexName`, a button for the other kind is added to the connect, own link, reconnect and known chat alerts.
    - For a contact's or an invitation's `OwnLink`: show alert.

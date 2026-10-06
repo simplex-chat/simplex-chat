@@ -99,7 +99,7 @@ private fun showNameWarningAlert(
           }
           if (openExistingChat != null) {
             SectionItemView({ dismiss(); openExistingChat() }) {
-              Text(generalGetString(MR.strings.connect_plan_open_existing_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+              Text(generalGetString(MR.strings.connect_plan_open_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
             }
           }
           SectionItemView(::dismiss) {
@@ -269,7 +269,6 @@ private suspend fun planAndConnectTask(
               planSimplexName = planSimplexName,
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
-              openExistingChat = openExisting?.let { open -> { open(); cleanup() } },
               close,
               cleanup
             )
@@ -356,7 +355,6 @@ private suspend fun planAndConnectTask(
               planSimplexName = planSimplexName,
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
-              openExistingChat = openExisting?.let { open -> { open(); cleanup() } },
               close,
               cleanup
             )
@@ -443,8 +441,7 @@ private suspend fun planAndConnectTask(
                 )
               },
               subtitle = generalGetString(MR.strings.channel_no_active_relays_try_later),
-              confirmText = openExisting?.let { generalGetString(MR.strings.connect_plan_open_existing_chat) },
-              onConfirm = openExisting?.let { open -> { open(); cleanup() } },
+              confirmText = null,
               dismissText = generalGetString(MR.strings.ok),
               onDismiss = { cleanup() }
             )
@@ -471,8 +468,7 @@ private suspend fun planAndConnectTask(
                 )
               },
               subtitle = generalGetString(MR.strings.group_link_requires_newer_version),
-              confirmText = openExisting?.let { generalGetString(MR.strings.connect_plan_open_existing_chat) },
-              onConfirm = openExisting?.let { open -> { open(); cleanup() } },
+              confirmText = null,
               dismissText = generalGetString(MR.strings.ok),
               onDismiss = { cleanup() }
             )
@@ -813,7 +809,6 @@ fun showPrepareContactAlert(
   planSimplexName: SimplexNameInfo? = null,
   connectOtherButton: String? = null,
   connectOtherLink: String? = null,
-  openExistingChat: (() -> Unit)? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -832,9 +827,6 @@ fun showPrepareContactAlert(
     },
     profileBadge = if (contactShortLinkData.localBadge?.status == BadgeStatus.ExpiredOld) null else contactShortLinkData.localBadge,
     nameCaption = planSimplexName?.shortStr,
-    subtitle = if (openExistingChat != null && planSimplexName != null)
-      String.format(generalGetString(MR.strings.simplex_name_address_changed), planSimplexName.nameDomain.fullDomainName)
-    else null,
     information = ownerVerificationMessage(ownerVerification),
     confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),
     onConfirm = {
@@ -853,8 +845,6 @@ fun showPrepareContactAlert(
     },
     connectOtherButton = connectOtherButton,
     onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
-    dismissText = generalGetString(if (openExistingChat != null) MR.strings.connect_plan_open_existing_chat else MR.strings.cancel_verb),
-    onDismissButton = openExistingChat,
     onDismiss = {
       cleanup?.invoke()
     }
@@ -870,7 +860,6 @@ fun showPrepareGroupAlert(
   planSimplexName: SimplexNameInfo? = null,
   connectOtherButton: String? = null,
   connectOtherLink: String? = null,
-  openExistingChat: (() -> Unit)? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -888,14 +877,8 @@ fun showPrepareGroupAlert(
     },
     nameCaption = planSimplexName?.shortStr,
     subtitle = subscriberCount,
-    information = listOfNotNull(
-      if (openExistingChat != null && planSimplexName != null) String.format(generalGetString(MR.strings.simplex_name_channel_changed), planSimplexName.nameDomain.fullDomainName) else null,
-      ownerVerificationMessage(ownerVerification)
-    ).joinToString("\n").ifEmpty { null },
-    confirmText = generalGetString(
-      if (isChannel) (if (openExistingChat != null) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_channel)
-      else MR.strings.connect_plan_open_group
-    ),
+    information = ownerVerificationMessage(ownerVerification),
+    confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_channel else MR.strings.connect_plan_open_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
@@ -919,8 +902,6 @@ fun showPrepareGroupAlert(
     },
     connectOtherButton = connectOtherButton,
     onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
-    dismissText = generalGetString(if (openExistingChat != null) MR.strings.connect_plan_open_existing_chat else MR.strings.cancel_verb),
-    onDismissButton = openExistingChat,
     onDismiss = {
       cleanup?.invoke()
     }

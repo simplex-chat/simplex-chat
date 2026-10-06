@@ -140,9 +140,9 @@ It is omitted from the no-relays, app-update and "You are already joining the gr
 | 4 | Bare name; a chat; the name also leads to the other kind at a link the user has no chat at (e.g. channel `#bakery`, the name now has only a contact link) | the channel's plan if the name has a channel link, else the contact's; the local chat is shown only as the other kind's button, if at all | the contact's plan; the local channel is shown only when the name has a channel link |
 | 7 | A chat; the name leads to a new link whose profile does not claim the name | the "Unconfirmed name" error alert | the chat, no alert |
 | 8 | A chat; the request fails | the "SimpleX name error" alert | the chat, no alert |
-| 9 | A chat; the name leads to a new link; from a message | 3c with Open new chat, Cancel | 3c with Open new chat, Open existing chat (opens `knownChat`), and no Cancel |
+| 9 | A chat; the name leads to a new link; from a message | 3c with Open new chat, Cancel | the new link's alert, as with nothing local (N10) |
 | 10 | A chat; the name is available | "Name no longer registered", "from $X per year" | the same alert, "$Y for 2 years" |
-| 11 | Own address or channel; the name leads to another link | "Connect to yourself?", or the own channel | own address: the new link's plan, as with nothing local (N9); own channel: 3c, as for a chat, including 9 |
+| 11 | Own address or channel; the name leads to another link | "Connect to yourself?", or the own channel | own address: the new link's plan, as with nothing local (N9); own channel: as for a chat |
 | 14 | Own; the name is available | "Your name has expired", "from $X per year" | the same alert, "$Y for 2 years" |
 | 15 | Bare name; own address; the name also has a channel link the user has no chat at | the channel's join sheet | the channel's join sheet, or its no-relays or app-update alert; "Connect to yourself?" (4a) with Join channel when the channel's plan fails |
 | 16 | `#d`, or a bare name whose contact kind fails too; nothing local; the channel's link has no relays or needs an app update, and its profile does not claim the name | the no-relays or app-update alert | "Unconfirmed name" (2g) |
@@ -251,15 +251,14 @@ The `your` lines are printed for `CAPOwnLink` and `GLPOwnLink` plans. `is availa
 
 ## 8. Apps
 
-- **Alert.** `showNameRegistrationAlert` becomes `showNameWarningAlert`, a plain `case` from `NameWarning` and `own` to title, message and action (Renew, Register, Re-register, Connect to SimpleX team). `own` is the plan's `isOwnLink`. Open existing chat is shown when the plan has a local chat (1d), with OK. For an available name, the title is "Name no longer registered" with Open existing chat, and "Name not registered" without it.
+- **Alert.** `showNameRegistrationAlert` becomes `showNameWarningAlert`, a plain `case` from `NameWarning` and `own` to title, message and action (Renew, Register, Re-register, Connect to SimpleX team). `own` is the plan's `isOwnLink`. Open chat is shown when the plan has a local chat (1d), with OK. For an available name, the title is "Name no longer registered" with Open chat, and "Name not registered" without it.
 - **Flow.** The alert is shown by `planAndConnect` when the plan has a warning. Otherwise:
   - for a chat, prepared contact or own channel (`CAPKnown`, `CAPContactViaAddress`, `GLPKnown`, `GLPOwnLink`), the chat's, prepared contact's or own channel's alert is shown, with the other kind's button (N14); for a pasted link, it is replaced by the list filter, as before this change;
   - every other plan is handled as before this change, with the other kind's button where §3 lists it.
 
   Dates, lengths and the choice between own and chat warnings are decided in core.
-- **Flow for `NCMoved`.** The plan's alert is shown with Open existing chat (`knownChat`). The name warning alert is shown for `NCLapsed` only.
-- **3c.** In the `Ok` alert with Open existing chat, "<d> now leads to a new address." (contact) or "<d> now leads to a new channel." (channel) is shown, with Open new chat (Open new channel). Cancel is replaced by Open existing chat.
-- **No-relays and app-update alerts:** OK, and Open existing chat when the plan has `knownChat` (N35).
+- **Flow for `NCMoved` (3c, N10).** The plan's alert is shown as in master, with Cancel. `knownChat` is added to the chat list and, on a tap from the chat list search, to the list filter; Cancel keeps the filter. The name warning alert is shown for `NCLapsed` only.
+- **No-relays and app-update alerts:** as in master.
 - **Name search.**
   - Chat list: while the text is a name, a debounced `resolve=never` lookup is made for its kind, or for `@d` and `#d` for a bare name. The list is filtered to the plans' local chats, which are added to or updated in the chat list (N31).
   - New chat sheet: nothing is looked up while typing.
@@ -267,20 +266,20 @@ The `your` lines are printed for `CAPOwnLink` and `GLPOwnLink` plans. `is availa
   - Chat list: the local chats of the button's plan are added to the list filter (`showLocalChats`), so a chat found or verified on the tap is listed with the typing lookup's chats. Only the button's own plan is added; the filter is left unchanged by the other kind's button.
   - The search is cleared when a chat is opened or a connection is started from the button's flow. It is kept after errors, warnings without a chat, Cancel and OK. The new chat sheet is closed when a chat is opened or a connection is started.
 - **Pasted links.** `filterKnownContact` and `filterKnownGroup` are passed, as in master: both in the chat list, only `filterKnownContact` in the new chat sheet. A known contact or group is then shown in the filtered list in place of an alert.
-- **Local chats.** Each app computes `localChats` from the plan: its contact or group, then `knownChat`. Both apps add them to or update them in the chat list, and the first is opened by Open existing chat (N32).
+- **Local chats.** Each app computes `localChats` from the plan: its contact or group, then `knownChat`. Both apps add them to or update them in the chat list, and the first is opened by Open chat in the name warning alert (N32).
 - **Types.** Kotlin and Swift get `NameWarning` and `NamePrice` in place of `NameRegistration` and `NamePricing`. The hand-written Swift decoder for `NameRegistration` goes away: `NameWarning` is chat's own type and derives like its neighbours.
 - **Strings.** The price strings change from "from %s per year" to "%s for %d years".
 
 ## 9. Canvas changes
 
 - **2a, 3c, 4a:** the other kind's button is shown for bare names only.
-- **3c:** also applies to the own channel. From a message, it shows Open new chat and Open existing chat, with no Cancel. For the own address, the new link's plan is shown as with nothing local (N9).
+- **3c:** the new link's alert, as with nothing local, with Cancel; the known chat is shown in the filtered chat list (N10). For the own address, the new link's plan is shown as with nothing local (N9).
 - **3e, 3e′:** dropped. When a bare name's plan is a chat, prepared contact or own channel, and the name also leads to the other kind, the other kind's button is shown in that chat's, prepared contact's or own channel's alert (N14, N17).
 - **Prices:** "$X for 2 years", computed from the registry's price. The amounts on the canvas are examples.
 - **3a:** "Still leads to your chat, or not found, no valid link, another name, its new link fails, or the request failed" is consistent with §3 and N19; another chat of the user's at the new link is shown instead (N35).
 - **1a, 3f, band 3, footer:** the chat list is filtered to the device's answers, and "Connect to …" is shown while the text is a name; the name is resolved on a tap, and the tap's local chats are added to the list (N28, N31).
 - **The other kind's button:** that kind is planned as a typed name, so 3c is shown for a moved chat of that kind.
-- **4a, 4a′:** 4a′ is the own channel from a message or the new chat sheet (N34). For a new link that cannot be joined yet, its no-relays or app-update alert is shown, with Open existing chat (N35).
+- **4a, 4a′:** 4a′ is the own channel from a message or the new chat sheet (N34). For a new link that cannot be joined yet, its no-relays or app-update alert is shown (N35).
 
 ## 10. What goes away
 
@@ -305,16 +304,16 @@ Decided:
 | N7 | The name no longer has a link of a chat's or own's kind | not reported |
 | N8 | The other kind | offered for bare names only, whenever the name has a link of that kind |
 | N9 | Own address or channel at another link than the name's | own channel: 3c, as for a chat; own address: the new link's plan without a change, as with nothing local |
-| N10 | 3c from a message | Open new chat, and Open existing chat (`knownChat`), no Cancel |
+| N10 | 3c | the new link's alert as in master, with Cancel and no move text; from the chat list search, `knownChat` is in the list filter, and Cancel keeps it |
 | N11 | Not registered (reserved for another reason, or too short), with a chat or own | not reported |
 | N12 | The new link does not claim the name, with a chat or own | the local one, no alert |
 | N15 | The request failed | with a chat or own: the local one, no alert; with nothing: the error alert |
 | N16 | Where the bare name's lookups are | the two local lookups (`knownLinkPlans`) are in the `where` of `connectPlan`'s short link branches; each kind of a bare name is planned through `connectPlan`, with the resolution already made |
-| N17 | Name search (the "Connect to …" button) | no filter is passed: an alert is shown for every answer, with Open chat or Open existing chat for a local chat; in the chat list, the plan's local chats are added to the list filter; the search is cleared when a chat is opened or a connection is started |
+| N17 | Name search (the "Connect to …" button) | no filter is passed: an alert is shown for every answer, with Open chat for a local chat; in the chat list, the plan's local chats are added to the list filter; the search is cleared when a chat is opened or a connection is started |
 | N18 | `/c` with `nameChange` | `NCLapsed`: the plan is shown instead of connecting, as only resolvable names are connected; `NCMoved`: connects when the plan allows, as `/c` is not planning (`connectionPlanProceed`) |
 | N19 | A chat, and the name's link data cannot be fetched | the chat, no alert, as N15 |
 | N20 | 3c for the own address from a message | superseded by N9: the own address has no 3c |
-| N21 | 3c for a channel | "… now leads to a new channel." in the information line; Open new channel, and Open existing chat from a message |
+| N21 | 3c for a channel | superseded by N10: the channel's alert as in master |
 | N22 | Bare name, the channel failed and the contact kind is planned | the channel is offered as the other kind |
 | N23 | A chat answered without a warning (N7, N11) | superseded by N28: the name is resolved on every lookup |
 | N24 | Expired without a grace date | "expired on <date>", without a renew clause, as the CLI |
@@ -327,7 +326,7 @@ Decided:
 | N29 | Bare name, the channel has no relays or needs an app update | the channel's plan; the contact kind is offered when the name has a contact link |
 | N30 | Expired, and the grace date has passed | the dateless variant (N24) |
 | N31 | Name search | a debounced `resolve=never` lookup of the typed kind, or of both kinds for a bare name; the list is filtered to their local chats; the "Connect to …" button is shown while the text is a name |
-| N32 | The local chat in the apps | `localChats`, computed from the plan: its contact or group, then `knownChat`; added to the list or updated in it, and opened by Open existing chat. "You are already joining the group" keeps its alert and is not filtered |
+| N32 | The local chat in the apps | `localChats`, computed from the plan: its contact or group, then `knownChat`; added to the list or updated in it, and opened by Open chat in the name warning alert. "You are already joining the group" keeps its alert and is not filtered |
 | N33 | The other kind's button with a chats filter | superseded by N14: filters are passed for pasted links only, and a link has no other kind |
 | N34 | iOS against Kotlin | the name line in alerts, the own channel's "Your channel" text, a contact prepared at the name's address opened as in Kotlin, and the other kind's button on the "Repeat join request?" sheet |
 | N35 | A local chat's name leads to a link that cannot be joined yet (no relays, needs an app update, connecting), or to another chat the user has | that link's plan, or that chat's, with `NCMoved` |
@@ -354,7 +353,7 @@ Decided:
    - the View;
    - the CLI tests.
 2. Regenerate the bot API types.
-3. Kotlin, then Swift: the `case`, 3c from a message, the strings.
+3. Kotlin, then Swift: the `case`, the strings.
 4. Update the lookup plan (`plans/2026-09-22-name-lookup-core-api.md`) §2–§4, and the canvas (§9).
 
 ## 14. Done means

@@ -18,8 +18,6 @@
   <string name="connect_plan_open_new_chat">Open new chat</string>
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_open_new_group">Open new group</string>
-  <string name="connect_plan_open_new_channel">Open new channel</string>
-  <string name="connect_plan_open_existing_chat">Open existing chat</string>
   <string name="connect_plan_you_are_observer">You are an observer</string>
   <string name="connect_plan_you_are_member">You are a member</string>
   <string name="connect_plan_you_are_moderator">You are a moderator</string>
@@ -218,8 +216,6 @@
   <string name="simplex_name_available_desc">%1$s is available for registration for %2$s.</string>
   <string name="simplex_name_price_for_years">%1$s for %2$d years</string>
   <string name="simplex_name_reserved_community_desc">%1$s is reserved for community. Please contact SimpleX Chat if you are interested in using it.</string>
-  <string name="simplex_name_address_changed">%1$s now leads to a new address.</string>
-  <string name="simplex_name_channel_changed">%1$s now leads to a new channel.</string>
   <string name="simplex_name_register">Register</string>
   <string name="simplex_name_re_register">Re-register</string>
   <string name="simplex_name_renew">Renew</string>
