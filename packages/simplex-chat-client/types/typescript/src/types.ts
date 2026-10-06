@@ -2138,15 +2138,13 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
-    nameWarning_?: NameWarning
-    existingChat_?: ChatInfo
+    nameChange?: NameChange
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
-    nameWarning_?: NameWarning
-    existingChat_?: ChatInfo
+    nameChange?: NameChange
   }
 
   export interface NameNotConnectable extends Interface {
@@ -2212,7 +2210,6 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
-    addressChanged: boolean
   }
 
   export interface OwnLink extends Interface {
@@ -2853,7 +2850,6 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
-    addressChanged: boolean
   }
 
   export interface OwnLink extends Interface {
@@ -3377,6 +3373,26 @@ export namespace MsgVerified {
   }
 }
 
+export type NameChange = NameChange.Lapsed | NameChange.Moved
+
+export namespace NameChange {
+  export type Tag = "lapsed" | "moved"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Lapsed extends Interface {
+    type: "lapsed"
+    nameWarning: NameWarning
+  }
+
+  export interface Moved extends Interface {
+    type: "moved"
+    knownChat: ChatInfo
+  }
+}
+
 export type NameErrorType = NameErrorType.NO_RESOLVER | NameErrorType.NOT_FOUND | NameErrorType.RESOLVER
 
 export namespace NameErrorType {
@@ -3407,22 +3423,12 @@ export interface NamePrice {
 
 export type NameWarning = 
   | NameWarning.Expired
-  | NameWarning.OwnExpired
   | NameWarning.Available
-  | NameWarning.NoLongerRegistered
-  | NameWarning.OwnAvailable
   | NameWarning.ReservedForCommunity
   | NameWarning.NotRegistered
 
 export namespace NameWarning {
-  export type Tag = 
-    | "expired"
-    | "ownExpired"
-    | "available"
-    | "noLongerRegistered"
-    | "ownAvailable"
-    | "reservedForCommunity"
-    | "notRegistered"
+  export type Tag = "expired" | "available" | "reservedForCommunity" | "notRegistered"
 
   interface Interface {
     type: Tag
@@ -3434,24 +3440,8 @@ export namespace NameWarning {
     graceUntil?: string // ISO-8601 timestamp
   }
 
-  export interface OwnExpired extends Interface {
-    type: "ownExpired"
-    expiredAt: string // ISO-8601 timestamp
-    graceUntil?: string // ISO-8601 timestamp
-  }
-
   export interface Available extends Interface {
     type: "available"
-    price: NamePrice
-  }
-
-  export interface NoLongerRegistered extends Interface {
-    type: "noLongerRegistered"
-    price: NamePrice
-  }
-
-  export interface OwnAvailable extends Interface {
-    type: "ownAvailable"
     price: NamePrice
   }
 

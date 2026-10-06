@@ -144,6 +144,7 @@ This file is generated automatically.
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
+- [NameChange](#namechange)
 - [NameErrorType](#nameerrortype)
 - [NamePrice](#nameprice)
 - [NameWarning](#namewarning)
@@ -1872,14 +1873,12 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
-- nameWarning_: [NameWarning](#namewarning)?
-- existingChat_: [ChatInfo](#chatinfo)?
+- nameChange: [NameChange](#namechange)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
-- nameWarning_: [NameWarning](#namewarning)?
-- existingChat_: [ChatInfo](#chatinfo)?
+- nameChange: [NameChange](#namechange)?
 
 NameNotConnectable:
 - type: "nameNotConnectable"
@@ -1931,7 +1930,6 @@ Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
-- addressChanged: bool
 
 OwnLink:
 - type: "ownLink"
@@ -2542,7 +2540,6 @@ Ok:
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
-- addressChanged: bool
 
 OwnLink:
 - type: "ownLink"
@@ -3102,6 +3099,21 @@ SigMissing:
 
 ---
 
+## NameChange
+
+**Discriminated union type**:
+
+Lapsed:
+- type: "lapsed"
+- nameWarning: [NameWarning](#namewarning)
+
+Moved:
+- type: "moved"
+- knownChat: [ChatInfo](#chatinfo)
+
+
+---
+
 ## NameErrorType
 
 **Discriminated union type**:
@@ -3137,21 +3149,8 @@ Expired:
 - expiredAt: UTCTime
 - graceUntil: UTCTime?
 
-OwnExpired:
-- type: "ownExpired"
-- expiredAt: UTCTime
-- graceUntil: UTCTime?
-
 Available:
 - type: "available"
-- price: [NamePrice](#nameprice)
-
-NoLongerRegistered:
-- type: "noLongerRegistered"
-- price: [NamePrice](#nameprice)
-
-OwnAvailable:
-- type: "ownAvailable"
 - price: [NamePrice](#nameprice)
 
 ReservedForCommunity:

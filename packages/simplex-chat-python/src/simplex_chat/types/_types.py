@@ -1481,14 +1481,12 @@ class ConnectionPlan_invitationLink(TypedDict):
 class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
-    nameWarning_: NotRequired["NameWarning"]
-    existingChat_: NotRequired["ChatInfo"]
+    nameChange: NotRequired["NameChange"]
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
-    nameWarning_: NotRequired["NameWarning"]
-    existingChat_: NotRequired["ChatInfo"]
+    nameChange: NotRequired["NameChange"]
 
 class ConnectionPlan_nameNotConnectable(TypedDict):
     type: Literal["nameNotConnectable"]
@@ -1538,7 +1536,6 @@ class ContactAddressPlan_ok(TypedDict):
     type: Literal["ok"]
     contactSLinkData_: NotRequired["ContactShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
-    addressChanged: bool
 
 class ContactAddressPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -1985,7 +1982,6 @@ class GroupLinkPlan_ok(TypedDict):
     groupSLinkInfo_: NotRequired["GroupShortLinkInfo"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
-    addressChanged: bool
 
 class GroupLinkPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -2360,6 +2356,18 @@ MsgVerified = MsgVerified_signed | MsgVerified_sigMissing
 
 MsgVerified_Tag = Literal["signed", "sigMissing"]
 
+class NameChange_lapsed(TypedDict):
+    type: Literal["lapsed"]
+    nameWarning: "NameWarning"
+
+class NameChange_moved(TypedDict):
+    type: Literal["moved"]
+    knownChat: "ChatInfo"
+
+NameChange = NameChange_lapsed | NameChange_moved
+
+NameChange_Tag = Literal["lapsed", "moved"]
+
 class NameErrorType_NO_RESOLVER(TypedDict):
     type: Literal["NO_RESOLVER"]
 
@@ -2383,21 +2391,8 @@ class NameWarning_expired(TypedDict):
     expiredAt: str  # ISO-8601 timestamp
     graceUntil: NotRequired[str]  # ISO-8601 timestamp
 
-class NameWarning_ownExpired(TypedDict):
-    type: Literal["ownExpired"]
-    expiredAt: str  # ISO-8601 timestamp
-    graceUntil: NotRequired[str]  # ISO-8601 timestamp
-
 class NameWarning_available(TypedDict):
     type: Literal["available"]
-    price: "NamePrice"
-
-class NameWarning_noLongerRegistered(TypedDict):
-    type: Literal["noLongerRegistered"]
-    price: "NamePrice"
-
-class NameWarning_ownAvailable(TypedDict):
-    type: Literal["ownAvailable"]
     price: "NamePrice"
 
 class NameWarning_reservedForCommunity(TypedDict):
@@ -2408,15 +2403,12 @@ class NameWarning_notRegistered(TypedDict):
 
 NameWarning = (
     NameWarning_expired
-    | NameWarning_ownExpired
     | NameWarning_available
-    | NameWarning_noLongerRegistered
-    | NameWarning_ownAvailable
     | NameWarning_reservedForCommunity
     | NameWarning_notRegistered
 )
 
-NameWarning_Tag = Literal["expired", "ownExpired", "available", "noLongerRegistered", "ownAvailable", "reservedForCommunity", "notRegistered"]
+NameWarning_Tag = Literal["expired", "available", "reservedForCommunity", "notRegistered"]
 
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
