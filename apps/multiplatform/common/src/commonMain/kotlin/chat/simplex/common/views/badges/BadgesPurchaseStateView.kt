@@ -6,17 +6,20 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import chat.simplex.common.model.BadgeIssueFailure
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
 @Composable
-fun BadgesPurchaseStateView(title: StringResource, message: StringResource?, onDismiss: () -> Unit) {
+fun BadgesPurchaseStateView(title: StringResource, message: StringResource?, failure: BadgeIssueFailure? = null, onDismiss: () -> Unit) {
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -39,6 +42,19 @@ fun BadgesPurchaseStateView(title: StringResource, message: StringResource?, onD
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth()
       )
+    }
+
+    if (failure != null) {
+      Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(painterResource(MR.images.ic_warning), contentDescription = null, tint = Color.Red)
+        Text(
+          failure.purchaseText,
+          style = MaterialTheme.typography.body1,
+          color = MaterialTheme.colors.secondary,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
     }
 
     Spacer(Modifier.weight(1f))

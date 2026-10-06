@@ -45,6 +45,7 @@ interface PlatformInterface {
     return emptyList()
   }
   suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = throw BadgeStoreError.StoreUnavailable
+  suspend fun androidAcknowledgeBadgePurchase(receipt: BadgeStoreReceipt) {}
   suspend fun androidFinishBadgePurchase(receipt: BadgeStoreReceipt) {}
   suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = emptyList()
   val androidApiLevel: Int? get() = null

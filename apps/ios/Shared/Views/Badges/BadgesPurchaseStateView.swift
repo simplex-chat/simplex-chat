@@ -7,12 +7,14 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct BadgesPurchaseStateView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) private var dismiss
     let title: LocalizedStringKey
     var message: LocalizedStringKey? = nil
+    var failure: BadgeIssueFailure? = nil
     var showsAsSheet: Bool = false
 
     var body: some View {
@@ -43,6 +45,18 @@ struct BadgesPurchaseStateView: View {
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let failure {
+                VStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.red)
+                    Text(failure.purchaseText)
+                        .font(.body)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer()

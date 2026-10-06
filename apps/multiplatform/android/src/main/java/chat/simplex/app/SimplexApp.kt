@@ -355,6 +355,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(id, invoiceId)
 
+      override suspend fun androidAcknowledgeBadgePurchase(receipt: BadgeStoreReceipt) = acknowledgeBadgePurchase(receipt)
+
       override suspend fun androidFinishBadgePurchase(receipt: BadgeStoreReceipt) = finishBadgePurchase(receipt)
 
       override suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = unfinishedBadgePurchases()

@@ -66,7 +66,6 @@ struct BadgeStoreReceipt {
     // the signed token the badge service verifies - never transaction.jsonRepresentation
     let jws: String
     let productId: String
-    let transactionId: UInt64
     let invoiceId: UUID?
     let signatureVerified: Bool
     let transaction: Transaction
@@ -102,31 +101,31 @@ final class BadgeStore: ObservableObject {
 
     @Published private var state: LoadState = .notLoaded
     private var products: [String: Product] = [:]
-    // transactions this run has started presenting and not finished - filled by claim, not by reading the
-    // store, so it is empty at launch until the sweep reaches each one
-    @Published private var unfinished: [UInt64: BadgeStoreReceipt] = [:]
     // core's open store purchases for the profile they were read for: core knows whose a purchase is
     @Published private var storePurchases: (userId: Int64, purchases: [OpenStorePurchase])? = nil
-    // whether this run has an open store sheet, or an interactive presentation that has not returned
+    // whether a store sheet this run opened has not returned
     @Published private var buying = false
     // kept for this run only: StoreKit lists no deferred purchase, and a declined one delivers nothing
     // by invoice id, so a pending purchase shows only under the profile whose record it names
     @Published private var waitingForApproval: Set<String> = []
-    // set when the first sweep has returned, which is after every held transaction has been presented
-    // over the network - until then a purchase made while the app was not running is unknown
+    // set when the first sweep has returned, which is after every transaction the store holds was handed
+    // to core - until then a purchase made while the app was not running is unknown
     @Published private var reconciledOnce = false
-    // whether the purchase the user started waits on the presentation, so its outcome is shown whoever claimed it
-    private var presenting: [UInt64: Bool] = [:]
+    // invoices of the purchases the user started this run, whose refusal is theirs to be told of
+    private var awaitedInvoices: Set<String> = []
     private var transactionUpdates: Task<Void, Never>? = nil
 
     private init() {}
 
     func purchaseState(_ userId: Int64?) -> BadgePurchaseState? {
         let purchases = openStorePurchases(userId)
-        let held = Set(unfinished.values.compactMap { $0.echoedInvoiceId })
-        if purchases.contains(where: { $0.invoiceId.map(held.contains) == true }) { return .issuing }
+        if purchases.contains(where: { $0.transactionRef != nil }) { return .issuing }
         if purchases.contains(where: { $0.invoiceId.map(waitingForApproval.contains) == true }) { return .waitingForApproval }
         return nil
+    }
+
+    func creditError(_ userId: Int64?) -> BadgeIssueFailure? {
+        openStorePurchases(userId).compactMap(\.creditError).first
     }
 
     var checkingPurchases: Bool { !reconciledOnce }
@@ -208,10 +207,9 @@ final class BadgeStore: ObservableObject {
         await loadBadgeStateAsync(userId)
         do {
             let outcome = try await storePurchase(product, invoiceId)
-            switch outcome {
-            // finished only once the service answers for it, as an unfinished transaction is what the store re-delivers
-            case let .purchased(receipt) where receipt.signatureVerified: await presentPurchase(receipt, interactive: true)
-            case .purchased, .cancelled, .pending: break
+            if case let .purchased(receipt) = outcome, receipt.signatureVerified {
+                await MainActor.run { _ = awaitedInvoices.insert(invoice) }
+                await handOver(receipt)
             }
             await MainActor.run { buying = false }
             return outcome
@@ -233,47 +231,51 @@ final class BadgeStore: ObservableObject {
         }
     }
 
-    // only the purchase the user started may alert: an answer can reveal a profile other than the one on screen
-    private func presentPurchase(_ receipt: BadgeStoreReceipt, interactive: Bool) async {
-        guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }),
-              await claim(receipt, interactive: interactive)
-        else { return }
-        var alertText: String? = nil
+    // Core holds the receipt and credits it; the transaction stays unfinished until core answers it credited
+    // or refused, as an unfinished transaction is what the store re-delivers if anything is lost on the way.
+    private func handOver(_ receipt: BadgeStoreReceipt) async {
+        guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else { return }
         do {
-            switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, .apple(jws: receipt.jws), retry: interactive) {
-            case let .redeemed(user, badgeState):
+            switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, .apple(jws: receipt.jws)) {
+            case let .held(user, badgeState, storePurchases):
                 await MainActor.run {
-                    // finished below whichever profile was credited, as it is paid for; only the profile on screen shows it
+                    // the answer is the owner's, which may be another profile and a hidden one
+                    if active(user) {
+                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
+                        setStorePurchases(user.userId, storePurchases)
+                    }
+                }
+            case let .credited(user, badgeState):
+                await MainActor.run {
                     if active(user) {
                         BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
                         ChatModel.shared.updateUser(user)
                         if badgeState?.shown == true { UserDefaults.standard.set(true, forKey: DEFAULT_SUPPORTER_BANNER_SHOWN) }
                     }
                 }
-                await finish(receipt)
-            case nil:
-                break
+                await settle(receipt, refusal: nil)
             }
         } catch let error {
-            logger.error("BadgeStore.presentPurchase: \(responseError(error))")
-            let refused = badgeReceiptRefused(error)
-            if refused { await finish(receipt) }
-            let text = redeemErrorText(error, purchase: true)
-            alertText = refused || retryCannotCredit(error) ? text : text + "\n\n" + NSLocalizedString("The purchase will be retried, and the badge will arrive.", comment: "alert message")
-        }
-        await loadCurrentBadgeState()
-        let userWaiting = await MainActor.run { presenting.removeValue(forKey: receipt.transactionId) == true }
-        if userWaiting, let alertText {
-            await MainActor.run { showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: alertText) }
+            logger.error("BadgeStore.handOver: \(responseError(error))")
+            if badgeReceiptRefused(error) { await settle(receipt, refusal: error) }
         }
     }
 
-    // at launch, on return to the foreground and on a profile switch, never on a timer
+    private func settle(_ receipt: BadgeStoreReceipt, refusal: Error?) async {
+        await receipt.transaction.finish()
+        let awaited = await MainActor.run { receipt.echoedInvoiceId.map { awaitedInvoices.remove($0) != nil } ?? false }
+        if awaited, let refusal {
+            await MainActor.run { showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(refusal, purchase: true)) }
+        }
+    }
+
+    // at launch, on return to the foreground, on a profile switch and when core settles a purchase, never on a timer
     func presentUnfinished() async {
         await listenForTransactions()
         for await verification in Transaction.unfinished {
             await reconcile(verification)
         }
+        await loadCurrentBadgeState()
         await MainActor.run { reconciledOnce = true }
     }
 
@@ -295,27 +297,8 @@ final class BadgeStore: ObservableObject {
         if !badgeOneTimeProductIds.contains(receipt.productId) {
             await receipt.transaction.finish()
         } else if receipt.signatureVerified {
-            await presentPurchase(receipt, interactive: false)
+            await handOver(receipt)
         }
-    }
-
-    // one request per transaction: the purchase itself, launch, foreground and the store can each present it
-    @MainActor
-    private func claim(_ receipt: BadgeStoreReceipt, interactive: Bool) -> Bool {
-        if let waiting = presenting[receipt.transactionId] {
-            presenting[receipt.transactionId] = waiting || interactive
-            return false
-        }
-        presenting[receipt.transactionId] = interactive
-        unfinished[receipt.transactionId] = receipt
-        // an approved Ask to Buy arrives as a transaction, which ends the wait
-        if let invoiceId = receipt.echoedInvoiceId { waitingForApproval.remove(invoiceId) }
-        return true
-    }
-
-    private func finish(_ receipt: BadgeStoreReceipt) async {
-        await receipt.transaction.finish()
-        await MainActor.run { unfinished[receipt.transactionId] = nil }
     }
 
     @MainActor
@@ -349,26 +332,16 @@ private func storeReceipt(_ verification: VerificationResult<Transaction>) -> Ba
     return BadgeStoreReceipt(
         jws: verification.jwsRepresentation,
         productId: t.productID,
-        transactionId: t.id,
         invoiceId: t.appAccountToken,
         signatureVerified: signatureVerified,
         transaction: t
     )
 }
 
-// the only answers after which the receipt will never be credited, so the store may stop re-delivering it
+// the codes core refuses a receipt with for good, after which the store may stop re-delivering it
 private func badgeReceiptRefused(_ error: Error) -> Bool {
     if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError {
         return code == .receiptInvalid || code == .receiptUsed
     }
     return false
-}
-
-private func retryCannotCredit(_ error: Error) -> Bool {
-    guard case let .error(.badgeRedeemError(e)) = error as? ChatError else { return false }
-    switch e {
-    case .badgeActive, .serviceNotConfigured: return true
-    case let .serviceError(code): return code == .providerNotConfigured || code == .productUnavailable
-    default: return false
-    }
 }

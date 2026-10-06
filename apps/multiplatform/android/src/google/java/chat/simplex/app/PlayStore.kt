@@ -143,7 +143,8 @@ private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = wh
     BadgeStoreReceipt(
       token = purchase.purchaseToken,
       productId = purchase.products.firstOrNull() ?: "",
-      invoiceId = purchase.accountIdentifiers?.obfuscatedAccountId
+      invoiceId = purchase.accountIdentifiers?.obfuscatedAccountId,
+      acknowledged = purchase.isAcknowledged
     )
   )
   else -> null
@@ -225,19 +226,33 @@ private fun ProductDetails.badgeOffer(id: BadgeStoreProductId): BadgeOffer? {
   return BadgeOffer(id, product, this, offer.offerToken)
 }
 
+// acknowledged without consuming, so Play stops its 3-day refund clock and still lists the purchase until it is finished
+suspend fun acknowledgeBadgePurchase(receipt: BadgeStoreReceipt) {
+  if (!receipt.acknowledged) acknowledge(connectedBadgeBillingClient(), receipt.token)
+}
+
 // consumed if one-time so it can be bought again, else acknowledged, as Play refunds an unacknowledged purchase
 // after 3 days; decided by product id, as after a restart there is no ProductDetails for the purchase
 suspend fun finishBadgePurchase(receipt: BadgeStoreReceipt) {
   val client = connectedBadgeBillingClient()
-  val done = CompletableDeferred<BillingResult>()
   if (receipt.productId in badgeOneTimeProductIds) {
+    val done = CompletableDeferred<BillingResult>()
     val params = ConsumeParams.newBuilder().setPurchaseToken(receipt.token).build()
     client.consumeAsync(params) { result, _ -> done.complete(result) }
+    checkBillingResult(done.await())
   } else {
-    val params = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(receipt.token).build()
-    client.acknowledgePurchase(params) { done.complete(it) }
+    acknowledge(client, receipt.token)
   }
-  val result = done.await()
+}
+
+private suspend fun acknowledge(client: BillingClient, token: String) {
+  val done = CompletableDeferred<BillingResult>()
+  val params = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(token).build()
+  client.acknowledgePurchase(params) { done.complete(it) }
+  checkBillingResult(done.await())
+}
+
+private fun checkBillingResult(result: BillingResult) {
   if (result.responseCode != BillingClient.BillingResponseCode.OK) {
     throw BadgeStoreError.BillingError(result.responseCode, result.debugMessage)
   }

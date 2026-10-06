@@ -590,12 +590,11 @@ object ChatController {
   }
 
   // log = false because a store receipt is a bearer secret, like a badge code - it is in the command.
-  // null when the user cancels the retry alert, which is offered only when retry is set.
-  suspend fun apiPurchaseBadge(rh: Long?, userId: Long, echoedInvoiceId: String?, payment: ServicePayment, retry: Boolean): BadgePurchaseResult? {
-    val cmd = CC.ApiPurchaseBadge(userId, echoedInvoiceId, payment)
-    val r = (if (retry) sendCmdWithRetry(rh, cmd, log = false) else sendCmd(rh, cmd, log = false)) ?: return null
+  suspend fun apiPurchaseBadge(rh: Long?, userId: Long, echoedInvoiceId: String?, payment: ServicePayment): BadgePurchaseResult {
+    val r = sendCmd(rh, CC.ApiPurchaseBadge(userId, echoedInvoiceId, payment), log = false)
     return when {
-      r is API.Result && r.res is CR.BadgeRedeemed -> BadgePurchaseResult.Redeemed(r.res.user.updateRemoteHostId(rh), r.res.badgeState)
+      r is API.Result && r.res is CR.BadgeStateR -> BadgePurchaseResult.Held(r.res.user, r.res.badgeState, r.res.storePurchases)
+      r is API.Result && r.res is CR.BadgeRedeemed -> BadgePurchaseResult.Credited(r.res.user.updateRemoteHostId(rh), r.res.badgeState)
       r is API.Error -> BadgePurchaseResult.Failed(r.err)
       else -> {
         // the response type alone - it names a case or a JSON key, never the service's message
@@ -3614,6 +3613,9 @@ object ChatController {
             BadgeModel.setAlert(rhId, r.user.userId, r.badgeAlert)
           }
         }
+      is CR.StorePurchaseSettled ->
+        // whichever profile owns it: only the app can finish the store purchase
+        withLongRunningApi { BadgeStore.presentUnfinished() }
       else ->
         Log.d(TAG , "unsupported event: ${msg.responseType}")
     }
@@ -3918,10 +3920,12 @@ sealed class BadgeRedeemResult {
 }
 
 @Serializable
-data class OpenStorePurchase(val invoiceId: String? = null, val transactionRef: String? = null)
+data class OpenStorePurchase(val invoiceId: String? = null, val transactionRef: String? = null, val creditError: BadgeIssueFailure? = null)
 
+// a refusal is Failed, with the code in BREServiceError
 sealed class BadgePurchaseResult {
-  class Redeemed(val user: User, val badgeState: BadgeState?): BadgePurchaseResult()
+  class Held(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<OpenStorePurchase>): BadgePurchaseResult()
+  class Credited(val user: User, val badgeState: BadgeState?): BadgePurchaseResult()
   // err is null for a response of an unexpected type, which is logged where it is received
   class Failed(val err: ChatError?): BadgePurchaseResult()
 }
@@ -6929,6 +6933,7 @@ sealed class CR {
   @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
+  @Serializable @SerialName("storePurchaseSettled") class StorePurchaseSettled(val user: UserRef): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -7121,6 +7126,7 @@ sealed class CR {
     is BadgeLedger -> "badgeLedger"
     is BadgeChanged -> "badgeChanged"
     is BadgeAlertR -> "badgeAlert"
+    is StorePurchaseSettled -> "storePurchaseSettled"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -7330,6 +7336,7 @@ sealed class CR {
     is BadgeLedger -> withUser(user, json.encodeToString(badgeLedger))
     is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
     is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))
+    is StorePurchaseSettled -> withUser(user, noDetails())
     is Response -> json
     is Invalid -> str
   }

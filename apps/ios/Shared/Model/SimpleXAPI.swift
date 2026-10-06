@@ -2196,24 +2196,18 @@ func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: 
     throw r.unexpected
 }
 
+// a refusal is thrown, as BREServiceError with the code
 enum BadgePurchaseResult {
-    case redeemed(user: User, badgeState: BadgeState?)
+    case held(user: UserRef, badgeState: BadgeState?, storePurchases: [OpenStorePurchase])
+    case credited(user: User, badgeState: BadgeState?)
 }
 
 // log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
-// nil when the user cancels the retry alert, which is offered only when retry is set.
-func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, _ payment: ServicePayment, retry: Bool) async throws -> BadgePurchaseResult? {
-    let cmd = ChatCommand.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, payment: payment)
-    let r: APIResult<ChatResponse2>?
-    if retry {
-        r = await chatApiSendCmdWithRetry(cmd, log: false)
-    } else {
-        let res: APIResult<ChatResponse2> = await chatApiSendCmd(cmd, log: false)
-        r = res
-    }
-    guard let r else { return nil }
+func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, _ payment: ServicePayment) async throws -> BadgePurchaseResult {
+    let r: ChatResponse2 = try await chatSendCmd(.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, payment: payment), log: false)
     switch r {
-    case let .result(.badgeRedeemed(user, _, _, badgeState)): return .redeemed(user: user, badgeState: badgeState)
+    case let .badgeState(user, badgeState, storePurchases): return .held(user: user, badgeState: badgeState, storePurchases: storePurchases ?? [])
+    case let .badgeRedeemed(user, _, _, badgeState): return .credited(user: user, badgeState: badgeState)
     default: throw r.unexpected
     }
 }
@@ -3100,6 +3094,9 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 BadgeModel.shared.setAlert(userId: user.userId, alert: badgeAlert)
             }
         }
+    case .storePurchaseSettled:
+        // whichever profile owns it: only the app can finish the store transaction
+        Task { await BadgeStore.shared.presentUnfinished() }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }

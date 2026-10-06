@@ -28,7 +28,7 @@ struct BadgesView: View {
                     .transition(.opacity)
             } else if let purchaseState = store.purchaseState(chatModel.currentUser?.userId) {
                 // holds the purchase screens' slot, so a consumable cannot be bought twice
-                BadgesPurchaseStateView(title: purchaseState.title, message: purchaseState.message, showsAsSheet: showsAsSheet)
+                BadgesPurchaseStateView(title: purchaseState.title, message: purchaseState.message, failure: store.creditError(chatModel.currentUser?.userId), showsAsSheet: showsAsSheet)
                     .transition(.opacity)
             } else if store.checkingPurchases {
                 BadgesPurchaseStateView(title: "Checking your purchases", showsAsSheet: showsAsSheet)

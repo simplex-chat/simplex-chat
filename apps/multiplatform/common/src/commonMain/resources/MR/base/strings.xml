@@ -3181,7 +3181,6 @@
   <string name="badges_banner_dismiss_message">You can support SimpleX later in Settings.</string>
   <string name="badges_larger_files_longer">Support SimpleX to send larger files that stay available longer</string>
   <string name="badges_purchase_error">Purchase error</string>
-  <string name="badges_purchase_will_retry">The purchase will be retried, and the badge will arrive.</string>
   <string name="badges_check_your_order_title">Check your order</string>
   <string name="badges_order_duration">Duration</string>
   <string name="badges_order_total">Total</string>
@@ -3262,6 +3261,7 @@
   <string name="badges_renewal_failed">Badge renewal failed</string>
   <string name="badges_tap_for_details">Tap for details</string>
   <string name="badges_error_service_refused">The badge service refused the renewal: %1$s</string>
+  <string name="badges_error_purchase_refused">The badge service refused the purchase: %1$s</string>
   <string name="badges_error_no_response">The badge service did not respond.</string>
   <string name="badges_error_unreachable">The badge service could not be reached.</string>
   <string name="badges_error_credential_invalid">The badge issued by the service cannot be verified.</string>

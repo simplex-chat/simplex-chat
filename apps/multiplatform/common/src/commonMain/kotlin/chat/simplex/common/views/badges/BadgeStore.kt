@@ -92,7 +92,8 @@ data class BadgeStoreReceipt(
   // the token the badge service verifies with the Publisher API
   val token: String,
   val productId: String,
-  val invoiceId: String?
+  val invoiceId: String?,
+  val acknowledged: Boolean = false
 )
 
 // TODO [badges] Play Billing has no offline product configuration. Set to true to price the screens
@@ -149,32 +150,31 @@ object BadgeStore {
   private val state = mutableStateOf(LoadState.NotLoaded)
   // snapshot state so a composable reading only the products still recomposes when they arrive
   private val products = mutableStateOf<Map<BadgeStoreProductId, BadgeProduct>>(emptyMap())
-  // purchases this run has started presenting and not finished - filled by claim, not by reading the
-  // store, so it is empty at launch until the sweep reaches each one
-  private val unfinished = mutableStateOf<Map<String, BadgeStoreReceipt>>(emptyMap())
   // core's open store purchases for the profile they were read for: core knows whose a purchase is
   private val storePurchases = mutableStateOf<Triple<Long?, Long, List<OpenStorePurchase>>?>(null)
-  // whether this run has an open store sheet, or an interactive presentation that has not returned
+  // whether a store sheet this run opened has not returned
   private val buying = mutableStateOf(false)
   // by invoice id, so a pending purchase shows only under the profile whose record it names
   private val waitingForApproval = mutableStateOf<Set<String>>(emptySet())
-  // set when the first sweep has returned or failed, which is after every held purchase has been presented
-  // over the network - until then a purchase made while the app was not running is unknown
+  // set when the first sweep has returned or failed, which is after every purchase the store holds was handed
+  // to core - until then a purchase made while the app was not running is unknown
   private val reconciledOnce = mutableStateOf(false)
-  // whether the purchase the user started waits on the presentation, so its outcome is shown whoever claimed it;
+  // invoices of the purchases the user started this run, whose refusal is theirs to be told of;
   // read and written on the main thread only
-  private val presenting = mutableMapOf<String, Boolean>()
+  private val awaitedInvoices = mutableSetOf<String>()
 
   fun purchaseState(userId: Long?): BadgePurchaseState? {
     if (!badgeStoreAvailable) return null
     val purchases = openStorePurchases(userId)
-    val held = unfinished.value.values.mapNotNull { it.invoiceId }.toSet()
     return when {
-      purchases.any { it.invoiceId?.let(held::contains) == true } -> BadgePurchaseState.Issuing
+      purchases.any { it.transactionRef != null } -> BadgePurchaseState.Issuing
       purchases.any { it.invoiceId?.let(waitingForApproval.value::contains) == true } -> BadgePurchaseState.WaitingForApproval
       else -> null
     }
   }
+
+  fun creditError(userId: Long?): BadgeIssueFailure? =
+    openStorePurchases(userId).firstNotNullOfOrNull { it.creditError }
 
   val checkingPurchases: Boolean get() = badgeStoreAvailable && !reconciledOnce.value
 
@@ -246,10 +246,9 @@ object BadgeStore {
     chatModel.controller.loadBadgeState(rhId)
     try {
       val outcome = storePurchase(id, invoiceId)
-      when (outcome) {
-        // finished only once the service answers for it, as an unfinished purchase is what the store re-delivers
-        is BadgePurchaseOutcome.Purchased -> presentPurchase(outcome.receipt, interactive = true)
-        is BadgePurchaseOutcome.Cancelled, is BadgePurchaseOutcome.Pending -> {}
+      if (outcome is BadgePurchaseOutcome.Purchased) {
+        withContext(Dispatchers.Main) { awaitedInvoices += invoiceId }
+        handOver(outcome.receipt)
       }
       return outcome
     } finally {
@@ -273,61 +272,68 @@ object BadgeStore {
     return outcome
   }
 
-  // only the purchase the user started may alert: an answer can reveal a profile other than the one on screen
-  private suspend fun presentPurchase(receipt: BadgeStoreReceipt, interactive: Boolean) {
+  // Core holds the receipt and credits it; the purchase stays unfinished until core answers it credited
+  // or refused, as an unfinished purchase is what the store re-delivers if anything is lost on the way.
+  private suspend fun handOver(receipt: BadgeStoreReceipt) {
     val rhId = chatModel.remoteHostId()
     val userId = chatModel.currentUser.value?.userId ?: return
-    if (!claim(receipt, interactive)) return
-    var alertText: String? = null
-    var userWaiting = false
     try {
-      when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, ServicePayment.Google(receipt.productId, receipt.token), retry = interactive)) {
-        is BadgePurchaseResult.Redeemed -> {
+      when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, ServicePayment.Google(receipt.productId, receipt.token))) {
+        is BadgePurchaseResult.Held -> {
+          // core holds it durably now, so Play must not refund it after three days unacknowledged
+          acknowledge(receipt)
           withContext(Dispatchers.Main) {
-            // finished below whichever profile was credited, as it is paid for; only the profile on screen shows it
+            // the answer is the owner's, which may be another profile and a hidden one
+            if (chatModel.controller.activeUser(rhId, r.user)) {
+              BadgeModel.set(rhId, r.user.userId, r.badgeState)
+              setStorePurchases(rhId, r.user.userId, r.storePurchases)
+            }
+          }
+        }
+        is BadgePurchaseResult.Credited -> {
+          withContext(Dispatchers.Main) {
             if (chatModel.controller.activeUser(rhId, r.user)) {
               BadgeModel.set(rhId, r.user.userId, r.badgeState)
               chatModel.updateUser(r.user)
               if (r.badgeState?.shown == true) appPrefs.supporterBannerShown.set(true)
             }
           }
-          finish(receipt)
+          settle(receipt, refusal = null)
         }
         is BadgePurchaseResult.Failed -> {
-          Log.e(TAG, "BadgeStore.presentPurchase: ${r.err?.string}")
-          val refused = badgeReceiptRefused(r.err)
-          if (refused) finish(receipt)
-          val text = chatModel.controller.redeemErrorText(r.err, purchase = true)
-          alertText = if (refused || retryCannotCredit(r.err)) text else text + "\n\n" + generalGetString(MR.strings.badges_purchase_will_retry)
+          Log.e(TAG, "BadgeStore.handOver: ${r.err?.string}")
+          if (badgeReceiptRefused(r.err)) settle(receipt, refusal = r.err)
         }
-        null -> {}
       }
     } catch (e: Exception) {
       if (e is CancellationException) throw e
-      Log.e(TAG, "BadgeStore.presentPurchase: ${e.stackTraceToString()}")
-      alertText = "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}" + "\n\n" + generalGetString(MR.strings.badges_purchase_will_retry)
-    } finally {
-      withContext(NonCancellable) { chatModel.controller.loadBadgeState(chatModel.remoteHostId()) }
-      userWaiting = withContext(Dispatchers.Main + NonCancellable) { presenting.remove(receipt.token) == true }
-    }
-    if (userWaiting && alertText != null) {
-      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_purchase_error), text = alertText)
+      Log.e(TAG, "BadgeStore.handOver: ${e.stackTraceToString()}")
     }
   }
 
-  // at launch, on return to the foreground and on a profile switch, never on a timer
+  private suspend fun settle(receipt: BadgeStoreReceipt, refusal: ChatError?) {
+    finish(receipt)
+    val awaited = withContext(Dispatchers.Main) { receipt.invoiceId?.let { awaitedInvoices.remove(it) } == true }
+    if (awaited && refusal != null) {
+      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_purchase_error), text = chatModel.controller.redeemErrorText(refusal, purchase = true))
+    }
+  }
+
+  // at launch, on return to the foreground, on a profile switch and when core settles a purchase, never on a timer
   suspend fun presentUnfinished() {
     try {
-      if (useBadgeTestProducts || !platform.androidHasPlatformStore) return
-      val purchases = try {
-        platform.androidUnfinishedBadgePurchases()
-      } catch (e: Exception) {
-        Log.e(TAG, "BadgeStore.presentUnfinished: ${e.message}")
-        return
+      if (!useBadgeTestProducts && platform.androidHasPlatformStore) {
+        try {
+          val purchases = platform.androidUnfinishedBadgePurchases()
+          // Play lists a purchase awaiting payment, so unlike on iOS the waiting state is re-found here
+          withContext(Dispatchers.Main) { waitingForApproval.value = purchases.mapNotNull { (it as? BadgePurchaseOutcome.Pending)?.invoiceId }.toSet() }
+          purchases.forEach { reconcile(it) }
+        } catch (e: Exception) {
+          if (e is CancellationException) throw e
+          Log.e(TAG, "BadgeStore.presentUnfinished: ${e.message}")
+        }
       }
-      // Play lists a purchase awaiting payment, so unlike on iOS the waiting state is re-found here
-      withContext(Dispatchers.Main) { waitingForApproval.value = purchases.mapNotNull { (it as? BadgePurchaseOutcome.Pending)?.invoiceId }.toSet() }
-      purchases.forEach { reconcile(it) }
+      chatModel.controller.loadBadgeState(chatModel.remoteHostId())
     } finally {
       withContext(Dispatchers.Main + NonCancellable) { reconciledOnce.value = true }
     }
@@ -337,31 +343,25 @@ object BadgeStore {
     when (outcome) {
       is BadgePurchaseOutcome.Purchased ->
         if (outcome.receipt.productId !in badgeOneTimeProductIds) finish(outcome.receipt)
-        else presentPurchase(outcome.receipt, interactive = false)
+        else handOver(outcome.receipt)
       is BadgePurchaseOutcome.Pending ->
         if (outcome.invoiceId != null) withContext(Dispatchers.Main) { waitingForApproval.value += outcome.invoiceId }
       is BadgePurchaseOutcome.Cancelled -> {}
     }
   }
 
-  // one request per purchase: the purchase itself, launch, foreground and the store can each present it
-  private suspend fun claim(receipt: BadgeStoreReceipt, interactive: Boolean): Boolean = withContext(Dispatchers.Main) {
-    val waiting = presenting[receipt.token]
-    if (waiting != null) {
-      presenting[receipt.token] = waiting || interactive
-      return@withContext false
+  private suspend fun acknowledge(receipt: BadgeStoreReceipt) {
+    try {
+      if (!useBadgeTestProducts) platform.androidAcknowledgeBadgePurchase(receipt)
+    } catch (e: Exception) {
+      // the next sweep hands the purchase over again, and acknowledges it then
+      Log.e(TAG, "BadgeStore.acknowledge: ${e.message}")
     }
-    presenting[receipt.token] = interactive
-    unfinished.value += receipt.token to receipt
-    // a slow payment that completes arrives as a purchase, which ends the wait
-    if (receipt.invoiceId != null) waitingForApproval.value -= receipt.invoiceId
-    true
   }
 
   private suspend fun finish(receipt: BadgeStoreReceipt) {
     try {
       if (!useBadgeTestProducts) platform.androidFinishBadgePurchase(receipt)
-      withContext(Dispatchers.Main) { unfinished.value -= receipt.token }
     } catch (e: Exception) {
       // still unfinished: the store re-delivers it, and the next answer for it finishes it
       Log.e(TAG, "BadgeStore.finish: ${e.message}")
@@ -391,16 +391,9 @@ private fun compactPrice(product: BadgeProduct): String {
   }
 }
 
-// the only answers after which the receipt will never be credited, so the store may stop re-delivering it
+// the codes core refuses a receipt with for good, after which the store may stop re-delivering it
 private fun badgeReceiptRefused(err: ChatError?): Boolean {
   val redeemError = ((err as? ChatError.ChatErrorChat)?.errorType as? ChatErrorType.CEBadgeRedeemError)?.badgeRedeemError
   val code = (redeemError as? BadgeRedeemError.ServiceError)?.serviceError
   return code is BadgeServiceErrorCode.ReceiptInvalid || code is BadgeServiceErrorCode.ReceiptUsed
 }
-
-private fun retryCannotCredit(err: ChatError?): Boolean =
-  when (val e = ((err as? ChatError.ChatErrorChat)?.errorType as? ChatErrorType.CEBadgeRedeemError)?.badgeRedeemError) {
-    is BadgeRedeemError.BadgeActive, is BadgeRedeemError.ServiceNotConfigured -> true
-    is BadgeRedeemError.ServiceError -> e.serviceError is BadgeServiceErrorCode.ProviderNotConfigured || e.serviceError is BadgeServiceErrorCode.ProductUnavailable
-    else -> false
-  }

@@ -756,6 +756,7 @@ enum ServicePayment: Encodable {
 struct OpenStorePurchase: Decodable {
     var invoiceId: String?
     var transactionRef: String?
+    var creditError: BadgeIssueFailure?
 }
 
 // ChatResponse is split to three enums to reduce stack size used when parsing it, parsing large enums is very inefficient.
@@ -1290,6 +1291,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     // badges
     case badgeChanged(user: User, badgeState: BadgeState?)
     case badgeAlert(user: UserRef, badgeAlert: BadgeAlert)
+    case storePurchaseSettled(user: UserRef)
 
     var responseType: String {
         switch self {
@@ -1364,6 +1366,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .contactPQEnabled: "contactPQEnabled"
         case .badgeChanged: "badgeChanged"
         case .badgeAlert: "badgeAlert"
+        case .storePurchaseSettled: "storePurchaseSettled"
         }
     }
 
@@ -1448,6 +1451,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
         case let .badgeChanged(u, badgeState): return withUser(u, String(describing: badgeState))
         case let .badgeAlert(u, badgeAlert): return withUser(u, String(describing: badgeAlert))
+        case .storePurchaseSettled: return noDetails
         }
     }
 }

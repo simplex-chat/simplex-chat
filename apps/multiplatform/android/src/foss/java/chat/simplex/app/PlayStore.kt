@@ -25,6 +25,9 @@ suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurc
   throw BadgeStoreError.StoreUnavailable
 
 @Suppress("UNUSED_PARAMETER")
+suspend fun acknowledgeBadgePurchase(receipt: BadgeStoreReceipt) {}
+
+@Suppress("UNUSED_PARAMETER")
 suspend fun finishBadgePurchase(receipt: BadgeStoreReceipt) {}
 
 suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> = emptyList()
