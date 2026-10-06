@@ -109,8 +109,8 @@ final class BadgeStore: ObservableObject {
     // kept for this run only: StoreKit lists no deferred purchase, and a declined one delivers nothing
     // by invoice id, so a pending purchase shows only under the profile whose record it names
     @Published private var waitingForApproval: Set<String> = []
-    // set when the first sweep has returned, which is after every transaction the store holds was handed
-    // to core - until then a purchase made while the app was not running is unknown
+    // set once presentUnfinished has read the store: until then, an Ask to Buy approved while the app was
+    // closed, or a purchase it died before handing over, are both unknown, so canBuy refuses to buy again
     @Published private var reconciledOnce = false
     // purchases the user started this run, by transaction: the store is not relied on to echo the invoice back
     private var awaitedTransactions: Set<UInt64> = []

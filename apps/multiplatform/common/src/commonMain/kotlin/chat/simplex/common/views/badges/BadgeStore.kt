@@ -156,8 +156,8 @@ object BadgeStore {
   private val buying = mutableStateOf(false)
   // by invoice id, so a pending purchase shows only under the profile whose record it names
   private val waitingForApproval = mutableStateOf<Set<String>>(emptySet())
-  // set when the first sweep has returned or failed, which is after every purchase the store holds was handed
-  // to core - until then a purchase made while the app was not running is unknown
+  // set once presentUnfinished has read the store, or failed to: until then, a slow payment completed while
+  // the app was closed, or a purchase it died before handing over, are both unknown, so canBuy refuses
   private val reconciledOnce = mutableStateOf(false)
   // purchases the user started this run, by token: the store is not relied on to echo the invoice back
   private val awaitedTransactions = mutableSetOf<String>()

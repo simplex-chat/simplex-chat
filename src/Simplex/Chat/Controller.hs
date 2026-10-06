@@ -294,6 +294,11 @@ data BadgeWorker = BadgeWorker
     badgeWork :: TMVar ()
   }
 
+data StoreReceiptWorker = StoreReceiptWorker
+  { receiptWorker :: Worker,
+    parkedReceipts :: TVar (Set Int64)
+  }
+
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     randomPresetServers :: NonEmpty PresetOperator,
@@ -328,7 +333,7 @@ data ChatController = ChatController
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     -- one badge worker per user: badge state is per profile, and one profile must not stall another
     badgeWorkers :: TMap UserId (SessionVar BadgeWorker),
-    storeReceiptWorkers :: TMap UserId (SessionVar BadgeWorker),
+    storeReceiptWorkers :: TMap UserId StoreReceiptWorker,
     badgeSeq :: TVar Int,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,

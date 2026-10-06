@@ -24,7 +24,6 @@ CREATE TABLE badge_store_receipts(
   master_key BYTEA NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   payment TEXT,
-  next_attempt_at TIMESTAMPTZ,
   retry_delay BIGINT,
   credit_error TEXT,
   UNIQUE(provider, transaction_ref)
