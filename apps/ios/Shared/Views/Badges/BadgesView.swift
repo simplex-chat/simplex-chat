@@ -30,6 +30,12 @@ struct BadgesView: View {
                 // holds the purchase screens' slot, so a consumable cannot be bought twice
                 BadgesPurchaseStateView(title: purchaseState.title, message: purchaseState.message, failure: store.creditError(chatModel.currentUser?.userId), showsAsSheet: showsAsSheet)
                     .transition(.opacity)
+                    .onReceive(store.refusals) { refusal in
+                        // only the issuing screen belongs to the active profile's held purchase, so a refusal shown there reads as its own
+                        if purchaseState == .issuing {
+                            showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(refusal, purchase: true))
+                        }
+                    }
             } else if store.checkingPurchases {
                 BadgesPurchaseStateView(title: "Checking your purchases", showsAsSheet: showsAsSheet)
                     .transition(.opacity)

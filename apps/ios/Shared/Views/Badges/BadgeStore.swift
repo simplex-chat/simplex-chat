@@ -66,7 +66,6 @@ struct BadgeStoreReceipt {
     // the signed token the badge service verifies - never transaction.jsonRepresentation
     let jws: String
     let productId: String
-    let transactionId: UInt64
     let invoiceId: UUID?
     let signatureVerified: Bool
     let transaction: Transaction
@@ -112,8 +111,7 @@ final class BadgeStore: ObservableObject {
     // set once presentUnfinished has read the store: until then, an Ask to Buy approved while the app was
     // closed, or a purchase it died before handing over, are both unknown, so canBuy refuses to buy again
     @Published private var reconciledOnce = false
-    // purchases the user started this run, by transaction: the store is not relied on to echo the invoice back
-    private var awaitedTransactions: Set<UInt64> = []
+    let refusals = PassthroughSubject<Error, Never>()
     private var transactionUpdates: Task<Void, Never>? = nil
 
     private init() {}
@@ -209,7 +207,6 @@ final class BadgeStore: ObservableObject {
         do {
             let outcome = try await storePurchase(product, invoiceId)
             if case let .purchased(receipt) = outcome, receipt.signatureVerified {
-                await MainActor.run { _ = awaitedTransactions.insert(receipt.transactionId) }
                 await handOver(receipt)
             }
             await MainActor.run { buying = false }
@@ -264,9 +261,8 @@ final class BadgeStore: ObservableObject {
 
     private func settle(_ receipt: BadgeStoreReceipt, refusal: Error?) async {
         await receipt.transaction.finish()
-        let awaited = await MainActor.run { awaitedTransactions.remove(receipt.transactionId) != nil }
-        if awaited, let refusal {
-            await MainActor.run { showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(refusal, purchase: true)) }
+        if let refusal {
+            await MainActor.run { refusals.send(refusal) }
         }
     }
 
@@ -333,7 +329,6 @@ private func storeReceipt(_ verification: VerificationResult<Transaction>) -> Ba
     return BadgeStoreReceipt(
         jws: verification.jwsRepresentation,
         productId: t.productID,
-        transactionId: t.id,
         invoiceId: t.appAccountToken,
         signatureVerified: signatureVerified,
         transaction: t

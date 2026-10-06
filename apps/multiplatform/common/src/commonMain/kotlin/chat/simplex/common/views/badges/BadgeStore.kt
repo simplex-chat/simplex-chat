@@ -6,12 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.helpers.AlertManager
-import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Currency
@@ -159,8 +157,7 @@ object BadgeStore {
   // set once presentUnfinished has read the store, or failed to: until then, a slow payment completed while
   // the app was closed, or a purchase it died before handing over, are both unknown, so canBuy refuses
   private val reconciledOnce = mutableStateOf(false)
-  // purchases the user started this run, by token: the store is not relied on to echo the invoice back
-  private val awaitedTransactions = mutableSetOf<String>()
+  val refusals = MutableSharedFlow<ChatError>()
 
   fun purchaseState(userId: Long?): BadgePurchaseState? {
     if (!badgeStoreAvailable) return null
@@ -246,7 +243,6 @@ object BadgeStore {
     try {
       val outcome = storePurchase(id, invoiceId)
       if (outcome is BadgePurchaseOutcome.Purchased) {
-        withContext(Dispatchers.Main) { awaitedTransactions += outcome.receipt.token }
         handOver(outcome.receipt)
       }
       return outcome
@@ -312,9 +308,8 @@ object BadgeStore {
 
   private suspend fun settle(receipt: BadgeStoreReceipt, refusal: ChatError?) {
     finish(receipt)
-    val awaited = withContext(Dispatchers.Main) { awaitedTransactions.remove(receipt.token) }
-    if (awaited && refusal != null) {
-      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_purchase_error), text = chatModel.controller.redeemErrorText(refusal, purchase = true))
+    if (refusal != null) {
+      withContext(Dispatchers.Main) { refusals.emit(refusal) }
     }
   }
 
