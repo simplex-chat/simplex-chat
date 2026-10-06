@@ -2900,7 +2900,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               pure m'
             Just mContactId -> do
               mCt <- withStore $ \db -> getContact db cxt user mContactId
-              if canUpdateProfile mCt
+              if contactUpdatableFromMember mCt
                 then do
                   (m', ct') <- withStore $ \db -> updateContactMemberProfile db cxt user m mCt p'
                   unless (muteEventInChannel gInfo m') $ do
@@ -2909,12 +2909,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     toView $ CEvtContactUpdated user mCt ct'
                   pure m'
                 else pure m
-              where
-                canUpdateProfile ct
-                  | not (contactActive ct) = True
-                  | otherwise = case contactConn ct of
-                      Nothing -> True
-                      Just conn -> not (connReady conn) || (authErrCounter conn >= 1)
       | otherwise =
           pure m
       where

@@ -3412,7 +3412,16 @@ setMemberContactStartedConnection db Contact {contactId} = do
     (BI True, currentTs, contactId)
 
 updateMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
-updateMemberProfile db cxt user@User {userId} m p' = do
+updateMemberProfile db cxt user m@GroupMember {memberContactId} p' = case memberContactId of
+  Nothing -> updateUnlinkedMemberProfile db cxt user m p'
+  Just ctId -> do
+    ct <- getContact db cxt user ctId
+    if contactUpdatableFromMember ct
+      then fst <$> updateContactMemberProfile db cxt user m ct p'
+      else pure m
+
+updateUnlinkedMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
+updateUnlinkedMemberProfile db cxt user@User {userId} m p' = do
   currentTs <- liftIO getCurrentTime
   badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) (memberProfile m) p'
   let memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified Nothing
@@ -3494,8 +3503,7 @@ createNewUnknownGroupMember db cxt user@User {userId, userContactId} GroupInfo {
 createLinkOwnerMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe ContactId -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
 createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupId} contactId_ memberId ownerKey = do
   currentTs <- liftIO getCurrentTime
-  let memberProfile = profileFromName $ nameFromMemberId memberId
-  (localDisplayName, profileId, _) <- createNewMemberProfile_ db cxt user memberProfile currentTs
+  (localDisplayName, profileId) <- maybe (newOwnerProfile currentTs) contactNameAndProfile contactId_
   indexInGroup <- getUpdateNextIndexInGroup_ db groupId
   liftIO $
     DB.execute
@@ -3515,6 +3523,12 @@ createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupI
   getGroupMemberById db cxt user groupMemberId
   where
     VersionRange minV maxV = vr cxt
+    newOwnerProfile currentTs = do
+      (ldn, pId, _) <- createNewMemberProfile_ db cxt user (profileFromName $ nameFromMemberId memberId) currentTs
+      pure (ldn, pId)
+    contactNameAndProfile ctId = do
+      Contact {localDisplayName = ldn, profile = LocalProfile {profileId = pId}} <- getContact db cxt user ctId
+      pure (ldn, pId)
 
 -- Intro refreshes only profile / status / peer version. Role and key stay owner-authoritative
 -- (the owner-signed roster for members/moderators/admins, link data for owners), so taking either from
