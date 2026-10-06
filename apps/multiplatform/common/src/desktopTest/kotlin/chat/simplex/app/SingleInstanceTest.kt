@@ -48,8 +48,10 @@ class SingleInstanceTest {
     try {
       block(tmp)
     } finally {
-      Files.walk(tmp).sorted(Comparator.reverseOrder()).forEach {
-        try { Files.delete(it) } catch (_: java.io.IOException) {}
+      Files.walk(tmp).use { paths ->
+        paths.sorted(Comparator.reverseOrder()).forEach {
+          try { Files.delete(it) } catch (_: java.io.IOException) {}
+        }
       }
     }
   }
