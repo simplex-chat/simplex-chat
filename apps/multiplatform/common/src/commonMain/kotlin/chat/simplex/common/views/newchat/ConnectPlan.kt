@@ -142,10 +142,6 @@ private fun showNameWarningAlert(
       generalGetString(MR.strings.simplex_name_connect_simplex_team) to { uh: UriHandler -> uh.openVerifiedSimplexUri(simplexTeamUri) }
     )
     NameWarning.NotRegistered -> alert(generalGetString(MR.strings.simplex_name_not_registered), generalGetString(MR.strings.simplex_name_not_found_desc))
-    NameWarning.NoValidLink -> alert(
-      generalGetString(MR.strings.simplex_name_no_valid_link),
-      String.format(generalGetString(MR.strings.simplex_name_no_valid_link_desc), nameStr)
-    )
   }
 }
 

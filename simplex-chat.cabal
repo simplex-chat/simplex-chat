@@ -168,7 +168,6 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
           Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
           Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
-          Simplex.Chat.Store.Postgres.Migrations.M20260924_simplex_names
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -346,7 +345,6 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260915_user_badges
           Simplex.Chat.Store.SQLite.Migrations.M20260918_badge_issue_errors
           Simplex.Chat.Store.SQLite.Migrations.M20260923_preferences_json
-          Simplex.Chat.Store.SQLite.Migrations.M20260924_simplex_names
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

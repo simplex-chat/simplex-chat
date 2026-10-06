@@ -2250,7 +2250,6 @@ viewNameWarning planSimplexName = \case
       NWOwnAvailable p -> "your " <> name <> " is no longer registered, available: " <> priceStr p
       NWReservedForCommunity -> name <> " is reserved for community"
       NWNotRegistered -> name <> " is not registered"
-      NWNoValidLink -> name <> " has no valid link"
       where
         name = "SimpleX name " <> plain (fullDomainName d)
     priceStr NamePrice {amount = USDCents c, years} =

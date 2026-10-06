@@ -52,8 +52,6 @@ module Simplex.Chat.Store.Profiles
     deleteUserAddress,
     getUserAddress,
     setUserSimplexDomain,
-    getSimplexName,
-    setSimplexName,
     getUserContactLinkById,
     getGroupLinkInfo,
     getUserContactLinkByConnReq,
@@ -125,10 +123,10 @@ import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), NameRegistration, ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, maybeFirstRow', safeDecodeUtf8)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -411,27 +409,6 @@ setUserSimplexDomain db user@User {userId, profile = p@LocalProfile {profileId}}
     "UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?"
     (domain_, ts, userId, profileId)
   pure (user :: User) {profile = p {contactDomain = mkDomainClaim <$> domain_}}
-
-getSimplexName :: DB.Connection -> User -> SimplexDomain -> IO (Maybe (NameRegistration, UTCTime))
-getSimplexName db User {userId} domain =
-  maybeFirstRow' Nothing toName $
-    DB.query db "SELECT registration, resolved_at FROM simplex_names WHERE user_id = ? AND simplex_domain = ?" (userId, domain)
-  where
-    toName :: (Text, UTCTime) -> Maybe (NameRegistration, UTCTime)
-    toName (reg, resolvedAt) = (,resolvedAt) <$> decodeJSON reg
-
-setSimplexName :: DB.Connection -> User -> SimplexDomain -> NameRegistration -> IO ()
-setSimplexName db User {userId} domain reg = do
-  ts <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      INSERT INTO simplex_names (user_id, simplex_domain, registration, resolved_at) VALUES (?,?,?,?)
-      ON CONFLICT (user_id, simplex_domain) DO UPDATE SET
-        registration = excluded.registration,
-        resolved_at = excluded.resolved_at
-    |]
-    (userId, domain, encodeJSON reg, ts)
 
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
 setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do

@@ -850,16 +850,17 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
               searchChatFilteredBySimplexLink.value = emptySet()
               if (candidate != null) {
                 // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
-                // search when the next keystroke arrives.
+                // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
+                // both and filter every known chat found.
                 delay(NAME_SEARCH_DEBOUNCE_MS)
                 val rhId = chatModel.remoteHostId()
                 val inProgress = mutableStateOf(false) // background search: no spinner, no error alerts
-                val result = chatModel.controller.apiConnectPlan(rhId, candidate, PlanResolveMode.PRMNever, inProgress = inProgress)
-                if (result != null) {
-                  val localChats = result.connectionPlan.localChats
-                  upsertChats(rhId, localChats)
-                  searchChatFilteredBySimplexLink.value = localChats.map { it.id }.toSet()
+                val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate", "#$candidate")
+                val localChats = targets.flatMap { name ->
+                  chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress)?.connectionPlan?.localChats ?: emptyList()
                 }
+                upsertChats(rhId, localChats)
+                searchChatFilteredBySimplexLink.value = localChats.map { it.id }.toSet()
               } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {
                   focusRequester.requestFocus()

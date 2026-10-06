@@ -53,7 +53,6 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260904_file_badges
 import Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
 import Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
 import Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
-import Simplex.Chat.Store.Postgres.Migrations.M20260924_simplex_names
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -106,8 +105,7 @@ schemaMigrations =
     ("20260904_file_badges", m20260904_file_badges, Just down_m20260904_file_badges),
     ("20260915_user_badges", m20260915_user_badges, Just down_m20260915_user_badges),
     ("20260918_badge_issue_errors", m20260918_badge_issue_errors, Just down_m20260918_badge_issue_errors),
-    ("20260923_preferences_json", m20260923_preferences_json, Just down_m20260923_preferences_json),
-    ("20260924_simplex_names", m20260924_simplex_names, Just down_m20260924_simplex_names)
+    ("20260923_preferences_json", m20260923_preferences_json, Just down_m20260923_preferences_json)
   ]
 
 -- | The list of migrations in ascending order by date

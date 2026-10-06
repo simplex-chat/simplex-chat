@@ -1394,11 +1394,6 @@ private func showNameWarningAlert(
         )
     case .notRegistered:
         alert(NSLocalizedString("Name not registered", comment: "alert title"), NSLocalizedString("This SimpleX name is not registered. Please check the name.", comment: ""))
-    case .noValidLink:
-        alert(
-            NSLocalizedString("No valid link", comment: ""),
-            String.localizedStringWithFormat(NSLocalizedString("The SimpleX name %@ is registered, but it has no valid link.", comment: ""), nameStr)
-        )
     }
 }
 

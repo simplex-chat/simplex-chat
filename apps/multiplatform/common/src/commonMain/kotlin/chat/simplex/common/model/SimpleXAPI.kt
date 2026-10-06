@@ -7462,9 +7462,9 @@ data class ConnectionPlanResult(
 
 // APIConnectPlan resolution scope; PRMNever is local-store-only (no network), used for per-keystroke name search
 enum class PlanResolveMode {
-  PRMAll, PRMUnknown, PRMNever;
+  PRMAllGroups, PRMUnknown, PRMNever;
   val cmdString: String get() = when (this) {
-    PRMAll -> "all"
+    PRMAllGroups -> "allGroups"
     PRMUnknown -> "unknown"
     PRMNever -> "never"
   }
@@ -7509,7 +7509,6 @@ sealed class NameWarning {
   @Serializable @SerialName("ownAvailable") class OwnAvailable(val price: NamePrice): NameWarning()
   @Serializable @SerialName("reservedForCommunity") object ReservedForCommunity: NameWarning()
   @Serializable @SerialName("notRegistered") object NotRegistered: NameWarning()
-  @Serializable @SerialName("noValidLink") object NoValidLink: NameWarning()
 }
 
 @Serializable

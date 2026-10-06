@@ -1637,15 +1637,6 @@ ALTER TABLE test_chat_schema.settings ALTER COLUMN settings_id ADD GENERATED ALW
 
 
 
-CREATE TABLE test_chat_schema.simplex_names (
-    user_id bigint NOT NULL,
-    simplex_domain text NOT NULL,
-    registration text NOT NULL,
-    resolved_at timestamp with time zone NOT NULL
-);
-
-
-
 CREATE TABLE test_chat_schema.snd_files (
     file_id bigint NOT NULL,
     connection_id bigint NOT NULL,
@@ -2109,11 +2100,6 @@ ALTER TABLE ONLY test_chat_schema.server_operators
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_pkey PRIMARY KEY (settings_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.simplex_names
-    ADD CONSTRAINT simplex_names_pkey PRIMARY KEY (user_id, simplex_domain);
 
 
 
@@ -3655,11 +3641,6 @@ ALTER TABLE ONLY test_chat_schema.sent_probes
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.simplex_names
-    ADD CONSTRAINT simplex_names_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
 
 
 

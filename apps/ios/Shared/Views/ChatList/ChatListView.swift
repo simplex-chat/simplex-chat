@@ -856,13 +856,16 @@ struct ChatListSearchBar: View {
                         nameSearchTask = Task { @MainActor in
                             try? await Task.sleep(nanoseconds: 300_000_000)
                             if Task.isCancelled { return }
-                            let result = await apiConnectPlan(connLink: candidate, resolveMode: .never, inProgress: BoxedValue(false))
-                            if Task.isCancelled { return }
-                            if let result {
-                                let localChats = result.connectionPlan.localChats
-                                upsertChats(localChats)
-                                searchChatFilteredBySimplexLink = Set(localChats.map { $0.id })
+                            // a bare name can be a contact or a channel: search both and keep every match
+                            let targets = candidate.hasPrefix("@") || candidate.hasPrefix("#") ? [candidate] : ["@\(candidate)", "#\(candidate)"]
+                            var localChats: [ChatInfo] = []
+                            for name in targets {
+                                let result = await apiConnectPlan(connLink: name, resolveMode: .never, inProgress: BoxedValue(false))
+                                if Task.isCancelled { return }
+                                localChats += result?.connectionPlan.localChats ?? []
                             }
+                            upsertChats(localChats)
+                            searchChatFilteredBySimplexLink = Set(localChats.map { $0.id })
                         }
                     } else if t != "" {
                         searchFocussed = true

@@ -1452,7 +1452,7 @@ struct ConnectionPlanResult {
 
 // APIConnectPlan resolution scope; .never is local-store-only (no network), used for per-keystroke name search
 enum PlanResolveMode: String {
-    case all
+    case allGroups
     case unknown
     case never
 }
@@ -1492,7 +1492,6 @@ enum NameWarning: Decodable, Hashable {
     case ownAvailable(price: NamePrice)
     case reservedForCommunity
     case notRegistered
-    case noValidLink
 }
 
 struct NamePrice: Decodable, Hashable {

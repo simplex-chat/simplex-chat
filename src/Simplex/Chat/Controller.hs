@@ -93,7 +93,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), USDCents, XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NameRegistration, NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), USDCents, XFTPServer)
 import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
@@ -317,6 +317,7 @@ data ChatController = ChatController
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
+    simplexNames :: TMap Text (NameRegistration, UTCTime),
     localDeviceName :: TVar Text,
     multicastSubscribers :: TMVar Int,
     remoteSessionSeq :: TVar Int,
@@ -712,17 +713,16 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMAll -- always resolve, also known chats
-  | PRMUnknown -- resolve unknown chats, and names of known chats not resolved within a day (default)
+  = PRMAllGroups -- resolve all known groups and all unknown chats
+  | PRMUnknown -- only resolve if chat is unknown (default)
   | PRMNever -- do not resolve links and names, only do local search
   deriving (Eq, Show)
 
 planResolveModeP :: A.Parser PlanResolveMode
 planResolveModeP =
   A.takeTill (== ' ') >>= \case
-    "all" -> pure PRMAll
-    "allGroups" -> pure PRMAll
-    "on" -> pure PRMAll
+    "allGroups" -> pure PRMAllGroups
+    "on" -> pure PRMAllGroups
     "unknown" -> pure PRMUnknown
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever
@@ -1169,7 +1169,6 @@ data NameWarning
   | NWOwnAvailable {price :: NamePrice}
   | NWReservedForCommunity
   | NWNotRegistered
-  | NWNoValidLink
   deriving (Eq, Show)
 
 data NamePrice = NamePrice {amount :: USDCents, years :: Int}

@@ -981,13 +981,6 @@ CREATE TABLE badge_code_redemptions(
   created_at TEXT NOT NULL,
   UNIQUE(user_id, code)
 ) STRICT;
-CREATE TABLE simplex_names(
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  simplex_domain TEXT NOT NULL,
-  registration TEXT NOT NULL,
-  resolved_at TEXT NOT NULL,
-  PRIMARY KEY(user_id, simplex_domain)
-) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name

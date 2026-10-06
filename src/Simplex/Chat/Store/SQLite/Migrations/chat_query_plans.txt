@@ -5102,14 +5102,6 @@ Query:
 Plan:
 
 Query: 
-      INSERT INTO simplex_names (user_id, simplex_domain, registration, resolved_at) VALUES (?,?,?,?)
-      ON CONFLICT (user_id, simplex_domain) DO UPDATE SET
-        registration = excluded.registration,
-        resolved_at = excluded.resolved_at
-    
-Plan:
-
-Query: 
       INSERT INTO temp_delete_members (contact_profile_id, member_profile_id, local_display_name)
       SELECT contact_profile_id, member_profile_id, local_display_name FROM group_members WHERE group_id = ?
     
@@ -7729,10 +7721,6 @@ SCAN badge_code_redemptions
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT registration, resolved_at FROM simplex_names WHERE user_id = ? AND simplex_domain = ?
-Plan:
-SEARCH simplex_names USING INDEX sqlite_autoindex_simplex_names_1 (user_id=? AND simplex_domain=?)
 
 Query: SELECT relay_own_status FROM groups WHERE group_id = ?
 Plan:
