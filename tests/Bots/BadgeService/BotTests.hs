@@ -510,11 +510,14 @@ testMultiUseRepeatAfterExpiry ps =
       redeemFirstBadge alice code
       rows <- ledgerRows (chatController alice) "badge_ledger"
       setClockAt bsClock $ dueAtOf rows
-      alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "badge alert: support_ended "
-      alice <##. "1: supporter"
-      alice <##. "badge alert: support_ended "
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               StartsWith "badge alert: support_ended ",
+               StartsWith "1: supporter",
+               StartsWith "badge alert: support_ended "
+             ]
       waitShownBadge (chatController alice) Nothing
       -- The repeat uses the same purchase key, so the service returns the credential it already issued.
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
@@ -1010,11 +1013,14 @@ testWorkerRetiresExpired ps =
         bob <## currentChatVRangeInfo
         rows <- ledgerRows (chatController alice) "badge_ledger"
         setClockAt bsClock $ dueAtOf rows
-        alice ##> "/_app activate"
-        alice <## "ok"
-        alice <##. "badge alert: support_ended "
-        alice <##. "1: supporter"
-        alice <##. "badge alert: support_ended "
+        alice `send` "/_app activate"
+        alice
+          <### [ "/_app activate",
+                 "ok",
+                 StartsWith "badge alert: support_ended ",
+                 StartsWith "1: supporter",
+                 StartsWith "badge alert: support_ended "
+               ]
         waitShownBadge (chatController alice) Nothing
         alice ##> "/p"
         alice <## "user profile: alice (Alice)"
@@ -1056,11 +1062,14 @@ testEndedAlert ps =
       rows <- ledgerRows (chatController alice) "badge_ledger"
       let endsAt = dueAtOf rows
       setClockAt bsClock endsAt
-      alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "badge alert: support_ended "
-      alice <##. "1: supporter"
-      alice <##. "badge alert: support_ended "
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               StartsWith "badge alert: support_ended ",
+               StartsWith "1: supporter",
+               StartsWith "badge alert: support_ended "
+             ]
       pure endsAt
     withTestChatCfg ps bsClientCfg "alice" $ \alice -> do
       alice <##. "badge alert: support_ended "
@@ -1209,9 +1218,7 @@ testNoCredentialMonthsRanOut ps =
       rows' <- ledgerRows (chatController alice) "badge_ledger"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) rows' `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-2, 0, Just "support")]
       alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "1: supporter"
-      alice <##. "badge alert: support_ended "
+      alice <### ["ok", StartsWith "1: supporter", StartsWith "badge alert: support_ended "]
       waitShownBadge (chatController alice) Nothing
 
 -- The service issuing nothing while the ledger still owes a month is a fault the client cannot
@@ -1338,20 +1345,22 @@ testSnoozedAlertReturns ps =
       rows <- ledgerRows (chatController alice) "badge_ledger"
       let endsAt = dueAtOf rows
       setClockAt bsClock endsAt
-      alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "badge alert: support_ended "
-      alice <##. "1: supporter"
-      alice <##. "badge alert: support_ended "
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               StartsWith "badge alert: support_ended ",
+               StartsWith "1: supporter",
+               StartsWith "badge alert: support_ended "
+             ]
       alice ##> ("/_badge ack 1 1 support_ended on " <> T.unpack (safeDecodeUtf8 $ strEncode endsAt))
       alice <##. "1: supporter"
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
       setClockAt bsClock $ addUTCTime (nominalDay + 60) endsAt
-      alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "badge alert: support_ended "
+      alice `send` "/_app activate"
+      alice <### ["/_app activate", "ok", StartsWith "badge alert: support_ended "]
 
 testRenewalKeepsProfileEdits :: HasCallStack => TestParams -> IO ()
 testRenewalKeepsProfileEdits ps =
