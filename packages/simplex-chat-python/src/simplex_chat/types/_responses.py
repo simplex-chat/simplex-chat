@@ -65,7 +65,6 @@ class ConnectionPlan(TypedDict):
     planSimplexName: NotRequired["T.SimplexNameInfo"]
     otherSimplexName: NotRequired["T.SimplexNameInfo"]
     connectionPlan: "T.ConnectionPlan"
-    offerLookup: bool
 
 class ContactAlreadyExists(TypedDict):
     type: Literal["contactAlreadyExists"]

@@ -211,7 +211,6 @@ export namespace CR {
     planSimplexName?: T.SimplexNameInfo
     otherSimplexName?: T.SimplexNameInfo
     connectionPlan: T.ConnectionPlan
-    offerLookup: boolean
   }
 
   export interface ContactAlreadyExists extends Interface {

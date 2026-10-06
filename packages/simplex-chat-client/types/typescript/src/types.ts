@@ -2139,14 +2139,14 @@ export namespace ConnectionPlan {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
     nameWarning_?: NameWarning
-    localChats: ChatInfo[]
+    existingChat_?: ChatInfo
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
     nameWarning_?: NameWarning
-    localChats: ChatInfo[]
+    existingChat_?: ChatInfo
   }
 
   export interface NameNotConnectable extends Interface {
@@ -3413,7 +3413,6 @@ export type NameWarning =
   | NameWarning.OwnAvailable
   | NameWarning.ReservedForCommunity
   | NameWarning.NotRegistered
-  | NameWarning.NoValidLink
 
 export namespace NameWarning {
   export type Tag = 
@@ -3424,7 +3423,6 @@ export namespace NameWarning {
     | "ownAvailable"
     | "reservedForCommunity"
     | "notRegistered"
-    | "noValidLink"
 
   interface Interface {
     type: Tag
@@ -3463,10 +3461,6 @@ export namespace NameWarning {
 
   export interface NotRegistered extends Interface {
     type: "notRegistered"
-  }
-
-  export interface NoValidLink extends Interface {
-    type: "noValidLink"
   }
 }
 

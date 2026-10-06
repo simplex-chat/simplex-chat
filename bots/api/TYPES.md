@@ -1873,13 +1873,13 @@ ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
 - nameWarning_: [NameWarning](#namewarning)?
-- localChats: [[ChatInfo](#chatinfo)]
+- existingChat_: [ChatInfo](#chatinfo)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
 - nameWarning_: [NameWarning](#namewarning)?
-- localChats: [[ChatInfo](#chatinfo)]
+- existingChat_: [ChatInfo](#chatinfo)?
 
 NameNotConnectable:
 - type: "nameNotConnectable"
@@ -3159,9 +3159,6 @@ ReservedForCommunity:
 
 NotRegistered:
 - type: "notRegistered"
-
-NoValidLink:
-- type: "noValidLink"
 
 
 ---

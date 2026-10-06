@@ -1482,13 +1482,13 @@ class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
     nameWarning_: NotRequired["NameWarning"]
-    localChats: list["ChatInfo"]
+    existingChat_: NotRequired["ChatInfo"]
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
     nameWarning_: NotRequired["NameWarning"]
-    localChats: list["ChatInfo"]
+    existingChat_: NotRequired["ChatInfo"]
 
 class ConnectionPlan_nameNotConnectable(TypedDict):
     type: Literal["nameNotConnectable"]
@@ -2406,9 +2406,6 @@ class NameWarning_reservedForCommunity(TypedDict):
 class NameWarning_notRegistered(TypedDict):
     type: Literal["notRegistered"]
 
-class NameWarning_noValidLink(TypedDict):
-    type: Literal["noValidLink"]
-
 NameWarning = (
     NameWarning_expired
     | NameWarning_ownExpired
@@ -2417,10 +2414,9 @@ NameWarning = (
     | NameWarning_ownAvailable
     | NameWarning_reservedForCommunity
     | NameWarning_notRegistered
-    | NameWarning_noValidLink
 )
 
-NameWarning_Tag = Literal["expired", "ownExpired", "available", "noLongerRegistered", "ownAvailable", "reservedForCommunity", "notRegistered", "noValidLink"]
+NameWarning_Tag = Literal["expired", "ownExpired", "available", "noLongerRegistered", "ownAvailable", "reservedForCommunity", "notRegistered"]
 
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
