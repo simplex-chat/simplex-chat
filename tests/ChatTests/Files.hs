@@ -1190,7 +1190,10 @@ testXFTPCancelRcvRepeat =
       bob <##. "receiving file 1 (testfile) progress"
 
       bob ##> "/fc 1"
-      bob <## "cancelled receiving file 1 (testfile) from alice"
+      bob
+        <### [ "cancelled receiving file 1 (testfile) from alice",
+               StartsWith "chat db error: SERcvFileNotFoundXFTP"
+             ]
 
       bob ##> "/fs 1"
       bob <## "receiving file 1 (testfile) not accepted yet, use /fr 1 to receive file"
@@ -1198,8 +1201,7 @@ testXFTPCancelRcvRepeat =
       bob ##> ("/fr 1 " <> tmpDir bob)
       bob
         <### [ ConsoleString $ "saving file 1 from alice to " <> testfile1,
-               "started receiving file 1 (testfile) from alice",
-               StartsWith "chat db error: SERcvFileNotFoundXFTP"
+               "started receiving file 1 (testfile) from alice"
              ]
       bob <## "completed receiving file 1 (testfile) from alice"
 

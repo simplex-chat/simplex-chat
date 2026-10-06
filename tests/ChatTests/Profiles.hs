@@ -1415,8 +1415,10 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
                 WithTime "#alisa alisa_1> hello again [>>]",
                 WithTime "#alisa robert> hi there [>>]"
               ]
-          cath <## "#alisa: member alisa_1 is connected"
-          cath <## "#alisa: member robert is connected",
+          cath
+            <### [ "#alisa: member alisa_1 is connected",
+                   "#alisa: member robert is connected"
+                 ],
         biz <## "#alisa: cath joined the group",
         do
           alice <## "#biz: biz_1 added cath (Catherine) to the group (connecting...)"

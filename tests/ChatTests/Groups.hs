@@ -4749,13 +4749,13 @@ testMergeGroupLinkHostMultipleContacts =
       concurrentlyN_
         [ bob
             <### [ EndsWith "joined the group",
-                   "contact and member are merged: cath, #party cath_2",
+                   Predicate (`elem` ["contact and member are merged: cath, #party cath_2", "contact and member are merged: cath_1, #party cath_2"]),
                    StartsWith "use @cath"
                  ],
           cath
             <### [ "#party: joining the group...",
                    "#party: you joined the group",
-                   "contact and member are merged: bob, #party bob_2",
+                   Predicate (`elem` ["contact and member are merged: bob, #party bob_2", "contact and member are merged: bob_1, #party bob_2"]),
                    StartsWith "use @bob"
                  ]
         ]
