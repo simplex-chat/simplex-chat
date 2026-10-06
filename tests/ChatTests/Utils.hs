@@ -826,8 +826,10 @@ createGroup4 gName cc1 (cc2, role2) (cc3, role3) (cc4, role4) = do
     [ cc1 <## "#team: dan joined the group",
       do
         cc4 <## ("#" <> gName <> ": you joined the group")
-        cc4 <## ("#" <> gName <> ": member " <> sName2 <> " is connected")
-        cc4 <## ("#" <> gName <> ": member " <> sName3 <> " is connected"),
+        cc4
+          <### [ ConsoleString ("#" <> gName <> ": member " <> sName2 <> " is connected"),
+                 ConsoleString ("#" <> gName <> ": member " <> sName3 <> " is connected")
+               ],
       do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName4 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name4 <> " is connected"),

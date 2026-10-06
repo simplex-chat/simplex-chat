@@ -23,7 +23,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar)
 import Control.Monad (forM_, void, when)
 import Control.Exception (finally)
@@ -52,6 +53,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError 
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
+import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -238,10 +240,10 @@ issueCodeAs cc badgeType months status =
 runBadgeService :: TestParams -> ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
 runBadgeService ps cfg opts action = do
   env <- newServiceState
-  t <- forkIO $ badgeService opts (fst $ testPortsCfg ps cfg testOpts) env
+  t <- async $ badgeService opts (fst $ testPortsCfg ps cfg testOpts) env
   ready <- timeout 30000000 $ atomically $ readTMVar $ serviceCC env
-  when (isNothing ready) $ killThread t >> error "badge service did not start"
-  action env `finally` killThread t
+  when (isNothing ready) $ cancel t >> error "badge service did not start"
+  action env `finally` (cancel t >> atomically (readTMVar $ serviceCC env) >>= disposeAgentClient . smpAgent)
 
 codeArg :: BadgeCode -> String
 codeArg = T.unpack . formatBadgeCode

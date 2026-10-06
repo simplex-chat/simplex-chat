@@ -3105,10 +3105,10 @@ associateContactWithMemberRecord
         db
         [sql|
           UPDATE group_members
-          SET contact_id = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+          SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
+          WHERE user_id = ? AND ((group_id = ? AND group_member_id = ?) OR contact_id = ?)
         |]
-        (contactId, currentTs, userId, groupId, groupMemberId)
+        (contactId, memLDN, memProfileId, currentTs, userId, groupId, groupMemberId, contactId)
       DB.execute
         db
         [sql|

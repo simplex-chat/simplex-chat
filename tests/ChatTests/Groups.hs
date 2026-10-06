@@ -7692,8 +7692,10 @@ testGroupMemberInactive ps = do
       threadDelay 1500000
 
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
-        bob <## "subscribed 2 connections on server localhost"
-        bob <# "#team alice> 1"
+        bob
+          <### [ "subscribed 2 connections on server localhost",
+                 WithTime "#team alice> 1"
+               ]
         bob <# "#team alice> 2"
         bob <#. "#team alice> skipped message ID"
         alice <## "[#team bob] inactive connection is marked as active"

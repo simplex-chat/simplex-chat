@@ -10,8 +10,9 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
-import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Concurrent.STM (atomically, peekTQueue)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (async, cancel)
+import Control.Concurrent.STM (atomically, peekTQueue, tryReadTMVar)
 import Control.Exception (finally)
 import Control.Monad (forM_, when, void)
 import qualified Data.Aeson as J
@@ -22,13 +23,14 @@ import Directory.Options
 import Directory.Service
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (smpAgent))
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (memberSupportVoiceVersion)
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Version
 import NameResolver
@@ -1657,8 +1659,8 @@ withDirectoryServiceOpts ps modOpts test = do
       test superUser dsLink
 
 withDirectoryServiceVoiceCaptcha :: HasCallStack => TestParams -> FilePath -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryServiceVoiceCaptcha ps voiceScript =
-  withDirectoryServiceOpts ps (\o -> o {voiceCaptchaGenerator = Just voiceScript})
+withDirectoryServiceVoiceCaptcha ps voiceScript test =
+  withXFTPServer ps $ withDirectoryServiceOpts ps (\o -> o {voiceCaptchaGenerator = Just voiceScript}) test
 
 testRestoreDirectory :: HasCallStack => TestParams -> IO ()
 testRestoreDirectory ps = do
@@ -1817,9 +1819,10 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
 
 runDirectory :: TestParams -> ChatConfig -> DirectoryOpts -> IO () -> IO ()
 runDirectory ps cfg opts action = do
-  t <- forkIO $ directoryService opts $ fst $ testPortsCfg ps cfg testOpts
+  env <- newServiceState opts
+  t <- async $ directoryService opts (fst $ testPortsCfg ps cfg testOpts) env
   threadDelay 500000
-  action `finally` killThread t
+  action `finally` (cancel t >> atomically (tryReadTMVar $ serviceCC env) >>= mapM_ (disposeAgentClient . smpAgent))
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
@@ -1847,6 +1850,21 @@ groupAccepted u n ugId = do
   u <# ("'SimpleX Directory'> Joined the group " <> n <> ". Registration is pending approval — it may take up to 48 hours.")
   u <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
   u <## ("Captcha verification is enabled. Use /'filter " <> show ugId <> "' to change it.")
+
+channelJoinedByDirectory :: HasCallStack => TestCC -> TestCC -> IO ()
+channelJoinedByDirectory owner relay =
+  concurrentlyN_
+    [ do
+        relay <## "'SimpleX Directory': accepting request to join group #news..."
+        relay <## "#news: 'SimpleX Directory' joined the group",
+      owner
+        <### [ WithTime "'SimpleX Directory'> Joining the channel news…",
+               "#news: relay introduced 'SimpleX Directory_1' in the channel",
+               WithTime "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours.",
+               WithTime "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them.",
+               "Captcha verification is enabled. Use /'filter 1' to change it."
+             ]
+    ]
 
 completeRegistration :: TestCC -> TestCC -> String -> String -> Int -> IO String
 completeRegistration su u n fn gId =
@@ -2127,17 +2145,7 @@ testRegisterChannelViaCard ps =
         _ <- getTermLine bob -- short link
         _ <- getTermLine bob -- ownerSig JSON
         -- directory bot validates and joins via relay
-        bob <# "'SimpleX Directory'> Joining the channel news…"
-        concurrentlyN_
-          [ do
-              relay <## "'SimpleX Directory': accepting request to join group #news..."
-              relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
-          ]
-        -- owner sends a message to trigger member introduction
-        bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
-        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
+        channelJoinedByDirectory bob relay
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
         superUser <##. "Link to join channel: "
@@ -2208,16 +2216,7 @@ testDirectoryChannelName ps = withSmpServerAndNames ps $ \reg ->
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
         _ <- getTermLine bob -- short link
         _ <- getTermLine bob -- ownerSig JSON
-        bob <# "'SimpleX Directory'> Joining the channel news…"
-        concurrentlyN_
-          [ do
-              relay <## "'SimpleX Directory': accepting request to join group #news..."
-              relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
-          ]
-        bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
-        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
+        channelJoinedByDirectory bob relay
         -- the directory verified the name against the channel link and shows it to the admin
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
@@ -2251,16 +2250,7 @@ testDirectoryChannelNameNotVerified ps = withSmpServerAndNames ps $ \reg ->
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
         _ <- getTermLine bob -- short link
         _ <- getTermLine bob -- ownerSig JSON
-        bob <# "'SimpleX Directory'> Joining the channel news…"
-        concurrentlyN_
-          [ do
-              relay <## "'SimpleX Directory': accepting request to join group #news..."
-              relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
-          ]
-        bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
-        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
+        channelJoinedByDirectory bob relay
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
         superUser <## "SimpleX name: #news (NOT verified - will not be shown)"
@@ -2311,16 +2301,7 @@ testDeleteChannelRegistration ps =
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
         _ <- getTermLine bob -- short link
         _ <- getTermLine bob -- ownerSig JSON
-        bob <# "'SimpleX Directory'> Joining the channel news…"
-        concurrentlyN_
-          [ do
-              relay <## "'SimpleX Directory': accepting request to join group #news..."
-              relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
-          ]
-        bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
-        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
+        channelJoinedByDirectory bob relay
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
         superUser <##. "Link to join channel: "
@@ -2357,16 +2338,7 @@ testReregistrationAlreadyListed ps =
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
         _ <- getTermLine bob -- short link
         _ <- getTermLine bob -- ownerSig JSON
-        bob <# "'SimpleX Directory'> Joining the channel news…"
-        concurrentlyN_
-          [ do
-              relay <## "'SimpleX Directory': accepting request to join group #news..."
-              relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
-          ]
-        bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
-        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
+        channelJoinedByDirectory bob relay
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
         superUser <##. "Link to join channel: "
@@ -2418,16 +2390,7 @@ testLinkCheckUpdatesCount ps = do
             bob <# "@'SimpleX Directory' link to join channel #news (signed):"
             _ <- getTermLine bob -- short link
             _ <- getTermLine bob -- ownerSig JSON
-            bob <# "'SimpleX Directory'> Joining the channel news…"
-            concurrentlyN_
-              [ do
-                  relay <## "'SimpleX Directory': accepting request to join group #news..."
-                  relay <## "#news: 'SimpleX Directory' joined the group",
-                bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
-              ]
-            bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-            bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
-            bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
+            channelJoinedByDirectory bob relay
             superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
             superUser <## "news"
             superUser <##. "Link to join channel: "
