@@ -1460,8 +1460,7 @@ testStopStartChat ps =
       M.null <$> readTVarIO expireCIThreads `shouldReturn` True
       M.null <$> readTVarIO timedItemThreads `shouldReturn` True
       alice ##> "/_start"
-      alice <## "chat started"
-      alice <## "subscribed 1 connections on server localhost"
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
       bob #> "@alice hello"
       alice <# "bob> hello"
       threadDelay 3000000
@@ -1493,9 +1492,8 @@ testMaintenanceMode ps = do
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/_start"
-      alice <## "chat started"
       -- chat works after start
-      alice <## "subscribed 1 connections on server localhost"
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
       alice #> "@bob hi again"
       bob <# "alice> hi again"
       bob #> "@alice hello"
@@ -1519,6 +1517,10 @@ testMaintenanceMode ps = do
 testChatWorking :: HasCallStack => TestCC -> TestCC -> IO ()
 testChatWorking alice bob = do
   alice <## "subscribed 1 connections on server localhost"
+  testChatMessages alice bob
+
+testChatMessages :: HasCallStack => TestCC -> TestCC -> IO ()
+testChatMessages alice bob = do
   alice #> "@bob hello again"
   bob <# "alice> hello again"
   bob #> "@alice hello too"
@@ -1602,8 +1604,8 @@ testDatabaseEncryption ps = do
       alice <## "error: chat store changed, please restart chat"
     withTestChatOpts ps (getTestOpts True "mykey") "alice" $ \alice -> do
       alice ##> "/_start"
-      alice <## "chat started"
-      testChatWorking alice bob
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
+      testChatMessages alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/db test key wrongkey"
@@ -1618,8 +1620,8 @@ testDatabaseEncryption ps = do
       alice <## "ok"
     withTestChatOpts ps (getTestOpts True "anotherkey") "alice" $ \alice -> do
       alice ##> "/_start"
-      alice <## "chat started"
-      testChatWorking alice bob
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
+      testChatMessages alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/db decrypt anotherkey"
@@ -2041,7 +2043,7 @@ testServiceRequestResponse =
     alice ##> "/_stop"
     alice <## "chat stopped"
     alice ##> "/_start main=on snd_files=on service_requests=on"
-    alice <## "chat started"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
     concurrently_
       ( do
           bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
@@ -2066,7 +2068,7 @@ testSignedServiceRequest =
     alice ##> "/_stop"
     alice <## "chat stopped"
     alice ##> "/_start main=on snd_files=on service_requests=on"
-    alice <## "chat started"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
     g <- C.newRandom
     (pub, priv :: C.PrivateKeyEd25519) <- atomically $ C.generateKeyPair g
     let signKey = B.unpack $ strEncode $ C.StoredPrivateKey priv

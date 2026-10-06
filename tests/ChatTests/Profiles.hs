@@ -1513,10 +1513,12 @@ testPlanAddressOwn ps =
     alice <## "contact address: own address"
 
     alice ##> ("/c " <> cLink)
-    alice <## "connection request sent!"
-    alice <## "alice_1 (Alice) wants to connect to you!"
-    alice <## "to accept: /ac alice_1"
-    alice <## "to reject: /rc alice_1 (the sender will NOT be notified)"
+    alice
+      <### [ "connection request sent!",
+             "alice_1 (Alice) wants to connect to you!",
+             "to accept: /ac alice_1",
+             "to reject: /rc alice_1 (the sender will NOT be notified)"
+           ]
     alice @@@ [("@alice_1", "Audio/video calls: enabled"), (":2", "")]
     alice ##> "/ac alice_1"
     alice <## "alice_1 (Alice): accepting contact request, you can send messages to contact"
@@ -4094,10 +4096,13 @@ testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
         <### [ "alice: connection started",
                WithTime "@alice hello"
              ]
-      alice <# "robert> hello"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
-        (alice <## "robert: contact is connected")
+        ( alice
+            <### [ WithTime "robert> hello",
+                   "robert: contact is connected"
+                 ]
+        )
 
       alice <##> bob
 

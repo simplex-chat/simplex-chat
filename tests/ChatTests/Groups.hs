@@ -4810,8 +4810,10 @@ testMemberContactMessage =
       alice <##> bob
 
       alice `send` "@bob hi"
-      alice <## "bob: quantum resistant end-to-end encryption enabled"
-      alice <# "@bob hi"
+      alice
+        <### [ "bob: quantum resistant end-to-end encryption enabled",
+               WithTime "@bob hi"
+             ]
       bob <## "alice: quantum resistant end-to-end encryption enabled"
       bob <# "alice> hi"
 
