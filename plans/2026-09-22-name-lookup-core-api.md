@@ -31,7 +31,7 @@ The declared types were close to right. Twelve states mapped onto them as they s
 - for each kind, the local chat is looked up first, and its link is compared with the name's link;
 - the warning is attached to the local plan, or returned as `CPNameNotConnectable` when nothing is local.
 
-`CPContactAddress` and `CPGroupLink` have `nameWarning_ :: Maybe NameWarning` in place of the declared `nameRegistration_`. For 3c, `addressChanged` is added to the `Ok` plans, and `existingChat_ :: Maybe AChatInfo`, the local chat to open, to `CPContactAddress` and `CPGroupLink`. `CPNameNotConnectable` has its domain, so the UI can print the bare name the canvas shows.
+`CPContactAddress` and `CPGroupLink` have `nameChange :: Maybe NameChange` in place of the declared `nameRegistration_`: how the name changed since the local chat was found by it. `CPNameNotConnectable` has its domain and the registry's warning, so the UI can print the bare name the canvas shows.
 
 The by-name store lookups take `CTName` and query by domain:
 - `getContactToConnect` (`Direct.hs:803`);
@@ -76,23 +76,21 @@ The changes are to the types in `Controller.hs`, including `PlanResolveMode`, an
 
 `planSimplexName` cannot serve here. It is a `SimplexNameInfo`, which needs a `nameType`, and an unregistered name has none — the code as of `db779eff4` invented one by trying `NTPublicGroup` then `NTContact`, which is arbitrary and becomes visible the moment the UI renders it. The canvas writes every band-2 body as a bare name (`sunflower.simplex is available…`, `bakery.simplex expired on…`), never `@`/`#`, so the UI uses `fullDomainName`, not `shortStr`.
 
-**`CAPOk` and `GLPOk` gain `addressChanged :: Bool`.**
+**`CPContactAddress` and `CPGroupLink` gain `nameChange`.**
 
 ```haskell
-| CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
-| GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
+| CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameChange :: Maybe NameChange}
+| CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameChange :: Maybe NameChange}
+
+data NameChange
+  = NCLapsed {nameWarning :: NameWarning}
+  | NCMoved {knownChat :: AChatInfo}
 ```
 
-`addressChanged` is true when the name's link differs from the link of the local chat, own address or own channel, and the new link's plan is `CAPOk` or `GLPOk`. This is state 3c. Only the move of the address is expressed, as in the canvas's 3c ("bakery.simplex now leads to a new address"). It is the narrow form of the `nameOwnerChanged` field dropped in `f3bcd4a16`: owner identity is neither included, stored nor compared.
-
-**`CPContactAddress` and `CPGroupLink` gain `nameWarning_` and `existingChat_`.**
-
-```haskell
-| CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameWarning_ :: Maybe NameWarning, existingChat_ :: Maybe AChatInfo}
-| CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameWarning_ :: Maybe NameWarning, existingChat_ :: Maybe AChatInfo}
-```
-
-`nameWarning_` is described in `plans/2026-09-28-name-warnings.md` §5. `existingChat_` is the local chat when the name moved to another link: the contact, the business chat, the channel or the own channel. It is `Nothing` for the own address, and for every plan of a name that did not move.
+- `NCLapsed`: the local plan, with the registry's warning (`plans/2026-09-28-name-warnings.md` §5).
+- `NCMoved`: the new link's plan; the name's link differs from the link of a local chat or own channel. This is state 3c. Only the move is expressed, as in the canvas's 3c ("bakery.simplex now leads to a new address"). It is the narrow form of the `nameOwnerChanged` field dropped in `f3bcd4a16`: owner identity is neither included, stored nor compared.
+- `knownChat` is the contact, the business chat, the channel or the own channel.
+- A name that moved from the own address has no change: the new link's plan is returned as for a name with nothing local.
 
 **`connectPlan` returns an optional link, and takes the bare name's resolution.**
 
@@ -133,14 +131,21 @@ nameRecordOrWarning :: SystemSeconds -> SimplexDomain -> NameRegistration -> Eit
 
 **Expiry is a producer rule, not a UI rule.** An expired name must not yield a connectable plan — "It does not connect while only its owner can renew it". `expires` absent (a v20/v21 router sent the record alone) means expiry is unknown, so the name is treated as unexpired — the only safe reading. The other case, `expires` known and past with `graceUntil` absent, is the dateless variant in §4.
 
-**`addressChanged`.** When the target is a `CTName` and a chat, the own address or the own channel is found locally, the name is resolved in `knownNamePlan`. The name's link is compared with the stored one by `sameShortLinkContact`:
+**`nameChange`.** The name is resolved before the local lookup, so a local plan is built with `NCLapsed` (`localChange`). When the target is a `CTName` and a chat, the own address or the own channel is found locally, the name's link is compared with the stored one by `sameShortLinkContact`, in `knownNamePlan`:
 - equal: the local plan (3a, 4a);
-- different: the plan for the new link, with `addressChanged = True` on `CAPOk` and `GLPOk`, and `existingChat_` (3c, N35 of `plans/2026-09-28-name-warnings.md`);
+- different: the plan for the new link, built with `NCMoved` (3c, N35 of `plans/2026-09-28-name-warnings.md`), or without a change for the own address;
 - different, and the new link's profile does not claim the name, or its data cannot be fetched: the local plan (N12, N19).
 
-`False` is passed at every other construction site.
+The change is a parameter of the link plan functions:
+- `contactLinkPlan`;
+- `groupLinkPlan`;
+- `contactRequestPlan`;
+- `groupJoinRequestPlan`;
+- `groupPlan`.
 
-**Warnings, not registrations.** `nameWarning_` is `Just` exactly when the canvas shows an alert. The registration stays in core (`plans/2026-09-28-name-warnings.md` §5).
+`Nothing` is passed by full links, `ConnectSimplex` and a name with nothing local.
+
+**Warnings, not registrations.** `NCLapsed` or `CPNameNotConnectable` is returned exactly when the canvas shows a name alert. The registration stays in core (`plans/2026-09-28-name-warnings.md` §5).
 
 ---
 
@@ -148,7 +153,7 @@ nameRecordOrWarning :: SystemSeconds -> SimplexDomain -> NameRegistration -> Eit
 
 The contract is the scenario table in `plans/2026-09-28-name-warnings.md` §3. It lists every combination of target (typed or bare name), local chat, and registry answer, with the plan and warning for each. Core now makes the four readings this section used to leave to the UI:
 - the label length check (2c vs 2e);
-- own vs chat, as separate warnings;
+- own vs other, read from the plan (`CAPOwnLink`, `GLPOwnLink`);
 - the dateless variants (`graceUntil` absent);
 - the price, as the 2-year term.
 
@@ -188,9 +193,9 @@ Registry and network failures stay command errors when nothing is local (2h), wi
 ## 7. Decisions taken
 
 1. **Reversed on 2026-09-28: the price is the 2-year term, computed in core.** `NamePrice {amount, years}` is the registry's per-year price for the label's length times `years = 2`, so the term is in one place and no client hardcodes it (`plans/2026-09-28-name-warnings.md`, N3).
-2. **3c is a `Bool` on the `Ok` plans, not a revived `nameOwnerChanged`.** No owner is included and nothing is persisted, so `f3bcd4a16` is not reopened.
+2. **3c is `NCMoved`, not a revived `nameOwnerChanged`.** No owner is included and nothing is persisted, so `f3bcd4a16` is not reopened.
 3. **Dateless alerts rather than suppressed ones.** A registration whose `expires` has passed, without `graceUntil`, is shown with the expiry alert; only the renew-by date is omitted (`plans/2026-09-28-name-warnings.md`, N24). An absent `expires` is treated as unexpired.
-4. **Registration does not go through `ConnectionPlan`.** On the sibling canvas, 5a and 5b are the only registration states that would need one, and they cannot be expressed by `nameWarning_`: an unexpired name has no warning. Both are proposed for dropping (`b898b991d`, "suggest to drop 5a & 5b"). With them dropped, the registration check is a plain name-status call, and this API has one consumer.
+4. **Registration does not go through `ConnectionPlan`.** On the sibling canvas, 5a and 5b are the only registration states that would need one, and they cannot be expressed by `nameChange`: an unexpired name has no warning. Both are proposed for dropping (`b898b991d`, "suggest to drop 5a & 5b"). With them dropped, the registration check is a plain name-status call, and this API has one consumer.
 5. **Consequently the lookup canvas's footer line "registration will always resolve" is obsolete** and came off the sketch with this change.
 6. **Reversed on review (2026-09-24), then simplified: core resolves a name on every plan, and the apps keep no name state.** §9.
 7. **The constructor is `CPNameNotConnectable`, renamed from `CPSimplexName`.** It covers four states (2b, 2c, 2d, 2e): a connection is impossible, and the reason is given by the attached `NameWarning`. Rejected names:
@@ -206,8 +211,7 @@ Registry and network failures stay command errors when nothing is local (2h), wi
 
 - `View.hs:2234`, `:2252` — match the new arities; `viewConnectionPlan` (`:2214`) takes `Maybe ACreatedConnLink` and gains a `CPNameNotConnectable` case rendering the domain; the warning line is `viewNameWarning` (`plans/2026-09-28-name-warnings.md` §7).
 - `View.hs:217` — pass the now-optional `connLink` through.
-- `Commands.hs` — `nameWarning_` and `existingChat_` are added at the 26 `CPContactAddress` / `CPGroupLink` occurrences; `CRConnectionPlan` is built with `Maybe` at `:2178` and `:4586`.
-- `addressChanged` is added at the `CAPOk` / `GLPOk` construction sites.
+- `Commands.hs` — `nameChange` is added at the 26 `CPContactAddress` / `CPGroupLink` occurrences; `CRConnectionPlan` is built with `Maybe` at `:2178` and `:4586`.
 - Regenerate the client types. Before regeneration, the four-constructor plan was described in `bots/api/TYPES.md:1903-1922`, `packages/simplex-chat-client/types/typescript/src/types.ts` and `packages/simplex-chat-python/src/simplex_chat/types/_types.py`. `resolve=` is omitted by `bots/src/API/Docs/Commands.hs:150` and both generated clients.
 - Regeneration is pending. The removed `localChats`, `offerLookup` and `NWNoValidLink` are still described in `bots/api/COMMANDS.md`, `bots/api/TYPES.md` and both generated clients.
 
@@ -248,11 +252,11 @@ Decision 6 (§7) is implemented as follows.
 
 **A. Types.** The changes in §2, plus the `connectionPlanProceed` and derivation updates. Done when the constructors, fields and `deriveJSON` calls are in place and `Controller.hs` has no remaining arity error.
 
-**B. Producer.** `resolveNameRecordOrWarning` and `nameRecordOrWarning`, the `CTDomain` branch, `knownNamePlan` after the local lookups (`knownLinkPlans`), expiry gating, and `addressChanged`. Done when every row of §4 can be produced.
+**B. Producer.** `resolveNameRecordOrWarning` and `nameRecordOrWarning`, the `CTDomain` branch, `knownNamePlan` after the local lookups (`knownLinkPlans`), expiry gating, and `NCMoved`. Done when every row of §4 can be produced.
 
 **C. Consumers.** `View.hs`, the `Commands.hs` construction sites, the response builders. Done when `cabal build` is clean.
 
-**D. Tests.** The harness comes first: `tests/NameResolver.hs:49-50` could only answer `NRRegistered` with `expires = Nothing`, or `NRAvailable` at a fixed price. Add `registerExpiredName` (expired a day ago, renewable for 30 days), `registerReservedName`, `unregisterName` and `failNameResolution`; the dateless and unexpired-community cases are unit tests of `nameRecordOrWarning` — without these, nine of the sixteen rows cannot be reached at all. Then extend `tests/ChatTests/Names.hs` (which already drives `/_connect plan` at `:236`, `:261`, `:282`, `:292`): one case per §4 row, plus a `PRMNever` hit and miss, plus `addressChanged` both ways. Done when all sixteen rows are asserted.
+**D. Tests.** The harness comes first: `tests/NameResolver.hs:49-50` could only answer `NRRegistered` with `expires = Nothing`, or `NRAvailable` at a fixed price. Add `registerExpiredName` (expired a day ago, renewable for 30 days), `registerReservedName`, `unregisterName` and `failNameResolution`; the dateless and unexpired-community cases are unit tests of `nameRecordOrWarning` — without these, nine of the sixteen rows cannot be reached at all. Then extend `tests/ChatTests/Names.hs` (which already drives `/_connect plan` at `:236`, `:261`, `:282`, `:292`): one case per §4 row, plus a `PRMNever` hit and miss, plus `NCMoved` both ways. Done when all sixteen rows are asserted.
 
 **E. Regeneration.** §8. Done when the generated types describe five constructors.
 
@@ -265,9 +269,9 @@ Decision 6 (§7) is implemented as follows.
 - `tests/NameResolver.hs` can answer expired, reserved and available, not only registered-without-dates
 - every row of §4 is produced by core and asserted by a test
 - `CPNameNotConnectable` has a domain and is returned only when nothing of the planned kind is local for the name
-- `nameWarning_` is `Just` exactly when the lookup canvas shows an alert (`plans/2026-09-28-name-warnings.md` §3)
+- `NCLapsed` or `CPNameNotConnectable` is returned exactly when the lookup canvas shows a name alert (`plans/2026-09-28-name-warnings.md` §3)
 - `PRMAll` replaces `PRMAllGroups` (`allGroups` and `on` still parse), a name is resolved on every lookup except with `PRMNever`, and `PRMNever` is unchanged
 - an expired name never yields a connectable plan, and an absent `expires` is treated as unexpired
-- an `Ok` plan with `addressChanged = True` and `existingChat_` is returned for a known chat whose name moved to a link that claims it
+- the new link's plan with `NCMoved` is returned for a known chat whose name moved to a link that claims it
 - `cabal build` and `cabal test` are clean, and the generated client types match
 - core and the apps keep a name's registration only within one plan, and the chat commands are unchanged except `resolve=all`

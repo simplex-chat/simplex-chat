@@ -76,6 +76,7 @@ private fun showNameWarningAlert(
   rhId: Long?,
   domain: SimplexDomain,
   warning: NameWarning,
+  own: Boolean,
   openExistingChat: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -112,28 +113,21 @@ private fun showNameWarningAlert(
   }
   val register = generalGetString(MR.strings.simplex_name_register) to ::openNameHowTo
   when (warning) {
-    is NameWarning.Expired -> alert(
+    is NameWarning.Expired -> if (!own) alert(
       generalGetString(MR.strings.simplex_name_expired),
       if (warning.graceUntil != null) String.format(generalGetString(MR.strings.simplex_name_expired_desc), nameStr, nameDate(warning.expiredAt), nameDate(warning.graceUntil))
       else String.format(generalGetString(MR.strings.simplex_name_expired_no_date_desc), nameStr, nameDate(warning.expiredAt))
-    )
-    is NameWarning.OwnExpired -> alert(
+    ) else alert(
       generalGetString(MR.strings.simplex_name_own_expired),
       if (warning.graceUntil != null) String.format(generalGetString(MR.strings.simplex_name_own_expired_desc), nameStr, nameDate(warning.expiredAt), nameDate(warning.graceUntil))
       else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr, nameDate(warning.expiredAt)),
       generalGetString(MR.strings.simplex_name_renew) to ::openNameHowTo
     )
-    is NameWarning.Available -> alert(
-      generalGetString(MR.strings.simplex_name_not_registered),
+    is NameWarning.Available -> if (!own) alert(
+      generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
       String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
       register
-    )
-    is NameWarning.NoLongerRegistered -> alert(
-      generalGetString(MR.strings.simplex_name_no_longer_registered),
-      String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
-      register
-    )
-    is NameWarning.OwnAvailable -> alert(
+    ) else alert(
       generalGetString(MR.strings.simplex_name_own_expired),
       String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
       generalGetString(MR.strings.simplex_name_re_register) to ::openNameHowTo
@@ -187,12 +181,12 @@ private suspend fun planAndConnectTask(
     }
     val (nameDomain, nameWarning) = when (connectionPlan) {
       is ConnectionPlan.NameNotConnectable -> connectionPlan.simplexDomain to connectionPlan.nameWarning
-      is ConnectionPlan.ContactAddress -> planSimplexName?.nameDomain to connectionPlan.nameWarning_
-      is ConnectionPlan.GroupLink -> planSimplexName?.nameDomain to connectionPlan.nameWarning_
+      is ConnectionPlan.ContactAddress -> planSimplexName?.nameDomain to (connectionPlan.nameChange as? NameChange.Lapsed)?.nameWarning
+      is ConnectionPlan.GroupLink -> planSimplexName?.nameDomain to (connectionPlan.nameChange as? NameChange.Lapsed)?.nameWarning
       else -> null to null
     }
     if (nameWarning != null && nameDomain != null) {
-      showNameWarningAlert(rhId, nameDomain, nameWarning, openExisting, cleanup)
+      showNameWarningAlert(rhId, nameDomain, nameWarning, connectionPlan.isOwnLink, openExisting, cleanup)
       return completable
     }
     if (connectionLink == null) {
@@ -275,7 +269,6 @@ private suspend fun planAndConnectTask(
               planSimplexName = planSimplexName,
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
-              addressChanged = connectionPlan.contactAddressPlan.addressChanged,
               openExistingChat = openExisting?.let { open -> { open(); cleanup() } },
               close,
               cleanup
@@ -363,7 +356,6 @@ private suspend fun planAndConnectTask(
               planSimplexName = planSimplexName,
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
-              addressChanged = connectionPlan.groupLinkPlan.addressChanged,
               openExistingChat = openExisting?.let { open -> { open(); cleanup() } },
               close,
               cleanup
@@ -821,7 +813,6 @@ fun showPrepareContactAlert(
   planSimplexName: SimplexNameInfo? = null,
   connectOtherButton: String? = null,
   connectOtherLink: String? = null,
-  addressChanged: Boolean = false,
   openExistingChat: (() -> Unit)? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
@@ -841,7 +832,7 @@ fun showPrepareContactAlert(
     },
     profileBadge = if (contactShortLinkData.localBadge?.status == BadgeStatus.ExpiredOld) null else contactShortLinkData.localBadge,
     nameCaption = planSimplexName?.shortStr,
-    subtitle = if (addressChanged && planSimplexName != null)
+    subtitle = if (openExistingChat != null && planSimplexName != null)
       String.format(generalGetString(MR.strings.simplex_name_address_changed), planSimplexName.nameDomain.fullDomainName)
     else null,
     information = ownerVerificationMessage(ownerVerification),
@@ -879,7 +870,6 @@ fun showPrepareGroupAlert(
   planSimplexName: SimplexNameInfo? = null,
   connectOtherButton: String? = null,
   connectOtherLink: String? = null,
-  addressChanged: Boolean = false,
   openExistingChat: (() -> Unit)? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
@@ -899,11 +889,11 @@ fun showPrepareGroupAlert(
     nameCaption = planSimplexName?.shortStr,
     subtitle = subscriberCount,
     information = listOfNotNull(
-      if (addressChanged && planSimplexName != null) String.format(generalGetString(MR.strings.simplex_name_channel_changed), planSimplexName.nameDomain.fullDomainName) else null,
+      if (openExistingChat != null && planSimplexName != null) String.format(generalGetString(MR.strings.simplex_name_channel_changed), planSimplexName.nameDomain.fullDomainName) else null,
       ownerVerificationMessage(ownerVerification)
     ).joinToString("\n").ifEmpty { null },
     confirmText = generalGetString(
-      if (isChannel) (if (addressChanged) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_channel)
+      if (isChannel) (if (openExistingChat != null) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_channel)
       else MR.strings.connect_plan_open_group
     ),
     onConfirm = {

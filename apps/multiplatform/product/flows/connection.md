@@ -60,14 +60,19 @@ suspend fun apiConnectPlan(rh: Long?, connLink: String, inProgress: MutableState
 sealed class ConnectionPlan {
   val localChats: List<ChatInfo>
   class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameWarning_: NameWarning? = null, val existingChat_: ChatInfo? = null): ConnectionPlan()
-  class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameWarning_: NameWarning? = null, val existingChat_: ChatInfo? = null): ConnectionPlan()
+  class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameChange: NameChange? = null): ConnectionPlan()
+  class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameChange: NameChange? = null): ConnectionPlan()
   class NameNotConnectable(val simplexDomain: SimplexDomain, val nameWarning: NameWarning): ConnectionPlan()
   class Error(val chatError: ChatError): ConnectionPlan()
 }
+
+sealed class NameChange {
+  class Lapsed(val nameWarning: NameWarning): NameChange()
+  class Moved(val knownChat: ChatInfo): NameChange()
+}
 ```
 
-`localChats` is computed from the plan: its contact or group, then `existingChat_`.
+`localChats` is computed from the plan: its contact or group, then `knownChat` of `Moved`.
 
 4. For `InvitationLinkPlan`:
    - `Ok`: Fresh invitation, safe to connect.
@@ -110,8 +115,8 @@ suspend fun planAndConnect(
 2. `apiConnectPlan` is called to analyze the link.
 3. The plan's `localChats` are added to or updated in the chat list, and passed to `showLocalChats`.
 4. Based on the plan type, the appropriate UI is shown:
-   - For a name warning (`nameWarning_`, or `NameNotConnectable`): the name warning alert, with Open existing chat when the plan has local chats.
-   - For `Ok` plans: the alert to connect, with the link's profile when it has one. When `addressChanged` is set, "<name> now leads to a new address" (or channel) is shown, and Cancel is replaced by Open existing chat (`existingChat_`).
+   - For a name warning (`NameChange.Lapsed`, or `NameNotConnectable`): the name warning alert, with Open existing chat when the plan has local chats.
+   - For `Ok` plans: the alert to connect, with the link's profile when it has one. With `NameChange.Moved`, "<name> now leads to a new address" (or channel) is shown, and Cancel is replaced by Open existing chat (`knownChat`).
    - For `Known`, `ContactViaAddress`, a contact's `ConnectingProhibit`, an invitation's `Connecting`, and a group's `OwnLink`: the contact or group is passed to `filterKnownContact` or `filterKnownGroup` in place of the alert. Without a filter, the plan's alert is shown (for `Known`, to open the existing contact/group).
    - When the plan has `otherSimplexName`, a button for the other kind is added to the connect, own link, reconnect and known chat alerts.
    - For a contact's or an invitation's `OwnLink`: show alert.

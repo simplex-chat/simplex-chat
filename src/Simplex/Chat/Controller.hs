@@ -41,7 +41,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.Set (Set)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -1154,18 +1154,20 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameWarning_ :: Maybe NameWarning, existingChat_ :: Maybe AChatInfo}
-  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameWarning_ :: Maybe NameWarning, existingChat_ :: Maybe AChatInfo}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameChange :: Maybe NameChange}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameChange :: Maybe NameChange}
   | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameWarning :: NameWarning}
   | CPError {chatError :: ChatError}
   deriving (Show)
 
+data NameChange
+  = NCLapsed {nameWarning :: NameWarning}
+  | NCMoved {knownChat :: AChatInfo}
+  deriving (Show)
+
 data NameWarning
   = NWExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
-  | NWOwnExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
   | NWAvailable {price :: NamePrice}
-  | NWNoLongerRegistered {price :: NamePrice}
-  | NWOwnAvailable {price :: NamePrice}
   | NWReservedForCommunity
   | NWNotRegistered
   deriving (Eq, Show)
@@ -1181,7 +1183,7 @@ data InvitationLinkPlan
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -1190,7 +1192,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -1231,15 +1233,17 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap w_ _ -> case cap of
-    CAPOk {addressChanged} -> not addressChanged
-    CAPOwnLink -> isNothing w_
+  CPContactAddress _ (Just NCLapsed {}) -> False
+  CPContactAddress cap _ -> case cap of
+    CAPOk {} -> True
+    CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp w_ _ -> case glp of
-    GLPOk {addressChanged} -> not addressChanged
-    GLPOwnLink _ -> isNothing w_
+  CPGroupLink _ (Just NCLapsed {}) -> False
+  CPGroupLink glp _ -> case glp of
+    GLPOk {} -> True
+    GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False
@@ -1881,6 +1885,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
 $(JQ.deriveJSON defaultJSON ''NamePrice)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NW") ''NameWarning)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NC") ''NameChange)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 

@@ -20,7 +20,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import NameResolver
-import Simplex.Chat.Controller (ChatResponse (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), NamePrice (..), NameWarning (..))
+import Simplex.Chat.Controller (ChatResponse (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), NameChange (..), NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (execChatCommand', nameRecordOrWarning, parseChatCommand)
 import Simplex.Chat.Messages (AChatInfo (..), ChatInfo (..))
 import Simplex.Chat.Types (Contact (..), GroupInfo (..))
@@ -413,27 +413,20 @@ knownAlicePlan bob = do
   bob <## "SimpleX name: @alice.simplex (verified)"
   bob <## "use @alice <message> to send messages"
 
-planExistingChat :: TestCC -> ByteString -> IO (Maybe String)
-planExistingChat TestCC {chatController = cc} cmd = do
-  cmd' <- either fail pure $ parseChatCommand cmd
-  r <- execChatCommand' cmd' 0 `runReaderT` cc
-  case r of
-    Right CRConnectionPlan {connectionPlan = CPContactAddress CAPOk {} _ existingChat_} -> pure $ chatName =<< existingChat_
-    Right CRConnectionPlan {connectionPlan = CPGroupLink GLPOk {} _ existingChat_} -> pure $ chatName =<< existingChat_
-    _ -> fail $ "unexpected response: " <> show r
-
 planLocal :: TestCC -> ByteString -> IO [String]
 planLocal TestCC {chatController = cc} cmd = do
   cmd' <- either fail pure $ parseChatCommand cmd
   r <- execChatCommand' cmd' 0 `runReaderT` cc
   case r of
-    Right CRConnectionPlan {connectionPlan = CPContactAddress cap _ existingChat_} -> pure $ maybeToList (case cap of CAPKnown Contact {localDisplayName} -> Just (T.unpack localDisplayName); _ -> Nothing) <> maybeToList (chatName =<< existingChat_)
-    Right CRConnectionPlan {connectionPlan = CPGroupLink glp _ existingChat_} -> pure $ maybeToList (groupName glp) <> maybeToList (chatName =<< existingChat_)
+    Right CRConnectionPlan {connectionPlan = CPContactAddress cap nc_} -> pure $ maybeToList (case cap of CAPKnown Contact {localDisplayName} -> Just (T.unpack localDisplayName); _ -> Nothing) <> knownChatName nc_
+    Right CRConnectionPlan {connectionPlan = CPGroupLink glp nc_} -> pure $ maybeToList (groupName glp) <> knownChatName nc_
     _ -> fail $ "unexpected response: " <> show r
   where
     groupName GLPKnown {groupInfo = GroupInfo {localDisplayName}} = Just $ T.unpack localDisplayName
     groupName GLPOwnLink {groupInfo = GroupInfo {localDisplayName}} = Just $ T.unpack localDisplayName
     groupName _ = Nothing
+    knownChatName (Just NCMoved {knownChat}) = maybeToList $ chatName knownChat
+    knownChatName _ = []
 
 chatName :: AChatInfo -> Maybe String
 chatName (AChatInfo _ (DirectChat Contact {localDisplayName})) = Just $ T.unpack localDisplayName
@@ -601,18 +594,20 @@ testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
       cath ##> "/_set domain 1 alice.simplex"
       cath <## "new contact address set"
       alice ##> "/_connect plan 1 @alice.simplex"
-      alice <## "contact address: ok to connect, address changed"
+      alice <## "contact address: ok to connect"
       _ <- getTermLine alice
-      planExistingChat alice "/_connect plan 1 @alice.simplex" `shouldReturn` Nothing
+      (alice </)
       bob ##> "/_connect plan 1 @alice.simplex"
-      bob <## "contact address: ok to connect, address changed"
+      bob <## "contact address: ok to connect"
       _ <- getTermLine bob
-      bob ##> "/c @alice.simplex"
-      bob <## "contact address: ok to connect, address changed"
-      _ <- getTermLine bob
-      planExistingChat bob "/_connect plan 1 @alice.simplex" `shouldReturn` Just "alice"
+      bob <## "known contact @alice"
       bob ##> "/_connect plan 1 @alice.simplex resolve=never"
       knownAlicePlan bob
+      bob ##> "/c @alice.simplex"
+      bob <## "cath: connection started"
+      cath <## "bob (Bob) wants to connect to you!"
+      cath <## "to accept: /ac bob"
+      cath <## "to reject: /rc bob (the sender will NOT be notified)"
 
 testPlanKnownNameNewChatOpened :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameNewChatOpened ps = withSmpServerAndNames $ \reg ->
@@ -624,8 +619,9 @@ testPlanKnownNameNewChatOpened ps = withSmpServerAndNames $ \reg ->
       connectBobByName alice bob
       (cathLink, cathFullLink) <- setAliceName reg cath
       bob ##> "/_connect plan 1 @alice.simplex resolve=all"
-      bob <## "contact address: ok to connect, address changed"
+      bob <## "contact address: ok to connect"
       contactSLinkData <- getTermLine bob
+      bob <## "known contact @alice"
       bob ##> ("/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " domain=alice.simplex " <> contactSLinkData)
       bob <## "cath: contact is prepared"
       bob ##> "/_connect plan 1 @alice.simplex resolve=never"
@@ -655,6 +651,7 @@ testPlanKnownNameMovedToKnownChat ps = withSmpServerAndNames $ \reg ->
       bob <## "contact address: known contact cath"
       bob <## "SimpleX name: @alice.simplex (verified)"
       bob <## "use @cath <message> to send messages"
+      bob <## "known contact @alice"
       alice ##> ("/c " <> cathLink)
       alice <## "connection request sent!"
       cath <## "alice (Alice) wants to connect to you!"
@@ -669,6 +666,7 @@ testPlanKnownNameMovedToKnownChat ps = withSmpServerAndNames $ \reg ->
       alice <## "contact address: known contact cath"
       alice <## "SimpleX name: @alice.simplex (verified)"
       alice <## "use @cath <message> to send messages"
+      (alice </)
 
 testPlanNameResolverFailed :: HasCallStack => TestParams -> IO ()
 testPlanNameResolverFailed = withAliceName $ \reg _r _alice bob -> do
@@ -724,9 +722,9 @@ testPlanChannelNameMoved ps = withSmpServerAndNames $ \reg ->
         cath <## "alice_1 updated group #team2: (signed)"
         cath <## "updated public group access: domain=team.simplex"
         bob ##> "/_connect plan 1 #team.simplex resolve=all"
-        bob <## "group link: ok to connect via relays, address changed"
+        bob <## "group link: ok to connect via relays"
         _ <- getTermLine bob
-        planExistingChat bob "/_connect plan 1 #team.simplex resolve=all" `shouldReturn` Just "team"
+        bob <## "known channel #team"
         memberJoinChannel' "team2" 2 1 1 1 [cath] [alice] shortLink2 fullLink2 bob
         bob ##> "/_verify domain #2"
         bob <## "SimpleX name #team verified"
@@ -768,6 +766,7 @@ testPlanChannelNameMovedNoRelays ps = withSmpServerAndNames $ \reg ->
         bob <## "group link: channel has no active relays, please try to join later"
         bob ##> "/_connect plan 1 #team.simplex resolve=all"
         bob <## "group link: channel has no active relays, please try to join later"
+        bob <## "known channel #team"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -869,9 +868,9 @@ testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice
   knownTeamPlan bob
   bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 @team.simplex"
-  bob <## "contact address: ok to connect, address changed"
+  bob <## "contact address: ok to connect"
   _ <- getTermLine bob
-  pure ()
+  bob <## "known contact @alice"
 
 testPlanNameOtherKindBusiness :: HasCallStack => TestParams -> IO ()
 testPlanNameOtherKindBusiness ps = withSmpServerAndNames $ \reg ->

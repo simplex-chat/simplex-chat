@@ -334,6 +334,7 @@ chatTypesDocsData =
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
     (sti @MsgVerified, STUnion, "MV", [], "", ""),
+    (sti @NameChange, STUnion, "NC", [], "", ""),
     (sti @NameErrorType, STUnion, "", [], "", ""),
     (sti @NamePrice, STRecord, "", [], "", ""),
     (sti @NameWarning, STUnion, "NW", [], "", ""),
@@ -576,6 +577,7 @@ deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
 deriving instance Generic MsgVerified
+deriving instance Generic NameChange
 deriving instance Generic NameErrorType
 deriving instance Generic NamePrice
 deriving instance Generic NameWarning

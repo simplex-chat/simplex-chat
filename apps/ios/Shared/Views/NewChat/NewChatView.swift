@@ -1107,7 +1107,6 @@ private func showPrepareContactAlert(
     planSimplexName: SimplexNameInfo? = nil,
     connectOtherButton: String? = nil,
     connectOtherLink: String? = nil,
-    addressChanged: Bool = false,
     openExistingChat: (() -> Void)? = nil,
     theme: AppTheme,
     dismiss: Bool,
@@ -1130,7 +1129,7 @@ private func showPrepareContactAlert(
         profileBadge: contactShortLinkData.localBadge,
         nameCaption: planSimplexName?.shortStr,
         theme: theme,
-        subtitle: addressChanged ? planSimplexName.map { String.localizedStringWithFormat(NSLocalizedString("%@ now leads to a new address.", comment: "alert subtitle"), $0.nameDomain.fullDomainName) } : nil,
+        subtitle: openExistingChat != nil ? planSimplexName.map { String.localizedStringWithFormat(NSLocalizedString("%@ now leads to a new address.", comment: "alert subtitle"), $0.nameDomain.fullDomainName) } : nil,
         information: ownerVerificationMessage(ownerVerification),
         cancelTitle: openExistingChat == nil ? NSLocalizedString("Cancel", comment: "new chat action") : NSLocalizedString("Open existing chat", comment: "alert action"),
         confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
@@ -1167,7 +1166,6 @@ private func showPrepareGroupAlert(
     planSimplexName: SimplexNameInfo? = nil,
     connectOtherButton: String? = nil,
     connectOtherLink: String? = nil,
-    addressChanged: Bool = false,
     openExistingChat: (() -> Void)? = nil,
     theme: AppTheme,
     dismiss: Bool,
@@ -1175,7 +1173,7 @@ private func showPrepareGroupAlert(
     onOpen: (() -> Void)? = nil
 ) {
     let isChannel = !(groupShortLinkInfo?.direct ?? true)
-    let channelChanged = addressChanged ? planSimplexName.map { String.localizedStringWithFormat(NSLocalizedString("%@ now leads to a new channel.", comment: "alert information"), $0.nameDomain.fullDomainName) } : nil
+    let channelChanged = openExistingChat != nil ? planSimplexName.map { String.localizedStringWithFormat(NSLocalizedString("%@ now leads to a new channel.", comment: "alert information"), $0.nameDomain.fullDomainName) } : nil
     let information = [channelChanged, ownerVerificationMessage(ownerVerification)].compactMap { $0 }.joined(separator: "\n")
     let subscriberCount = groupShortLinkData.publicGroupData.map { "\($0.publicMemberCount) subscribers" }
     showOpenChatAlert(
@@ -1195,7 +1193,7 @@ private func showPrepareGroupAlert(
         information: information.isEmpty ? nil : information,
         cancelTitle: openExistingChat == nil ? NSLocalizedString("Cancel", comment: "new chat action") : NSLocalizedString("Open existing chat", comment: "alert action"),
         confirmTitle: isChannel
-            ? (addressChanged ? NSLocalizedString("Open new channel", comment: "new chat action") : NSLocalizedString("Open channel", comment: "new chat action"))
+            ? (openExistingChat != nil ? NSLocalizedString("Open new channel", comment: "new chat action") : NSLocalizedString("Open channel", comment: "new chat action"))
             : NSLocalizedString("Open group", comment: "new chat action"),
         secondTitle: connectOtherButton,
         onCancel: openExistingChat ?? { cleanup?() },
@@ -1334,6 +1332,7 @@ private func namePrice(_ price: NamePrice) -> String {
 private func showNameWarningAlert(
     domain: SimplexDomain,
     warning: NameWarning,
+    own: Bool,
     openExistingChat: (() -> Void)?,
     cleanup: (() -> Void)?
 ) {
@@ -1354,33 +1353,27 @@ private func showNameWarningAlert(
     let openHowTo = { openBrowserAlert(uri: "https://simplex.domains/#testing") }
     let register = (title: NSLocalizedString("Register", comment: "alert action"), handler: openHowTo)
     switch warning {
-    case let .expired(expiredAt, graceUntil):
+    case let .expired(expiredAt, graceUntil) where !own:
         let message = if let graceUntil {
             String.localizedStringWithFormat(NSLocalizedString("%1$@ expired on %2$@. Its owner can renew it until %3$@.", comment: "alert message"), nameStr, nameDate(expiredAt), nameDate(graceUntil))
         } else {
             String.localizedStringWithFormat(NSLocalizedString("%1$@ expired on %2$@.", comment: "alert message"), nameStr, nameDate(expiredAt))
         }
         alert(NSLocalizedString("Name expired", comment: "alert title"), message)
-    case let .ownExpired(expiredAt, graceUntil):
+    case let .expired(expiredAt, graceUntil):
         let message = if let graceUntil {
             String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ expired on %2$@. Renew it before %3$@.", comment: "alert message"), nameStr, nameDate(expiredAt), nameDate(graceUntil))
         } else {
             String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ expired on %2$@.", comment: "alert message"), nameStr, nameDate(expiredAt))
         }
         alert(NSLocalizedString("Your name has expired", comment: "alert title"), message, action: (NSLocalizedString("Renew", comment: "alert action"), openHowTo))
+    case let .available(price) where !own:
+        alert(
+            openExistingChat == nil ? NSLocalizedString("Name not registered", comment: "alert title") : NSLocalizedString("Name no longer registered", comment: "alert title"),
+            String.localizedStringWithFormat(NSLocalizedString("%1$@ is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price)),
+            action: register
+        )
     case let .available(price):
-        alert(
-            NSLocalizedString("Name not registered", comment: "alert title"),
-            String.localizedStringWithFormat(NSLocalizedString("%1$@ is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price)),
-            action: register
-        )
-    case let .noLongerRegistered(price):
-        alert(
-            NSLocalizedString("Name no longer registered", comment: "alert title"),
-            String.localizedStringWithFormat(NSLocalizedString("%1$@ is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price)),
-            action: register
-        )
-    case let .ownAvailable(price):
         alert(
             NSLocalizedString("Your name has expired", comment: "alert title"),
             String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ is no longer registered. It is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price)),
@@ -1461,12 +1454,12 @@ func planAndConnect(
                 }
                 let (nameDomain, nameWarning): (SimplexDomain?, NameWarning?) = switch connectionPlan {
                 case let .nameNotConnectable(simplexDomain, warning): (simplexDomain, warning)
-                case let .contactAddress(_, warning, _), let .groupLink(_, warning, _): (planSimplexName?.nameDomain, warning)
+                case let .contactAddress(_, .some(.lapsed(warning))), let .groupLink(_, .some(.lapsed(warning))): (planSimplexName?.nameDomain, warning)
                 default: (nil, nil)
                 }
                 if let nameWarning, let nameDomain {
                     await MainActor.run {
-                        showNameWarningAlert(domain: nameDomain, warning: nameWarning, openExistingChat: openExisting, cleanup: cleanup)
+                        showNameWarningAlert(domain: nameDomain, warning: nameWarning, own: connectionPlan.isOwnLink, openExistingChat: openExisting, cleanup: cleanup)
                     }
                     return
                 }
@@ -1541,9 +1534,9 @@ func planAndConnect(
                             }
                         }
                     }
-                case let .contactAddress(cap, _, _):
+                case let .contactAddress(cap, _):
                     switch cap {
-                    case let .ok(contactSLinkData_, ownerVerification, addressChanged):
+                    case let .ok(contactSLinkData_, ownerVerification):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
                             await MainActor.run {
@@ -1554,7 +1547,6 @@ func planAndConnect(
                                     planSimplexName: planSimplexName,
                                     connectOtherButton: connectOtherButton,
                                     connectOtherLink: connectOtherLink,
-                                    addressChanged: addressChanged,
                                     openExistingChat: openExisting,
                                     theme: theme,
                                     dismiss: dismiss,
@@ -1634,9 +1626,9 @@ func planAndConnect(
                             }
                         }
                     }
-                case let .groupLink(glp, _, _):
+                case let .groupLink(glp, _):
                     switch glp {
-                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, addressChanged):
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
@@ -1648,7 +1640,6 @@ func planAndConnect(
                                     planSimplexName: planSimplexName,
                                     connectOtherButton: connectOtherButton,
                                     connectOtherLink: connectOtherLink,
-                                    addressChanged: addressChanged,
                                     openExistingChat: openExisting,
                                     theme: theme,
                                     dismiss: dismiss,

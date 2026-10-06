@@ -1459,37 +1459,53 @@ enum PlanResolveMode: String {
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan, nameWarning_: NameWarning?, existingChat_: ChatInfo?)
-    case groupLink(groupLinkPlan: GroupLinkPlan, nameWarning_: NameWarning?, existingChat_: ChatInfo?)
+    case contactAddress(contactAddressPlan: ContactAddressPlan, nameChange: NameChange?)
+    case groupLink(groupLinkPlan: GroupLinkPlan, nameChange: NameChange?)
     case nameNotConnectable(simplexDomain: SimplexDomain, nameWarning: NameWarning)
     case error(chatError: ChatError)
 
     var localChats: [ChatInfo] {
         switch self {
-        case let .contactAddress(plan, _, existingChat_):
+        case let .contactAddress(plan, _):
             let chat: ChatInfo? = switch plan {
             case let .connectingProhibit(contact), let .known(contact), let .contactViaAddress(contact): .direct(contact: contact)
             default: nil
             }
-            return [chat, existingChat_].compactMap { $0 }
-        case let .groupLink(plan, _, existingChat_):
+            return [chat, knownChat].compactMap { $0 }
+        case let .groupLink(plan, _):
             let groupInfo: GroupInfo? = switch plan {
             case let .ownLink(groupInfo), let .known(groupInfo): groupInfo
             case let .connectingProhibit(groupInfo_): groupInfo_
             default: nil
             }
-            return [groupInfo.map { .group(groupInfo: $0, groupChatScope: nil) }, existingChat_].compactMap { $0 }
+            return [groupInfo.map { .group(groupInfo: $0, groupChatScope: nil) }, knownChat].compactMap { $0 }
         default: return []
+        }
+    }
+
+    var knownChat: ChatInfo? {
+        switch self {
+        case let .contactAddress(_, .some(.moved(chat))), let .groupLink(_, .some(.moved(chat))): chat
+        default: nil
+        }
+    }
+
+    var isOwnLink: Bool {
+        switch self {
+        case .invitationLink(.ownLink), .contactAddress(.ownLink, _), .groupLink(.ownLink, _): true
+        default: false
         }
     }
 }
 
+enum NameChange: Decodable, Hashable {
+    case lapsed(nameWarning: NameWarning)
+    case moved(knownChat: ChatInfo)
+}
+
 enum NameWarning: Decodable, Hashable {
     case expired(expiredAt: Date, graceUntil: Date?)
-    case ownExpired(expiredAt: Date, graceUntil: Date?)
     case available(price: NamePrice)
-    case noLongerRegistered(price: NamePrice)
-    case ownAvailable(price: NamePrice)
     case reservedForCommunity
     case notRegistered
 }
@@ -1507,7 +1523,7 @@ enum InvitationLinkPlan: Decodable, Hashable {
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?, addressChanged: Bool)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1522,7 +1538,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?, addressChanged: Bool)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)

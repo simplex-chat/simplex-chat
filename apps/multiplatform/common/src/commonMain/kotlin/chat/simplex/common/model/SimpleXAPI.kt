@@ -7480,7 +7480,7 @@ sealed class ConnectionPlan {
         is ContactAddressPlan.ContactViaAddress -> ChatInfo.Direct(p.contact)
         else -> null
       },
-      existingChat_
+      (nameChange as? NameChange.Moved)?.knownChat
     )
     is GroupLink -> listOfNotNull(
       when (val p = groupLinkPlan) {
@@ -7489,24 +7489,33 @@ sealed class ConnectionPlan {
         is GroupLinkPlan.ConnectingProhibit -> p.groupInfo_
         else -> null
       }?.let { ChatInfo.Group(it, groupChatScope = null) },
-      existingChat_
+      (nameChange as? NameChange.Moved)?.knownChat
     )
     else -> emptyList()
   }
+  val isOwnLink: Boolean get() = when (this) {
+    is InvitationLink -> invitationLinkPlan is InvitationLinkPlan.OwnLink
+    is ContactAddress -> contactAddressPlan is ContactAddressPlan.OwnLink
+    is GroupLink -> groupLinkPlan is GroupLinkPlan.OwnLink
+    else -> false
+  }
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameWarning_: NameWarning? = null, val existingChat_: ChatInfo? = null): ConnectionPlan()
-  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameWarning_: NameWarning? = null, val existingChat_: ChatInfo? = null): ConnectionPlan()
+  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameChange: NameChange? = null): ConnectionPlan()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameChange: NameChange? = null): ConnectionPlan()
   @Serializable @SerialName("nameNotConnectable") class NameNotConnectable(val simplexDomain: SimplexDomain, val nameWarning: NameWarning): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
 }
 
 @Serializable
+sealed class NameChange {
+  @Serializable @SerialName("lapsed") class Lapsed(val nameWarning: NameWarning): NameChange()
+  @Serializable @SerialName("moved") class Moved(val knownChat: ChatInfo): NameChange()
+}
+
+@Serializable
 sealed class NameWarning {
   @Serializable @SerialName("expired") class Expired(val expiredAt: Instant, val graceUntil: Instant? = null): NameWarning()
-  @Serializable @SerialName("ownExpired") class OwnExpired(val expiredAt: Instant, val graceUntil: Instant? = null): NameWarning()
   @Serializable @SerialName("available") class Available(val price: NamePrice): NameWarning()
-  @Serializable @SerialName("noLongerRegistered") class NoLongerRegistered(val price: NamePrice): NameWarning()
-  @Serializable @SerialName("ownAvailable") class OwnAvailable(val price: NamePrice): NameWarning()
   @Serializable @SerialName("reservedForCommunity") object ReservedForCommunity: NameWarning()
   @Serializable @SerialName("notRegistered") object NotRegistered: NameWarning()
 }
@@ -7524,7 +7533,7 @@ sealed class InvitationLinkPlan {
 
 @Serializable
 sealed class ContactAddressPlan {
-  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null, val addressChanged: Boolean = false): ContactAddressPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): ContactAddressPlan()
   @Serializable @SerialName("ownLink") object OwnLink: ContactAddressPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
@@ -7534,7 +7543,7 @@ sealed class ContactAddressPlan {
 
 @Serializable
 sealed class GroupLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null, val addressChanged: Boolean = false): GroupLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null): GroupLinkPlan()
   @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()

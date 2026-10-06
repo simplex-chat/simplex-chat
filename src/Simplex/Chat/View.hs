@@ -217,7 +217,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation showFullLinks ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged showFullLinks u c nu c'
-  CRConnectionPlan u connLink planSimplexName otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName <> viewNameWarning planSimplexName connectionPlan
+  CRConnectionPlan u connLink planSimplexName otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName <> viewNameWarning planSimplexName connectionPlan <> viewKnownChat connectionPlan
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -2236,25 +2236,43 @@ otherSimplexNameNote = \case
 
 viewNameWarning :: Maybe SimplexNameInfo -> ConnectionPlan -> [StyledString]
 viewNameWarning planSimplexName = \case
-  CPContactAddress _ (Just w) _ -> planNameWarning w
-  CPGroupLink _ (Just w) _ -> planNameWarning w
-  CPNameNotConnectable d w -> [warningStr d w]
+  CPContactAddress CAPOwnLink (Just (NCLapsed w)) -> planNameWarning True w
+  CPContactAddress _ (Just (NCLapsed w)) -> planNameWarning False w
+  CPGroupLink GLPOwnLink {} (Just (NCLapsed w)) -> planNameWarning True w
+  CPGroupLink _ (Just (NCLapsed w)) -> planNameWarning False w
+  CPNameNotConnectable d (NWAvailable p) -> [nameStr d <> " is available: " <> priceStr p]
+  CPNameNotConnectable d w -> [warningStr False d w]
   _ -> []
   where
-    planNameWarning w = maybe [] (\SimplexNameInfo {nameDomain} -> [warningStr nameDomain w]) planSimplexName
-    warningStr d = \case
-      NWExpired e g -> name <> " expired on " <> plain (day e) <> maybe "" ((", its owner can renew it until " <>) . plain . day) g
-      NWOwnExpired e g -> "your " <> name <> " expired on " <> plain (day e) <> maybe "" ((", renew it before " <>) . plain . day) g
-      NWAvailable p -> name <> " is available: " <> priceStr p
-      NWNoLongerRegistered p -> name <> " is no longer registered, available: " <> priceStr p
-      NWOwnAvailable p -> "your " <> name <> " is no longer registered, available: " <> priceStr p
+    planNameWarning own w = maybe [] (\SimplexNameInfo {nameDomain} -> [warningStr own nameDomain w]) planSimplexName
+    warningStr own d = \case
+      NWExpired e g
+        | own -> "your " <> name <> " expired on " <> plain (day e) <> maybe "" ((", renew it before " <>) . plain . day) g
+        | otherwise -> name <> " expired on " <> plain (day e) <> maybe "" ((", its owner can renew it until " <>) . plain . day) g
+      NWAvailable p -> (if own then "your " else "") <> name <> " is no longer registered, available: " <> priceStr p
       NWReservedForCommunity -> name <> " is reserved for community"
       NWNotRegistered -> name <> " is not registered"
       where
-        name = "SimpleX name " <> plain (fullDomainName d)
+        name = nameStr d
+    nameStr d = "SimpleX name " <> plain (fullDomainName d)
     priceStr NamePrice {amount = USDCents c, years} =
       let (dollars, cents) = c `divMod` 100
        in plain $ "$" <> tshow dollars <> (if cents == 0 then "" else "." <> T.justifyRight 2 '0' (tshow cents)) <> " for " <> tshow years <> " years"
+
+viewKnownChat :: ConnectionPlan -> [StyledString]
+viewKnownChat = \case
+  CPContactAddress _ (Just (NCMoved c)) -> chatLine c
+  CPGroupLink _ (Just (NCMoved c)) -> chatLine c
+  _ -> []
+  where
+    chatLine :: AChatInfo -> [StyledString]
+    chatLine (AChatInfo _ c) = case c of
+      DirectChat ct -> ["known contact @" <> ttyContact' ct]
+      GroupChat g@GroupInfo {businessChat} _
+        | isJust businessChat -> ["known business " <> ttyGroup' g]
+        | useRelays' g -> ["known channel " <> ttyGroup' g]
+        | otherwise -> ["known group " <> ttyGroup' g]
+      _ -> []
 
 viewConnectionPlan :: ChatConfig -> Maybe ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
@@ -2276,8 +2294,8 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
-  CPContactAddress cap _ _ -> case cap of
-    CAPOk contactSLinkData ov addressChanged -> [addrOrBiz contactSLinkData ("ok to connect" <> (if addressChanged then ", address changed" else ""))] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
+  CPContactAddress cap _ -> case cap of
+    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -2294,10 +2312,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
-  CPGroupLink glp _ _ -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData ov addressChanged ->
+  CPGroupLink glp _ -> case glp of
+    GLPOk groupSLinkInfo_ groupSLinkData ov ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
-       in [grpLink $ (if direct then "ok to connect directly" else "ok to connect via relays") <> (if addressChanged then ", address changed" else "")]
+       in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
             <> viewSigVerification ov
             <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
