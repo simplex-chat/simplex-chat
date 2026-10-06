@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.*
 import android.view.View
 import android.view.WindowManager
-import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.fragment.app.FragmentActivity
@@ -39,8 +38,6 @@ class MainActivity: FragmentActivity() {
       window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
     }
     super.onCreate(savedInstanceState)
-    // Added before setContent, so any enabled Compose BackHandler takes precedence over it
-    onBackPressedDispatcher.addCallback(this) { onRootBackPressed() }
     // testJson()
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
@@ -91,23 +88,32 @@ class MainActivity: FragmentActivity() {
     AppLock.appWasHidden()
   }
 
-  private fun onRootBackPressed() {
-    if (ChatController.appPrefs.performLA.get()) {
+  override fun onBackPressed() {
+    val canFinishActivity = (
+        onBackPressedDispatcher.hasEnabledCallbacks() // Has something to do in a backstack
+            || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R // Android 11 or above
+            || isTaskRoot // there are still other tasks after we reach the main (home) activity
+        ) && SimplexApp.context.chatModel.sharedContent.value !is SharedContent.Forward
+    if (canFinishActivity) {
+      // https://medium.com/mobile-app-development-publication/the-risk-of-android-strandhogg-security-issue-and-how-it-can-be-mitigated-80d2ddb4af06
+      super.onBackPressed()
+    }
+
+    if (!onBackPressedDispatcher.hasEnabledCallbacks() && ChatController.appPrefs.performLA.get()) {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       AppLock.clearAuthState()
       AppLock.laFailed.value = true
     }
-    val sharedContent = chatModel.sharedContent.value
-    // Drop shared content
-    chatModel.sharedContent.value = null
-    if (sharedContent is SharedContent.Forward) {
-      chatModel.chatId.value = sharedContent.fromChatInfo.id
-    } else if (
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.R // Android 11 or above
-      || isTaskRoot // there are still other tasks after we reach the main (home) activity
-    ) {
-      // https://medium.com/mobile-app-development-publication/the-risk-of-android-strandhogg-security-issue-and-how-it-can-be-mitigated-80d2ddb4af06
-      finish()
+    if (!onBackPressedDispatcher.hasEnabledCallbacks()) {
+      val sharedContent = chatModel.sharedContent.value
+      // Drop shared content
+      chatModel.sharedContent.value = null
+      if (sharedContent is SharedContent.Forward) {
+        chatModel.chatId.value = sharedContent.fromChatInfo.id
+      }
+      if (canFinishActivity) {
+        finish()
+      }
     }
   }
 }

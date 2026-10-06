@@ -10,7 +10,6 @@ import android.os.*
 import android.util.Rational
 import android.view.*
 import androidx.activity.ComponentActivity
-import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.trackPipAnimationHintView
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -76,7 +75,6 @@ class CallActivity: ComponentActivity(), ServiceConnection {
       }
     }
 
-    onBackPressedDispatcher.addCallback(this) { onCallBackPressed() }
     setContent { CallActivityView() }
 
     if (isOnLockScreenNow()) {
@@ -128,9 +126,10 @@ class CallActivity: ComponentActivity(), ServiceConnection {
     return grantedAudio && grantedCamera
   }
 
-  private fun onCallBackPressed() {
+  @Deprecated("Was deprecated in OS")
+  override fun onBackPressed() {
     if (isOnLockScreenNow()) {
-      finish()
+      super.onBackPressed()
     } else if (!hasGrantedPermissions() && !callHasVideo()) {
       val call = m.activeCall.value
       if (call != null) {

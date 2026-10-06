@@ -35,6 +35,8 @@
     </intent>
   </queries>
 
+  <!-- enableOnBackInvokedCallback="false": Activity.onBackPressed() overrides are not called on Android 16+ without it.
+       UnusedAttribute is ignored because the attribute only exists on API 33+, older versions call onBackPressed() anyway -->
   <application
       android:name="SimplexApp"
       android:allowBackup="false"
@@ -44,7 +46,9 @@
       android:largeHeap="true"
       android:extractNativeLibs="${extract_native_libs}"
       android:supportsRtl="true"
-      android:theme="@style/Theme.SimpleX">
+      android:enableOnBackInvokedCallback="false"
+      android:theme="@style/Theme.SimpleX"
+      tools:ignore="UnusedAttribute">
     <!--      android:localeConfig="@xml/locales_config"-->
 
     <!-- Main activity -->
