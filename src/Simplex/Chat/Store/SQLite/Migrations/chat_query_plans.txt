@@ -1835,11 +1835,15 @@ SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE group_members
-          SET contact_id = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+          SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
+          WHERE (user_id = ? AND group_id = ? AND group_member_id = ?) OR contact_id = ?
         
 Plan:
+MULTI-INDEX OR
+INDEX 1
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+INDEX 2
+SEARCH group_members USING INDEX idx_group_members_contact_id (contact_id=?)
 
 Query: 
           UPDATE group_members
@@ -7282,6 +7286,10 @@ Query: SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND ms
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=? AND item_sent=?)
 
+Query: SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'
+Plan:
+SCAN commands
+
 Query: SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -7679,6 +7687,10 @@ SCAN group_members
 Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_members WHERE user_id = ? AND group_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT next_wake_at, badge_purchase_id FROM badge_purchases
+Plan:
+SCAN badge_purchases
 
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ?
 Plan:
