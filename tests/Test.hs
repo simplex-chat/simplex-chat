@@ -31,6 +31,9 @@ import OperatorTests
 import RandomServers
 import RemoteTests
 import Test.Hspec hiding (it)
+#if !MIN_VERSION_hspec(2,10,10)
+import Test.Hspec.Core.Spec (sequential)
+#endif
 import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests

@@ -235,6 +235,7 @@ withOwnerJoined ps cc gid action =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     joinGroup cc alice
     waitMemberRole cc gid "alice" "owner"
+    drainUntil alice ["#" <> groupName <> ": " <> botName <> " changed your role from member to owner"]
     r <- action alice
     drainConsole alice
     pure r

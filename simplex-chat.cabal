@@ -842,5 +842,6 @@ test-suite simplex-chat-test
     build-depends:
         bytestring ==0.10.*
       , hspec ==2.7.*
+      , hspec-core ==2.7.*
       , process >=1.6 && <1.6.18
       , text >=1.2.4.0 && <1.3
