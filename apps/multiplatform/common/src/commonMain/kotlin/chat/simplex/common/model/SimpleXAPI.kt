@@ -7462,9 +7462,9 @@ data class ConnectionPlanResult(
 
 // APIConnectPlan resolution scope; PRMNever is local-store-only (no network), used for per-keystroke name search
 enum class PlanResolveMode {
-  PRMAllGroups, PRMUnknown, PRMNever;
+  PRMAll, PRMUnknown, PRMNever;
   val cmdString: String get() = when (this) {
-    PRMAllGroups -> "allGroups"
+    PRMAll -> "all"
     PRMUnknown -> "unknown"
     PRMNever -> "never"
   }
