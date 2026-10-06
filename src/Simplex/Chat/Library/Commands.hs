@@ -5460,22 +5460,14 @@ runStoreReceiptWorker a userId Worker {doWork} = do
           now <- badgeNow
           if nextAttemptAt <= now
             then pure $ Right (Just r)
-            else Right Nothing <$ scheduleReceipt scheduled receiptId nextAttemptAt
+            else Right Nothing <$ scheduleReceipt scheduled receiptId (diffUTCTime nextAttemptAt now)
         r -> pure r
-    scheduleReceipt scheduled receiptId at = do
+    scheduleReceipt scheduled receiptId delay = do
       new <- atomically $ stateTVar scheduled $ \ids -> (S.notMember receiptId ids, S.insert receiptId ids)
-      when new $ do
-        clock <- asks $ badgeCurrentTime . config
-        RetryInterval {maxInterval} <- asks $ badgeRetryInterval . config
-        void . liftIO . forkIO $ do
-          waitBadgeTime clock maxInterval at
-          atomically $ modifyTVar' scheduled $ S.delete receiptId
-          void $ atomically $ tryPutTMVar doWork ()
-
-waitBadgeTime :: IO UTCTime -> Int64 -> UTCTime -> IO ()
-waitBadgeTime clock step at = do
-  remaining <- diffToMicroseconds . diffUTCTime at <$> clock
-  when (remaining > 0) $ threadDelay' (min remaining step) >> waitBadgeTime clock step at
+      when new . void . liftIO . forkIO $ do
+        threadDelay' $ diffToMicroseconds delay
+        atomically $ modifyTVar' scheduled $ S.delete receiptId
+        void $ atomically $ tryPutTMVar doWork ()
 
 data StoreReceiptOutcome = SROCredited (Maybe User) | SRORefused | SRORetry | SRODeferred
 

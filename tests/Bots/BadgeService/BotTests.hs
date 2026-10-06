@@ -153,14 +153,13 @@ badgeServiceTests = do
     it "should refuse an invoice with no service configured or while a badge is held, creating no record" testInvoiceRefusedBeforeCharge
     it "should hold a receipt for an invoice while a badge is held, without attempting it" testInvoiceWhileBadgeHeld
     it "should list only the asking profile's open store purchases" testInvoiceStateOtherProfile
-    it "should credit a receipt the store could not verify once its retryAfter has passed, with no trigger at all" testStoreReceiptRetried
-    it "should retry a receipt with no verifier a day later, and never drop it" testStoreReceiptRetriedDaily
+    it "should retry a receipt the service could not verify, and credit it with no trigger at all" testStoreReceiptRetried
     it "should credit a second receipt while an earlier one waits for the store" testStoreReceiptNotBlocked
     it "should answer a refused receipt from the record, sending nothing, and not list it" testStoreRefusalKept
     it "should announce a settlement to an owner that is not active, and print nothing for a hidden one" testStoreSettledOtherProfile
     it "should resolve one new transaction handed over twice at once to one record" testStoreReceiptTwoAtOnce
     it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
-    it "should keep a receipt whose attempt throws, sending nothing" testStoreReceiptAttemptThrows
+    it "should keep a receipt whose attempt throws" testStoreReceiptAttemptThrows
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -1711,8 +1710,8 @@ testPurchaseBadgeAppStore ps =
 
 testPurchaseStash :: HasCallStack => TestParams -> IO ()
 testPurchaseStash ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsClock, bsController = cc, bsStore = store} ->
-    withNewTestChatCfg ps (fastRetryCfg bsClientCfg) "alice" aliceProfile $ \alice -> do
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       let records = rowCount (chatController alice) "badge_store_receipts"
           refused = "/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase")
       -- the store does not vouch for it, so it can never be credited, and the record says so
@@ -1727,16 +1726,13 @@ testPurchaseStash ps =
       alice <## "cannot get badge: invalid store receipt"
       records `shouldReturn` 1
       nothingPurchased cc
-      -- pending keeps the receipt held, and the settled purchase is credited to its keys, once
+      -- pending keeps the receipt held
       alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken))
       storePurchaseOpen alice ""
       waitStoreReceiptError (chatController alice) "service_error retry payment_pending"
-      settlePending store
-      passRetryAfter bsClock
-      mapM_ (alice <##.) $ creditedLines "" "1: supporter"
       records `shouldReturn` 2
-      heldStoreReceipts (chatController alice) `shouldReturn` 0
-      rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+      heldStoreReceipts (chatController alice) `shouldReturn` 1
+      nothingPurchased cc
 
 testPurchaseStashReceiptUsed :: HasCallStack => TestParams -> IO ()
 testPurchaseStashReceiptUsed ps =
@@ -1796,20 +1792,20 @@ testPurchaseSameReceiptOtherProfile ps =
       showActiveUser alice "alisa"
 
 testPurchaseStrandedUnderOtherProfile :: HasCallStack => TestParams -> IO ()
-testPurchaseStrandedUnderOtherProfile ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsClock, bsController = cc, bsStore = store} ->
+testPurchaseStrandedUnderOtherProfile ps = do
+  broken <- newIORef True
+  withBadgeServiceVerifier ps (brokenGoogle broken) $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
     withNewTestChatCfg ps (fastRetryCfg bsClientCfg) "alice" aliceProfile $ \alice -> do
-      let unsettled userId = "/_badge purchase " <> show (userId :: Int) <> " " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken)
-      alice ##> unsettled 1
+      let purchase userId = "/_badge purchase " <> show (userId :: Int) <> " " <> paymentArg supporterPlay
+      alice ##> purchase 1
       storePurchaseOpen alice ""
-      waitStoreReceiptError (chatController alice) "service_error retry payment_pending"
+      waitStoreReceiptError (chatController alice) "service_error final internal"
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      settlePending store
       -- handed over again under whichever profile is active, the purchase stays with the keys alice holds
-      alice ##> unsettled 2
+      alice ##> purchase 2
       storePurchaseOpen alice "[user: alice] "
-      passRetryAfter bsClock
+      writeIORef broken False
       mapM_ (alice <##.) $ creditedLines "[user: alice] " "1: supporter"
       (alice </)
       rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
@@ -1818,24 +1814,24 @@ testPurchaseStrandedUnderOtherProfile ps =
       showActiveUser alice "alice (Alice, * supporter)"
 
 testPurchaseDeliveredToHiddenProfile :: HasCallStack => TestParams -> IO ()
-testPurchaseDeliveredToHiddenProfile ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsClock, bsStore = store} ->
+testPurchaseDeliveredToHiddenProfile ps = do
+  broken <- newIORef True
+  withBadgeServiceVerifier ps (brokenGoogle broken) $ \BadgeServiceEnv {bsClientCfg} ->
     withNewTestChatCfg ps (fastRetryCfg bsClientCfg) "alice" aliceProfile $ \alice -> do
-      let unsettled userId = "/_badge purchase " <> show (userId :: Int) <> " " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken)
-      alice ##> unsettled 1
+      let purchase userId = "/_badge purchase " <> show (userId :: Int) <> " " <> paymentArg supporterPlay
+      alice ##> purchase 1
       storePurchaseOpen alice ""
-      waitStoreReceiptError (chatController alice) "service_error retry payment_pending"
+      waitStoreReceiptError (chatController alice) "service_error final internal"
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> "/_hide user 1 \"password\""
       alice <## "user alice:"
       alice <## "messages are hidden (use /tail to view)"
       alice <## "profile is hidden"
-      settlePending store
       -- the answer and the credit are the hidden owner's, so the view prints none of them
-      alice ##> unsettled 2
+      alice ##> purchase 2
       (alice </)
-      passRetryAfter bsClock
+      writeIORef broken False
       waitHeldStoreReceipts (chatController alice) 0
       (alice </)
       alice ##> "/user alice password"
@@ -1966,37 +1962,15 @@ testInvoiceStateOtherProfile ps =
 
 testStoreReceiptRetried :: HasCallStack => TestParams -> IO ()
 testStoreReceiptRetried ps = do
-  hook <- newIORef (pure ())
-  verifications <- countGoogleVerifications hook
-  withBadgeServiceVerifier ps (googleVerifierWithHook hook) $ \BadgeServiceEnv {bsClientCfg, bsClock, bsController = cc, bsStore = store} ->
+  broken <- newIORef True
+  withBadgeServiceVerifier ps (brokenGoogle broken) $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
     withNewTestChatCfg ps (fastRetryCfg bsClientCfg) "alice" aliceProfile $ \alice -> do
-      setGoogleDown store True
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       storePurchaseOpen alice ""
-      waitStoreReceiptError (chatController alice) "service_error retry provider_unavailable"
-      setGoogleDown store False
-      threadDelay 1000000
-      verifications `shouldReturn` 1
-      passRetryAfter bsClock
+      waitStoreReceiptError (chatController alice) "service_error final internal"
+      writeIORef broken False
       mapM_ (alice <##.) $ creditedLines "" "1: supporter"
-      verifications `shouldReturn` 2
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
-
-testStoreReceiptRetriedDaily :: HasCallStack => TestParams -> IO ()
-testStoreReceiptRetriedDaily ps = do
-  hook <- newIORef (pure ())
-  verifications <- countGoogleVerifications hook
-  withBadgeServiceVerifier ps (notConfiguredGoogle hook) $ \BadgeServiceEnv {bsClientCfg, bsClock} ->
-    withNewTestChatCfg ps (fastRetryCfg bsClientCfg) "alice" aliceProfile $ \alice -> do
-      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
-      storePurchaseOpen alice ""
-      waitStoreReceiptError (chatController alice) "service_error final provider_not_configured"
-      threadDelay 1000000
-      verifications `shouldReturn` 1
-      passDay bsClock
-      waitGoogleVerifications verifications 2
-      (alice </)
-      heldStoreReceipts (chatController alice) `shouldReturn` 1
 
 testStoreReceiptNotBlocked :: HasCallStack => TestParams -> IO ()
 testStoreReceiptNotBlocked ps =
@@ -2093,20 +2067,16 @@ testStoreReceiptCleanup ps =
 
 testStoreReceiptAttemptThrows :: HasCallStack => TestParams -> IO ()
 testStoreReceiptAttemptThrows ps = do
-  hook <- newIORef (pure ())
-  verifications <- countGoogleVerifications hook
-  withBadgeServiceVerifier ps (notConfiguredGoogle hook) $ \BadgeServiceEnv {bsClientCfg, bsClock} ->
+  broken <- newIORef True
+  withBadgeServiceVerifier ps (brokenGoogle broken) $ \BadgeServiceEnv {bsClientCfg} ->
     withNewTestChatCfg ps (fastRetryCfg bsClientCfg) "alice" aliceProfile $ \alice -> do
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       storePurchaseOpen alice ""
-      waitStoreReceiptError (chatController alice) "service_error final provider_not_configured"
-      verifications `shouldReturn` 1
+      waitStoreReceiptError (chatController alice) "service_error final internal"
       -- a stored payment this version cannot read makes the attempt throw before anything is sent
       setStoreReceiptPayment (chatController alice) "not a payment"
-      passDay bsClock
       waitStoreReceiptError (chatController alice) "unexpected held store payment does not decode"
       (alice </)
-      verifications `shouldReturn` 1
       heldStoreReceipts (chatController alice) `shouldReturn` 1
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
@@ -2164,20 +2134,18 @@ setStoreReceiptPayment :: ChatController -> Text -> IO ()
 setStoreReceiptPayment ChatController {chatStore} payment =
   withTransaction chatStore $ \db -> DB.execute db "UPDATE badge_store_receipts SET payment = ?" (Only payment)
 
--- | Past the 300 seconds the service asks a client to wait while a store is pending or unreachable.
-passRetryAfter :: TestClock -> IO ()
-passRetryAfter clock = testClockTime clock >>= setClockAt clock . addUTCTime 301
-
-passDay :: TestClock -> IO ()
-passDay clock = testClockTime clock >>= setClockAt clock . addUTCTime (nominalDay + 1)
-
 fastRetryCfg :: ChatConfig -> ChatConfig
 fastRetryCfg cfg = cfg {badgeRetryInterval = RetryInterval {initialInterval = 100000, increaseAfter = 0, maxInterval = 500000}}
 
--- | Google answered as by a service with no Play verifier deployed, each verification counted by the hook.
-notConfiguredGoogle :: IORef (IO ()) -> FakeStore -> StoreVerifier
-notConfiguredGoogle hook store =
-  googleVerifierWithHook hook store {fakeVerifier = noStoreVerifier {verifyGoogle = Just $ \_ _ -> pure $ Left SRNotConfigured}}
+-- | The fake store's Google verdicts, failing as a verifier bug while broken is set: internal, with no retryAfter.
+brokenGoogle :: IORef Bool -> FakeStore -> StoreVerifier
+brokenGoogle broken FakeStore {fakeVerifier = v@StoreVerifier {verifyGoogle}} =
+  v {verifyGoogle = unlessBroken <$> verifyGoogle}
+  where
+    unlessBroken verify productId token =
+      readIORef broken >>= \case
+        True -> pure $ Left $ SRVerifierFailed "fake verifier bug"
+        False -> verify productId token
 
 -- | Each block's lines in order, the blocks in any order: the worker is signalled before the command that
 -- signalled it has answered, so its events can print first. Every line is matched as a prefix.
@@ -2202,12 +2170,6 @@ countGoogleVerifications hook = do
   let count = modifyIORef' n (+ 1) >> writeIORef hook count
   writeIORef hook count
   pure $ readIORef n
-
-waitGoogleVerifications :: HasCallStack => IO Int -> Int -> IO ()
-waitGoogleVerifications verifications n = loop (100 :: Int)
-  where
-    loop 0 = verifications `shouldReturn` n
-    loop i = verifications >>= \made -> if made == n then pure () else threadDelay 50000 >> loop (i - 1)
 
 storePurchaseOpen :: HasCallStack => TestCC -> String -> IO ()
 storePurchaseOpen cc userPrefix = cc <##. openPurchase userPrefix
