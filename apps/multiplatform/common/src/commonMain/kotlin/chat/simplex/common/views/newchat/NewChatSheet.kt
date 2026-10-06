@@ -319,7 +319,7 @@ private fun ModalData.NewChatSheetLayout(
             )
             connectNameCandidate.value?.let { candidate ->
               Divider()
-              ConnectByNameRow(candidate) { withBGApi { planAndConnect(chatModel.remoteHostId(), candidate, close = close) } }
+              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
             }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
@@ -410,7 +410,7 @@ private fun ModalData.NewChatSheetLayout(
           )
           connectNameCandidate.value?.let { candidate ->
             Divider()
-            ConnectByNameRow(candidate) { withBGApi { planAndConnect(chatModel.remoteHostId(), candidate, close = close) } }
+            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
           }
           Divider()
         }

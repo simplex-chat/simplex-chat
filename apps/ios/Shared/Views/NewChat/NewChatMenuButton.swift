@@ -96,6 +96,8 @@ struct NewChatSheet: View {
                 if let candidate = connectNameCandidate {
                     ConnectByNameRow(
                         name: candidate,
+                        searchText: $searchText,
+                        connectNameCandidate: $connectNameCandidate,
                         searchFocussed: $searchFocussed,
                         dismiss: true
                     )

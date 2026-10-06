@@ -815,6 +815,13 @@ testPlanNameChannelNoRelays ps = withSmpServerAndNames $ \reg ->
         alice <## "#team: cath left the group (signed)"
         threadDelay 100000
         bob ##> "/_connect plan 1 #team.simplex"
+        bob <## "SimpleX name team.simplex is not included in the connection link's profile"
+        bob ##> "/_connect plan 1 team.simplex"
+        bob <## "SimpleX name team.simplex is not included in the connection link's profile"
+        alice ##> "/public group access #team domain=team.simplex"
+        alice <## "updated public group access: domain=team.simplex"
+        threadDelay 100000
+        bob ##> "/_connect plan 1 #team.simplex"
         bob <## "group link: channel has no active relays, please try to join later"
         bob ##> "/_connect plan 1 team.simplex"
         bob <## "group link: channel has no active relays, please try to join later"

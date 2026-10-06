@@ -453,6 +453,7 @@ private suspend fun planAndConnectTask(
           Log.d(TAG, "planAndConnect, .GroupLink, .NoRelays")
           val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
           if (groupSLinkData != null) {
+            if (showLocalChats) chatsFilter?.show(localChats)
             AlertManager.privacySensitive.showOpenChatAlert(
               profileName = groupSLinkData.groupProfile.displayName,
               profileFullName = groupSLinkData.groupProfile.fullName,
@@ -464,7 +465,8 @@ private suspend fun planAndConnectTask(
                 )
               },
               subtitle = generalGetString(MR.strings.channel_no_active_relays_try_later),
-              confirmText = null,
+              confirmText = openExisting?.let { generalGetString(MR.strings.connect_plan_open_existing_chat) },
+              onConfirm = openExisting?.let { open -> { open(); cleanup() } },
               dismissText = generalGetString(MR.strings.ok),
               onDismiss = { cleanup() }
             )
@@ -480,6 +482,7 @@ private suspend fun planAndConnectTask(
           Log.d(TAG, "planAndConnect, .GroupLink, .UpdateRequired")
           val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
           if (groupSLinkData != null) {
+            if (showLocalChats) chatsFilter?.show(localChats)
             AlertManager.privacySensitive.showOpenChatAlert(
               profileName = groupSLinkData.groupProfile.displayName,
               profileFullName = groupSLinkData.groupProfile.fullName,
@@ -491,7 +494,8 @@ private suspend fun planAndConnectTask(
                 )
               },
               subtitle = generalGetString(MR.strings.group_link_requires_newer_version),
-              confirmText = null,
+              confirmText = openExisting?.let { generalGetString(MR.strings.connect_plan_open_existing_chat) },
+              onConfirm = openExisting?.let { open -> { open(); cleanup() } },
               dismissText = generalGetString(MR.strings.ok),
               onDismiss = { cleanup() }
             )

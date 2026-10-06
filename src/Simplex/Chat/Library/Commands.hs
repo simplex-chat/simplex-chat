@@ -4540,9 +4540,13 @@ processChatCommand cxt nm = \case
               groupLinkPlan l' = do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                let unjoinable plan = do
+                      forM_ simplexName_ $ \SimplexNameInfo {nameDomain} ->
+                        unless ((groupClaim . (\GroupShortLinkData {groupProfile} -> groupProfile) =<< groupSLinkData_) == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                      pure (con l' cReq, CPGroupLink (plan groupSLinkData_) Nothing Nothing)
                 if
-                  | not direct && unsupportedGroupType groupSLinkData_ -> pure (con l' cReq, CPGroupLink (GLPUpdateRequired groupSLinkData_) Nothing Nothing)
-                  | not direct && null relays -> pure (con l' cReq, CPGroupLink (GLPNoRelays groupSLinkData_) Nothing Nothing)
+                  | not direct && unsupportedGroupType groupSLinkData_ -> unjoinable GLPUpdateRequired
+                  | not direct && null relays -> unjoinable GLPNoRelays
                   | otherwise -> do
                       let FixedLinkData {linkEntityId, rootKey} = fd
                           linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}

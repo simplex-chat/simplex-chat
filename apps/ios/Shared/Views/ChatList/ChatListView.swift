@@ -772,9 +772,10 @@ struct ChatListSearchBar: View {
             if oneHandUI, let candidate = connectNameCandidate {
                 ConnectByNameRow(
                     name: candidate,
+                    searchText: $searchText,
+                    connectNameCandidate: $connectNameCandidate,
                     searchFocussed: $searchFocussed,
-                    dismiss: false,
-                    chatsFilter: chatsFilter
+                    dismiss: false
                 )
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
@@ -816,9 +817,10 @@ struct ChatListSearchBar: View {
             if !oneHandUI, let candidate = connectNameCandidate {
                 ConnectByNameRow(
                     name: candidate,
+                    searchText: $searchText,
+                    connectNameCandidate: $connectNameCandidate,
                     searchFocussed: $searchFocussed,
-                    dismiss: false,
-                    chatsFilter: chatsFilter
+                    dismiss: false
                 )
             }
         }
@@ -923,13 +925,14 @@ struct ChatListSearchBar: View {
 
 // Row shown when the search text is a SimpleX name — in place of the list tags in the chat list, below
 // the search field in the new chat sheet. The @ icon marks a contact name, the tag icon a channel/other
-// name; tapping hides the keyboard and connects online.
+// name; tapping hides the keyboard, connects online, and clears the field.
 struct ConnectByNameRow: View {
     @EnvironmentObject var theme: AppTheme
     var name: String
+    @Binding var searchText: String
+    @Binding var connectNameCandidate: String?
     @FocusState.Binding var searchFocussed: Bool
     var dismiss: Bool
-    var chatsFilter: ChatsFilter? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -947,7 +950,10 @@ struct ConnectByNameRow: View {
                 name,
                 theme: theme,
                 dismiss: dismiss,
-                chatsFilter: chatsFilter
+                onOpen: {
+                    searchText = ""
+                    connectNameCandidate = nil
+                }
             )
         }
     }
