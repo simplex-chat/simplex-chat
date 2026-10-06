@@ -710,9 +710,11 @@ testXFTPFileTransferEncrypted =
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> ("/fr 1 encrypt=on " <> bobDir)
-      bob <## ("saving file 1 from alice to " <> bobDir <> "test.pdf")
+      bob
+        <### [ ConsoleString $ "saving file 1 from alice to " <> bobDir <> "test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
       alice <## "completed uploading file 1 (test.pdf) for bob"
-      bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "completed receiving file 1 (test.pdf) from alice"
       Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine bob
       Right dest <- chatReadFile (bobDir <> "test.pdf") (strEncode key) (strEncode nonce)

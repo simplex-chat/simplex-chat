@@ -181,8 +181,10 @@ testDirectoryService ps =
         bob ##> "/mr PSA 'SimpleX Directory' admin"
         -- putStrLn "*** discover service joins group and sends the registration for approval"
         bob <## "#PSA: you changed the role of 'SimpleX Directory' to admin"
-        bob <# "'SimpleX Directory'> Joining the group PSA…"
-        bob <## "#PSA: 'SimpleX Directory' joined the group"
+        bob
+          <### [ WithTime "'SimpleX Directory'> Joining the group PSA…",
+                 "#PSA: 'SimpleX Directory' joined the group"
+               ]
         bob <# "'SimpleX Directory'> Joined the group PSA. Registration is pending approval — it may take up to 48 hours."
         bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
         bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
@@ -630,9 +632,11 @@ testInviteOwnerAfterLeavingOwnersGroup ps =
       superUser <## "#owners: new member bob is connected"
       -- owner leaves owners' group; GroupMember row keeps status GSMemLeft
       leaveGroup "owners" bob
-      superUser <## "#owners: bob left the group (signed)"
       -- owners' group has no GroupReg, so directory service notifies admins on contact left
-      superUser <# "'SimpleX Directory'> Error: contact left, group: 1 owners, group registration not found"
+      superUser
+        <### [ "#owners: bob left the group (signed)",
+               WithTime "'SimpleX Directory'> Error: contact left, group: 1 owners, group registration not found"
+             ]
       -- super-user re-invites via /invite — must send a fresh invitation, not "already a member"
       superUser #> "@'SimpleX Directory' /invite 2:privacy"
       superUser <# "'SimpleX Directory'> > /invite 2:privacy"
@@ -654,9 +658,7 @@ testDelistedOwnerLeaves ps =
         bob <## ""
         bob <## "The group is no longer listed in the directory."
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is de-listed (group owner left)."
-        cath `connectVia` dsLink
-        cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
-        cath <## "use @'SimpleX Directory' <message> to send messages"
+        connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         groupNotFound cath "privacy"
 
 testDelistedOwnerRemoved :: HasCallStack => TestParams -> IO ()
@@ -667,14 +669,17 @@ testDelistedOwnerRemoved ps =
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
-        removeMember "privacy" cath bob
-        bob <# "'SimpleX Directory'> You are removed from the group ID 1 (privacy)."
-        bob <## ""
-        bob <## "The group is no longer listed in the directory."
+        cath ##> "/rm privacy bob"
+        cath <## "#privacy: you removed bob from the group (signed)"
+        bob
+          <### [ "#privacy: cath removed you from the group (signed)",
+                 "use /d #privacy to delete the group",
+                 WithTime "'SimpleX Directory'> You are removed from the group ID 1 (privacy).",
+                 "",
+                 "The group is no longer listed in the directory."
+               ]
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is de-listed (group owner is removed)."
-        cath `connectVia` dsLink
-        cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
-        cath <## "use @'SimpleX Directory' <message> to send messages"
+        connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         groupNotFound cath "privacy"
 
 testNotDelistedMemberLeaves :: HasCallStack => TestParams -> IO ()
@@ -806,9 +811,7 @@ testDelistedRoleChanges ps =
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
-        cath `connectVia` dsLink
-        cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
-        cath <## "use @'SimpleX Directory' <message> to send messages"
+        connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         groupFoundN 3 cath "privacy"
         -- de-listed if service role changed
         bob ##> "/mr privacy 'SimpleX Directory' member"
@@ -822,28 +825,34 @@ testDelistedRoleChanges ps =
         -- re-listed if service role changed back without profile changes
         cath ##> "/mr privacy 'SimpleX Directory' admin"
         cath <## "#privacy: you changed the role of 'SimpleX Directory' to admin (signed)"
-        bob <## "#privacy: cath changed the role of 'SimpleX Directory' from member to admin (signed)"
-        bob <# "'SimpleX Directory'> SimpleX Directory role in the group ID 1 (privacy) is changed to admin."
-        bob <## ""
-        bob <## "The group is listed in the directory again."
+        bob
+          <### [ "#privacy: cath changed the role of 'SimpleX Directory' from member to admin (signed)",
+                 WithTime "'SimpleX Directory'> SimpleX Directory role in the group ID 1 (privacy) is changed to admin.",
+                 "",
+                 "The group is listed in the directory again."
+               ]
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is listed (SimpleX Directory role is changed to admin)."
         groupFoundN 3 cath "privacy"
         -- de-listed if owner role changed
         cath ##> "/mr privacy bob admin"
         cath <## "#privacy: you changed the role of bob to admin (signed)"
-        bob <## "#privacy: cath changed your role from owner to admin (signed)"
-        bob <# "'SimpleX Directory'> Your role in the group ID 1 (privacy) is changed to admin."
-        bob <## ""
-        bob <## "The group is no longer listed in the directory."
+        bob
+          <### [ "#privacy: cath changed your role from owner to admin (signed)",
+                 WithTime "'SimpleX Directory'> Your role in the group ID 1 (privacy) is changed to admin.",
+                 "",
+                 "The group is no longer listed in the directory."
+               ]
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is de-listed (user role is set to admin)."
         groupNotFound cath "privacy"
         -- re-listed if owner role changed back without profile changes
         cath ##> "/mr privacy bob owner"
         cath <## "#privacy: you changed the role of bob to owner (signed)"
-        bob <## "#privacy: cath changed your role from admin to owner (signed)"
-        bob <# "'SimpleX Directory'> Your role in the group ID 1 (privacy) is changed to owner."
-        bob <## ""
-        bob <## "The group is listed in the directory again."
+        bob
+          <### [ "#privacy: cath changed your role from admin to owner (signed)",
+                 WithTime "'SimpleX Directory'> Your role in the group ID 1 (privacy) is changed to owner.",
+                 "",
+                 "The group is listed in the directory again."
+               ]
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is listed (user role is set to owner)."
         groupFoundN 3 cath "privacy"
 
@@ -855,9 +864,7 @@ testNotDelistedMemberRoleChanged ps =
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
-        cath `connectVia` dsLink
-        cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
-        cath <## "use @'SimpleX Directory' <message> to send messages"
+        connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         groupFoundN 3 cath "privacy"
         bob ##> "/mr privacy cath member"
         bob <## "#privacy: you changed the role of cath to member (signed)"
@@ -902,6 +909,7 @@ testNotApprovedBadRoles ps =
         notifySuperUser superUser bob "privacy" "Privacy" 1
         bob ##> "/mr privacy 'SimpleX Directory' member"
         bob <## "#privacy: you changed the role of 'SimpleX Directory' to member (signed)"
+        serviceRoleIs superUser "member"
         let approve = "/approve 1:privacy 1"
         superUser #> ("@'SimpleX Directory' " <> approve)
         superUser <# ("'SimpleX Directory'> > " <> approve)
@@ -915,6 +923,16 @@ testNotApprovedBadRoles ps =
         notifySuperUser superUser bob "privacy" "Privacy" 1
         void $ approveRegistration superUser bob "privacy" 1
         groupFound cath "privacy"
+  where
+    serviceRoleIs superUser expectedRole = go (50 :: Int)
+      where
+        go n = do
+          superUser #> "@'SimpleX Directory' /x /ms privacy"
+          superUser <# "'SimpleX Directory'> > /x /ms privacy"
+          l <- getTermLine superUser
+          superUser <## "bob (Bob): owner, host, connected"
+          let expected = "      'SimpleX Directory': " <> expectedRole <> ", you, connected"
+          if l == expected || n == 0 then l `shouldBe` expected else threadDelay 100000 >> go (n - 1)
 
 testRegOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
 testRegOwnerChangedProfile ps =
@@ -930,9 +948,7 @@ testRegOwnerChangedProfile ps =
         bob <## "It is hidden from the directory until approved."
         cath <## "bob updated group #privacy: (signed)"
         cath <## "description changed to: Privacy and Security"
-        cath `connectVia` dsLink
-        cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
-        cath <## "use @'SimpleX Directory' <message> to send messages"
+        connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         groupNotFound cath "privacy"
         reapproveGroup 3 superUser bob ""
         groupFoundN 3 cath "privacy"
@@ -945,15 +961,15 @@ testAnotherOwnerChangedProfile ps =
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
-        cath `connectVia` dsLink
-        cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
-        cath <## "use @'SimpleX Directory' <message> to send messages"
+        connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         cath ##> "/gp privacy privacy Privacy and Security"
         cath <## "description changed to: Privacy and Security"
-        bob <## "cath updated group #privacy: (signed)"
-        bob <## "description changed to: Privacy and Security"
-        bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath!"
-        bob <## "It is hidden from the directory until approved."
+        bob
+          <### [ "cath updated group #privacy: (signed)",
+                 "description changed to: Privacy and Security",
+                 WithTime "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath!",
+                 "It is hidden from the directory until approved."
+               ]
         groupNotFound cath "privacy"
         reapproveGroup 3 superUser bob " by cath"
         groupFoundN 3 cath "privacy"
@@ -970,10 +986,12 @@ testNotConnectedOwnerChangedProfile ps =
           addCathAsOwner bob cath
           cath ##> "/gp privacy privacy Privacy and Security"
           cath <## "description changed to: Privacy and Security"
-          bob <## "cath updated group #privacy: (signed)"
-          bob <## "description changed to: Privacy and Security"
-          bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath!"
-          bob <## "It is hidden from the directory until approved."
+          bob
+            <### [ "cath updated group #privacy: (signed)",
+                   "description changed to: Privacy and Security",
+                   WithTime "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath!",
+                   "It is hidden from the directory until approved."
+                 ]
           groupNotFound dan "privacy"
           reapproveGroup 3 superUser bob " by cath"
           groupFoundN 3 dan "privacy"
@@ -997,9 +1015,7 @@ testRegOwnerRemovedLink ps =
         -- removing the link keeps the group listed
         setWelcomeMessage bob [cath] "Welcome!"
         groupUpdatedListed superUser bob "privacy" ""
-        cath `connectVia` dsLink
-        cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
-        cath <## "use @'SimpleX Directory' <message> to send messages"
+        connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         groupFoundWelcome 3 cath "privacy" "Welcome!"
 
 testAnotherOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
@@ -1010,20 +1026,20 @@ testAnotherOwnerRemovedLink ps =
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
-        cath `connectVia` dsLink
-        cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
-        cath <## "use @'SimpleX Directory' <message> to send messages"
+        connectViaMerged cath dsLink "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
         -- setting the welcome message requires re-approval
-        setWelcomeMessage cath [bob] "Welcome!"
-        groupUpdatedHidden superUser bob "privacy" " by cath" $ reapprovalRequested 3 superUser (Just "Welcome!")
+        welcomeUpdatedBy bob cath "Welcome!" "It is hidden from the directory until approved."
+        noticeAndRequest superUser "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath." $ reapprovalRequested 3 superUser (Just "Welcome!")
         void $ approveRegistration_ superUser bob "privacy" 1 1 1
         -- another owner adds the link - the group remains listed
         gLink <- getGroupLinkFromBot bob
-        setWelcomeMessage cath [bob] ("Welcome! Link to join the group privacy: " <> gLink)
-        groupUpdatedListed superUser bob "privacy" " by cath"
+        welcomeUpdatedBy bob cath ("Welcome! Link to join the group privacy: " <> gLink) "The group is listed in directory."
+        superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath - only link or whitespace changes."
+        superUser <## "The group remained listed in directory."
         -- another owner removes the link - the group remains listed
-        setWelcomeMessage cath [bob] "Welcome!"
-        groupUpdatedListed superUser bob "privacy" " by cath"
+        welcomeUpdatedBy bob cath "Welcome!" "The group is listed in directory."
+        superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath - only link or whitespace changes."
+        superUser <## "The group remained listed in directory."
         groupFoundWelcome 3 cath "privacy" "Welcome!"
 
 testNotConnectedOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
@@ -1037,17 +1053,19 @@ testNotConnectedOwnerRemovedLink ps =
           registerGroup superUser bob "privacy" "Privacy"
           addCathAsOwner bob cath
           -- setting the welcome message requires re-approval
-          setWelcomeMessage cath [bob] "Welcome!"
-          groupUpdatedHidden superUser bob "privacy" " by cath" $ reapprovalRequested 3 superUser (Just "Welcome!")
+          welcomeUpdatedBy bob cath "Welcome!" "It is hidden from the directory until approved."
+          noticeAndRequest superUser "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath." $ reapprovalRequested 3 superUser (Just "Welcome!")
           groupNotFound dan "privacy"
           void $ approveRegistration_ superUser bob "privacy" 1 1 1
           -- the not connected owner adds the link - the group remains listed
           gLink <- getGroupLinkFromBot bob
-          setWelcomeMessage cath [bob] ("Welcome! Link to join the group privacy: " <> gLink)
-          groupUpdatedListed superUser bob "privacy" " by cath"
+          welcomeUpdatedBy bob cath ("Welcome! Link to join the group privacy: " <> gLink) "The group is listed in directory."
+          superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath - only link or whitespace changes."
+          superUser <## "The group remained listed in directory."
           -- the not connected owner removes the link - the group remains listed
-          setWelcomeMessage cath [bob] "Welcome!"
-          groupUpdatedListed superUser bob "privacy" " by cath"
+          welcomeUpdatedBy bob cath "Welcome!" "The group is listed in directory."
+          superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath - only link or whitespace changes."
+          superUser <## "The group remained listed in directory."
           groupFoundWelcome 3 dan "privacy" "Welcome!"
 
 testDuplicateAskConfirmation :: HasCallStack => TestParams -> IO ()
@@ -1215,14 +1233,10 @@ testListUserGroups promote ps =
     webDir = tmpFile ps "web"
 
 checkListings :: HasCallStack => FilePath -> [T.Text] -> [T.Text] -> IO ()
-checkListings webDir listed promoted = do
-  threadDelay 100000
-  checkListing listingFileName listed
-  checkListing promotedFileName promoted
+checkListings webDir listed promoted =
+  ((,) <$> readListing listingFileName <*> readListing promotedFileName) `shouldEventuallyReturn` (listed, promoted)
   where
-    checkListing f expected = do
-      Just (DirectoryListing gs) <- J.decodeFileStrict $ webDir </> "data" </> f
-      map groupName gs `shouldBe` expected
+    readListing f = maybe [] (\(DirectoryListing gs) -> map groupName gs) <$> J.decodeFileStrict (webDir </> "data" </> f)
     groupName DirectoryEntry {displayName} = displayName
 
 testAlwaysCaptcha :: HasCallStack => TestParams -> IO ()
@@ -1953,6 +1967,18 @@ setWelcomeMessage u others welcome = do
     m <## "welcome message changed to:"
     m <## welcome
 
+welcomeUpdatedBy :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
+welcomeUpdatedBy owner updater welcome status = do
+  uName <- userName updater
+  setWelcomeMessage updater [] welcome
+  owner
+    <### [ ConsoleString (uName <> " updated group #privacy: (signed)"),
+           "welcome message changed to:",
+           ConsoleString welcome,
+           WithTime ("'SimpleX Directory'> The group ID 1 (privacy) is updated by " <> uName <> "!"),
+           ConsoleString status
+         ]
+
 connectVia :: TestCC -> String -> IO ()
 u `connectVia` dsLink = do
   u ##> ("/c " <> dsLink)
@@ -1965,6 +1991,23 @@ u `connectVia` dsLink = do
   u <## "/new - recent groups."
   u <## ""
   u <## "[Directory rules](https://simplex.chat/docs/directory.html)."
+
+connectViaMerged :: HasCallStack => TestCC -> String -> String -> IO ()
+connectViaMerged u dsLink merged = do
+  u ##> ("/c " <> dsLink)
+  u <## "connection request sent!"
+  u .<## ": contact is connected"
+  u
+    <### [ EndsWith "> Welcome to SimpleX Directory!",
+           "",
+           "🔍 Send search string to find groups - try security.",
+           "/help - how to submit your group or channel.",
+           "/new - recent groups.",
+           "",
+           "[Directory rules](https://simplex.chat/docs/directory.html).",
+           ConsoleString merged,
+           "use @'SimpleX Directory' <message> to send messages"
+         ]
 
 joinGroup :: String -> TestCC -> TestCC -> IO ()
 joinGroup gName member host = do
@@ -2406,25 +2449,24 @@ testLinkCheckUpdatesCount ps = do
             bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
             bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
             -- link check updates count (bot joined)
-            threadDelay 1000000
-            bob #> "@'SimpleX Directory' news"
-            bob <# "'SimpleX Directory'> > news"
-            bob <## "      Found 1 group(s)."
-            bob <# "'SimpleX Directory'> news"
-            bob <##. "Link to join channel: "
-            bob <## "You need SimpleX Chat app v6.5 to join."
-            bob <## "2 subscribers"
+            searchSubscribers bob "2 subscribers"
             -- second subscriber joins
             memberJoinChannel "news" [relay] [bob] shortLink fullLink cath
             -- link check updates count again
-            threadDelay 1000000
-            bob #> "@'SimpleX Directory' news"
-            bob <# "'SimpleX Directory'> > news"
-            bob <## "      Found 1 group(s)."
-            bob <# "'SimpleX Directory'> news"
-            bob <##. "Link to join channel: "
-            bob <## "You need SimpleX Chat app v6.5 to join."
-            bob <## "3 subscribers"
+            searchSubscribers bob "3 subscribers"
+  where
+    searchSubscribers bob expected = go (20 :: Int)
+      where
+        go n = do
+          threadDelay 500000
+          bob #> "@'SimpleX Directory' news"
+          bob <# "'SimpleX Directory'> > news"
+          bob <## "      Found 1 group(s)."
+          bob <# "'SimpleX Directory'> news"
+          bob <##. "Link to join channel: "
+          bob <## "You need SimpleX Chat app v6.5 to join."
+          countLine <- getTermLine bob
+          if countLine == expected || n == 0 then countLine `shouldBe` expected else go (n - 1)
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do

@@ -353,8 +353,10 @@ remoteStoreFileTest =
         [ do
             desktop <## "completed uploading file 1 (test_1.pdf) for bob",
           do
-            bob <## "saving file 1 from alice to test_1.pdf"
-            bob <## "started receiving file 1 (test_1.pdf) from alice"
+            bob
+              <### [ "saving file 1 from alice to test_1.pdf",
+                     "started receiving file 1 (test_1.pdf) from alice"
+                   ]
             bob <## "completed receiving file 1 (test_1.pdf) from alice"
         ]
       B.readFile (bobFiles </> "test_1.pdf") `shouldReturn` src
@@ -381,8 +383,10 @@ remoteStoreFileTest =
         [ do
             desktop <## "completed uploading file 2 (test_2.pdf) for bob",
           do
-            bob <## "saving file 2 from alice to test_2.pdf"
-            bob <## "started receiving file 2 (test_2.pdf) from alice"
+            bob
+              <### [ "saving file 2 from alice to test_2.pdf",
+                     "started receiving file 2 (test_2.pdf) from alice"
+                   ]
             bob <## "completed receiving file 2 (test_2.pdf) from alice"
         ]
       B.readFile (bobFiles </> "test_2.pdf") `shouldReturn` src
@@ -398,8 +402,10 @@ remoteStoreFileTest =
         [ do
             bob <## "completed uploading file 3 (test.jpg) for alice",
           do
-            desktop <## "saving file 3 from bob to test.jpg"
-            desktop <## "started receiving file 3 (test.jpg) from bob"
+            desktop
+              <### [ "saving file 3 from bob to test.jpg",
+                     "started receiving file 3 (test.jpg) from bob"
+                   ]
             desktop <## "completed receiving file 3 (test.jpg) from bob"
         ]
       Just cfArgs'@(CFArgs key' nonce') <- J.decode . LB.pack <$> getTermLine desktop
@@ -456,8 +462,10 @@ remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer
     [ do
         bob <## "completed uploading file 1 (test.pdf) for alice",
       do
-        desktop <## "saving file 1 from bob to test.pdf"
-        desktop <## "started receiving file 1 (test.pdf) from bob"
+        desktop
+          <### [ "saving file 1 from bob to test.pdf",
+                 "started receiving file 1 (test.pdf) from bob"
+               ]
         desktop <## "completed receiving file 1 (test.pdf) from bob"
     ]
 
@@ -482,8 +490,10 @@ remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer
     [ do
         desktop <## "completed uploading file 2 (test.jpg) for bob",
       do
-        bob <## ("saving file 2 from alice to " <> bobFiles <> "test.jpg")
-        bob <## "started receiving file 2 (test.jpg) from alice"
+        bob
+          <### [ ConsoleString ("saving file 2 from alice to " <> bobFiles <> "test.jpg"),
+                 "started receiving file 2 (test.jpg) from alice"
+               ]
         bob <## "completed receiving file 2 (test.jpg) from alice"
     ]
 

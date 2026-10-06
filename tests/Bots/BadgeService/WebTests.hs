@@ -81,10 +81,9 @@ import UnliftIO.Temporary (withTempDirectory)
 
 #if defined(dbPostgres)
 import BadgeService.Store.Postgres.Migrations (badgeServiceSchemaMigrations)
-import ChatClient (testDBConnectInfo, testDBConnstr)
+import ChatClient (testDBConnstr)
 import Database.PostgreSQL.Simple (Only (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
-import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
 #else
 import BadgeService.Store.SQLite.Migrations (badgeServiceSchemaMigrations)
 import Data.String (fromString)
@@ -96,21 +95,23 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 
 #if defined(dbPostgres)
 withServiceStore :: (DBStore -> IO a) -> IO a
-withServiceStore action =
-  E.bracket_
-    (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
-    (dropDatabaseAndUser testDBConnectInfo)
-    $ do
-      Right st <- createDBStore serviceDBOpts badgeServiceSchemaMigrations (MigrationConfig MCError Nothing)
-      action st `E.finally` closeDBStore st
+withServiceStore action = do
+  n <- atomicModifyIORef' serviceSchemaCounter (\i -> (i + 1, i))
+  Right st <- createDBStore (serviceDBOpts n) badgeServiceSchemaMigrations (MigrationConfig MCError Nothing)
+  action st `E.finally` closeDBStore st
   where
-    serviceDBOpts =
+    serviceDBOpts :: Int -> DBOpts
+    serviceDBOpts n =
       DBOpts
         { connstr = BC.pack testDBConnstr,
-          schema = "sx_badge_service_web_test",
+          schema = "sx_badge_service_web_test_" <> BC.pack (show n),
           poolSize = 4,
           createSchema = True
         }
+
+serviceSchemaCounter :: IORef Int
+serviceSchemaCounter = unsafePerformIO $ newIORef 0
+{-# NOINLINE serviceSchemaCounter #-}
 #else
 withServiceStore :: (DBStore -> IO a) -> IO a
 withServiceStore action = do
@@ -1466,11 +1467,17 @@ testHoldReportsTheRowNotTheWake = bounded "hold reports the row" $ withWebApp $ 
 testHold :: Int
 testHold = 2000000
 
+awaitWaitingCount :: WebEnv -> Int -> IO ()
+awaitWaitingCount env n = do
+  parked <- waitingCount (weWaiters env)
+  when (parked /= n) $ threadDelay 10000 >> awaitWaitingCount env n
+
 testHoldTimeoutReportsAnUnpublishedChange :: IO ()
 testHoldTimeoutReportsAnUnpublishedChange = bounded "hold timeout" $ withWebAppHolding testHold $ \env client -> do
   iid <- seedOpenInvoice env
   started <- getCurrentTime
   held <- async $ webGet client (invoicePath iid <> "?wait=open")
+  awaitWaitingCount env 1
   threadDelay 50000
   expireRow (weStore env) iid
   r <- wait held
@@ -2532,7 +2539,7 @@ testCadenceFollowsTheWaiters = bounded "cadence" $ withStubPoller raceHold $ \_ 
   waitingCount (weWaiters env) `shouldReturn` 0
   passDelayNow poller `shouldReturn` (pIdleSeconds * 1000000)
   held <- async $ webGet client (invoicePath iid <> "?wait=open")
-  threadDelay 100000
+  awaitWaitingCount env 1
   passDelayNow poller `shouldReturn` (pWaitingSeconds * 1000000)
   waitingCount (weWaiters env) `shouldReturn` 1
   markPaidAndPublish env iid
@@ -3471,7 +3478,7 @@ testHeldWaitWakesOnAPaymentThatDoesNotSettle :: IO ()
 testHeldWaitWakesOnAPaymentThatDoesNotSettle = bounded "funded wakes a hold" $ withCheckout $ \_ env client -> do
   iid <- seedOpenInvoice env
   held <- async $ webGet client (invoicePath iid <> "?wait=open")
-  threadDelay 100000
+  awaitWaitingCount env 1
   waitingCount (weWaiters env) `shouldReturn` 1
   settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
     `shouldReturn` Right ISOpen

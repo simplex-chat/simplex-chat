@@ -2256,11 +2256,15 @@ testSharedMessageBody ps' =
         withTestChatOpts ps opts' "cath" $ \cath -> do
           concurrentlyN_
             [ alice <## "subscribed 4 connections on server localhost",
-              bob <## "subscribed 3 connections on server localhost",
-              cath <## "subscribed 3 connections on server localhost"
+              bob
+                <### [ "subscribed 3 connections on server localhost",
+                       WithTime "#team alice> hello"
+                     ],
+              cath
+                <### [ "subscribed 3 connections on server localhost",
+                       WithTime "#team alice> hello"
+                     ]
             ]
-          bob <# "#team alice> hello"
-          cath <# "#team alice> hello"
           threadDelay 500000
           checkMsgBodyCount alice 0
 
@@ -2934,10 +2938,10 @@ testPlanGroupLinkOwn ps =
     alice <## "group link: own link for group #team"
 
     alice ##> ("/c " <> gLink)
-    alice <## "connection request sent!"
-    alice <## "alice_1 (Alice): accepting request to join group #team..."
     alice
-      <### [ "#team: alice_1 joined the group",
+      <### [ "connection request sent!",
+             "alice_1 (Alice): accepting request to join group #team...",
+             "#team: alice_1 joined the group",
              "#team_1: joining the group...",
              "#team_1: you joined the group"
            ]
@@ -3553,12 +3557,8 @@ testGLinkRejectBlockedName =
       bob <## "#team: joining the group..."
       bob <## "#team: join rejected, reason: GRRBlockedName"
 
-      threadDelay 1000000
-
+      withCCTransaction alice (\db -> DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]) `shouldEventuallyReturn` [[1]]
       alice `hasContactProfiles` ["alice"]
-      memCount <- withCCTransaction alice $ \db ->
-        DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]
-      memCount `shouldBe` [[1]]
 
       -- rejected member can't send messages to group
       bob ##> "#team hello"
@@ -4119,8 +4119,10 @@ testPlanGroupLinkConnecting ps = do
     withCCAgentTransaction alice (\db -> DB.query_ db "SELECT count(1) FROM commands" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
   withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
-    bob <## "subscribed 1 connections on server localhost"
-    bob <## "#team: joining the group..."
+    bob
+      <### [ "subscribed 1 connections on server localhost",
+             "#team: joining the group..."
+           ]
     bob <## "#team: you joined the group"
 
     bob ##> ("/_connect plan 1 " <> gLink)
@@ -4215,8 +4217,8 @@ testGroupSyncRatchet ps =
       bob <## "#team alice: connection synchronized"
 
       threadDelay 100000
-      bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+      (bob ##> "/_get chat #1 count=3" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")]
+      (alice ##> "/_get chat #1 count=2" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(0, "connection synchronization agreed"), (0, "connection synchronized")]
 
       alice #> "#team hello again"
       bob <# "#team alice> hello again"
@@ -4255,8 +4257,8 @@ testGroupSyncRatchetCodeReset ps =
       bob <## "#team alice: connection synchronized"
 
       threadDelay 100000
-      bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+      (bob ##> "/_get chat #1 count=4" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")]
+      (alice ##> "/_get chat #1 count=2" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(0, "connection synchronization agreed"), (0, "connection synchronized")]
 
       -- connection not verified
       bob ##> "/i #team alice"
@@ -5542,7 +5544,15 @@ setupGroupForwardingVectors :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwardingVectors host invitee1 invitee2 = do
   invitee1Name <- userName invitee1
   invitee2Name <- userName invitee2
+  groupForwardingRelations host invitee1Name invitee2Name `shouldEventuallyReturn` (MRConnected, MRConnected)
   updateGroupForwardingVectors host invitee1Name invitee2Name MRIntroduced
+
+groupForwardingRelations :: TestCC -> String -> String -> IO (MemberRelation, MemberRelation)
+groupForwardingRelations host invitee1Name invitee2Name =
+  withCCTransaction host $ \db -> do
+    [(invitee1Index, invitee1Vec)] <- DB.query db "SELECT index_in_group, member_relations_vector FROM group_members WHERE local_display_name = ?" (Only invitee1Name)
+    [(invitee2Index, invitee2Vec)] <- DB.query db "SELECT index_in_group, member_relations_vector FROM group_members WHERE local_display_name = ?" (Only invitee2Name)
+    pure (getRelation invitee2Index (fromMaybe B.empty invitee1Vec), getRelation invitee1Index (fromMaybe B.empty invitee2Vec))
 
 updateGroupForwardingVectors :: TestCC -> String -> String -> MemberRelation -> IO ()
 updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
@@ -5694,8 +5704,10 @@ testGroupMsgForwardFile =
             cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
         ]
       cath ##> ("/fr 1 " <> tmpDir cath)
-      cath <## ("saving file 1 from bob to " <> tmpFile cath "test.jpg")
-      cath <## "started receiving file 1 (test.jpg) from bob"
+      cath
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
       cath <## "completed receiving file 1 (test.jpg) from bob"
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile (tmpFile cath "test.jpg")
@@ -7800,9 +7812,10 @@ testGroupMemberReports =
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
       alice ##> "\\\\ #jokes cath inappropriate joke"
       concurrentlyN_
-        [ do
-            alice <## "#jokes: 1 messages deleted by user"
-            alice <## "message marked deleted by you",
+        [ alice
+            <### [ "#jokes: 1 messages deleted by user",
+                   "message marked deleted by you"
+                 ],
           do
             bob <# "#jokes cath> [marked deleted by alice] inappropriate joke"
             bob <## "#jokes: 1 messages deleted by member alice",
@@ -9216,7 +9229,7 @@ testChannels1RelayDeliver ps =
             alice <## "group ID: 1"
             alice <## "subscribers: 4"
             -- subscriber refreshes count via short link
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 4"
@@ -9438,20 +9451,26 @@ memberJoinChannelIncognito gName relays owners shortLink fullLink member = do
 -- | Assert that sender's member_relations_vector has 'MRIntroduced' at
 -- the recipient's index, looked up by display name on the same DB.
 memberIntroducedTo :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
-memberIntroducedTo cc senderName recipientName = do
-  rows <- withCCTransaction cc $ \db ->
-    DB.query
-      db
-      [sql|
-        SELECT s.member_relations_vector, r.index_in_group
-        FROM group_members s, group_members r
-        WHERE s.local_display_name = ? AND r.local_display_name = ?
-      |]
-      (senderName, recipientName) ::
-      IO [(Maybe ByteString, Int64)]
-  case rows of
-    [(mv, idx)] -> getRelation idx (fromMaybe B.empty mv) `shouldBe` MRIntroduced
-    _ -> expectationFailure $ "memberIntroducedTo: expected exactly one row for " <> show (senderName, recipientName) <> ", got " <> show (length rows)
+memberIntroducedTo cc senderName recipientName = go (50 :: Int)
+  where
+    go n = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          [sql|
+            SELECT s.member_relations_vector, r.index_in_group
+            FROM group_members s, group_members r
+            WHERE s.local_display_name = ? AND r.local_display_name = ?
+          |]
+          (senderName, recipientName) ::
+          IO [(Maybe ByteString, Int64)]
+      case rows of
+        [(mv, idx)]
+          | relation == MRIntroduced || n == 0 -> relation `shouldBe` MRIntroduced
+          | otherwise -> threadDelay 100000 >> go (n - 1)
+          where
+            relation = getRelation idx (fromMaybe B.empty mv)
+        _ -> expectationFailure $ "memberIntroducedTo: expected exactly one row for " <> show (senderName, recipientName) <> ", got " <> show (length rows)
 
 testChannels1RelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
 testChannels1RelayDeliverLoop deliveryBucketSize ps =
@@ -9502,9 +9521,9 @@ testChannelsSenderDeduplicateOwn ps = do
           dan #> "#team 6"
 
           withTestChatCfgOpts ps cfg relayTestOpts "bob" $ \bob -> do
-            bob <## "subscribed 6 connections on server localhost"
             bob
-              <### [ WithTime "#team> 1",
+              <### [ "subscribed 6 connections on server localhost",
+                     WithTime "#team> 1",
                      WithTime "#team> 2",
                      WithTime "#team> 3",
                      WithTime "#team cath> 4",
@@ -10323,7 +10342,7 @@ testChannelModeratorActionViaRoster ps =
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
               -- the late joiner learns the roster from the served snapshot (verified below); under the
               -- no-broadcast model the apply finds no role change to surface, so no item here
-              threadDelay 1000000 -- the served roster arrives async
+              waitMemberRow frank "cath" (Just "moderator")
               checkMemberRole frank "cath" "moderator"
   where
     checkMemberRole :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
@@ -10360,7 +10379,7 @@ testChannelSubscriberRosterCatchUp ps =
               -- the next privileged change (frank -> v2) reaches cath at a jumped version, triggering catch-up:
               -- cath requests the roster from the forwarding relay, which re-serves the current snapshot
               promoteChannelMember "team" alice bob frank [cath, dan, eve]
-              threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
+              withCCTransaction cath (\db -> DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only danId) :: IO [(T.Text, Maybe ByteString)]) `shouldEventuallyReturn` [("member", danKey)]
               -- cath recovered dan from the re-served roster: same member id, role, and owner-pinned key
               (recRole, recKey) <- getMemberRoleKey cath danId
               recRole `shouldBe` "member"
@@ -10420,7 +10439,7 @@ testChannel2RelaysSubscriberRosterCatchUp ps =
                   dan <### [EndsWith "from member to moderator (signed)"],
                   frank <### [EndsWith "from member to moderator (signed)"]
                 ]
-              threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
+              withCCTransaction frank (\db -> DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only danId) :: IO [(T.Text, Maybe ByteString)]) `shouldEventuallyReturn` [("member", danKey)]
               (recRole, recKey) <- getMemberRoleKey frank danId
               recRole `shouldBe` "member"
               recKey `shouldBe` danKey
@@ -10485,8 +10504,7 @@ testChannelRoleTransitionsUpdateRoster ps =
               -- no separate role-change item under the no-broadcast model)
               threadDelay 100000
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
-              threadDelay 1000000 -- the served roster arrives async; wait before reading the applied state
-              checkMemberRow dan "cath" (Just "moderator")
+              waitMemberRow dan "cath" (Just "moderator")
               -- moderator -> admin: dan now knows cath, role event lands cleanly
               threadDelay 100000
               alice ##> "/mr #team cath admin"
@@ -10499,8 +10517,7 @@ testChannelRoleTransitionsUpdateRoster ps =
               -- eve joins; cached roster has cath as admin (learned from the served snapshot)
               threadDelay 100000
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink eve
-              threadDelay 1000000 -- the served roster arrives async; wait before reading the applied state
-              checkMemberRow eve "cath" (Just "admin")
+              waitMemberRow eve "cath" (Just "admin")
               -- admin -> observer (crossing out of roster, since member is now in-roster): roster drops cath
               threadDelay 100000
               alice ##> "/mr #team cath observer"
@@ -10576,7 +10593,7 @@ testChannelRelayCannotForgePrivilegedMember ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
-        threadDelay 1000000
+        waitMemberRow cath "alice" (Just "owner")
         -- the forged attribution only resolves to a privileged author if the victim already holds the
         -- owner at GROwner (established via the group link on join) - this documents and guards that premise
         checkMemberRow cath "alice" (Just "owner")
@@ -10651,7 +10668,7 @@ testChannelRemoveMemberSigned ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 4"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 4"
@@ -10683,7 +10700,7 @@ testChannelRemoveMemberSigned ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 3"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 3"
@@ -10712,7 +10729,7 @@ testChannelRemoveMemberSigned ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 2"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 2"
@@ -10840,7 +10857,7 @@ testChannelSubscriberLeave ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 4"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             eve ##> "/_get group link data #1"
             eve <## "group ID: 1"
             eve <## "subscribers: 4"
@@ -10864,7 +10881,7 @@ testChannelSubscriberLeave ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 3"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             eve ##> "/_get group link data #1"
             eve <## "group ID: 1"
             eve <## "subscribers: 3"
@@ -10894,7 +10911,7 @@ testChannelSubscriberLeave ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 2"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             eve ##> "/_get group link data #1"
             eve <## "group ID: 1"
             eve <## "subscribers: 2"
@@ -10910,10 +10927,9 @@ testChannelSubscriberLeave ps =
             checkMemberStatus cath "dan" Nothing
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
-    checkMemberStatus cc name expected = do
-      statuses <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_status FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
-      map (\(Only s) -> s) statuses `shouldBe` maybeToList expected
+    checkMemberStatus cc name expected =
+      (map (\(Only s) -> s) <$> withCCTransaction cc (\db -> DB.query db "SELECT member_status FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]))
+        `shouldEventuallyReturn` maybeToList expected
 
 testChannelRelayLeave :: HasCallStack => TestParams -> IO ()
 testChannelRelayLeave ps =
@@ -10979,7 +10995,7 @@ testChannelRelayLeave ps =
               (eve </)
 
               -- new subscriber tries to join channel with no relays - gets proper error
-              threadDelay 100000
+              waitQueuedLinkUpdates alice
               frank ##> ("/_connect plan 1 " <> shortLink)
               frank <## "group link: channel has no active relays, please try to join later"
   where
@@ -11332,7 +11348,7 @@ testChannelRosterDigestMismatchRejected ps =
           -- frank joins; bob re-serves the valid header with the corrupted blob, frank rejects it
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
-          threadDelay 1000000
+          waitMemberRow frank "cath" (Just "observer")
           -- the rejected roster never elevates cath: the intro caps her to the channel default, so she
           -- stays observer (not moderator), and the version must not advance to the corrupted roster's version 1
           checkMemberRow frank "cath" (Just "observer")
@@ -11627,7 +11643,7 @@ testChannelRemoveLeftRelay ps =
           alice <## "#team: you removed cath from the group (signed)"
 
           -- dan syncs with link - should clean up cath's stale record
-          threadDelay 100000
+          waitQueuedLinkUpdates alice
           dan ##> "/_get group link data #1"
           dan <## "group ID: 1"
           void $ getTermLine dan -- subscribers: N
@@ -11727,7 +11743,7 @@ testRelayRejectAfterLeave ps =
 
         -- bob's transient row was created with relay_own_status='rejected';
         -- after INFO arrives the cleanup arm deletes it. Original row 1 remains rejected.
-        threadDelay 1000000
+        listRelayOwnStatuses bob `shouldEventuallyReturn` [(1, "rejected")]
         checkRelayGroupCount bob 1
         finalStatuses <- listRelayOwnStatuses bob
         finalStatuses `shouldBe` [(1, "rejected")]
@@ -11878,7 +11894,7 @@ testRelayRejectRaceConcurrentInvitations ps =
         alice <## "#team: group relays:"
         alice .<##. ("  - relay id", ": invited")
         alice <## "#team: relay rejected, reason: RRRRejoinRejected"
-        threadDelay 1000000
+        listRelayOwnStatuses bob `shouldEventuallyReturn` [(1, "rejected")]
         checkRelayGroupCount bob 1
 
         -- subscriber doesn't receive between rejections (no active relay)
@@ -11898,7 +11914,7 @@ testRelayRejectRaceConcurrentInvitations ps =
         alice #> "#team after second rejection"
         (cath </)
 
-        threadDelay 1000000
+        listRelayOwnStatuses bob `shouldEventuallyReturn` [(1, "rejected")]
         checkRelayGroupCount bob 1
         finalStatuses <- listRelayOwnStatuses bob
         finalStatuses `shouldBe` [(1, "rejected")]
@@ -12949,11 +12965,10 @@ testChannelMemberUpdateEnforcement ps =
             either (fail . show) (const $ pure ()) sent
             -- dan rejects the unsigned mutation of the held-signed item (RGEMsgBadSignature, stored not shown live),
             -- and the original signed content is not overwritten
-            threadDelay 2000000
+            -- the rejection is recorded as a bad-signature item
+            (dan ##> "/_get chat #1 count=100 search=bad signature" >> chat <$> getTermLine dan) `shouldEventuallyReturn` [(0, "message rejected: bad signature")]
             -- (critical) the forged content did NOT overwrite the original signed item
             dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
-            -- the rejection is recorded as a bad-signature item
-            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
 
             -- a legitimate signed edit by cath is accepted
             cathMsgId <- lastItemId cath
@@ -13330,9 +13345,8 @@ testChannelMemberDeleteEnforcement ps =
             sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
             either (fail . show) (const $ pure ()) sent
             -- dan rejects the unsigned delete of the held-signed item; item not deleted, rejection recorded
-            threadDelay 2000000
+            (dan ##> "/_get chat #1 count=100 search=bad signature" >> chat <$> getTermLine dan) `shouldEventuallyReturn` [(0, "message rejected: bad signature")]
             dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
-            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
 
             -- a legitimate signed self-delete by cath is accepted
             cathMsgId <- lastItemId cath
