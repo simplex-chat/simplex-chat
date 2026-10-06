@@ -544,7 +544,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                 notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
                 verifyAndSendToApprove g' gr' n'
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll Nothing) >>= \case
-            Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g'}) _ _) _) ->
+            Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g'}) _ _)) ->
               case dbOwnerMemberId gr of
                 Just ownerGMId ->
                   withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (storeCxt cc) user groupId ownerGMId) >>= \case
@@ -777,7 +777,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $ do
             let link = ACL SCMContact $ CLShort groupLink
             sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll Nothing) >>= \case
-              Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated, linkOwners = ListDef owners}) _ _) _) ->
+              Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated, linkOwners = ListDef owners}) _ _)) ->
                 checkValidOwner dbOwnerMemberId owners $ do
                   -- re-verify every cycle: a name that stopped resolving to the link must lose verified status
                   g'' <- verifyGroupDomain_ g'
@@ -915,7 +915,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               mId = MemberId oIdBytes
               gt' = groupTypeStr gt
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll (Just ownerSig)) >>= \case
-            Right (CRConnectionPlan _ (Just (ACCL SCMContact ccLink)) _ _ plan _) ->
+            Right (CRConnectionPlan _ (Just (ACCL SCMContact ccLink)) _ _ plan) ->
               handleGroupLinkPlan ct ccLink mId ownerSig gt' plan
             _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
     deChatLinkReceived ct (MCLGroup {groupProfile = GroupProfile {publicGroup = Just pg}}) _ =
@@ -1252,7 +1252,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         getRegisteredGroupByLink :: AConnectionLink -> IO (Maybe (GroupInfo, GroupReg, CreatedLinkContact))
         getRegisteredGroupByLink uri =
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget uri)) PRMNever Nothing) >>= \case
-            Right (CRConnectionPlan _ (Just (ACCL SCMContact ccLink)) _ _ (CPGroupLink glp _ _) _) -> case glp of
+            Right (CRConnectionPlan _ (Just (ACCL SCMContact ccLink)) _ _ (CPGroupLink glp _ _)) -> case glp of
               GLPOwnLink g -> groupReg g ccLink
               GLPKnown {groupInfo = g} -> groupReg g ccLink
               GLPConnectingProhibit (Just g) -> groupReg g ccLink

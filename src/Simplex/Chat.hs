@@ -126,7 +126,6 @@ defaultChatConfig =
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
       callInvitationTTL = 180, -- 3 minutes, the apps stop ringing for older invitations
-      nameCacheTTL = 60,
       highlyAvailable = False,
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
@@ -187,7 +186,6 @@ newChatController
         sndFiles <- newTVarIO M.empty
         rcvFiles <- newTVarIO M.empty
         currentCalls <- TM.emptyIO
-        simplexNames <- TM.emptyIO
         localDeviceName <- newTVarIO $ fromMaybe deviceNameForRemote deviceName
         multicastSubscribers <- newTMVarIO 0
         remoteSessionSeq <- newTVarIO 0
@@ -236,7 +234,6 @@ newChatController
               sndFiles,
               rcvFiles,
               currentCalls,
-              simplexNames,
               localDeviceName,
               multicastSubscribers,
               remoteSessionSeq,

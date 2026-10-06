@@ -2179,9 +2179,8 @@ processChatCommand cxt nm = \case
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
   APIConnectPlan userId (Just ct) resolveMode linkOwnerSig_ -> withUserId userId $ \user -> do
-    nameCached <- newTVarIO False
-    (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct resolveMode linkOwnerSig_ Nothing nameCached
-    CRConnectionPlan user ccLink planSimplexName otherSimplexName plan <$> readTVarIO nameCached
+    (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct resolveMode linkOwnerSig_ Nothing
+    pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
@@ -2409,13 +2408,12 @@ processChatCommand cxt nm = \case
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito (Just ct) -> withUser $ \user -> do
-    nameCached <- newTVarIO False
     let con m cReq = pure (Just (ACCL m (CCLink cReq Nothing)), Nothing, Nothing, CPInvitationLink (ILPOk Nothing Nothing))
-    (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct PRMUnknown Nothing Nothing nameCached `catchAllErrors` \e -> case ct of
+    (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct PRMUnknown Nothing Nothing `catchAllErrors` \e -> case ct of
       ACTarget m (CTFullContact cReq) -> con m cReq
       ACTarget m (CTInv (CLFull cReq)) -> con m cReq
       _ -> throwError e
-    connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan =<< readTVarIO nameCached
+    connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIVerifyContactDomain contactId -> withUser $ \user -> do
     ct@Contact {profile = LocalProfile {contactDomain}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
@@ -2457,7 +2455,7 @@ processChatCommand cxt nm = \case
       throwError e
   ConnectSimplex incognito -> withUser $ \user -> do
     plan <- contactRequestPlan user adminContactReq Nothing Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing False) Nothing Nothing)
-    connectWithPlan user incognito (Just (ACCL SCMContact (CCLink adminContactReq Nothing))) Nothing Nothing plan False
+    connectWithPlan user incognito (Just (ACCL SCMContact (CCLink adminContactReq Nothing))) Nothing Nothing plan
   DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
   ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
   APIListContacts userId -> withUserId userId $ \user ->
@@ -4408,8 +4406,8 @@ processChatCommand cxt nm = \case
             pure (gId, chatSettings)
         _ -> throwCmdError "not supported"
       processChatCommand cxt nm $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
-    connectPlan :: User -> AConnectTarget -> PlanResolveMode -> Maybe LinkOwnerSig -> Maybe (Either ChatError (Either NameWarning NameRecord)) -> TVar Bool -> CM (Maybe ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan)
-    connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ _ _ = case cLink of
+    connectPlan :: User -> AConnectTarget -> PlanResolveMode -> Maybe LinkOwnerSig -> Maybe (Either ChatError (Either NameWarning NameRecord)) -> CM (Maybe ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan)
+    connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ _ = case cLink of
       CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing Nothing
       CLShort l -> do
         let l' = serverShortLink l
@@ -4430,12 +4428,12 @@ processChatCommand cxt nm = \case
         invitationReqAndPlan cReq sLnk_ cld ov = do
           plan <- invitationRequestPlan user cReq cld ov `catchAllErrors` (pure . CPError)
           pure (Just (ACCL SCMInvitation (CCLink cReq sLnk_)), Nothing, Nothing,  plan)
-    connectPlan user (ACTarget SCMContact ct) resolveMode sig_ nameRec nameCached = case ct of
+    connectPlan user (ACTarget SCMContact ct) resolveMode sig_ nameRec = case ct of
       CTDomain d
         -- local search only: look up #d then @d in the store, without online name resolution
         | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
         | otherwise ->
-            tryAllErrors (resolveNameRecordCached user nm nameCached d) >>= \case
+            tryAllErrors (resolveNameRecordOrWarning user nm d) >>= \case
               Right (Right nr)
                 | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
                     (addOther nr <$> connectPlanName NTPublicGroup (Right (Right nr))) `catchAllErrors` \e ->
@@ -4449,7 +4447,7 @@ processChatCommand cxt nm = \case
                   r -> pure r
               Left e -> connectPlanNoName e
         where
-          connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_) nameCached
+          connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_)
             where
               connTarget = ACTarget SCMContact $ CTShortContact $ CTName $ SimplexNameInfo nameType d
           connectPlanNoName e =
@@ -4628,14 +4626,14 @@ processChatCommand cxt nm = \case
           -- resolve a name to its first contact/channel short link
           resolveNameLink :: SimplexNameInfo -> CM (Either NameWarning (ConnShortLink 'CMContact))
           resolveNameLink SimplexNameInfo {nameType, nameDomain} = do
-            nr_ <- maybe (resolveNameRecordCached user nm nameCached nameDomain) (ExceptT . pure) nameRec
+            nr_ <- maybe (resolveNameRecordOrWarning user nm nameDomain) (ExceptT . pure) nameRec
             forM nr_ $ \NameRecord {nrSimplexContact, nrSimplexChannel} -> do
               let (candidates, ctType') = case nameType of
                     NTContact -> (nrSimplexContact, CCTContact)
                     NTPublicGroup -> (nrSimplexChannel, CCTChannel)
               maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink ctType' candidates
-    connectWithPlan :: User -> IncognitoEnabled -> Maybe ACreatedConnLink -> Maybe SimplexNameInfo -> Maybe SimplexNameInfo -> ConnectionPlan -> Bool -> CM ChatResponse
-    connectWithPlan user@User {userId} incognito ccLink_ planSimplexName otherSimplexName plan nameCached
+    connectWithPlan :: User -> IncognitoEnabled -> Maybe ACreatedConnLink -> Maybe SimplexNameInfo -> Maybe SimplexNameInfo -> ConnectionPlan -> CM ChatResponse
+    connectWithPlan user@User {userId} incognito ccLink_ planSimplexName otherSimplexName plan
       | Just ccLink <- ccLink_, connectionPlanProceed plan = do
           case plan of CPError e -> eToView e; _ -> pure ()
           case plan of
@@ -4645,7 +4643,7 @@ processChatCommand cxt nm = \case
             CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _ _) _ _
               | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
-      | otherwise = pure $ CRConnectionPlan user ccLink_ planSimplexName otherSimplexName plan nameCached
+      | otherwise = pure $ CRConnectionPlan user ccLink_ planSimplexName otherSimplexName plan
       where
         vName = nameDomain <$> planSimplexName
         joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
@@ -5146,22 +5144,11 @@ resolveNameRecord user nm domain = do
     NRRegistered {nameRecord} -> pure nameRecord
     _ -> throwError $ chatErrorAgent $ SMP "" (NAME SMP.NOT_FOUND)
 
-resolveNameRecordCached :: User -> NetworkRequestMode -> TVar Bool -> SimplexDomain -> CM (Either NameWarning NameRecord)
-resolveNameRecordCached user nm nameCached domain = do
-  ttl <- asks (nameCacheTTL . config)
-  names <- asks simplexNames
-  ts <- liftIO getCurrentTime
-  cached_ <- liftIO $ TM.lookupIO (fullDomainName domain) names
-  reg <- case cached_ of
-    Just (r, resolvedAt) | diffUTCTime ts resolvedAt < ttl -> fromCache r
-    _ ->
-      tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain) >>= \case
-        Right NameResponse {registration} -> registration <$ atomically (TM.insert (fullDomainName domain) (registration, ts) names)
-        Left e -> maybe (throwError e) (fromCache . fst) cached_
+resolveNameRecordOrWarning :: User -> NetworkRequestMode -> SimplexDomain -> CM (Either NameWarning NameRecord)
+resolveNameRecordOrWarning user nm domain = do
+  NameResponse {registration} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
   now <- liftIO getSystemSeconds
-  pure $ nameRecordOrWarning now domain reg
-  where
-    fromCache r = r <$ atomically (writeTVar nameCached True)
+  pure $ nameRecordOrWarning now domain registration
 
 nameRecordOrWarning :: SystemSeconds -> SimplexDomain -> NameRegistration -> Either NameWarning NameRecord
 nameRecordOrWarning now SimplexDomain {domain} = \case

@@ -20,7 +20,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import NameResolver
-import Simplex.Chat.Controller (ChatConfig (..), ChatResponse (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), NamePrice (..), NameWarning (..))
+import Simplex.Chat.Controller (ChatResponse (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (execChatCommand', nameRecordOrWarning, parseChatCommand)
 import Simplex.Chat.Messages (AChatInfo (..), ChatInfo (..))
 import Simplex.Chat.Types (Contact (..), GroupInfo (..))
@@ -65,7 +65,6 @@ chatNamesTests = do
     it "own name, expired" testPlanOwnNameExpired
     it "own name, now available" testPlanOwnNameAvailable
     it "the request failed" testPlanNameResolverFailed
-    it "name resolved less than a minute ago" testPlanNameCached
     it "resolve=never: local hit and miss" testPlanNameResolveNever
   describe "name warnings" $ do
     it "registration record or warning" $ \_ -> testNameRecordOrWarning
@@ -528,10 +527,8 @@ testPlanKnownNameResolverFailed = withAliceName $ \reg _r alice bob -> do
   failNameResolution reg aliceSimplexName
   bob ##> "/_connect plan 1 @alice.simplex resolve=all"
   knownAlicePlan bob
-  bob <## "SimpleX name from cache"
   bob ##> "/_connect plan 1 alice.simplex resolve=all"
   knownAlicePlan bob
-  bob <## "SimpleX name from cache"
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
 
@@ -678,32 +675,8 @@ testPlanNameResolverFailed = withAliceName $ \reg _r _alice bob -> do
   failNameResolution reg brokenName
   bob ##> "/_connect plan 1 broken.simplex"
   bob .<## "smpErr = NAME {nameErr = RESOLVER {resolverErr = \"HTTP 500\"}}}"
-  bob ##> "/_connect plan 1 @alice.simplex"
-  bob <## "contact address: ok to connect"
-  _ <- getTermLine bob
-  failNameResolution reg aliceSimplexName
-  bob ##> "/_connect plan 1 @alice.simplex"
-  bob <## "contact address: ok to connect"
-  _ <- getTermLine bob
-  bob <## "SimpleX name from cache"
   where
     brokenName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "broken" [])
-
-testPlanNameCached :: HasCallStack => TestParams -> IO ()
-testPlanNameCached ps = withSmpServerAndNames $ \reg ->
-  testChatCfg2 testCfg {nameCacheTTL = 60} aliceProfile bobProfile (test reg) ps
-  where
-    test reg alice bob = do
-      mapM_ enableNamesRole [alice, bob]
-      _ <- setAliceName reg alice
-      bob ##> "/_connect plan 1 @alice.simplex"
-      bob <## "contact address: ok to connect"
-      _ <- getTermLine bob
-      unregisterName reg aliceSimplexName
-      bob ##> "/_connect plan 1 alice.simplex"
-      bob <## "contact address: ok to connect"
-      _ <- getTermLine bob
-      bob <## "SimpleX name from cache"
 
 testPlanKnownNameLinkFailed :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameLinkFailed ps = withSmpServerAndNames $ \reg ->

@@ -244,8 +244,7 @@ testCfg =
       testView = True,
       tbqSize = 16,
       channelSubscriberRole = GRObserver,
-      confirmMigrations = MCYesUp,
-      nameCacheTTL = 0
+      confirmMigrations = MCYesUp
     }
 
 testAgentCfgVPrev :: AgentConfig
