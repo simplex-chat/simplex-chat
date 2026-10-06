@@ -36,7 +36,7 @@ import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
-import Data.List (stripPrefix)
+import Data.List (isPrefixOf, stripPrefix)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
 import Data.String (fromString)
@@ -57,6 +57,7 @@ import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..))
+import Simplex.Chat.Store.Badges (getDueStoreReceipts, getNextStoreReceiptAttempt)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -1599,7 +1600,9 @@ testStoreQuantityRefused ps =
       since <- testClockTime bsClock
       alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleQuantityJWS})
       storePurchaseOpen alice ""
-      snd <$> waitStoreReceiptDeferred (chatController alice) since `shouldReturn` "service_error final internal"
+      (at, failure) <- waitStoreReceiptDeferred (chatController alice) since
+      failure `shouldBe` "service_error final internal"
+      at `shouldSatisfy` (< addUTCTime 60 since)
       heldStoreReceipts (chatController alice) `shouldReturn` 1
     nothingPurchased cc
 
@@ -1692,8 +1695,7 @@ testPurchaseBadge ps =
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       let purchase = "/_badge purchase 1 " <> paymentArg supporterPlay
       alice ##> purchase
-      storePurchaseOpen alice ""
-      storePurchaseCredited alice "" "1: supporter"
+      inAnyOrder alice [[openPurchase ""], creditedLines "" "1: supporter"]
       -- the app hands a purchase over until it is answered credited, and one already credited adds nothing
       alice ##> purchase
       alice <## "badge already redeemed"
@@ -1708,8 +1710,7 @@ testPurchaseBadgeAppStore ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc, bsStore = FakeStore {appleLegendJWS}} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendJWS})
-      storePurchaseOpen alice ""
-      storePurchaseCredited alice "" "1: legend"
+      inAnyOrder alice [[openPurchase ""], creditedLines "" "1: legend"]
       storePayments cc `shouldReturn` [("apple", Just 7000, Just "USD", 1)]
 
 testPurchaseStash :: HasCallStack => TestParams -> IO ()
@@ -1720,8 +1721,7 @@ testPurchaseStash ps =
           refused = "/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase")
       -- the store does not vouch for it, so it can never be credited, and the record says so
       alice ##> refused
-      storePurchaseOpen alice ""
-      alice <## "store purchase settled"
+      inAnyOrder alice [[openPurchase ""], ["store purchase settled"]]
       alice ##> refused
       alice <## "cannot get badge: badge service error: receipt_invalid"
       records `shouldReturn` 1
@@ -1737,8 +1737,7 @@ testPurchaseStash ps =
       storePurchaseOpen alice ""
       snd <$> waitStoreReceiptDeferred (chatController alice) since `shouldReturn` "service_error retry payment_pending"
       settlePending store
-      retryStoreReceiptsAfter alice bsClock 300
-      storePurchaseCredited alice "" "1: supporter"
+      retryStoreReceiptsAfter alice bsClock 300 $ creditedLines "" "1: supporter"
       records `shouldReturn` 2
       heldStoreReceipts (chatController alice) `shouldReturn` 0
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
@@ -1750,11 +1749,9 @@ testPurchaseStashReceiptUsed ps =
       withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
         let purchase = "/_badge purchase 1 " <> paymentArg supporterPlay
         alice ##> purchase
-        storePurchaseOpen alice ""
-        storePurchaseCredited alice "" "1: supporter"
+        inAnyOrder alice [[openPurchase ""], creditedLines "" "1: supporter"]
         bob ##> purchase
-        storePurchaseOpen bob ""
-        bob <## "store purchase settled"
+        inAnyOrder bob [[openPurchase ""], ["store purchase settled"]]
         bob ##> purchase
         bob <## "cannot get badge: badge service error: receipt_used"
         storeReceiptRows (chatController bob) `shouldReturn` [(1, Nothing, True)]
@@ -1784,8 +1781,7 @@ testPurchaseWhileBadgeHeld ps =
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       alice <##. "1: supporter"
       storePurchaseOpen alice ""
-      (alice </)
-      storeReceiptErrors (chatController alice) `shouldReturn` [Nothing]
+      selectableStoreReceipts (chatController alice) 1 `shouldReturn` (0, Nothing)
       heldStoreReceipts (chatController alice) `shouldReturn` 1
       rowCount cc "sx_badge_service_payments" `shouldReturn` 0
 
@@ -1794,8 +1790,7 @@ testPurchaseSameReceiptOtherProfile ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
-      storePurchaseOpen alice ""
-      storePurchaseCredited alice "" "1: supporter"
+      inAnyOrder alice [[openPurchase ""], creditedLines "" "1: supporter"]
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       -- the store transaction is the device's, so it stays with the profile it was bought under
@@ -1820,8 +1815,7 @@ testPurchaseStrandedUnderOtherProfile ps =
       -- handed over again under whichever profile is active, the purchase stays with the keys alice holds
       alice ##> unsettled 2
       storePurchaseOpen alice "[user: alice] "
-      retryStoreReceiptsAfter alice bsClock 300
-      storePurchaseCredited alice "[user: alice] " "1: supporter"
+      retryStoreReceiptsAfter alice bsClock 300 $ creditedLines "[user: alice] " "1: supporter"
       (alice </)
       rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
@@ -1847,7 +1841,7 @@ testPurchaseDeliveredToHiddenProfile ps =
       -- the answer and the credit are the hidden owner's, so the view prints none of them
       alice ##> unsettled 2
       (alice </)
-      retryStoreReceiptsAfter alice bsClock 300
+      retryStoreReceiptsAfter alice bsClock 300 []
       waitHeldStoreReceipts (chatController alice) 0
       (alice </)
       alice ##> "/user alice password"
@@ -1861,8 +1855,7 @@ testInvoiceOtherProfile ps =
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> purchaseWithInvoice 2 invoiceId supporterPlay
-      alice <##. ("[user: alice] store purchase open: invoice " <> invoiceId <> ", transaction ")
-      storePurchaseCredited alice "[user: alice] " "1: supporter"
+      inAnyOrder alice [["[user: alice] store purchase open: invoice " <> invoiceId <> ", transaction "], creditedLines "[user: alice] " "1: supporter"]
       (alice </)
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
       alice ##> "/user alice"
@@ -1874,8 +1867,7 @@ testInvoiceSameReceiptTwice ps =
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       invoiceId <- createInvoice alice 1
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
-      alice <##. ("store purchase open: invoice " <> invoiceId <> ", transaction ")
-      storePurchaseCredited alice "" "1: supporter"
+      inAnyOrder alice [["store purchase open: invoice " <> invoiceId <> ", transaction "], creditedLines "" "1: supporter"]
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
       alice <## "badge already redeemed"
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
@@ -1890,8 +1882,7 @@ testInvoiceUnknown ps =
       -- a reinstall or a second device: the store echoes an invoice this database never created
       let unknown = "0b6a5e6c-4f3e-4d51-9f55-3a0f7c2f9e11"
       alice ##> purchaseWithInvoice 2 unknown supporterPlay
-      alice <##. ("store purchase open: invoice " <> unknown <> ", transaction ")
-      storePurchaseCredited alice "" "1: supporter"
+      inAnyOrder alice [["store purchase open: invoice " <> unknown <> ", transaction "], creditedLines "" "1: supporter"]
       storeReceiptRows (chatController alice) `shouldReturn` [(2, Just (T.pack unknown), True)]
 
 testInvoiceLateReceipt :: HasCallStack => TestParams -> IO ()
@@ -1903,8 +1894,7 @@ testInvoiceLateReceipt ps =
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> purchaseWithInvoice 2 invoiceId supporterPlay
-      alice <##. ("[user: alice] store purchase open: invoice " <> invoiceId <> ", transaction ")
-      storePurchaseCredited alice "[user: alice] " "1: supporter"
+      inAnyOrder alice [["[user: alice] store purchase open: invoice " <> invoiceId <> ", transaction "], creditedLines "[user: alice] " "1: supporter"]
       (alice </)
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
 
@@ -1922,10 +1912,14 @@ testInvoiceAgedOut ps =
       alice <## ("store purchase open: invoice " <> refused)
       _ <- waitStoreReceiptDeferred (chatController alice) since
       alice ##> purchaseWithInvoice 1 refused (googlePayment "badge_supporter_01" "not-a-purchase")
-      alice <## ("store purchase open: invoice " <> unpaid)
-      alice <##. ("store purchase open: invoice " <> presented <> ", transaction ")
-      alice <##. ("store purchase open: invoice " <> refused <> ", transaction ")
-      alice <## "store purchase settled"
+      inAnyOrder
+        alice
+        [ [ "store purchase open: invoice " <> unpaid,
+            "store purchase open: invoice " <> presented <> ", transaction ",
+            "store purchase open: invoice " <> refused <> ", transaction "
+          ],
+          ["store purchase settled"]
+        ]
       -- no age hides a record: one with no receipt and one held stay listed, and only a settled one goes
       getCurrentTime >>= setClockAt clock . addUTCTime (8 * nominalDay)
       alice ##> "/_badge state 1"
@@ -1957,8 +1951,7 @@ testInvoiceWhileBadgeHeld ps =
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
       alice <##. "1: supporter"
       alice <##. ("store purchase open: invoice " <> invoiceId <> ", transaction ")
-      (alice </)
-      storeReceiptErrors (chatController alice) `shouldReturn` [Nothing]
+      selectableStoreReceipts (chatController alice) 1 `shouldReturn` (0, Nothing)
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
       heldStoreReceipts (chatController alice) `shouldReturn` 1
       rowCount cc "sx_badge_service_payments" `shouldReturn` 0
@@ -1991,8 +1984,7 @@ testStoreReceiptRetried ps =
       failure `shouldBe` "service_error retry provider_unavailable"
       at `shouldSatisfy` (> addUTCTime 290 since)
       setGoogleDown store False
-      retryStoreReceiptsAfter alice bsClock 300
-      storePurchaseCredited alice "" "1: supporter"
+      retryStoreReceiptsAfter alice bsClock 300 $ creditedLines "" "1: supporter"
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
 testStoreReceiptNotSentEarly :: HasCallStack => TestParams -> IO ()
@@ -2025,7 +2017,7 @@ testStoreReceiptRetriedDaily ps =
       storePurchaseOpen alice ""
       (firstAt, _) <- waitStoreReceiptDeferred (chatController alice) since
       firstAt `shouldSatisfy` (> addUTCTime (nominalDay - 60) since)
-      retryStoreReceiptsAfter alice bsClock nominalDay
+      retryStoreReceiptsAfter alice bsClock nominalDay []
       (secondAt, failure) <- waitStoreReceiptDeferred (chatController alice) firstAt
       failure `shouldBe` "service_error final provider_not_configured"
       secondAt `shouldSatisfy` (> addUTCTime (nominalDay - 60) firstAt)
@@ -2039,8 +2031,7 @@ testStoreRefusalKept ps = do
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       let refused = "/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase")
       alice ##> refused
-      storePurchaseOpen alice ""
-      alice <## "store purchase settled"
+      inAnyOrder alice [[openPurchase ""], ["store purchase settled"]]
       alice ##> refused
       alice <## "cannot get badge: badge service error: receipt_invalid"
       alice ##> "/_badge state 1"
@@ -2058,9 +2049,11 @@ testStoreSettledOtherProfile ps =
       showActiveUser alice "alisa"
       -- the invoice makes alice the owner, so the hand-over's answer and the settlement are hers
       alice ##> purchaseWithInvoice 2 shown (googlePayment "badge_supporter_01" "not-a-purchase")
-      alice <##. ("[user: alice] store purchase open: invoice " <> shown <> ", transaction ")
-      alice <## ("store purchase open: invoice " <> hidden)
-      alice <## "[user: alice] store purchase settled"
+      inAnyOrder
+        alice
+        [ ["[user: alice] store purchase open: invoice " <> shown <> ", transaction ", "store purchase open: invoice " <> hidden],
+          ["[user: alice] store purchase settled"]
+        ]
       alice ##> "/_hide user 1 \"password\""
       alice <## "user alice:"
       alice <## "messages are hidden (use /tail to view)"
@@ -2077,7 +2070,7 @@ testStoreReceiptTwoAtOnce ps =
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       let handOver = void $ sendChatCmdStr (chatController alice) ("/_badge purchase 1 " <> paymentArg supporterPlay)
       concurrentlyN_ [handOver, handOver]
-      storePurchaseCredited alice "" "1: supporter"
+      mapM_ (alice <##.) $ creditedLines "" "1: supporter"
       (alice </)
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
@@ -2089,22 +2082,20 @@ testStoreReceiptCleanup ps =
     withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
       unpaid <- createInvoice alice 1
       alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase"))
-      alice <## ("store purchase open: invoice " <> unpaid)
-      storePurchaseOpen alice ""
-      alice <## "store purchase settled"
+      inAnyOrder alice [["store purchase open: invoice " <> unpaid, openPurchase ""], ["store purchase settled"]]
       since <- testClockTime bsClock
       alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" googleUnreachableToken))
       alice <## ("store purchase open: invoice " <> unpaid)
       storePurchaseOpen alice ""
       _ <- waitStoreReceiptDeferred (chatController alice) since
       alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
-      alice <## ("store purchase open: invoice " <> unpaid)
-      storePurchaseOpen alice ""
-      storePurchaseOpen alice ""
-      storePurchaseCredited alice "" "1: supporter"
+      inAnyOrder alice [["store purchase open: invoice " <> unpaid, openPurchase "", openPurchase ""], creditedLines "" "1: supporter"]
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack unpaid), False), (1, Nothing, True), (1, Nothing, True), (1, Nothing, True)]
       -- a month on, the record no receipt reached and the refusal go; the credited and the held one stay
       testClockTime bsClock >>= setClockAt bsClock . addUTCTime (31 * nominalDay)
+      -- the move also ends the badge credited above; whether its worker wakes alone or on this signal, its lines are read here
+      alice `send` "/_app activate"
+      inAnyOrder alice [["/_app activate"], ["ok"], ["badge alert: support_ended "], ["1: supporter", "badge alert: support_ended "]]
       waitStoreReceiptRows (chatController alice) 2 `shouldReturn` [(1, Nothing, True), (1, Nothing, True)]
       heldStoreReceipts (chatController alice) `shouldReturn` 1
       -- a receipt for the deleted invoice now arrives with no record to name its profile, so the presenting one gets it
@@ -2128,7 +2119,7 @@ testStoreReceiptAttemptThrows ps = do
       verifications `shouldReturn` 1
       -- a stored payment this version cannot read makes the attempt throw before anything is sent
       setStoreReceiptPayment (chatController alice) "not a payment"
-      retryStoreReceiptsAfter alice bsClock 300
+      retryStoreReceiptsAfter alice bsClock 300 []
       (secondAt, failure) <- waitStoreReceiptDeferred (chatController alice) firstAt
       failure `shouldBe` "unexpected held store payment does not decode"
       secondAt `shouldSatisfy` (> addUTCTime (nominalDay - 60) firstAt)
@@ -2161,10 +2152,13 @@ waitStoreReceiptRows cc n = loop (100 :: Int)
       rows <- storeReceiptRows cc
       if length rows == n then pure rows else threadDelay 50000 >> loop (i - 1)
 
-storeReceiptErrors :: ChatController -> IO [Maybe Text]
-storeReceiptErrors ChatController {chatStore} =
+-- | The receipts the owner's worker could select, and when it would wake for them. Read two days ahead, so
+-- a receipt the worker has already deferred by a day is still counted.
+selectableStoreReceipts :: ChatController -> Int64 -> IO (Int, Maybe UTCTime)
+selectableStoreReceipts ChatController {chatStore} userId = do
+  later <- addUTCTime (2 * nominalDay) <$> getCurrentTime
   withTransaction chatStore $ \db ->
-    map fromOnly <$> DB.query_ db "SELECT credit_error FROM badge_store_receipts ORDER BY badge_store_receipt_id"
+    (,) <$> (length <$> getDueStoreReceipts db userId later) <*> getNextStoreReceiptAttempt db userId
 
 heldStoreReceipts :: ChatController -> IO Int
 heldStoreReceipts ChatController {chatStore} =
@@ -2197,12 +2191,28 @@ setStoreReceiptPayment ChatController {chatStore} payment =
   withTransaction chatStore $ \db -> DB.execute db "UPDATE badge_store_receipts SET payment = ?" (Only payment)
 
 -- | Moves the badge clock past a deferred receipt's next attempt, and signals the worker as the app's
--- return to the foreground does.
-retryStoreReceiptsAfter :: HasCallStack => TestCC -> TestClock -> NominalDiffTime -> IO ()
-retryStoreReceiptsAfter cc clock wait = do
+-- return to the foreground does; the events the worker prints may come before or after the "ok".
+retryStoreReceiptsAfter :: HasCallStack => TestCC -> TestClock -> NominalDiffTime -> [String] -> IO ()
+retryStoreReceiptsAfter cc clock wait events = do
   testClockTime clock >>= setClockAt clock . addUTCTime (wait + 1)
   cc ##> "/_app activate"
-  cc <## "ok"
+  inAnyOrder cc $ ["ok"] : [events | not (null events)]
+
+-- | Each block's lines in order, the blocks in any order: the worker is signalled before the command that
+-- signalled it has answered, so its events can print first. Every line is matched as a prefix.
+inAnyOrder :: HasCallStack => TestCC -> [[String]] -> IO ()
+inAnyOrder _ [] = pure ()
+inAnyOrder cc blocks = do
+  line <- getTermLine cc
+  case break (startsWith line) blocks of
+    (earlier, (_ : rest) : others) -> do
+      mapM_ (cc <##.) rest
+      inAnyOrder cc (earlier <> others)
+    _ -> error $ "expected a line starting one of " <> show blocks <> ", got " <> show line
+  where
+    startsWith l = \case
+      start : _ -> start `isPrefixOf` l
+      [] -> False
 
 -- | Counts the Google verifications the service makes, re-arming the one-shot hook each time.
 countGoogleVerifications :: IORef (IO ()) -> IO (IO Int)
@@ -2213,10 +2223,11 @@ countGoogleVerifications hook = do
   pure $ readIORef n
 
 storePurchaseOpen :: HasCallStack => TestCC -> String -> IO ()
-storePurchaseOpen cc userPrefix = cc <##. (userPrefix <> "store purchase open: invoice none, transaction ")
+storePurchaseOpen cc userPrefix = cc <##. openPurchase userPrefix
+
+openPurchase :: String -> String
+openPurchase userPrefix = userPrefix <> "store purchase open: invoice none, transaction "
 
 -- | The worker's credit as the owner's terminal shows it: the badge, then the settlement.
-storePurchaseCredited :: HasCallStack => TestCC -> String -> String -> IO ()
-storePurchaseCredited cc userPrefix badge = do
-  cc <##. (userPrefix <> badge)
-  cc <## (userPrefix <> "store purchase settled")
+creditedLines :: String -> String -> [String]
+creditedLines userPrefix badge = [userPrefix <> badge, userPrefix <> "store purchase settled"]
