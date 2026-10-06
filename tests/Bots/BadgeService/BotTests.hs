@@ -796,6 +796,20 @@ redeemFirstBadge alice code = do
   alice <## "badge redeemed"
   alice <## "supporter badge - active"
   alice <##. "expires "
+  waitWakeArmed (chatController alice)
+
+waitWakeArmed :: HasCallStack => ChatController -> IO ()
+waitWakeArmed ChatController {chatStore} = loop (100 :: Int)
+  where
+    loop i = do
+      rows :: [(Maybe UTCTime, Int64)] <-
+        withTransaction chatStore $ \db ->
+          DB.query_ db "SELECT next_wake_at, badge_purchase_id FROM badge_purchases"
+      case rows of
+        [(Just _, _)] -> pure ()
+        _
+          | i == 0 -> error $ "expected one badge purchase with a wake, got " <> show rows
+          | otherwise -> threadDelay 50000 >> loop (i - 1)
 
 testWorkerRenews :: HasCallStack => TestParams -> IO ()
 testWorkerRenews ps =

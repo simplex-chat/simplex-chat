@@ -3688,11 +3688,11 @@ testShortLinkAddressConnectRetryIncognito ps =
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "contact address: known prepared contact alice"
         bob ##> "/_connect contact @2 incognito=on text hello"
-        bobIncognito <- getTermLine bob
-        bob
-          <### [ "alice: connection started incognito",
-                 WithTime "i @alice hello"
-               ]
+        line <- getTermLine bob
+        let helloFirst = dropTime_ line == Just "i @alice hello"
+        bobIncognito <- if helloFirst then getTermLine bob else pure line
+        bob <## "alice: connection started incognito"
+        unless helloFirst $ bob <# "i @alice hello"
         alice
           <### [ ConsoleString (bobIncognito <> " wants to connect to you!"),
                  WithTime (bobIncognito <> "> hello")
