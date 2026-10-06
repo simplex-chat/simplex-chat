@@ -66,6 +66,7 @@ struct BadgeStoreReceipt {
     // the signed token the badge service verifies - never transaction.jsonRepresentation
     let jws: String
     let productId: String
+    let transactionId: UInt64
     let invoiceId: UUID?
     let signatureVerified: Bool
     let transaction: Transaction
@@ -111,8 +112,8 @@ final class BadgeStore: ObservableObject {
     // set when the first sweep has returned, which is after every transaction the store holds was handed
     // to core - until then a purchase made while the app was not running is unknown
     @Published private var reconciledOnce = false
-    // invoices of the purchases the user started this run, whose refusal is theirs to be told of
-    private var awaitedInvoices: Set<String> = []
+    // purchases the user started this run, by transaction: the store is not relied on to echo the invoice back
+    private var awaitedTransactions: Set<UInt64> = []
     private var transactionUpdates: Task<Void, Never>? = nil
 
     private init() {}
@@ -208,7 +209,7 @@ final class BadgeStore: ObservableObject {
         do {
             let outcome = try await storePurchase(product, invoiceId)
             if case let .purchased(receipt) = outcome, receipt.signatureVerified {
-                await MainActor.run { _ = awaitedInvoices.insert(invoice) }
+                await MainActor.run { _ = awaitedTransactions.insert(receipt.transactionId) }
                 await handOver(receipt)
             }
             await MainActor.run { buying = false }
@@ -263,7 +264,7 @@ final class BadgeStore: ObservableObject {
 
     private func settle(_ receipt: BadgeStoreReceipt, refusal: Error?) async {
         await receipt.transaction.finish()
-        let awaited = await MainActor.run { receipt.echoedInvoiceId.map { awaitedInvoices.remove($0) != nil } ?? false }
+        let awaited = await MainActor.run { awaitedTransactions.remove(receipt.transactionId) != nil }
         if awaited, let refusal {
             await MainActor.run { showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(refusal, purchase: true)) }
         }
@@ -332,6 +333,7 @@ private func storeReceipt(_ verification: VerificationResult<Transaction>) -> Ba
     return BadgeStoreReceipt(
         jws: verification.jwsRepresentation,
         productId: t.productID,
+        transactionId: t.id,
         invoiceId: t.appAccountToken,
         signatureVerified: signatureVerified,
         transaction: t

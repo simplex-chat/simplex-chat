@@ -159,9 +159,8 @@ object BadgeStore {
   // set when the first sweep has returned or failed, which is after every purchase the store holds was handed
   // to core - until then a purchase made while the app was not running is unknown
   private val reconciledOnce = mutableStateOf(false)
-  // invoices of the purchases the user started this run, whose refusal is theirs to be told of;
-  // read and written on the main thread only
-  private val awaitedInvoices = mutableSetOf<String>()
+  // purchases the user started this run, by token: the store is not relied on to echo the invoice back
+  private val awaitedTransactions = mutableSetOf<String>()
 
   fun purchaseState(userId: Long?): BadgePurchaseState? {
     if (!badgeStoreAvailable) return null
@@ -247,7 +246,7 @@ object BadgeStore {
     try {
       val outcome = storePurchase(id, invoiceId)
       if (outcome is BadgePurchaseOutcome.Purchased) {
-        withContext(Dispatchers.Main) { awaitedInvoices += invoiceId }
+        withContext(Dispatchers.Main) { awaitedTransactions += outcome.receipt.token }
         handOver(outcome.receipt)
       }
       return outcome
@@ -313,7 +312,7 @@ object BadgeStore {
 
   private suspend fun settle(receipt: BadgeStoreReceipt, refusal: ChatError?) {
     finish(receipt)
-    val awaited = withContext(Dispatchers.Main) { receipt.invoiceId?.let { awaitedInvoices.remove(it) } == true }
+    val awaited = withContext(Dispatchers.Main) { awaitedTransactions.remove(receipt.token) }
     if (awaited && refusal != null) {
       AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_purchase_error), text = chatModel.controller.redeemErrorText(refusal, purchase = true))
     }
