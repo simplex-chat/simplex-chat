@@ -23,7 +23,9 @@ CREATE TABLE badge_store_receipts(
   master_key BLOB NOT NULL,
   created_at TEXT NOT NULL,
   payment TEXT,
+  next_attempt_at TEXT,
   retry_delay INTEGER,
+  retry_count INTEGER NOT NULL DEFAULT 0,
   credit_error TEXT,
   UNIQUE(provider, transaction_ref)
 ) STRICT;

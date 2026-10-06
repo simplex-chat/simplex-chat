@@ -39,7 +39,6 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (isPrefixOf, stripPrefix)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
-import qualified Data.Set as S
 import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
@@ -58,7 +57,7 @@ import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..))
-import Simplex.Chat.Store.Badges (getNextDueStoreReceipt)
+import Simplex.Chat.Store.Badges (getNextHeldStoreReceipt)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -155,7 +154,8 @@ badgeServiceTests = do
     it "should hold a receipt for an invoice while a badge is held, without attempting it" testInvoiceWhileBadgeHeld
     it "should list only the asking profile's open store purchases" testInvoiceStateOtherProfile
     it "should credit a receipt the store could not verify once its retryAfter has passed, with no trigger at all" testStoreReceiptRetried
-    it "should keep a receipt with no verifier held, and attempt it again only on the next trigger" testStoreReceiptRetriedOnTrigger
+    it "should retry a receipt with no verifier a day later, and never drop it" testStoreReceiptRetriedDaily
+    it "should credit a second receipt while an earlier one waits for the store" testStoreReceiptNotBlocked
     it "should answer a refused receipt from the record, sending nothing, and not list it" testStoreRefusalKept
     it "should announce a settlement to an owner that is not active, and print nothing for a hidden one" testStoreSettledOtherProfile
     it "should resolve one new transaction handed over twice at once to one record" testStoreReceiptTwoAtOnce
@@ -1982,21 +1982,32 @@ testStoreReceiptRetried ps = do
       verifications `shouldReturn` 2
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
-testStoreReceiptRetriedOnTrigger :: HasCallStack => TestParams -> IO ()
-testStoreReceiptRetriedOnTrigger ps = do
+testStoreReceiptRetriedDaily :: HasCallStack => TestParams -> IO ()
+testStoreReceiptRetriedDaily ps = do
   hook <- newIORef (pure ())
   verifications <- countGoogleVerifications hook
-  withBadgeServiceVerifier ps (notConfiguredGoogle hook) $ \BadgeServiceEnv {bsClientCfg} ->
+  withBadgeServiceVerifier ps (notConfiguredGoogle hook) $ \BadgeServiceEnv {bsClientCfg, bsClock} ->
     withNewTestChatCfg ps (fastRetryCfg bsClientCfg) "alice" aliceProfile $ \alice -> do
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       storePurchaseOpen alice ""
       waitStoreReceiptError (chatController alice) "service_error final provider_not_configured"
       threadDelay 1000000
       verifications `shouldReturn` 1
-      alice ##> "/_app activate"
-      alice <## "ok"
+      passDay bsClock
       waitGoogleVerifications verifications 2
       (alice </)
+      heldStoreReceipts (chatController alice) `shouldReturn` 1
+
+testStoreReceiptNotBlocked :: HasCallStack => TestParams -> IO ()
+testStoreReceiptNotBlocked ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsStore = store@FakeStore {appleSupporterJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      setGoogleDown store True
+      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+      storePurchaseOpen alice ""
+      waitStoreReceiptError (chatController alice) "service_error retry provider_unavailable"
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
+      inAnyOrder alice [[openPurchase "", openPurchase ""], creditedLines "" "1: supporter"]
       heldStoreReceipts (chatController alice) `shouldReturn` 1
 
 testStoreRefusalKept :: HasCallStack => TestParams -> IO ()
@@ -2084,16 +2095,15 @@ testStoreReceiptAttemptThrows :: HasCallStack => TestParams -> IO ()
 testStoreReceiptAttemptThrows ps = do
   hook <- newIORef (pure ())
   verifications <- countGoogleVerifications hook
-  withBadgeServiceVerifier ps (notConfiguredGoogle hook) $ \BadgeServiceEnv {bsClientCfg} ->
-    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+  withBadgeServiceVerifier ps (notConfiguredGoogle hook) $ \BadgeServiceEnv {bsClientCfg, bsClock} ->
+    withNewTestChatCfg ps (fastRetryCfg bsClientCfg) "alice" aliceProfile $ \alice -> do
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       storePurchaseOpen alice ""
       waitStoreReceiptError (chatController alice) "service_error final provider_not_configured"
       verifications `shouldReturn` 1
       -- a stored payment this version cannot read makes the attempt throw before anything is sent
       setStoreReceiptPayment (chatController alice) "not a payment"
-      alice ##> "/_app activate"
-      alice <## "ok"
+      passDay bsClock
       waitStoreReceiptError (chatController alice) "unexpected held store payment does not decode"
       (alice </)
       verifications `shouldReturn` 1
@@ -2127,7 +2137,7 @@ waitStoreReceiptRows cc n = loop (100 :: Int)
 storeReceiptDue :: ChatController -> Int64 -> IO Bool
 storeReceiptDue ChatController {chatStore} userId =
   withTransaction chatStore $ \db ->
-    getNextDueStoreReceipt db userId S.empty >>= either (error . show) (pure . isJust)
+    getNextHeldStoreReceipt db userId >>= either (error . show) (pure . isJust)
 
 heldStoreReceipts :: ChatController -> IO Int
 heldStoreReceipts ChatController {chatStore} =
@@ -2157,6 +2167,9 @@ setStoreReceiptPayment ChatController {chatStore} payment =
 -- | Past the 300 seconds the service asks a client to wait while a store is pending or unreachable.
 passRetryAfter :: TestClock -> IO ()
 passRetryAfter clock = testClockTime clock >>= setClockAt clock . addUTCTime 301
+
+passDay :: TestClock -> IO ()
+passDay clock = testClockTime clock >>= setClockAt clock . addUTCTime (nominalDay + 1)
 
 fastRetryCfg :: ChatConfig -> ChatConfig
 fastRetryCfg cfg = cfg {badgeRetryInterval = RetryInterval {initialInterval = 100000, increaseAfter = 0, maxInterval = 500000}}

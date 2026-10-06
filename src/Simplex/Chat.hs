@@ -72,6 +72,7 @@ defaultChatConfig =
       badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
       badgeCurrentTime = getCurrentTime,
       badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
+      badgeConsecutiveRetries = 3,
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options

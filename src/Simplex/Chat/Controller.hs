@@ -153,6 +153,8 @@ data ChatConfig = ChatConfig
     badgeCurrentTime :: IO UTCTime,
     -- how long a badge worker waits before repeating a renewal that failed for a passing reason
     badgeRetryInterval :: RetryInterval,
+    -- attempts a store receipt gets in one turn before its next one waits for the stored schedule
+    badgeConsecutiveRetries :: Int,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -294,11 +296,6 @@ data BadgeWorker = BadgeWorker
     badgeWork :: TMVar ()
   }
 
-data StoreReceiptWorker = StoreReceiptWorker
-  { receiptWorker :: Worker,
-    parkedReceipts :: TVar (Set Int64)
-  }
-
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     randomPresetServers :: NonEmpty PresetOperator,
@@ -333,7 +330,7 @@ data ChatController = ChatController
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     -- one badge worker per user: badge state is per profile, and one profile must not stall another
     badgeWorkers :: TMap UserId (SessionVar BadgeWorker),
-    storeReceiptWorkers :: TMap UserId StoreReceiptWorker,
+    storeReceiptWorkers :: TMap UserId Worker,
     badgeSeq :: TVar Int,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,

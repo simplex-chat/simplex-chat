@@ -26,7 +26,7 @@ module Simplex.Chat.Store.Badges
     holdStoreReceipt,
     createBadgeStoreReceipt,
     getOpenStorePurchases,
-    getNextDueStoreReceipt,
+    getNextHeldStoreReceipt,
     recordStoreReceiptFailure,
     refuseStoreReceipt,
     deleteUnfundedStoreReceipts,
@@ -49,10 +49,7 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.List (find)
 import Data.Maybe (isJust, mapMaybe)
-import Data.Set (Set)
-import qualified Data.Set as S
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
@@ -141,8 +138,8 @@ holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provid
       forM_ invoiceId_ $ \invoiceId ->
         DB.execute
           db
-          "UPDATE badge_store_receipts SET provider = ?, transaction_ref = ?, payment = ? WHERE invoice_id = ? AND transaction_ref IS NULL"
-          (provider, transactionRef, paymentJSON, invoiceId)
+          "UPDATE badge_store_receipts SET provider = ?, transaction_ref = ?, payment = ?, next_attempt_at = ? WHERE invoice_id = ? AND transaction_ref IS NULL"
+          (provider, transactionRef, paymentJSON, now, invoiceId)
       getStoreReceipt db txRef >>= \case
         Just r -> pure $ Just (r, True)
         Nothing -> do
@@ -162,11 +159,11 @@ holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provid
         db
         [sql|
           INSERT INTO badge_store_receipts
-            (user_id, invoice_id, provider, transaction_ref, payment, purchase_key, purchase_priv_key, master_key, created_at)
-          VALUES (?,?,?,?,?,?,?,?,?)
+            (user_id, invoice_id, provider, transaction_ref, payment, next_attempt_at, purchase_key, purchase_priv_key, master_key, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT DO NOTHING
         |]
-        ((userId, invoiceId', provider, transactionRef, paymentJSON) :. (purchaseKey, purchasePrivKey, Binary mk, now))
+        ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, now))
 
 -- | held is a CASE because in Postgres a comparison is boolean, which BoolInt rejects.
 getStoreReceipt :: DB.Connection -> StoreTransactionRef -> IO (Maybe StoreReceipt)
@@ -218,38 +215,46 @@ data HeldStoreReceipt = HeldStoreReceipt
   { receiptId :: Int64,
     stash :: BadgeStash,
     payment :: Text,
+    nextAttemptAt :: UTCTime,
     retryDelay :: Maybe Int64
   }
 
-getNextDueStoreReceipt :: DB.Connection -> UserId -> Set Int64 -> IO (Either StoreError (Maybe HeldStoreReceipt))
-getNextDueStoreReceipt db userId parked =
-  Right . find notParked . map toHeld
-    <$> DB.query
+getNextHeldStoreReceipt :: DB.Connection -> UserId -> IO (Either StoreError (Maybe HeldStoreReceipt))
+getNextHeldStoreReceipt db userId =
+  fmap Right . maybeFirstRow toHeld $
+    DB.query
       db
       [sql|
-        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.payment, r.retry_delay
+        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.payment, r.next_attempt_at, r.retry_delay
         FROM badge_store_receipts r
         JOIN users u ON u.user_id = r.user_id
         WHERE r.user_id = ? AND r.payment IS NOT NULL AND u.shown_badge_id IS NULL
-        ORDER BY r.badge_store_receipt_id
+        ORDER BY r.next_attempt_at, r.retry_count, r.badge_store_receipt_id
+        LIMIT 1
       |]
       (Only userId)
   where
-    notParked HeldStoreReceipt {receiptId} = receiptId `S.notMember` parked
-    toHeld (stashRow@(receiptId, _, _, _) :. (payment, retryDelay)) =
-      HeldStoreReceipt {receiptId, stash = toBadgeStash BSRStoreReceipt stashRow, payment, retryDelay}
+    toHeld (stashRow@(receiptId, _, _, _) :. (payment, nextAttemptAt, retryDelay)) =
+      HeldStoreReceipt {receiptId, stash = toBadgeStash BSRStoreReceipt stashRow, payment, nextAttemptAt, retryDelay}
 
-recordStoreReceiptFailure :: DB.Connection -> Int64 -> Int64 -> BadgeIssueFailure -> IO ()
-recordStoreReceiptFailure db receiptId retryDelay failure =
+recordStoreReceiptFailure :: DB.Connection -> Int64 -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
+recordStoreReceiptFailure db receiptId retryDelay nextAttemptAt failure =
   DB.execute
     db
-    "UPDATE badge_store_receipts SET retry_delay = ?, credit_error = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL"
-    (retryDelay, failure, receiptId)
+    [sql|
+      UPDATE badge_store_receipts
+      SET retry_delay = ?, next_attempt_at = ?, retry_count = retry_count + 1, credit_error = ?
+      WHERE badge_store_receipt_id = ? AND payment IS NOT NULL
+    |]
+    (retryDelay, nextAttemptAt, failure, receiptId)
 
 -- | Kept rather than deleted, so that a later hand-over of the same transaction is answered from the record.
 refuseStoreReceipt :: DB.Connection -> Int64 -> BadgeIssueFailure -> IO ()
 refuseStoreReceipt db receiptId refusal =
-  DB.execute db "UPDATE badge_store_receipts SET payment = NULL, retry_delay = NULL, credit_error = ? WHERE badge_store_receipt_id = ?" (refusal, receiptId)
+  DB.execute
+    db
+    "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ? WHERE badge_store_receipt_id = ?"
+    (refusal, receiptId)
 
 -- | A held record is paid for and a credited one is referenced by its purchase, so neither is deleted.
 deleteUnfundedStoreReceipts :: DB.Connection -> UTCTime -> IO ()
@@ -285,7 +290,7 @@ deleteBadgeCodeRedemption db User {userId} code =
 createStashBadgePurchase :: DB.Connection -> User -> BadgeStash -> BadgeCredential -> UTCTime -> IO (Int64, Bool)
 createStashBadgePurchase db User {userId} stash credential now = do
   -- the credit settles a held receipt in the transaction that stores its purchase, a replay included
-  forM_ storeReceiptId_ $ \storeReceiptId -> DB.execute db "UPDATE badge_store_receipts SET payment = NULL, retry_delay = NULL WHERE badge_store_receipt_id = ?" (Only storeReceiptId)
+  forM_ storeReceiptId_ $ \storeReceiptId -> DB.execute db "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0 WHERE badge_store_receipt_id = ?" (Only storeReceiptId)
   getStashBadgePurchase db stash >>= \case
     Just purchaseId -> pure (purchaseId, False)
     Nothing -> do
