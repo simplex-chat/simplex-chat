@@ -158,13 +158,13 @@ kotlin {
 
 android {
   namespace = "chat.simplex.common"
-  compileSdk = 35
+  compileSdk = 36
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26
   }
-  testOptions.targetSdk = 34
-  lint.targetSdk = 34
+  testOptions.targetSdk = 36
+  lint.targetSdk = 36
   val isAndroid = gradle.startParameter.taskNames.find {
     val lower = it.lowercase()
     lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
