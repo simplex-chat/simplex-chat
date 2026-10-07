@@ -41,7 +41,7 @@ fun loadPlayStoreCountry() {
 
 // One long-lived client for badges: ProductDetails obtained from it are passed back to it when the
 // purchase is launched, and the purchase result arrives on its listener rather than as a return value.
-// volatile: the listener is called on the main thread, the purchase runs on a background dispatcher
+// volatile: written by the purchase on a background dispatcher, read by the listener on another thread
 @Volatile private var badgeBillingClient: BillingClient? = null
 @Volatile private var badgeOffers: Map<BadgeStoreProductId, BadgeOffer> = emptyMap()
 @Volatile private var badgePurchase: CompletableDeferred<BadgePurchaseOutcome>? = null
