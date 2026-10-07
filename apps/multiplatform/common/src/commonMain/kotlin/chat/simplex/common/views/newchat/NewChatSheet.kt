@@ -319,7 +319,7 @@ private fun ModalData.NewChatSheetLayout(
             )
             connectNameCandidate.value?.let { candidate ->
               Divider()
-              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+              ConnectByNameRow(candidate) { withBGApi { planAndConnect(chatModel.remoteHostId(), candidate, close = close) } }
             }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
@@ -410,7 +410,7 @@ private fun ModalData.NewChatSheetLayout(
           )
           connectNameCandidate.value?.let { candidate ->
             Divider()
-            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+            ConnectByNameRow(candidate) { withBGApi { planAndConnect(chatModel.remoteHostId(), candidate, close = close) } }
           }
           Divider()
         }
@@ -598,7 +598,11 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
+      filterChats = { chats ->
+        val contacts = chats.all { it is ChatInfo.Direct }
+        if (contacts) searchChatFilteredBySimplexLink.value = chats.map { it.id }.toSet()
+        contacts
+      },
       close = close,
       cleanup = cleanup,
     )

@@ -1046,8 +1046,8 @@ func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, l
         return nil
     }
     let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink, resolveMode: resolveMode, linkOwnerSig: linkOwnerSig), inProgress: inProgress)
-    if case let .result(.connectionPlan(_, connLink, planSimplexName, otherSimplexName, connPlan)) = r {
-        return ConnectionPlanResult(connLink: connLink, planSimplexName: planSimplexName, otherSimplexName: otherSimplexName, connectionPlan: connPlan)
+    if case let .result(.connectionPlan(_, connLink, planSimplexName, otherSimplexName, connPlan, localChats, offerLookup)) = r {
+        return ConnectionPlanResult(connLink: connLink, planSimplexName: planSimplexName, otherSimplexName: otherSimplexName, connectionPlan: connPlan, localChats: localChats ?? [], offerLookup: offerLookup ?? false)
     }
     // a .never (typing) search that matches nothing locally is not an error to surface
     if case .error(.error(.notResolvedLocally)) = r { return nil }

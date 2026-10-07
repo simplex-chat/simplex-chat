@@ -850,17 +850,16 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
               searchChatFilteredBySimplexLink.value = emptySet()
               if (candidate != null) {
                 // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
-                // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
-                // both and filter every known chat found; drop the row only when both types are already known.
+                // search when the next keystroke arrives.
                 delay(NAME_SEARCH_DEBOUNCE_MS)
                 val rhId = chatModel.remoteHostId()
                 val inProgress = mutableStateOf(false) // background search: no spinner, no error alerts
-                val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate", "#$candidate")
-                val ids = targets.mapNotNull { name ->
-                  knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
+                val result = chatModel.controller.apiConnectPlan(rhId, candidate, PlanResolveMode.PRMNever, inProgress = inProgress)
+                if (result != null) {
+                  addMissingChats(rhId, result.localChats)
+                  searchChatFilteredBySimplexLink.value = result.localChats.map { it.id }.toSet()
+                  if (!result.offerLookup) connectNameCandidate.value = null
                 }
-                searchChatFilteredBySimplexLink.value = ids.toSet()
-                if (ids.size == targets.size) connectNameCandidate.value = null
               } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {
                   focusRequester.requestFocus()
@@ -889,8 +888,10 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
-      filterKnownGroup = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
+      filterChats = { chats ->
+        searchChatFilteredBySimplexLink.value = chats.map { it.id }.toSet()
+        true
+      },
       close = null,
       cleanup = cleanup,
     )
@@ -1018,10 +1019,10 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
             Divider()
             // bottom toolbar: search bar below, so on desktop the connect row goes below the tags
-            TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
+            TagsOrConnectByName(searchText, searchChatFilteredBySimplexLink, connectNameCandidate) { candidate ->
               TagsView(searchText)
               Divider()
-              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+              ConnectByNameRow(candidate) { connect(candidate, searchChatFilteredBySimplexLink, cleanup = null) }
             }
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
@@ -1029,8 +1030,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
           // top toolbar: search bar above, so on desktop the connect row goes above the tags
-          TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
-            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+          TagsOrConnectByName(searchText, searchChatFilteredBySimplexLink, connectNameCandidate) { candidate ->
+            ConnectByNameRow(candidate) { connect(candidate, searchChatFilteredBySimplexLink, cleanup = null) }
             Divider()
             TagsView(searchText)
           }
@@ -1162,66 +1163,33 @@ internal fun nameSearchCandidate(str: String): String? {
   }
 }
 
-// The chat id a local (PRMNever) search resolved to — a contact, a business, or a channel — or null on a miss.
-// The core returns the correct type for @ vs # (getContactToConnect / type-filtered getGroupToConnect), so no
-// client-side type check is needed.
-internal suspend fun knownChatId(rhId: Long?, result: ConnectionPlanResult?): String? = when (val plan = result?.connectionPlan) {
-  is ConnectionPlan.ContactAddress -> (plan.contactAddressPlan as? ContactAddressPlan.Known)?.contact?.let { contact ->
-    // a name-resolved chat may be prepared in the store but not yet listed, so add it (as the tap path does)
-    if (chatModel.getContactChat(contact.contactId) == null) {
-      chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
-    }
-    contact.id
-  }
-  is ConnectionPlan.GroupLink -> (when (val g = plan.groupLinkPlan) {
-    is GroupLinkPlan.Known -> g.groupInfo
-    is GroupLinkPlan.OwnLink -> g.groupInfo
-    else -> null
-  })?.let { gInfo ->
-    if (chatModel.getGroupChat(gInfo.groupId) == null) {
-      chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(gInfo, groupChatScope = null), chatItems = emptyList()))
-    }
-    gInfo.id
-  }
-  else -> null
-}
-
 // The list tags and the connect-by-name row share one slot. When there is no name, the tags show; on
 // mobile the row replaces the tags while shown. On desktop both show, arranged by the caller (which
 // knows whether the search bar is above or below), passed as desktopView.
 @Composable
 private fun TagsOrConnectByName(
   searchText: MutableState<TextFieldValue>,
+  searchChatFilteredBySimplexLink: MutableState<Set<String>>,
   connectNameCandidate: MutableState<String?>,
   desktopView: @Composable (candidate: String) -> Unit,
 ) {
   val candidate = connectNameCandidate.value
   when {
     candidate == null -> TagsView(searchText)
-    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+    !appPlatform.isDesktop -> ConnectByNameRow(candidate) { connect(candidate, searchChatFilteredBySimplexLink, cleanup = null) }
     else -> desktopView(candidate)
   }
 }
 
 @Composable
-internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldValue>, connectNameCandidate: MutableState<String?>, close: (() -> Unit)?) {
+internal fun ConnectByNameRow(name: String, onClick: () -> Unit) {
   val view = LocalMultiplatformView()
   Row(
     Modifier
       .fillMaxWidth()
       .clickable {
         hideKeyboard(view)
-        withBGApi {
-          planAndConnect(
-            chatModel.remoteHostId(),
-            name,
-            close = close,
-            cleanup = {
-              searchText.value = TextFieldValue()
-              connectNameCandidate.value = null
-            },
-          )
-        }
+        onClick()
       }
       .padding(vertical = DEFAULT_PADDING_HALF),
     verticalAlignment = Alignment.CenterVertically

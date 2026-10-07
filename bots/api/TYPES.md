@@ -145,6 +145,8 @@ This file is generated automatically.
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
+- [NamePrice](#nameprice)
+- [NameWarning](#namewarning)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -1870,10 +1872,17 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
+- nameWarning_: [NameWarning](#namewarning)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
+- nameWarning_: [NameWarning](#namewarning)?
+
+NameNotConnectable:
+- type: "nameNotConnectable"
+- simplexDomain: [SimplexDomain](#simplexdomain)
+- nameWarning: [NameWarning](#namewarning)
 
 Error:
 - type: "error"
@@ -1920,6 +1929,7 @@ Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- addressChanged: bool
 
 OwnLink:
 - type: "ownLink"
@@ -2530,6 +2540,7 @@ Ok:
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- addressChanged: bool
 
 OwnLink:
 - type: "ownLink"
@@ -3106,6 +3117,53 @@ RESOLVER:
 
 ---
 
+## NamePrice
+
+**Record type**:
+- amount: int64
+- years: int
+
+
+---
+
+## NameWarning
+
+**Discriminated union type**:
+
+Expired:
+- type: "expired"
+- expiredAt: UTCTime
+- graceUntil: UTCTime?
+
+OwnExpired:
+- type: "ownExpired"
+- expiredAt: UTCTime
+- graceUntil: UTCTime?
+
+Available:
+- type: "available"
+- price: [NamePrice](#nameprice)
+
+NoLongerRegistered:
+- type: "noLongerRegistered"
+- price: [NamePrice](#nameprice)
+
+OwnAvailable:
+- type: "ownAvailable"
+- price: [NamePrice](#nameprice)
+
+ReservedForCommunity:
+- type: "reservedForCommunity"
+
+NotRegistered:
+- type: "notRegistered"
+
+NoValidLink:
+- type: "noValidLink"
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3219,7 +3277,7 @@ count=<count>
 ## PlanResolveMode
 
 **Enum type**:
-- "allGroups"
+- "all"
 - "unknown"
 - "never"
 
