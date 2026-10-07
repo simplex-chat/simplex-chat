@@ -5271,11 +5271,12 @@ handOverStoreReceipt presentingUser echoedInvoiceId payment = do
   void requireBadgeService
   g <- asks random
   now <- badgeNow
-  (StoreReceipt {ownerId, status}, newlyHeld) <-
+  StoreReceipt {ownerId, status} <-
     withStore' (\db -> holdStoreReceipt db g presentingUser echoedInvoiceId txRef payment now)
       >>= maybe (throwChatError $ CEInternalError "store receipt was not recorded") pure
-  -- before the answer, which can throw: no later hand-over of this receipt signals, and a spare signal costs an empty pass
-  when newlyHeld $ lift $ resumeStoreReceiptWork ownerId
+  -- signalled before the answer, which can throw: nothing else would signal this receipt, and it would wait
+  -- for an app event. A signal with nothing due costs an empty pass
+  lift $ resumeStoreReceiptWork ownerId
   owner <- withStore $ \db -> getUser db ownerId
   case status of
     RSHeld -> badgeStateResponse owner

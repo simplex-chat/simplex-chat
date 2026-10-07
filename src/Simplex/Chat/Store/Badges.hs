@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Badges
@@ -127,13 +126,13 @@ data StoreReceiptStatus
 -- | A store transaction belongs to the store account, not to a profile, so it is found across profiles and
 -- stays with the record whose keys the service may have credited. A new one goes to the record created when
 -- Buy was tapped, or else to the presenting profile. 'True' when this hand-over is the one that held it.
-holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe (StoreReceipt, Bool))
+holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe StoreReceipt)
 holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
   getStoreReceipt db txRef >>= \case
     Just r@StoreReceipt {receiptId} -> do
       -- a settled record stays settled, so a hand-over landing just after its credit cannot hold it again
       DB.execute db "UPDATE badge_store_receipts SET payment = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL" (paymentJSON, receiptId)
-      pure $ Just (r, False)
+      pure $ Just r
     Nothing -> do
       forM_ invoiceId_ $ \invoiceId ->
         DB.execute
@@ -141,11 +140,11 @@ holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provid
           "UPDATE badge_store_receipts SET provider = ?, transaction_ref = ?, payment = ?, next_attempt_at = ? WHERE invoice_id = ? AND transaction_ref IS NULL"
           (provider, transactionRef, paymentJSON, now, invoiceId)
       getStoreReceipt db txRef >>= \case
-        Just r -> pure $ Just (r, True)
+        Just r -> pure $ Just r
         Nothing -> do
           insertReceipt
           -- read back rather than trusted: a concurrent hand-over of the same transaction may have inserted first
-          fmap (,True) <$> getStoreReceipt db txRef
+          getStoreReceipt db txRef
   where
     paymentJSON = safeDecodeUtf8 . LB.toStrict $ J.encode payment
     insertReceipt = do
