@@ -82,3 +82,13 @@ Most app settings are shared for all profiles, but some settings are specific to
 Read more in [App settings](./app-settings.md) page.
 
 Many conversation actions are available via long-press or swipe – try them!
+
+### Tutorial video
+
+[![SimpleX Chat tutorial video](./images/Welcome_video.jpg)](https://youtu.be/MjZFHTLeOrE)
+
+When you create a profile in SimpleX Chat, it is stored only on your phone - nobody can compromise your profile via the servers.
+
+It also makes SimpleX Chat the safest messenger: you only talk to people you shared the link with.
+
+[Watch the tutorial video](https://youtu.be/MjZFHTLeOrE)
