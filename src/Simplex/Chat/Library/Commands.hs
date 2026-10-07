@@ -5488,7 +5488,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} payment retry
           | storeReceiptRefused code -> SRORefused <$ withStore' (\db -> refuseStoreReceipt db receiptId $ serviceFailure code retryAfter)
           | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
         Left e -> failed ri delay (badgeIssueFailure e) Nothing
-    -- only a settlement is announced, and the app's sweep in answer signals this worker only for a newly held receipt, so it cannot loop
+    -- only a settlement is announced, and the sweep it prompts signals this worker only for a receipt still held, so it cannot loop
     case outcome of
       SROCredited present_ -> do
         user <- withStore $ \db -> getUser db userId
