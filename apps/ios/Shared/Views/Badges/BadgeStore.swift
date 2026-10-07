@@ -233,6 +233,7 @@ final class BadgeStore: ObservableObject {
     // or refused, as an unfinished transaction is what the store re-delivers if anything is lost on the way.
     private func handOver(_ receipt: BadgeStoreReceipt) async throws {
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else { return }
+        // a refusal is announced where it reads as its own, so only an unexpected answer reaches the buyer
         do {
             switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, .apple(jws: receipt.jws)) {
             case let .held(user, badgeState, storePurchases):
@@ -253,7 +254,6 @@ final class BadgeStore: ObservableObject {
                 }
                 await resolve(receipt, refusal: nil)
             }
-        // a refusal is announced where it reads as its own, so only an unexpected answer reaches the buyer
         } catch let error where badgeReceiptRefused(error) {
             logger.error("BadgeStore.handOver: \(responseError(error))")
             await resolve(receipt, refusal: error)
