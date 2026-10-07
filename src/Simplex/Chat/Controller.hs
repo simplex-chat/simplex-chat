@@ -997,7 +997,7 @@ data ChatEvent
   | CEvtServiceReplySent {connectionId :: AgentConnId}
   | CEvtBadgeChanged {user :: User, badgeState :: Maybe BadgeState} -- badge state changed, including a renewal that arrived without a command
   | CEvtBadgeAlert {user :: User, badgeAlert :: BadgeAlert}
-  | CEvtStorePurchaseSettled {user :: User} -- a held store receipt was credited or refused, so its store transaction can be finished
+  | CEvtStorePurchaseResolved {user :: User} -- a held store receipt was credited or refused, so its store transaction can be finished
   | CEvtContactRequestRejected {user :: User, contact :: Contact, rejectionReason :: Maybe ContactRejectionReason}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}

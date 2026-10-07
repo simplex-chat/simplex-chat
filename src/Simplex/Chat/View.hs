@@ -484,7 +484,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtServiceReplySent (AgentConnId cId) -> [plain $ "service reply sent, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   CEvtBadgeChanged u st -> ttyUser u $ viewUserBadgeState st
   CEvtBadgeAlert u alert -> ttyUser u $ viewBadgeAlert alert
-  CEvtStorePurchaseSettled u -> ttyUser u ["store purchase settled"]
+  CEvtStorePurchaseResolved u -> ttyUser u ["store purchase resolved"]
   CEvtContactRequestRejected u Contact {localDisplayName = c} _reason -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci

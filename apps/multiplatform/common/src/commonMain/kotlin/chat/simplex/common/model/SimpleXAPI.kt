@@ -3613,7 +3613,7 @@ object ChatController {
             BadgeModel.setAlert(rhId, r.user.userId, r.badgeAlert)
           }
         }
-      is CR.StorePurchaseSettled ->
+      is CR.StorePurchaseResolved ->
         // whichever profile owns it: only the app can finish the store purchase
         withLongRunningApi { BadgeStore.presentUnfinished() }
       else ->
@@ -6933,7 +6933,7 @@ sealed class CR {
   @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
-  @Serializable @SerialName("storePurchaseSettled") class StorePurchaseSettled(val user: UserRef): CR()
+  @Serializable @SerialName("storePurchaseResolved") class StorePurchaseResolved(val user: UserRef): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -7126,7 +7126,7 @@ sealed class CR {
     is BadgeLedger -> "badgeLedger"
     is BadgeChanged -> "badgeChanged"
     is BadgeAlertR -> "badgeAlert"
-    is StorePurchaseSettled -> "storePurchaseSettled"
+    is StorePurchaseResolved -> "storePurchaseResolved"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -7336,7 +7336,7 @@ sealed class CR {
     is BadgeLedger -> withUser(user, json.encodeToString(badgeLedger))
     is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
     is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))
-    is StorePurchaseSettled -> withUser(user, noDetails())
+    is StorePurchaseResolved -> withUser(user, noDetails())
     is Response -> json
     is Invalid -> str
   }

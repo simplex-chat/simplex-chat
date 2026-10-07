@@ -221,7 +221,7 @@ undocumentedEvents =
     "CEvtSndFileRedirectStartXFTP",
     "CEvtSndFileStart", -- legacy SMP files
     "CEvtSndStandaloneFileComplete",
-    "CEvtStorePurchaseSettled",
+    "CEvtStorePurchaseResolved",
     "CEvtConnectionsDiff",
     "CEvtSubscriptionEnd",
     "CEvtTerminalEvent",

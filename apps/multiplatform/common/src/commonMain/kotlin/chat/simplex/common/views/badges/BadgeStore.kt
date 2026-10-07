@@ -293,11 +293,11 @@ object BadgeStore {
               if (r.badgeState?.shown == true) appPrefs.supporterBannerShown.set(true)
             }
           }
-          settle(receipt, refusal = null)
+          resolve(receipt, refusal = null)
         }
         is BadgePurchaseResult.Failed -> {
           Log.e(TAG, "BadgeStore.handOver: ${r.err?.string}")
-          if (badgeReceiptRefused(r.err)) settle(receipt, refusal = r.err)
+          if (badgeReceiptRefused(r.err)) resolve(receipt, refusal = r.err)
         }
       }
     } catch (e: Exception) {
@@ -306,14 +306,14 @@ object BadgeStore {
     }
   }
 
-  private suspend fun settle(receipt: BadgeStoreReceipt, refusal: ChatError?) {
+  private suspend fun resolve(receipt: BadgeStoreReceipt, refusal: ChatError?) {
     finish(receipt)
     if (refusal != null) {
       withContext(Dispatchers.Main) { refusals.emit(refusal) }
     }
   }
 
-  // at launch, on return to the foreground, on a profile switch and when core settles a purchase, never on a timer
+  // at launch, on return to the foreground, on a profile switch and when core resolves a purchase, never on a timer
   suspend fun presentUnfinished() {
     try {
       if (!useBadgeTestProducts && platform.androidHasPlatformStore) {

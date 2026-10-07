@@ -129,7 +129,7 @@ holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> Sto
 holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
   getReceiptRecord db txRef >>= \case
     Just r@BadgeReceiptRecord {receiptId} -> do
-      -- a settled record stays settled, so a hand-over landing just after its credit cannot hold it again
+      -- a resolved record stays resolved, so a hand-over landing just after its credit cannot hold it again
       DB.execute db "UPDATE badge_store_receipts SET payment = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL" (paymentJSON, receiptId)
       pure $ Just r
     Nothing -> do
@@ -197,7 +197,7 @@ createBadgeStoreReceipt db g User {userId} invoiceId now = do
     |]
     (userId, invoiceId, purchaseKey, purchasePrivKey, Binary mk, now)
 
--- | No receipt yet, or one held: a credited or refused record is settled and not listed.
+-- | No receipt yet, or one held: a credited or refused record is resolved and not listed.
 getOpenStorePurchases :: DB.Connection -> User -> IO [OpenStorePurchase]
 getOpenStorePurchases db User {userId} =
   map toOpenStorePurchase

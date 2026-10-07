@@ -1716,7 +1716,7 @@ testPurchaseStash ps =
           refused = "/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase")
       -- the store does not vouch for it, so it can never be credited, and the record says so
       alice ##> refused
-      inAnyOrder alice [[openPurchase ""], ["store purchase settled"]]
+      inAnyOrder alice [[openPurchase ""], ["store purchase resolved"]]
       alice ##> refused
       alice <## "cannot get badge: badge service error: receipt_invalid"
       records `shouldReturn` 1
@@ -1743,7 +1743,7 @@ testPurchaseStashReceiptUsed ps =
         alice ##> purchase
         inAnyOrder alice [[openPurchase ""], creditedLines "" "1: supporter"]
         bob ##> purchase
-        inAnyOrder bob [[openPurchase ""], ["store purchase settled"]]
+        inAnyOrder bob [[openPurchase ""], ["store purchase resolved"]]
         bob ##> purchase
         bob <## "cannot get badge: badge service error: receipt_used"
         storeReceiptRows (chatController bob) `shouldReturn` [(1, Nothing, True)]
@@ -1902,7 +1902,7 @@ testInvoiceAgedOut ps =
             "store purchase open: invoice " <> presented,
             "store purchase open: invoice " <> refused <> ", transaction "
           ],
-          ["store purchase settled"]
+          ["store purchase resolved"]
         ]
       alice ##> purchaseWithInvoice 1 presented (googlePayment "badge_supporter_01" googlePendingToken)
       alice <## ("store purchase open: invoice " <> unpaid)
@@ -1992,7 +1992,7 @@ testStoreRefusalKept ps = do
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       let refused = "/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase")
       alice ##> refused
-      inAnyOrder alice [[openPurchase ""], ["store purchase settled"]]
+      inAnyOrder alice [[openPurchase ""], ["store purchase resolved"]]
       alice ##> refused
       alice <## "cannot get badge: badge service error: receipt_invalid"
       alice ##> "/_badge state 1"
@@ -2013,7 +2013,7 @@ testStoreSettledOtherProfile ps =
       inAnyOrder
         alice
         [ ["[user: alice] store purchase open: invoice " <> shown <> ", transaction ", "store purchase open: invoice " <> hidden],
-          ["[user: alice] store purchase settled"]
+          ["[user: alice] store purchase resolved"]
         ]
       alice ##> "/_hide user 1 \"password\""
       alice <## "user alice:"
@@ -2043,7 +2043,7 @@ testStoreReceiptCleanup ps =
     withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
       unpaid <- createInvoice alice 1
       alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase"))
-      inAnyOrder alice [["store purchase open: invoice " <> unpaid, openPurchase ""], ["store purchase settled"]]
+      inAnyOrder alice [["store purchase open: invoice " <> unpaid, openPurchase ""], ["store purchase resolved"]]
       alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
       inAnyOrder alice [["store purchase open: invoice " <> unpaid, openPurchase ""], creditedLines "" "1: supporter"]
       alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" googleUnreachableToken))
@@ -2179,4 +2179,4 @@ openPurchase userPrefix = userPrefix <> "store purchase open: invoice none, tran
 
 -- | The worker's credit as the owner's terminal shows it: the badge, then the settlement.
 creditedLines :: String -> String -> [String]
-creditedLines userPrefix badge = [userPrefix <> badge, userPrefix <> "store purchase settled"]
+creditedLines userPrefix badge = [userPrefix <> badge, userPrefix <> "store purchase resolved"]

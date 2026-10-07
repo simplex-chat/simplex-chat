@@ -5493,10 +5493,10 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} payment retry
       SROCredited present_ -> do
         user <- withStore $ \db -> getUser db userId
         toView . CEvtBadgeChanged user =<< getUserBadgeState user
-        toView $ CEvtStorePurchaseSettled user
+        toView $ CEvtStorePurchaseResolved user
         -- last, so a failed broadcast cannot lose the settlement; outside the badge lock, as it takes the chat lock
         mapM_ presentUserBadgeToContacts present_
-      SRORefused -> withStore (`getUser` userId) >>= toView . CEvtStorePurchaseSettled
+      SRORefused -> withStore (`getUser` userId) >>= toView . CEvtStorePurchaseResolved
       SRORetry | n + 1 < badgeConsecutiveRetries -> loop
       _ -> pure ()
   where

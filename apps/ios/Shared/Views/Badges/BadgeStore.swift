@@ -251,22 +251,22 @@ final class BadgeStore: ObservableObject {
                         if badgeState?.shown == true { UserDefaults.standard.set(true, forKey: DEFAULT_SUPPORTER_BANNER_SHOWN) }
                     }
                 }
-                await settle(receipt, refusal: nil)
+                await resolve(receipt, refusal: nil)
             }
         } catch let error {
             logger.error("BadgeStore.handOver: \(responseError(error))")
-            if badgeReceiptRefused(error) { await settle(receipt, refusal: error) }
+            if badgeReceiptRefused(error) { await resolve(receipt, refusal: error) }
         }
     }
 
-    private func settle(_ receipt: BadgeStoreReceipt, refusal: Error?) async {
+    private func resolve(_ receipt: BadgeStoreReceipt, refusal: Error?) async {
         await receipt.transaction.finish()
         if let refusal {
             await MainActor.run { refusals.send(refusal) }
         }
     }
 
-    // at launch, on return to the foreground, on a profile switch and when core settles a purchase, never on a timer
+    // at launch, on return to the foreground, on a profile switch and when core resolves a purchase, never on a timer
     func presentUnfinished() async {
         await listenForTransactions()
         for await verification in Transaction.unfinished {

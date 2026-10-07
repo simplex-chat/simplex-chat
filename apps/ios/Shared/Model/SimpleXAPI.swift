@@ -3094,7 +3094,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 BadgeModel.shared.setAlert(userId: user.userId, alert: badgeAlert)
             }
         }
-    case .storePurchaseSettled:
+    case .storePurchaseResolved:
         // whichever profile owns it: only the app can finish the store transaction
         Task { await BadgeStore.shared.presentUnfinished() }
     default:
