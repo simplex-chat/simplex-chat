@@ -48,10 +48,10 @@ dpkg-deb -R ./release/main/deb/simplex*.deb ./extracted
 rm -f ./extracted/opt/*imple*/lib/app/*skiko-awt-runtime-linux*
 sed -i -e '/skiko-awt-runtime-linux/d' ./extracted/opt/*imple*/lib/app/simplex.cfg
 sed -i "/Version/ s/\$/~$VERSION_CODENAME/" ./extracted/DEBIAN/control
-# jpackage's desktop entry passes no URL and handles no MIME type; this registers the simplexchat: scheme
-SCHEME_MIME_TYPE_LINE='MimeType=x-scheme-handler/simplexchat;'
+# jpackage's desktop entry passes no URL and handles no MIME type; this registers the simplexchat: and simplex: schemes
+SCHEME_MIME_TYPE_LINE='MimeType=x-scheme-handler/simplexchat;x-scheme-handler/simplex;'
 sed -i -e 's|^Exec=.*|& %u|' -e "s|^MimeType=.*|$SCHEME_MIME_TYPE_LINE|" ./extracted/opt/*imple*/lib/*.desktop
-grep -qxF "$SCHEME_MIME_TYPE_LINE" ./extracted/opt/*imple*/lib/*.desktop || { echo "desktop entry does not register simplexchat:" >&2; exit 1; }
+grep -qxF "$SCHEME_MIME_TYPE_LINE" ./extracted/opt/*imple*/lib/*.desktop || { echo "desktop entry does not register simplexchat: and simplex:" >&2; exit 1; }
 find ./extracted/ -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
 
 dpkg-deb --build --root-owner-group --uniform-compression ./extracted ./release/main/deb/simplex_${ARCH}.deb

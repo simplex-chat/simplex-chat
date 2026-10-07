@@ -1,7 +1,7 @@
 package chat.simplex.app
 
 import chat.simplex.common.FILE_TIME_TOLERANCE
-import chat.simplex.common.MAX_APP_LINK_BYTES
+import chat.simplex.common.MAX_LINK_BYTES
 import chat.simplex.common.SHOW_FILE
 import chat.simplex.common.SHOW_TMP_SUFFIX
 import chat.simplex.common.ShowSignal
@@ -76,9 +76,16 @@ class SingleInstanceTest {
   fun signalCarriesTheLinkAndIsTakenOnce() = withTempDir { dir ->
     signalRunningInstance(dir, BADGE_LINK)
     assertEquals(listOf(SHOW_FILE), fileNames(dir), "only the signal may exist after signalling")
-    assertEquals(BADGE_LINK, takeSignal(dir)?.appLink)
+    assertEquals(BADGE_LINK, takeSignal(dir)?.link)
     assertEquals(listOf(), fileNames(dir), "taking the signal must leave no file behind")
     assertNull(takeSignal(dir), "a signal already taken must not be taken again")
+  }
+
+  @Test
+  fun signalCarriesAOneTimeLinkWithItsPostQuantumKey() = withTempDir { dir ->
+    val link = oneTimeLinkWithKemKey()
+    signalRunningInstance(dir, link)
+    assertEquals(link, takeSignal(dir)?.link, "a connection link of ${link.length} bytes")
   }
 
   @Test
@@ -86,7 +93,7 @@ class SingleInstanceTest {
     signalRunningInstance(dir, null)
     val signal = takeSignal(dir)
     assertNotNull(signal, "an empty signal must still be taken")
-    assertNull(signal.appLink, "an empty signal carries no link")
+    assertNull(signal.link, "an empty signal carries no link")
     assertEquals(listOf(), fileNames(dir), "taking the signal must leave no file behind")
     assertNull(takeSignal(dir), "a signal already taken must not be taken again")
   }
@@ -96,7 +103,7 @@ class SingleInstanceTest {
     signalRunningInstance(dir, BADGE_LINK)
     signalRunningInstance(dir, OTHER_BADGE_LINK)
     assertEquals(listOf(SHOW_FILE), fileNames(dir), "the later signal must replace the earlier one")
-    assertEquals(OTHER_BADGE_LINK, takeSignal(dir)?.appLink)
+    assertEquals(OTHER_BADGE_LINK, takeSignal(dir)?.link)
   }
 
   @Test
@@ -114,34 +121,34 @@ class SingleInstanceTest {
   fun takeSignalReplacesATakenFileLeftByACrash() = withTempDir { dir ->
     Files.writeString(dir.resolve(TAKEN_SHOW_FILE), OTHER_BADGE_LINK)
     signalRunningInstance(dir, BADGE_LINK)
-    assertEquals(BADGE_LINK, takeSignal(dir)?.appLink, "the new signal, not the leftover, must be read")
+    assertEquals(BADGE_LINK, takeSignal(dir)?.link, "the new signal, not the leftover, must be read")
     assertEquals(listOf(), fileNames(dir), "taking the signal must leave no file behind")
   }
 
   @Test
   fun takeSignalAcceptsALinkOfExactlyTheBound() = withTempDir { dir ->
-    val atBound = badgeLinkOfBytes(MAX_APP_LINK_BYTES)
+    val atBound = badgeLinkOfBytes(MAX_LINK_BYTES)
     signalRunningInstance(dir, atBound)
-    assertEquals(atBound, takeSignal(dir)?.appLink, "a link of exactly $MAX_APP_LINK_BYTES bytes")
+    assertEquals(atBound, takeSignal(dir)?.link, "a link of exactly $MAX_LINK_BYTES bytes")
   }
 
   @Test
-  fun takeSignalDropsContentThatIsNotAnAppLink() = withTempDir { dir ->
+  fun takeSignalDropsContentThatIsNotAnAcceptedLink() = withTempDir { dir ->
     val show = dir.resolve(SHOW_FILE)
     fun assertTakenWithoutLink(case: String) {
       val signal = takeSignal(dir)
       assertNotNull(signal, "$case: rejected content is still a signal, so the window comes forward")
-      assertNull(signal.appLink, case)
+      assertNull(signal.link, case)
     }
     Files.writeString(show, "https://simplex.chat/contact#/?v=2-7")
     assertTakenWithoutLink("web link")
     assertEquals(listOf(), fileNames(dir), "a rejected signal must still be removed")
 
-    Files.writeString(show, badgeLinkOfBytes(MAX_APP_LINK_BYTES + 1))
+    Files.writeString(show, badgeLinkOfBytes(MAX_LINK_BYTES + 1))
     assertTakenWithoutLink("link over the length bound")
 
-    // 614 characters but 1214 bytes; a read cut at the bound would end on a whole character and decode to an accepted link
-    Files.writeString(show, "simplexchat:/x" + "é".repeat(600))
+    // 4214 characters but 8414 bytes; a read cut at the bound would end on a whole character and decode to an accepted link
+    Files.writeString(show, "simplexchat:/x" + "é".repeat(4200))
     assertTakenWithoutLink("multi-byte link over the byte bound")
     assertEquals(listOf(), fileNames(dir), "a rejected signal must still be removed")
   }
@@ -187,7 +194,7 @@ class SingleInstanceTest {
   fun watcherTakesASignalWrittenBeforeItsWatch() = withTempDir { dir ->
     signalRunningInstance(dir, BADGE_LINK)
     watch(dir) { signals ->
-      assertEquals(BADGE_LINK, signals.poll(SIGNAL_WAIT_SECONDS, TimeUnit.SECONDS)?.appLink, "a signal written before the watch raised no event")
+      assertEquals(BADGE_LINK, signals.poll(SIGNAL_WAIT_SECONDS, TimeUnit.SECONDS)?.link, "a signal written before the watch raised no event")
     }
   }
 
@@ -197,11 +204,11 @@ class SingleInstanceTest {
     watch(dir) { signals ->
       // Each signal is written after the previous one arrived, so later ones can come only from watch events.
       signalRunningInstance(dir, BADGE_LINK)
-      assertEquals(BADGE_LINK, signals.poll(SIGNAL_WAIT_SECONDS, TimeUnit.SECONDS)?.appLink, "first signal")
+      assertEquals(BADGE_LINK, signals.poll(SIGNAL_WAIT_SECONDS, TimeUnit.SECONDS)?.link, "first signal")
       signalRunningInstance(dir, OTHER_BADGE_LINK)
-      assertEquals(OTHER_BADGE_LINK, signals.poll(SIGNAL_WAIT_SECONDS, TimeUnit.SECONDS)?.appLink, "second signal, seen as a creation")
+      assertEquals(OTHER_BADGE_LINK, signals.poll(SIGNAL_WAIT_SECONDS, TimeUnit.SECONDS)?.link, "second signal, seen as a creation")
       signalRunningInstance(dir, BADGE_LINK)
-      assertEquals(BADGE_LINK, signals.poll(SIGNAL_WAIT_SECONDS, TimeUnit.SECONDS)?.appLink, "third signal, after the watch key was reset")
+      assertEquals(BADGE_LINK, signals.poll(SIGNAL_WAIT_SECONDS, TimeUnit.SECONDS)?.link, "third signal, after the watch key was reset")
     }
   }
 

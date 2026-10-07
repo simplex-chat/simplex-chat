@@ -1,6 +1,7 @@
 package chat.simplex.common.platform
 
 import chat.simplex.common.views.chatlist.appLinkScheme
+import chat.simplex.common.views.chatlist.connectionLinkScheme
 import com.sun.jna.platform.win32.Advapi32Util
 import com.sun.jna.platform.win32.Win32Exception
 import com.sun.jna.platform.win32.WinReg.HKEY_CURRENT_USER
@@ -13,10 +14,9 @@ import java.nio.file.attribute.PosixFilePermission
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
-internal const val SCHEME_MIME_TYPE = "x-scheme-handler/$appLinkScheme"
-private const val WINDOWS_SCHEME_KEY = "Software\\Classes\\$appLinkScheme"
-private const val WINDOWS_COMMAND_KEY = "$WINDOWS_SCHEME_KEY\\shell\\open\\command"
-private const val WINDOWS_ICON_KEY = "$WINDOWS_SCHEME_KEY\\DefaultIcon"
+internal const val APP_LINK_MIME_TYPE = "x-scheme-handler/$appLinkScheme"
+internal const val CONNECTION_LINK_MIME_TYPE = "x-scheme-handler/$connectionLinkScheme"
+private const val WINDOWS_CLASSES_KEY = "Software\\Classes"
 private const val WINDOWS_FIRST_ICON_INDEX = 0
 // the Win32 name of a key's default value
 private const val REGISTRY_DEFAULT_VALUE = ""
@@ -39,13 +39,14 @@ internal sealed interface DesktopInstallation {
   data object Unpackaged : DesktopInstallation
 }
 
+// Only simplexchat: decides how the badge page ends, so simplex: is registered without being checked here.
 @Volatile
 private var registered = false
 
 actual fun appLinkSchemeRegistered(): Boolean = registered
 
-fun registerAppLinkScheme() {
-  thread(name = "simplex-app-link-scheme", isDaemon = true) {
+fun registerLinkSchemes() {
+  thread(name = "simplex-link-schemes", isDaemon = true) {
     registered = registerForThisInstallation()
   }
 }
@@ -76,9 +77,9 @@ private fun realPathOrSelf(path: String): Path =
 
 private fun registerForThisInstallation(): Boolean =
   when (val installation = desktopInstallation(desktopPlatform, System.getProperty("jpackage.app-path"), System.getenv())) {
-    // The bundle's Info.plist and the Flatpak's exported desktop entry register the scheme.
+    // The bundle's Info.plist and the Flatpak's exported desktop entry register the schemes.
     DesktopInstallation.MacBundle, DesktopInstallation.Flatpak -> true
-    is DesktopInstallation.WindowsExe -> registerWindowsScheme(installation.path, ::registryDefault, ::writeRegistryValue)
+    is DesktopInstallation.WindowsExe -> registerWindowsSchemes(installation.path, ::registryDefault, ::writeRegistryValue)
     is DesktopInstallation.AppImage -> registerAppImageScheme(installation.path, File(unixDataHome, "applications"), ::runProcess)
     DesktopInstallation.LinuxPackage -> linuxPackageRegistered(::runProcess)
     DesktopInstallation.Unpackaged -> false
@@ -88,22 +89,35 @@ internal fun windowsOpenCommand(appPath: String): String = "\"$appPath\" \"%1\""
 
 internal data class RegistryValue(val key: String, val name: String, val value: String)
 
-// The command goes last, so finding it means every value before it was written.
-internal fun windowsSchemeValues(appPath: String): List<RegistryValue> = listOf(
-  RegistryValue(key = WINDOWS_SCHEME_KEY, name = REGISTRY_DEFAULT_VALUE, value = "URL:$APP_DISPLAY_NAME"),
-  // without this value Windows does not treat the key as a URL scheme
-  RegistryValue(key = WINDOWS_SCHEME_KEY, name = "URL Protocol", value = ""),
-  RegistryValue(key = WINDOWS_ICON_KEY, name = REGISTRY_DEFAULT_VALUE, value = "\"$appPath\",$WINDOWS_FIRST_ICON_INDEX"),
-  RegistryValue(key = WINDOWS_COMMAND_KEY, name = REGISTRY_DEFAULT_VALUE, value = windowsOpenCommand(appPath)),
-)
+private fun windowsSchemeKey(scheme: String): String = "$WINDOWS_CLASSES_KEY\\$scheme"
 
-internal fun registerWindowsScheme(appPath: String, readDefault: (key: String) -> String?, write: (RegistryValue) -> Unit): Boolean {
+private fun windowsCommandKey(scheme: String): String = "${windowsSchemeKey(scheme)}\\shell\\open\\command"
+
+// The command goes last, so finding it means every value before it was written.
+internal fun windowsSchemeValues(scheme: String, appPath: String): List<RegistryValue> {
+  val schemeKey = windowsSchemeKey(scheme)
+  return listOf(
+    RegistryValue(key = schemeKey, name = REGISTRY_DEFAULT_VALUE, value = "URL:$APP_DISPLAY_NAME"),
+    // without this value Windows does not treat the key as a URL scheme
+    RegistryValue(key = schemeKey, name = "URL Protocol", value = ""),
+    RegistryValue(key = "$schemeKey\\DefaultIcon", name = REGISTRY_DEFAULT_VALUE, value = "\"$appPath\",$WINDOWS_FIRST_ICON_INDEX"),
+    RegistryValue(key = windowsCommandKey(scheme), name = REGISTRY_DEFAULT_VALUE, value = windowsOpenCommand(appPath)),
+  )
+}
+
+internal fun registerWindowsSchemes(appPath: String, readDefault: (key: String) -> String?, write: (RegistryValue) -> Unit): Boolean {
+  val registered = registerWindowsScheme(appLinkScheme, appPath, readDefault, write)
+  registerWindowsScheme(connectionLinkScheme, appPath, readDefault, write)
+  return registered
+}
+
+private fun registerWindowsScheme(scheme: String, appPath: String, readDefault: (key: String) -> String?, write: (RegistryValue) -> Unit): Boolean {
   val command = windowsOpenCommand(appPath)
   return try {
-    if (readDefault(WINDOWS_COMMAND_KEY) != command) windowsSchemeValues(appPath).forEach(write)
-    readDefault(WINDOWS_COMMAND_KEY) == command
+    if (readDefault(windowsCommandKey(scheme)) != command) windowsSchemeValues(scheme, appPath).forEach(write)
+    readDefault(windowsCommandKey(scheme)) == command
   } catch (e: Win32Exception) {
-    Log.w(TAG, "app link scheme: cannot register in the registry: ${e.message}")
+    Log.w(TAG, "link scheme: cannot register $scheme: in the registry: ${e.message}")
     false
   }
 }
@@ -138,7 +152,7 @@ internal fun appImageDesktopEntry(appImagePath: String): String? {
     |Name=$APP_DISPLAY_NAME
     |NoDisplay=true
     |Exec=${desktopExecArgument(appImagePath)} %u
-    |MimeType=$SCHEME_MIME_TYPE;
+    |MimeType=$APP_LINK_MIME_TYPE;$CONNECTION_LINK_MIME_TYPE;
     |""".trimMargin()
 }
 
@@ -161,7 +175,7 @@ internal fun onlyOwnerCanWrite(attributes: PosixFileAttributes, user: String): B
 
 internal fun registerAppImageScheme(appImagePath: String, applicationsDir: File, run: (List<String>) -> String?): Boolean {
   if (!onlyOwnerCanReplace(Path.of(appImagePath), System.getProperty("user.name"))) {
-    Log.w(TAG, "app link scheme: not registered, as other users may replace $appImagePath")
+    Log.w(TAG, "link scheme: not registered, as other users may replace $appImagePath")
     return false
   }
   val content = appImageDesktopEntry(appImagePath) ?: return false
@@ -173,32 +187,38 @@ internal fun registerAppImageScheme(appImagePath: String, applicationsDir: File,
       run(listOf("update-desktop-database", applicationsDir.path))
     }
   } catch (e: IOException) {
-    Log.w(TAG, "app link scheme: cannot write desktop entry: ${e.message}")
+    Log.w(TAG, "link scheme: cannot write desktop entry: ${e.message}")
     return false
   }
-  if (xdgDefaultSchemeHandler(run) == APPIMAGE_ENTRY_NAME) return true
-  run(listOf(XDG_MIME, "default", APPIMAGE_ENTRY_NAME, SCHEME_MIME_TYPE))
-  return xdgDefaultSchemeHandler(run) == APPIMAGE_ENTRY_NAME
+  val registered = makeAppImageEntryDefault(APP_LINK_MIME_TYPE, run)
+  makeAppImageEntryDefault(CONNECTION_LINK_MIME_TYPE, run)
+  return registered
 }
 
-private fun xdgDefaultSchemeHandler(run: (List<String>) -> String?): String? =
-  run(listOf(XDG_MIME, "query", "default", SCHEME_MIME_TYPE))?.trim()
+private fun makeAppImageEntryDefault(mimeType: String, run: (List<String>) -> String?): Boolean {
+  if (xdgDefaultSchemeHandler(mimeType, run) == APPIMAGE_ENTRY_NAME) return true
+  run(listOf(XDG_MIME, "default", APPIMAGE_ENTRY_NAME, mimeType))
+  return xdgDefaultSchemeHandler(mimeType, run) == APPIMAGE_ENTRY_NAME
+}
+
+private fun xdgDefaultSchemeHandler(mimeType: String, run: (List<String>) -> String?): String? =
+  run(listOf(XDG_MIME, "query", "default", mimeType))?.trim()
 
 internal fun linuxPackageRegistered(run: (List<String>) -> String?): Boolean =
-  xdgDefaultSchemeHandler(run) == DEB_ENTRY_NAME
+  xdgDefaultSchemeHandler(APP_LINK_MIME_TYPE, run) == DEB_ENTRY_NAME
 
 internal fun runProcess(command: List<String>): String? {
   val process = try {
     ProcessBuilder(command).redirectError(ProcessBuilder.Redirect.DISCARD).start()
   } catch (e: IOException) {
-    Log.w(TAG, "app link scheme: cannot run ${command.first()}: ${e.message}")
+    Log.w(TAG, "link scheme: cannot run ${command.first()}: ${e.message}")
     return null
   }
   return try {
     process.outputStream.close()
     if (!process.waitFor(PROCESS_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
       process.destroyForcibly()
-      Log.w(TAG, "app link scheme: ${command.first()} timed out")
+      Log.w(TAG, "link scheme: ${command.first()} timed out")
       null
     } else if (process.exitValue() == 0) {
       process.inputStream.bufferedReader().readText()
@@ -206,7 +226,7 @@ internal fun runProcess(command: List<String>): String? {
       null
     }
   } catch (e: IOException) {
-    Log.w(TAG, "app link scheme: ${command.first()} failed: ${e.message}")
+    Log.w(TAG, "link scheme: ${command.first()} failed: ${e.message}")
     null
   } catch (_: InterruptedException) {
     process.destroyForcibly()

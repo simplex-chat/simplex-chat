@@ -93,6 +93,7 @@ compose {
                   <key>CFBundleURLSchemes</key>
                   <array>
                     <string>simplexchat</string>
+                    <string>simplex</string>
                   </array>
                 </dict>
               </array>

@@ -9,8 +9,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
 import chat.simplex.common.acquireSingleInstance
-import chat.simplex.common.appLinkFromArgs
 import chat.simplex.common.installOpenUriHandler
+import chat.simplex.common.linkFromArgs
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
@@ -25,9 +25,9 @@ import java.io.File
 
 fun main(args: Array<String>) {
   try {
-    val appLink = appLinkFromArgs(args)
-    if (!acquireSingleInstance(appLink)) return
-    appLink?.let { chatModel.appOpenUrl.value = null to it }
+    val link = linkFromArgs(args)
+    if (!acquireSingleInstance(link)) return
+    link?.let { chatModel.appOpenUrl.value = null to it }
     // started after the launch link is stored, so a link it forwards later is not overwritten
     if (singleInstanceLock) startShowFileWatcher()
     // Clean shared temp dirs only in the owning instance (not in a Files.desktop val
@@ -39,7 +39,7 @@ fun main(args: Array<String>) {
     runMigrations()
     setupUpdateChecker()
     initApp()
-    registerAppLinkScheme()
+    registerLinkSchemes()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
     // Only the owning instance cleans tmpDir on exit (see preferencesTmpDir above).

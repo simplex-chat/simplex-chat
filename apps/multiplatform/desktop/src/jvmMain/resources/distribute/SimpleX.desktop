@@ -5,4 +5,4 @@ Comment=Private and secure open-source messenger - no user IDs (not even random 
 Exec=/opt/simplex/bin/simplex %u
 Icon=/opt/simplex/lib/simplex
 Categories=Network;Chat;
-MimeType=x-scheme-handler/simplexchat;
+MimeType=x-scheme-handler/simplexchat;x-scheme-handler/simplex;

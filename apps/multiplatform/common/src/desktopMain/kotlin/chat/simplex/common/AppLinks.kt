@@ -2,19 +2,21 @@ package chat.simplex.common
 
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.chatlist.isAppLink
+import chat.simplex.common.views.chatlist.isConnectionLink
 import java.awt.Desktop
 
-// A link this build handles is far shorter; the bound caps what the app accepts from outside.
-internal const val MAX_APP_LINK_BYTES = 1024
+// A one-time link with its post-quantum key is about 2 KB, near 4 KB with a second such key;
+// the bound caps what the app accepts from outside.
+internal const val MAX_LINK_BYTES = 8192
 
-internal fun isAcceptedAppLink(uri: String): Boolean =
-  uri.toByteArray(Charsets.UTF_8).size <= MAX_APP_LINK_BYTES && isAppLink(uri)
+internal fun isAcceptedLink(uri: String): Boolean =
+  uri.toByteArray(Charsets.UTF_8).size <= MAX_LINK_BYTES && (isAppLink(uri) || isConnectionLink(uri))
 
-fun appLinkFromArgs(args: Array<String>): String? =
-  args.singleOrNull()?.takeIf(::isAcceptedAppLink)
+fun linkFromArgs(args: Array<String>): String? =
+  args.singleOrNull()?.takeIf(::isAcceptedLink)
 
 // The link is stored before showWindow, so a failure to show the window cannot lose it.
-internal fun openDesktopAppLink(uri: String) {
+internal fun openDesktopLink(uri: String) {
   chatModel.appOpenUrl.value = chatModel.remoteHostId() to uri
   showWindow()
 }
@@ -26,6 +28,6 @@ fun installOpenUriHandler() {
   if (!desktop.isSupported(Desktop.Action.APP_OPEN_URI)) return
   desktop.setOpenURIHandler { event ->
     val uri = event.uri.toString()
-    if (isAcceptedAppLink(uri)) openDesktopAppLink(uri)
+    if (isAcceptedLink(uri)) openDesktopLink(uri)
   }
 }

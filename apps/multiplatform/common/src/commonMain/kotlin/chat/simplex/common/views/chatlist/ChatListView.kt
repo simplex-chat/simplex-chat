@@ -790,11 +790,15 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
 
 // the app's own scheme, for every link that is not a connection link, which stays on simplex:
 internal const val appLinkScheme = "simplexchat"
+internal const val connectionLinkScheme = "simplex"
 private const val badgeLinkPath = "/badge/code/"
 
 // the prefix of the raw text, not a parsed URI: a link that does not parse is still an app link
 fun isAppLink(uri: String): Boolean =
   uri.startsWith("$appLinkScheme:", ignoreCase = true)
+
+fun isConnectionLink(uri: String): Boolean =
+  uri.startsWith("$connectionLinkScheme:", ignoreCase = true)
 
 // a link type added in a later version reaches this build too, so an unknown path asks for an update
 private fun openAppLink(rhId: Long?, uri: String) {

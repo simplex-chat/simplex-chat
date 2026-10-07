@@ -4,7 +4,8 @@ import chat.simplex.common.platform.APPIMAGE_ENTRY_NAME
 import chat.simplex.common.platform.DesktopInstallation
 import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.platform.RegistryValue
-import chat.simplex.common.platform.SCHEME_MIME_TYPE
+import chat.simplex.common.platform.APP_LINK_MIME_TYPE
+import chat.simplex.common.platform.CONNECTION_LINK_MIME_TYPE
 import chat.simplex.common.platform.appImageDesktopEntry
 import chat.simplex.common.platform.desktopExecArgument
 import chat.simplex.common.platform.desktopInstallation
@@ -12,7 +13,7 @@ import chat.simplex.common.platform.linuxPackageRegistered
 import chat.simplex.common.platform.onlyOwnerCanReplace
 import chat.simplex.common.platform.onlyOwnerCanWrite
 import chat.simplex.common.platform.registerAppImageScheme
-import chat.simplex.common.platform.registerWindowsScheme
+import chat.simplex.common.platform.registerWindowsSchemes
 import chat.simplex.common.platform.runProcess
 import chat.simplex.common.platform.windowsOpenCommand
 import chat.simplex.common.platform.windowsSchemeValues
@@ -44,7 +45,8 @@ private const val XDG_MIME = "xdg-mime"
 
 class AppLinkSchemeTest {
   private val windowsExe = "C:\\Program Files\\SimpleX\\SimpleX.exe"
-  private val windowsCommandKey = "Software\\Classes\\simplexchat\\shell\\open\\command"
+  private val appLinkCommandKey = "Software\\Classes\\simplexchat\\shell\\open\\command"
+  private val connectionCommandKey = "Software\\Classes\\simplex\\shell\\open\\command"
   private val olderWindowsCommand = "\"C:\\Old\\SimpleX.exe\" \"%1\""
   private val appImagePath = "/home/user/$APPIMAGE_FILE_NAME"
 
@@ -63,41 +65,61 @@ class AppLinkSchemeTest {
         RegistryValue(key = "Software\\Classes\\simplexchat", name = "", value = "URL:SimpleX Chat"),
         RegistryValue(key = "Software\\Classes\\simplexchat", name = "URL Protocol", value = ""),
         RegistryValue(key = "Software\\Classes\\simplexchat\\DefaultIcon", name = "", value = "\"$windowsExe\",0"),
-        RegistryValue(key = windowsCommandKey, name = "", value = "\"$windowsExe\" \"%1\""),
+        RegistryValue(key = appLinkCommandKey, name = "", value = "\"$windowsExe\" \"%1\""),
       ),
-      windowsSchemeValues(windowsExe)
+      windowsSchemeValues("simplexchat", windowsExe),
+      "app link scheme"
+    )
+    assertEquals(
+      listOf(
+        RegistryValue(key = "Software\\Classes\\simplex", name = "", value = "URL:SimpleX Chat"),
+        RegistryValue(key = "Software\\Classes\\simplex", name = "URL Protocol", value = ""),
+        RegistryValue(key = "Software\\Classes\\simplex\\DefaultIcon", name = "", value = "\"$windowsExe\",0"),
+        RegistryValue(key = connectionCommandKey, name = "", value = "\"$windowsExe\" \"%1\""),
+      ),
+      windowsSchemeValues("simplex", windowsExe),
+      "connection link scheme"
     )
   }
 
   @Test
-  fun windowsRegistrationWritesEveryValueWhenTheCommandPointsElsewhere() {
-    val registry = FakeRegistry(mutableMapOf(windowsCommandKey to olderWindowsCommand))
-    assertTrue(registerWindowsScheme(windowsExe, registry::readDefault, registry::write), "the command now opens this exe")
-    assertEquals(windowsSchemeValues(windowsExe), registry.writes)
+  fun windowsRegistrationWritesEveryValueWhenTheCommandsPointElsewhere() {
+    val registry = FakeRegistry(mutableMapOf(appLinkCommandKey to olderWindowsCommand, connectionCommandKey to olderWindowsCommand))
+    assertTrue(registerWindowsSchemes(windowsExe, registry::readDefault, registry::write), "the command now opens this exe")
+    assertEquals(windowsSchemeValues("simplexchat", windowsExe) + windowsSchemeValues("simplex", windowsExe), registry.writes)
+    assertEquals(windowsOpenCommand(windowsExe), registry.readDefault(connectionCommandKey), "connection links open this exe too")
   }
 
   @Test
-  fun windowsRegistrationLeavesAMatchingCommandAlone() {
-    val registry = FakeRegistry(mutableMapOf(windowsCommandKey to windowsOpenCommand(windowsExe)))
-    assertTrue(registerWindowsScheme(windowsExe, registry::readDefault, registry::write))
+  fun windowsRegistrationLeavesMatchingCommandsAlone() {
+    val command = windowsOpenCommand(windowsExe)
+    val registry = FakeRegistry(mutableMapOf(appLinkCommandKey to command, connectionCommandKey to command))
+    assertTrue(registerWindowsSchemes(windowsExe, registry::readDefault, registry::write))
     assertEquals(listOf(), registry.writes, "nothing is written again")
   }
 
   @Test
-  fun windowsRegistrationFailsWhenTheCommandIsNotStored() {
-    val registry = FakeRegistry(mutableMapOf(windowsCommandKey to olderWindowsCommand), keepsWrites = false)
-    assertFalse(registerWindowsScheme(windowsExe, registry::readDefault, registry::write), "the older command stayed")
-    assertEquals(windowsSchemeValues(windowsExe), registry.writes)
+  fun windowsRegistrationFailsWhenTheAppLinkCommandIsNotStored() {
+    val registry = FakeRegistry(mutableMapOf(appLinkCommandKey to olderWindowsCommand), refusedKeys = setOf(appLinkCommandKey))
+    assertFalse(registerWindowsSchemes(windowsExe, registry::readDefault, registry::write), "the older command stayed")
+    assertEquals(windowsSchemeValues("simplexchat", windowsExe) + windowsSchemeValues("simplex", windowsExe), registry.writes)
   }
 
-  private class FakeRegistry(private val defaults: MutableMap<String, String>, private val keepsWrites: Boolean = true) {
+  @Test
+  fun windowsRegistrationSucceedsWhenOnlyTheConnectionCommandIsNotStored() {
+    val registry = FakeRegistry(mutableMapOf(), refusedKeys = setOf(connectionCommandKey))
+    assertTrue(registerWindowsSchemes(windowsExe, registry::readDefault, registry::write), "only simplexchat: decides the badge page")
+    assertNull(registry.readDefault(connectionCommandKey), "the connection command was refused")
+  }
+
+  private class FakeRegistry(private val defaults: MutableMap<String, String>, private val refusedKeys: Set<String> = setOf()) {
     val writes = mutableListOf<RegistryValue>()
 
     fun readDefault(key: String): String? = defaults[key]
 
     fun write(value: RegistryValue) {
       writes += value
-      if (keepsWrites && value.name == "") defaults[value.key] = value.value
+      if (value.key !in refusedKeys && value.name == "") defaults[value.key] = value.value
     }
   }
 
@@ -140,7 +162,7 @@ class AppLinkSchemeTest {
       |Name=SimpleX Chat
       |NoDisplay=true
       |Exec="/home/user/My Apps/simplex.AppImage" %u
-      |MimeType=x-scheme-handler/simplexchat;
+      |MimeType=x-scheme-handler/simplexchat;x-scheme-handler/simplex;
       |""".trimMargin(),
       appImageDesktopEntry("/home/user/My Apps/simplex.AppImage")
     )
@@ -343,15 +365,20 @@ class AppLinkSchemeTest {
     assertNull(runProcess(listOf("sh", "-c", "echo x; exit 3")))
   }
 
-  private val queryDefault = listOf(XDG_MIME, "query", "default", SCHEME_MIME_TYPE)
-  private val setDefault = listOf(XDG_MIME, "default", APPIMAGE_ENTRY_NAME, SCHEME_MIME_TYPE)
+  private fun queryDefault(mimeType: String) = listOf(XDG_MIME, "query", "default", mimeType)
+  private fun setDefault(mimeType: String) = listOf(XDG_MIME, "default", APPIMAGE_ENTRY_NAME, mimeType)
+  private val queryBothDefaults = listOf(queryDefault(APP_LINK_MIME_TYPE), queryDefault(CONNECTION_LINK_MIME_TYPE))
+  private val setBothDefaults = listOf(
+    queryDefault(APP_LINK_MIME_TYPE), setDefault(APP_LINK_MIME_TYPE), queryDefault(APP_LINK_MIME_TYPE),
+    queryDefault(CONNECTION_LINK_MIME_TYPE), setDefault(CONNECTION_LINK_MIME_TYPE), queryDefault(CONNECTION_LINK_MIME_TYPE),
+  )
 
   @Test
   fun appImageRegistrationWritesTheEntryAndMakesItTheDefault() = withRegistration { appImage, applicationsDir ->
     val xdg = FakeXdgMime(default = null)
     assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run), "the entry became the default handler")
     assertEquals(appImageDesktopEntry(appImage), File(applicationsDir, APPIMAGE_ENTRY_NAME).readText(), "the missing directory is created")
-    assertEquals(listOf(updateDatabase(applicationsDir), queryDefault, setDefault, queryDefault), xdg.calls)
+    assertEquals(listOf(updateDatabase(applicationsDir)) + setBothDefaults, xdg.calls)
   }
 
   @Test
@@ -360,7 +387,7 @@ class AppLinkSchemeTest {
     File(applicationsDir, APPIMAGE_ENTRY_NAME).writeText(appImageDesktopEntry(appImage)!!)
     val xdg = FakeXdgMime(default = APPIMAGE_ENTRY_NAME)
     assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run))
-    assertEquals(listOf(queryDefault), xdg.calls, "nothing is rewritten or set again")
+    assertEquals(queryBothDefaults, xdg.calls, "nothing is rewritten or set again")
   }
 
   @Test
@@ -369,7 +396,19 @@ class AppLinkSchemeTest {
     File(applicationsDir, APPIMAGE_ENTRY_NAME).writeText(appImageDesktopEntry(appImage)!!)
     val xdg = FakeXdgMime(default = "other.desktop")
     assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run), "the entry became the default handler again")
-    assertEquals(listOf(queryDefault, setDefault, queryDefault), xdg.calls, "the entry is not rewritten, only made the default")
+    assertEquals(setBothDefaults, xdg.calls, "the entry is not rewritten, only made the default")
+  }
+
+  @Test
+  fun appImageRegistrationSetsOnlyTheDefaultThatPointsElsewhere() = withRegistration { appImage, applicationsDir ->
+    applicationsDir.mkdirs()
+    File(applicationsDir, APPIMAGE_ENTRY_NAME).writeText(appImageDesktopEntry(appImage)!!)
+    val xdg = FakeXdgMime(default = APPIMAGE_ENTRY_NAME, connectionDefault = "other.desktop")
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run))
+    assertEquals(
+      listOf(queryDefault(APP_LINK_MIME_TYPE), queryDefault(CONNECTION_LINK_MIME_TYPE), setDefault(CONNECTION_LINK_MIME_TYPE), queryDefault(CONNECTION_LINK_MIME_TYPE)),
+      xdg.calls
+    )
   }
 
   @Test
@@ -379,14 +418,21 @@ class AppLinkSchemeTest {
     val xdg = FakeXdgMime(default = APPIMAGE_ENTRY_NAME)
     assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run))
     assertEquals(appImageDesktopEntry(appImage), File(applicationsDir, APPIMAGE_ENTRY_NAME).readText())
-    assertEquals(listOf(updateDatabase(applicationsDir), queryDefault), xdg.calls)
+    assertEquals(listOf(updateDatabase(applicationsDir)) + queryBothDefaults, xdg.calls)
   }
 
   @Test
-  fun appImageRegistrationFailsWhenAnotherHandlerKeepsTheDefault() = withRegistration { appImage, applicationsDir ->
-    val xdg = FakeXdgMime(default = "other.desktop", keepsDefault = true)
+  fun appImageRegistrationFailsWhenAnotherHandlerKeepsTheAppLinkDefault() = withRegistration { appImage, applicationsDir ->
+    val xdg = FakeXdgMime(default = "other.desktop", keptMimeTypes = setOf(APP_LINK_MIME_TYPE))
     assertFalse(registerAppImageScheme(appImage, applicationsDir, xdg::run), "the default handler did not change")
-    assertEquals(listOf(updateDatabase(applicationsDir), queryDefault, setDefault, queryDefault), xdg.calls)
+    assertEquals(listOf(updateDatabase(applicationsDir)) + setBothDefaults, xdg.calls, "the connection link default is still set")
+  }
+
+  @Test
+  fun appImageRegistrationSucceedsWhenAnotherHandlerKeepsOnlyTheConnectionDefault() = withRegistration { appImage, applicationsDir ->
+    val xdg = FakeXdgMime(default = "other.desktop", keptMimeTypes = setOf(CONNECTION_LINK_MIME_TYPE))
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run), "only simplexchat: decides the badge page")
+    assertEquals(listOf(updateDatabase(applicationsDir)) + setBothDefaults, xdg.calls)
   }
 
   @Test
@@ -403,18 +449,25 @@ class AppLinkSchemeTest {
     assertTrue(linuxPackageRegistered(FakeXdgMime(default = "simplex-simplex.desktop")::run), "the deb's own entry")
     assertFalse(linuxPackageRegistered(FakeXdgMime(default = "other.desktop")::run), "another handler")
     assertFalse(linuxPackageRegistered(FakeXdgMime(default = null)::run), "no handler")
+    assertFalse(
+      linuxPackageRegistered(FakeXdgMime(default = "other.desktop", connectionDefault = "simplex-simplex.desktop")::run),
+      "only the connection link handler"
+    )
   }
 
   private fun updateDatabase(applicationsDir: File) = listOf("update-desktop-database", applicationsDir.path)
 
-  private class FakeXdgMime(private var default: String?, private val keepsDefault: Boolean = false) {
+  private class FakeXdgMime(default: String?, connectionDefault: String? = default, private val keptMimeTypes: Set<String> = setOf()) {
+    private val defaults = mutableMapOf(APP_LINK_MIME_TYPE to default, CONNECTION_LINK_MIME_TYPE to connectionDefault)
     val calls = mutableListOf<List<String>>()
 
     fun run(command: List<String>): String? {
       calls += command
-      if (command.take(2) == listOf(XDG_MIME, "query")) return default?.let { "$it\n" }
+      if (command.take(3) == listOf(XDG_MIME, "query", "default")) return defaults[command[3]]?.let { "$it\n" }
       // xdg-mime sets the default only when given an entry and then a MIME type, the order it requires
-      if (!keepsDefault && command.size == 4 && command[1] == "default" && command[2].endsWith(".desktop")) default = command[2]
+      if (command.size == 4 && command[1] == "default" && command[2].endsWith(".desktop") && command[3] !in keptMimeTypes) {
+        defaults[command[3]] = command[2]
+      }
       return ""
     }
   }

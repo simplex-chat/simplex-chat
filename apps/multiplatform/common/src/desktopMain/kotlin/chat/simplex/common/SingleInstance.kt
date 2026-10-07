@@ -35,7 +35,7 @@ private val showPath get() = dataDir.resolve(SHOW_FILE).toPath()
 var singleInstanceLock = false
   private set
 
-internal class ShowSignal(val appLink: String?)
+internal class ShowSignal(val link: String?)
 
 private sealed interface LockResult {
   class Acquired(val lock: FileLock) : LockResult
@@ -43,7 +43,7 @@ private sealed interface LockResult {
   object Failed : LockResult
 }
 
-fun acquireSingleInstance(appLink: String?): Boolean {
+fun acquireSingleInstance(link: String?): Boolean {
   dataDir.mkdirs()
   val lockAttemptTime = FileTime.from(Instant.now())
   when (val result = tryAcquireLock()) {
@@ -58,7 +58,7 @@ fun acquireSingleInstance(appLink: String?): Boolean {
     }
     LockResult.Taken -> {
       if (desktopPlatform.isWindows()) allowPrimaryForeground()
-      signalRunningInstance(dataDir.toPath(), appLink)
+      signalRunningInstance(dataDir.toPath(), link)
       // a signal still present after 1 s means the running instance is hung, so the user decides
       val deadline = System.currentTimeMillis() + 1000
       while (Files.exists(showPath) && System.currentTimeMillis() < deadline) {
@@ -124,11 +124,11 @@ internal fun deleteStaleSignalFiles(dir: Path, lockAttemptTime: FileTime) {
 }
 
 // The temp file is owner-only on POSIX, as the link is a bearer secret, and the rename makes it appear whole.
-internal fun signalRunningInstance(dir: Path, appLink: String?) {
+internal fun signalRunningInstance(dir: Path, link: String?) {
   var tmp: Path? = null
   try {
     tmp = Files.createTempFile(dir, SHOW_FILE, SHOW_TMP_SUFFIX)
-    Files.write(tmp, (appLink ?: "").toByteArray(Charsets.UTF_8))
+    Files.write(tmp, (link ?: "").toByteArray(Charsets.UTF_8))
     Files.move(tmp, dir.resolve(SHOW_FILE), ATOMIC_MOVE)
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: cannot signal running instance: ${e.message}")
@@ -156,14 +156,14 @@ internal fun takeSignal(dir: Path): ShowSignal? {
     return ShowSignal(null)
   }
   val bytes = try {
-    Files.newInputStream(taken).use { it.readNBytes(MAX_APP_LINK_BYTES + 1) }
+    Files.newInputStream(taken).use { it.readNBytes(MAX_LINK_BYTES + 1) }
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: cannot read signal file: ${e.message}")
     null
   } finally {
     deleteSignalFile(taken)
   }
-  return ShowSignal(bytes?.toString(Charsets.UTF_8)?.takeIf(::isAcceptedAppLink))
+  return ShowSignal(bytes?.toString(Charsets.UTF_8)?.takeIf(::isAcceptedLink))
 }
 
 // Win32 ASFW_ANY lets every process take the foreground
@@ -205,7 +205,7 @@ fun startShowFileWatcher() {
   thread(name = "simplex-single-instance", isDaemon = true) {
     watchShowSignals(ws, dir) { signal ->
       SwingUtilities.invokeLater {
-        if (signal.appLink != null) openDesktopAppLink(signal.appLink) else showWindow()
+        if (signal.link != null) openDesktopLink(signal.link) else showWindow()
       }
     }
   }
