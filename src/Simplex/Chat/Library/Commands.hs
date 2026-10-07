@@ -5452,8 +5452,7 @@ runStoreReceiptWorker a userId Worker {doWork} = do
     lift $ waitForWork doWork
     withWork_ a doWork (getDueReceipt scheduled) $ \case
       BadgeReceiptRecord {receiptId, status = RSHeld {stash, payment, retryDelay}} -> creditStoreReceipt a userId receiptId stash payment retryDelay
-      BadgeReceiptRecord {status = RSCredited {}} -> pure ()
-      BadgeReceiptRecord {status = RSRefused {}} -> pure ()
+      BadgeReceiptRecord {receiptId} -> notHeld receiptId
   where
     getDueReceipt scheduled =
       withStore' (`getNextHeldStoreReceipt` userId) >>= \case
@@ -5462,9 +5461,10 @@ runStoreReceiptWorker a userId Worker {doWork} = do
           if nextAttemptAt <= now
             then pure $ Right (Just r)
             else Right Nothing <$ scheduleReceipt scheduled receiptId (diffUTCTime nextAttemptAt now)
-        Right (Just BadgeReceiptRecord {status = RSCredited {}}) -> pure $ Right Nothing
-        Right (Just BadgeReceiptRecord {status = RSRefused {}}) -> pure $ Right Nothing
+        Right (Just BadgeReceiptRecord {receiptId}) -> Right Nothing <$ notHeld receiptId
         r -> pure r
+    -- getNextHeldStoreReceipt reads held rows only, so this says its query and its result type disagree
+    notHeld receiptId = eToView $ ChatError $ CEInternalError $ "store receipt " <> show receiptId <> " is not held"
     scheduleReceipt scheduled receiptId delay = do
       new <- atomically $ stateTVar scheduled $ \ids -> (S.notMember receiptId ids, S.insert receiptId ids)
       when new . void . liftIO . forkIO $ do
