@@ -161,12 +161,7 @@ fun UserPicker(
     val onUserClicked: (user: User) -> Unit = { user ->
       if (!user.activeUser) {
         userPickerState.value = AnimatedViewState.HIDING
-        withBGApi {
-          controller.showProgressIfNeeded {
-            ModalManager.closeAllModalsEverywhere()
-            chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
-          }
-        }
+        withBGApi { switchToUser(user) }
       } else {
         showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }()
         withBGApi {
@@ -675,5 +670,12 @@ private fun switchToRemoteHost(h: RemoteHostInfo, connecting: MutableState<Boole
     }
   } else {
     connectMobileDevice(h, connecting)
+  }
+}
+
+suspend fun switchToUser(user: User) {
+  controller.showProgressIfNeeded {
+    ModalManager.closeAllModalsEverywhere()
+    controller.changeActiveUser(user.remoteHostId, user.userId, null)
   }
 }

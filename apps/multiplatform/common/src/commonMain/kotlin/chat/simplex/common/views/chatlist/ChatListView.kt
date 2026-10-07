@@ -238,32 +238,39 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+  val calmHome = remember { appPrefs.calmHome.state }
+  val showAllChats = rememberSaveable { mutableStateOf(false) }
+  val calm = calmHome.value && !showAllChats.value
+  val onCalmHome = if (calmHome.value && showAllChats.value) { { showAllChats.value = false } } else null
   Box(Modifier.fillMaxSize()) {
     if (oneHandUI.value) {
-      ChatListWithLoadingScreen(searchText, listState)
+      ChatListWithLoadingScreen(searchText, listState, calm, stopped) { showAllChats.value = true }
       Column(Modifier.align(Alignment.BottomCenter)) {
         ChatListToolbar(
           userPickerState,
           listState,
           stopped,
           setPerformLA,
+          onCalmHome,
         )
       }
     } else {
-      ChatListWithLoadingScreen(searchText, listState)
+      ChatListWithLoadingScreen(searchText, listState, calm, stopped) { showAllChats.value = true }
       Column {
         ChatListToolbar(
           userPickerState,
           listState,
           stopped,
           setPerformLA,
+          onCalmHome,
         )
       }
-      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+      if (!calm && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         NewChatSheetFloatingButton(oneHandUI, stopped)
       }
     }
   }
+  BackHandler(enabled = calmHome.value && showAllChats.value && chatModel.chatId.value == null) { showAllChats.value = false }
 
   if (searchText.value.text.isEmpty()) {
     if (appPlatform.isDesktop && !oneHandUI.value) {
@@ -446,16 +453,21 @@ private fun ConnectBannerCard() {
 }
 
 @Composable
-private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState, calm: Boolean, stopped: Boolean, onAllChats: () -> Unit) {
   if (chatModel.chatRunning.value == null) {
     Text(stringResource(MR.strings.loading_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
   } else if (shouldShowOnboarding()) {
     if (appPlatform.isAndroid) AndroidOnboardingCards()
   } else {
     if (!chatModel.desktopNoUserNoRemote) {
-      ChatList(searchText = searchText, listState)
+      if (calm) {
+        val oneHandUI = remember { appPrefs.oneHandUI.state }
+        CalmHomeView(chatModel, stopped, oneHandUI.value, { if (!stopped) showNewChatSheet(oneHandUI) }, onAllChats)
+      } else {
+        ChatList(searchText = searchText, listState)
+      }
     }
-    if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+    if (!calm && chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
       Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
     }
   }
@@ -518,9 +530,12 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, listState: LazyListState, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
+private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, listState: LazyListState, stopped: Boolean, setPerformLA: (Boolean) -> Unit, onCalmHome: (() -> Unit)?) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
+  if (onCalmHome != null) {
+    barButtons.add { CalmHomeButton(onCalmHome) }
+  }
   val updatingProgress = remember { chatModel.updatingProgress }.value
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 

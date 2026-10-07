@@ -111,6 +111,7 @@ fun AppearanceScope.AppearanceLayout(
       if (remember { appPrefs.oneHandUI.state }.value) {
         SettingsPreferenceItem(icon = null, stringResource(MR.strings.chat_bottom_bar), ChatModel.controller.appPrefs.chatBottomBar)
       }
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.calm_home_screen), ChatModel.controller.appPrefs.calmHome)
     }
 
     SectionDividerSpaced()
