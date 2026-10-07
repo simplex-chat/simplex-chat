@@ -330,7 +330,7 @@ Decided:
 | N33 | The other kind's button with a chats filter | superseded by N14: filters are passed for pasted links only, and a link has no other kind |
 | N34 | iOS against Kotlin | the name line in alerts, the own channel's "Your channel" text, a contact prepared at the name's address opened as in Kotlin, and the other kind's button on the "Repeat join request?" sheet |
 | N35 | A local chat's name leads to a link that cannot be joined yet (no relays, needs an app update, connecting), or to another chat the user has | that link's plan, or that chat's, with `NCMoved` |
-| N36 | Chats whose name verification changes while planning or preparing | core emits `CEvtContactUpdated` / `CEvtGroupUpdated` for each of the user's other chats of the name's kind whose verification it clears (`unverifyOtherNameChats`); the verified chat is in the command's response |
+| N36 | Chats whose name verification changes while planning or preparing | `unverifyOtherNameChats` clears the flag on the user's other chats of the name's kind with one `UPDATE` per table, and core emits one `CEvtNameVerified {simplexName, chatRef}`; the apps clear the flag on their other chats with that name and kind, changing no other field; the verified chat is in the command's response |
 
 ## 12. Tests
 

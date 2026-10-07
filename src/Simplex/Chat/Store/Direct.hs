@@ -52,6 +52,7 @@ module Simplex.Chat.Store.Direct
     getContactIdByName,
     updateContactProfile,
     setContactDomainVerified,
+    unverifyNameContacts,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -115,7 +116,7 @@ import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexNameInfo (..), UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -600,6 +601,17 @@ setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} ve
     |]
     (BI verified, userId, contactId)
   pure (ct {profile = p {contactDomainVerified = Just verified}} :: Contact)
+
+unverifyNameContacts :: DB.Connection -> User -> SimplexDomain -> Maybe ContactId -> IO ()
+unverifyNameContacts db User {userId} domain exceptContactId_ =
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles SET contact_domain_verified = 0
+      WHERE user_id = ? AND contact_domain = ? AND contact_domain_verified = 1
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
+    |]
+    (userId, domain, userId, exceptContactId_)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do

@@ -47,7 +47,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
-    unverifyNameChats,
+    unverifyNameGroups,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -2751,21 +2751,19 @@ setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified = do
     (BI verified, userId, groupId)
   pure g {groupDomainVerified = Just verified}
 
-unverifyNameChats :: DB.Connection -> StoreCxt -> User -> SimplexNameInfo -> ChatRef -> IO ([Contact], [GroupInfo])
-unverifyNameChats db cxt user@User {userId} SimplexNameInfo {nameType, nameDomain} verifiedChat = do
-  cts <- case nameType of
-    NTContact -> mapM (\ct -> setContactDomainVerified db user ct False) =<< loaded (getContact db cxt user) =<< otherIds CTDirect contactsQuery
-    NTPublicGroup -> pure []
-  gs <- mapM (\g -> setGroupDomainVerified db user g False) =<< loaded (getGroupInfo db cxt user) =<< otherIds CTGroup (groupsQuery <> businessCond)
-  pure (cts, gs)
-  where
-    otherIds chatType q = filter (\chatId -> ChatRef chatType chatId Nothing /= verifiedChat) . map fromOnly <$> DB.query db q (userId, nameDomain)
-    loaded get = fmap rights . mapM (runExceptT . get)
-    contactsQuery = "SELECT ct.contact_id FROM contacts ct JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1 AND ct.deleted = 0"
-    groupsQuery = "SELECT g.group_id FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified = 1"
-    businessCond = case nameType of
-      NTContact -> " AND g.business_chat IS NOT NULL"
-      NTPublicGroup -> " AND g.business_chat IS NULL"
+unverifyNameGroups :: DB.Connection -> User -> Bool -> SimplexDomain -> Maybe GroupId -> IO ()
+unverifyNameGroups db User {userId} business domain exceptGroupId_ =
+  DB.execute
+    db
+    ( [sql|
+        UPDATE groups SET group_domain_verified = 0
+        WHERE user_id = ? AND group_domain_verified = 1
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE group_domain = ?)
+          AND group_id NOT IN (SELECT group_id FROM groups WHERE user_id = ? AND group_id = ?)
+      |]
+        <> (if business then " AND business_chat IS NOT NULL" else " AND business_chat IS NULL")
+    )
+    (userId, domain, userId, exceptGroupId_)
 
 -- A business group has no publicGroup claim, so the domain it was connected by (from its address) is written
 -- directly to group_domain and marked verified, so it is found by the local name search (getGroupToConnect).

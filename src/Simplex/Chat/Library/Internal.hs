@@ -1667,11 +1667,15 @@ updateContactFromLinkData user ct@Contact {contactId, profile = profile@LocalPro
     verifyChanged = contactDomainVerified /= Just True || claimChanged
 
 unverifyOtherNameChats :: User -> SimplexNameInfo -> ChatRef -> CM ()
-unverifyOtherNameChats user ni verifiedChat = do
-  cxt <- chatStoreCxt
-  (cts, gs) <- withFastStore' $ \db -> unverifyNameChats db cxt user ni verifiedChat
-  forM_ cts $ \ct -> toView $ CEvtContactUpdated user ct ct
-  forM_ gs $ \g -> toView $ CEvtGroupUpdated user g g Nothing Nothing
+unverifyOtherNameChats user ni@SimplexNameInfo {nameType, nameDomain} chatRef@(ChatRef cType chatId _) = do
+  withFastStore' $ \db -> case nameType of
+    NTContact -> do
+      unverifyNameContacts db user nameDomain (idOf CTDirect)
+      unverifyNameGroups db user True nameDomain (idOf CTGroup)
+    NTPublicGroup -> unverifyNameGroups db user False nameDomain (Just chatId)
+  toView $ CEvtNameVerified user ni chatRef
+  where
+    idOf t = if cType == t then Just chatId else Nothing
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfoKeys -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)

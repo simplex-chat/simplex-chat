@@ -2978,6 +2978,32 @@ object ChatController {
           }
         }
       }
+      is CR.NameVerified -> {
+        if (active(r.user)) {
+          val domain = r.simplexName.nameDomain.fullDomainName
+          val contactName = r.simplexName.nameType == SimplexNameType.contact
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.chats.value.filter { it.remoteHostId == rhId && it.id != r.chatRef.id }.forEach { chat ->
+              when (val cInfo = chat.chatInfo) {
+                is ChatInfo.Direct -> {
+                  val p = cInfo.contact.profile
+                  if (contactName && p.contactDomainVerified == true && p.contactDomain?.domain == domain) {
+                    chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Direct(cInfo.contact.copy(profile = p.copy(contactDomainVerified = false))))
+                  }
+                }
+                is ChatInfo.Group -> {
+                  val g = cInfo.groupInfo
+                  val claim = if (contactName) g.businessChat?.businessDomain else if (g.businessChat == null) g.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim else null
+                  if (g.groupDomainVerified == true && claim?.domain == domain) {
+                    chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Group(g.copy(groupDomainVerified = false), groupChatScope = null))
+                  }
+                }
+                else -> {}
+              }
+            }
+          }
+        }
+      }
       is CR.GroupMemberUpdated -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -6776,6 +6802,7 @@ sealed class CR {
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef, val contactRequest: UserContactRequest, val contact_: Contact?): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
+  @Serializable @SerialName("nameVerified") class NameVerified(val user: UserRef, val simplexName: SimplexNameInfo, val chatRef: ChatRef): CR()
   @Serializable @SerialName("groupMemberUpdated") class GroupMemberUpdated(val user: UserRef, val groupInfo: GroupInfo, val fromMember: GroupMember, val toMember: GroupMember): CR()
   @Serializable @SerialName("subscriptionStatus") class SubscriptionStatusEvt(val subscriptionStatus: SubscriptionStatus, val connections: List<String>): CR()
   @Serializable @SerialName("chatInfoUpdated") class ChatInfoUpdated(val user: UserRef, val chatInfo: ChatInfo): CR()
@@ -6977,6 +7004,7 @@ sealed class CR {
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
     is ContactUpdated -> "contactUpdated"
+    is NameVerified -> "nameVerified"
     is GroupMemberUpdated -> "groupMemberUpdated"
     is SubscriptionStatusEvt -> "subscriptionStatus"
     is ChatInfoUpdated -> "chatInfoUpdated"
@@ -7168,6 +7196,7 @@ sealed class CR {
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\ncontact_: ${json.encodeToString(contact_)}")
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
+    is NameVerified -> withUser(user, "simplexName: ${json.encodeToString(simplexName)}\nchatRef: ${json.encodeToString(chatRef)}")
     is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
     is SubscriptionStatusEvt -> "subscriptionStatus $subscriptionStatus\nconnections: $connections"
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
@@ -7451,6 +7480,11 @@ object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
       else -> BadgeServiceErrorCode.Unknown(v)
     }
   override fun serialize(encoder: Encoder, value: BadgeServiceErrorCode) = encoder.encodeString(value.text)
+}
+
+@Serializable
+data class ChatRef(val chatType: String, val chatId: Long) {
+  val id: String get() = (if (chatType == "direct") ChatType.Direct else ChatType.Group).type + chatId
 }
 
 data class ConnectionPlanResult(

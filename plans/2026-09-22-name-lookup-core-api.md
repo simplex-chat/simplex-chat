@@ -233,7 +233,7 @@ Decision 6 (§7) is implemented as follows.
    - `APISetPublicGroupAccess`;
    - `updateContactFromLinkData` and `updateGroupFromLinkData`, when the chat is verified from the link data.
 
-   The flag is cleared on the user's other chats of the name's kind: contacts and business chats for a contact name, channels for a channel name. Core emits `CEvtContactUpdated` or `CEvtGroupUpdated` for each (N36 of `plans/2026-09-28-name-warnings.md`). After "Open new chat" in 3c, a lookup of the name returns the new chat.
+   The flag is cleared on the user's other chats of the name's kind by one `UPDATE` per table: `unverifyNameContacts` (contacts, for a contact name) and `unverifyNameGroups` (business chats for a contact name, channels for a channel name). Core then emits one `CEvtNameVerified {simplexName, chatRef}`; the apps clear the flag on their other chats with that name and kind (N36 of `plans/2026-09-28-name-warnings.md`). After "Open new chat" in 3c, a lookup of the name returns the new chat.
 4. **Prepared chats.** A prepared chat is set verified only when the link's profile claims the name (`APIPrepareContact`, `APIPrepareGroup`).
 5. **UIs.** Both apps plan a name with the default mode, and keep no name state.
 6. **iOS decoding.** Superseded, per the note in §8.

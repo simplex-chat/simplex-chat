@@ -2601,6 +2601,27 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateChatInfo(cInfo)
             }
         }
+    case let .nameVerified(user, simplexName, chatRef):
+        if active(user) {
+            await MainActor.run {
+                let domain = simplexName.nameDomain.fullDomainName
+                let contactName = simplexName.nameType == .contact
+                for chat in m.chats where chat.id != chatRef.id {
+                    switch chat.chatInfo {
+                    case var .direct(contact) where contactName && contact.profile.contactDomainVerified == true && contact.profile.contactDomain?.domain == domain:
+                        contact.profile.contactDomainVerified = false
+                        m.updateChatInfo(.direct(contact: contact))
+                    case var .group(groupInfo, _) where groupInfo.groupDomainVerified == true:
+                        let claim = contactName ? groupInfo.businessChat?.businessDomain : groupInfo.businessChat == nil ? groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim : nil
+                        if claim?.domain == domain {
+                            groupInfo.groupDomainVerified = false
+                            m.updateChatInfo(.group(groupInfo: groupInfo, groupChatScope: nil))
+                        }
+                    default: ()
+                    }
+                }
+            }
+        }
     case let .groupMemberUpdated(user, groupInfo, _, toMember):
         if active(user) {
             await MainActor.run {

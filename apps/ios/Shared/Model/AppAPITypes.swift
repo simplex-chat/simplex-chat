@@ -1180,6 +1180,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case contactSndReady(user: UserRef, contact: Contact)
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest, chat_: ChatData?)
     case contactUpdated(user: UserRef, toContact: Contact)
+    case nameVerified(user: UserRef, simplexName: SimplexNameInfo, chatRef: ChatRef)
     case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
     case subscriptionStatus(subscriptionStatus: SubscriptionStatus, connections: [String])
     case chatInfoUpdated(user: UserRef, chatInfo: ChatInfo)
@@ -1262,6 +1263,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .contactSndReady: "contactSndReady"
         case .receivedContactRequest: "receivedContactRequest"
         case .contactUpdated: "contactUpdated"
+        case .nameVerified: "nameVerified"
         case .groupMemberUpdated: "groupMemberUpdated"
         case .subscriptionStatus: "subscriptionStatus"
         case .chatInfoUpdated: "chatInfoUpdated"
@@ -1338,6 +1340,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .contactSndReady(u, contact): return withUser(u, String(describing: contact))
         case let .receivedContactRequest(u, contactRequest, chat_): return withUser(u, "contactRequest: \(String(describing: contactRequest))\nchat_: \(String(describing: chat_))")
         case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
+        case let .nameVerified(u, simplexName, chatRef): return withUser(u, "simplexName: \(simplexName)\nchatRef: \(chatRef)")
         case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
         case let .subscriptionStatus(status, conns): return "subscriptionStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
         case let .chatInfoUpdated(u, chatInfo): return withUser(u, String(describing: chatInfo))
@@ -1441,6 +1444,13 @@ enum ChatPagination {
 enum OwnerVerification: Decodable, Hashable {
     case verified
     case failed(reason: String)
+}
+
+struct ChatRef: Decodable, Hashable {
+    var chatType: String
+    var chatId: Int64
+
+    var id: ChatId { (chatType == "direct" ? ChatType.direct : ChatType.group).rawValue + String(chatId) }
 }
 
 struct ConnectionPlanResult {

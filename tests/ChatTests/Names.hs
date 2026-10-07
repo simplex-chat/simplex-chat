@@ -390,7 +390,7 @@ aliceSimplexName :: SimplexNameInfo
 aliceSimplexName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
 
 withAliceName :: HasCallStack => (NameRegistry -> NameRecord -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
-withAliceName test ps = withSmpServerAndNames $ \reg ->
+withAliceName test ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (setup reg) ps
   where
     setup reg alice bob = do
@@ -447,7 +447,7 @@ connectBobByName alice bob = do
     (alice <## "bob (Bob): contact is connected")
 
 testPrepareNameNotClaimed :: HasCallStack => TestParams -> IO ()
-testPrepareNameNotClaimed ps = withSmpServerAndNames $ \reg ->
+testPrepareNameNotClaimed ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     test reg alice bob = do
@@ -577,7 +577,7 @@ testPlanNameResolveNever = withAliceName $ \reg _r alice bob -> do
   bob <## "no matching chat found, name resolution is disabled"
 
 testPlanKnownNameAddressChanged :: HasCallStack => TestParams -> IO ()
-testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
+testPlanKnownNameAddressChanged ps = withSmpServerAndNames ps $ \reg ->
   testChat3 aliceProfile bobProfile cathProfile (test reg) ps
   where
     test reg alice bob cath = do
@@ -610,7 +610,7 @@ testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
       cath <## "to reject: /rc bob (the sender will NOT be notified)"
 
 testPlanKnownNameNewChatOpened :: HasCallStack => TestParams -> IO ()
-testPlanKnownNameNewChatOpened ps = withSmpServerAndNames $ \reg ->
+testPlanKnownNameNewChatOpened ps = withSmpServerAndNames ps $ \reg ->
   testChat3 aliceProfile bobProfile cathProfile (test reg) ps
   where
     test reg alice bob cath = do
@@ -629,7 +629,7 @@ testPlanKnownNameNewChatOpened ps = withSmpServerAndNames $ \reg ->
       bob <## "SimpleX name: @alice.simplex (verified)"
 
 testPlanKnownNameMovedToKnownChat :: HasCallStack => TestParams -> IO ()
-testPlanKnownNameMovedToKnownChat ps = withSmpServerAndNames $ \reg ->
+testPlanKnownNameMovedToKnownChat ps = withSmpServerAndNames ps $ \reg ->
   testChat3 aliceProfile bobProfile cathProfile (test reg) ps
   where
     test reg alice bob cath = do
@@ -677,7 +677,7 @@ testPlanNameResolverFailed = withAliceName $ \reg _r _alice bob -> do
     brokenName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "broken" [])
 
 testPlanKnownNameLinkFailed :: HasCallStack => TestParams -> IO ()
-testPlanKnownNameLinkFailed ps = withSmpServerAndNames $ \reg ->
+testPlanKnownNameLinkFailed ps = withSmpServerAndNames ps $ \reg ->
   testChat3 aliceProfile bobProfile cathProfile (test reg) ps
   where
     test reg alice bob cath = do
@@ -696,7 +696,7 @@ testPlanKnownNameLinkFailed ps = withSmpServerAndNames $ \reg ->
       cath <##. "error: "
 
 testPlanChannelNameMoved :: HasCallStack => TestParams -> IO ()
-testPlanChannelNameMoved ps = withSmpServerAndNames $ \reg ->
+testPlanChannelNameMoved ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -736,7 +736,7 @@ testPlanChannelNameMoved ps = withSmpServerAndNames $ \reg ->
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
 testPlanChannelNameMovedNoRelays :: HasCallStack => TestParams -> IO ()
-testPlanChannelNameMovedNoRelays ps = withSmpServerAndNames $ \reg ->
+testPlanChannelNameMovedNoRelays ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -771,7 +771,7 @@ testPlanChannelNameMovedNoRelays ps = withSmpServerAndNames $ \reg ->
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
 testPlanNameChannelNoRelays :: HasCallStack => TestParams -> IO ()
-testPlanNameChannelNoRelays ps = withSmpServerAndNames $ \reg ->
+testPlanNameChannelNoRelays ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -873,7 +873,7 @@ testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice
   bob <## "known contact @alice"
 
 testPlanNameOtherKindBusiness :: HasCallStack => TestParams -> IO ()
-testPlanNameOtherKindBusiness ps = withSmpServerAndNames $ \reg ->
+testPlanNameOtherKindBusiness ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -925,7 +925,7 @@ testPlanNameOtherKindBusiness ps = withSmpServerAndNames $ \reg ->
       cc <## "use #biz <message> to send messages"
 
 withTeamChats :: HasCallStack => (NameRegistry -> String -> String -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
-withTeamChats test ps = withSmpServerAndNames $ \reg ->
+withTeamChats test ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
