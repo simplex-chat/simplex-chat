@@ -130,7 +130,7 @@ sealed class BadgeStoreError: Exception() {
   class BillingError(val responseCode: Int, val debugMessage: String): BadgeStoreError()
   object StoreUnavailable: BadgeStoreError()
   object NoActiveProfile: BadgeStoreError()
-  class InvoiceRefused(val err: ChatError): BadgeStoreError()
+  class ApiError(val err: ChatError): BadgeStoreError()
 
   override val message: String
     get() = when (this) {
@@ -138,7 +138,7 @@ sealed class BadgeStoreError: Exception() {
       is BillingError -> "billingError(responseCode: $responseCode, $debugMessage)"
       is StoreUnavailable -> "storeUnavailable"
       is NoActiveProfile -> "noActiveProfile"
-      is InvoiceRefused -> "invoiceRefused(${err.string})"
+      is ApiError -> "apiError(${err.string})"
     }
 }
 
@@ -272,37 +272,36 @@ object BadgeStore {
   private suspend fun handOver(receipt: BadgeStoreReceipt) {
     val rhId = chatModel.remoteHostId()
     val userId = chatModel.currentUser.value?.userId ?: return
-    try {
-      when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, ServicePayment.Google(receipt.productId, receipt.token))) {
-        is BadgePurchaseResult.Held -> {
-          // core holds it durably now, so Play must not refund it after three days unacknowledged
-          acknowledge(receipt)
-          withContext(Dispatchers.Main) {
-            // the answer is the owner's, which may be another profile and a hidden one
-            if (chatModel.controller.activeUser(rhId, r.user)) {
-              BadgeModel.set(rhId, r.user.userId, r.badgeState)
-              setStorePurchases(rhId, r.user.userId, r.storePurchases)
-            }
+    when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, ServicePayment.Google(receipt.productId, receipt.token))) {
+      is BadgePurchaseResult.Held -> {
+        // core holds it durably now, so Play must not refund it after three days unacknowledged
+        acknowledge(receipt)
+        withContext(Dispatchers.Main) {
+          // the answer is the owner's, which may be another profile and a hidden one
+          if (chatModel.controller.activeUser(rhId, r.user)) {
+            BadgeModel.set(rhId, r.user.userId, r.badgeState)
+            setStorePurchases(rhId, r.user.userId, r.storePurchases)
           }
-        }
-        is BadgePurchaseResult.Credited -> {
-          withContext(Dispatchers.Main) {
-            if (chatModel.controller.activeUser(rhId, r.user)) {
-              BadgeModel.set(rhId, r.user.userId, r.badgeState)
-              chatModel.updateUser(r.user)
-              if (r.badgeState?.shown == true) appPrefs.supporterBannerShown.set(true)
-            }
-          }
-          resolve(receipt, refusal = null)
-        }
-        is BadgePurchaseResult.Failed -> {
-          Log.e(TAG, "BadgeStore.handOver: ${r.err?.string}")
-          if (badgeReceiptRefused(r.err)) resolve(receipt, refusal = r.err)
         }
       }
-    } catch (e: Exception) {
-      if (e is CancellationException) throw e
-      Log.e(TAG, "BadgeStore.handOver: ${e.stackTraceToString()}")
+      is BadgePurchaseResult.Credited -> {
+        withContext(Dispatchers.Main) {
+          if (chatModel.controller.activeUser(rhId, r.user)) {
+            BadgeModel.set(rhId, r.user.userId, r.badgeState)
+            chatModel.updateUser(r.user)
+            if (r.badgeState?.shown == true) appPrefs.supporterBannerShown.set(true)
+          }
+        }
+        resolve(receipt, refusal = null)
+      }
+      // a refusal is announced where it reads as its own, so only an unexpected answer reaches the buyer
+      is BadgePurchaseResult.Failed ->
+        if (badgeReceiptRefused(r.err)) {
+          Log.e(TAG, "BadgeStore.handOver: ${r.err?.string}")
+          resolve(receipt, refusal = r.err)
+        } else {
+          throw r.err?.let(BadgeStoreError::ApiError) ?: Exception("apiPurchaseBadge: unexpected response")
+        }
     }
   }
 
@@ -337,7 +336,13 @@ object BadgeStore {
     when (outcome) {
       is BadgePurchaseOutcome.Purchased ->
         if (outcome.receipt.productId !in badgeOneTimeProductIds) finish(outcome.receipt)
-        else handOver(outcome.receipt)
+        // no buyer to tell: the purchase stays unfinished and the next sweep hands it over again
+        else try {
+          handOver(outcome.receipt)
+        } catch (e: Exception) {
+          if (e is CancellationException) throw e
+          Log.e(TAG, "BadgeStore.reconcile: ${e.stackTraceToString()}")
+        }
       is BadgePurchaseOutcome.Pending ->
         if (outcome.invoiceId != null) withContext(Dispatchers.Main) { waitingForApproval.value += outcome.invoiceId }
       is BadgePurchaseOutcome.Cancelled -> {}

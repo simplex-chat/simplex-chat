@@ -207,7 +207,7 @@ final class BadgeStore: ObservableObject {
         do {
             let outcome = try await storePurchase(product, invoiceId)
             if case let .purchased(receipt) = outcome, receipt.signatureVerified {
-                await handOver(receipt)
+                try await handOver(receipt)
             }
             await MainActor.run { buying = false }
             return outcome
@@ -231,7 +231,7 @@ final class BadgeStore: ObservableObject {
 
     // Core holds the receipt and credits it; the transaction stays unfinished until core answers it credited
     // or refused, as an unfinished transaction is what the store re-delivers if anything is lost on the way.
-    private func handOver(_ receipt: BadgeStoreReceipt) async {
+    private func handOver(_ receipt: BadgeStoreReceipt) async throws {
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else { return }
         do {
             switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, .apple(jws: receipt.jws)) {
@@ -253,9 +253,10 @@ final class BadgeStore: ObservableObject {
                 }
                 await resolve(receipt, refusal: nil)
             }
-        } catch let error {
+        // a refusal is announced where it reads as its own, so only an unexpected answer reaches the buyer
+        } catch let error where badgeReceiptRefused(error) {
             logger.error("BadgeStore.handOver: \(responseError(error))")
-            if badgeReceiptRefused(error) { await resolve(receipt, refusal: error) }
+            await resolve(receipt, refusal: error)
         }
     }
 
@@ -294,7 +295,10 @@ final class BadgeStore: ObservableObject {
         if !badgeOneTimeProductIds.contains(receipt.productId) {
             await receipt.transaction.finish()
         } else if receipt.signatureVerified {
-            await handOver(receipt)
+            // no buyer to tell: the receipt stays unfinished and the next sweep hands it over again
+            do { try await handOver(receipt) } catch let error {
+                logger.error("BadgeStore.reconcile: \(responseError(error))")
+            }
         }
     }
 

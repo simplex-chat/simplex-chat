@@ -99,7 +99,7 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
       purchasing.value = false
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.badges_purchase_error),
-        text = if (e is BadgeStoreError.InvoiceRefused) chatModel.controller.redeemErrorText(e.err, purchase = true)
+        text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
           else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
       )
     }

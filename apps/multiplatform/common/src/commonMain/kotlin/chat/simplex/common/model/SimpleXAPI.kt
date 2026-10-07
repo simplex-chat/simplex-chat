@@ -607,7 +607,7 @@ object ChatController {
   suspend fun apiCreateBadgeInvoice(rh: Long?, userId: Long): String {
     val r = sendCmd(rh, CC.ApiCreateBadgeInvoice(userId))
     if (r is API.Result && r.res is CR.BadgeInvoice) return r.res.invoiceId
-    if (r is API.Error) throw BadgeStoreError.InvoiceRefused(r.err)
+    if (r is API.Error) throw BadgeStoreError.ApiError(r.err)
     throw Exception("apiCreateBadgeInvoice: unexpected ${r.responseType}")
   }
 
