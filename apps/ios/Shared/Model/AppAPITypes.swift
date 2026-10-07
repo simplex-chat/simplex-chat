@@ -679,8 +679,6 @@ enum ChatCommand: ChatCmdProtocol {
             return .apiRedeemBadgeCode(userId: userId, code: obfuscate(code))
         case let .apiPurchaseBadge(userId, echoedInvoiceId, .apple(jws)):
             return .apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, payment: .apple(jws: obfuscate(jws)))
-        case let .apiPurchaseBadge(userId, echoedInvoiceId, .google(productId, token)):
-            return .apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, payment: .google(productId: productId, token: obfuscate(token)))
         default: return self
         }
     }
@@ -730,10 +728,8 @@ enum ChatCommand: ChatCmdProtocol {
     }
 }
 
-// core parses it with a "type" tag, not the key-per-case form Swift would synthesize
 enum ServicePayment: Encodable {
     case apple(jws: String)
-    case google(productId: String, token: String)
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -741,15 +737,11 @@ enum ServicePayment: Encodable {
         case let .apple(jws):
             try container.encode("apple", forKey: .type)
             try container.encode(jws, forKey: .jws)
-        case let .google(productId, token):
-            try container.encode("google", forKey: .type)
-            try container.encode(productId, forKey: .productId)
-            try container.encode(token, forKey: .token)
         }
     }
 
     private enum CodingKeys: String, CodingKey {
-        case type, jws, productId, token
+        case type, jws
     }
 }
 

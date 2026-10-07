@@ -4552,7 +4552,6 @@ sealed class CC {
       // a code or a store receipt is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
       is ApiRedeemBadgeCode -> ApiRedeemBadgeCode(userId, obfuscate(code))
       is ApiPurchaseBadge -> ApiPurchaseBadge(userId, echoedInvoiceId, when (payment) {
-        is ServicePayment.Apple -> ServicePayment.Apple(obfuscate(payment.jws))
         is ServicePayment.Google -> ServicePayment.Google(payment.productId, obfuscate(payment.token))
       })
       else -> this
@@ -4588,10 +4587,9 @@ sealed class CC {
   }
 }
 
-// encoded as the base type, so the "type" tag core parses by is included
+// the field must stay typed as the sealed base, or kotlinx omits the "type" tag core parses by
 @Serializable
 sealed class ServicePayment {
-  @Serializable @SerialName("apple") class Apple(val jws: String): ServicePayment()
   @Serializable @SerialName("google") class Google(val productId: String, val token: String): ServicePayment()
 }
 
