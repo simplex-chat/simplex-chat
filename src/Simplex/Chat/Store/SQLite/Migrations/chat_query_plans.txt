@@ -1124,6 +1124,15 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH h USING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
 
 Query: 
+            SELECT s.member_relations_vector, r.index_in_group
+            FROM group_members s, group_members r
+            WHERE s.local_display_name = ? AND r.local_display_name = ?
+          
+Plan:
+SCAN s
+SEARCH r USING AUTOMATIC PARTIAL COVERING INDEX (local_display_name=?)
+
+Query: 
             SELECT t.roster_transfer_id, t.roster_version, t.roster_digest, t.sending_owner_gm_id, t.broker_ts,
                    t.roster_msg_chat_binding, t.roster_msg_signatures, t.roster_msg_body
             FROM rcv_roster_transfers t
@@ -4200,15 +4209,6 @@ SEARCH s USING PRIMARY KEY (file_id=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH cs USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: 
-        SELECT s.member_relations_vector, r.index_in_group
-        FROM group_members s, group_members r
-        WHERE s.local_display_name = ? AND r.local_display_name = ?
-      
-Plan:
-SCAN s
-SEARCH r USING AUTOMATIC PARTIAL COVERING INDEX (local_display_name=?)
 
 Query: 
         SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled,
@@ -7470,9 +7470,9 @@ Query: SELECT connection_id FROM connections WHERE user_id = ? AND group_member_
 Plan:
 SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 
-Query: SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
+Query: SELECT contact_id FROM contacts WHERE user_id = ? AND (chat_item_ttl > 0 OR chat_item_ttl IS NULL)
 Plan:
-SCAN contacts
+SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 
 Query: SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0
 Plan:
@@ -7568,9 +7568,9 @@ Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMI
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
-Query: SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
+Query: SELECT group_id FROM groups WHERE user_id = ? AND (chat_item_ttl > 0 OR chat_item_ttl IS NULL)
 Plan:
-SCAN groups
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
 Query: SELECT group_id FROM groups WHERE user_id = ? AND creating_in_progress = 1 AND created_at <= ?
 Plan:
@@ -7607,6 +7607,10 @@ SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=? AN
 Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
+
+Query: SELECT index_in_group, member_relations_vector FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
 
 Query: SELECT issue_failed_since, issue_error FROM badge_purchases
 Plan:
