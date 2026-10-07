@@ -5274,10 +5274,9 @@ handOverStoreReceipt presentingUser echoedInvoiceId payment = do
   BadgeReceiptRecord {ownerId, status} <-
     withStore' (\db -> holdStoreReceipt db g presentingUser echoedInvoiceId txRef payment now)
       >>= maybe (throwChatError $ CEInternalError "store receipt was not recorded") pure
-  lift $ resumeStoreReceiptWork ownerId
   owner <- withStore $ \db -> getUser db ownerId
   case status of
-    RSHeld {} -> badgeStateResponse owner
+    RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
     RSCredited {badgePurchaseId} -> do
       cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
       cred@(BadgeCredential _ _ _ info) <- maybe (throwChatError $ CEInternalError "credited store purchase has no credential") pure cred_
