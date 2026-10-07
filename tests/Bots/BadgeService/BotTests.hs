@@ -117,49 +117,55 @@ badgeServiceTests = do
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
   it "should present the month already issued when a previous pass did not" testPresentationCatchesUp
   describe "store purchases" $ do
-    it "should credit the months a store receipt paid for and issue the first" testStorePurchase
-    it "should return the same credential for a receipt its key presents again, writing nothing" testStorePurchaseReplay
-    it "should refuse a receipt another key was credited with" testStoreReceiptUsed
-    it "should refuse a receipt the store does not vouch for, with no retry" testStoreReceiptInvalid
-    it "should answer a store it cannot reach as retryable, writing nothing" testStoreUnreachable
-    it "should write nothing for a pending purchase, and credit it once when it settles" testStorePending
-    it "should refuse a product that grants no badge" testStoreUnknownProduct
-    it "should refuse a store purchase that carries an upgrade" testStoreUpgradeRefused
-    it "should grant the badge of the product the receipt proves" testStoreBadgeTypeFromProduct
-    it "should keep refusing invoice and receipt funding" testNonStoreFundingRefused
-    it "should replay a receipt to its own key while the store is down, and to no other" testStoreReplayWhileStoreDown
-    it "should answer a throwing Apple verifier as internal, and a failing or hanging Google one as retryable" testStoreVerifierFailures
-    it "should credit a transaction claimed twice at once only once" testStoreClaimRace
-    it "should answer a request that lost the claim race with the credential the winner was given" testStorePurchaseRace
-    it "should refuse as receipt_used a key that lost the claim race to another key, crediting nothing" testStorePurchaseRaceOtherKey
-    it "should refuse a store with no verifier with no retry, and the client should hold the receipt, showing why it is not credited" testPurchaseWithNoVerifier
-    it "should credit nothing when the verified transaction is not the one the evidence names" testStoreVerifiedOtherTransaction
-    it "should refuse a verified quantity other than one as internal, and the client should hold the receipt" testStoreQuantityRefused
-    it "should refuse a store purchase whose purchaseKey is not the verified signer" testStorePurchaseKeyMismatch
-    it "should hold a Play receipt until the worker credits it, and answer it as credited after" testPurchaseBadge
-    it "should credit an App Store purchase by its JWS" testPurchaseBadgeAppStore
-    it "should keep a refusal on the record, and hold a pending receipt until it settles" testPurchaseStash
-    it "should keep a receipt credited to another key as refused" testPurchaseStashReceiptUsed
-    it "should hold a Play token the service will not send to Play" testPurchaseUnsentPlayToken
-    it "should hold a store receipt while a badge is held, without attempting it" testPurchaseWhileBadgeHeld
-    it "should answer a receipt handed over under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
-    it "should credit a purchase first handed over under another profile to that profile" testPurchaseStrandedUnderOtherProfile
-    it "should credit a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
-    it "should credit a receipt to the profile that created its invoice, and answer as that profile" testInvoiceOtherProfile
-    it "should resolve the same receipt to the same record, and answer it as credited" testInvoiceSameReceiptTwice
-    it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
-    it "should attach a late receipt to its record, and credit the profile that created it" testInvoiceLateReceipt
-    it "should list a record however old until a receipt reaching it is settled" testInvoiceAgedOut
-    it "should refuse an invoice with no service configured or while a badge is held, creating no record" testInvoiceRefusedBeforeCharge
-    it "should hold a receipt for an invoice while a badge is held, without attempting it" testInvoiceWhileBadgeHeld
-    it "should list only the asking profile's open store purchases" testInvoiceStateOtherProfile
-    it "should retry a receipt the service could not verify, and credit it with no trigger at all" testStoreReceiptRetried
-    it "should credit a second receipt while an earlier one waits for the store" testStoreReceiptNotBlocked
-    it "should answer a refused receipt from the record, sending nothing, and not list it" testStoreRefusalKept
-    it "should announce a settlement to an owner that is not active, and print nothing for a hidden one" testStoreSettledOtherProfile
-    it "should resolve one new transaction handed over twice at once to one record" testStoreReceiptTwoAtOnce
-    it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
-    it "should keep a receipt whose attempt throws" testStoreReceiptAttemptThrows
+    describe "what the store answers" $ do
+      it "should credit the months a store receipt paid for and issue the first" testStorePurchase
+      it "should return the same credential for a receipt its key presents again, writing nothing" testStorePurchaseReplay
+      it "should refuse a receipt another key was credited with" testStoreReceiptUsed
+      it "should refuse a receipt the store does not vouch for, with no retry" testStoreReceiptInvalid
+      it "should answer a store it cannot reach as retryable, writing nothing" testStoreUnreachable
+      it "should write nothing for a pending purchase, and credit it once when it settles" testStorePending
+      it "should refuse a product that grants no badge" testStoreUnknownProduct
+      it "should refuse a store purchase that carries an upgrade" testStoreUpgradeRefused
+      it "should grant the badge of the product the receipt proves" testStoreBadgeTypeFromProduct
+      it "should keep refusing invoice and receipt funding" testNonStoreFundingRefused
+      it "should replay a receipt to its own key while the store is down, and to no other" testStoreReplayWhileStoreDown
+      it "should answer a throwing Apple verifier as internal, and a failing or hanging Google one as retryable" testStoreVerifierFailures
+    describe "claim races" $ do
+      it "should credit a transaction claimed twice at once only once" testStoreClaimRace
+      it "should answer a request that lost the claim race with the credential the winner was given" testStorePurchaseRace
+      it "should refuse as receipt_used a key that lost the claim race to another key, crediting nothing" testStorePurchaseRaceOtherKey
+    describe "the service's own checks" $ do
+      it "should refuse a store with no verifier with no retry, and the client should hold the receipt, showing why it is not credited" testPurchaseWithNoVerifier
+      it "should credit nothing when the verified transaction is not the one the evidence names" testStoreVerifiedOtherTransaction
+      it "should refuse a verified quantity other than one as internal, and the client should hold the receipt" testStoreQuantityRefused
+      it "should refuse a store purchase whose purchaseKey is not the verified signer" testStorePurchaseKeyMismatch
+    describe "the hand-over" $ do
+      it "should hold a Play receipt until the worker credits it, and answer it as credited after" testPurchaseBadge
+      it "should credit an App Store purchase by its JWS" testPurchaseBadgeAppStore
+      it "should keep a refusal on the record, and hold a pending receipt until it settles" testPurchaseStash
+      it "should keep a receipt credited to another key as refused" testPurchaseStashReceiptUsed
+      it "should hold a Play token the service will not send to Play" testPurchaseUnsentPlayToken
+      it "should hold a store receipt while a badge is held, without attempting it" testPurchaseWhileBadgeHeld
+      it "should answer a receipt handed over under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
+      it "should credit a purchase first handed over under another profile to that profile" testPurchaseStrandedUnderOtherProfile
+      it "should credit a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
+    describe "invoice first" $ do
+      it "should credit a receipt to the profile that created its invoice, and answer as that profile" testInvoiceOtherProfile
+      it "should resolve the same receipt to the same record, and answer it as credited" testInvoiceSameReceiptTwice
+      it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
+      it "should attach a late receipt to its record, and credit the profile that created it" testInvoiceLateReceipt
+      it "should list a record however old until a receipt reaching it is settled" testInvoiceAgedOut
+      it "should refuse an invoice with no service configured or while a badge is held, creating no record" testInvoiceRefusedBeforeCharge
+      it "should hold a receipt for an invoice while a badge is held, without attempting it" testInvoiceWhileBadgeHeld
+      it "should list only the asking profile's open store purchases" testInvoiceStateOtherProfile
+    describe "the receipt worker" $ do
+      it "should retry a receipt the service could not verify, and credit it with no trigger at all" testStoreReceiptRetried
+      it "should credit a second receipt while an earlier one waits for the store" testStoreReceiptNotBlocked
+      it "should answer a refused receipt from the record, sending nothing, and not list it" testStoreRefusalKept
+      it "should announce a settlement to an owner that is not active, and print nothing for a hidden one" testStoreSettledOtherProfile
+      it "should resolve one new transaction handed over twice at once to one record" testStoreReceiptTwoAtOnce
+      it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
+      it "should keep a receipt whose attempt throws" testStoreReceiptAttemptThrows
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
