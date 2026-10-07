@@ -61,7 +61,7 @@ import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), OpenStorePurchase (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
@@ -76,6 +76,8 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
+import Simplex.Chat.PaymentService.Types (PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
@@ -103,9 +105,10 @@ import qualified Simplex.Chat.Util as U
 import Simplex.Chat.Web (webPreviewWorker)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSizeHard)
 import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Client (getAgentWorker, waitForUserNetwork, waitForWork, waitWhileSuspended, withWork_)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), Worker (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), withRetryInterval)
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay, withRetryInterval, withRetryIntervalCount)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
@@ -261,6 +264,7 @@ startChatController mainApp enableSndFiles serviceRequests = do
           startRelayRequestWorker_
           startCleanupManager
           mapM_ startBadgeWork users
+          startStoreReceiptWorkers users
           void $ forkIO $ mapM_ startExpireCIs users
           startRelayChecks users
           startWebPreview users
@@ -278,6 +282,10 @@ startChatController mainApp enableSndFiles serviceRequests = do
     startRelayRequestWorker_ =
       runExceptT startRelayRequestWorker >>= \case
         Left e -> liftIO $ putStrLn $ "Error starting relay request worker: " <> show e
+        Right _ -> pure ()
+    startStoreReceiptWorkers users =
+      runExceptT (mapM_ startStoreReceiptWork users) >>= \case
+        Left e -> liftIO $ putStrLn $ "Error starting store receipt workers: " <> show e
         Right _ -> pure ()
     startCleanupManager = do
       cleanupAsync <- asks cleanupManagerAsync
@@ -357,7 +365,7 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers, badgeWorkers} = do
+stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers, badgeWorkers, storeReceiptWorkers} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
@@ -371,6 +379,7 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
   clearMap deliveryJobWorkers >>= mapM_ cancelWorker
   clearMap relayRequestWorkers >>= mapM_ cancelWorker
   stopBadgeWorkers badgeWorkers
+  clearMap storeReceiptWorkers >>= mapM_ cancelWorker
   closeFiles sndFiles
   closeFiles rcvFiles
   atomically $ do
@@ -603,6 +612,7 @@ processChatCommand cxt nm = \case
         void . forkIO $ startFilesToReceive users
         setAllExpireCIFlags True
         mapM_ startBadgeWork users
+      mapM_ startStoreReceiptWork users
     ok_
   APISuspendChat t -> do
     chatWriteVar chatActivated False
@@ -3562,10 +3572,19 @@ processChatCommand cxt nm = \case
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
+  APIPurchaseBadge userId echoedInvoiceId payment -> withUserId userId $ \user -> handOverStoreReceipt user echoedInvoiceId payment
+  APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
+    void requireBadgeService
+    refuseWhileBadgeHeld user
+    g <- asks random
+    now <- badgeNow
+    invoiceId <- UUID.toText <$> liftIO V4.nextRandom
+    withStore' $ \db -> createBadgeStoreReceipt db g user invoiceId now
+    pure $ CRBadgeInvoice user invoiceId
   APIGetBadgeState userId -> withUserId' userId $ \user -> do
     -- the read also signals the worker, whose results follow as CEvtBadgeChanged
     lift $ startBadgeWork user
-    CRBadgeState user <$> getUserBadgeState user
+    badgeStateResponse user
   APIGetBadgeLedger userId badgePurchaseId -> withUserId userId $ \user ->
     CRBadgeLedger user <$> withStore' (\db -> getBadgeLedger db user badgePurchaseId)
   APIAckBadgeAlert userId badgePurchaseId alertKind snooze episode -> withUserId userId $ \user -> do
@@ -3574,7 +3593,7 @@ processChatCommand cxt nm = \case
     withStore' $ \db -> setBadgeAlertAcked db user badgePurchaseId alertKind episode snoozeUntil
     -- after the write, so the pass it signals arms a wake for the snooze rather than raising again
     lift $ startBadgeWork user
-    CRBadgeState user <$> getUserBadgeState user
+    badgeStateResponse user
   SetBotCommands commands -> withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
@@ -5219,30 +5238,20 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user@User {userId} codeText = do
   code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+  sendTarget <- requireBadgeService
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
   -- the guard, the request and the write are one section: without it two codes redeemed at once
   -- both pass the guard and are both spent, for one badge
   (present_, redeemed) <- withEntityLock "badgeRedeem" (CLBadgeUser userId) $ do
-    redemption_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
-    -- a code already redeemed here is allowed through: re-sending it returns the badge it bought
-    -- and adds nothing. Refused before its keys are stashed and before the request, so it stays unspent
-    replaying <- maybe (pure False) (\r -> withStore' $ \db -> isJust <$> getCodeBadgePurchase db r) redemption_
-    unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
-    redemption@BadgeCodeRedemption {purchaseKey, purchasePrivKey, masterKey} <-
-      maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
-    let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
-    respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
-    respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
-    case J.fromJSON (J.Object respData) of
-      J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
-      J.Success BSPError {code = errCode} -> do
-        when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db (redemptionId redemption)
+    stash_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
+    stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeCodeRedemption db g user codeSent now
+    requestBadgeStash nm user sendTarget stash BSCRedeemBadgeCode {masterKey, code = codeSent} >>= \case
+      Left (errCode, _) -> do
+        when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db user codeSent
         throwRedeemError $ BREServiceError errCode
-      J.Success BSPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user redemption cred statement
-      J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
+      Right redeemed -> pure redeemed
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
   pure redeemed
@@ -5253,6 +5262,69 @@ redeemBadgeCode nm user@User {userId} codeText = do
       BSECodeUsed -> True
       BSECodeExpired -> True
       _ -> False
+
+-- | The app hands a receipt over until it is answered credited or refused, under whichever profile is
+-- active; the answer is the owner's, read from the record. Nothing is sent: the owner's receipt worker is.
+handOverStoreReceipt :: User -> Maybe Text -> ServicePayment -> CM ChatResponse
+handOverStoreReceipt presentingUser echoedInvoiceId payment = do
+  txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
+  void requireBadgeService
+  g <- asks random
+  now <- badgeNow
+  BadgeReceiptRecord {ownerId, status} <-
+    withStore' (\db -> holdStoreReceipt db g presentingUser echoedInvoiceId txRef payment now)
+      >>= maybe (throwChatError $ CEInternalError "store receipt was not recorded") pure
+  owner <- withStore $ \db -> getUser db ownerId
+  case status of
+    RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
+    RSCredited {badgePurchaseId} -> do
+      cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
+      cred@(BadgeCredential _ _ _ info) <- maybe (throwChatError $ CEInternalError "credited store purchase has no credential") pure cred_
+      CRBadgeRedeemed owner (OwnBadge cred (mkBadgeStatus now (Just True) info)) False <$> getUserBadgeState owner
+    RSRefused {refusal = Just BIFServiceError {code}} -> throwRedeemError $ BREServiceError code
+    RSRefused {} -> throwChatError $ CEInternalError "store purchase refused for no recorded reason"
+
+-- | The receipt will never be credited to its key; any other refusal may pass on a retry.
+storeReceiptRefused :: BadgeServiceErrorCode -> Bool
+storeReceiptRefused = \case
+  BSEReceiptInvalid -> True
+  BSEReceiptUsed -> True
+  _ -> False
+
+-- | The same reference the service claims a transaction by, read without verifying anything.
+storeTransactionRef :: ServicePayment -> Maybe StoreTransactionRef
+storeTransactionRef = \case
+  SPApple {jws} -> StoreTransactionRef PPApple <$> appleTransactionId jws
+  SPGoogle {token} -> Just $ StoreTransactionRef PPGoogle $ googlePurchaseRef token
+  SPInvoice {} -> Nothing
+  SPReceipt {} -> Nothing
+
+-- | A stash that already bought a badge here passes, as re-sending it adds nothing; any other is
+-- refused while a badge is held, before its keys are stashed or sent, so the funding stays unspent.
+stashBadgeKeys :: User -> Maybe BadgeStash -> (DB.Connection -> IO BadgeStash) -> CM BadgeStash
+stashBadgeKeys user stash_ createStash = do
+  replaying <- maybe (pure False) (\s -> withStore' $ \db -> isJust <$> getStashBadgePurchase db s) stash_
+  unless replaying $ refuseWhileBadgeHeld user
+  maybe (withStore' createStash) pure stash_
+
+requireBadgeService :: CM (ConnectTarget 'CMContact)
+requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+
+refuseWhileBadgeHeld :: User -> CM ()
+refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
+
+-- | One attempt to turn a stash into a badge. A refusal is answered rather than thrown, with the
+-- service's retryAfter.
+requestBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (Maybe User, ChatResponse))
+requestBadgeStash nm user sendTarget stash@BadgeStash {purchaseKey, purchasePrivKey} request = do
+  let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request}
+  respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
+  respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
+  case J.fromJSON (J.Object respData) of
+    J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
+    J.Success BSPError {code, retryAfter} -> pure $ Left (code, retryAfter)
+    J.Success BSPBadgeCredential {credential = Just cred, statement} -> Right <$> storeRedeemedBadge user stash cred statement
+    J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
 
 throwRedeemError :: BadgeRedeemError -> CM a
 throwRedeemError = throwChatError . CEBadgeRedeemError
@@ -5362,6 +5434,89 @@ waitBadgeWake badgeWork now = \case
 badgeMaxWake :: NominalDiffTime
 badgeMaxWake = 100 * 365 * nominalDay
 
+startStoreReceiptWork :: User -> CM ()
+startStoreReceiptWork User {userId} = do
+  held <- withStore' $ \db -> getNextHeldStoreReceipt db userId
+  when (either (const False) isJust held) $ lift $ resumeStoreReceiptWork userId
+
+resumeStoreReceiptWork :: UserId -> CM' ()
+resumeStoreReceiptWork userId = do
+  ws <- asks storeReceiptWorkers
+  a <- asks smpAgent
+  void $ getAgentWorker "store_receipt" True a userId ws $ runStoreReceiptWorker a userId
+
+runStoreReceiptWorker :: AgentClient -> UserId -> Worker -> CM ()
+runStoreReceiptWorker a userId Worker {doWork} = do
+  scheduled <- newTVarIO S.empty
+  forever $ do
+    lift $ waitForWork doWork
+    withWork_ a doWork (getDueReceipt scheduled) $ \case
+      BadgeReceiptRecord {receiptId, status = RSHeld {stash, payment, retryDelay}} -> creditStoreReceipt a userId receiptId stash payment retryDelay
+      BadgeReceiptRecord {receiptId} -> notHeld receiptId
+  where
+    getDueReceipt scheduled =
+      withStore' (`getNextHeldStoreReceipt` userId) >>= \case
+        Right (Just r@BadgeReceiptRecord {receiptId, status = RSHeld {nextAttemptAt}}) -> do
+          now <- badgeNow
+          if nextAttemptAt <= now
+            then pure $ Right (Just r)
+            else Right Nothing <$ scheduleReceipt scheduled receiptId (diffUTCTime nextAttemptAt now)
+        Right (Just BadgeReceiptRecord {receiptId}) -> Right Nothing <$ notHeld receiptId
+        r -> pure r
+    -- getNextHeldStoreReceipt reads held rows only, so this says its query and its result type disagree
+    notHeld receiptId = eToView $ ChatError $ CEInternalError $ "store receipt " <> show receiptId <> " is not held"
+    scheduleReceipt scheduled receiptId delay = do
+      new <- atomically $ stateTVar scheduled $ \ids -> (S.notMember receiptId ids, S.insert receiptId ids)
+      when new . void . liftIO . forkIO $ do
+        threadDelay' $ diffToMicroseconds delay
+        atomically $ modifyTVar' scheduled $ S.delete receiptId
+        void $ atomically $ tryPutTMVar doWork ()
+
+data StoreReceiptOutcome = SROCredited (Maybe User) | SRORefused | SRORetry | SRODeferred
+
+-- | Under the owner's badge lock, which keeps a profile's requests to the service serial.
+creditStoreReceipt :: AgentClient -> UserId -> Int64 -> BadgeStash -> Text -> Maybe Int64 -> CM ()
+creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} payment retryDelay = do
+  ChatConfig {badgeRetryInterval = ri, badgeConsecutiveRetries} <- asks config
+  withRetryIntervalCount (maybe ri (\d -> ri {initialInterval = d, increaseAfter = 0}) retryDelay) $ \n delay loop -> do
+    liftIO $ waitWhileSuspended a
+    liftIO $ waitForUserNetwork a
+    outcome <- withEntityLock "badgePurchase" (CLBadgeUser userId) $
+      tryAllErrors attempt >>= \case
+        Right (Right (present_, _)) -> pure $ SROCredited present_
+        Right (Left (code, retryAfter))
+          | storeReceiptRefused code -> SRORefused <$ withStore' (\db -> refuseStoreReceipt db receiptId $ serviceFailure code retryAfter)
+          | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
+        Left e -> failed ri delay (badgeIssueFailure e) Nothing
+    -- only a settlement is announced, and the sweep it prompts signals this worker only for a receipt still held, so it cannot loop
+    case outcome of
+      SROCredited present_ -> do
+        user <- withStore $ \db -> getUser db userId
+        toView . CEvtBadgeChanged user =<< getUserBadgeState user
+        toView $ CEvtStorePurchaseResolved user
+        -- last, so a failed broadcast cannot lose the settlement; outside the badge lock, as it takes the chat lock
+        mapM_ presentUserBadgeToContacts present_
+      SRORefused -> withStore (`getUser` userId) >>= toView . CEvtStorePurchaseResolved
+      SRORetry | n + 1 < badgeConsecutiveRetries -> loop
+      _ -> pure ()
+  where
+    attempt = do
+      user <- withStore $ \db -> getUser db userId
+      refuseWhileBadgeHeld user
+      sendTarget <- requireBadgeService
+      payment' <- maybe (throwChatError $ CEInternalError "held store payment does not decode") pure $ decodeJSON payment
+      requestBadgeStash NRMBackground user sendTarget stash BSCPurchaseBadge {masterKey, payment = payment', upgrade = Nothing}
+    serviceFailure code retryAfter = BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
+    failed ri delay failure retryAfter = do
+      now <- badgeNow
+      let (retryIn, outcome)
+            | isJust retryAfter = (badgeRetryAfter ri retryAfter, SRODeferred)
+            -- a buyer is waiting, so unlike a renewal a failure that can clear on its own never waits the day
+            | badgeFailureTransient failure = (fromIntegral delay / 1000000, SRORetry)
+            | otherwise = (badgeStalledInterval, SRODeferred)
+      withStore' $ \db -> recordStoreReceiptFailure db receiptId (nextRetryDelay 0 delay ri) (retryIn `addUTCTime` now) failure
+      pure outcome
+
 -- | Retire what has ended, renew what is due, then report the next wake. Waking early, late or not
 -- at all changes only timing: each run reads stored state and works out what to do.
 updateUserBadge :: UserId -> TVar (Maybe BadgeOccurrence) -> UTCTime -> CM (Maybe UTCTime)
@@ -5439,6 +5594,15 @@ emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now
     raised <- atomically $ stateTVar emitted (,occurrence)
     when (raised /= occurrence) $ toView $ CEvtBadgeAlert user alert
 
+-- | Scoped to one profile, so another profile's store purchase, which may be hidden, never shows under it.
+badgeStateResponse :: User -> CM ChatResponse
+badgeStateResponse user = do
+  badgeState <- getUserBadgeState user
+  CRBadgeState user badgeState . map finalError <$> withStore' (`getOpenStorePurchases` user)
+  where
+    -- like a renewal's, only a failure that cannot clear on its own is the user's to know about
+    finalError p@OpenStorePurchase {creditError} = p {creditError = find (not . badgeFailureTransient) creditError}
+
 -- | Read from stored rows alone; the worker's results follow as CEvtBadgeChanged.
 getUserBadgeState :: User -> CM (Maybe BadgeState)
 getUserBadgeState user = do
@@ -5472,9 +5636,10 @@ badgeStalledInterval = nominalDay
 -- | The wait after a service refusal, floored at initialInterval so answering 0 cannot spin the
 -- worker, and uncapped above it.
 badgeRetryAfter :: RetryInterval -> Maybe Word32 -> NominalDiffTime
-badgeRetryAfter RetryInterval {initialInterval} = maybe badgeStalledInterval (max floorWait . fromIntegral)
-  where
-    floorWait = fromIntegral initialInterval / 1000000
+badgeRetryAfter ri = maybe badgeStalledInterval (max (retryFloor ri) . fromIntegral)
+
+retryFloor :: RetryInterval -> NominalDiffTime
+retryFloor RetryInterval {initialInterval} = fromIntegral initialInterval / 1000000
 
 -- | How far ahead of the shown credential's expiry the renewal is requested - a day, so a failure
 -- has that long to retry. The wake and the due check both derive from it and have to agree.
@@ -5531,6 +5696,8 @@ badgeIssueFailure e = case e of
     | otherwise -> BIFUnexpected {message = tshow agentError}
   ChatError (CECommandError m) -> BIFUnexpected {message = T.pack m}
   ChatError (CEInternalError m) -> BIFUnexpected {message = T.pack m}
+  ChatError (CEBadgeRedeemError BREUnknownKeyIndex) -> BIFInvalidCredential
+  ChatError (CEBadgeRedeemError BRECredentialNotVerified) -> BIFInvalidCredential
   _ -> BIFUnexpected {message = tshow e}
 
 -- | Whether a failure can clear on its own, which decides whether the alert waits for the shown
@@ -5654,8 +5821,8 @@ stopBadgeWorkers workers =
 -- | Verify the credential before writing anything; the purchase, the statement's rows, the
 -- issuance and the profile's badge go in one transaction. Answers the user to tell contacts about,
 -- which the caller does once the badge lock is released.
-storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
-storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeType}) statement =
+storeRedeemedBadge :: User -> BadgeStash -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
+storeRedeemedBadge user@User {userId} stash@BadgeStash {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeType}) statement =
   verifyOwnBadge cred >>= \case
     Nothing -> throwRedeemError BREUnknownKeyIndex
     Just False -> throwRedeemError BRECredentialNotVerified
@@ -5668,7 +5835,7 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
       let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
       -- TODO [badges] retire a previously held badge
       (user', newBadge, applied) <- withStore $ \db -> do
-        (purchaseId, newBadge) <- liftIO $ createCodeBadgePurchase db user redemption cred now
+        (purchaseId, newBadge) <- liftIO $ createStashBadgePurchase db user stash cred now
         applied <- liftIO $ applyBadgeStatement db g purchaseId badgeType statement (Just cred) now
         -- a replay must not put a superseded badge back, or tell every contact again
         user' <- if newBadge then setUserBadge db user (Just badge) else getUser db userId
@@ -5818,6 +5985,7 @@ cleanupManager = do
       cleanupDeliveryJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
+      cleanupStoreReceipts `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
     runWithoutInitialDelay cleanupInterval = flip catchAllErrors eToView $ do
@@ -5887,6 +6055,11 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       withStore' (`deleteOldProbes` cutoffTs)
+    -- the badge clock, which the records are written with
+    cleanupStoreReceipts = do
+      ts <- badgeNow
+      let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
+      withStore' (`deleteUnfundedStoreReceipts` cutoffTs)
 
 deleteInProgressGroup :: User -> GroupInfo -> CM ()
 deleteInProgressGroup user gInfo = do
@@ -6109,6 +6282,8 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
+      "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <*> optional (" invoice=" *> (safeDecodeUtf8 <$> A.takeTill (== ' '))) <* A.space <*> jsonP),
+      "/_badge invoice " *> (APICreateBadgeInvoice <$> A.decimal),
       "/_badge state " *> (APIGetBadgeState <$> A.decimal),
       "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
       "/_badge ack " *> (APIAckBadgeAlert <$> A.decimal <* A.space <*> A.decimal <* A.space <*> badgeAlertKindP <* A.space <*> onOffP <* A.space <*> textP),

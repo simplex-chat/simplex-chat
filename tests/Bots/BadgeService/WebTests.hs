@@ -14,7 +14,7 @@ import BadgeService.Poller
 import BadgeService.Providers
 import BadgeService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
 import BadgeService.Providers.Stripe (stripeProvider)
-import BadgeService.Store (CodeRedemption (..), IssuedCode (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getBadgeCode, insertBadgeCode, revokeCode)
+import BadgeService.Store (FundingCredit (..), IssuedCode (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getBadgeCode, insertBadgeCode, revokeCode)
 import BadgeService.Store.Invoices
 import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
@@ -471,7 +471,7 @@ testRevokeAndRedeemExcludeEachOther = withServiceStore $ \st -> do
       revoke codeHash = withTransaction st $ \db -> revokeCode db codeHash now
       unredeemed codeHash =
         withTransaction st (`getBadgeCode` codeHash) >>= \case
-          Just IssuedCode {redemption = CodeUnredeemed} -> pure True
+          Just IssuedCode {redemption = Uncredited} -> pure True
           _ -> pure False
   revokedFirst <- newCode "revoked-first"
   revoke "revoked-first" `shouldReturn` Revoked
@@ -801,7 +801,8 @@ testServiceConfig staticDir trustForwarded =
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
-      devChatRedeem = False
+      devChatRedeem = False,
+      devAcceptUnverifiedStoreReceipts = False
     }
 
 testServeWebappOff :: IO ()

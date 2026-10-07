@@ -85,7 +85,7 @@ suspend fun redeemBadgeCode(rhId: Long?, user: User, code: String): BadgeRedeemO
     }
     is BadgeRedeemResult.Failed -> {
       Log.e(TAG, "apiRedeemBadgeCode: ${result.err?.string}")
-      BadgeRedeemOutcome.Refused(chatModel.controller.redeemErrorText(result.err))
+      BadgeRedeemOutcome.Refused(chatModel.controller.redeemErrorText(result.err, purchase = false))
     }
   }
 
@@ -94,11 +94,12 @@ fun showCannotRedeemAlert(message: String) {
 }
 
 @Composable
-fun BadgesRedeemCodeView(modalManager: ModalManager) {
+fun BadgesRedeemCodeView(modalManager: ModalManager, unwindToDepth: Int) {
   val rhId = remember { chatModel.remoteHostId() }
   val code = remember { mutableStateOf(TextFieldValue("")) }
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
+  CloseWhenSupportGivesWay(modalManager, unwindToDepth)
 
   // when the text is unchanged, the field's own value is kept: it carries the cursor position and the
   // keyboard's composition state, which BasicTextField loses unless they are passed back to it
@@ -117,7 +118,8 @@ fun BadgesRedeemCodeView(modalManager: ModalManager) {
       withContext(Dispatchers.Main) {
         submitting.value = false
         when (outcome) {
-          is BadgeRedeemOutcome.Redeemed -> modalManager.closeModal()
+          // a shown badge closes this screen itself, and a second close would take the screen beneath
+          is BadgeRedeemOutcome.Redeemed -> if (currentShownBadge() == null) modalManager.closeModal()
           is BadgeRedeemOutcome.Refused -> showCannotRedeemAlert(outcome.message)
           is BadgeRedeemOutcome.Cancelled -> {}
         }
@@ -382,7 +384,8 @@ private fun Confirming(onConfirm: () -> Unit, onCancel: () -> Unit) {
 // leaving does not cancel: the badge is still added after the screen closes
 @Composable
 private fun BeingIssued(onDismiss: () -> Unit) {
-  LinkStep(MR.strings.badges_being_issued, textButton = MR.strings.badges_dismiss to onDismiss) {
+  LinkStep(MR.strings.badges_issuing_title, textButton = MR.strings.badges_dismiss to onDismiss) {
+    LinkText(stringResource(MR.strings.badges_link_issuing_profile))
     Spacer(Modifier.weight(1f))
     CircularProgressIndicator(
       Modifier.size(30.dp),

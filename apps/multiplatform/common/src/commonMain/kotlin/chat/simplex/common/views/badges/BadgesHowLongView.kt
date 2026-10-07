@@ -9,10 +9,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.ClipboardManager
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,6 +44,13 @@ enum class BadgePeriod {
       Annual -> MR.strings.badges_period_annual
     }
 
+  val months: Int
+    get() = when (this) {
+      OneMonth -> 1
+      Monthly -> 1
+      Annual -> 12
+    }
+
   @Composable
   fun priceText(price: BadgePrice): String = when (price) {
     is BadgePrice.Loading -> "…"
@@ -68,12 +74,11 @@ enum class BadgePeriod {
 }
 
 @Composable
-fun BadgesHowLongView(level: BadgeLevel) {
-  var selectedPeriod by remember { mutableStateOf(BadgePeriod.Monthly) }
-  val purchasing = remember { mutableStateOf(false) }
-  val clipboard = LocalClipboardManager.current
+fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDepth: Int) {
+  var selectedPeriod by remember { mutableStateOf(if (BadgePeriod.Monthly in badgePeriodsForSale) BadgePeriod.Monthly else BadgePeriod.OneMonth) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
+  CloseWhenSupportGivesWay(modalManager, unwindToDepth)
 
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
@@ -102,39 +107,46 @@ fun BadgesHowLongView(level: BadgeLevel) {
 
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
-    // IntrinsicSize.Max + fillMaxHeight on children so all three cards match the tallest one -
+    // IntrinsicSize.Max + fillMaxHeight on children so the cards all match the tallest one -
     // only Annual carries a savings line, and prices wrap at large fonts.
     Row(
       Modifier.fillMaxWidth().height(IntrinsicSize.Max),
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-      PeriodCard(level, BadgePeriod.OneMonth, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
-      PeriodCard(level, BadgePeriod.Monthly, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
-      PeriodCard(level, BadgePeriod.Annual, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
+      BadgePeriod.entries.forEach { period ->
+        PeriodCard(level, period, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
+      }
     }
 
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
-    // Replicates TextButtonBelowOnboardingButton spacing (7.5dp outer + 5dp inner) without a
-    // TextButton so the footer has no hover/click affordance.
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      PayButton(level, selectedPeriod, purchasing, clipboard)
-      Box(Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(
-          stringResource(billingFooter(selectedPeriod)).format(stubBillingDate()),
-          Modifier.padding(vertical = 5.dp),
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.secondary,
-          textAlign = TextAlign.Center
-        )
-      }
+      ContinueButton(level, selectedPeriod, modalManager, unwindToDepth)
+      BadgeBillingFooter(selectedPeriod)
     }
+  }
+}
+
+// Replicates TextButtonBelowOnboardingButton spacing (7.5dp outer + 5dp inner) without a
+// TextButton so the footer has no hover/click affordance.
+@Composable
+fun BadgeBillingFooter(period: BadgePeriod) {
+  Box(Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Text(
+      stringResource(billingFooter(period)).format(billingDate(period)),
+      Modifier.padding(vertical = 5.dp),
+      style = MaterialTheme.typography.body2,
+      color = MaterialTheme.colors.secondary,
+      textAlign = TextAlign.Center
+    )
   }
 }
 
 @Composable
 private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: BadgePeriod, modifier: Modifier, onSelect: (BadgePeriod) -> Unit) {
   val isSelected = period == selectedPeriod
+  val forSale = period in badgePeriodsForSale
+  val textColor = if (forSale) Color.Unspecified else MaterialTheme.colors.secondary
   val borderColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
   // Light: transparent so card matches page background. Dark: subtle gray tint for visible contrast.
   val cardBackground = if (isInDarkTheme()) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
@@ -145,7 +157,7 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
       .clip(shape)
       .background(cardBackground, shape)
       .border(2.dp, borderColor, shape)
-      .clickable { onSelect(period) }
+      .clickable(enabled = forSale) { onSelect(period) }
       .padding(vertical = 20.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -154,10 +166,10 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
       painterResource(period.icon),
       contentDescription = null,
       tint = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-      modifier = Modifier.size(32.dp)
+      modifier = Modifier.size(32.dp).alpha(if (forSale) 1f else 0.4f)
     )
-    Text(stringResource(period.label), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-    Text(period.priceText(BadgeStore.price(level, period)), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
+    Text(stringResource(period.label), style = MaterialTheme.typography.body2, color = textColor, textAlign = TextAlign.Center)
+    Text(period.priceText(BadgeStore.price(level, period)), style = MaterialTheme.typography.body1, fontWeight = FontWeight.SemiBold, color = textColor, textAlign = TextAlign.Center)
     val percent = savingsPercent(level, period)
     if (percent != null) {
       Text(
@@ -173,76 +185,15 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
 private fun savingsPercent(level: BadgeLevel, period: BadgePeriod): Int? =
   if (period == BadgePeriod.Annual) BadgeStore.annualSavings(level) else null
 
-// TODO [badges] on desktop and the foss build there is no store, so every price is Unavailable and
-// this button stays disabled - it will offer Stripe/crypto payment instead
 @Composable
-private fun PayButton(level: BadgeLevel, selectedPeriod: BadgePeriod, purchasing: MutableState<Boolean>, clipboard: ClipboardManager) {
-  val price = BadgeStore.price(level, selectedPeriod)
-  val (labelId, labelArg) = selectedPeriod.payLabel(price)
+private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modalManager: ModalManager, unwindToDepth: Int) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-    labelId = labelId,
-    labelArg = labelArg,
+    labelId = MR.strings.badges_continue,
     onboarding = null,
-    enabled = price.canPurchase && !purchasing.value,
-    onclick = { purchase(level, selectedPeriod, purchasing, clipboard) }
-  )
-}
-
-private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: MutableState<Boolean>, clipboard: ClipboardManager) {
-  val invoiceId = newBadgeInvoiceId()
-  purchasing.value = true
-  // not withBGApi: the purchase waits for the user in the Play sheet and would block chat API calls
-  withLongRunningApi {
-    try {
-      val outcome = BadgeStore.purchase(level, period, invoiceId)
-      purchasing.value = false
-      when (outcome) {
-        is BadgePurchaseOutcome.Purchased -> showPurchasedAlert(outcome.receipt, invoiceId, clipboard)
-        is BadgePurchaseOutcome.Pending -> AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.badges_purchase_pending),
-          text = generalGetString(MR.strings.badges_purchase_pending_desc)
-        )
-        is BadgePurchaseOutcome.Cancelled -> {}
-      }
-    } catch (e: Exception) {
-      Log.e(TAG, "BadgesHowLongView.purchase: ${e.stackTraceToString()}")
-      purchasing.value = false
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.badges_purchase_error),
-        text = e.toString()
-      )
+    onclick = {
+      modalManager.showModal(cardScreen = true) { BadgesCheckOrderView(level, selectedPeriod, modalManager, unwindToDepth) }
     }
-  }
-}
-
-// TODO [badges] store integration diagnostics - replaced by the issued badge once the service lands.
-private fun showPurchasedAlert(receipt: BadgeStoreReceipt, invoiceId: String, clipboard: ClipboardManager) {
-  val returnedInvoice = when (receipt.invoiceId) {
-    null -> "none"
-    invoiceId -> "yes"
-    else -> "mismatch: ${receipt.invoiceId}"
-  }
-  val lines = mutableListOf(
-    "Product: ${receipt.productId}",
-    "Invoice: $invoiceId",
-    "Invoice returned by Google: $returnedInvoice",
-    "Order: ${receipt.orderId ?: "none"}"
-  )
-  if (receipt.environment != null) lines.add("Environment: ${receipt.environment}")
-  lines.add("Token: ${receipt.token.length} bytes")
-  val summary = lines.joinToString("\n")
-  Log.d(TAG, "badge purchase succeeded\n$summary")
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.badges_purchase_successful),
-    text = summary,
-    confirmText = "Copy token",
-    onConfirm = {
-      clipboard.setText(AnnotatedString(receipt.token))
-      showToast(generalGetString(MR.strings.copied))
-    },
-    dismissText = generalGetString(MR.strings.ok),
-    parseHtml = false
   )
 }
 
@@ -251,9 +202,10 @@ private fun billingFooter(period: BadgePeriod): StringResource = when (period) {
   BadgePeriod.OneMonth -> MR.strings.badges_billing_footer_one_month
 }
 
-// TODO [badges] source the actual date from the purchase state machine when wired.
-private fun stubBillingDate(): String {
-  val date = java.time.LocalDate.of(2026, 7, 22)
+// TODO [badges] from now only because a purchase is refused while a badge is held (refuseWhileBadgeHeld);
+// a top-up must count from the end of the existing balance
+private fun billingDate(period: BadgePeriod): String {
+  val date = java.time.LocalDate.now().plusMonths(period.months.toLong())
   val formatter = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)
   return date.format(formatter)
 }

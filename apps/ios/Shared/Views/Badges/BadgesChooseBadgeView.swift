@@ -23,10 +23,17 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var filesDescription: LocalizedStringKey {
+    var fileSize: LocalizedStringKey {
         switch self {
-        case .supporter: "Send 2GB files"
-        case .legend: "Send 5GB files"
+        case .supporter: "Files up to 2 GB"
+        case .legend: "Files up to 5 GB"
+        }
+    }
+
+    var fileStorage: LocalizedStringKey {
+        switch self {
+        case .supporter: "Stored for 7 days"
+        case .legend: "Stored for 21 days"
         }
     }
 
@@ -50,7 +57,6 @@ struct BadgesChooseBadgeView: View {
     @ObservedObject private var store = BadgeStore.shared
     @State private var selectedLevel: BadgeLevel = .supporter
     @State private var continueActive = false
-    @State private var howItWorksActive = false
 
     var body: some View {
         GeometryReader { g in
@@ -69,14 +75,10 @@ struct BadgesChooseBadgeView: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    BadgeUserPreview(level: selectedLevel) {
-                        Image(systemName: "chevron.down")
-                            .font(.body)
-                            .foregroundColor(theme.colors.primary)
-                    }
-                    .padding(.top, 4)
+                    BadgeUserPreview(level: selectedLevel)
+                        .padding(.top, 4)
 
-                    Spacer(minLength: 20)
+                    Spacer(minLength: 12)
 
                     // fixedSize + maxHeight on the cards so both match the taller one when a
                     // store price wraps in one of them
@@ -86,13 +88,20 @@ struct BadgesChooseBadgeView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
-                    Spacer(minLength: 20)
+                    Spacer(minLength: 12)
 
                     VStack(spacing: 10) {
                         continueButton()
                             .padding(.vertical, 10)
-                        howItWorksButton()
-                            .frame(height: 22)
+                        // redeeming a code is here only when Support SimpleX offers the browser instead
+                        Group {
+                            if badgeBrowserAllowed {
+                                RedeemCodeButton()
+                            } else {
+                                Color.clear
+                            }
+                        }
+                        .frame(height: 22)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -116,17 +125,20 @@ struct BadgesChooseBadgeView: View {
                 Image(badgeImageName(level.badgeType))
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 60, height: 60)
-                    .padding(.top, 20)
+                    .frame(width: 44, height: 44)
+                    .padding(.top, 16)
                 Text(level.title)
                     .font(.title3)
                     .fontWeight(.bold)
-                Text(level.filesDescription)
-                    .font(.subheadline)
-                    .foregroundColor(theme.colors.secondary)
                 BadgePeriod.monthly.priceText(store.price(level, .monthly))
                     .font(.body)
-                    .padding(.bottom, 20)
+                VStack(spacing: 2) {
+                    Text(level.fileSize)
+                    Text(level.fileStorage)
+                }
+                .font(.subheadline)
+                .foregroundColor(theme.colors.secondary)
+                .padding(.bottom, 16)
             }
             .multilineTextAlignment(.center)
             .padding(.horizontal, 12)
@@ -152,29 +164,6 @@ struct BadgesChooseBadgeView: View {
 
             NavigationLink(isActive: $continueActive) {
                 BadgesHowLongView(level: selectedLevel)
-                    .modifier(ThemedBackground())
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-        }
-    }
-
-    private func howItWorksButton() -> some View {
-        ZStack {
-            Button {
-                howItWorksActive = true
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "info.circle")
-                    Text("How badges protect your privacy").fontWeight(.medium)
-                }
-                .font(.body)
-            }
-
-            NavigationLink(isActive: $howItWorksActive) {
-                BadgesHowItWorksView()
                     .modifier(ThemedBackground())
             } label: {
                 EmptyView()

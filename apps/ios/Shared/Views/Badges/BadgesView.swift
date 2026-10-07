@@ -12,6 +12,7 @@ import SimpleXChat
 struct BadgesView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject private var badgeModel = BadgeModel.shared
+    @ObservedObject private var store = BadgeStore.shared
     var showsAsSheet: Bool = false
 
     private var shownBadge: BadgeState? {
@@ -25,12 +26,27 @@ struct BadgesView: View {
             if let badgeState = shownBadge {
                 BadgesYourBadgeView(badgeState: badgeState, showsAsSheet: showsAsSheet)
                     .transition(.opacity)
+            } else if let purchaseState = store.purchaseState(chatModel.currentUser?.userId) {
+                // holds the purchase screens' slot, so a consumable cannot be bought twice
+                BadgesPurchaseStateView(title: purchaseState.title, message: purchaseState.message, failure: store.creditError(chatModel.currentUser?.userId), showsAsSheet: showsAsSheet)
+                    .transition(.opacity)
+                    .onReceive(store.refusals) { refusal in
+                        // only the issuing screen belongs to the active profile's held purchase, so a refusal shown there reads as its own
+                        if purchaseState == .issuing {
+                            showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(refusal, purchase: true))
+                        }
+                    }
+            } else if store.checkingPurchases {
+                BadgesPurchaseStateView(title: "Checking your purchases", showsAsSheet: showsAsSheet)
+                    .transition(.opacity)
             } else {
                 BadgesSupportSimplexView(showsAsSheet: showsAsSheet)
                     .transition(.opacity)
             }
         }
         .animation(.default, value: shownBadge != nil)
+        .animation(.default, value: store.purchaseState(chatModel.currentUser?.userId))
+        .animation(.default, value: store.checkingPurchases)
     }
 }
 

@@ -938,6 +938,7 @@ CREATE TABLE badge_purchases(
   issue_error_at TEXT,
   issue_error TEXT,
   next_wake_at TEXT,
+  badge_store_receipt_id INTEGER REFERENCES badge_store_receipts,
   UNIQUE(purchase_key)
 ) STRICT;
 CREATE TABLE badge_ledger(
@@ -980,6 +981,23 @@ CREATE TABLE badge_code_redemptions(
   master_key BLOB NOT NULL,
   created_at TEXT NOT NULL,
   UNIQUE(user_id, code)
+) STRICT;
+CREATE TABLE badge_store_receipts(
+  badge_store_receipt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  invoice_id TEXT UNIQUE,
+  provider TEXT,
+  transaction_ref TEXT,
+  purchase_key BLOB NOT NULL,
+  purchase_priv_key BLOB NOT NULL,
+  master_key BLOB NOT NULL,
+  created_at TEXT NOT NULL,
+  payment TEXT,
+  next_attempt_at TEXT,
+  retry_delay INTEGER,
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  credit_error TEXT,
+  UNIQUE(provider, transaction_ref)
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1543,6 +1561,10 @@ CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
 );
 CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
   badge_code_redemption_id
+);
+CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
+CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(
+  badge_store_receipt_id
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members

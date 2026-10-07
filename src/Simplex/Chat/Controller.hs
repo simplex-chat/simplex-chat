@@ -85,7 +85,8 @@ import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyM
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
 import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..), OpenStorePurchase (..))
+import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -152,6 +153,8 @@ data ChatConfig = ChatConfig
     badgeCurrentTime :: IO UTCTime,
     -- how long a badge worker waits before repeating a renewal that failed for a passing reason
     badgeRetryInterval :: RetryInterval,
+    -- attempts a store receipt gets in one turn before its next one waits for the stored schedule
+    badgeConsecutiveRetries :: Int,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -327,6 +330,7 @@ data ChatController = ChatController
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     -- one badge worker per user: badge state is per profile, and one profile must not stall another
     badgeWorkers :: TMap UserId (SessionVar BadgeWorker),
+    storeReceiptWorkers :: TMap UserId Worker,
     badgeSeq :: TVar Int,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,
@@ -659,6 +663,8 @@ data ChatCommand
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
+  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
+  | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
   | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
   -- episode is last because it is free text: it is the value that makes one occurrence of an
@@ -869,7 +875,8 @@ data ChatResponse
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
-  | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
+  | CRBadgeInvoice {user :: User, invoiceId :: Text}
+  | CRBadgeState {user :: User, badgeState :: Maybe BadgeState, storePurchases :: [OpenStorePurchase]}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
@@ -990,6 +997,7 @@ data ChatEvent
   | CEvtServiceReplySent {connectionId :: AgentConnId}
   | CEvtBadgeChanged {user :: User, badgeState :: Maybe BadgeState} -- badge state changed, including a renewal that arrived without a command
   | CEvtBadgeAlert {user :: User, badgeAlert :: BadgeAlert}
+  | CEvtStorePurchaseResolved {user :: User} -- a held store receipt was credited or refused, so its store transaction can be finished
   | CEvtContactRequestRejected {user :: User, contact :: Contact, rejectionReason :: Maybe ContactRejectionReason}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
@@ -1479,8 +1487,10 @@ data SimplexDomainError
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
+-- | Why acquiring a badge failed, for a code and for a store purchase alike.
 data BadgeRedeemError
   = BREInvalidCode -- format or check character
+  | BREInvalidReceipt -- names no transaction, or is not a store payment
   | BREServiceNotConfigured
   | BREBadgeActive
   | BREServiceError {serviceError :: BadgeServiceErrorCode}

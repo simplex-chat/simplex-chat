@@ -27,6 +27,8 @@ import chat.simplex.common.model.SMPProxyMode.Always
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgeStore
+import chat.simplex.common.views.badges.BadgeStoreError
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
@@ -587,13 +589,38 @@ object ChatController {
     }
   }
 
+  // log = false because a store receipt is a bearer secret, like a badge code - it is in the command.
+  suspend fun apiPurchaseBadge(rh: Long?, userId: Long, echoedInvoiceId: String?, payment: ServicePayment): BadgePurchaseResult {
+    val r = sendCmd(rh, CC.ApiPurchaseBadge(userId, echoedInvoiceId, payment), log = false)
+    return when {
+      r is API.Result && r.res is CR.BadgeStateR -> BadgePurchaseResult.Held(r.res.user, r.res.badgeState, r.res.storePurchases)
+      r is API.Result && r.res is CR.BadgeRedeemed -> BadgePurchaseResult.Credited(r.res.user.updateRemoteHostId(rh), r.res.badgeState)
+      r is API.Error -> BadgePurchaseResult.Failed(r.err)
+      else -> {
+        // the response type alone - it names a case or a JSON key, never the service's message
+        Log.e(TAG, "apiPurchaseBadge: unexpected ${r.responseType}")
+        BadgePurchaseResult.Failed(null)
+      }
+    }
+  }
+
+  suspend fun apiCreateBadgeInvoice(rh: Long?, userId: Long): String {
+    val r = sendCmd(rh, CC.ApiCreateBadgeInvoice(userId))
+    if (r is API.Result && r.res is CR.BadgeInvoice) return r.res.invoiceId
+    if (r is API.Error) throw BadgeStoreError.ApiError(r.err)
+    throw Exception("apiCreateBadgeInvoice: unexpected ${r.responseType}")
+  }
+
   // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
-  fun redeemErrorText(err: ChatError?): String {
+  fun redeemErrorText(err: ChatError?, purchase: Boolean): String {
     if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CEBadgeRedeemError) {
       when (val e = err.errorType.badgeRedeemError) {
         is BadgeRedeemError.InvalidCode -> return generalGetString(MR.strings.badges_error_invalid_code)
-        is BadgeRedeemError.ServiceNotConfigured -> return generalGetString(MR.strings.badges_error_service_not_configured)
-        is BadgeRedeemError.BadgeActive -> return generalGetString(MR.strings.badges_error_already_active)
+        is BadgeRedeemError.InvalidReceipt -> {}
+        is BadgeRedeemError.ServiceNotConfigured ->
+          return generalGetString(if (purchase) MR.strings.badges_error_service_not_configured_purchase else MR.strings.badges_error_service_not_configured)
+        is BadgeRedeemError.BadgeActive ->
+          return generalGetString(if (purchase) MR.strings.badges_error_already_active_purchase else MR.strings.badges_error_already_active)
         is BadgeRedeemError.ServiceError -> badgeServiceErrorText(e.serviceError)?.let { return it }
         is BadgeRedeemError.InvalidResponse -> return String.format(generalGetString(MR.strings.badges_error_bad_service_response), e.message)
         is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> return generalGetString(MR.strings.badges_error_credential_not_verified)
@@ -602,9 +629,9 @@ object ChatController {
     return "${generalGetString(MR.strings.error_prefix)}: ${err?.string ?: generalGetString(MR.strings.badges_error_unknown)}"
   }
 
-  suspend fun apiGetBadgeState(rh: Long?, userId: Long): BadgeState? {
+  suspend fun apiGetBadgeState(rh: Long?, userId: Long): Pair<BadgeState?, List<OpenStorePurchase>> {
     val r = sendCmd(rh, CC.ApiGetBadgeState(userId))
-    if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState
+    if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState to r.res.storePurchases
     throw Exception("apiGetBadgeState: unexpected ${r.responseType}")
   }
 
@@ -637,11 +664,14 @@ object ChatController {
 
   // Not thrown: a failed badge read must not stop the app starting, and the model is left alone
   // rather than set to nil, which would read as "no badge".
-  private suspend fun loadBadgeState(rhId: Long?) {
+  suspend fun loadBadgeState(rhId: Long?) {
     try {
       val userId = currentUserId("loadBadgeState")
-      val badgeState = apiGetBadgeState(rhId, userId)
-      withContext(Dispatchers.Main) { BadgeModel.set(rhId, userId, badgeState) }
+      val (badgeState, storePurchases) = apiGetBadgeState(rhId, userId)
+      withContext(Dispatchers.Main) {
+        BadgeModel.set(rhId, userId, badgeState)
+        BadgeStore.setStorePurchases(rhId, userId, storePurchases)
+      }
     } catch (e: Exception) {
       Log.e(TAG, "loadBadgeState: ${e.message}")
     }
@@ -686,6 +716,7 @@ object ChatController {
       }
       apiStartChat()
       appPrefs.chatStopped.set(false)
+      withLongRunningApi { BadgeStore.presentUnfinished() }
     } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
@@ -751,6 +782,7 @@ object ChatController {
     chatModel.users.clear()
     chatModel.users.addAll(users)
     getUserChatData(rhId, keepingChatId = keepingChatId)
+    withLongRunningApi { BadgeStore.presentUnfinished() }
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
     if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
@@ -3581,6 +3613,9 @@ object ChatController {
             BadgeModel.setAlert(rhId, r.user.userId, r.badgeAlert)
           }
         }
+      is CR.StorePurchaseResolved ->
+        // whichever profile owns it: only the app can finish the store purchase
+        withLongRunningApi { BadgeStore.presentUnfinished() }
       else ->
         Log.d(TAG , "unsupported event: ${msg.responseType}")
     }
@@ -3622,7 +3657,7 @@ object ChatController {
     getUserChatData(null)
   }
 
-  private fun activeUser(rhId: Long?, user: UserLike): Boolean =
+  fun activeUser(rhId: Long?, user: UserLike): Boolean =
     rhId == chatModel.remoteHostId() && user.userId == chatModel.currentUser.value?.userId
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
@@ -3884,6 +3919,17 @@ sealed class BadgeRedeemResult {
   class Failed(val err: ChatError?): BadgeRedeemResult()
 }
 
+@Serializable
+data class OpenStorePurchase(val invoiceId: String? = null, val transactionRef: String? = null, val creditError: BadgeIssueFailure? = null)
+
+// a refusal is Failed, with the code in BREServiceError
+sealed class BadgePurchaseResult {
+  class Held(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<OpenStorePurchase>): BadgePurchaseResult()
+  class Credited(val user: User, val badgeState: BadgeState?): BadgePurchaseResult()
+  // err is null for a response of an unexpected type, which is logged where it is received
+  class Failed(val err: ChatError?): BadgePurchaseResult()
+}
+
 // ChatCommand
 // Spec: spec/api.md#CC
 sealed class CC {
@@ -4064,6 +4110,8 @@ sealed class CC {
   class ApiStandaloneFileInfo(val url: String): CC()
   // badges
   class ApiRedeemBadgeCode(val userId: Long, val code: String): CC()
+  class ApiPurchaseBadge(val userId: Long, val echoedInvoiceId: String?, val payment: ServicePayment): CC()
+  class ApiCreateBadgeInvoice(val userId: Long): CC()
   class ApiGetBadgeState(val userId: Long): CC()
   class ApiGetBadgeLedger(val userId: Long, val badgePurchaseId: Long): CC()
   class ApiAckBadgeAlert(val userId: Long, val badgePurchaseId: Long, val alertKind: BadgeAlertKind, val snooze: Boolean, val episode: String): CC()
@@ -4289,6 +4337,8 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "/_download $userId $url ${file.filePath}"
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ApiRedeemBadgeCode -> "/_redeem_badge_code $userId $code"
+    is ApiPurchaseBadge -> "/_badge purchase $userId${echoedInvoiceId?.let { " invoice=$it" } ?: ""} ${json.encodeToString(payment)}"
+    is ApiCreateBadgeInvoice -> "/_badge invoice $userId"
     is ApiGetBadgeState -> "/_badge state $userId"
     is ApiGetBadgeLedger -> "/_badge ledger $userId $badgePurchaseId"
     is ApiAckBadgeAlert -> "/_badge ack $userId $badgePurchaseId ${badgeAlertKindParam(alertKind)} ${onOff(snooze)} $episode"
@@ -4473,6 +4523,8 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "apiDownloadStandaloneFile"
     is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ApiRedeemBadgeCode -> "apiRedeemBadgeCode"
+    is ApiPurchaseBadge -> "apiPurchaseBadge"
+    is ApiCreateBadgeInvoice -> "apiCreateBadgeInvoice"
     is ApiGetBadgeState -> "apiGetBadgeState"
     is ApiGetBadgeLedger -> "apiGetBadgeLedger"
     is ApiAckBadgeAlert -> "apiAckBadgeAlert"
@@ -4497,8 +4549,11 @@ sealed class CC {
       is ApiUnhideUser -> ApiUnhideUser(userId, obfuscate(viewPwd))
       is ApiDeleteUser -> ApiDeleteUser(userId, delSMPQueues, obfuscateOrNull(viewPwd))
       is TestStorageEncryption -> TestStorageEncryption(obfuscate(key))
-      // a code is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
+      // a code or a store receipt is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
       is ApiRedeemBadgeCode -> ApiRedeemBadgeCode(userId, obfuscate(code))
+      is ApiPurchaseBadge -> ApiPurchaseBadge(userId, echoedInvoiceId, when (payment) {
+        is ServicePayment.Google -> ServicePayment.Google(payment.productId, obfuscate(payment.token))
+      })
       else -> this
     }
 
@@ -4530,6 +4585,12 @@ sealed class CC {
       }
     }
   }
+}
+
+// the field must stay typed as the sealed base, or kotlinx omits the "type" tag core parses by
+@Serializable
+sealed class ServicePayment {
+  @Serializable @SerialName("google") class Google(val productId: String, val token: String): ServicePayment()
 }
 
 fun onOff(b: Boolean): String = if (b) "on" else "off"
@@ -6865,10 +6926,12 @@ sealed class CR {
   // badges
   // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
   @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
-  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?): CR()
+  @Serializable @SerialName("badgeInvoice") class BadgeInvoice(val user: UserRef, val invoiceId: String): CR()
+  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<OpenStorePurchase> = emptyList()): CR()
   @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
+  @Serializable @SerialName("storePurchaseResolved") class StorePurchaseResolved(val user: UserRef): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -7056,10 +7119,12 @@ sealed class CR {
     is ArchiveImported -> "archiveImported"
     is AppSettingsR -> "appSettings"
     is BadgeRedeemed -> "badgeRedeemed"
+    is BadgeInvoice -> "badgeInvoice"
     is BadgeStateR -> "badgeState"
     is BadgeLedger -> "badgeLedger"
     is BadgeChanged -> "badgeChanged"
     is BadgeAlertR -> "badgeAlert"
+    is StorePurchaseResolved -> "storePurchaseResolved"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -7264,10 +7329,12 @@ sealed class CR {
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
     is AppSettingsR -> json.encodeToString(appSettings)
     is BadgeRedeemed -> withUser(user, "redeemedBadge: ${json.encodeToString(redeemedBadge)}\nnewBadge: $newBadge\nbadgeState: ${json.encodeToString(badgeState)}")
-    is BadgeStateR -> withUser(user, json.encodeToString(badgeState))
+    is BadgeInvoice -> withUser(user, invoiceId)
+    is BadgeStateR -> withUser(user, "${json.encodeToString(badgeState)}\nstorePurchases: ${json.encodeToString(storePurchases)}")
     is BadgeLedger -> withUser(user, json.encodeToString(badgeLedger))
     is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
     is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))
+    is StorePurchaseResolved -> withUser(user, noDetails())
     is Response -> json
     is Invalid -> str
   }
@@ -7323,6 +7390,7 @@ sealed class SimplexDomainError {
 sealed class BadgeRedeemError {
   val string: String get() = when (this) {
     is InvalidCode -> "invalidCode"
+    is InvalidReceipt -> "invalidReceipt"
     is ServiceNotConfigured -> "serviceNotConfigured"
     is BadgeActive -> "badgeActive"
     is ServiceError -> "serviceError ${serviceError.text}"
@@ -7331,6 +7399,7 @@ sealed class BadgeRedeemError {
     is CredentialNotVerified -> "credentialNotVerified"
   }
   @Serializable @SerialName("invalidCode") object InvalidCode : BadgeRedeemError()
+  @Serializable @SerialName("invalidReceipt") object InvalidReceipt : BadgeRedeemError()
   @Serializable @SerialName("serviceNotConfigured") object ServiceNotConfigured : BadgeRedeemError()
   @Serializable @SerialName("badgeActive") object BadgeActive : BadgeRedeemError()
   @Serializable @SerialName("serviceError") class ServiceError(val serviceError: BadgeServiceErrorCode) : BadgeRedeemError()
@@ -7352,6 +7421,7 @@ sealed class BadgeServiceErrorCode {
   object PaymentNotEntitled: BadgeServiceErrorCode()
   object PaymentPending: BadgeServiceErrorCode()
   object ProviderUnavailable: BadgeServiceErrorCode()
+  object ProviderNotConfigured: BadgeServiceErrorCode()
   object RateLimited: BadgeServiceErrorCode()
   object CodeInvalid: BadgeServiceErrorCode()
   object CodeUsed: BadgeServiceErrorCode()
@@ -7373,6 +7443,7 @@ sealed class BadgeServiceErrorCode {
       is PaymentNotEntitled -> "payment_not_entitled"
       is PaymentPending -> "payment_pending"
       is ProviderUnavailable -> "provider_unavailable"
+      is ProviderNotConfigured -> "provider_not_configured"
       is RateLimited -> "rate_limited"
       is CodeInvalid -> "code_invalid"
       is CodeUsed -> "code_used"
@@ -7392,6 +7463,12 @@ fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
   is BadgeServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
   is BadgeServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
   is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
+  is BadgeServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
+  is BadgeServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
+  is BadgeServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
+  is BadgeServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
+  is BadgeServiceErrorCode.ProviderNotConfigured -> generalGetString(MR.strings.badges_error_provider_not_configured)
+  is BadgeServiceErrorCode.ProductUnavailable -> generalGetString(MR.strings.badges_error_product_unavailable)
   else -> null
 }
 
@@ -7409,6 +7486,7 @@ object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
       "payment_not_entitled" -> BadgeServiceErrorCode.PaymentNotEntitled
       "payment_pending" -> BadgeServiceErrorCode.PaymentPending
       "provider_unavailable" -> BadgeServiceErrorCode.ProviderUnavailable
+      "provider_not_configured" -> BadgeServiceErrorCode.ProviderNotConfigured
       "rate_limited" -> BadgeServiceErrorCode.RateLimited
       "code_invalid" -> BadgeServiceErrorCode.CodeInvalid
       "code_used" -> BadgeServiceErrorCode.CodeUsed

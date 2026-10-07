@@ -42,5 +42,10 @@ idle_seconds = 60
 index = 1
 private_key = replace-me
 
+; local testing only: signs a credential for anyone who sends /redeem <code> over chat,
+; with a master key this service generates and can therefore link
 [dev]
-chat_redeem = on
+chat_redeem = off
+; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
+; verifying it, so anyone who can reach this service can mint badges
+accept_unverified_store_receipts = off
