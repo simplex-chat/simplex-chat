@@ -552,7 +552,7 @@ testPlanNameResolvedEveryCall = withAliceName $ \reg aliceRecord _alice bob -> d
 testPlanOwnNameExpired :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameExpired = withAliceName $ \reg aliceRecord alice _bob -> do
   registerExpiredName reg aliceSimplexName aliceRecord
-  alice ##> "/c @alice.simplex"
+  alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   alice <##. "your SimpleX name alice.simplex expired on "
 
@@ -712,7 +712,7 @@ testPlanChannelNameMoved ps = withSmpServerAndNames $ \reg ->
         bob <## "SimpleX name #team verified"
         planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` ["team"]
         registerExpiredName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
-        alice ##> "/c #team.simplex"
+        alice ##> "/_connect plan 1 #team.simplex"
         alice <## "group link: own link for group #team"
         alice <##. "your SimpleX name team.simplex expired on "
         (shortLink2, fullLink2) <- prepareChannel' 2 "team2" alice cath

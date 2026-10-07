@@ -226,7 +226,7 @@ In the plan for a link L, the claim of L's profile is checked (`SDEUnknownDomain
 
 ## 7. CLI
 
-`viewNameWarning` prints one line after the plan, replacing today's `registered …` / `available …` / `reserved …` lines:
+`viewConnectionPlan` takes `planSimplexName`. The `CPContactAddress`, `CPGroupLink` and `CPNameNotConnectable` cases print one line after the plan's lines, replacing today's `registered …` / `available …` / `reserved …` lines. `viewNameWarning` prints the warning:
 
 - `SimpleX name bakery.simplex expired on 2027-06-24, its owner can renew it until 2027-09-22`
 - `your SimpleX name alice.simplex expired on 2027-06-24, renew it before 2027-09-22`
@@ -236,7 +236,7 @@ In the plan for a link L, the claim of L's profile is checked (`SDEUnknownDomain
 - `SimpleX name privacy.simplex is reserved for community`
 - `SimpleX name acme.simplex is not registered`
 
-`viewKnownChat` prints `NCMoved` after the plan:
+`viewNameChange` prints `NCLapsed` with `viewNameWarning`, and `NCMoved` as:
 - `known contact @alice`
 - `known group #club`
 - `known channel #team`
@@ -286,7 +286,7 @@ The `your` lines are printed for `CAPOwnLink` and `GLPOwnLink` plans. `is availa
 - `nameRegistration_` on `CPContactAddress`/`CPGroupLink`, `nameRegistration` on `CPNameNotConnectable`, and `setPlanRegistration`.
 - The `PRMUnknown` equation.
 - The pre-resolve branch of `CTShortContact`, `nameHasLink` and `nameExpired`.
-- `viewNameRegistration`, replaced by `viewNameWarning`.
+- `viewNameRegistration`, replaced by `viewNameWarning` and `viewNameChange` in `viewConnectionPlan`.
 - In both apps: the decisions in `showNameRegistrationAlert`, `NameRegistration.expired`, `reservedForCommunity`, `centsPerYear`, `nameCentsPerYear`, and the Swift `NameRegistration` decoder.
 
 ## 11. Decisions

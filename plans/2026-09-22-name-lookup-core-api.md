@@ -209,7 +209,7 @@ Registry and network failures stay command errors when nothing is local (2h), wi
 
 ## 8. Compile fixes and regeneration
 
-- `View.hs:2234`, `:2252` — match the new arities; `viewConnectionPlan` (`:2214`) takes `Maybe ACreatedConnLink` and gains a `CPNameNotConnectable` case rendering the domain; the warning line is `viewNameWarning` (`plans/2026-09-28-name-warnings.md` §7).
+- `View.hs:2234`, `:2252` — match the new arities; `viewConnectionPlan` (`:2214`) takes `Maybe ACreatedConnLink` and `planSimplexName`, and gains a `CPNameNotConnectable` case rendering the domain; the name lines are printed in the plan's cases (`plans/2026-09-28-name-warnings.md` §7).
 - `View.hs:217` — pass the now-optional `connLink` through.
 - `Commands.hs` — `nameChange` is added at the 26 `CPContactAddress` / `CPGroupLink` occurrences; `CRConnectionPlan` is built with `Maybe` at `:2178` and `:4586`.
 - Regenerate the client types. Before regeneration, the four-constructor plan was described in `bots/api/TYPES.md:1903-1922`, `packages/simplex-chat-client/types/typescript/src/types.ts` and `packages/simplex-chat-python/src/simplex_chat/types/_types.py`. `resolve=` is omitted by `bots/src/API/Docs/Commands.hs:150` and both generated clients.
