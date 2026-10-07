@@ -5274,8 +5274,6 @@ handOverStoreReceipt presentingUser echoedInvoiceId payment = do
   StoreReceipt {ownerId, status} <-
     withStore' (\db -> holdStoreReceipt db g presentingUser echoedInvoiceId txRef payment now)
       >>= maybe (throwChatError $ CEInternalError "store receipt was not recorded") pure
-  -- signalled before the answer, which can throw: nothing else would signal this receipt, and it would wait
-  -- for an app event. A signal with nothing due costs an empty pass
   lift $ resumeStoreReceiptWork ownerId
   owner <- withStore $ \db -> getUser db ownerId
   case status of
