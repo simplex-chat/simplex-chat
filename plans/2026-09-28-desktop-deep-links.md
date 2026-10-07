@@ -4,7 +4,7 @@
 
 The badge page (`badges.simplex.chat`) ends a purchase opened from the app with *Return to SimpleX*, which navigates to `simplexchat:/badge/code/<code>`. Android and iOS handle it since #7592 (`isAppLink` → `openAppLink` → `openBadgeLink` → `BadgesRedeemLinkView`, which confirms before redeeming). Desktop registers no scheme, so it opens the page with `app=desktop` and relies on the user pasting the code (D1). Goal: every packaged desktop build receives the link, cold or running, and sends `app=true` only when a link is expected to reach this installation. D1 stays as the fallback.
 
-The decisions were to build on #7592, forward to a running instance through the existing signal file with a payload, register `simplexchat:` only, and self-register at runtime on Windows (HKCU) and AppImage.
+The decisions were to build on #7592, forward to a running instance through the existing signal file with a payload, register `simplexchat:` only (`simplex:` connection links were added afterwards, see the last section), and self-register at runtime on Windows (HKCU) and AppImage.
 
 ## Research summary
 
@@ -18,33 +18,33 @@ The decisions were to build on #7592, forward to a running instance through the 
 
 ```
 browser ─ simplexchat:/badge/code/X
-  macOS:          Apple Event → setOpenURIHandler → openDesktopAppLink
-  Windows/Linux:  new process main(args) → appLinkFromArgs
+  macOS:          Apple Event → setOpenURIHandler → openDesktopLink
+  Windows/Linux:  new process main(args) → linkFromArgs
                     lock acquired  → chatModel.appOpenUrl (cold start), then the watcher starts
-                    lock taken     → simplex.show payload → primary watcher → openDesktopAppLink
-openDesktopAppLink: chatModel.appOpenUrl = remoteHostId() to uri; showWindow()
+                    lock taken     → simplex.show payload → primary watcher → openDesktopLink
+openDesktopLink: chatModel.appOpenUrl = remoteHostId() to uri; showWindow()
 App.kt LaunchedEffect (existing) → connectIfOpenedViaUri → openAppLink (lane)
 ```
 
 ## Changes
 
 1. **`common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt`** (new, beside `SingleInstance.kt`)
-   - `isAcceptedAppLink(uri)`: `isAppLink` (`ChatListView.kt`) within `MAX_APP_LINK_BYTES` UTF-8 bytes.
-   - `appLinkFromArgs(args)`: the only argument, when it is an accepted app link; anything else is ignored.
-   - `openDesktopAppLink(uri)`: on the EDT, `chatModel.appOpenUrl.value = chatModel.remoteHostId() to uri`, then `showWindow()` (`DesktopApp.kt:258`), so a failure to show the window cannot lose the link. `remoteHostId()` matches the redeem screen (`BadgesRedeemCodeView.kt:98`).
-   - `installOpenUriHandler()`: called on macOS only (so Windows and Linux do not start AWT early); sets a handler that forwards accepted links to `openDesktopAppLink`.
+   - `isAcceptedLink(uri)`: `isAppLink` (`ChatListView.kt`) within `MAX_LINK_BYTES` UTF-8 bytes.
+   - `linkFromArgs(args)`: the only argument, when it is an accepted link; anything else is ignored.
+   - `openDesktopLink(uri)`: on the EDT, `chatModel.appOpenUrl.value = chatModel.remoteHostId() to uri`, then `showWindow()` (`DesktopApp.kt:258`), so a failure to show the window cannot lose the link. `remoteHostId()` matches the redeem screen (`BadgesRedeemCodeView.kt:98`).
+   - `installOpenUriHandler()`: called on macOS only (so Windows and Linux do not start AWT early); sets a handler that forwards accepted links to `openDesktopLink`.
 
-2. **`desktop/.../Main.kt`**: `main(args)`. Compute the link and pass it to `acquireSingleInstance(appLink)`; when this process runs, put it into `chatModel.appOpenUrl` (`null` host), then start the watcher if this process holds the lock, so a link the watcher forwards later is not overwritten. A short-lived second process never touches `chatModel`. After `initApp()`: start registration (step 4) and `installOpenUriHandler()`. Keep everything inside the existing try.
+2. **`desktop/.../Main.kt`**: `main(args)`. Compute the link and pass it to `acquireSingleInstance(link)`; when this process runs, put it into `chatModel.appOpenUrl` (`null` host), then start the watcher if this process holds the lock, so a link the watcher forwards later is not overwritten. A short-lived second process never touches `chatModel`. After `initApp()`: start registration (step 4) and `installOpenUriHandler()`. Keep everything inside the existing try.
 
 3. **`SingleInstance.kt`**: the signal carries an optional payload.
    - Second process: `Files.createTempFile(dataDir, "simplex.show", ".tmp")` (owner-only on POSIX), write the link or nothing, then `Files.move(tmp, showPath, ATOMIC_MOVE)`, which replaces an untaken signal on Linux and Windows. If that fails, fall back to an empty signal, which still brings the running instance forward. The rename arrives as `ENTRY_CREATE` on inotify and Windows. Existing 1 s wait and hung-primary alert stay; on "start anyway" the payload file is deleted and `main` handles the link itself.
-   - Primary watcher: rename `simplex.show` to a private temp name, so a newer signal renamed over it is not deleted unread, then accept at most `MAX_APP_LINK_BYTES` bytes, delete it, and post `openDesktopAppLink(link)` or `showWindow()`.
+   - Primary watcher: rename `simplex.show` to a private temp name, so a newer signal renamed over it is not deleted unread, then accept at most `MAX_LINK_BYTES` bytes, delete it, and post `openDesktopLink(link)` or `showWindow()`.
    - Primary start deletes a taken file left by a crash, and any `simplex.show*` file older than its lock attempt minus a 2 s tolerance for file time granularity: such a signal or temp file was left by an earlier session, while a fresh temp file is a signal being written. `main` then starts the watcher, which registers the watch and handles a signal already present, which raised no event.
    - Windows: call `AllowSetForegroundWindow(ASFW_ANY)` before signalling so the primary can come forward (best effort). jna-platform 5.14 does not bind it, so it is looked up through `NativeLibrary`.
    - Take the directory as a parameter internally so tests can use a temp dir.
    - No log line includes the link.
 
-4. **`common/src/desktopMain/.../platform/AppLinkScheme.desktop.kt`** (new): `registerAppLinkScheme()` runs once on a background thread and sets a `@Volatile` result read by the UI. `unixDataHome` is exposed from `Platform.desktop.kt` and `appLinkScheme` from `ChatListView.kt` for reuse.
+4. **`common/src/desktopMain/.../platform/AppLinkScheme.desktop.kt`** (new): `registerLinkSchemes()` runs once on a background thread and sets a `@Volatile` result read by the UI. `unixDataHome` is exposed from `Platform.desktop.kt` and `appLinkScheme` from `ChatListView.kt` for reuse.
    - macOS: registered when `jpackage.app-path` is set (packaged bundle).
    - Windows: when `jpackage.app-path` is set, read the HKCU command via `Advapi32Util`. If it differs from `"<path>" "%1"`, write the default value `URL:SimpleX Chat`, `URL Protocol`, `DefaultIcon`, and `shell\open\command`. Registered if the key now matches.
    - Linux:
@@ -88,11 +88,13 @@ App.kt LaunchedEffect (existing) → connectIfOpenedViaUri → openAppLink (lane
 10. `docs: describe desktop deep links in the spec`
 11. `docs: plan desktop deep links`
 12. `docs: report on desktop deep links`
+13. `desktop: open simplex connection links`
+14. `docs: describe simplex links on desktop`
 
 ## Verification
 
 - **Unit tests** (`common/src/desktopTest`, beside `SingleInstanceTest.kt`):
-  - `appLinkFromArgs`: accepts `simplexchat:` in any case; rejects `simplex:`, `https:`, empty args, a link that is not the only argument, and a link over the bound in bytes, including a multi-byte one within it in characters.
+  - `linkFromArgs`: accepts `simplexchat:` in any case; rejects `https:`, empty args, a link that is not the only argument, and a link over the bound in bytes, including a multi-byte one within it in characters.
   - Signal payload: link and empty round trip, taken once, replace of an untaken signal and of a taken file left by a crash, owner-only file on POSIX, a link of exactly the byte bound, rejected content including a multi-byte link over the bound, a temp file created beside the signal, a sweep that removes old temp files and a taken file but keeps a fresh temp file and the old lock and database files, keeps a signal within the 2 s tolerance and drops an older one, a watcher that takes a signal written before its watch, and successive signals arriving while it watches, each once, through a real `WatchService`.
   - The Windows command string, the registry values and registration with a stand-in registry, the deb's registered check, the AppImage desktop entry for a path with spaces, Exec quoting that leaves a plain path bare and quotes and escapes reserved characters, its refusal of line breaks and `%`, `runProcess` output, discarded error output, an end of input and failure, and `desktopInstallation` precedence including Flatpak over AppImage, inherited AppImage variables, a mount path that only shares a prefix, and a mount reached through a symlink; the AppImage ownership check for world-writable and group-writable files and directories, a world-writable ancestor, another owner, a root-owned file, and a missing file; AppImage registration with a stand-in for `xdg-mime`: a new entry in a missing directory, an unchanged default, an unchanged entry that is no longer the default, a moved AppImage, a default that does not change, and a path the entry cannot run.
   - `badgePageUrl` (in `common/src/commonTest`): `app=true` when the link returns, `app=desktop` otherwise.
@@ -114,3 +116,12 @@ App.kt LaunchedEffect (existing) → connectIfOpenedViaUri → openAppLink (lane
 - GNOME Wayland raising the window (best effort).
 - Stale HKCU keys and AppImage entries stay after uninstall or deletion; the plan accepts that.
 - The deb's existing `Categories=Unknown`, which `desktop-file-validate` rejects, is out of scope and left as is.
+
+## `simplex:` connection links
+
+Android already opens `simplex:` links through `connectIfOpenedViaUri`, which sends them to `planAndConnect` (it asks before connecting). Desktop now receives them by the same paths as app links.
+
+- `isAcceptedLink` accepts `isAppLink` or `isConnectionLink` (`ChatListView.kt`). One bound covers both: `MAX_LINK_BYTES` is 8192, as a one-time link with its post-quantum key is about 2 KB and a second such key would bring it near 4 KB (the sntrup761 key alone is 1544 characters in base64url). The desktop names lose the `App` part: `linkFromArgs`, `openDesktopLink`, `registerLinkSchemes`.
+- Every registration declares both schemes: the Info.plist, the deb, AppImage and Flatpak desktop entries, an HKCU key per scheme on Windows, and `xdg-mime default` per MIME type for an AppImage.
+- `appLinkSchemeRegistered()` still reports `simplexchat:` only, as it decides how the badge page ends; `simplex:` is registered without being checked.
+- Tests: a short link, a one-time link with its key, and the scheme in another case are accepted; another scheme sharing the prefix and a path are not; a forwarded one-time link round trips through the signal file; Windows and AppImage registration write both schemes, and only `simplexchat:` decides the result.

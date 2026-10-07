@@ -301,7 +301,7 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 ### Description
 
-Desktop registers the `simplexchat:` scheme so the badge page can return to the app. The registration has known limits:
+Desktop registers the `simplexchat:` scheme so the badge page can return to the app, and the `simplex:` scheme so connection links open in it. The registration has known limits:
 
 - Uninstalling or deleting the app leaves the per-user registration behind: the HKCU key on Windows and the hidden AppImage desktop entry on Linux. A later link then points at a missing program. On Windows, if the app was installed into a folder other users can write to (for example a custom folder at the root of `C:\`), another user could put a program at that path and have it run on the next link; the default Program Files install is not affected. This risk is accepted.
 - A Flatpak counts as registered without a check, as it cannot query the host's default handler. It works only once the Flathub release pins a commit with the desktop file's MimeType line and its wrapper passes `"$@"` to the app.

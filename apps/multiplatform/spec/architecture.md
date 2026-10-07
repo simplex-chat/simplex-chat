@@ -226,9 +226,9 @@ Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26
 
 ```
 main(args)
-  +-- appLinkFromArgs(args)              // A simplexchat: link passed by the OS
-  +-- acquireSingleInstance(appLink)     // Or forward the link to the running instance and exit
-  +-- appOpenUrl = appLink               // Stored before the watcher can forward a newer link
+  +-- linkFromArgs(args)                 // A simplexchat: or simplex: link passed by the OS
+  +-- acquireSingleInstance(link)        // Or forward the link to the running instance and exit
+  +-- appOpenUrl = link                  // Stored before the watcher can forward a newer link
   +-- startShowFileWatcher()             // Only while holding the single-instance lock
   +-- initHaskell()                      // Load native lib from resources dir, call initHS()
   |     +-- System.load(libapp-lib.so/dll/dylib)
@@ -236,7 +236,7 @@ main(args)
   +-- runMigrations()
   +-- setupUpdateChecker()
   +-- initApp()                          // Set ntfManager, applyAppLocale, initChatControllerOnStart
-  +-- registerAppLinkScheme()            // Background thread, per-OS registration and detection
+  +-- registerLinkSchemes()              // Background thread, per-OS registration and detection
   +-- installOpenUriHandler()            // macOS only: links arrive as Apple Events
   +-- showApp()                          // Compose window with AppScreen()
 ```
