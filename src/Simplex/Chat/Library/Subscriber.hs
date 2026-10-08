@@ -3937,7 +3937,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfoKeys -> Maybe GroupChatScopeInfo -> GroupMember -> GrpMsgForward -> ParsedMsg 'Json -> UTCTime -> CM ()
-    xGrpMsgForward g@(GIK gInfo _) scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs = do
+    xGrpMsgForward g@(GIK gInfo@GroupInfo {membership} _) scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs = do
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
       case fwdSender of
         FwdMember memberId memberName -> do
@@ -3945,6 +3945,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           let allowCreate = toCMEventTag chatMsgEvent /= XGrpLeave_
           withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownRole allowCreate) >>= \case
             Just (author, unknown)
+              | not (useRelays' gInfo) && groupMemberId' author == groupMemberId' membership ->
+                  messageError $ "x.grp.msg.forward: content attributed to own membership, forwarder " <> tshow (groupMemberId' m) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | memberRemoved author ->
                   logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | not (useRelays' gInfo) && not (expectedForwarder author) ->
@@ -4160,7 +4162,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
               | otherwise ->
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
-                    let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxEncodedMsgLength nextTasks
+                    let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxForwardBatchLength nextTasks
                         senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
                     withStore' $ \db -> do
                       forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds body
@@ -4290,8 +4292,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         else do
                           -- all members' profiles disseminate; privileged key/role come from the roster, not here
                           let (encoderErrs, validLabeled) = partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew (vr cxt) gInfo s | (s, _) <- senders]
-                              (extBody', inBody, overflowLabeled, large1) = batchProfilesWithBody maxEncodedMsgLength body validLabeled
-                              (overflowBatches', large2) = batchProfiles maxEncodedMsgLength overflowLabeled
+                              (extBody', inBody, overflowLabeled, large1) = batchProfilesWithBody maxForwardBatchLength body validLabeled
+                              (overflowBatches', large2) = batchProfiles maxForwardBatchLength overflowLabeled
                               packerErrs = [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | s <- large1 <> large2]
                               allErrs = encoderErrs <> packerErrs
                           unless (null allErrs) $ do
