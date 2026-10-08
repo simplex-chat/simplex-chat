@@ -15,7 +15,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit

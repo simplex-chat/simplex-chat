@@ -23,7 +23,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URI

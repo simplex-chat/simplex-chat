@@ -56,11 +56,6 @@ kotlin {
     }
 
     val commonMain by getting {
-      if (hasSimplexAssets) {
-        resources.srcDir(simplexAssetsLocal)
-      } else {
-        resources.srcDir("src/commonMain/resources/assets/default")
-      }
       dependencies {
         api(compose.runtime)
         api(compose.foundation)
@@ -78,8 +73,8 @@ kotlin {
         // Link Previews
         implementation("org.jsoup:jsoup:1.17.2")
         // Resources
-        api("dev.icerock.moko:resources:0.23.0")
-        api("dev.icerock.moko:resources-compose:0.23.0")
+        api("dev.icerock.moko:resources:0.27.1")
+        api("dev.icerock.moko:resources-compose:0.27.1")
 
         // Markdown
         implementation("com.mikepenz:multiplatform-markdown-renderer:0.27.0")
@@ -95,7 +90,6 @@ kotlin {
       }
     }
     val androidMain by getting {
-      kotlin.srcDir("build/generated/moko/androidMain/src")
       dependencies {
         implementation("androidx.activity:activity-compose:1.9.1")
         val workVersion = "2.9.1"
@@ -165,20 +159,13 @@ android {
   }
   testOptions.targetSdk = 36
   lint.targetSdk = 36
-  val isAndroid = gradle.startParameter.taskNames.find {
-    val lower = it.lowercase()
-    lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
-  } != null
-  if (isAndroid) {
-    // This is not needed on Android but can't be moved to desktopMain because MR lib don't support this.
-    // No other ways to exclude a file work, but it's large and should be excluded
-    kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
-  }
 }
 
 multiplatformResources {
-  multiplatformResourcesPackage = "chat.simplex.res"
-  //  multiplatformResourcesClassName = "MR"
+  resourcesPackage.set("chat.simplex.res")
+  resourcesSourceSets {
+    getByName("commonMain").srcDirs(if (hasSimplexAssets) simplexAssetsLocal.resolve("MR") else file("src/commonMain/resources/assets/default/MR"))
+  }
 }
 
 buildConfig {
@@ -286,8 +273,8 @@ afterEvaluate {
         }
         return this
       }
-      val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
-      val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
+      val fileRegex = Regex("moko-resources/../strings.xml$|moko-resources/..-.../strings.xml$|moko-resources/..-../strings.xml$|moko-resources/base/strings.xml$")
+      val tree = fileTree("src/commonMain/moko-resources").filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
       val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val lvStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("lv/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val treeList = ArrayList(tree.toList())
