@@ -169,14 +169,13 @@ The result is the link and the local plan without its change. The known chat is 
 
 **A typed name `@d` or `#d`**
 
-1. The name is resolved, except with `resolve=never`. The result is the name's link of the kind, or an error: a warning (`SDENameWarning`), no link of the kind (`SDENoValidLink`), a failed request, or `CENotResolvedLocally`.
-2. The name's kind is looked up locally.
-3. With something local, the answer from `knownNamePlan` is:
+1. The name's kind is looked up locally.
+2. With something local, `knownNamePlan` answers with the local plan with `resolve=never`. Otherwise the name is resolved to the name's link of the kind, or to an error: a warning (`SDENameWarning`), no link of the kind (`SDENoValidLink`), or a failed request. The answer is:
    - **the same link:** the local plan;
    - **another link L:** the plan for L, with `NCMoved` for a chat or own channel (N35), without a change for the own address (N9); the local plan on an error in L's plan (N12, N19); L's plan without a change when it is the local chat (N39);
    - **a warning:** the local plan with `NCLapsed w`, except `NWNotRegistered` (N11);
    - **another error:** the local plan.
-4. With nothing local, the answer is the plan for the link, or the error.
+3. With nothing local, the answer is `CENotResolvedLocally` with `resolve=never`. Otherwise the name is resolved, and the answer is the plan for the name's link, or the error.
 
 In the plan for a link L, the claim of L's profile is checked (`SDEUnknownDomain`), and a chat the user has at L is refreshed and verified. `knownChat` is then marked moved (N37).
 

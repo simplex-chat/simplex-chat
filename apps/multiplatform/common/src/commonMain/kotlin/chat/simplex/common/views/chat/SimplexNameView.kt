@@ -84,10 +84,8 @@ fun SimplexNameView(
           showToast(generalGetString(MR.strings.copied))
         }
       !verifiable -> Text(simplexName, style = nameStyle)
-      verified == DomainVerification.Failed ->
-        SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, Color.Red) { runVerify(manual = true) }
-      verified == DomainVerification.Moved ->
-        SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, MaterialTheme.colors.secondary) { runVerify(manual = true) }
+      verified == DomainVerification.Failed || verified == DomainVerification.Moved ->
+        SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, if (verified == DomainVerification.Failed) Color.Red else MaterialTheme.colors.secondary) { runVerify(manual = true) }
       else -> {
         Text(simplexName, style = nameStyle)
         Text(

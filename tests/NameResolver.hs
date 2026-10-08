@@ -61,23 +61,23 @@ withNameResolver action = do
 -- | Register a name's domain to resolve to the given record.
 registerName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
 registerName reg ni nameRecord =
-  registerRegistration reg ni NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Nothing, nameRecord}
+  registerAnswer reg ni $ AnswerRegistration NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Nothing, nameRecord}
 
-registerRegistration :: NameRegistry -> SimplexNameInfo -> NameRegistration -> IO ()
-registerRegistration reg ni r = atomically $ modifyTVar' reg $ M.insert (registryKey ni) (AnswerRegistration r)
+registerAnswer :: NameRegistry -> SimplexNameInfo -> TestNameAnswer -> IO ()
+registerAnswer reg ni a = atomically $ modifyTVar' reg $ M.insert (registryKey ni) a
 
 registerExpiredName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
 registerExpiredName reg ni nameRecord = do
   RoundedSystemTime now <- getSystemSeconds
   let expires = Just $ RoundedSystemTime (now - 86400)
       graceUntil = Just $ RoundedSystemTime (now + 30 * 86400)
-  registerRegistration reg ni NRRegistered {expires, graceUntil, reservedReason_ = Nothing, nameRecord}
+  registerAnswer reg ni $ AnswerRegistration NRRegistered {expires, graceUntil, reservedReason_ = Nothing, nameRecord}
 
 registerReservedName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> IO ()
-registerReservedName reg ni reservedReason = registerRegistration reg ni NRReserved {reservedReason}
+registerReservedName reg ni reservedReason = registerAnswer reg ni $ AnswerRegistration NRReserved {reservedReason}
 
 failNameResolution :: NameRegistry -> SimplexNameInfo -> IO ()
-failNameResolution reg ni = atomically $ modifyTVar' reg $ M.insert (registryKey ni) AnswerFails
+failNameResolution reg ni = registerAnswer reg ni AnswerFails
 
 unregisterName :: NameRegistry -> SimplexNameInfo -> IO ()
 unregisterName reg ni = atomically $ modifyTVar' reg $ M.delete (registryKey ni)

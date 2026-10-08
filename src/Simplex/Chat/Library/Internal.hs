@@ -1667,20 +1667,18 @@ updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {conta
     verifyChanged = contactDomainVerified /= Just DVVerified || claimChanged
 
 setOtherNameChatsMoved :: User -> ChatInfo c -> CM ()
-setOtherNameChatsMoved user cInfo = forM_ ((,) <$> chatSimplexName cInfo <*> chatInfoToRef cInfo) $ \(ni@SimplexNameInfo {nameType, nameDomain}, ChatRef cType chatId _) -> do
-  let idOf t = if cType == t then Just chatId else Nothing
-  (ctIds, gIds) <- withFastStore' $ \db ->
-    (,)
-      <$> (if nameType == NTContact then setNameContactsMoved db user nameDomain (idOf CTDirect) else pure [])
-      <*> setNameGroupsMoved db user ni (idOf CTGroup)
-  unless (null ctIds && null gIds) $ toView $ CEvtNameMoved user ctIds gIds
-
-chatSimplexName :: ChatInfo c -> Maybe SimplexNameInfo
-chatSimplexName = \case
-  DirectChat Contact {profile = LocalProfile {contactDomain}} -> SimplexNameInfo NTContact . claimDomain <$> contactDomain
-  GroupChat GroupInfo {businessChat = Just BusinessChatInfo {businessDomain}} _ -> SimplexNameInfo NTContact . claimDomain <$> businessDomain
-  GroupChat GroupInfo {groupProfile} _ -> SimplexNameInfo NTPublicGroup <$> groupClaim groupProfile
-  _ -> Nothing
+setOtherNameChatsMoved user = \case
+  DirectChat Contact {contactId, profile = LocalProfile {contactDomain = Just d}} -> setMoved (SimplexNameInfo NTContact $ claimDomain d) (Just contactId) Nothing
+  GroupChat GroupInfo {groupId, businessChat = Just BusinessChatInfo {businessDomain = Just d}} _ -> setMoved (SimplexNameInfo NTContact $ claimDomain d) Nothing (Just groupId)
+  GroupChat GroupInfo {groupId, businessChat = Nothing, groupProfile} _ | Just d <- groupClaim groupProfile -> setMoved (SimplexNameInfo NTPublicGroup d) Nothing (Just groupId)
+  _ -> pure ()
+  where
+    setMoved ni@SimplexNameInfo {nameType, nameDomain} ctId_ gId_ = do
+      (ctIds, gIds) <- withFastStore' $ \db ->
+        (,)
+          <$> (if nameType == NTContact then setNameContactsMoved db user nameDomain ctId_ else pure [])
+          <*> setNameGroupsMoved db user ni gId_
+      unless (null ctIds && null gIds) $ toView $ CEvtNameMoved user ctIds gIds
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfoKeys -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
