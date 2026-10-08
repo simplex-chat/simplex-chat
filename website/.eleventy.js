@@ -95,6 +95,9 @@ glossary.forEach(item => {
     item.tooltip = firstParagraph
     item.hasMultipleParagraphs = paragraphCount > 1
   }
+
+  const definitionLinks = new JSDOM(item.definition).window.document.querySelectorAll('a[href*="#"]')
+  item.linkedHashes = Array.from(definitionLinks, a => a.href.substring(a.href.indexOf("#") + 1))
 })
 
 
@@ -173,13 +176,14 @@ module.exports = function (ty) {
       let changeNoted = false
       const id = term.term.toLowerCase().replace(/\s/g, '-')
 
+      const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
       allContentNodes.forEach((node) => {
-        const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
         const beforeContent = node.innerHTML
-        node.innerHTML = node.innerHTML.replace(regex, (match) => {
+        const afterContent = beforeContent.replace(regex, (match) => {
           return `<span data-glossary="tooltip-${id}" class="glossary-term">${match}</span>`
         })
-        if (beforeContent !== node.innerHTML && !changeNoted) {
+        if (afterContent !== beforeContent) {
+          node.innerHTML = afterContent
           changeNoted = true
         }
       })
@@ -208,16 +212,7 @@ module.exports = function (ty) {
         body.appendChild(definitionTooltipDiv)
       }
 
-      let tooltipDom = new JSDOM(term.definition)
-      let tooltipDocument = tooltipDom.window.document
-      const hashList = [term.term.toLowerCase().replace(/\s/g, '-')]
-      tooltipDocument.querySelectorAll('a[href*="#"]').forEach(a => {
-        let hashIndex = a.href.indexOf("#")
-        if (hashIndex !== -1) {
-          let hash = a.href.substring(hashIndex + 1)
-          hashList.push(hash)
-        }
-      })
+      const hashList = [id, ...term.linkedHashes]
 
       hashList.forEach(hash => {
         if (!overlayIds.includes(hash)) {

@@ -36,8 +36,8 @@
         },
         {
           "fact": "Paid marketing",
-          "value": "none",
-          "asOf": "October 2026",
+          "value": "none before the equity crowdfunding campaign",
+          "asOf": "until August 2026",
           "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
         },
         {
