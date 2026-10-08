@@ -651,7 +651,7 @@
     <string name="set_password_to_export">Nastavte prístupovú frázu pre export</string>
     <string name="to_reveal_profile_enter_password">Aby ste odhalili svoj skrytý profil, zadajte celé heslo do vyhľadávacieho poľa na stránke profilov chatov.</string>
     <string name="network_proxy_auth_mode_username_password">Vaše prihlasovacie údaje môžu byť zaslané nešifrované.</string>
-    <string name="keychain_is_storing_securely">Android Keystore je použitý na bezpečné uloženie prístupovej frázy - umožňuje to fungovanie služby oznámení.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s je použitý na bezpečné uloženie prístupovej frázy - umožňuje to fungovanie služby oznámení.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore bude použitý na bezpečné uloženie prístupovej frázy po reštarte aplikácie alebo zmene prístupovej frázy - umožní to fungovanie služby oznámení.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Upozornenie</b>: ak stratíte vašu prístupovú frázu, NEBUDE možné ju obnoviť ani zmeniť.]]></string>
     <string name="change_database_passphrase_question">Zmeniť prístupovú frázu k databáze?</string>

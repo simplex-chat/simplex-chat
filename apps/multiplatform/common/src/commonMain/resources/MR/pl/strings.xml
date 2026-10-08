@@ -538,7 +538,7 @@
     <string name="update_database">Aktualizuj</string>
     <string name="update_database_passphrase">Aktualizuj hasło do bazy danych</string>
     <string name="database_is_not_encrypted">Twoja baza danych czatu nie jest szyfrowana - ustaw hasło, aby ją chronić.</string>
-    <string name="keychain_is_storing_securely">Android Keystore służy do bezpiecznego przechowywania hasła - umożliwia działanie usługi powiadomień.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s służy do bezpiecznego przechowywania hasła - umożliwia działanie usługi powiadomień.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore będzie używany do bezpiecznego przechowywania hasła po ponownym uruchomieniu aplikacji lub zmianie hasła - pozwoli to na otrzymywanie powiadomień.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b> Uwaga</b>: NIE będziesz w stanie odzyskać ani zmienić hasła, jeśli je zgubisz.]]></string>
     <string name="cannot_access_keychain">Nie można uzyskać dostępu do Keystore w celu zapisania hasła bazy danych</string>

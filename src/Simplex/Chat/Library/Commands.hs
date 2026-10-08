@@ -359,7 +359,9 @@ startReceiveUserFiles user = do
 
 restoreCalls :: CM' ()
 restoreCalls = do
-  savedCalls <- fromRight [] <$> runExceptT (withFastStore' getCalls)
+  ttl <- asks (callInvitationTTL . config)
+  cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
+  savedCalls <- fromRight [] <$> runExceptT (withFastStore' $ \db -> expireCalls db cutoffTs >> getCalls db)
   let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
@@ -1519,7 +1521,8 @@ processChatCommand cxt nm = \case
           callId <- atomically $ CallId <$> C.randomBytes 16 g
           callUUID <- UUID.toText <$> liftIO V4.nextRandom
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
-          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
+          ChatConfig {callVRange = callVR} <- asks config
+          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair, callVRange = Just $ CallVersionRange callVR}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage user ct (XCallInv callId invitation)
           ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0)
@@ -1547,9 +1550,9 @@ processChatCommand cxt nm = \case
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
     -- party accepting call
     withCurrentCall contactId $ \user ct call@Call {callId, chatItemId, callState} -> case callState of
-      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey} -> do
+      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey, callVersion} -> do
         let callDhPubKey = if encryptedCall callType then localDhPubKey else Nothing
-            offer = CallOffer {callType, rtcSession, callDhPubKey}
+            offer = CallOffer {callType, rtcSession, callDhPubKey, callVersion}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallOffer callId offer)
@@ -1604,7 +1607,8 @@ processChatCommand cxt nm = \case
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
-  APISetUserDomain userId domain_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} ->
+  APISetUserDomain userId strDomain_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} -> do
+    let domain_ = unStrJSON <$> strDomain_
     if (claimDomain <$> contactDomain) == domain_
       then pure $ CRUserProfileNoChange user
       else do
@@ -2876,7 +2880,8 @@ processChatCommand cxt nm = \case
         Nothing -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
     (g@(GIK gInfo _), m) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupMemberById db cxt user gmId
-    assertUserGroupRole gInfo $ max GRModerator role
+    -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
+    assertUserGroupRole gInfo $ roleRequiredToChange GRMember role
     case memberStatus m of
       GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve
         let GroupInfo {groupProfile = GroupProfile {memberAdmission}} = gInfo
@@ -2955,6 +2960,8 @@ processChatCommand cxt nm = \case
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
       when (anyRelay || newRole == GRRelay) $ throwCmdError "relay role can't be changed"
+      -- TODO [multi-owner] allow once owners are added via link data - until then promoted owner would lack link authority
+      when (useRelays' gInfo && newRole == GROwner) $ throwCmdError "owner role can't be assigned in channels"
       -- TODO allow moderators (needs UI) - relay is rejected above (anyRelay), so drop the GRAdmin floor:
       -- TODO   assertUserGroupRole gInfo (roleRequiredToChange maxRole newRole)
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
@@ -3999,7 +4006,7 @@ processChatCommand cxt nm = \case
       dm <- case gInfo_ of
         Just (Just gInfo@(GIK g gks))
           | useRelays' g -> case relayMemberId_ of
-              Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
+              Just relayMemberId -> encodeXMemberConnInfo pqSup gInfo relayMemberId profileToSend
               Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
           | otherwise -> encodeConnInfoPQ pqSup $ XContact profileToSend (Just $ groupMemberKey gks) (Just xContactId) welcomeSharedMsgId msg_
         _ ->
@@ -6298,7 +6305,7 @@ chatCommandP =
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
-      "/_set domain " *> (APISetUserDomain <$> A.decimal <*> optional (A.space *> strP)),
+      "/_set domain " *> (APISetUserDomain <$> A.decimal <*> optional (A.space *> (StrJSON <$> strP))),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),

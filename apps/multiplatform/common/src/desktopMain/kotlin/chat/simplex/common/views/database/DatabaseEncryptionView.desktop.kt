@@ -59,6 +59,7 @@ actual fun DatabaseEncryptionFooter(
   useKeychain: MutableState<Boolean>,
   chatDbEncrypted: Boolean?,
   storedKey: MutableState<Boolean>,
+  keyStorage: String?,
   initialRandomDBPassphrase: MutableState<Boolean>,
   migration: Boolean,
 ) {

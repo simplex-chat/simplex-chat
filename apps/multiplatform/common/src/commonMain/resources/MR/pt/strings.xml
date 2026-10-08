@@ -166,7 +166,7 @@
     <string name="voice_messages_prohibited">Mensagens de voz proibidas!</string>
     <string name="voice_message_with_duration">Mensagem de voz (%1$s)</string>
     <string name="app_version_name">Versão da aplicação: v%s</string>
-    <string name="keychain_is_storing_securely">O Android Keystore é usado para armazenar com segurança a senha - permite que o serviço de notificações funcione.</string>
+    <string name="keychain_is_storing_securely">O Android Keystore%s é usado para armazenar com segurança a senha - permite que o serviço de notificações funcione.</string>
     <string name="keychain_allows_to_receive_ntfs">O Android Keystore será usado para armazenar com segurança a senha depois de voçê reiniciar a aplicação ou alterar a senha - irá permitir receber notificações.</string>
     <string name="notifications_will_be_hidden">As notificações serão entregues apenas até à aplicação parar!</string>
     <string name="app_version_code">Compilação da aplicação: %s</string>

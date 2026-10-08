@@ -14,21 +14,21 @@ import BadgeService.Poller
 import BadgeService.Providers
 import BadgeService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
 import BadgeService.Providers.Stripe (stripeProvider)
-import BadgeService.Store (FundingCredit (..), IssuedCode (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getBadgeCode, insertBadgeCode, revokeCode)
+import BadgeService.Store (KeyPurchase (..), KeyRedemption (..), ManagedGroup (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getCodePurchaseForKey, getManagedGroup, insertBadgeCode, insertManagedGroup, markOwnerBootstrapped, revokeCode)
 import BadgeService.Store.Invoices
 import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
-import Bots.BadgeService.BotTests (newPurchaseKeys)
+import Bots.BadgeService.BotTests (codeCounts, newPurchaseKeys)
 import Bots.BadgeService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
 import Bots.BadgeService.FakeBTCPay
 import Bots.BadgeService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
-import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar, takeMVar, withMVar)
 import Control.Concurrent.STM (atomically, modifyTVar', readTVarIO)
 import qualified Control.Exception as E
-import Control.Monad (join, replicateM, replicateM_, void, when)
+import Control.Monad (forM_, join, replicateM, replicateM_, void, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as K
@@ -41,9 +41,10 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (toLower)
 import Data.Either (isLeft)
 import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
-import Data.List (sort, sortOn)
+import Data.Int (Int64)
+import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (isJust, isNothing, fromMaybe)
+import Data.Maybe (catMaybes, isJust, isNothing, fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -57,15 +58,16 @@ import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, d
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
-import Simplex.Chat.Badges (BadgeType (..))
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withConnection, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (BBSSignature (..))
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Directory (createDirectoryIfMissing, createFileLink, doesFileExist, listDirectory)
@@ -79,34 +81,37 @@ import UnliftIO.Temporary (withTempDirectory)
 
 #if defined(dbPostgres)
 import BadgeService.Store.Postgres.Migrations (badgeServiceSchemaMigrations)
-import ChatClient (testDBConnectInfo, testDBConnstr)
+import ChatClient (testDBConnstr)
 import Database.PostgreSQL.Simple (Only (..))
-import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
+import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 #else
 import BadgeService.Store.SQLite.Migrations (badgeServiceSchemaMigrations)
 import Data.String (fromString)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 #endif
 
 #if defined(dbPostgres)
 withServiceStore :: (DBStore -> IO a) -> IO a
-withServiceStore action =
-  E.bracket_
-    (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
-    (dropDatabaseAndUser testDBConnectInfo)
-    $ do
-      Right st <- createDBStore serviceDBOpts badgeServiceSchemaMigrations (MigrationConfig MCError Nothing)
-      action st `E.finally` closeDBStore st
+withServiceStore action = do
+  n <- atomicModifyIORef' serviceSchemaCounter (\i -> (i + 1, i))
+  Right st <- createDBStore (serviceDBOpts n) badgeServiceSchemaMigrations (MigrationConfig MCError Nothing)
+  action st `E.finally` closeDBStore st
   where
-    serviceDBOpts =
+    serviceDBOpts :: Int -> DBOpts
+    serviceDBOpts n =
       DBOpts
         { connstr = BC.pack testDBConnstr,
-          schema = "sx_badge_service_web_test",
+          schema = "sx_badge_service_web_test_" <> BC.pack (show n),
           poolSize = 4,
           createSchema = True
         }
+
+serviceSchemaCounter :: IORef Int
+serviceSchemaCounter = unsafePerformIO $ newIORef 0
+{-# NOINLINE serviceSchemaCounter #-}
 #else
 withServiceStore :: (DBStore -> IO a) -> IO a
 withServiceStore action = do
@@ -134,6 +139,10 @@ badgeWebTests = do
   describe "badge service schema" $ do
     it "carries the five service-only columns" testServiceColumns
     it "refuses a duplicate provider_ref" testProviderRefUnique
+    it "M20260918 adds the multi-use columns and the group table" testGroupOpsColumns
+    it "M20260918 defaults a fresh code to one use with none spent" testGroupOpsRedeemCounts
+    it "migrates all the way down and up again" testSchemaDownUpCycle
+    it "rolls back only the group migration and re-applies it, keeping a code redeemed twice spent" testGroupOpsDownUp
   describe "badge service store" $ do
     it "writes the invoice, its code and their link atomically" testCreationIsAtomic
     it "newInvoiceId is 128 CSPRNG bits, base64url, and two calls differ" testNewInvoiceIdRandom
@@ -144,7 +153,15 @@ badgeWebTests = do
     it "expireOverdue spares an invoice funded by dust, or by the verdict alone" testExpireOverdueSparesAZeroAmount
     it "readCatalogRows drops every disabled row" testReadCatalogRowsDropsDisabled
     it "a revoked code cannot be redeemed, and a redeemed code cannot be revoked" testRevokeAndRedeemExcludeEachOther
+    it "a multi-use code can be revoked while it has uses left, and not once they are gone" testRevokeMultiUseCode
     it "every timestamp round-trips to the second" testTimestampRoundTrip
+  describe "managed group" $ do
+    it "round-trips and bootstraps once" testManagedGroupRoundTripsAndBootstrapsOnce
+    it "refuses a second row and burns the flag per group" testManagedGroupIsSingleRow
+  describe "multi-use" $ do
+    it "finds a key's own purchase with its newest credential, and none for another key" testKeyPurchaseLookup
+    it "gives concurrent claims exactly the code's uses" testMultiUseConcurrentClaimsUpToLimit
+    it "refuses a second claim by the same key without using up a use" testSameKeyClaimsOnce
   describe "badge service catalog seed" $ do
     it "writes the compiled-in catalog into an empty database" testSeedWritesTheCatalog
     it "leaves exactly one row per id when the service starts twice" testSeedIsIdempotent
@@ -237,6 +254,7 @@ badgeWebTests = do
     it "reports a skipped invoice once, and again only after the interval" testSkipWarningsAreRateLimited
     it "warns once for a provider that stays down, not once a pass" testOutageWarnsOnceNotEveryPass
     it "holds the skip log under its cap when every reason is fresh" testSkipReasonsStayBounded
+    it "warns once for all the invoices it did not sell, not once per invoice" testStrangerSkipsShareOneWarning
     it "raises a skip naming an invoice this service sold" testSkipNamingOurInvoiceIsRaised
     it "holds the sweep back until a pass has accounted for every invoice" testSweepWaitsForAPassThatSawEverything
     it "settles the rest of the pass around an invoice that throws" testOneBadInvoiceDoesNotStopThePass
@@ -300,6 +318,59 @@ testServiceColumns = withServiceStore $ \st -> do
   columnsOf st "sx_badge_service_payments" >>= (`shouldSatisfy` elem "crypto_paid")
   columnsOf st "sx_badge_service_badge_codes"
     >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["expires_at", "revoked_at"])
+
+testGroupOpsColumns :: IO ()
+testGroupOpsColumns = withServiceStore assertGroupOpsColumns
+
+assertGroupOpsColumns :: HasCallStack => DBStore -> IO ()
+assertGroupOpsColumns st = do
+  columnsOf st "sx_badge_service_badge_codes"
+    >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["redeem_limit", "redeem_count", "group_item_id", "group_item_sent_at"])
+  columnsOf st "sx_badge_service_group"
+    >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["group_id", "group_link", "owner_bootstrapped", "created_at"])
+
+runMigrations :: DBStore -> MigrationsToRun -> IO ()
+#if defined(dbPostgres)
+runMigrations st = Migrations.run st Nothing
+#else
+runMigrations st = Migrations.run st Nothing True
+#endif
+
+testSchemaDownUpCycle :: IO ()
+testSchemaDownUpCycle = withServiceStore $ \st -> do
+  let downMigrations = mapMaybe toDownMigration badgeServiceSchemaMigrations
+  length downMigrations `shouldBe` length badgeServiceSchemaMigrations
+  runMigrations st $ MTRDown downMigrations
+  columnsOf st "sx_badge_service_badge_codes" `shouldReturn` []
+  columnsOf st "sx_badge_service_group" `shouldReturn` []
+  runMigrations st $ MTRUp badgeServiceSchemaMigrations
+  assertGroupOpsColumns st
+
+testGroupOpsDownUp :: IO ()
+testGroupOpsDownUp = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  let redeemedHash = digestFixture 44
+      unredeemedHash = digestFixture 45
+      groupOps = [m | m@Migration {name = "20260918_badge_group_ops"} <- badgeServiceSchemaMigrations]
+  redeemed <- insertCode st redeemedHash CPSPaid 2 now
+  void $ insertCode st unredeemedHash CPSPaid 1 now
+  -- Two purchases of one code would break a down migration that restored the unique index.
+  replicateM_ 2 $ newPurchaseKeys >>= claimUse st redeemed now >>= (`shouldSatisfy` isJust)
+  runMigrations st $ MTRDown (mapMaybe toDownMigration groupOps)
+  columnsOf st "sx_badge_service_badge_codes" >>= (`shouldNotSatisfy` elem "redeem_count")
+  runMigrations st $ MTRUp groupOps
+  codeCounts st redeemedHash `shouldReturn` Just (1, 1)
+  codeCounts st unredeemedHash `shouldReturn` Just (1, 0)
+
+testGroupOpsRedeemCounts :: IO ()
+testGroupOpsRedeemCounts = withServiceStore $ \st -> do
+  let codeHash = digestFixture 43
+  withConnection st $ \db ->
+    DB.execute
+      db
+      "INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, created_at) VALUES (?,?,?,?,?)"
+      (DB.Binary codeHash, "supporter" :: Text, 1 :: Int, "free" :: Text, someCreated)
+  codeCounts st codeHash `shouldReturn` Just (1, 0)
 
 testProviderRefUnique :: IO ()
 testProviderRefUnique = withServiceStore $ \st -> do
@@ -463,24 +534,34 @@ expireAllOverdue st now = overdueInvoices st now >>= expireOverdue st now . map 
 testRevokeAndRedeemExcludeEachOther :: IO ()
 testRevokeAndRedeemExcludeEachOther = withServiceStore $ \st -> do
   now <- truncateToSecond <$> getCurrentTime
-  (purchaseKey, masterKey) <- newPurchaseKeys
-  let newCode codeHash = withTransaction st $ \db -> do
-        insertBadgeCode db codeHash BTSupporter 1 CPSPaid now
-        maybe (error "the code was not written") (\IssuedCode {badgeCodeId} -> badgeCodeId) <$> getBadgeCode db codeHash
-      redeem badgeCodeId = withTransaction st $ \db -> createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType = BTSupporter} now
+  keys <- newPurchaseKeys
+  let newCode codeHash = insertCode st codeHash CPSPaid 1 now
+      redeem badgeCodeId = claimUse st badgeCodeId now keys
       revoke codeHash = withTransaction st $ \db -> revokeCode db codeHash now
-      unredeemed codeHash =
-        withTransaction st (`getBadgeCode` codeHash) >>= \case
-          Just IssuedCode {redemption = Uncredited} -> pure True
-          _ -> pure False
   revokedFirst <- newCode "revoked-first"
-  revoke "revoked-first" `shouldReturn` Revoked
+  revoke "revoked-first" `shouldReturn` Revoked revokedFirst
   redeem revokedFirst `shouldReturn` Nothing
-  unredeemed "revoked-first" `shouldReturn` True
+  codeCounts st "revoked-first" `shouldReturn` Just (1, 0)
   redeemedFirst <- newCode "redeemed-first"
   isJust <$> redeem redeemedFirst `shouldReturn` True
   revoke "redeemed-first" `shouldReturn` AlreadyRedeemed
   redeem redeemedFirst `shouldReturn` Nothing
+
+testRevokeMultiUseCode :: IO ()
+testRevokeMultiUseCode = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  let newCode codeHash = insertCode st codeHash CPSPaid 2 now
+      -- A purchase key redeems once, so every redemption here brings its own.
+      redeem badgeCodeId = newPurchaseKeys >>= claimUse st badgeCodeId now
+      revoke codeHash = withTransaction st $ \db -> revokeCode db codeHash now
+  partlyUsed <- newCode "partly-used"
+  isJust <$> redeem partlyUsed `shouldReturn` True
+  revoke "partly-used" `shouldReturn` Revoked partlyUsed
+  redeem partlyUsed `shouldReturn` Nothing
+  usedUp <- newCode "used-up"
+  isJust <$> redeem usedUp `shouldReturn` True
+  isJust <$> redeem usedUp `shouldReturn` True
+  revoke "used-up" `shouldReturn` AlreadyRedeemed
 
 testReadCatalogRowsDropsDisabled :: IO ()
 testReadCatalogRowsDropsDisabled = withServiceStore $ \st -> do
@@ -614,6 +695,103 @@ testTimestampRoundTrip = withServiceStore $ \st -> do
   Just row <- getInvoice st (niInvoiceId ni)
   irExpiresAt row `shouldBe` truncated
   irCreatedAt row `shouldBe` truncated
+
+testManagedGroupRoundTripsAndBootstrapsOnce :: IO ()
+testManagedGroupRoundTripsAndBootstrapsOnce = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  beforeInsert <- withTransaction st getManagedGroup
+  beforeInsert `shouldBe` Nothing
+  withTransaction st $ \db -> insertManagedGroup db 42 "https://link" now
+  afterInsert <- withTransaction st getManagedGroup
+  afterInsert `shouldBe` Just ManagedGroup {mgGroupId = 42, mgGroupLink = "https://link", mgOwnerBootstrapped = False}
+  show afterInsert `shouldNotSatisfy` ("https://link" `isInfixOf`)
+  firstMark <- withTransaction st (`markOwnerBootstrapped` 42)
+  secondMark <- withTransaction st (`markOwnerBootstrapped` 42)
+  (firstMark, secondMark) `shouldBe` (True, False)
+
+testManagedGroupIsSingleRow :: IO ()
+testManagedGroupIsSingleRow = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  withTransaction st $ \db -> insertManagedGroup db 42 "https://link" now
+  withTransaction st $ \db -> insertManagedGroup db 43 "https://other" now
+  withTransaction st $ \db -> insertManagedGroup db 42 "https://again" now
+  managedGroupRows st `shouldReturn` [(42, "https://link")]
+  withTransaction st (`markOwnerBootstrapped` 43) `shouldReturn` False
+  (fmap mgOwnerBootstrapped <$> withTransaction st getManagedGroup) `shouldReturn` Just False
+  withTransaction st (`markOwnerBootstrapped` 42) `shouldReturn` True
+  (fmap mgOwnerBootstrapped <$> withTransaction st getManagedGroup) `shouldReturn` Just True
+
+managedGroupRows :: DBStore -> IO [(Int64, Text)]
+managedGroupRows st =
+  withConnection st $ \db -> DB.query_ db "SELECT group_id, group_link FROM sx_badge_service_group ORDER BY group_id"
+
+insertCode :: DBStore -> ByteString -> BadgeCodePaymentStatus -> Int -> UTCTime -> IO Int64
+insertCode st codeHash paymentStatus redeemLimit now =
+  withTransaction st $ \db -> insertBadgeCode db codeHash BTSupporter 1 paymentStatus redeemLimit now
+
+claimUse :: DBStore -> Int64 -> UTCTime -> (C.PublicKeyEd25519, BadgeMasterKey) -> IO (Maybe Int64)
+claimUse st badgeCodeId now (purchaseKey, masterKey) =
+  withTransaction st $ \db ->
+    createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType = BTSupporter} now
+
+-- The signature is dummy bytes, since only the JSON round-trip is under test; 80 is the length its decoder accepts.
+seededCredential :: BadgeMasterKey -> UTCTime -> BadgeCredential
+seededCredential masterKey expiry =
+  BadgeCredential {badgeKeyIdx = 1, masterKey, signature = BBSSignature (BS.replicate 80 7), badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = expiry, badgeExtra = ""}}
+
+seedIssuance :: DBStore -> Int64 -> Text -> BadgeMasterKey -> UTCTime -> UTCTime -> IO ()
+seedIssuance st purchaseId issuanceId masterKey at periodEnd =
+  withConnection st $ \db ->
+    DB.execute
+      db
+      "INSERT INTO sx_badge_service_badge_issuances (issuance_id, badge_purchase_id, badge_type, period_start, period_end, expiry, credential, created_at) VALUES (?,?,?,?,?,?,?,?)"
+      (issuanceId, purchaseId, "supporter" :: Text, at, periodEnd, periodEnd, DB.Binary (LB.toStrict (J.encode (seededCredential masterKey periodEnd))), at)
+
+testKeyPurchaseLookup :: IO ()
+testKeyPurchaseLookup = withServiceStore $ \st -> do
+  now <- getCurrentTime
+  let codeHash = digestFixture 41
+  badgeCodeId <- insertCode st codeHash CPSFree 2 now
+  keys@(k1, mk1) <- newPurchaseKeys
+  Just purchaseId <- claimUse st badgeCodeId now keys
+  withTransaction st (\db -> getCodePurchaseForKey db badgeCodeId k1) >>= \case
+    KeyRedeemedUnreadable -> pure ()
+    _ -> expectationFailure "expected a purchase with no issuance to be unreadable"
+  let firstPeriodEnd = someExpiry
+      renewedPeriodEnd = addUTCTime 86400 someExpiry
+  seedIssuance st purchaseId "iss-first" mk1 now firstPeriodEnd
+  seedIssuance st purchaseId "iss-renewed" mk1 now renewedPeriodEnd
+  (unusedKey, _) <- newPurchaseKeys
+  withTransaction st (\db -> getCodePurchaseForKey db badgeCodeId unusedKey) >>= \case
+    KeyUnredeemed -> pure ()
+    _ -> expectationFailure "expected no purchase for a key that never redeemed"
+  replayed <- withTransaction st (\db -> getCodePurchaseForKey db badgeCodeId k1)
+  case replayed of
+    KeyRedeemed KeyPurchase {badgePurchaseId, credential} -> do
+      badgePurchaseId `shouldBe` purchaseId
+      credential `shouldBe` seededCredential mk1 renewedPeriodEnd
+    _ -> expectationFailure "expected the redeemed key's purchase"
+
+testSameKeyClaimsOnce :: IO ()
+testSameKeyClaimsOnce = withServiceStore $ \st -> do
+  now <- getCurrentTime
+  let codeHash = digestFixture 46
+  badgeCodeId <- insertCode st codeHash CPSFree 3 now
+  keys <- newPurchaseKeys
+  claimUse st badgeCodeId now keys >>= (`shouldSatisfy` isJust)
+  -- The key is unique across purchases, so the second insert fails and its transaction returns the use.
+  claimUse st badgeCodeId now keys `shouldThrow` anyException
+  codeCounts st codeHash `shouldReturn` Just (3, 1)
+
+testMultiUseConcurrentClaimsUpToLimit :: IO ()
+testMultiUseConcurrentClaimsUpToLimit = withServiceStore $ \st -> do
+  now <- getCurrentTime
+  let codeHash = digestFixture 42
+  badgeCodeId <- insertCode st codeHash CPSFree 3 now
+  contenders <- replicateM 6 newPurchaseKeys
+  results <- Async.mapConcurrently (claimUse st badgeCodeId now) contenders
+  length (catMaybes results) `shouldBe` 3
+  codeCounts st codeHash `shouldReturn` Just (3, 3)
 
 data StubCall
   = StubCreate ServicePaymentMethod OrderDraft
@@ -801,7 +979,7 @@ testServiceConfig staticDir trustForwarded =
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
-      devChatRedeem = False,
+      group = Nothing,
       devAcceptUnverifiedStoreReceipts = False
     }
 
@@ -1290,11 +1468,17 @@ testHoldReportsTheRowNotTheWake = bounded "hold reports the row" $ withWebApp $ 
 testHold :: Int
 testHold = 2000000
 
+awaitWaitingCount :: WebEnv -> Int -> IO ()
+awaitWaitingCount env n = do
+  parked <- waitingCount (weWaiters env)
+  when (parked /= n) $ threadDelay 10000 >> awaitWaitingCount env n
+
 testHoldTimeoutReportsAnUnpublishedChange :: IO ()
 testHoldTimeoutReportsAnUnpublishedChange = bounded "hold timeout" $ withWebAppHolding testHold $ \env client -> do
   iid <- seedOpenInvoice env
   started <- getCurrentTime
   held <- async $ webGet client (invoicePath iid <> "?wait=open")
+  awaitWaitingCount env 1
   threadDelay 50000
   expireRow (weStore env) iid
   r <- wait held
@@ -2356,7 +2540,7 @@ testCadenceFollowsTheWaiters = bounded "cadence" $ withStubPoller raceHold $ \_ 
   waitingCount (weWaiters env) `shouldReturn` 0
   passDelayNow poller `shouldReturn` (pIdleSeconds * 1000000)
   held <- async $ webGet client (invoicePath iid <> "?wait=open")
-  threadDelay 100000
+  awaitWaitingCount env 1
   passDelayNow poller `shouldReturn` (pWaitingSeconds * 1000000)
   waitingCount (weWaiters env) `shouldReturn` 1
   markPaidAndPublish env iid
@@ -2485,9 +2669,13 @@ seedPastWindow st i providerRef provider = do
 passListing :: IORef StubState -> PollerEnv -> IO ()
 passListing ref poller = runOnePass poller >> clearCalls ref
 
+stderrCaptureLock :: MVar ()
+stderrCaptureLock = unsafePerformIO $ newMVar ()
+{-# NOINLINE stderrCaptureLock #-}
+
 -- hDuplicateTo changes stderr's buffering, so put the original setting back.
 capturingStderr :: IO () -> IO Text
-capturingStderr action = do
+capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "badge-stderr" $ \dir -> do
     let path = dir </> "stderr.log"
@@ -2498,7 +2686,7 @@ capturingStderr action = do
     T.readFile path
 
 loggedError :: Text -> Text -> Bool
-loggedError message = any (\l -> "[ERROR " `T.isPrefixOf` l && message `T.isInfixOf` l) . T.lines
+loggedError message = any (\l -> "[ERROR " `T.isInfixOf` l && message `T.isInfixOf` l) . T.lines
 
 failCancels :: IORef StubState -> IO ()
 failCancels ref = atomicModifyIORef' ref $ \s -> (s {ssCancelError = Just (ProviderError "refused")}, ())
@@ -2666,12 +2854,18 @@ testSkipNamingOurInvoiceIsRaised = bounded "skip ownership" $ withStubPoller rac
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
 
 testSkipReasonsStayBounded :: IO ()
-testSkipReasonsStayBounded = bounded "skip reasons bounded" $ withStubPoller raceHold $ \ref poller _ _ -> do
-  let reasons n = [(Just ("p-" <> tshow i), "btcpay invoice p-" <> tshow i <> ": unknown method") | i <- [1 .. n :: Int]]
-  setSkipped ref (reasons (maxSkipReasons + 500))
+testSkipReasonsStayBounded = bounded "skip reasons bounded" $ withStubPoller raceHold $ \_ poller _ _ -> do
+  now <- getCurrentTime
+  forM_ [1 .. maxSkipReasons + 500] $ \i -> dueToWarn poller now ("btcpay invoice p-" <> tshow i <> ": unknown method")
   runOnePass poller
   held <- Map.size <$> readTVarIO (peSkipped poller)
   held `shouldSatisfy` (<= maxSkipReasons)
+
+testStrangerSkipsShareOneWarning :: IO ()
+testStrangerSkipsShareOneWarning = bounded "stranger skips" $ withStubPoller raceHold $ \ref poller _ _ -> do
+  setSkipped ref [(Just ("stranger-" <> tshow i), "btcpay invoice stranger-" <> tshow i <> ": unknown method") | i <- [1 .. 3 :: Int]]
+  runOnePass poller
+  Map.size <$> readTVarIO (peSkipped poller) `shouldReturn` 1
 
 -- | The failure text carries the whole request, whose window moves with the clock, so the two
 -- messages differ only in startDate to prove the limiter key ignores it rather than warning
@@ -3285,7 +3479,7 @@ testHeldWaitWakesOnAPaymentThatDoesNotSettle :: IO ()
 testHeldWaitWakesOnAPaymentThatDoesNotSettle = bounded "funded wakes a hold" $ withCheckout $ \_ env client -> do
   iid <- seedOpenInvoice env
   held <- async $ webGet client (invoicePath iid <> "?wait=open")
-  threadDelay 100000
+  awaitWaitingCount env 1
   waitingCount (weWaiters env) `shouldReturn` 1
   settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
     `shouldReturn` Right ISOpen

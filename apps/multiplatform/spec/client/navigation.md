@@ -123,8 +123,8 @@ App links use the app's own scheme, `simplexchat:`, for everything that is not a
 | `SwitchingUsersView` | User switch in progress | Loading overlay |
 | Auth gate | `userAuthorized != true` | `AuthView` or `SplashView` + passcode |
 | Active call | `showCallView == true` | `ActiveCallView` (desktop) or call activity (Android) |
-| One-time passcode | Always | `ModalManager.fullscreen.showOneTimePasscodeInView` |
-| Privacy alerts | Always | `AlertManager.privacySensitive` |
+| One-time passcode | `userAuthorized == true` | `ModalManager.fullscreen.showOneTimePasscodeInView` |
+| Privacy alerts | `userAuthorized == true` | `AlertManager.privacySensitive` |
 | Incoming call | `activeCallInvitation != null` | `IncomingCallAlertView` |
 | Shared alerts | Always | `AlertManager.shared` |
 
@@ -302,7 +302,7 @@ object AppLock {
 ### Authentication Flow
 
 1. **MainScreen** checks `unauthorized` (derived: `userAuthorized.value != true`) at line ~135.
-2. If unauthorized and not in an active call:
+2. If unauthorized, including during an active call:
    - Launches `AppLock.runAuthenticate()` which triggers platform-specific biometric/passcode prompt.
    - On Android with system auth finishing during activity destruction, authentication is skipped.
 3. If `performLA` preference is set and `laFailed` is true: shows `AuthView` with "Unlock" button.
@@ -310,7 +310,7 @@ object AppLock {
 
 ### Lock Delay
 
-The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~270) to prevent unnecessary re-auth.
+The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~270) to prevent unnecessary re-auth. A call counts as activity: `recheckAuthState()` is a no-op while `showCallView` is true, and `CallManager.endCall()` resets `enteredBackground`, so the delay is counted from the end of the call. When a call is accepted from a notification or from the Android lock screen, `recheckAuthState()` is called before `acceptIncomingCall()`, so an expired delay still locks the app.
 
 ### Lock Modes
 

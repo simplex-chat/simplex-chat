@@ -280,7 +280,7 @@
     <string name="update_database_passphrase">Aktualizovat přístupovou frázi</string>
     <string name="enter_correct_current_passphrase">Zadejte prosím správnou aktuální přístupovou frázi.</string>
     <string name="database_is_not_encrypted">Databáze chatu není šifrována - nastavte přístupovou frázi pro její ochranu.</string>
-    <string name="keychain_is_storing_securely">K bezpečnému uložení přístupové fráze slouží úložiště klíčů Android - umožňuje fungování služby oznámení.</string>
+    <string name="keychain_is_storing_securely">K bezpečnému uložení přístupové fráze slouží úložiště klíčů Android%s - umožňuje fungování služby oznámení.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Upozornění</b>: pokud přístupovou frázi ztratíte, NEBUDE možné ji obnovit ani změnit.]]></string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Databáze bude zašifrována a přístupová fráze bude uložena v úložišti klíčů.</string>
     <string name="store_passphrase_securely">Přístupovou frázi uložte bezpečně, v případě její ztráty ji NEBUDE možné změnit.</string>

@@ -19,6 +19,7 @@ badgeServiceSchemaMigrations = sortOn name $ map migration schemaMigrations
 schemaMigrations :: [(String, Query, Maybe Query)]
 schemaMigrations =
   [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
+    ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts)
   ]
 
@@ -109,6 +110,48 @@ DROP INDEX @idx_badge_purchases_code;
       servicePrefix
       [sql|
 DROP TABLE @badge_codes;
+|]
+
+m20260918_badge_group_ops :: Query
+m20260918_badge_group_ops =
+  withPrefix
+    servicePrefix
+    [sql|
+CREATE TABLE @group(
+  group_id INTEGER NOT NULL PRIMARY KEY,
+  group_link TEXT NOT NULL,
+  owner_bootstrapped INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+) STRICT;
+
+ALTER TABLE @badge_codes ADD COLUMN redeem_limit INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE @badge_codes ADD COLUMN redeem_count INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @badge_codes ADD COLUMN group_item_id INTEGER;
+
+ALTER TABLE @badge_codes ADD COLUMN group_item_sent_at TEXT;
+
+-- Redemptions made before this migration must count against the new limit, or every code
+-- redeemed already would read as unspent and could be redeemed once more.
+UPDATE @badge_codes SET redeem_count = 1 WHERE redeemed_at IS NOT NULL;
+
+DROP INDEX @idx_badge_purchases_code;
+
+CREATE INDEX @idx_badge_purchases_code ON @badge_purchases(badge_code_id);
+|]
+
+-- The index stays non-unique, since a multi-use code may already have several purchases.
+down_m20260918_badge_group_ops :: Query
+down_m20260918_badge_group_ops =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @badge_codes DROP COLUMN group_item_sent_at;
+ALTER TABLE @badge_codes DROP COLUMN group_item_id;
+ALTER TABLE @badge_codes DROP COLUMN redeem_count;
+ALTER TABLE @badge_codes DROP COLUMN redeem_limit;
+DROP TABLE @group;
 |]
 
 m20260925_badge_store_receipts :: Query

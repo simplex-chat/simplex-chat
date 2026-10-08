@@ -256,7 +256,7 @@
     <string name="error_importing_database">Errore nell\'importazione del database della chat</string>
     <string name="group_full_name_field">Nome completo del gruppo:</string>
     <string name="full_backup">Backup dei dati dell\'app</string>
-    <string name="keychain_is_storing_securely">L\'archivio chiavi di Android è usato per memorizzare in modo sicuro la password; permette il funzionamento del servizio di notifica.</string>
+    <string name="keychain_is_storing_securely">L\'archivio chiavi di Android%s è usato per memorizzare in modo sicuro la password; permette il funzionamento del servizio di notifica.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Permetti ai tuoi contatti di inviare messaggi vocali.</string>
     <string name="chat_database_deleted">Database della chat eliminato</string>
     <string name="settings_section_title_icon">Icona app</string>
