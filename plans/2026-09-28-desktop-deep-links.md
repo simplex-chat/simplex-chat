@@ -90,6 +90,12 @@ App.kt LaunchedEffect (existing) → connectIfOpenedViaUri → openAppLink (lane
 12. `docs: report on desktop deep links`
 13. `desktop: open simplex connection links`
 14. `docs: describe simplex links on desktop`
+15. `desktop: keep a link from opening twice`
+16. `desktop: retry taking a signal held open`
+17. `desktop: keep the user's AppImage link handler`
+18. `desktop: register Windows links through Capabilities`
+19. `desktop: add %u to the deb entry only once`
+20. `docs: describe the review fixes`
 
 ## Verification
 
@@ -125,3 +131,15 @@ Android already opens `simplex:` links through `connectIfOpenedViaUri`, which se
 - Every registration declares both schemes: the Info.plist, the deb, AppImage and Flatpak desktop entries, an HKCU key per scheme on Windows, and `xdg-mime default` per MIME type for an AppImage.
 - `appLinkSchemeRegistered()` still reports `simplexchat:` only, as it decides how the badge page ends; `simplex:` is registered without being checked.
 - Tests: a short link, a one-time link with its key, and the scheme in another case are accepted; another scheme sharing the prefix and a path are not; a forwarded one-time link round trips through the signal file; Windows and AppImage registration write both schemes, and only `simplexchat:` decides the result.
+
+## Review fixes
+
+- "Start anyway" after the not-responding alert withdraws the signal with `deleteIfExists`; when the running instance has already taken it, the second process exits, so the link opens once (`startDespiteRunningInstance`, extracted from `acquireSingleInstance` so it is tested).
+- `takeSignal` retries a failed rename once after 100 ms, as another program (an antivirus scanner on Windows) can hold the file open for a moment. The move is a parameter, so tests make it fail.
+- Windows registration compares and repairs every value, not only the command; reads a value of another type as missing instead of letting JNA's `RuntimeException` end the registration thread; and reports not registered when `UserChoice` names another ProgId (replaced later by asking the shell, below).
+- Registration takes a scheme only when no handler is set or the current one is no longer installed: on Windows when the command's program file is missing, for an AppImage when the current default's desktop entry is in no applications directory. Another installation keeps it, and the badge page falls back to `app=desktop`.
+- The deb's `Exec` sed adds `%u` only to a line without a field code.
+- Windows: a test on Windows 11 showed that a scheme key alone loses to any app registered through `Capabilities`: links went to that app without asking, and default-app settings did not offer SimpleX. Each scheme now also gets a `SimpleX.<scheme>` ProgId named in `HKCU\Software\chat.simplex.app\Capabilities\URLAssociations`, and the application is listed in `HKCU\Software\RegisteredApplications` last. `UserChoice` was compared with that ProgId until the shell check below replaced it. The scheme key stays, as it declares the URL scheme to Windows.
+- Not changed: stale-signal detection still compares file times with the local clock (network file systems with clock skew above 2 s are an accepted edge case).
+- A second review of the Windows change: Windows 11 can keep the user's pick in `UserChoiceLatest` and stop updating `UserChoice`, and with several capable apps and no pick Windows chooses or asks. So the registered check no longer reads either key: it asks the shell which program opens `simplexchat:` links (`AssocQueryStringW` with `ASSOCSTR_EXECUTABLE`) and compares it with this exe. This app's own ProgId is rewritten even while another program holds the scheme, so a pick in settings keeps working after a reinstall elsewhere; the "another program" check also reads `HKLM\Software\Classes`, which a per-user key would otherwise hide; the application is listed only when at least one scheme is this app's; and `SHChangeNotify(SHCNE_ASSOCCHANGED)` follows any write. Both functions are called through `NativeLibrary`, as jna-platform 5.14 binds neither.
+- A third review: `SHChangeNotify` also clears Explorer's icon cache, so it is sent only after a write. Another installed copy's ProgId (its command names an existing exe other than this one) is kept like any other handler, so two installed copies do not take the user's pick from each other at every start. A command naming this exe with other arguments or letter case counts as this app's own and is updated. A ProgId that cannot be written keeps its scheme unregistered, so `URLAssociations` never names a missing ProgId.
