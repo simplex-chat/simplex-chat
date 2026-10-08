@@ -43,7 +43,7 @@ import chat.simplex.common.views.chat.group.ChatTTLOption
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.newchat.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*

@@ -4,7 +4,7 @@ import androidx.compose.runtime.*
 import chat.simplex.common.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.awt.Desktop
 import java.io.*
 import java.net.URI

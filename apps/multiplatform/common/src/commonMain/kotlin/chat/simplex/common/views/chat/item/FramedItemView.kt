@@ -25,7 +25,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.newchat.planAndConnect
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.ceil

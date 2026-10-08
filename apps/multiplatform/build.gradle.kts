@@ -48,7 +48,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:${rootProject.extra["gradle.plugin.version"]}")
         classpath(kotlin("gradle-plugin", version = rootProject.extra["kotlin.version"] as String))
-        classpath("dev.icerock.moko:resources-generator:0.23.0")
+        classpath("dev.icerock.moko:resources-generator:0.27.1")
 
         // Workaround gradle sync issue: https://github.com/gmazzo/gradle-buildconfig-plugin/issues/137#issuecomment-1935739759
         classpath("com.squareup:kotlinpoet:1.16.0")
