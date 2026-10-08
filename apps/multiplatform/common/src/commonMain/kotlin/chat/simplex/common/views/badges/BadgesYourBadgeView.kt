@@ -78,14 +78,6 @@ fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
       }
       SectionSpacer()
     }
-    if (BadgeStore.purchaseState(chatModel.currentUser.value?.userId) != null) {
-      SectionView(stringResource(MR.strings.badges_store_purchase_title)) {
-        SectionItemView {
-          Text(stringResource(MR.strings.badges_store_purchase_processing), color = MaterialTheme.colors.secondary)
-        }
-      }
-      SectionSpacer()
-    }
     if (appPrefs.developerTools.get()) {
       val clipboard = LocalClipboardManager.current
       SectionView(stringResource(MR.strings.badges_credential)) {

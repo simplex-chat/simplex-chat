@@ -16,7 +16,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.BadgeIssueFailure
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun BadgesPurchaseStateView(title: StringResource, message: StringResource?, failure: BadgeIssueFailure? = null, onDismiss: () -> Unit) {
