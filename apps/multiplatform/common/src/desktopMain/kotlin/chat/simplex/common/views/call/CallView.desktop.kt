@@ -6,7 +6,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock

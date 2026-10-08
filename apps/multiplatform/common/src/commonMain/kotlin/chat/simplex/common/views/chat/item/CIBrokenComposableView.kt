@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun CIBrokenComposableView(alignment: Alignment) {

@@ -29,7 +29,7 @@ import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.common.views.onboarding.HowItWorks
 import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun BadgesSupportSimplexView(modalManager: ModalManager, unwindToDepth: Int) {
