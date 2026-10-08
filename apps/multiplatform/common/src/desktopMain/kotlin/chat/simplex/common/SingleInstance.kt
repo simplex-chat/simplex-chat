@@ -30,6 +30,7 @@ internal const val TAKEN_SHOW_FILE = "$SHOW_FILE.taken$SHOW_TMP_SUFFIX"
 internal val FILE_TIME_TOLERANCE: Duration = Duration.ofSeconds(2)
 private const val SIGNAL_WAIT_MILLIS = 1000L
 private const val SIGNAL_POLL_MILLIS = 50L
+private const val SIGNAL_RETRY_MILLIS = 100L
 
 private val lockPath get() = dataDir.resolve("simplex.started").toPath()
 
@@ -155,10 +156,10 @@ internal fun signalRunningInstance(dir: Path, link: String?) {
 }
 
 // The signal is renamed before it is read, so a newer signal renamed over it meanwhile is not deleted unread.
-internal fun takeSignal(dir: Path): ShowSignal? {
+internal fun takeSignal(dir: Path, move: (Path, Path) -> Unit = ::moveAtomically): ShowSignal? {
   val taken = dir.resolve(TAKEN_SHOW_FILE)
   try {
-    Files.move(dir.resolve(SHOW_FILE), taken, ATOMIC_MOVE)
+    moveWithRetry(dir.resolve(SHOW_FILE), taken, move)
   } catch (_: NoSuchFileException) {
     return null
   } catch (e: IOException) {
@@ -174,6 +175,27 @@ internal fun takeSignal(dir: Path): ShowSignal? {
     deleteSignalFile(taken)
   }
   return ShowSignal(bytes?.toString(Charsets.UTF_8)?.takeIf(::isAcceptedLink))
+}
+
+private fun moveAtomically(from: Path, to: Path) {
+  Files.move(from, to, ATOMIC_MOVE)
+}
+
+// Another program, such as an antivirus scanner on Windows, can hold the file open for a moment.
+private fun moveWithRetry(from: Path, to: Path, move: (Path, Path) -> Unit) {
+  try {
+    move(from, to)
+  } catch (e: NoSuchFileException) {
+    throw e
+  } catch (e: IOException) {
+    try {
+      Thread.sleep(SIGNAL_RETRY_MILLIS)
+    } catch (_: InterruptedException) {
+      Thread.currentThread().interrupt()
+      throw e
+    }
+    move(from, to)
+  }
 }
 
 // Win32 ASFW_ANY lets every process take the foreground

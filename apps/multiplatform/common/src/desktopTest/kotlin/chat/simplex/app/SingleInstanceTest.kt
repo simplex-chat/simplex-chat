@@ -15,8 +15,10 @@ import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import java.nio.channels.FileChannel
 import java.nio.channels.OverlappingFileLockException
+import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.READ
 import java.nio.file.StandardOpenOption.WRITE
@@ -164,6 +166,34 @@ class SingleInstanceTest {
     signalRunningInstance(dir, BADGE_LINK)
     assertEquals(BADGE_LINK, takeSignal(dir)?.link, "the new signal, not the leftover, must be read")
     assertEquals(listOf(), fileNames(dir), "taking the signal must leave no file behind")
+  }
+
+  @Test
+  fun takeSignalRetriesAMoveThatFailsOnce() = withTempDir { dir ->
+    signalRunningInstance(dir, BADGE_LINK)
+    var attempts = 0
+    val signal = takeSignal(dir) { from, to ->
+      attempts++
+      if (attempts == 1) throw FileSystemException(from.toString(), null, "held open by another program")
+      Files.move(from, to, StandardCopyOption.ATOMIC_MOVE)
+    }
+    assertEquals(2, attempts, "one failed attempt and one retry")
+    assertEquals(BADGE_LINK, signal?.link, "the retry must still deliver the link")
+    assertEquals(listOf(), fileNames(dir), "taking the signal must leave no file behind")
+  }
+
+  @Test
+  fun takeSignalLeavesTheSignalWhenTheRetryFailsToo() = withTempDir { dir ->
+    signalRunningInstance(dir, BADGE_LINK)
+    var attempts = 0
+    val signal = takeSignal(dir) { from, _ ->
+      attempts++
+      throw FileSystemException(from.toString(), null, "held open by another program")
+    }
+    assertEquals(2, attempts, "one failed attempt and one retry")
+    assertNotNull(signal, "the window still comes forward")
+    assertNull(signal.link, "a signal that cannot be read carries no link")
+    assertEquals(BADGE_LINK, takeSignal(dir)?.link, "the signal stays for the next attempt")
   }
 
   @Test
