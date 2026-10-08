@@ -5428,16 +5428,6 @@ Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-      UPDATE contact_profiles SET contact_domain_verified = 0
-      WHERE user_id = ? AND contact_domain = ? AND contact_domain_verified = 1
-        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
-    
-Plan:
-SEARCH contact_profiles USING INDEX idx_contact_profiles_user_id (user_id=?)
-LIST SUBQUERY 1
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
       UPDATE contact_profiles SET contact_domain_verified = ?
       WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
     
@@ -7678,6 +7668,10 @@ Query: SELECT member_id FROM group_members WHERE local_display_name = ?
 Plan:
 SCAN group_members
 
+Query: SELECT member_id FROM group_members WHERE member_category = ?
+Plan:
+SCAN group_members
+
 Query: SELECT member_id FROM group_members WHERE member_role = ? LIMIT 1
 Plan:
 SCAN group_members
@@ -8153,6 +8147,10 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_profiles SET description = ? WHERE display_name = ?
+Plan:
+SCAN group_profiles
 
 Query: UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?
 Plan:
