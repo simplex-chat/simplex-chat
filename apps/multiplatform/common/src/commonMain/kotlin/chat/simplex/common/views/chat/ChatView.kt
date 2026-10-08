@@ -44,7 +44,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.platform.AudioPlayer
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
 import chat.simplex.common.views.newchat.alertProfileImageSize
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*

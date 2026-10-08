@@ -15,7 +15,7 @@ import chat.simplex.common.model.json
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.onboarding.ReadMoreButton
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
