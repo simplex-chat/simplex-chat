@@ -27,7 +27,7 @@ import boofcv.struct.image.GrayU8
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.common.util.concurrent.ListenableFuture

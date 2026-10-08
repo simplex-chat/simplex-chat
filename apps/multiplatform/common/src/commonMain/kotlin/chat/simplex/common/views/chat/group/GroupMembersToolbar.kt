@@ -16,7 +16,7 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable

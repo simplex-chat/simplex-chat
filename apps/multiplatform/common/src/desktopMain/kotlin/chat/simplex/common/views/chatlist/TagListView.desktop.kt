@@ -18,7 +18,7 @@ import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.views.chat.item.isHeartEmoji
 import chat.simplex.common.views.chat.item.isShortEmoji
 import chat.simplex.common.views.helpers.toDp
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
