@@ -9,6 +9,7 @@ import chat.simplex.common.model.BadgeState
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.ModalView
+import chat.simplex.common.views.helpers.ModalViewId
 import chat.simplex.res.*
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -58,5 +59,5 @@ fun CloseWhenSupportGivesWay(modalManager: ModalManager, unwindToDepth: Int) {
 
 // ModalManager.end, not start: every caller is in the chat, which on desktop is the right pane
 fun openBadgesView() {
-  ModalManager.end.showCustomModal { close -> BadgesView(ModalManager.end, close) }
+  ModalManager.end.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.end, close) }
 }
