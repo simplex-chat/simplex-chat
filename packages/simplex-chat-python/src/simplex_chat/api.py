@@ -489,14 +489,14 @@ class ChatApi:
 
     async def api_connect_plan(
         self, user_id: int, connection_link: str
-    ) -> tuple[T.ConnectionPlan, T.CreatedConnLink | None]:
+    ) -> tuple[T.ConnectionPlan, T.CreatedConnLink]:
         r = await self.send_chat_cmd(
             CC.APIConnectPlan_cmd_string(
                 {"userId": user_id, "connectTarget": connection_link, "resolveMode": "unknown"}
             )
         )
         if r["type"] == "connectionPlan":
-            return (r["connectionPlan"], r.get("connLink"))
+            return (r["connectionPlan"], r["connLink"])
         raise ChatCommandError("error getting connect plan", r)
 
     async def api_connect(

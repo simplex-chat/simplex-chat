@@ -473,7 +473,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CEvtRcvFileProgressXFTP {} -> []
   CEvtContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
-  CEvtNameVerified {} -> []
+  CEvtNameMoved {} -> []
   CEvtGroupMemberUpdated {} -> []
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _chat -> ttyUser u $ viewReceivedContactRequest c (fromLocalProfile profile)
   CEvtServiceRequest u reqId sigKey_ req ->
@@ -1172,13 +1172,14 @@ viewDomainVerified nameType domain_ result =
         Just reason -> [plain nameStr <> " not verified: " <> plain reason]
 
 -- §4.7: show a peer's claimed name only with its verification context — "verified" / "verification
--- failed" when a status is recorded, "unverified" when there is a proof but no status yet, and nothing
+-- failed" / "moved" when a status is recorded, "unverified" when there is a proof but no status yet, and nothing
 -- at all when there is neither (an unproven, unverifiable claim is not shown).
-simplexDomainLine :: SimplexNameType -> Maybe SimplexDomainClaim -> Maybe Bool -> [StyledString]
+simplexDomainLine :: SimplexNameType -> Maybe SimplexDomainClaim -> Maybe DomainVerification -> [StyledString]
 simplexDomainLine _ Nothing _ = []
 simplexDomainLine nameType (Just SimplexDomainClaim {domain, proof}) status = case status of
-  Just True -> [line "verified"]
-  Just False -> [line "verification failed"]
+  Just DVVerified -> [line "verified"]
+  Just DVFailed -> [line "verification failed"]
+  Just DVMoved -> [line "moved"]
   Nothing
     | isJust proof -> [line "unverified"]
     | otherwise -> []
@@ -2235,7 +2236,7 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
-viewConnectionPlan :: ChatConfig -> Maybe ACreatedConnLink -> Maybe SimplexNameInfo -> ConnectionPlan -> [StyledString]
+viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> Maybe SimplexNameInfo -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
@@ -2255,55 +2256,53 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
-  CPContactAddress cap nc_ -> plan <> viewNameChange (case cap of CAPOwnLink -> True; _ -> False) nc_
+  p@(CPContactAddress cap nc_) -> (<> viewNameChange (connectionPlanOwnLink p) nc_) $ case cap of
+    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
+    CAPOwnLink -> [ctAddr "own address"]
+    CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
+    CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+    CAPKnown ct
+      | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> contactDomainLine ct
+      | otherwise ->
+          [ctAddr ("known contact " <> ttyContact' ct)]
+            <> contactDomainLine ct
+            <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
+    CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactDomainLine ct
     where
-      plan = case cap of
-        CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
-        CAPOwnLink -> [ctAddr "own address"]
-        CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
-        CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
-        CAPKnown ct
-          | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> contactDomainLine ct
-          | otherwise ->
-              [ctAddr ("known contact " <> ttyContact' ct)]
-                <> contactDomainLine ct
-                <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
-        CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactDomainLine ct
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
-  CPGroupLink glp nc_ -> plan <> viewNameChange (case glp of GLPOwnLink {} -> True; _ -> False) nc_
+  p@(CPGroupLink glp nc_) -> (<> viewNameChange (connectionPlanOwnLink p) nc_) $ case glp of
+    GLPOk groupSLinkInfo_ groupSLinkData ov ->
+      let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
+       in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
+            <> viewSigVerification ov
+            <> [viewJSON groupSLinkData | testView]
+    GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
+    GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
+    GLPConnectingProhibit Nothing -> [grpLink "connecting"]
+    GLPConnectingProhibit (Just g) -> connecting g
+    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
+      Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
+        GSMemUnknown
+          | connLinkStartedConnection -> connecting g
+          | otherwise -> [knownGroup "prepared "] <> groupDomainLine g
+        GSMemAccepted -> connecting g
+        _
+          | memberRemoved m -> [knownGroup "deleted "] <> groupDomainLine g -- it should not get here, as this plan is returned as GLPOk
+          | otherwise -> knownActive
+      _ -> knownActive
+      where
+        knownActive =
+          [knownGroup ""]
+            <> groupDomainLine g
+            <> ["use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"]
+        knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
+    GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
+    GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
     where
-      plan = case glp of
-        GLPOk groupSLinkInfo_ groupSLinkData ov ->
-          let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
-           in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
-                <> viewSigVerification ov
-                <> [viewJSON groupSLinkData | testView]
-        GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
-        GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
-        GLPConnectingProhibit Nothing -> [grpLink "connecting"]
-        GLPConnectingProhibit (Just g) -> connecting g
-        GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
-          Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
-            GSMemUnknown
-              | connLinkStartedConnection -> connecting g
-              | otherwise -> [knownGroup "prepared "] <> groupDomainLine g
-            GSMemAccepted -> connecting g
-            _
-              | memberRemoved m -> [knownGroup "deleted "] <> groupDomainLine g -- it should not get here, as this plan is returned as GLPOk
-              | otherwise -> knownActive
-          _ -> knownActive
-          where
-            knownActive =
-              [knownGroup ""]
-                <> groupDomainLine g
-                <> ["use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"]
-            knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
-        GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
-        GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
       grpOrBizLink GroupInfo {businessChat} = case businessChat of
@@ -2312,12 +2311,6 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"
-  CPNameNotConnectable d w ->
-    [ nameStr d <> ": nothing to connect to",
-      case w of
-        NWAvailable p -> nameStr d <> " is available: " <> priceStr p
-        _ -> viewNameWarning False d w
-    ]
   CPError e -> viewChatError False logLevel testView e
   where
     viewNameChange :: Bool -> Maybe NameChange -> [StyledString]
@@ -2331,17 +2324,6 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \
           | otherwise -> ["known group " <> ttyGroup' g]
         _ -> []
       Nothing -> []
-    viewNameWarning own d = \case
-      NWExpired e g
-        | own -> "your " <> nameStr d <> " expired on " <> plain (day e) <> maybe "" ((", renew it before " <>) . plain . day) g
-        | otherwise -> nameStr d <> " expired on " <> plain (day e) <> maybe "" ((", its owner can renew it until " <>) . plain . day) g
-      NWAvailable p -> (if own then "your " else "") <> nameStr d <> " is no longer registered, available: " <> priceStr p
-      NWReservedForCommunity -> nameStr d <> " is reserved for community"
-      NWNotRegistered -> nameStr d <> " is not registered"
-    nameStr d = "SimpleX name " <> plain (fullDomainName d)
-    priceStr NamePrice {amount = USDCents c, years} =
-      let (dollars, cents) = c `divMod` 100
-       in plain $ "$" <> tshow dollars <> (if cents == 0 then "" else "." <> T.justifyRight 2 '0' (tshow cents)) <> " for " <> tshow years <> " years"
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
@@ -2356,6 +2338,29 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
       Nothing -> []
+
+viewNameWarning :: Bool -> SimplexDomain -> NameWarning -> StyledString
+viewNameWarning own d = \case
+  NWExpired e g -> yours <> simplexNameStr d <> " expired on " <> plain (day e) <> maybe "" ((renewal <>) . plain . day) g
+  NWAvailable p -> yours <> simplexNameStr d <> " is no longer registered, available: " <> namePriceStr p
+  NWReservedForCommunity -> simplexNameStr d <> " is reserved for community"
+  NWNotRegistered -> simplexNameStr d <> " is not registered"
+  where
+    yours = if own then "your " else ""
+    renewal = if own then ", renew it before " else ", its owner can renew it until "
+
+viewNameNotConnectable :: SimplexDomain -> NameWarning -> StyledString
+viewNameNotConnectable d = \case
+  NWAvailable p -> simplexNameStr d <> " is available: " <> namePriceStr p
+  w -> viewNameWarning False d w
+
+simplexNameStr :: SimplexDomain -> StyledString
+simplexNameStr d = "SimpleX name " <> plain (fullDomainName d)
+
+namePriceStr :: NamePrice -> StyledString
+namePriceStr NamePrice {amount = USDCents c, years} =
+  let (dollars, cents) = c `divMod` 100
+   in plain $ "$" <> tshow dollars <> (if cents == 0 then "" else "." <> T.justifyRight 2 '0' (tshow cents)) <> " for " <> tshow years <> " years"
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
@@ -2825,6 +2830,7 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
+    CESimplexDomainNotReady domain (SDENameWarning w) -> [viewNameNotConnectable domain w]
     CESimplexDomainNotReady domain domainErr ->
       let reason = case domainErr of
             SDENoValidLink -> "has no valid connection link"

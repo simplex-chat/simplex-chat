@@ -36,7 +36,7 @@ describe("Bot tests (use preset servers)", () => {
     // connect to bot
     const [plan, link] = await alice.apiConnectPlan(aliceUser.userId, util.contactAddressStr(botAddress.connLinkContact))
     assert(plan.type === "contactAddress")
-    await expect(alice.apiConnect(aliceUser.userId, false, link!)).resolves.toBe(api.ConnReqType.Contact)
+    await expect(alice.apiConnect(aliceUser.userId, false, link)).resolves.toBe(api.ConnReqType.Contact)
     const [botContact, aliceContact] = await Promise.all([
       (await alice.wait("contactConnected")).contact,
       (await chat.wait("contactConnected")).contact

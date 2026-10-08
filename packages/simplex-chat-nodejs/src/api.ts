@@ -717,7 +717,7 @@ export class ChatApi {
    * Determine SimpleX link type and if the bot is already connected via this link.
    * Network usage: interactive.
    */
-  async apiConnectPlan(userId: number, connectionLink: string): Promise<[T.ConnectionPlan, T.CreatedConnLink | undefined]> {
+  async apiConnectPlan(userId: number, connectionLink: string): Promise<[T.ConnectionPlan, T.CreatedConnLink]> {
     const r = await this.sendChatCmd(CC.APIConnectPlan.cmdString({userId, connectTarget: connectionLink, resolveMode: T.PlanResolveMode.Unknown}))
     if (r.type === "connectionPlan") return [r.connectionPlan, r.connLink]
     throw new ChatCommandError("error getting connect plan", r)

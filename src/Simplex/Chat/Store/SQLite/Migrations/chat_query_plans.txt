@@ -471,7 +471,7 @@ Query:
               FROM user_contact_links ucl
               JOIN groups g ON g.group_id = ucl.group_id
               JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-              WHERE ucl.user_id = ? AND gp.group_domain = ?
+              WHERE ucl.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified IS DISTINCT FROM 2
             
 Plan:
 SEARCH ucl USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
@@ -3820,6 +3820,15 @@ SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT ct.contact_id, ct.contact_profile_id FROM contacts ct
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1
+      
+Plan:
+SEARCH ct USING COVERING INDEX sqlite_autoindex_contacts_2 (user_id=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete
         FROM xftp_file_descriptions d
         JOIN rcv_files f ON f.file_descr_id = d.file_descr_id
@@ -4405,30 +4414,24 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        UPDATE groups SET group_domain_verified = 0
-        WHERE user_id = ? AND group_domain_verified = 1
-          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE group_domain = ?)
-          AND group_id NOT IN (SELECT group_id FROM groups WHERE user_id = ? AND group_id = ?)
-       AND business_chat IS NOT NULL
+        UPDATE groups SET group_domain_verified = 2
+        WHERE user_id = ? AND group_domain_verified = 1 AND group_id IS DISTINCT FROM ?
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
+       AND business_chat IS NOT NULL RETURNING group_id
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=? AND group_profile_id=?)
 LIST SUBQUERY 1
-SCAN group_profiles
-LIST SUBQUERY 2
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH group_profiles USING INDEX idx_group_profiles_user_id (user_id=?)
 
 Query: 
-        UPDATE groups SET group_domain_verified = 0
-        WHERE user_id = ? AND group_domain_verified = 1
-          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE group_domain = ?)
-          AND group_id NOT IN (SELECT group_id FROM groups WHERE user_id = ? AND group_id = ?)
-       AND business_chat IS NULL
+        UPDATE groups SET group_domain_verified = 2
+        WHERE user_id = ? AND group_domain_verified = 1 AND group_id IS DISTINCT FROM ?
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
+       AND business_chat IS NULL RETURNING group_id
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=? AND group_profile_id=?)
 LIST SUBQUERY 1
-SCAN group_profiles
-LIST SUBQUERY 2
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH group_profiles USING INDEX idx_group_profiles_user_id (user_id=?)
 
 Query: 
         WITH user_groups AS MATERIALIZED (
@@ -7513,10 +7516,6 @@ Query: SELECT connection_id FROM connections WHERE user_id = ? AND group_member_
 Plan:
 SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 
-Query: SELECT contact_domain_resolved_at, contact_domain_expires_at FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ? AND contact_domain_resolved_at IS NOT NULL
-Plan:
-SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: SELECT contact_id FROM contacts WHERE user_id = ? AND (chat_item_ttl > 0 OR chat_item_ttl IS NULL)
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -7952,6 +7951,10 @@ Plan:
 SCAN contact_profiles
 
 Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contact_profiles SET contact_domain_verified = 2 WHERE contact_profile_id = ?
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 

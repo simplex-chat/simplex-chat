@@ -81,6 +81,7 @@ This file is generated automatically.
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
 - [CtrlAppInfo](#ctrlappinfo)
+- [DomainVerification](#domainverification)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
@@ -1880,11 +1881,6 @@ GroupLink:
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
 - nameChange: [NameChange](#namechange)?
 
-NameNotConnectable:
-- type: "nameNotConnectable"
-- simplexDomain: [SimplexDomain](#simplexdomain)
-- nameWarning: [NameWarning](#namewarning)
-
 Error:
 - type: "error"
 - chatError: [ChatError](#chaterror)
@@ -2063,6 +2059,16 @@ Remote controller application info.
 - appVersionRange: [AppVersionRange](#appversionrange)
 - deviceName: string
 - compression: bool
+
+
+---
+
+## DomainVerification
+
+**Enum type**:
+- "failed"
+- "verified"
+- "moved"
 
 
 ---
@@ -2504,7 +2510,7 @@ MemberSupport:
 - rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-- groupDomainVerified: bool?
+- groupDomainVerified: [DomainVerification](#domainverification)?
 
 
 ---
@@ -2907,7 +2913,7 @@ Unknown:
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
 - contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
-- contactDomainVerified: bool?
+- contactDomainVerified: [DomainVerification](#domainverification)?
 
 
 ---
@@ -3275,7 +3281,7 @@ count=<count>
 ## PlanResolveMode
 
 **Enum type**:
-- "all"
+- "allGroups"
 - "unknown"
 - "never"
 
@@ -3875,6 +3881,10 @@ NoValidLink:
 
 UnknownDomain:
 - type: "unknownDomain"
+
+NameWarning:
+- type: "nameWarning"
+- nameWarning: [NameWarning](#namewarning)
 
 
 ---

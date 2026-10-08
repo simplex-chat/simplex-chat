@@ -859,7 +859,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                 val localChats = targets.flatMap { name ->
                   chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress)?.connectionPlan?.localChats ?: emptyList()
                 }
-                upsertChats(rhId, localChats)
+                localChats.forEach { chatModel.chatsContext.updateChat(rhId, it) }
                 searchChatFilteredBySimplexLink.value = localChats.map { it.id }.toSet()
               } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {

@@ -61,7 +61,7 @@ class ChatCmdError(TypedDict):
 class ConnectionPlan(TypedDict):
     type: Literal["connectionPlan"]
     user: "T.User"
-    connLink: NotRequired["T.CreatedConnLink"]
+    connLink: "T.CreatedConnLink"
     planSimplexName: NotRequired["T.SimplexNameInfo"]
     otherSimplexName: NotRequired["T.SimplexNameInfo"]
     connectionPlan: "T.ConnectionPlan"

@@ -272,6 +272,7 @@ chatTypesDocsData =
     (sti @ContactUserPreferences, STRecord, "", [], "", ""),
     (sti @CryptoFile, STRecord, "", [], "", ""),
     (sti @CryptoFileArgs, STRecord, "", [], "", ""),
+    (sti @DomainVerification, STEnum, "DV", [], "", ""),
     (sti @DroppedMsg, STRecord, "", [], "", ""),
     (sti @E2EInfo, STRecord, "", [], "", ""),
     (sti @ErrorType, STUnion, "", [], "", ""),
@@ -508,6 +509,7 @@ deriving instance Generic ContactStatus
 deriving instance Generic ContactUserPreferences
 deriving instance Generic CryptoFile
 deriving instance Generic CryptoFileArgs
+deriving instance Generic DomainVerification
 deriving instance Generic DroppedMsg
 deriving instance Generic E2EInfo
 deriving instance Generic ErrorType

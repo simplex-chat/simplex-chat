@@ -1104,6 +1104,8 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
                     NSLocalizedString("Unconfirmed name", comment: ""),
                     message: String.localizedStringWithFormat(NSLocalizedString("The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.", comment: ""), domain.fullDomainName)
                 )
+            case let .nameWarning(warning):
+                showNameWarningAlert(domain: domain, warning: warning, own: false, openExistingChat: nil, cleanup: nil)
             }
         case .errorAgent(.NO_NAME_SERVERS):
             showAlert(
@@ -2601,23 +2603,19 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateChatInfo(cInfo)
             }
         }
-    case let .nameVerified(user, simplexName, chatRef):
+    case let .nameMoved(user, contactIds, groupIds):
         if active(user) {
             await MainActor.run {
-                let domain = simplexName.nameDomain.fullDomainName
-                let contactName = simplexName.nameType == .contact
-                for chat in m.chats where chat.id != chatRef.id {
-                    switch chat.chatInfo {
-                    case var .direct(contact) where contactName && contact.profile.contactDomainVerified == true && contact.profile.contactDomain?.domain == domain:
-                        contact.profile.contactDomainVerified = false
+                for contactId in contactIds {
+                    if case var .direct(contact)? = m.getContactChat(contactId)?.chatInfo {
+                        contact.profile.contactDomainVerified = .moved
                         m.updateChatInfo(.direct(contact: contact))
-                    case var .group(groupInfo, _) where groupInfo.groupDomainVerified == true:
-                        let claim = contactName ? groupInfo.businessChat?.businessDomain : groupInfo.businessChat == nil ? groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim : nil
-                        if claim?.domain == domain {
-                            groupInfo.groupDomainVerified = false
-                            m.updateChatInfo(.group(groupInfo: groupInfo, groupChatScope: nil))
-                        }
-                    default: ()
+                    }
+                }
+                for groupId in groupIds {
+                    if case var .group(groupInfo, _)? = m.getGroupChat(groupId)?.chatInfo {
+                        groupInfo.groupDomainVerified = .moved
+                        m.updateChatInfo(.group(groupInfo: groupInfo, groupChatScope: nil))
                     }
                 }
             }

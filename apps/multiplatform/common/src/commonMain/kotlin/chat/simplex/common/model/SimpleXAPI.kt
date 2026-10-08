@@ -1687,6 +1687,8 @@ object ChatController {
             generalGetString(MR.strings.simplex_name_no_valid_link),
             generalGetString(MR.strings.simplex_name_no_valid_link_desc).format(domain)
           )
+        } else if (r.err.errorType.simplexDomainError is SimplexDomainError.NameWarning) {
+          showNameWarningAlert(r.rhId, r.err.errorType.simplexDomain, r.err.errorType.simplexDomainError.nameWarning, own = false, openExistingChat = null, cleanup = null)
         } else {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_unconfirmed),
@@ -2978,25 +2980,16 @@ object ChatController {
           }
         }
       }
-      is CR.NameVerified -> {
+      is CR.NameMoved -> {
         if (active(r.user)) {
-          val domain = r.simplexName.nameDomain.fullDomainName
-          val contactName = r.simplexName.nameType == SimplexNameType.contact
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.chats.value.filter { it.remoteHostId == rhId && it.id != r.chatRef.id }.forEach { chat ->
+            chatModel.chatsContext.chats.value.filter { it.remoteHostId == rhId }.forEach { chat ->
               when (val cInfo = chat.chatInfo) {
-                is ChatInfo.Direct -> {
-                  val p = cInfo.contact.profile
-                  if (contactName && p.contactDomainVerified == true && p.contactDomain?.domain == domain) {
-                    chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Direct(cInfo.contact.copy(profile = p.copy(contactDomainVerified = false))))
-                  }
+                is ChatInfo.Direct -> if (cInfo.contact.contactId in r.contactIds) {
+                  chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Direct(cInfo.contact.copy(profile = cInfo.contact.profile.copy(contactDomainVerified = DomainVerification.Moved))))
                 }
-                is ChatInfo.Group -> {
-                  val g = cInfo.groupInfo
-                  val claim = if (contactName) g.businessChat?.businessDomain else if (g.businessChat == null) g.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim else null
-                  if (g.groupDomainVerified == true && claim?.domain == domain) {
-                    chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Group(g.copy(groupDomainVerified = false), groupChatScope = null))
-                  }
+                is ChatInfo.Group -> if (cInfo.groupInfo.groupId in r.groupIds) {
+                  chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Group(cInfo.groupInfo.copy(groupDomainVerified = DomainVerification.Moved), groupChatScope = null))
                 }
                 else -> {}
               }
@@ -6770,7 +6763,7 @@ sealed class CR {
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connLinkInvitation: CreatedConnLink, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
-  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink? = null, val planSimplexName: SimplexNameInfo? = null, val otherSimplexName: SimplexNameInfo? = null, val connectionPlan: ConnectionPlan): CR()
+  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val planSimplexName: SimplexNameInfo? = null, val otherSimplexName: SimplexNameInfo? = null, val connectionPlan: ConnectionPlan): CR()
   @Serializable @SerialName("newPreparedChat") class NewPreparedChat(val user: UserRef, val chat: Chat): CR()
   @Serializable @SerialName("contactUserChanged") class ContactUserChanged(val user: UserRef, val fromContact: Contact, val newUser: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupUserChanged") class GroupUserChanged(val user: UserRef, val fromGroup: GroupInfo, val newUser: UserRef, val toGroup: GroupInfo): CR()
@@ -6802,7 +6795,7 @@ sealed class CR {
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef, val contactRequest: UserContactRequest, val contact_: Contact?): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
-  @Serializable @SerialName("nameVerified") class NameVerified(val user: UserRef, val simplexName: SimplexNameInfo, val chatRef: ChatRef): CR()
+  @Serializable @SerialName("nameMoved") class NameMoved(val user: UserRef, val contactIds: List<Long>, val groupIds: List<Long>): CR()
   @Serializable @SerialName("groupMemberUpdated") class GroupMemberUpdated(val user: UserRef, val groupInfo: GroupInfo, val fromMember: GroupMember, val toMember: GroupMember): CR()
   @Serializable @SerialName("subscriptionStatus") class SubscriptionStatusEvt(val subscriptionStatus: SubscriptionStatus, val connections: List<String>): CR()
   @Serializable @SerialName("chatInfoUpdated") class ChatInfoUpdated(val user: UserRef, val chatInfo: ChatInfo): CR()
@@ -7004,7 +6997,7 @@ sealed class CR {
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
     is ContactUpdated -> "contactUpdated"
-    is NameVerified -> "nameVerified"
+    is NameMoved -> "nameMoved"
     is GroupMemberUpdated -> "groupMemberUpdated"
     is SubscriptionStatusEvt -> "subscriptionStatus"
     is ChatInfoUpdated -> "chatInfoUpdated"
@@ -7196,7 +7189,7 @@ sealed class CR {
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\ncontact_: ${json.encodeToString(contact_)}")
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
-    is NameVerified -> withUser(user, "simplexName: ${json.encodeToString(simplexName)}\nchatRef: ${json.encodeToString(chatRef)}")
+    is NameMoved -> withUser(user, "contactIds: $contactIds\ngroupIds: $groupIds")
     is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
     is SubscriptionStatusEvt -> "subscriptionStatus $subscriptionStatus\nconnections: $connections"
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
@@ -7378,6 +7371,7 @@ sealed class OwnerVerification {
 sealed class SimplexDomainError {
   @Serializable @SerialName("noValidLink") object NoValidLink : SimplexDomainError()
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
+  @Serializable @SerialName("nameWarning") class NameWarning(val nameWarning: chat.simplex.common.model.NameWarning) : SimplexDomainError()
 }
 
 @Serializable
@@ -7482,13 +7476,8 @@ object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
   override fun serialize(encoder: Encoder, value: BadgeServiceErrorCode) = encoder.encodeString(value.text)
 }
 
-@Serializable
-data class ChatRef(val chatType: String, val chatId: Long) {
-  val id: String get() = (if (chatType == "direct") ChatType.Direct else ChatType.Group).type + chatId
-}
-
 data class ConnectionPlanResult(
-  val connLink: CreatedConnLink?,
+  val connLink: CreatedConnLink,
   val planSimplexName: SimplexNameInfo?,
   val otherSimplexName: SimplexNameInfo?,
   val connectionPlan: ConnectionPlan,
@@ -7496,9 +7485,9 @@ data class ConnectionPlanResult(
 
 // APIConnectPlan resolution scope; PRMNever is local-store-only (no network), used for per-keystroke name search
 enum class PlanResolveMode {
-  PRMAll, PRMUnknown, PRMNever;
+  PRMAllGroups, PRMUnknown, PRMNever;
   val cmdString: String get() = when (this) {
-    PRMAll -> "all"
+    PRMAllGroups -> "allGroups"
     PRMUnknown -> "unknown"
     PRMNever -> "never"
   }
@@ -7506,37 +7495,32 @@ enum class PlanResolveMode {
 
 @Serializable
 sealed class ConnectionPlan {
-  val localChats: List<ChatInfo> get() = when (this) {
-    is ContactAddress -> listOfNotNull(
-      when (val p = contactAddressPlan) {
-        is ContactAddressPlan.ConnectingProhibit -> ChatInfo.Direct(p.contact)
-        is ContactAddressPlan.Known -> ChatInfo.Direct(p.contact)
-        is ContactAddressPlan.ContactViaAddress -> ChatInfo.Direct(p.contact)
-        else -> null
-      },
-      (nameChange as? NameChange.Moved)?.knownChat
-    )
-    is GroupLink -> listOfNotNull(
-      when (val p = groupLinkPlan) {
-        is GroupLinkPlan.OwnLink -> p.groupInfo
-        is GroupLinkPlan.Known -> p.groupInfo
-        is GroupLinkPlan.ConnectingProhibit -> p.groupInfo_
-        else -> null
-      }?.let { ChatInfo.Group(it, groupChatScope = null) },
-      (nameChange as? NameChange.Moved)?.knownChat
-    )
-    else -> emptyList()
+  open val nameChange: NameChange? get() = null
+  val localChats: List<ChatInfo> get() = listOfNotNull(planChat, knownChat)
+  val planChat: ChatInfo? get() = when (this) {
+    is ContactAddress -> when (val p = contactAddressPlan) {
+      is ContactAddressPlan.ConnectingProhibit -> ChatInfo.Direct(p.contact)
+      is ContactAddressPlan.Known -> ChatInfo.Direct(p.contact)
+      is ContactAddressPlan.ContactViaAddress -> ChatInfo.Direct(p.contact)
+      else -> null
+    }
+    is GroupLink -> when (val p = groupLinkPlan) {
+      is GroupLinkPlan.OwnLink -> p.groupInfo
+      is GroupLinkPlan.Known -> p.groupInfo
+      is GroupLinkPlan.ConnectingProhibit -> p.groupInfo_
+      else -> null
+    }?.let { ChatInfo.Group(it, groupChatScope = null) }
+    else -> null
   }
+  val knownChat: ChatInfo? get() = (nameChange as? NameChange.Moved)?.knownChat
   val isOwnLink: Boolean get() = when (this) {
-    is InvitationLink -> invitationLinkPlan is InvitationLinkPlan.OwnLink
     is ContactAddress -> contactAddressPlan is ContactAddressPlan.OwnLink
     is GroupLink -> groupLinkPlan is GroupLinkPlan.OwnLink
     else -> false
   }
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameChange: NameChange? = null): ConnectionPlan()
-  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameChange: NameChange? = null): ConnectionPlan()
-  @Serializable @SerialName("nameNotConnectable") class NameNotConnectable(val simplexDomain: SimplexDomain, val nameWarning: NameWarning): ConnectionPlan()
+  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, override val nameChange: NameChange? = null): ConnectionPlan()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, override val nameChange: NameChange? = null): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
 }
 

@@ -711,17 +711,16 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMAll -- resolve all known groups and all unknown chats
-  | PRMUnknown -- only resolve if chat is unknown (default)
+  = PRMAllGroups -- resolve names, links of known groups and of unknown chats
+  | PRMUnknown -- resolve names, and links of unknown chats (default)
   | PRMNever -- do not resolve links and names, only do local search
   deriving (Eq, Show)
 
 planResolveModeP :: A.Parser PlanResolveMode
 planResolveModeP =
   A.takeTill (== ' ') >>= \case
-    "all" -> pure PRMAll
-    "allGroups" -> pure PRMAll
-    "on" -> pure PRMAll
+    "allGroups" -> pure PRMAllGroups
+    "on" -> pure PRMAllGroups
     "unknown" -> pure PRMUnknown
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever
@@ -887,7 +886,7 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connLink :: Maybe ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
   | CRNewPreparedChat {user :: User, chat :: AChat}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
@@ -986,7 +985,7 @@ data ChatEvent
   | CEvtGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
   | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
-  | CEvtNameVerified {user :: User, simplexName :: SimplexNameInfo, chatRef :: ChatRef}
+  | CEvtNameMoved {user :: User, contactIds :: [ContactId], groupIds :: [GroupId]}
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
@@ -1157,7 +1156,6 @@ data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameChange :: Maybe NameChange}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameChange :: Maybe NameChange}
-  | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameWarning :: NameWarning}
   | CPError {chatError :: ChatError}
   deriving (Show)
 
@@ -1249,8 +1247,13 @@ connectionPlanProceed = \case
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False
     _ -> False
-  CPNameNotConnectable {} -> False
   CPError _ -> True
+
+connectionPlanOwnLink :: ConnectionPlan -> Bool
+connectionPlanOwnLink = \case
+  CPContactAddress CAPOwnLink _ -> True
+  CPGroupLink GLPOwnLink {} _ -> True
+  _ -> False
 
 data ForwardConfirmation
   = FCFilesNotAccepted {fileIds :: [FileTransferId]}
@@ -1500,6 +1503,7 @@ data ChatError
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
+  | SDENameWarning {nameWarning :: NameWarning}
   deriving (Eq, Show)
 
 data BadgeRedeemError
@@ -1867,6 +1871,10 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
+$(JQ.deriveJSON defaultJSON ''NamePrice)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NW") ''NameWarning)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
@@ -1882,10 +1890,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
-
-$(JQ.deriveJSON defaultJSON ''NamePrice)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NW") ''NameWarning)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NC") ''NameChange)
 

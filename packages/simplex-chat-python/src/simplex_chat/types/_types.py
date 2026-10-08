@@ -1488,11 +1488,6 @@ class ConnectionPlan_groupLink(TypedDict):
     groupLinkPlan: "GroupLinkPlan"
     nameChange: NotRequired["NameChange"]
 
-class ConnectionPlan_nameNotConnectable(TypedDict):
-    type: Literal["nameNotConnectable"]
-    simplexDomain: "SimplexDomain"
-    nameWarning: "NameWarning"
-
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]
     chatError: "ChatError"
@@ -1501,11 +1496,10 @@ ConnectionPlan = (
     ConnectionPlan_invitationLink
     | ConnectionPlan_contactAddress
     | ConnectionPlan_groupLink
-    | ConnectionPlan_nameNotConnectable
     | ConnectionPlan_error
 )
 
-ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "nameNotConnectable", "error"]
+ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "error"]
 
 class Contact(TypedDict):
     contactId: int  # int64
@@ -1623,6 +1617,8 @@ class CtrlAppInfo(TypedDict):
     appVersionRange: "AppVersionRange"
     deviceName: str
     compression: bool
+
+DomainVerification = Literal["failed", "verified", "moved"]
 
 class DroppedMsg(TypedDict):
     brokerTs: str  # ISO-8601 timestamp
@@ -1963,7 +1959,7 @@ class GroupInfo(TypedDict):
     rosterVersion: NotRequired[int]  # int64
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
-    groupDomainVerified: NotRequired[bool]
+    groupDomainVerified: NotRequired["DomainVerification"]
 
 class GroupLink(TypedDict):
     userContactLinkId: int  # int64
@@ -2212,7 +2208,7 @@ class LocalProfile(TypedDict):
     localBadge: NotRequired["LocalBadge"]
     localAlias: str
     contactDomain: NotRequired["SimplexDomainClaim"]
-    contactDomainVerified: NotRequired[bool]
+    contactDomainVerified: NotRequired["DomainVerification"]
 
 MemberCriteria = Literal["all"]
 
@@ -2493,7 +2489,7 @@ class PendingContactConnection(TypedDict):
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
 
-PlanResolveMode = Literal["all", "unknown", "never"]
+PlanResolveMode = Literal["allGroups", "unknown", "never"]
 
 class PrefEnabled(TypedDict):
     forUser: bool
@@ -2999,9 +2995,17 @@ class SimplexDomainError_noValidLink(TypedDict):
 class SimplexDomainError_unknownDomain(TypedDict):
     type: Literal["unknownDomain"]
 
-SimplexDomainError = SimplexDomainError_noValidLink | SimplexDomainError_unknownDomain
+class SimplexDomainError_nameWarning(TypedDict):
+    type: Literal["nameWarning"]
+    nameWarning: "NameWarning"
 
-SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain"]
+SimplexDomainError = (
+    SimplexDomainError_noValidLink
+    | SimplexDomainError_unknownDomain
+    | SimplexDomainError_nameWarning
+)
+
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "nameWarning"]
 
 class SimplexDomainProof(TypedDict):
     linkOwnerId: NotRequired[str]

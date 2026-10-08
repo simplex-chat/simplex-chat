@@ -52,7 +52,7 @@ module Simplex.Chat.Store.Direct
     getContactIdByName,
     updateContactProfile,
     setContactDomainVerified,
-    unverifyNameContacts,
+    setNameContactsMoved,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -600,18 +600,22 @@ setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} ve
       WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
     |]
     (BI verified, userId, contactId)
-  pure (ct {profile = p {contactDomainVerified = Just verified}} :: Contact)
+  pure (ct {profile = p {contactDomainVerified = Just $ if verified then DVVerified else DVFailed}} :: Contact)
 
-unverifyNameContacts :: DB.Connection -> User -> SimplexDomain -> Maybe ContactId -> IO ()
-unverifyNameContacts db User {userId} domain exceptContactId_ =
-  DB.execute
-    db
-    [sql|
-      UPDATE contact_profiles SET contact_domain_verified = 0
-      WHERE user_id = ? AND contact_domain = ? AND contact_domain_verified = 1
-        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
-    |]
-    (userId, domain, userId, exceptContactId_)
+setNameContactsMoved :: DB.Connection -> User -> SimplexDomain -> Maybe ContactId -> IO [ContactId]
+setNameContactsMoved db User {userId} domain exceptContactId_ = do
+  cts <-
+    DB.query
+      db
+      [sql|
+        SELECT ct.contact_id, ct.contact_profile_id FROM contacts ct
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1
+      |]
+      (userId, exceptContactId_, domain)
+  forM_ cts $ \(_ :: ContactId, profileId :: ProfileId) ->
+    DB.execute db "UPDATE contact_profiles SET contact_domain_verified = 2 WHERE contact_profile_id = ?" (Only profileId)
+  pure $ map fst cts
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do

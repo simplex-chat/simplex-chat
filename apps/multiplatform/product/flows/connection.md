@@ -59,10 +59,11 @@ suspend fun apiConnectPlan(rh: Long?, connLink: String, inProgress: MutableState
 ```kotlin
 sealed class ConnectionPlan {
   val localChats: List<ChatInfo>
+  val planChat: ChatInfo?
+  val knownChat: ChatInfo?
   class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
   class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameChange: NameChange? = null): ConnectionPlan()
   class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameChange: NameChange? = null): ConnectionPlan()
-  class NameNotConnectable(val simplexDomain: SimplexDomain, val nameWarning: NameWarning): ConnectionPlan()
   class Error(val chatError: ChatError): ConnectionPlan()
 }
 
@@ -72,7 +73,7 @@ sealed class NameChange {
 }
 ```
 
-`localChats` is computed from the plan: its contact or group, then `knownChat` of `Moved`.
+`planChat` is the plan's contact or group, `knownChat` is the chat of `Moved`, and `localChats` lists both.
 
 4. For `InvitationLinkPlan`:
    - `Ok`: Fresh invitation, safe to connect.
@@ -113,14 +114,13 @@ suspend fun planAndConnect(
 
 1. A progress indicator is shown.
 2. `apiConnectPlan` is called to analyze the link.
-3. The plan's `localChats` are added to or updated in the chat list, and passed to `showLocalChats`.
+3. `localChats` are added to or updated in the chat list, and passed to `showLocalChats`.
 4. Based on the plan type, the appropriate UI is shown:
-   - For a name warning (`NameChange.Lapsed`, or `NameNotConnectable`): the name warning alert, with Open chat when the plan has local chats.
-   - For `Ok` plans: the alert to connect, with the link's profile when it has one.
-   - For `Known`, `ContactViaAddress`, a contact's `ConnectingProhibit`, an invitation's `Connecting`, and a group's `OwnLink`: the contact or group is passed to `filterKnownContact` or `filterKnownGroup` in place of the alert. Without a filter, the plan's alert is shown (for `Known`, to open the existing contact/group).
-   - When the plan has `otherSimplexName`, a button for the other kind is added to the connect, own link, reconnect and known chat alerts.
-   - For a contact's or an invitation's `OwnLink`: show alert.
-   - For `ConnectingConfirmReconnect`: show reconnect confirmation; for a group's `ConnectingProhibit`: show the prohibit alert.
+   - For a name warning (`NameChange.Lapsed`): the name warning alert, with Open chat for `planChat`. With nothing local, the warning is the error `SimplexDomainError.NameWarning`, and the same alert is shown by the connect error handler.
+   - For `Ok` plans: proceed to `apiConnect`.
+   - For `Known`: navigate to the existing contact/group.
+   - For `OwnLink`: show alert.
+   - For `Connecting`: show reconnect confirmation or prohibit.
 5. Returns a `CompletableDeferred<Boolean>` indicating success.
 
 ### 2.3 Execute Connection
@@ -237,7 +237,7 @@ While connecting, the chat list shows a `PendingContactConnection` with status:
 |------|----------|---------|
 | `CreatedConnLink` | `model/SimpleXAPI.kt` | Connection link with full URI and short link |
 | `PendingContactConnection` | `model/ChatModel.kt` | In-progress connection shown in chat list |
-| `ConnectionPlan` | `model/SimpleXAPI.kt` | Sealed class: InvitationLink, ContactAddress, GroupLink, NameNotConnectable, Error |
+| `ConnectionPlan` | `model/SimpleXAPI.kt` | Sealed class: InvitationLink, ContactAddress, GroupLink, Error |
 | `InvitationLinkPlan` | `model/SimpleXAPI.kt` | Ok, OwnLink, Connecting, Known |
 | `ContactAddressPlan` | `model/SimpleXAPI.kt` | Ok, OwnLink, ConnectingConfirmReconnect, ConnectingProhibit, Known |
 | `GroupLinkPlan` | `model/SimpleXAPI.kt` | Ok, OwnLink, ConnectingConfirmReconnect, ConnectingProhibit, Known |

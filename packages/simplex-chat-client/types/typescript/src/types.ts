@@ -2120,11 +2120,10 @@ export type ConnectionPlan =
   | ConnectionPlan.InvitationLink
   | ConnectionPlan.ContactAddress
   | ConnectionPlan.GroupLink
-  | ConnectionPlan.NameNotConnectable
   | ConnectionPlan.Error
 
 export namespace ConnectionPlan {
-  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "nameNotConnectable" | "error"
+  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "error"
 
   interface Interface {
     type: Tag
@@ -2145,12 +2144,6 @@ export namespace ConnectionPlan {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
     nameChange?: NameChange
-  }
-
-  export interface NameNotConnectable extends Interface {
-    type: "nameNotConnectable"
-    simplexDomain: SimplexDomain
-    nameWarning: NameWarning
   }
 
   export interface Error extends Interface {
@@ -2313,6 +2306,12 @@ export interface CtrlAppInfo {
   appVersionRange: AppVersionRange
   deviceName: string
   compression: boolean
+}
+
+export enum DomainVerification {
+  Failed = "failed",
+  Verified = "verified",
+  Moved = "moved",
 }
 
 export interface DroppedMsg {
@@ -2805,7 +2804,7 @@ export interface GroupInfo {
   rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-  groupDomainVerified?: boolean
+  groupDomainVerified?: DomainVerification
 }
 
 export interface GroupLink {
@@ -3160,7 +3159,7 @@ export interface LocalProfile {
   localBadge?: LocalBadge
   localAlias: string
   contactDomain?: SimplexDomainClaim
-  contactDomainVerified?: boolean
+  contactDomainVerified?: DomainVerification
 }
 
 export enum MemberCriteria {
@@ -3573,7 +3572,7 @@ export interface PendingContactConnection {
 }
 
 export enum PlanResolveMode {
-  All = "all",
+  AllGroups = "allGroups",
   Unknown = "unknown",
   Never = "never",
 }
@@ -4289,10 +4288,13 @@ export interface SimplexDomainClaim {
   proof?: SimplexDomainProof
 }
 
-export type SimplexDomainError = SimplexDomainError.NoValidLink | SimplexDomainError.UnknownDomain
+export type SimplexDomainError = 
+  | SimplexDomainError.NoValidLink
+  | SimplexDomainError.UnknownDomain
+  | SimplexDomainError.NameWarning
 
 export namespace SimplexDomainError {
-  export type Tag = "noValidLink" | "unknownDomain"
+  export type Tag = "noValidLink" | "unknownDomain" | "nameWarning"
 
   interface Interface {
     type: Tag
@@ -4304,6 +4306,11 @@ export namespace SimplexDomainError {
 
   export interface UnknownDomain extends Interface {
     type: "unknownDomain"
+  }
+
+  export interface NameWarning extends Interface {
+    type: "nameWarning"
+    nameWarning: NameWarning
   }
 }
 

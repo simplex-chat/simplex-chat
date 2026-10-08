@@ -1,5 +1,3 @@
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
@@ -8,22 +6,16 @@ module ChatTests.Names where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay)
+import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitQueuedLinkUpdates)
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad.Reader (runReaderT)
-import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Data.Maybe (maybeToList)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import NameResolver
-import Simplex.Chat.Controller (ChatResponse (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), NameChange (..), NamePrice (..), NameWarning (..))
-import Simplex.Chat.Library.Commands (execChatCommand', nameRecordOrWarning, parseChatCommand)
-import Simplex.Chat.Messages (AChatInfo (..), ChatInfo (..))
-import Simplex.Chat.Types (Contact (..), GroupInfo (..))
+import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
+import Simplex.Chat.Library.Commands (nameRecordOrWarning)
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), USDCents (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
@@ -34,6 +26,7 @@ chatNamesTests = do
   it "connect by resolved name" testConnectByName
   it "connect by name not claimed in link profile is rejected" testConnectByNameNotClaimed
   it "prepare with a name not claimed in link profile is not verified" testPrepareNameNotClaimed
+  it "prepared chat moved to another user unverifies its chat with the name" testPrepareNameChangeUser
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name reports it is available" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
@@ -49,15 +42,17 @@ chatNamesTests = do
     it "known chat and own name, name moved to a new address" testPlanKnownNameAddressChanged
     it "known chat, name moved, new chat opened" testPlanKnownNameNewChatOpened
     it "known chat and own name, name moved to another known chat" testPlanKnownNameMovedToKnownChat
+    it "known chat, name moved to a known business chat" testPlanKnownNameMovedToBusinessChat
     it "known chat, name now available" testPlanKnownNameAvailable
-    it "known chat and own name, name without link or reserved, stored as resolved" testPlanKnownNameReserved
+    it "known chat and own name, name without link or reserved" testPlanKnownNameReserved
     it "known chat and own name, the request failed" testPlanKnownNameResolverFailed
     it "known chat and own name, the name's new link cannot be fetched" testPlanKnownNameLinkFailed
     it "own channel expired, joined channel moved to a new channel, new channel joined" testPlanChannelNameMoved
     it "joined channel moved to a channel with no relays" testPlanChannelNameMovedNoRelays
     it "no local chat, the channel has no relays" testPlanNameChannelNoRelays
     it "known chats, the name's link differs only in its key hash" testPlanNameLinkKeyHash
-    it "local chats, and whether a lookup can show more" testPlanLocalChats
+    it "known chats, the name's link differs only in its server address" testPlanNameLinkServer
+    it "local chats, before and after the name expired" testPlanLocalChats
     it "bare name, the other kind's chat moved, offered" testPlanNameOtherKindMoved
     it "bare name, the other kind is a business chat" testPlanNameOtherKindBusiness
     it "known chat, resolved on every call" testPlanKnownNameStale
@@ -147,7 +142,6 @@ testConnectByNameNotFound ps = withSmpServerAndNames ps $ \_reg ->
     test _alice bob = do
       enableNamesRole bob
       bob ##> "/c @nobody.simplex"
-      bob <## "SimpleX name nobody.simplex: nothing to connect to"
       bob <## "SimpleX name nobody.simplex is available: $20 for 2 years"
 
 testSetNameNotOwnAddress :: HasCallStack => TestParams -> IO ()
@@ -184,8 +178,9 @@ testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames ps $ \reg ->
         bob <## "group link: known group #team"
         bob <## "use #team <message> to send messages" -- no "SimpleX name" line: status stays unknown
         bob ##> "/_connect plan 1 #team.simplex"
-        knownTeamPlan bob
-        planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` ["team"]
+        knownGroupPlan "team" bob
+        bob ##> "/_connect plan 1 #team.simplex resolve=never"
+        knownGroupPlan "team" bob
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -293,17 +288,14 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames ps $ \reg ->
         bob <## "SimpleX name: #team (verified)"
         bob <## "use #team <message> to send messages"
         bob <## "You can also connect to @team.simplex in direct chat"
-        bob ##> "/_connect plan 1 #team.simplex resolve=all"
-        knownTeamPlan bob
-        bob ##> "/_connect plan 1 team.simplex resolve=all"
-        knownTeamPlan bob
-        bob <## "You can also connect to @team.simplex in direct chat"
+        bob ##> "/_connect plan 1 #team.simplex"
+        knownGroupPlan "team" bob
         registerName reg teamName (contactNameRecord "team.simplex" (T.pack contactLink))
         bob ##> "/_connect plan 1 team.simplex"
         bob <## "contact address: ok to connect"
         _ <- getTermLine bob
         bob ##> "/_connect plan 1 #team.simplex resolve=never"
-        knownTeamPlan bob
+        knownGroupPlan "team" bob
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -413,29 +405,19 @@ knownAlicePlan bob = do
   bob <## "SimpleX name: @alice.simplex (verified)"
   bob <## "use @alice <message> to send messages"
 
-planLocal :: TestCC -> ByteString -> IO [String]
-planLocal TestCC {chatController = cc} cmd = do
-  cmd' <- either fail pure $ parseChatCommand cmd
-  r <- execChatCommand' cmd' 0 `runReaderT` cc
-  case r of
-    Right CRConnectionPlan {connectionPlan = CPContactAddress cap nc_} -> pure $ maybeToList (case cap of CAPKnown Contact {localDisplayName} -> Just (T.unpack localDisplayName); _ -> Nothing) <> knownChatName nc_
-    Right CRConnectionPlan {connectionPlan = CPGroupLink glp nc_} -> pure $ maybeToList (groupName glp) <> knownChatName nc_
-    _ -> fail $ "unexpected response: " <> show r
+withKnownAliceName :: HasCallStack => (NameRegistry -> TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
+withKnownAliceName test ps = withSmpServerAndNames ps $ \reg ->
+  testChat3 aliceProfile bobProfile cathProfile (setup reg) ps
   where
-    groupName GLPKnown {groupInfo = GroupInfo {localDisplayName}} = Just $ T.unpack localDisplayName
-    groupName GLPOwnLink {groupInfo = GroupInfo {localDisplayName}} = Just $ T.unpack localDisplayName
-    groupName _ = Nothing
-    knownChatName (Just NCMoved {knownChat}) = maybeToList $ chatName knownChat
-    knownChatName _ = []
+    setup reg alice bob cath = do
+      mapM_ enableNamesRole [alice, bob, cath]
+      _ <- setAliceName reg alice
+      connectBobByName "@alice.simplex" alice bob
+      test reg alice bob cath
 
-chatName :: AChatInfo -> Maybe String
-chatName (AChatInfo _ (DirectChat Contact {localDisplayName})) = Just $ T.unpack localDisplayName
-chatName (AChatInfo _ (GroupChat GroupInfo {localDisplayName} _)) = Just $ T.unpack localDisplayName
-chatName _ = Nothing
-
-connectBobByName :: HasCallStack => TestCC -> TestCC -> IO ()
-connectBobByName alice bob = do
-  bob ##> "/c @alice.simplex"
+connectBobByName :: HasCallStack => String -> TestCC -> TestCC -> IO ()
+connectBobByName name alice bob = do
+  bob ##> ("/c " <> name)
   bob <## "alice: connection started"
   alice <## "bob (Bob) wants to connect to you!"
   alice <## "to accept: /ac bob"
@@ -461,11 +443,44 @@ testPrepareNameNotClaimed ps = withSmpServerAndNames ps $ \reg ->
       bob ##> "/_connect plan 1 @alice.simplex resolve=never"
       bob <## "no matching chat found, name resolution is disabled"
 
+testPrepareNameChangeUser :: HasCallStack => TestParams -> IO ()
+testPrepareNameChangeUser ps = withSmpServerAndNames ps $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      (shortLink, fullLink) <- setAliceName reg alice
+      connectBobByName "@alice.simplex" alice bob
+      bob ##> "/create user robert"
+      showActiveUser bob "robert"
+      bob ##> ("/_connect plan 2 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 2 " <> fullLink <> " " <> shortLink <> " domain=alice.simplex " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_set contact user @5 1"
+      bob <## "contact alice changed from user robert to user bob, new local name: alice_1"
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+      bob ##> "/_connect plan 1 @alice.simplex resolve=never"
+      bob <## "contact address: known prepared contact alice_1"
+      bob <## "SimpleX name: @alice.simplex (verified)"
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      _ <- getTermLine bob
+      bob <## "SimpleX name: @alice.simplex (moved)"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      _ <- getTermLine bob
+      pure ()
+
 testPlanNameReservedOther :: HasCallStack => TestParams -> IO ()
 testPlanNameReservedOther = withAliceName $ \reg _r _alice bob -> do
   registerReservedName reg acmeName NRRTrademark
   bob ##> "/_connect plan 1 acme.simplex"
-  bob <## "SimpleX name acme.simplex: nothing to connect to"
   bob <## "SimpleX name acme.simplex is not registered"
   where
     acmeName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
@@ -480,20 +495,17 @@ testPlanNameNoValidLink = withAliceName $ \reg _r _alice bob -> do
 
 testPlanKnownNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameAvailable = withAliceName $ \reg _r alice bob -> do
-  connectBobByName alice bob
+  connectBobByName "@alice.simplex" alice bob
   unregisterName reg aliceSimplexName
-  bob ##> "/_connect plan 1 @alice.simplex resolve=all"
-  knownAlicePlan bob
-  bob <## "SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   bob <## "SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
 
 testPlanKnownNameReserved :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
-  connectBobByName alice bob
+  connectBobByName "@alice.simplex" alice bob
   registerName reg aliceSimplexName (emptyRecord "alice.simplex")
-  bob ##> "/_connect plan 1 @alice.simplex resolve=all"
+  bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
@@ -502,12 +514,12 @@ testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
   knownAlicePlan bob
   bob <##. "SimpleX name alice.simplex expired on "
   registerReservedName reg aliceSimplexName NRRTrademark
-  bob ##> "/_connect plan 1 @alice.simplex resolve=all"
+  bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   registerReservedName reg aliceSimplexName NRRCommunity
-  bob ##> "/_connect plan 1 @alice.simplex resolve=all"
+  bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   bob <## "SimpleX name alice.simplex is reserved for community"
   alice ##> "/_connect plan 1 @alice.simplex"
@@ -516,18 +528,18 @@ testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
 
 testPlanKnownNameResolverFailed :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameResolverFailed = withAliceName $ \reg _r alice bob -> do
-  connectBobByName alice bob
+  connectBobByName "@alice.simplex" alice bob
   failNameResolution reg aliceSimplexName
-  bob ##> "/_connect plan 1 @alice.simplex resolve=all"
+  bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
-  bob ##> "/_connect plan 1 alice.simplex resolve=all"
+  bob ##> "/_connect plan 1 alice.simplex"
   knownAlicePlan bob
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
 
 testPlanKnownNameStale :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameStale = withAliceName $ \reg aliceRecord alice bob -> do
-  connectBobByName alice bob
+  connectBobByName "@alice.simplex" alice bob
   registerExpiredName reg aliceSimplexName aliceRecord
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
@@ -546,7 +558,6 @@ testPlanNameResolvedEveryCall = withAliceName $ \reg aliceRecord _alice bob -> d
   _ <- getTermLine bob
   registerExpiredName reg aliceSimplexName aliceRecord
   bob ##> "/_connect plan 1 @alice.simplex"
-  bob <## "SimpleX name alice.simplex: nothing to connect to"
   bob <##. "SimpleX name alice.simplex expired on "
 
 testPlanOwnNameExpired :: HasCallStack => TestParams -> IO ()
@@ -559,13 +570,13 @@ testPlanOwnNameExpired = withAliceName $ \reg aliceRecord alice _bob -> do
 testPlanOwnNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameAvailable = withAliceName $ \reg _r alice _bob -> do
   unregisterName reg aliceSimplexName
-  alice ##> "/_connect plan 1 @alice.simplex resolve=all"
+  alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   alice <## "your SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
 
 testPlanNameResolveNever :: HasCallStack => TestParams -> IO ()
 testPlanNameResolveNever = withAliceName $ \reg _r alice bob -> do
-  connectBobByName alice bob
+  connectBobByName "@alice.simplex" alice bob
   unregisterName reg aliceSimplexName
   bob ##> "/_connect plan 1 alice.simplex resolve=never"
   knownAlicePlan bob
@@ -577,96 +588,96 @@ testPlanNameResolveNever = withAliceName $ \reg _r alice bob -> do
   bob <## "no matching chat found, name resolution is disabled"
 
 testPlanKnownNameAddressChanged :: HasCallStack => TestParams -> IO ()
-testPlanKnownNameAddressChanged ps = withSmpServerAndNames ps $ \reg ->
-  testChat3 aliceProfile bobProfile cathProfile (test reg) ps
-  where
-    test reg alice bob cath = do
-      mapM_ enableNamesRole [alice, bob, cath]
-      _ <- setAliceName reg alice
-      connectBobByName alice bob
-      cath ##> "/ad"
-      (cathLink, _) <- getContactLinks cath True
-      registerName reg aliceSimplexName (contactNameRecord "alice.simplex" (T.pack cathLink))
-      bob ##> "/_connect plan 1 @alice.simplex resolve=all"
-      knownAlicePlan bob
-      alice ##> "/_connect plan 1 @alice.simplex"
-      alice <## "contact address: own address"
-      cath ##> "/_set domain 1 alice.simplex"
-      cath <## "new contact address set"
-      alice ##> "/_connect plan 1 @alice.simplex"
-      alice <## "contact address: ok to connect"
-      _ <- getTermLine alice
-      (alice </)
-      bob ##> "/_connect plan 1 @alice.simplex"
-      bob <## "contact address: ok to connect"
-      _ <- getTermLine bob
-      bob <## "known contact @alice"
-      bob ##> "/_connect plan 1 @alice.simplex resolve=never"
-      knownAlicePlan bob
-      bob ##> "/c @alice.simplex"
-      bob <## "cath: connection started"
-      cath <## "bob (Bob) wants to connect to you!"
-      cath <## "to accept: /ac bob"
-      cath <## "to reject: /rc bob (the sender will NOT be notified)"
+testPlanKnownNameAddressChanged = withKnownAliceName $ \reg alice bob cath -> do
+  cath ##> "/ad"
+  (cathLink, _) <- getContactLinks cath True
+  registerName reg aliceSimplexName (contactNameRecord "alice.simplex" (T.pack cathLink))
+  bob ##> "/_connect plan 1 @alice.simplex"
+  knownAlicePlan bob
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice <## "contact address: own address"
+  cath ##> "/_set domain 1 alice.simplex"
+  cath <## "new contact address set"
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice <## "contact address: ok to connect"
+  _ <- getTermLine alice
+  (alice </)
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "contact address: ok to connect"
+  _ <- getTermLine bob
+  bob <## "known contact @alice"
+  bob ##> "/_connect plan 1 @alice.simplex resolve=never"
+  knownAlicePlan bob
+  bob ##> "/c @alice.simplex"
+  bob <## "cath: connection started"
+  cath <## "bob (Bob) wants to connect to you!"
+  cath <## "to accept: /ac bob"
+  cath <## "to reject: /rc bob (the sender will NOT be notified)"
 
 testPlanKnownNameNewChatOpened :: HasCallStack => TestParams -> IO ()
-testPlanKnownNameNewChatOpened ps = withSmpServerAndNames ps $ \reg ->
-  testChat3 aliceProfile bobProfile cathProfile (test reg) ps
-  where
-    test reg alice bob cath = do
-      mapM_ enableNamesRole [alice, bob, cath]
-      _ <- setAliceName reg alice
-      connectBobByName alice bob
-      (cathLink, cathFullLink) <- setAliceName reg cath
-      bob ##> "/_connect plan 1 @alice.simplex resolve=all"
-      bob <## "contact address: ok to connect"
-      contactSLinkData <- getTermLine bob
-      bob <## "known contact @alice"
-      bob ##> ("/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " domain=alice.simplex " <> contactSLinkData)
-      bob <## "cath: contact is prepared"
-      bob ##> "/_connect plan 1 @alice.simplex resolve=never"
-      bob <## "contact address: known prepared contact cath"
-      bob <## "SimpleX name: @alice.simplex (verified)"
+testPlanKnownNameNewChatOpened = withKnownAliceName $ \reg _alice bob cath -> do
+  (cathLink, cathFullLink) <- setAliceName reg cath
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "contact address: ok to connect"
+  contactSLinkData <- getTermLine bob
+  bob <## "known contact @alice"
+  bob ##> ("/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " domain=alice.simplex " <> contactSLinkData)
+  bob <## "cath: contact is prepared"
+  bob ##> "/_connect plan 1 @alice.simplex resolve=never"
+  bob <## "contact address: known prepared contact cath"
+  bob <## "SimpleX name: @alice.simplex (verified)"
 
 testPlanKnownNameMovedToKnownChat :: HasCallStack => TestParams -> IO ()
-testPlanKnownNameMovedToKnownChat ps = withSmpServerAndNames ps $ \reg ->
-  testChat3 aliceProfile bobProfile cathProfile (test reg) ps
-  where
-    test reg alice bob cath = do
-      mapM_ enableNamesRole [alice, bob, cath]
-      _ <- setAliceName reg alice
-      connectBobByName alice bob
-      (cathLink, _) <- setAliceName reg cath
-      bob ##> ("/c " <> cathLink)
-      bob <## "connection request sent!"
-      cath <## "bob (Bob) wants to connect to you!"
-      cath <## "to accept: /ac bob"
-      cath <## "to reject: /rc bob (the sender will NOT be notified)"
-      cath ##> "/ac bob"
-      cath <## "bob (Bob): accepting contact request, you can send messages to contact"
-      concurrently_
-        (bob <## "cath (Catherine): contact is connected")
-        (cath <## "bob (Bob): contact is connected")
-      bob ##> "/_connect plan 1 @alice.simplex"
-      bob <## "contact address: known contact cath"
-      bob <## "SimpleX name: @alice.simplex (verified)"
-      bob <## "use @cath <message> to send messages"
-      bob <## "known contact @alice"
-      alice ##> ("/c " <> cathLink)
-      alice <## "connection request sent!"
-      cath <## "alice (Alice) wants to connect to you!"
-      cath <## "to accept: /ac alice"
-      cath <## "to reject: /rc alice (the sender will NOT be notified)"
-      cath ##> "/ac alice"
-      cath <## "alice (Alice): accepting contact request, you can send messages to contact"
-      concurrently_
-        (alice <## "cath (Catherine): contact is connected")
-        (cath <## "alice (Alice): contact is connected")
-      alice ##> "/_connect plan 1 @alice.simplex"
-      alice <## "contact address: known contact cath"
-      alice <## "SimpleX name: @alice.simplex (verified)"
-      alice <## "use @cath <message> to send messages"
-      (alice </)
+testPlanKnownNameMovedToKnownChat = withKnownAliceName $ \reg alice bob cath -> do
+  (cathLink, _) <- setAliceName reg cath
+  bob ##> ("/c " <> cathLink)
+  cath <#? bob
+  cath ##> "/ac bob"
+  cath <## "bob (Bob): accepting contact request, you can send messages to contact"
+  concurrently_
+    (bob <## "cath (Catherine): contact is connected")
+    (cath <## "bob (Bob): contact is connected")
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "contact address: known contact cath"
+  bob <## "SimpleX name: @alice.simplex (verified)"
+  bob <## "use @cath <message> to send messages"
+  bob <## "known contact @alice"
+  alice ##> ("/c " <> cathLink)
+  cath <#? alice
+  cath ##> "/ac alice"
+  cath <## "alice (Alice): accepting contact request, you can send messages to contact"
+  concurrently_
+    (alice <## "cath (Catherine): contact is connected")
+    (cath <## "alice (Alice): contact is connected")
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice <## "contact address: known contact cath"
+  alice <## "SimpleX name: @alice.simplex (verified)"
+  alice <## "use @cath <message> to send messages"
+  (alice </)
+
+testPlanKnownNameMovedToBusinessChat :: HasCallStack => TestParams -> IO ()
+testPlanKnownNameMovedToBusinessChat = withKnownAliceName $ \reg _alice bob cath -> do
+  (cathLink, cathFullLink) <- setAliceName reg cath
+  cath ##> "/auto_accept on business"
+  cath <## "auto_accept on, business"
+  bob ##> ("/_connect plan 1 " <> cathLink)
+  bob <## "business address: ok to connect"
+  contactSLinkData <- getTermLine bob
+  bob ##> ("/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " " <> contactSLinkData)
+  bob <## "#cath: group is prepared"
+  bob ##> "/_connect group #1"
+  bob <## "#cath: connection started"
+  cath <## "#bob (Bob): accepting business address request..."
+  cath <## "#bob: bob_1 joined the group"
+  bob <## "#cath: joining the group..."
+  bob <## "#cath: you joined the group"
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "business address: known business #cath"
+  bob <## "use #cath <message> to send messages"
+  bob <## "known contact @alice"
+  bob ##> "/_connect plan 1 @alice.simplex resolve=never"
+  bob <## "business address: known business #cath"
+  bob <## "use #cath <message> to send messages"
 
 testPlanNameResolverFailed :: HasCallStack => TestParams -> IO ()
 testPlanNameResolverFailed = withAliceName $ \reg _r _alice bob -> do
@@ -677,23 +688,17 @@ testPlanNameResolverFailed = withAliceName $ \reg _r _alice bob -> do
     brokenName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "broken" [])
 
 testPlanKnownNameLinkFailed :: HasCallStack => TestParams -> IO ()
-testPlanKnownNameLinkFailed ps = withSmpServerAndNames ps $ \reg ->
-  testChat3 aliceProfile bobProfile cathProfile (test reg) ps
-  where
-    test reg alice bob cath = do
-      mapM_ enableNamesRole [alice, bob, cath]
-      _ <- setAliceName reg alice
-      connectBobByName alice bob
-      _ <- setAliceName reg cath
-      cath ##> "/da"
-      cath <## "Your chat address is deleted - accepted contacts will remain connected."
-      cath <## "To create a new chat address use /ad"
-      bob ##> "/_connect plan 1 @alice.simplex resolve=all"
-      knownAlicePlan bob
-      alice ##> "/_connect plan 1 @alice.simplex"
-      alice <## "contact address: own address"
-      cath ##> "/_connect plan 1 @alice.simplex"
-      cath <##. "error: "
+testPlanKnownNameLinkFailed = withKnownAliceName $ \reg alice bob cath -> do
+  _ <- setAliceName reg cath
+  cath ##> "/da"
+  cath <## "Your chat address is deleted - accepted contacts will remain connected."
+  cath <## "To create a new chat address use /ad"
+  bob ##> "/_connect plan 1 @alice.simplex"
+  knownAlicePlan bob
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice <## "contact address: own address"
+  cath ##> "/_connect plan 1 @alice.simplex"
+  cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
 testPlanChannelNameMoved :: HasCallStack => TestParams -> IO ()
 testPlanChannelNameMoved ps = withSmpServerAndNames ps $ \reg ->
@@ -702,38 +707,33 @@ testPlanChannelNameMoved ps = withSmpServerAndNames ps $ \reg ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
         mapM_ enableNamesRole [alice, cath, bob]
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
-        registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
-        alice ##> "/public group access #team domain=team.simplex"
-        alice <## "updated public group access: domain=team.simplex"
-        cath <## "alice updated group #team: (signed)"
-        cath <## "updated public group access: domain=team.simplex"
+        registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
+        setChannelDomain alice cath "alice" "team" "team.simplex"
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
-        planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` ["team"]
-        registerExpiredName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
+        bob ##> "/_connect plan 1 #team.simplex resolve=never"
+        knownGroupPlan "team" bob
+        registerExpiredName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
         alice ##> "/_connect plan 1 #team.simplex"
         alice <## "group link: own link for group #team"
         alice <##. "your SimpleX name team.simplex expired on "
-        (shortLink2, fullLink2) <- prepareChannel' 2 "team2" alice cath
-        registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink2))
-        alice ##> "/public group access #team2 domain=team.simplex"
-        alice <## "updated public group access: domain=team.simplex"
-        cath <## "alice_1 updated group #team2: (signed)"
-        cath <## "updated public group access: domain=team.simplex"
-        bob ##> "/_connect plan 1 #team.simplex resolve=all"
+        (shortLink2, fullLink2) <- prepareChannel' 2 "teamv2" alice cath
+        registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink2))
+        setChannelDomain alice cath "alice_1" "teamv2" "team.simplex"
+        bob ##> "/_connect plan 1 #team.simplex"
         bob <## "group link: ok to connect via relays"
         _ <- getTermLine bob
         bob <## "known channel #team"
-        memberJoinChannel' "team2" 2 1 1 1 [cath] [alice] shortLink2 fullLink2 bob
+        memberJoinChannel' "teamv2" 2 1 1 1 [cath] [alice] shortLink2 fullLink2 bob
         bob ##> "/_verify domain #2"
         bob <## "SimpleX name #team verified"
         bob ##> "/_connect plan 1 #team.simplex resolve=never"
-        bob <## "group link: known group #team2"
+        bob <## "group link: known group #teamv2"
         bob <## "SimpleX name: #team (verified)"
-        bob <## "use #team2 <message> to send messages"
-  where
-    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
+        bob <## "use #teamv2 <message> to send messages"
+        alice ##> "/_connect plan 1 #team.simplex resolve=never"
+        alice <## "group link: own link for group #teamv2"
 
 testPlanChannelNameMovedNoRelays :: HasCallStack => TestParams -> IO ()
 testPlanChannelNameMovedNoRelays ps = withSmpServerAndNames ps $ \reg ->
@@ -742,33 +742,25 @@ testPlanChannelNameMovedNoRelays ps = withSmpServerAndNames ps $ \reg ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
         mapM_ enableNamesRole [alice, cath, bob]
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
-        registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
-        alice ##> "/public group access #team domain=team.simplex"
-        alice <## "updated public group access: domain=team.simplex"
-        cath <## "alice updated group #team: (signed)"
-        cath <## "updated public group access: domain=team.simplex"
+        registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
+        setChannelDomain alice cath "alice" "team" "team.simplex"
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
         (shortLink2, _) <- prepareChannel' 2 "team2" alice cath
-        registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink2))
-        alice ##> "/public group access #team2 domain=team.simplex"
-        alice <## "updated public group access: domain=team.simplex"
-        cath <## "alice_1 updated group #team2: (signed)"
-        cath <## "updated public group access: domain=team.simplex"
+        registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink2))
+        setChannelDomain alice cath "alice_1" "team2" "team.simplex"
         cath ##> "/leave #team2"
         cath <## "#team2: you left the group (future invitations will be rejected)"
         cath <## "use /group allow #team2 to allow future invitations"
         cath <## "use /d #team2 to delete the group (also clears the rejection)"
         alice <## "#team2: cath_1 left the group (signed)"
-        threadDelay 100000
+        waitQueuedLinkUpdates alice
         bob ##> ("/_connect plan 1 " <> shortLink2)
         bob <## "group link: channel has no active relays, please try to join later"
-        bob ##> "/_connect plan 1 #team.simplex resolve=all"
+        bob ##> "/_connect plan 1 #team.simplex"
         bob <## "group link: channel has no active relays, please try to join later"
         bob <## "known channel #team"
-  where
-    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
 testPlanNameChannelNoRelays :: HasCallStack => TestParams -> IO ()
 testPlanNameChannelNoRelays ps = withSmpServerAndNames ps $ \reg ->
@@ -779,20 +771,20 @@ testPlanNameChannelNoRelays ps = withSmpServerAndNames ps $ \reg ->
         (channelLink, _) <- prepareChannel1Relay "team" alice cath
         alice ##> "/ad"
         (contactLink, _) <- getContactLinks alice True
-        registerName reg teamName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
+        registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
         cath ##> "/leave #team"
         cath <## "#team: you left the group (future invitations will be rejected)"
         cath <## "use /group allow #team to allow future invitations"
         cath <## "use /d #team to delete the group (also clears the rejection)"
         alice <## "#team: cath left the group (signed)"
-        threadDelay 100000
+        waitQueuedLinkUpdates alice
         bob ##> "/_connect plan 1 #team.simplex"
         bob <## "SimpleX name team.simplex is not included in the connection link's profile"
         bob ##> "/_connect plan 1 team.simplex"
         bob <## "SimpleX name team.simplex is not included in the connection link's profile"
         alice ##> "/public group access #team domain=team.simplex"
         alice <## "updated public group access: domain=team.simplex"
-        threadDelay 100000
+        waitQueuedLinkUpdates alice
         bob ##> "/_connect plan 1 #team.simplex"
         bob <## "group link: channel has no active relays, please try to join later"
         bob ##> "/_connect plan 1 team.simplex"
@@ -805,25 +797,46 @@ testPlanNameChannelNoRelays ps = withSmpServerAndNames ps $ \reg ->
         _ <- getTermLine bob
         bob ##> "/_connect plan 1 @nobody.simplex resolve=never"
         bob <## "no matching chat found, name resolution is disabled"
-  where
-    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
 testPlanNameLinkKeyHash :: HasCallStack => TestParams -> IO ()
 testPlanNameLinkKeyHash = withTeamChats $ \reg contactLink channelLink _alice bob -> do
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink <> "?c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI") (T.pack channelLink))
   bob ##> "/_connect plan 1 team.simplex"
-  knownTeamPlan bob
+  knownGroupPlan "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
-  knownTeamPlan bob
+  knownGroupPlan "team" bob
+  bob ##> "/_connect plan 1 @team.simplex"
+  bob <## "contact address: known contact alice"
+  bob <## "SimpleX name: @team.simplex (verified)"
+  bob <## "use @alice <message> to send messages"
+  (bob </)
+
+testPlanNameLinkServer :: HasCallStack => TestParams -> IO ()
+testPlanNameLinkServer ps = flip withTeamChats ps $ \reg contactLink channelLink _alice bob -> do
+  let withPort l = T.pack $ l <> "?p=" <> smpTestPort ps <> "&c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI"
+  registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (withPort contactLink) (withPort channelLink))
+  bob ##> "/_connect plan 1 @team.simplex"
+  bob <## "contact address: known contact alice"
+  bob <## "SimpleX name: @team.simplex (verified)"
+  bob <## "use @alice <message> to send messages"
+  (bob </)
+  bob ##> "/_connect plan 1 #team.simplex"
+  knownGroupPlan "team" bob
+  (bob </)
 
 testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
-  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` ["team"]
-  planLocal bob "/_connect plan 1 #team.simplex resolve=never" `shouldReturn` ["team"]
-  planLocal bob "/_connect plan 1 @team.simplex resolve=never" `shouldReturn` ["alice"]
+  bob ##> "/_connect plan 1 team.simplex resolve=never"
+  knownGroupPlan "team" bob
+  bob ##> "/_connect plan 1 #team.simplex resolve=never"
+  knownGroupPlan "team" bob
+  bob ##> "/_connect plan 1 @team.simplex resolve=never"
+  bob <## "contact address: known contact alice"
+  bob <## "SimpleX name: @team.simplex (verified)"
+  bob <## "use @alice <message> to send messages"
   bob ##> "/_connect plan 1 team.simplex"
-  knownTeamPlan bob
+  knownGroupPlan "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 @team.simplex"
   bob <## "contact address: known contact alice"
@@ -831,11 +844,14 @@ testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> d
   bob <## "use @alice <message> to send messages"
   registerExpiredName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
   bob ##> "/_connect plan 1 team.simplex"
-  knownTeamPlan bob
+  knownGroupPlan "team" bob
   bob <##. "SimpleX name team.simplex expired on "
-  planLocal bob "/_connect plan 1 team.simplex resolve=never" `shouldReturn` ["team"]
-  planLocal alice "/_connect plan 1 team.simplex resolve=never" `shouldReturn` ["team"]
-  planLocal alice "/_connect plan 1 @team.simplex resolve=never" `shouldReturn` []
+  bob ##> "/_connect plan 1 team.simplex resolve=never"
+  knownGroupPlan "team" bob
+  alice ##> "/_connect plan 1 team.simplex resolve=never"
+  alice <## "group link: own link for group #team"
+  alice ##> "/_connect plan 1 @team.simplex resolve=never"
+  alice <## "contact address: own address"
 
 otherLink :: String -> String
 otherLink l = case break (== '#') l of
@@ -845,15 +861,22 @@ otherLink l = case break (== '#') l of
 teamSimplexName :: SimplexNameInfo
 teamSimplexName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
-knownTeamPlan :: HasCallStack => TestCC -> IO ()
-knownTeamPlan cc = do
-  cc <## "group link: known group #team"
-  cc <## "SimpleX name: #team (verified)"
-  cc <## "use #team <message> to send messages"
+setChannelDomain :: HasCallStack => TestCC -> TestCC -> String -> String -> String -> IO ()
+setChannelDomain owner relay ownerName g domain = do
+  owner ##> ("/public group access #" <> g <> " domain=" <> domain)
+  owner <## ("updated public group access: domain=" <> domain)
+  relay <## (ownerName <> " updated group #" <> g <> ": (signed)")
+  relay <## ("updated public group access: domain=" <> domain)
+
+knownGroupPlan :: HasCallStack => String -> TestCC -> IO ()
+knownGroupPlan g cc = do
+  cc <## ("group link: known group #" <> g)
+  cc <## ("SimpleX name: #" <> g <> " (verified)")
+  cc <## ("use #" <> g <> " <message> to send messages")
 
 testPlanNameOtherKindMoved :: HasCallStack => TestParams -> IO ()
 testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice bob -> do
-  bob ##> "/_connect plan 1 @team.simplex resolve=all"
+  bob ##> "/_connect plan 1 @team.simplex"
   bob <## "contact address: known contact alice"
   bob <## "SimpleX name: @team.simplex (verified)"
   bob <## "use @alice <message> to send messages"
@@ -865,7 +888,7 @@ testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice
   (contactLink2, _) <- getContactLinks alice True
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink2) (T.pack channelLink))
   bob ##> "/_connect plan 1 team.simplex"
-  knownTeamPlan bob
+  knownGroupPlan "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 @team.simplex"
   bob <## "contact address: ok to connect"
@@ -884,10 +907,7 @@ testPlanNameOtherKindBusiness ps = withSmpServerAndNames ps $ \reg ->
         registerName reg bizName (contactAndChannelNameRecord "biz.simplex" (T.pack contactLink) (T.pack channelLink))
         alice ##> "/auto_accept on business"
         alice <## "auto_accept on, business"
-        alice ##> "/public group access #biz domain=biz.simplex"
-        alice <## "updated public group access: domain=biz.simplex"
-        cath <## "alice updated group #biz: (signed)"
-        cath <## "updated public group access: domain=biz.simplex"
+        setChannelDomain alice cath "alice" "biz" "biz.simplex"
         alice ##> "/_set domain 1 biz.simplex"
         alice <## "new contact address set"
         bob ##> "/_connect plan 1 @biz.simplex"
@@ -913,16 +933,13 @@ testPlanNameOtherKindBusiness ps = withSmpServerAndNames ps $ \reg ->
               cath <## "#biz: bob joined the group"
           , alice <### [EndsWith "(Bob) in the channel"]
           ]
-        planLocal bob "/_connect plan 1 biz.simplex resolve=never" `shouldReturn` ["biz"]
+        bob ##> "/_connect plan 1 biz.simplex resolve=never"
+        knownGroupPlan "biz" bob
         bob ##> "/_connect plan 1 biz.simplex"
-        knownBizPlan bob
+        knownGroupPlan "biz" bob
         bob <## "You can also connect to @biz.simplex in direct chat"
   where
     bizName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "biz" [])
-    knownBizPlan cc = do
-      cc <## "group link: known group #biz"
-      cc <## "SimpleX name: #biz (verified)"
-      cc <## "use #biz <message> to send messages"
 
 withTeamChats :: HasCallStack => (NameRegistry -> String -> String -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
 withTeamChats test ps = withSmpServerAndNames ps $ \reg ->
@@ -934,22 +951,10 @@ withTeamChats test ps = withSmpServerAndNames ps $ \reg ->
         alice ##> "/ad"
         (contactLink, _) <- getContactLinks alice True
         registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
-        alice ##> "/public group access #team domain=team.simplex"
-        alice <## "updated public group access: domain=team.simplex"
-        cath <## "alice updated group #team: (signed)"
-        cath <## "updated public group access: domain=team.simplex"
+        setChannelDomain alice cath "alice" "team" "team.simplex"
         alice ##> "/_set domain 1 team.simplex"
         alice <## "new contact address set"
-        bob ##> "/c @team.simplex"
-        bob <## "alice: connection started"
-        alice <## "bob (Bob) wants to connect to you!"
-        alice <## "to accept: /ac bob"
-        alice <## "to reject: /rc bob (the sender will NOT be notified)"
-        alice ##> "/ac bob"
-        alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-        concurrently_
-          (bob <## "alice (Alice): contact is connected")
-          (alice <## "bob (Bob): contact is connected")
+        connectBobByName "@team.simplex" alice bob
         bob ##> "/c #team.simplex"
         bob <## "#team: connection started"
         concurrentlyN_

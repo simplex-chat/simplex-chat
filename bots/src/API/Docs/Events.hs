@@ -205,7 +205,7 @@ undocumentedEvents =
     "CEvtGroupMemberRatchetSync",
     "CEvtGroupMemberSwitch",
     "CEvtServiceSubStatus",
-    "CEvtNameVerified",
+    "CEvtNameMoved",
     "CEvtNewRemoteHost",
     "CEvtNoMemberContactCreating",
     "CEvtNtfMessage",

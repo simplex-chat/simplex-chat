@@ -545,7 +545,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                     <> ".\nIt is hidden from the directory until approved."
                 notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
                 verifyAndSendToApprove g' gr' n'
-          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll Nothing) >>= \case
+          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups Nothing) >>= \case
             Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g'}) _)) ->
               case dbOwnerMemberId gr of
                 Just ownerGMId ->
@@ -758,7 +758,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     sendToApprove g@GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image', publicGroup = pg_}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
       ct_ <- getContact' cc user dbContactId
       let gt = maybe "group" groupTypeStr' pg_
-          nameStr_ = (\d -> simplexNameStr d <> (if groupDomainVerified g == Just True then "" else " (NOT verified - will not be shown)")) <$> groupSimplexDomain g
+          nameStr_ = (\d -> simplexNameStr d <> (if groupDomainVerified g == Just DVVerified then "" else " (NOT verified - will not be shown)")) <$> groupSimplexDomain g
           membersStr = "_" <> membersCountStr p groupSummary <> "_\n"
           text =
             either (\_ -> "The " <> gt <> " ID " <> tshow groupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the " <> gt <> " ID " <> tshow groupId <> ": ") ct_
@@ -777,7 +777,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         forM_ pg_ $ \pg@PublicGroupProfile {groupLink} ->
           when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $ do
             let link = ACL SCMContact $ CLShort groupLink
-            sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll Nothing) >>= \case
+            sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups Nothing) >>= \case
               Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated, linkOwners = ListDef owners}) _)) ->
                 checkValidOwner dbOwnerMemberId owners $ do
                   -- re-verify every cycle: a name that stopped resolving to the link must lose verified status
@@ -915,8 +915,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           let link = ACL SCMContact $ CLShort connLink
               mId = MemberId oIdBytes
               gt' = groupTypeStr gt
-          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll (Just ownerSig)) >>= \case
-            Right (CRConnectionPlan _ (Just (ACCL SCMContact ccLink)) _ _ plan) ->
+          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups (Just ownerSig)) >>= \case
+            Right (CRConnectionPlan _ (ACCL SCMContact ccLink) _ _ plan) ->
               handleGroupLinkPlan ct ccLink mId ownerSig gt' plan
             _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
     deChatLinkReceived ct (MCLGroup {groupProfile = GroupProfile {publicGroup = Just pg}}) _ =
@@ -1253,7 +1253,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         getRegisteredGroupByLink :: AConnectionLink -> IO (Maybe (GroupInfo, GroupReg, CreatedLinkContact))
         getRegisteredGroupByLink uri =
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget uri)) PRMNever Nothing) >>= \case
-            Right (CRConnectionPlan _ (Just (ACCL SCMContact ccLink)) _ _ (CPGroupLink glp _)) -> case glp of
+            Right (CRConnectionPlan _ (ACCL SCMContact ccLink) _ _ (CPGroupLink glp _)) -> case glp of
               GLPOwnLink g -> groupReg g ccLink
               GLPKnown {groupInfo = g} -> groupReg g ccLink
               GLPConnectingProhibit (Just g) -> groupReg g ccLink

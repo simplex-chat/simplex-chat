@@ -29,7 +29,6 @@ needs nothing from Alice's.
 The repo is the channel, the file is the message, the render is the review surface.
 
 example PR: https://github.com/simplex-chat/simplex-chat/pull/7525
-example diff GIF: https://claude.ai/artifact/GhFaatzznQ2GthwG2UQKUd
 
 ## Conventions
 

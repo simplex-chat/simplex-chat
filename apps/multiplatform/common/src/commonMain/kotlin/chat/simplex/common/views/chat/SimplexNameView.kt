@@ -20,16 +20,16 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 
-// Renders a contact's / channel's SimpleX name with its 3-state verification indicator.
-// `verification`: null = not attempted, false = failed, true = verified.
+// Renders a contact's / channel's SimpleX name with its verification indicator.
+// `verified`: null = not attempted, Failed, Verified, or Moved to another chat.
 // `verify` runs the verify API, updates the model and returns (newVerification, failureReason);
 // null on network error. With `autoVerify`, it runs once on open when state is null.
 @Composable
 fun SimplexNameView(
   simplexName: String,
-  verified: Boolean?,
+  verified: DomainVerification?,
   verifiable: Boolean = true,
-  verify: suspend () -> Pair<Boolean?, String?>?
+  verify: suspend () -> Pair<DomainVerification?, String?>?
 ) {
   val scope = rememberCoroutineScope()
   val inFlight = remember { mutableStateOf(false) }
@@ -66,7 +66,7 @@ fun SimplexNameView(
 
   val clipboard = LocalClipboardManager.current
   val nameStyle = MaterialTheme.typography.body2.copy(
-    color = if (verified == true) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+    color = if (verified == DomainVerification.Verified) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
   )
   Row(
     verticalAlignment = Alignment.CenterVertically,
@@ -78,14 +78,16 @@ fun SimplexNameView(
         Text(simplexName, style = nameStyle)
         CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colors.secondary)
       }
-      verified == true ->
+      verified == DomainVerification.Verified ->
         SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_check_filled, MaterialTheme.colors.primary) {
           clipboard.setText(AnnotatedString(simplexName))
           showToast(generalGetString(MR.strings.copied))
         }
       !verifiable -> Text(simplexName, style = nameStyle)
-      verified == false ->
+      verified == DomainVerification.Failed ->
         SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, Color.Red) { runVerify(manual = true) }
+      verified == DomainVerification.Moved ->
+        SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, MaterialTheme.colors.secondary) { runVerify(manual = true) }
       else -> {
         Text(simplexName, style = nameStyle)
         Text(
