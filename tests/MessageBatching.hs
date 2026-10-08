@@ -210,11 +210,11 @@ testJsonElementsBatching = describe "JSON elements batching" $ do
   runJsonElementsTest 8 ["9aaaaaaaa", "bb"] ["bb"] 1
   runJsonElementsTest 8 ["aa", "9aaaaaaaa", "bb"] ["[aa,bb]"] 1
   it "splits by element count" $
-    batchJsonElements maxEncodedMsgLength (replicate (maxBatchElementCount + 1) "a")
+    batchElements BMJson maxEncodedMsgLength (replicate (maxBatchElementCount + 1) "a")
       `shouldBe` (["[" <> B.intercalate "," (replicate maxBatchElementCount "a") <> "]", "a"], 0)
   where
     runJsonElementsTest maxLen els batches dropped =
-      it (show els <> ", limit " <> show maxLen) $ batchJsonElements maxLen els `shouldBe` (batches, dropped)
+      it (show els <> ", limit " <> show maxLen) $ batchElements BMJson maxLen els `shouldBe` (batches, dropped)
 
 testLegacyFwdBodies :: IO ()
 testLegacyFwdBodies = do

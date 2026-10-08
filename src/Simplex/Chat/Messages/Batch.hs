@@ -13,7 +13,6 @@ module Simplex.Chat.Messages.Batch
     encodeFwdElement,
     encodeLegacyFwdElement,
     legacyFwdBodies,
-    batchJsonElements,
     encodeBinaryBatch,
     batchMessages,
     batchDeliveryTasks1,
@@ -108,19 +107,24 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
           body = if null accepted then Nothing else Just encoded
        in (body, reverse accepted, reverse large)
 
--- | Pack pre-encoded elements into binary batches within maxLen, preserving order.
+-- | Pack pre-encoded elements into batches within maxLen, preserving order.
 -- Elements may mix forward ('encodeFwdElement') and authored ('encodeBatchElement')
 -- forms; the receiver parses each by prefix. Also returns the count dropped as too large.
-batchElements :: Int -> [ByteString] -> ([ByteString], Int)
-batchElements maxLen = finish . foldl' addToBatch ([], [], 0, 0, 0)
+batchElements :: BatchMode -> Int -> [ByteString] -> ([ByteString], Int)
+batchElements mode maxLen = finish . foldl' addToBatch ([], [], 0, 0, 0)
   where
     addToBatch (batches, elems, len, n, dropped) el
-      | elLen + 4 > maxLen = (batches, elems, len, n, dropped + 1)
-      | n + 1 <= maxBatchElementCount && len + elLen + (n + 1) * 2 + 2 <= maxLen = (batches, el : elems, len + elLen, n + 1, dropped)
+      | framedLen elLen 1 > maxLen = (batches, elems, len, n, dropped + 1)
+      | n + 1 <= maxBatchElementCount && framedLen (len + elLen) (n + 1) <= maxLen = (batches, el : elems, len + elLen, n + 1, dropped)
       | otherwise = (closeBatch elems : batches, [el], elLen, 1, dropped)
       where
         elLen = B.length el
-    closeBatch elems = encodeBinaryBatch (reverse elems)
+    framedLen l k = case mode of
+      BMBinary -> l + k * 2 + 2
+      BMJson -> batchLen BMJson l k
+    closeBatch elems = case mode of
+      BMBinary -> encodeBinaryBatch (reverse elems)
+      BMJson -> encodeBatch BMJson (reverse elems)
     finish (batches, elems, _, n, dropped)
       | n == 0 = (reverse batches, dropped)
       | otherwise = (reverse (closeBatch elems : batches), dropped)
@@ -136,29 +140,12 @@ encodeLegacyFwdElement vr fwd chatMsg = chatMsgToBody ChatMessage {chatVRange = 
 
 legacyFwdBodies :: VersionRangeChat -> Int -> ByteString -> ([ByteString], Int)
 legacyFwdBodies vr maxLen body = case B.uncons body of
-  Just ('=', _) -> batchJsonElements maxLen $ mapMaybe legacyElement $ parseChatMessages body
+  Just ('=', _) -> batchElements BMJson maxLen $ mapMaybe legacyElement $ parseChatMessages body
   _ -> ([body], 0)
   where
     legacyElement = \case
       Right (APMsg SJson (ParsedMsg (Just fwd) _ chatMsg)) -> Just $ encodeLegacyFwdElement vr fwd chatMsg
       _ -> Nothing
-
-batchJsonElements :: Int -> [ByteString] -> ([ByteString], Int)
-batchJsonElements maxLen = finish . foldl' addToBatch ([], [], 0, 0, 0)
-  where
-    addToBatch (batches, els, len, n, dropped) el
-      | elLen > maxLen = (batches, els, len, n, dropped + 1)
-      | n == 0 = (batches, [el], elLen, 1, dropped)
-      | n < maxBatchElementCount && len + 1 + elLen + 2 <= maxLen = (batches, el : els, len + 1 + elLen, n + 1, dropped)
-      | otherwise = (closeBatch els : batches, [el], elLen, 1, dropped)
-      where
-        elLen = B.length el
-    closeBatch = \case
-      [el] -> el
-      els -> B.concat ["[", B.intercalate "," (reverse els), "]"]
-    finish (batches, els, _, n, dropped)
-      | n == 0 = (reverse batches, dropped)
-      | otherwise = (reverse (closeBatch els : batches), dropped)
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty

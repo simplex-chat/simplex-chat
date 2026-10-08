@@ -45,7 +45,7 @@ import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe, maybeToList)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -60,7 +60,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchElements, batchJsonElements, batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement, encodeLegacyFwdElement)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchElements, batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement, encodeLegacyFwdElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -1298,7 +1298,7 @@ serveRoster user gInfo@(GIK g _) member =
             withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
               Right owner -> do
                 let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
-                sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
+                sendFwdMemberMessage g member fwd (VMSigned MSSVerified sm chatMsg)
                 forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
                   sendInlineBlobChunks user gInfo [member] sid blob
                 -- record the blob's own stored version as served, not roster_version (the gate): a delta can
@@ -1413,12 +1413,12 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   -- signed items keep the author's original bytes/signature, unsigned are re-encoded; the welcome message
   -- (regular groups only; never channels) is an authored element -- all batch together in order.
   vr <- chatVersionRange
+  let mode = batchMode gInfo m
+      fwdEls = case mode of
+        BMBinary -> map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
+        BMJson -> map (\(fwd, verifiedMsg) -> encodeLegacyFwdElement vr fwd (verifiedChatMsg verifiedMsg)) (concat fwdMsgsByItem)
   welcomeEl <- welcomeElement
-  let fwdMsgs = concat fwdMsgsByItem
-      welcomeEls = maybe [] (: []) welcomeEl
-      (batches, dropped)
-        | m `supportsVersion` relayWebCapVersion = batchElements maxForwardBatchLength (map (uncurry encodeFwdElement) fwdMsgs <> welcomeEls)
-        | otherwise = batchJsonElements maxForwardBatchLength (map (\(fwd, verifiedMsg) -> encodeLegacyFwdElement vr fwd (verifiedChatMsg verifiedMsg)) fwdMsgs <> welcomeEls)
+  let (batches, dropped) = batchElements mode maxForwardBatchLength (fwdEls <> maybeToList welcomeEl)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
   forM_ batches $ \body ->
     void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
@@ -2843,13 +2843,13 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
       MSAForwarded -> pure ()
 
 -- Send pre-encoded forwarded message preserving original signature
-sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
-sendFwdMemberMessage member fwd verifiedMsg =
+sendFwdMemberMessage :: GroupInfo -> GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
+sendFwdMemberMessage gInfo member fwd verifiedMsg =
   forM_ (readyMemberConn member) $ \(_, conn) -> do
     vr <- chatVersionRange
-    let body
-          | member `supportsVersion` relayWebCapVersion = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-          | otherwise = encodeLegacyFwdElement vr fwd (verifiedChatMsg verifiedMsg)
+    let body = case batchMode gInfo member of
+          BMBinary -> encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
+          BMJson -> encodeLegacyFwdElement vr fwd (verifiedChatMsg verifiedMsg)
     void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages

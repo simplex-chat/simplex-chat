@@ -54,7 +54,7 @@ import Simplex.Chat.Files (getChatTempDirectory, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, legacyFwdBodies, maxBatchElementSize)
+import Simplex.Chat.Messages.Batch (BatchMode (..), batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, legacyFwdBodies, maxBatchElementSize)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
@@ -3755,7 +3755,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member =
           let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}
-           in sendFwdMemberMessage member fwd verifiedMsg
+           in sendFwdMemberMessage gInfo member fwd verifiedMsg
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
     isUserGrpFwdRelay gInfo@GroupInfo {membership}
@@ -4399,7 +4399,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
                 deliver msgBody mems = do
-                  let (mems', legacyMems) = partition (`supportsVersion` relayWebCapVersion) mems
+                  let (mems', legacyMems) = partition ((BMBinary ==) . batchMode gInfo) mems
                   unless (null mems') $ deliverBody msgBody mems'
                   unless (null legacyMems) $ do
                     let (legacyBodies, dropped) = legacyFwdBodies (vr cxt) maxForwardBatchLength msgBody
