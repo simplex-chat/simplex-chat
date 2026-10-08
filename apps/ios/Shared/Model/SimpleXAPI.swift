@@ -3095,7 +3095,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     case let .storePurchaseCredited(user, invoiceId):
-        Task { await BadgeStore.shared.storePurchaseResolved(user, invoiceId) }
+        Task { await BadgeStore.shared.storePurchaseCredited(user, invoiceId) }
     case let .storePurchaseRefused(user, invoiceId, refusal):
         Task { await BadgeStore.shared.storePurchaseRefused(user, invoiceId, refusal) }
     default:

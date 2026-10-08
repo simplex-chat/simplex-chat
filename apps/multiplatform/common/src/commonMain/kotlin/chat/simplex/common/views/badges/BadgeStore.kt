@@ -7,6 +7,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.AlertManager
+import chat.simplex.common.views.helpers.ModalManager
+import chat.simplex.common.views.helpers.ModalViewId
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 import kotlinx.coroutines.CancellationException
@@ -306,6 +308,24 @@ object BadgeStore {
     }
   }
 
+  suspend fun storePurchaseCredited(rhId: Long?, user: UserRef, invoiceId: String) {
+    withContext(Dispatchers.Main) {
+      // a profile other than the active one may be hidden, so it is never named
+      val activeOwner = chatModel.currentUser.value?.takeIf { chatModel.controller.activeUser(rhId, user) }
+      // not isLastModalOpen: the purchase screens pushed over the badges screen close once the badge appears
+      val badgesOpen = ModalManager.start.hasModalOpen(ModalViewId.BADGES) || ModalManager.end.hasModalOpen(ModalViewId.BADGES)
+      // an open badges screen is the notice only for the active profile, whose badge it shows
+      if (activeOwner == null || !badgesOpen) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.badges_link_added_title),
+          text = if (activeOwner != null) String.format(generalGetString(MR.strings.badges_link_added_profile), activeOwner.displayName)
+            else generalGetString(MR.strings.badges_added_other_profile)
+        )
+      }
+    }
+    storePurchaseResolved(rhId, user, invoiceId)
+  }
+
   suspend fun storePurchaseRefused(rhId: Long?, user: UserRef, invoiceId: String, refusal: BadgeIssueFailure) {
     withContext(Dispatchers.Main) {
       if (chatModel.controller.activeUser(rhId, user) && openStorePurchases(user.userId).any { it.invoiceId == invoiceId }) {
@@ -315,7 +335,7 @@ object BadgeStore {
     storePurchaseResolved(rhId, user, invoiceId)
   }
 
-  suspend fun storePurchaseResolved(rhId: Long?, user: UserRef, invoiceId: String) {
+  private suspend fun storePurchaseResolved(rhId: Long?, user: UserRef, invoiceId: String) {
     // the row goes before the store is read, or the screen shows it open while the store answers;
     // the purchase is finished whoever owns it, as only the app can, while the cached row is the active profile's
     withContext(Dispatchers.Main) {

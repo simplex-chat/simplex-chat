@@ -259,6 +259,23 @@ final class BadgeStore: ObservableObject {
         }
     }
 
+    func storePurchaseCredited(_ user: UserRef, _ invoiceId: String) async {
+        await MainActor.run {
+            // a profile other than the active one may be hidden, so it is never named
+            let activeOwner = active(user) ? ChatModel.shared.currentUser : nil
+            // an open badges screen is the notice only for the active profile, whose badge it shows
+            if activeOwner == nil || !badgesViewShown {
+                let message = if let activeOwner {
+                    String.localizedStringWithFormat(NSLocalizedString("The badge was added to the profile %@.", comment: "alert message"), activeOwner.displayName)
+                } else {
+                    NSLocalizedString("The badge was added to another profile.", comment: "alert message")
+                }
+                showAlert(NSLocalizedString("Badge added", comment: "alert title"), message: message)
+            }
+        }
+        await storePurchaseResolved(user, invoiceId)
+    }
+
     func storePurchaseRefused(_ user: UserRef, _ invoiceId: String, _ refusal: BadgeIssueFailure) async {
         await MainActor.run {
             if active(user) && openStorePurchases(user.userId).contains(where: { $0.invoiceId == invoiceId }) {
@@ -268,7 +285,7 @@ final class BadgeStore: ObservableObject {
         await storePurchaseResolved(user, invoiceId)
     }
 
-    func storePurchaseResolved(_ user: UserRef, _ invoiceId: String) async {
+    private func storePurchaseResolved(_ user: UserRef, _ invoiceId: String) async {
         // the row goes before the store is read, or the screen shows it open while the store answers;
         // the transaction is finished whoever owns it, as only the app can, while the cached row is the active profile's
         await MainActor.run {

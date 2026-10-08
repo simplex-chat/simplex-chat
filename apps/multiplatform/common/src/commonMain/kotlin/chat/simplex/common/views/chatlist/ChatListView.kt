@@ -1077,7 +1077,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_support_ended),
             subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
-            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } },
+            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
             onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_support_ended)) }
           )
         }
@@ -1090,7 +1090,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             title = stringResource(MR.strings.badges_renewal_failed),
             subtitle = stringResource(MR.strings.badges_tap_for_details),
             warning = true,
-            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } },
+            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
             onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_renewal_failed)) }
           )
         }
@@ -1103,7 +1103,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             showDismiss = supporterBannerTapped.value,
             onTap = {
               appPrefs.supporterBannerTapped.set(true)
-              ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) }
+              ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) }
             },
             onDismiss = ::showSupportSimpleXDismissAlert
           )
