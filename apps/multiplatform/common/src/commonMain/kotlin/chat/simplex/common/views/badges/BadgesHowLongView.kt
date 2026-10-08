@@ -22,7 +22,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 // TODO [badges]: replace with types produced by the badge purchase API when it lands.
 enum class BadgePeriod {

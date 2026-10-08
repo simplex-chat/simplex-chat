@@ -4,6 +4,7 @@ import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.dataDir
 import chat.simplex.common.platform.desktopPlatform
+import chat.simplex.res.*
 import com.sun.jna.NativeLibrary
 import java.io.IOException
 import java.nio.channels.FileChannel

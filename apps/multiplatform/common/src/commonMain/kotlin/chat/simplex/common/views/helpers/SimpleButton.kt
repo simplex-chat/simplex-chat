@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.SimpleXTheme
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun SimpleButton(text: String, icon: Painter,
