@@ -9,7 +9,7 @@ import chat.simplex.common.model.BadgeState
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.ModalView
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
