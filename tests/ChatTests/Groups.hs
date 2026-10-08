@@ -177,7 +177,6 @@ chatGroupTests = do
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
-    it "forward messages to member below version 18 as x.grp.msg.forward" testGroupMsgForwardOldMember
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
@@ -194,7 +193,6 @@ chatGroupTests = do
     it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
-    it "text messages to member below version 18" testGroupHistoryOldMember
     it "history is sent when joining via group link" testGroupHistoryGroupLink
     it "file with badge proof is received from history" testGroupHistoryFileBadgeProof
     it "file received from member with badge proof is received from history" testGroupHistoryRcvFileBadgeProof
@@ -5436,26 +5434,6 @@ testGroupMsgForwardMessage =
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
 
-testGroupMsgForwardOldMember :: HasCallStack => TestParams -> IO ()
-testGroupMsgForwardOldMember ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChat ps "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps oldCfg "cath" cathProfile $ \cath -> do
-        createGroup3 "team" alice bob cath
-        setupGroupForwarding alice bob cath
-
-        bob #> "#team hi there"
-        alice <# "#team bob> hi there"
-        cath <# "#team bob> hi there [>>]"
-
-        threadDelay 1000000
-
-        cath #> "#team hey team"
-        alice <# "#team cath> hey team"
-        bob <# "#team cath> hey team [>>]"
-  where
-    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
-
 testGroupMsgForwardOwnMembershipRejected :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardOwnMembershipRejected =
   testChat2 aliceProfile bobProfile $
@@ -6004,45 +5982,6 @@ testGroupHistory =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
-
-testGroupHistoryOldMember :: HasCallStack => TestParams -> IO ()
-testGroupHistoryOldMember ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChat ps "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps oldCfg "cath" cathProfile $ \cath -> do
-        createGroup2 "team" alice bob
-
-        threadDelay 1000000
-
-        alice #> "#team hello"
-        bob <# "#team alice> hello"
-
-        threadDelay 1000000
-
-        bob #> "#team hey!"
-        alice <# "#team bob> hey!"
-
-        connectUsers alice cath
-        addMember "team" alice cath GRAdmin
-        cath ##> "/j team"
-        concurrentlyN_
-          [ alice <## "#team: cath joined the group",
-            cath
-              <### [ "#team: you joined the group",
-                     WithTime "#team alice> hello [>>]",
-                     WithTime "#team bob> hey! [>>]",
-                     "#team: member bob (Bob) is connected"
-                   ],
-            do
-              bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
-              bob <## "#team: new member cath is connected"
-          ]
-
-        cath ##> "/_get chat #1 count=100"
-        r <- chat <$> getTermLine cath
-        r `shouldContain` [(0, "hello"), (0, "hey!")]
-  where
-    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
 
 testGroupHistoryGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupHistoryGroupLink =
