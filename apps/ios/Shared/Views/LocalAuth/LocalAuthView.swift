@@ -87,7 +87,7 @@ struct LocalAuthView: View {
                 AppChatState.shared.set(.active)
                 if m.currentUser != nil || !m.chatInitialized { return }
                 var profile: Profile? = nil
-                if let displayName = displayName.map(mkValidName), displayName != "" {
+                if let displayName = displayName, displayName != "" {
                     profile = Profile(displayName: displayName, fullName: "")
                 }
                 m.currentUser = try apiCreateActiveUser(profile, pastTimestamp: true)

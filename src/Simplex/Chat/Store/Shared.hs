@@ -74,8 +74,7 @@ data ChatLockEntity
   | CLContactRequest Int64
   | CLFile Int64
   | CLBadgeUser Int64 -- one signed badge request per profile in flight
-  | CLUserProfile Int64
-  | CLUserNames
+  | CLUserProfile
   deriving (Eq, Ord)
 
 -- These error type constructors must be added to mobile apps
@@ -601,10 +600,7 @@ getConnReqContact db connId =
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
 withLocalDisplayName :: forall a. DB.Connection -> UserId -> Text -> (Text -> IO (Either StoreError a)) -> IO (Either StoreError a)
-withLocalDisplayName db userId displayName = withLocalDisplayName_ db userId displayName Nothing
-
-withLocalDisplayName_ :: forall a. DB.Connection -> UserId -> Text -> Maybe (Text -> IO ()) -> (Text -> IO (Either StoreError a)) -> IO (Either StoreError a)
-withLocalDisplayName_ db userId displayName reserveName_ action = getLdnSuffix >>= (`tryCreateName` 20)
+withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreateName` 20)
   where
     getLdnSuffix :: IO Int
     getLdnSuffix =
@@ -624,16 +620,7 @@ withLocalDisplayName_ db userId displayName reserveName_ action = getLdnSuffix >
       currentTs <- getCurrentTime
       let ldn = displayName <> (if ldnSuffix == 0 then "" else T.pack $ '_' : show ldnSuffix)
       withSavepoint db "ldn_insert" (insertName ldn currentTs) >>= \case
-        Right () -> case reserveName_ of
-          Nothing -> action ldn
-          Just reserveName ->
-            withSavepoint db "ldn_reserve" (reserveName ldn) >>= \case
-              Right () -> action ldn
-              Left e
-                | constraintError e -> do
-                    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, ldn)
-                    tryCreateName (ldnSuffix + 1) (attempts - 1)
-                | otherwise -> E.throwIO e
+        Right () -> action ldn
         Left e
           | constraintError e -> tryCreateName (ldnSuffix + 1) (attempts - 1)
           | otherwise -> E.throwIO e

@@ -1927,12 +1927,7 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiUpdateProfile(userId, profile))
     if (r is API.Result && r.res is CR.UserProfileNoChange) return profile to emptyList()
     if (r is API.Result && r.res is CR.UserProfileUpdated) return r.res.toProfile to r.res.updateSummary.changedContacts
-    if (
-      r is API.Error && (
-        r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName ||
-        r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.UserExists
-      )
-    ) {
+    if (r is API.Error && (r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName || r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.UserExists)) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
     } else if (!(networkErrorAlert(r))) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_profile), "${r.responseType}: ${r.details}")
@@ -1991,9 +1986,7 @@ object ChatController {
   suspend fun apiSetContactPrefs(rh: Long?, contactId: Long, prefs: ChatPreferences): Contact? {
     val r = sendCmd(rh, CC.ApiSetContactPrefs(contactId, prefs))
     if (r is API.Result && r.res is CR.ContactPrefsUpdated) return r.res.toContact
-    if (!(networkErrorAlert(r))) {
-      apiErrorAlert("apiSetContactPrefs", generalGetString(MR.strings.error_saving_preferences), r)
-    }
+    Log.e(TAG, "apiSetContactPrefs bad response: ${r.responseType} ${r.details}")
     return null
   }
 

@@ -56,7 +56,6 @@ fun UserAddressView(
 
   fun setProfileAddress(on: Boolean) {
     progressIndicator.value = true
-    shareViaProfile.value = on
     withBGApi {
       try {
         val u = chatModel.controller.apiSetProfileAddress(user.value?.remoteHostId, on)
@@ -99,11 +98,13 @@ fun UserAddressView(
             confirmText = generalGetString(MR.strings.share_verb),
             onConfirm = {
               setProfileAddress(true)
+              shareViaProfile.value = true
             }
           )
           progressIndicator.value = false
         } else {
           setProfileAddress(true)
+          shareViaProfile.value = true
         }
       } else {
         progressIndicator.value = false

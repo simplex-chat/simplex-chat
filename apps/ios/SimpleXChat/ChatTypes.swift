@@ -133,7 +133,6 @@ public struct Profile: Codable, NamedChat, Hashable {
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
-        self.peerType = peerType
         self.contactDomain = contactDomain
     }
 
@@ -598,8 +597,7 @@ public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
         image: profile.image,
         contactLink: profile.contactLink,
         preferences: profile.preferences,
-        peerType: profile.peerType,
-        contactDomain: profile.contactDomain
+        peerType: profile.peerType
     )
 }
 

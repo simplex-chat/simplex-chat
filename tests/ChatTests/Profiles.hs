@@ -49,7 +49,7 @@ chatProfileTests = do
     it "profile is not saved when its address data upload fails" testUpdateProfileAddressDataError
     it "profile name used by a contact gets a local name with suffix" testUpdateProfileNameUsedByContact
     it "profile name used by another user is rejected, names with _N suffix are invalid" testUpdateProfileNameUsedByUser
-    it "profile name used by a hidden user is allowed" testUpdateProfileNameUsedByHiddenUser
+    it "profile name used by a hidden user is rejected" testUpdateProfileNameUsedByHiddenUser
     it "profile description round-trips and shows in contact info" testProfileDescriptionShown
     it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
@@ -285,9 +285,8 @@ testUpdateProfileNameUsedByContact =
 
 testUpdateProfileNameUsedByHiddenUser :: HasCallStack => TestParams -> IO ()
 testUpdateProfileNameUsedByHiddenUser =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
+  testChat aliceProfile $
+    \alice -> do
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> "/hide user my_password"
@@ -297,20 +296,7 @@ testUpdateProfileNameUsedByHiddenUser =
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       alice ##> "/p alisa"
-      alice <## "user profile is changed to alisa (your 1 contacts are notified)"
-      bob <## "contact alice changed to alisa"
-      bob <## "use @alisa <message> to send messages"
-      alice ##> "/users"
-      alice <## "alisa_1 (active)"
-      alice ##> "/create user alisa"
-      alice <## "user with the name alisa already exists"
-      alice ##> "/user alisa my_password"
-      showActiveUser alice "alisa"
-      alice ##> "/unhide user my_password"
-      alice <## "user with the name alisa already exists"
-      alice ##> "/users"
-      alice <## "alisa (active, hidden, muted)"
-      alice <## "alisa_1"
+      alice <## "invalid display name: alisa"
 
 testUpdateProfileNameUsedByUser :: HasCallStack => TestParams -> IO ()
 testUpdateProfileNameUsedByUser =
