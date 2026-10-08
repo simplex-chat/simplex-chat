@@ -17,7 +17,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: ModalManager, unwindToDepth: Int) {

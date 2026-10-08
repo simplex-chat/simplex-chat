@@ -11,7 +11,7 @@ import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.ModalView
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
