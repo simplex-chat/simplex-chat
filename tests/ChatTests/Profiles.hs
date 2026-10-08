@@ -46,11 +46,6 @@ import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 import Simplex.Messaging.Version (mkVersionRange)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..))
-#else
-import Database.SQLite.Simple (Only (..))
-#endif
 
 chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
@@ -63,7 +58,6 @@ chatProfileTests = do
     it "profile description round-trips and shows in contact info" testProfileDescriptionShown
     it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
-    it "stored image over the limit is kept, a new one is rejected" testUpdateProfileStoredLargeImage
     it "reject profile image that is too large" testSetProfileImageTooLarge
     it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
@@ -1110,21 +1104,6 @@ testUpdateProfileImage =
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
       (bob </)
-
-testUpdateProfileStoredLargeImage :: HasCallStack => TestParams -> IO ()
-testUpdateProfileStoredLargeImage =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      let image = "data:image/png;base64," <> replicate 13000 'A'
-      withCCTransaction alice $ \db ->
-        DB.execute db "UPDATE contact_profiles SET image = ? WHERE contact_profile_id = (SELECT contact_profile_id FROM contacts WHERE is_user = 1)" (Only image)
-      alice ##> "/p alisa"
-      alice <## "user profile is changed to alisa (your 1 contacts are notified)"
-      bob <## "contact alice changed to alisa"
-      bob <## "use @alisa <message> to send messages"
-      alice #> "@bob hi"
-      bob <# "alisa> hi"
 
 testSetProfileImageTooLarge :: HasCallStack => TestParams -> IO ()
 testSetProfileImageTooLarge =

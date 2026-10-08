@@ -4043,7 +4043,7 @@ processChatCommand cxt nm = \case
           p'' = (p' :: Profile) {contactDomain = if isJust contactLink then claim else Nothing}
        in updateProfile_ user' p'' True $ withFastStore $ \db -> updateUserProfile db user' p''
     updateProfile_ :: User -> Profile -> Bool -> CM User -> CM ChatResponse
-    updateProfile_ user@User {userId, profile = p@LocalProfile {displayName = n, image = img}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
+    updateProfile_ user@User {userId, profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | n /= n' = do
           checkValidName n'
@@ -4053,7 +4053,7 @@ processChatCommand cxt nm = \case
       | otherwise = update
       where
         update = do
-          when (img /= img') $ checkProfileImageSize img'
+          checkProfileImageSize img'
           checkProfileSize p'
           when shouldUpdateAddressData $ do
             ts <- liftIO getCurrentTime
@@ -4148,10 +4148,10 @@ processChatCommand cxt nm = \case
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupInfoKeys -> GroupProfile -> Bool -> CM ChatResponse
-    runUpdateGroupProfile user (GIK gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n, image = img}} gks) p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'} domainVerified = do
+    runUpdateGroupProfile user (GIK gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} gks) p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'} domainVerified = do
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
-      when (img /= img') $ checkProfileImageSize img'
+      checkProfileImageSize img'
       checkGroupProfileSize p'
       when (useRelays' gInfo && isJust (ma' >>= review)) $ throwCmdError "Admission review is not supported in channels"
       -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
