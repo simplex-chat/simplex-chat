@@ -583,7 +583,8 @@ public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias
         contactLink: profile.contactLink,
         preferences: profile.preferences,
         peerType: profile.peerType,
-        localAlias: localAlias
+        localAlias: localAlias,
+        contactDomain: profile.contactDomain
     )
 }
 
