@@ -67,6 +67,15 @@ func showCannotRedeemAlert(_ message: String) {
     showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: message)
 }
 
+// a hidden profile is named only while it is the active one, which is unlocked and on screen
+func showBadgeAddedAlert(_ user: any UserLike) {
+    guard let owner = ChatModel.shared.getUser(user.userId), active(owner) || !owner.hidden else { return }
+    showAlert(
+        NSLocalizedString("Badge added", comment: "alert title"),
+        message: String.localizedStringWithFormat(NSLocalizedString("The badge was added to the profile %@.", comment: "alert message"), owner.displayName)
+    )
+}
+
 struct BadgesRedeemCodeView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
@@ -396,12 +405,7 @@ struct BadgesRedeemLinkView: View {
             await MainActor.run {
                 switch outcome {
                 case .redeemed:
-                    if !isShowing {
-                        showAlert(
-                            NSLocalizedString("Badge added", comment: "alert title"),
-                            message: String.localizedStringWithFormat(NSLocalizedString("The badge was added to the profile %@.", comment: "alert message"), user.displayName)
-                        )
-                    }
+                    if !isShowing { showBadgeAddedAlert(user) }
                     // a covered screen is not left on the spinner; a closed one is not written to
                     if isOpen { state.step = .redeemed }
                 case let .refused(message): closeIfShowing { showCannotRedeemAlert(message) }

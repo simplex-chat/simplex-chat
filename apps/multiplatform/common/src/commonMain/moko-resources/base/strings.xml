@@ -3208,7 +3208,6 @@
   <string name="badges_link_issuing_profile">The badge will be added to this profile.</string>
   <string name="badges_link_added_title">Badge added</string>
   <string name="badges_link_added_profile">The badge was added to the profile %1$s.</string>
-  <string name="badges_added_other_profile">The badge was added to another profile.</string>
   <string name="badges_redeem_code_body">Paste the code you received.</string>
   <string name="badges_redeem_code_placeholder" translatable="false">SB-XXXXX-XXXXX-XXXXX-XXXXX</string>
   <string name="badges_redeem">Redeem</string>

@@ -310,18 +310,10 @@ object BadgeStore {
 
   suspend fun storePurchaseCredited(rhId: Long?, user: UserRef, invoiceId: String) {
     withContext(Dispatchers.Main) {
-      // a profile other than the active one may be hidden, so it is never named
-      val activeOwner = chatModel.currentUser.value?.takeIf { chatModel.controller.activeUser(rhId, user) }
       // not isLastModalOpen: the purchase screens pushed over the badges screen close once the badge appears
       val badgesOpen = ModalManager.start.hasModalOpen(ModalViewId.BADGES) || ModalManager.end.hasModalOpen(ModalViewId.BADGES)
       // an open badges screen is the notice only for the active profile, whose badge it shows
-      if (activeOwner == null || !badgesOpen) {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.badges_link_added_title),
-          text = if (activeOwner != null) String.format(generalGetString(MR.strings.badges_link_added_profile), activeOwner.displayName)
-            else generalGetString(MR.strings.badges_added_other_profile)
-        )
-      }
+      if (!chatModel.controller.activeUser(rhId, user) || !badgesOpen) showBadgeAddedAlert(rhId, user)
     }
     storePurchaseResolved(rhId, user, invoiceId)
   }

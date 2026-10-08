@@ -261,17 +261,8 @@ final class BadgeStore: ObservableObject {
 
     func storePurchaseCredited(_ user: UserRef, _ invoiceId: String) async {
         await MainActor.run {
-            // a profile other than the active one may be hidden, so it is never named
-            let activeOwner = active(user) ? ChatModel.shared.currentUser : nil
             // an open badges screen is the notice only for the active profile, whose badge it shows
-            if activeOwner == nil || !badgesViewShown {
-                let message = if let activeOwner {
-                    String.localizedStringWithFormat(NSLocalizedString("The badge was added to the profile %@.", comment: "alert message"), activeOwner.displayName)
-                } else {
-                    NSLocalizedString("The badge was added to another profile.", comment: "alert message")
-                }
-                showAlert(NSLocalizedString("Badge added", comment: "alert title"), message: message)
-            }
+            if !active(user) || !badgesViewShown { showBadgeAddedAlert(user) }
         }
         await storePurchaseResolved(user, invoiceId)
     }
