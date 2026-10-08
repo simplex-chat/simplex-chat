@@ -3613,7 +3613,7 @@ object ChatController {
           }
         }
       is CR.StorePurchaseCredited ->
-        withLongRunningApi { BadgeStore.storePurchaseResolved(rhId, r.user, r.invoiceId) }
+        withLongRunningApi { BadgeStore.storePurchaseCredited(rhId, r.user, r.invoiceId) }
       is CR.StorePurchaseRefused ->
         withLongRunningApi { BadgeStore.storePurchaseRefused(rhId, r.user, r.invoiceId, r.refusal) }
       else ->

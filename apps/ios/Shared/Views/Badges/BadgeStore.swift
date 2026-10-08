@@ -259,6 +259,14 @@ final class BadgeStore: ObservableObject {
         }
     }
 
+    func storePurchaseCredited(_ user: UserRef, _ invoiceId: String) async {
+        await MainActor.run {
+            // an open badges screen is the notice only for the active profile, whose badge it shows
+            if !active(user) || !badgesViewShown { showBadgeAddedAlert(user) }
+        }
+        await storePurchaseResolved(user, invoiceId)
+    }
+
     func storePurchaseRefused(_ user: UserRef, _ invoiceId: String, _ refusal: BadgeIssueFailure) async {
         await MainActor.run {
             if active(user) && openStorePurchases(user.userId).contains(where: { $0.invoiceId == invoiceId }) {
@@ -268,7 +276,7 @@ final class BadgeStore: ObservableObject {
         await storePurchaseResolved(user, invoiceId)
     }
 
-    func storePurchaseResolved(_ user: UserRef, _ invoiceId: String) async {
+    private func storePurchaseResolved(_ user: UserRef, _ invoiceId: String) async {
         // the row goes before the store is read, or the screen shows it open while the store answers;
         // the transaction is finished whoever owns it, as only the app can, while the cached row is the active profile's
         await MainActor.run {

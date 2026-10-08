@@ -93,6 +93,18 @@ fun showCannotRedeemAlert(message: String) {
   AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_error_title), text = message)
 }
 
+// a hidden profile is named only while it is the active one, which is unlocked and on screen
+fun showBadgeAddedAlert(rhId: Long?, user: UserLike) {
+  val owner = if (chatModel.controller.activeUser(rhId, user)) chatModel.currentUser.value
+    else chatModel.users.firstOrNull { it.user.remoteHostId == rhId && it.user.userId == user.userId }?.user?.takeIf { !it.hidden }
+  if (owner != null) {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.badges_link_added_title),
+      text = String.format(generalGetString(MR.strings.badges_link_added_profile), owner.displayName)
+    )
+  }
+}
+
 @Composable
 fun BadgesRedeemCodeView(modalManager: ModalManager, unwindToDepth: Int) {
   val rhId = remember { chatModel.remoteHostId() }
@@ -320,12 +332,7 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
       withContext(Dispatchers.Main) {
         when (outcome) {
           is BadgeRedeemOutcome.Redeemed -> {
-            if (!isShowing()) {
-              AlertManager.shared.showAlertMsg(
-                title = generalGetString(MR.strings.badges_link_added_title),
-                text = String.format(generalGetString(MR.strings.badges_link_added_profile), user.displayName)
-              )
-            }
+            if (!isShowing()) showBadgeAddedAlert(rhId, user)
             // a covered screen is not left on the spinner; a closed one is not written to
             if (isOpen()) step.value = BadgeLinkStep.Redeemed
           }

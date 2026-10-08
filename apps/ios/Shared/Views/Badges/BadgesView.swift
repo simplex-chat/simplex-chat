@@ -41,8 +41,12 @@ struct BadgesView: View {
         .animation(.default, value: shownBadge != nil)
         .animation(.default, value: store.purchaseState(chatModel.currentUser?.userId))
         .animation(.default, value: store.checkingPurchases)
+        .onAppear { badgesViewShown = true }
+        .onDisappear { badgesViewShown = false }
     }
 }
+
+private(set) var badgesViewShown = false
 
 var supportSimpleXAlertAction: UIAlertAction {
     UIAlertAction(title: NSLocalizedString("Support SimpleX", comment: "alert button"), style: .default) { _ in
