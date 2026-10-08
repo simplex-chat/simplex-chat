@@ -3568,7 +3568,7 @@ createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupI
   where
     VersionRange minV maxV = vr cxt
     newOwnerProfile currentTs = do
-      (ldn, pId, _) <- createNewMemberProfile_ db cxt user (profileFromName $ nameFromMemberId memberId) currentTs
+      (ldn, pId, _, _) <- createNewMemberProfile_ db cxt user (profileFromName $ nameFromMemberId memberId) Nothing currentTs
       pure (ldn, pId)
     contactNameAndProfile ctId = do
       Contact {localDisplayName = ldn, profile = LocalProfile {profileId = pId}} <- getContact db cxt user ctId

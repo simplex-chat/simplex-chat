@@ -20,7 +20,6 @@ import Control.Monad.Except
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.List (isSuffixOf)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
@@ -47,6 +46,11 @@ import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 import Simplex.Messaging.Version (mkVersionRange)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+#endif
 
 chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
@@ -59,6 +63,7 @@ chatProfileTests = do
     it "profile description round-trips and shows in contact info" testProfileDescriptionShown
     it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
+    it "stored image over the limit is kept, a new one is rejected" testUpdateProfileStoredLargeImage
     it "reject profile image that is too large" testSetProfileImageTooLarge
     it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
@@ -265,8 +270,8 @@ testUpdateProfileAddressDataError ps = do
       bob <## "disconnected 1 connections on server localhost"
   where
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg (tmpPath ps)
         }
     opts' =
@@ -806,8 +811,8 @@ testUserBadgeAddressConnectRetry ps = do
       bob <## "disconnected 1 connections on server localhost"
   where
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg (tmpPath ps)
         }
     opts' =
@@ -849,8 +854,8 @@ testUserBadgeInvitationConnectRetry ps = do
       bob <## "disconnected 1 connections on server localhost"
   where
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg (tmpPath ps)
         }
     opts' =
@@ -1105,6 +1110,21 @@ testUpdateProfileImage =
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
       (bob </)
+
+testUpdateProfileStoredLargeImage :: HasCallStack => TestParams -> IO ()
+testUpdateProfileStoredLargeImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      let image = "data:image/png;base64," <> replicate 13000 'A'
+      withCCTransaction alice $ \db ->
+        DB.execute db "UPDATE contact_profiles SET image = ? WHERE contact_profile_id = (SELECT contact_profile_id FROM contacts WHERE is_user = 1)" (Only image)
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 1 contacts are notified)"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+      alice #> "@bob hi"
+      bob <# "alisa> hi"
 
 testSetProfileImageTooLarge :: HasCallStack => TestParams -> IO ()
 testSetProfileImageTooLarge =
@@ -4101,7 +4121,6 @@ testShortLinkInvitationConnectRetry ps = testChatCfgOpts2 cfg' opts' aliceProfil
         { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
-    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
     opts' =
       testOpts
         { coreOptions =

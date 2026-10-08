@@ -51,6 +51,7 @@ badgeTests = do
   it "should accept unknown badge types" testUnknownBadgeType
   it "credential serializes to a paste-able token and back" testCredentialSerialization
   it "presentation headers encode and decode" testPresHeaderEncoding
+  it "presentation headers with binary bytes round-trip through JSON" testPresHeaderJSON
   it "should reject a proof presented under another chat binding" testOtherChatBinding
   it "should accept a profile proof only with the header of its chat" testProfileProofHeader
   describe "redemption codes" $ do
@@ -211,6 +212,23 @@ testPresHeaderEncoding =
       PHLink "link-key",
       PHUnknown 'Z' "payload"
     ]
+
+testPresHeaderJSON :: IO ()
+testPresHeaderJSON =
+  mapM_
+    ( \ph -> do
+        J.eitherDecode (J.encode ph) `shouldBe` Right ph
+        J.toJSON ph `shouldBe` J.toJSON (BBSPresHeader $ strEncode ph)
+    )
+    [ PHChat binaryBytes,
+      PHFileInv {chatBinding = binaryBytes, fileSize = 139737},
+      PHFileDescr {chatBinding = binaryBytes, fileSize = 139737, descrHash = binaryBytes, fileExpires = Just futureTime},
+      PHRequest binaryBytes,
+      PHLink binaryBytes,
+      PHUnknown 'Z' binaryBytes
+    ]
+  where
+    binaryBytes = "\0\1\31\34\92\127\128\195\255"
 
 testOtherChatBinding :: IO ()
 testOtherChatBinding = do

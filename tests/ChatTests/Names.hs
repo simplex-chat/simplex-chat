@@ -66,7 +66,7 @@ testConnectByName ps = withSmpServerAndNames ps $ \reg ->
       pure ()
 
 testUpdateProfileKeepsName :: HasCallStack => TestParams -> IO ()
-testUpdateProfileKeepsName ps = withSmpServerAndNames $ \reg ->
+testUpdateProfileKeepsName ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
@@ -103,7 +103,7 @@ testUpdateProfileKeepsName ps = withSmpServerAndNames $ \reg ->
       pure ()
 
 testAddressSharingOffRemovesName :: HasCallStack => TestParams -> IO ()
-testAddressSharingOffRemovesName ps = withSmpServerAndNames $ \reg ->
+testAddressSharingOffRemovesName ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
@@ -143,7 +143,7 @@ testAddressSharingOffRemovesName ps = withSmpServerAndNames $ \reg ->
       pure ()
 
 testAddressDeleteRemovesName :: HasCallStack => TestParams -> IO ()
-testAddressDeleteRemovesName ps = withSmpServerAndNames $ \reg ->
+testAddressDeleteRemovesName ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
