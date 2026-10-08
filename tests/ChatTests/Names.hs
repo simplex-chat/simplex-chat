@@ -178,9 +178,9 @@ testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames ps $ \reg ->
         bob <## "group link: known group #team"
         bob <## "use #team <message> to send messages" -- no "SimpleX name" line: status stays unknown
         bob ##> "/_connect plan 1 #team.simplex"
-        knownGroupPlan "team" bob
+        knownGroupPlan "team" "team" bob
         bob ##> "/_connect plan 1 #team.simplex resolve=never"
-        knownGroupPlan "team" bob
+        knownGroupPlan "team" "team" bob
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -289,13 +289,13 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames ps $ \reg ->
         bob <## "use #team <message> to send messages"
         bob <## "You can also connect to @team.simplex in direct chat"
         bob ##> "/_connect plan 1 #team.simplex"
-        knownGroupPlan "team" bob
+        knownGroupPlan "team" "team" bob
         registerName reg teamName (contactNameRecord "team.simplex" (T.pack contactLink))
         bob ##> "/_connect plan 1 team.simplex"
         bob <## "contact address: ok to connect"
         _ <- getTermLine bob
         bob ##> "/_connect plan 1 #team.simplex resolve=never"
-        knownGroupPlan "team" bob
+        knownGroupPlan "team" "team" bob
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -694,14 +694,9 @@ testPlanKnownNameLinkFailed = withKnownAliceName $ \reg alice bob cath -> do
 
 testPlanChannelNameMoved :: HasCallStack => TestParams -> IO ()
 testPlanChannelNameMoved = withChannelChats $ \reg alice cath bob -> do
-  (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
-  registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
-  setChannelDomain alice cath "alice" "team" "team.simplex"
-  memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
-  bob ##> "/_verify domain #1"
-  bob <## "SimpleX name #team verified"
+  shortLink <- joinVerifiedTeam reg alice cath bob
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   registerExpiredName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
   alice ##> "/_connect plan 1 #team.simplex"
   alice <## "group link: own link for group #team"
@@ -717,20 +712,13 @@ testPlanChannelNameMoved = withChannelChats $ \reg alice cath bob -> do
   bob ##> "/_verify domain #2"
   bob <## "SimpleX name #team verified"
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
-  bob <## "group link: known group #teamv2"
-  bob <## "SimpleX name: #team (verified)"
-  bob <## "use #teamv2 <message> to send messages"
+  knownGroupPlan "teamv2" "team" bob
   alice ##> "/_connect plan 1 #team.simplex resolve=never"
   alice <## "group link: own link for group #teamv2"
 
 testPlanChannelNameMovedNoRelays :: HasCallStack => TestParams -> IO ()
 testPlanChannelNameMovedNoRelays = withChannelChats $ \reg alice cath bob -> do
-  (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
-  registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
-  setChannelDomain alice cath "alice" "team" "team.simplex"
-  memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
-  bob ##> "/_verify domain #1"
-  bob <## "SimpleX name #team verified"
+  _ <- joinVerifiedTeam reg alice cath bob
   (shortLink2, _) <- prepareChannel' 2 "team2" alice cath
   registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink2))
   setChannelDomain alice cath "alice_1" "team2" "team.simplex"
@@ -782,10 +770,10 @@ testPlanNameLinkKeyHash :: HasCallStack => TestParams -> IO ()
 testPlanNameLinkKeyHash = withTeamChats $ \reg contactLink channelLink _alice bob -> do
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink <> "?c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI") (T.pack channelLink))
   bob ##> "/_connect plan 1 team.simplex"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   bob ##> "/_connect plan 1 @team.simplex"
   knownContactPlan "alice" "team.simplex" bob
   (bob </)
@@ -798,28 +786,28 @@ testPlanNameLinkServer ps = flip withTeamChats ps $ \reg contactLink channelLink
   knownContactPlan "alice" "team.simplex" bob
   (bob </)
   bob ##> "/_connect plan 1 #team.simplex"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   (bob </)
 
 testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
   bob ##> "/_connect plan 1 team.simplex resolve=never"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   bob ##> "/_connect plan 1 @team.simplex resolve=never"
   knownContactPlan "alice" "team.simplex" bob
   bob ##> "/_connect plan 1 team.simplex"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 @team.simplex"
   knownContactPlan "alice" "team.simplex" bob
   registerExpiredName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
   bob ##> "/_connect plan 1 team.simplex"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   bob <##. "SimpleX name team.simplex expired on "
   bob ##> "/_connect plan 1 team.simplex resolve=never"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   alice ##> "/_connect plan 1 team.simplex resolve=never"
   alice <## "group link: own link for group #team"
   alice ##> "/_connect plan 1 @team.simplex resolve=never"
@@ -840,10 +828,20 @@ setChannelDomain owner relay ownerName g domain = do
   relay <## (ownerName <> " updated group #" <> g <> ": (signed)")
   relay <## ("updated public group access: domain=" <> domain)
 
-knownGroupPlan :: HasCallStack => String -> TestCC -> IO ()
-knownGroupPlan g cc = do
+joinVerifiedTeam :: HasCallStack => NameRegistry -> TestCC -> TestCC -> TestCC -> IO String
+joinVerifiedTeam reg alice cath bob = do
+  (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
+  registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
+  setChannelDomain alice cath "alice" "team" "team.simplex"
+  memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+  bob ##> "/_verify domain #1"
+  bob <## "SimpleX name #team verified"
+  pure shortLink
+
+knownGroupPlan :: HasCallStack => String -> String -> TestCC -> IO ()
+knownGroupPlan g name cc = do
   cc <## ("group link: known group #" <> g)
-  cc <## ("SimpleX name: #" <> g <> " (verified)")
+  cc <## ("SimpleX name: #" <> name <> " (verified)")
   cc <## ("use #" <> g <> " <message> to send messages")
 
 testPlanNameOtherKindMoved :: HasCallStack => TestParams -> IO ()
@@ -858,7 +856,7 @@ testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice
   (contactLink2, _) <- getContactLinks alice True
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink2) (T.pack channelLink))
   bob ##> "/_connect plan 1 team.simplex"
-  knownGroupPlan "team" bob
+  knownGroupPlan "team" "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
   bob ##> "/_connect plan 1 @team.simplex"
   bob <## "contact address: ok to connect"
@@ -889,9 +887,9 @@ testPlanNameOtherKindBusiness = withChannelChats $ \reg alice cath bob -> do
   bob <## "#alice: you joined the group"
   joinChannelByName "biz" alice cath bob
   bob ##> "/_connect plan 1 biz.simplex resolve=never"
-  knownGroupPlan "biz" bob
+  knownGroupPlan "biz" "biz" bob
   bob ##> "/_connect plan 1 biz.simplex"
-  knownGroupPlan "biz" bob
+  knownGroupPlan "biz" "biz" bob
   bob <## "You can also connect to @biz.simplex in direct chat"
   where
     bizName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "biz" [])
