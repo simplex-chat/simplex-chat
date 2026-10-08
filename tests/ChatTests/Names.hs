@@ -16,6 +16,9 @@ import Test.Hspec hiding (it)
 chatNamesTests :: SpecWith TestParams
 chatNamesTests = do
   it "connect by resolved name" testConnectByName
+  it "profile update without the name keeps the name" testUpdateProfileKeepsName
+  it "stopping address sharing removes the name" testAddressSharingOffRemovesName
+  it "deleting the address removes the name" testAddressDeleteRemovesName
   it "connect by name not claimed in link profile is rejected" testConnectByNameNotClaimed
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name fails to resolve" testConnectByNameNotFound
@@ -61,6 +64,123 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
       bob <## "quantum resistant end-to-end encryption"
       _ <- getTermLine bob
       pure ()
+
+testUpdateProfileKeepsName :: HasCallStack => TestParams -> IO ()
+testUpdateProfileKeepsName ps = withSmpServerAndNames $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      alice ##> "/ad"
+      (shortLink, _) <- getContactLinks alice True
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
+      alice ##> "/_set domain 1 alice.simplex"
+      alice <## "new contact address set"
+      bob ##> "/c @alice.simplex"
+      bob <## "alice: connection started"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice ##> ("/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"shortDescr\": \"new bio\", \"contactLink\": \"" <> shortLink <> "\"}")
+      alice <## "user bio changed to new bio (your 1 contacts are notified)"
+      bob <## "contact alice updated bio: new bio"
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      _ <- getTermLine bob
+      bob <## "SimpleX name: @alice.simplex (verified)"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      _ <- getTermLine bob
+      pure ()
+
+testAddressSharingOffRemovesName :: HasCallStack => TestParams -> IO ()
+testAddressSharingOffRemovesName ps = withSmpServerAndNames $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      alice ##> "/ad"
+      (shortLink, _) <- getContactLinks alice True
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
+      alice ##> "/_set domain 1 alice.simplex"
+      alice <## "new contact address set"
+      bob ##> "/c @alice.simplex"
+      bob <## "alice: connection started"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice ##> "/pa off"
+      alice <## "contact address removed"
+      bob <## "alice removed contact address"
+      checkNoName bob
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+      bob <## "alice set new contact address, use /info alice to view"
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      _ <- getTermLine bob
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      _ <- getTermLine bob
+      pure ()
+
+testAddressDeleteRemovesName :: HasCallStack => TestParams -> IO ()
+testAddressDeleteRemovesName ps = withSmpServerAndNames $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      alice ##> "/ad"
+      (shortLink, _) <- getContactLinks alice True
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
+      alice ##> "/_set domain 1 alice.simplex"
+      alice <## "new contact address set"
+      bob ##> "/c @alice.simplex"
+      bob <## "alice: connection started"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice ##> "/da"
+      alice <## "Your chat address is deleted - accepted contacts will remain connected."
+      alice <## "To create a new chat address use /ad"
+      bob <## "alice removed contact address"
+      checkNoName bob
+
+checkNoName :: HasCallStack => TestCC -> IO ()
+checkNoName bob = do
+  bob ##> "/i alice"
+  bob <## "contact ID: 2"
+  bob <## "receiving messages via: localhost"
+  bob <## "sending messages via: localhost"
+  bob <## "you've shared main profile with this contact"
+  bob <## "connection not verified, use /code command to see security code"
+  bob <## "quantum resistant end-to-end encryption"
+  _ <- getTermLine bob
+  pure ()
 
 testConnectByNameNotClaimed :: HasCallStack => TestParams -> IO ()
 testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->

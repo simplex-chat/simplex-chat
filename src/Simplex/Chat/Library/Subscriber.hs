@@ -29,7 +29,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl')
+import Data.List (find, foldl', partition)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import qualified Data.IntSet as IS
@@ -54,7 +54,7 @@ import Simplex.Chat.Files (getChatTempDirectory, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
+import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, legacyFwdBodies, maxBatchElementSize)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
@@ -788,7 +788,7 @@ processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentCon
                     m' <- case mKey of
                       Just (MemberKey k) -> m {memberPubKey = Just k} <$ withStore' (\db -> setMemberPubKey db (groupMemberId' m) k)
                       Nothing -> pure m
-                    membershipProfile <- membershipHandshakeProfile gInfo $ maxVersion (peerChatVRange conn')
+                    membershipProfile <- membershipHandshakeProfile gInfo
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId (Just g) $ XGrpMemInfo (memberId' membership) membershipProfile
                     forM_ memProfile_ $ \memProfile -> processMemberProfileUpdate gInfo m' signedMsg_ memProfile Nothing
@@ -840,7 +840,7 @@ processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentCon
               XGrpMemInfo memId memProfile
                 | sameMemberId memId m -> do
                     let GroupMember {memberId = membershipMemId} = membership
-                    membershipProfile <- membershipHandshakeProfile gInfo $ maxVersion (peerChatVRange conn')
+                    membershipProfile <- membershipHandshakeProfile gInfo
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId (Just g) $ XGrpMemInfo membershipMemId membershipProfile
                     void $ processMemberProfileUpdate gInfo m signedMsg_ memProfile Nothing
@@ -1674,27 +1674,26 @@ processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentCon
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               g@(GIK gInfo _) <- withStore $ \db -> getGroupInfoKeys db cxt user groupId
               existing_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberByMemberId db cxt user gInfo joiningMemberId)
+              let signed = memberSigned gInfo joiningMemberId joiningKey signedMsg_
               case existing_ of
                 Just rosterMem
                   -- a privileged memberId's key is owner-authoritative (the roster); the joiner must prove
                   -- possession of that exact key, otherwise this is an attempt to impersonate it
                   | isRosterRole (memberRole' rosterMem) ->
-                      if verifyKey gInfo rosterMem
-                        then acceptJoin g (Just rosterMem) (memberRole' rosterMem)
+                      if verifyKey gInfo rosterMem signed
+                        then acceptJoin g signed (Just rosterMem) (memberRole' rosterMem)
                         else messageError "memberJoinRequestViaRelay: rejected join claiming privileged memberId (key mismatch or invalid signature)"
-                _ -> acceptJoin g Nothing gLinkMemRole
+                _ -> acceptJoin g signed Nothing gLinkMemRole
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
           where
             -- replay defense: the viaRelay == own memberId check (viaRelay is in the signed body); without it a sibling relay could replay a privileged member's signed join
-            verifyKey gInfo rosterMem = case signedMsg_ of
-              Just SignedMsg {chatBinding = CBGroup, signatures, signedBody} ->
-                memberPubKey rosterMem == Just joiningKey
-                  && verifyGroupSig joiningKey gInfo joiningMemberId signatures signedBody
-                  && viaRelay == Just (memberId' (membership gInfo))
-              _ -> False
-            acceptJoin g@(GIK gInfo _) existingMem_ acceptRole = do
-              let presHeader_ = memberPresHeader gInfo joiningMemberId $ mfilter (\k -> memberSigned gInfo joiningMemberId k signedMsg_) (Just joiningKey)
+            verifyKey gInfo rosterMem signed =
+              memberPubKey rosterMem == Just joiningKey
+                && signed
+                && viaRelay == Just (memberId' (membership gInfo))
+            acceptJoin g@(GIK gInfo _) signed existingMem_ acceptRole = do
+              let presHeader_ = memberPresHeader gInfo joiningMemberId $ if signed then Just joiningKey else Nothing
               mem <- acceptGroupJoinRequestAsync user uclId g invId chatVRange p presHeader_ Nothing (Just joiningMemberId) Nothing GAAccepted acceptRole Nothing (Just joiningMemberKey) existingMem_
               (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
               createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
@@ -3368,9 +3367,10 @@ processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentCon
       let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr cxt `peerConnChatVersion` mcvr
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      membershipProfile <- membershipHandshakeProfile gInfo chatV
+      membershipProfile <- membershipHandshakeProfile gInfo
       let msg = XGrpMemInfo membershipMemId membershipProfile
-      dm <- encodeConnInfoSigning PQSupportOff (groupMsgSigning False g msg) msg
+          signing_ = if chatV >= relayWebCapVersion then groupMsgSigning False g msg else Nothing
+      dm <- encodeConnInfoSigning PQSupportOff signing_ msg
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       let enableNtfsGrp = chatHasNtfs chatSettings
       (groupConnIds@(gCmdId, gAcId), _) <- prepareAgentJoin user enableNtfsGrp groupConnReq
@@ -3381,12 +3381,9 @@ processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentCon
       forM_ ((,) <$> directConnIds <*> directConnReq) $ \((dCmdId, dAcId), dcr) ->
         joinAgentConnectionAsync dCmdId False dAcId True dcr dm subMode
 
-    membershipHandshakeProfile :: GroupInfo -> VersionChat -> CM Profile
-    membershipHandshakeProfile gInfo@GroupInfo {membership} v
-      | v >= relayWebCapVersion = presentUserBadge user (incognitoMembershipProfile gInfo) (groupPresHeader gInfo) p
-      | otherwise = pure p
-      where
-        p = redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
+    membershipHandshakeProfile :: GroupInfo -> CM Profile
+    membershipHandshakeProfile gInfo@GroupInfo {membership} =
+      presentUserBadge user (incognitoMembershipProfile gInfo) (groupPresHeader gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
 
     -- rollback defense (channels): apply an owner-signed role/removal only at a version >= the persisted
     -- roster_version (not the batch-constant gInfo, which a relay can stale by reordering events in one
@@ -3969,7 +3966,7 @@ processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentCon
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfoKeys -> Maybe GroupChatScopeInfo -> GroupMember -> GrpMsgForward -> ParsedMsg 'Json -> UTCTime -> CM ()
-    xGrpMsgForward g@(GIK gInfo _) scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs = do
+    xGrpMsgForward g@(GIK gInfo@GroupInfo {membership} _) scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs = do
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
       case fwdSender of
         FwdMember memberId memberName -> do
@@ -3977,6 +3974,8 @@ processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentCon
           let allowCreate = toCMEventTag chatMsgEvent /= XGrpLeave_
           withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownRole allowCreate) >>= \case
             Just (author, unknown)
+              | groupMemberId' author == groupMemberId' membership ->
+                  messageError $ "x.grp.msg.forward: content attributed to own membership, forwarder " <> tshow (groupMemberId' m) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | memberRemoved author ->
                   logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | not (useRelays' gInfo) && not (expectedForwarder author) ->
@@ -4192,7 +4191,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
               | otherwise ->
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
-                    let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxEncodedMsgLength nextTasks
+                    let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxForwardBatchLength nextTasks
                         senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
                     withStore' $ \db -> do
                       forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds body
@@ -4322,8 +4321,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         else do
                           -- all members' profiles disseminate; privileged key/role come from the roster, not here
                           let (encoderErrs, validLabeled) = partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew (vr cxt) gInfo s | (s, _) <- senders]
-                              (extBody', inBody, overflowLabeled, large1) = batchProfilesWithBody maxEncodedMsgLength body validLabeled
-                              (overflowBatches', large2) = batchProfiles maxEncodedMsgLength overflowLabeled
+                              (extBody', inBody, overflowLabeled, large1) = batchProfilesWithBody maxForwardBatchLength body validLabeled
+                              (overflowBatches', large2) = batchProfiles maxForwardBatchLength overflowLabeled
                               packerErrs = [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | s <- large1 <> large2]
                               allErrs = encoderErrs <> packerErrs
                           unless (null allErrs) $ do
@@ -4428,7 +4427,15 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                   && maxVersion (memberChatVRange m) >= groupKnockingVersion
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
-                deliver msgBody mems =
+                deliver msgBody mems = do
+                  let (mems', legacyMems) = partition (`supportsVersion` relayWebCapVersion) mems
+                  unless (null mems') $ deliverBody msgBody mems'
+                  unless (null legacyMems) $ do
+                    let (legacyBodies, dropped) = legacyFwdBodies (vr cxt) maxForwardBatchLength msgBody
+                    when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("delivery job: dropped " <> show dropped <> " oversized forwarded messages")]
+                    forM_ legacyBodies (`deliverBody` legacyMems)
+                deliverBody :: ByteString -> [GroupMember] -> CM ()
+                deliverBody msgBody mems =
                   let mConns = mapMaybe (fmap snd . readyMemberConn) mems
                       msgReqs = foldMemConns mConns
                    in void $ withAgent (`sendMessages` msgReqs)

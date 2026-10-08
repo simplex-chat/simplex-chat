@@ -102,7 +102,7 @@ File: `src/Simplex/Chat/Library/Internal.hs`, `presentUserBadge` (`:2238`).
 
 The proof for an outgoing profile is generated with `sndBadgeProof`, as file proofs are. The header, `Maybe ProofPresHeader`, is a parameter; with `Nothing`, no badge is presented. For a send into a group the header is `groupPresHeader`, `memberPresHeader` of the user's own member id and key in that group. The membership key is generated and stored by `mkGroupInfoKeys` when the group is read with its keys, and it is set on the membership of the returned group; for a membership without a public key, no badge is presented. The header of every call site is listed in section 14.3.
 
-In the two handshake sends (section 4), the badge is presented only when the peer version is at least `relayWebCapVersion`.
+In the handshake sends (section 4) and in `XGrpAcpt` (section 14.3, item 9), the badge is presented at every peer version; the message is signed only when the peer version is at least `relayWebCapVersion`.
 
 ## 3. Accepting the profile badge
 
@@ -127,10 +127,10 @@ In a channel a badge is accepted from `XMember` and `XInfo` whose signature was 
 
 When two p2p members connect, each sends `XGrpMemInfo` with its group profile. It is sent from two places: the reply on the member connection (`Subscriber.hs:843`) and the join of the member connection and of the direct connection to the same member (`:3336`, both joined with the same message at `:3345-3347`). The four receiving sites — `:615, 647` on the direct connection, `:837, 850` on the member connection — each have a "TODO update member profile" comment.
 
-`XGrpMemInfo` is signed by `groupMsgSigning` when its profile includes a badge; the badge is presented only when the peer version is at least `relayWebCapVersion`. A `PHChat` proof is kept only from a verified signature.
+The badge is presented in `XGrpMemInfo` at every peer version, by `membershipHandshakeProfile`. `XGrpMemInfo` is signed by `groupMsgSigning` when its profile includes a badge and the peer version is at least `relayWebCapVersion`. A `PHChat` proof is kept only from a verified signature.
 
-- **Sign the join side.** In `xGrpMemFwd` (`:3336`), `XGrpMemInfo` is encoded with `encodeSignedConnInfo` when a signing is returned by `groupMsgSigning`; `GroupInfoKeys` is passed from the dispatch. The agreed version, `chatV`, is computed before the send, and the badge is presented when `chatV` is at least `relayWebCapVersion`.
-- **The reply side** (`:843`): the badge is presented when the maximum of the connection's `peerChatVRange` is at least `relayWebCapVersion`, and the message is signed by `allowAgentConnectionAsync` by the same rule.
+- **Sign the join side.** In `xGrpMemFwd` (`:3336`), `XGrpMemInfo` is encoded with `encodeSignedConnInfo` when a signing is returned by `groupMsgSigning` and the agreed version, `chatV`, is at least `relayWebCapVersion`; `GroupInfoKeys` is passed from the dispatch.
+- **The reply side** (`:843`): the message is signed by `allowAgentConnectionAsync` when the maximum of the connection's `peerChatVRange` is at least `relayWebCapVersion`.
 - **Parse the signature on CONF.** The member CONF site (`:781`) is parsed with `parseChatMessage'`, as INFO is (`:847`).
 - **Verify and store.** At `:837` and `:850` the signed message is passed to `processMemberProfileUpdate`, and the signature is verified by `signedMemberPresHeader` with the stored member key: the key from the introduction, or, at `:850` for the inviting host, the key from `XGrpInv`. The profile is stored with the binding of the verified key, or with no binding.
 - `:615` and `:647` are unchanged: the profile there is the same group profile, received over the direct connection to the member, and the member's profile row is used by the contact for the member (`createIntroToMemberContact`).
@@ -331,7 +331,7 @@ data ContactRequestBinding = CRBRatchet ConnVerifyCodes | CRBRequest ByteString
 - `CRContactUri` with ratchet keys: the same, from the address keys.
 - `CRContactUri` without keys: the x3dh keys are generated and stored (`generateRcvE2EParams`, `createRatchetX3dhKeys`); the binding is `CRBRequest (sha256 (smpEncode (k1, k2, kem, senderId)))` — the request's public keys and the queue id from the link's `SMPQueueUri`.
 
-The same pair is returned by `prepareConnectionToAccept`: for `CRInvitation` the ratchet is created from the invitation's keys, for `CRInvitationDR` the ratchet in the invitation is stored with the connection by `newConnToAcceptDR`. In `startJoinInvitation` and `startJoinInvitationDR` the stored ratchet is used, and a ratchet is created only for a connection without one, as in the contact path and its retry branch; in `createConnReq` the x3dh keys are read before they are generated, as in `mkJoinInvitation`. The stored ratchet is used by async joins and accepts. The prepare step is local.
+The same pair is returned by `prepareConnectionToAccept`: for `CRInvitation` the ratchet is created from the invitation's keys, for `CRInvitationDR` the ratchet in the invitation is stored with the connection by `newConnToAcceptDR`. In `startJoinInvitation` the stored ratchet is used, and a ratchet is created only for a connection without one, as in the contact path and its retry branch. In `startJoinInvitationDR` the ratchet in the invitation is written by `createRatchet` after `updateNewConnSnd`, in one transaction: it is written only while the connection has no send queue, and a ratchet used in a send is never replaced. In `createConnReq` the x3dh keys are read before they are generated, as in `mkJoinInvitation`. The stored ratchet is used by async joins and accepts. The prepare step is local.
 
 **Events.** A `ContactRequestBinding` field in `REQ`: `CRBRequest` in `smpInvitation`, computed from the received `CRInvitationUri` and the queue of the request; `CRBRatchet` in `smpContactRequest`, from the ratchet initialised there. `CONF` and `INFO` are unchanged: the receiver's ratchet is stored before the notification, so its codes are available to `getConnectionVerifyCodes`.
 
@@ -362,6 +362,7 @@ createConnectionForLink :: AgentClient -> NetworkRequestMode -> UserId -> Bool -
     PRKContact :: Maybe (RatchetKeyId, RcvE2EPrivRatchetParams 'C.X448) -> PreparedRatchetKeys 'CMContact
   ```
 
+- Client notices are checked for contact mode only.
 - Contact mode: the link given to `createConnectionForLink` is returned.
 - Invitation mode, prepare:
   - x3dh keys from `CR.generateRcvE2EParams`, PQ support from `CR.initialPQEncryption True pqInitKeys`
@@ -370,12 +371,17 @@ createConnectionForLink :: AgentClient -> NetworkRequestMode -> UserId -> Bool -
   - `useDR` is ignored
 - Invitation mode, create:
   - link data: `SL.encodeSignUserData SCMInvitation`, encrypted by `encryptInvLinkData` with `SL.invShortLinkKdf plpLinkKey`; `newRcvConnSrv` uses the same function
-  - then the connection is created and the `PRKInvitation` keys are stored with `createRatchetX3dhKeys`; the connection is deleted when storing fails
   - queue request: `CQRMessaging (Just CQRData {linkKey, privSigKey, srvReq = (sndId, srvData)})`
-- In both modes the queue is created by the local `createLinkQueue`:
+- In both modes the link data is encrypted before the connection is created, and the queue is created by the local `createLinkQueue`:
+  - the ratchet keys are stored: `PRKContact` keys by `storeAddressRatchetKeys`, `PRKInvitation` keys by `createRatchetX3dhKeys`
   - `createRcvQueue`
+  - the connection is deleted when either step fails
   - the returned link from `connReqWithShortLink`, moved from `newRcvConnSrv` to top level, with the created `RcvQueue` as a parameter — `CSLInvitation` with the link id from the server, PQ keys removed from the full link for `IKPQOn`
-- Tests: a connection via an invitation made by prepare and create; its link data is read by the joining party; `plpLinkKey` equals the key in the returned `CSLInvitation`; for link data above the size limit, `CMD LARGE` is returned before the connection is created. The six existing test calls are updated for the mode and the pair.
+- Tests:
+  - a connection via an invitation made by prepare and create; its link data is read by the joining party; `plpLinkKey` equals the key in the returned `CSLInvitation`
+  - a contact link returned by `createConnectionForLink` equals the prepared link
+  - for link data above the size limit, `CMD LARGE` is returned in both modes and no connection is stored
+  - the six existing test calls are updated for the mode and the pair
 
 **Existing connections.** The link of a connection is returned without a network call:
 
@@ -384,8 +390,8 @@ prepareConnShortLink :: AgentClient -> ConnId -> Maybe CRClientData -> AE (ConnS
 ```
 
 - A stored link is returned as is.
-- Otherwise the credentials are created and stored by `newContactLinkCreds :: AgentClient -> RcvQueue -> Maybe CRClientData -> AM ShortLinkCreds`: the signing key pair is generated, the fixed data is built from the connection request without ratchet keys, signed and encrypted (`SL.encryptFixedData`), and `ShortLinkCreds` are stored.
-- In `setConnShortLink`, `newContactLinkCreds` is used for a connection without stored credentials, and the user data is then encrypted and uploaded with one `LSET`.
+- Otherwise the credentials are created and stored by `newContactLinkCreds :: AgentClient -> RcvQueue -> Maybe CRClientData -> AM (ShortLinkCreds, C.SbKey)`: the signing key pair is generated, the fixed data is built from the connection request without ratchet keys, signed and encrypted (`SL.encryptFixedData`), and `ShortLinkCreds` are stored; the link data key is returned with them.
+- In `setConnShortLink`, `newContactLinkCreds` is used for a connection without stored credentials, and the user data is then encrypted with the returned key and uploaded with one `LSET`. For stored credentials, the key is derived once, by the link id check.
 - Tests: for an address without a short link, the link is the same from two `prepareConnShortLink` calls and from `setConnShortLink`; a requester connects via it.
 
 **SMP versions below 15.** The minimum SMP version of clients and servers is 15, and the code for older versions is removed:
@@ -497,7 +503,7 @@ ALTER TABLE connections ADD COLUMN pres_header BLOB;
 **9. Groups**
 
 - `groupPresHeader` at every send into a group: `Commands.hs:4002` (`joinContact`, relay group), `:4331`; `Subscriber.hs:505` group case, `:636`, `:829`, `:971`, `:1253`, and `membershipHandshakeProfile` (`:3384-3389`) for `:791`, `:843` and `:3371`; `Internal.hs:2546` (`encodeXGrpAcpt`) and `:2730`.
-- `acceptGroupJoinRequestAsync` (`Internal.hs:1037`): the expected header is a new parameter, passed to `createJoiningMember` and `updateMemberProfile` — in `memberJoinRequestViaRelay`, `memberPresHeader` of the joining member's id and the key in `XMember` when the message signature is verified with it. `Nothing` is passed to `createJoiningMember` in `acceptGroupJoinSendRejectAsync`.
+- `acceptGroupJoinRequestAsync` (`Internal.hs:1037`): the expected header is a new parameter, passed to `createJoiningMember` and `updateMemberProfile` — in `memberJoinRequestViaRelay`, `memberPresHeader` of the joining member's id and the key in `XMember` when the message signature is verified with it. The signature is verified once, for the roster key check and for the header. `Nothing` is passed to `createJoiningMember` in `acceptGroupJoinSendRejectAsync`.
 - Host `INFO` with `XInfo` (`Subscriber.hs:858-865`): after `storeMemberKey`, the profile is stored by `processMemberProfileUpdate` with `signedMemberPresHeader`, under the member's key.
 - The profile is also stored by `processMemberProfileUpdate` when the received proof is accepted and differs from the stored member proof in its header or its disclosed information, and when a profile without a proof is received for a member with a stored proof.
 - Introductions:
@@ -509,11 +515,11 @@ ALTER TABLE connections ADD COLUMN pres_header BLOB;
   - In a p2p group only `PHTest` is accepted.
 - Invitation via contact:
   - `profile :: Maybe Profile` in `XGrpAcpt`, the optional JSON field `profile`.
-  - The invitee (`Commands.hs:2851`, `Subscriber.hs:2700`, both by `encodeXGrpAcpt`, `Internal.hs:2541-2549`) includes its group profile, with `groupPresHeader`, when the maximum of the contact connection's `peerChatVRange` is at least `relayWebCapVersion`; the message is encoded by `encodeConnInfoSigning`, signed when a signing is returned by `groupMsgSigning`.
+  - The invitee (`Commands.hs:2851`, `Subscriber.hs:2700`, both by `encodeXGrpAcpt`, `Internal.hs:2541-2549`) includes its group profile, with `groupPresHeader`; the message is encoded by `encodeConnInfoSigning`, signed when a signing is returned by `groupMsgSigning` and the maximum of the contact connection's `peerChatVRange` is at least `relayWebCapVersion`.
   - `XGrpAcpt` with a badge in its profile is signed by `groupMsgSigning` (`Internal.hs:2360-2363`).
   - `encodeConnInfoSigning :: PQSupport -> Maybe MsgSigning -> ChatMsgEvent e -> CM ByteString` — `encodeSignedConnInfo` with a signing, `encodeConnInfoPQ` without one; used by `encodeXGrpAcpt`, `xGrpMemFwd` and `allowAgentConnectionAsync`.
   - The host (`Subscriber.hs:785-795`) stores the key, allows the connection, then stores the profile by `processMemberProfileUpdate` with the signed message. For an invitee whose contact is active, the profile row is kept by `canUpdateProfile` and the proof is stored on the membership (item 11).
-  - The host replies with `XGrpMemInfo` and its group profile in place of `XOk` (`Subscriber.hs:791-793`); the badge is presented when the invitee's version is at least `relayWebCapVersion`, as at `:843-845`.
+  - The host replies with `XGrpMemInfo` and its group profile in place of `XOk` (`Subscriber.hs:791-793`); the badge is presented at every version, and the reply is signed by `allowAgentConnectionAsync` from `relayWebCapVersion`, as at `:843-845`.
 
 **10. Link data**
 
@@ -598,6 +604,30 @@ Postgres: `BIGINT`, `BYTEA` and `TIMESTAMPTZ`. Both schema dumps and `chat_query
 - Channel: the owner's badge is shown at a subscriber and the subscriber's badge at the owner, forwarded by the relay (`testChannelMemberBadges`).
 - Channel: a relay invitation with an owner key that differs from the link data is failed by the relay, and the relay stays invited (`testChannelAddRelayOwnerKeyMismatch`).
 - Link data: the badge is shown from an invitation link under `PHLink`, an address, and an address that gets its first short link.
+- Member proofs: the stored proof is deleted when a profile without a badge is received, for a member joined by a group link and for a member with a contact.
+- Peers below `relayWebCapVersion`: `XGrpAcpt` to an inviting host and `XGrpMemInfo` to a joining member include the badge unsigned, the handshakes complete, and neither receiver stores the proof.
+- Profile updates: a failed address data upload leaves the profile unsaved, and a retry notifies contacts; after a failed save the address data of the current profile is restored; a profile update without the SimpleX name keeps the name at the contact.
+
+**14. The apps** — `SimpleXAPI.swift`, `UserAddressView.swift`, `ChatInfoView.swift`, `CIFeaturePreferenceView.swift`, `SimpleXAPI.kt`
+
+- A profile save error is shown in an alert by `apiUpdateProfile`, title `Error saving profile`; a duplicate name keeps its own alert.
+- An error of the address sharing toggle (`apiSetProfileAddress`) is shown in an alert, title `Error saving profile`.
+- An error of contact preferences (`apiSetContactPrefs`) is shown in an alert, title `Error saving preferences`.
+- iOS: `showErrorAlert`; Kotlin: `networkErrorAlert`, then `apiErrorAlert`.
+- The address sharing toggle is set back when `apiSetProfileAddress` fails: on iOS by the `revert` closure of `setProfileAddress`, in Kotlin by `setProfileAddress`, which sets `shareViaProfile` before the request.
+- iOS: the toggle and the address settings link are disabled while the request is in progress.
+- iOS: `fromLocalProfile` and `toLocalProfile` include `contactDomain`, and `Profile.init` assigns `peerType`.
+- `updateCurrentUser` keeps `localBadge` and `contactDomainVerified` of the current user, and on iOS its `localAlias`.
+
+**15. Profile updates** — `Commands.hs`, `Store/Profiles.hs`
+
+- `updateProfile_`, in one `withChatLock`:
+  - the address link data is uploaded with the user built by `updatedUserProfile` from the new profile;
+  - the profile is saved and the current user is replaced;
+  - the profile is sent to contacts.
+- When the save fails, the link data of the current profile is uploaded again, and the save error is returned.
+- `updatedUserProfile :: User -> Profile -> UTCTime -> LocalProfile` — the profile of `updateUserProfile`, with the stored badge and alias.
+- `updateProfile`: the SimpleX name claim of the current profile replaces the claim in the received profile. The claim is changed only by `APISetUserDomain`.
 
 `PHTest` proofs are generated only by released clients. For a connection prepared by a released client and joined after the update, the badge is presented only when its ratchet was stored by an earlier attempt; a retried request to an address prepared by a released client is sent without a badge.
 

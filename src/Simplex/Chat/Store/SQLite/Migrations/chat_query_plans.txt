@@ -5081,6 +5081,20 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO group_member_badge_proofs (group_member_id, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?)
+      ON CONFLICT (group_member_id) DO UPDATE SET
+        badge_proof = excluded.badge_proof,
+        badge_pres_header = excluded.badge_pres_header,
+        badge_key_idx = excluded.badge_key_idx,
+        badge_type = excluded.badge_type,
+        badge_expiry = excluded.badge_expiry,
+        badge_extra = excluded.badge_extra,
+        updated_at = excluded.updated_at
+    
+Plan:
+
+Query: 
       INSERT INTO msg_deliveries
         (message_id, connection_id, agent_msg_id, chat_ts, created_at, updated_at, delivery_status)
       VALUES (?,?,?,?,?,?,?)
@@ -6422,7 +6436,7 @@ Plan:
 SEARCH server_operators USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6435,7 +6449,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6449,7 +6463,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6463,7 +6477,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6478,7 +6492,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6492,7 +6506,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6506,7 +6520,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6520,7 +6534,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6534,7 +6548,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6547,7 +6561,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -7277,9 +7291,6 @@ Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, f
 Plan:
 
 Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, roster_transfer_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-Plan:
-
-Query: INSERT INTO group_member_badge_proofs (group_member_id, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO group_profiles (display_name, full_name, short_descr, description, image, user_id, member_admission, created_at, updated_at, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)

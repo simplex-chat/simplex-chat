@@ -3,6 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -31,7 +32,7 @@ import Simplex.Chat.Library.Internal (sendDirectContactMessage)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..), profileFromName, userProfileDirect)
+import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..), profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -43,6 +44,7 @@ import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (decodeJSON, encodeJSON)
+import Simplex.Messaging.Version (mkVersionRange)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
 
@@ -50,6 +52,10 @@ chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
+    it "profile is not saved when its address data upload fails" testUpdateProfileAddressDataError
+    it "profile name used by a contact gets a local name with suffix" testUpdateProfileNameUsedByContact
+    it "profile name used by another user is rejected, names with _N suffix are invalid" testUpdateProfileNameUsedByUser
+    it "profile name used by a hidden user is allowed" testUpdateProfileNameUsedByHiddenUser
     it "profile description round-trips and shows in contact info" testProfileDescriptionShown
     it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
@@ -63,6 +69,7 @@ chatProfileTests = do
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
     it "supporter badge sent to member joining via group link" testUserBadgeGroupLink
     it "supporter badge sent to member connecting in group" testUserBadgeGroupHandshake
+    it "supporter badge sent unsigned to member with version below 18 connecting in group" testUserBadgeGroupHandshakeOldMember
     it "supporter badge sent to group members with profile update" testUserBadgeGroupUpdate
     it "expired supporter badge shows as expired" testUserBadgeExpired
     it "long-expired supporter badge is not presented" testUserBadgeExpiredOld
@@ -78,6 +85,8 @@ chatProfileTests = do
     it "supporter badge of introduced member is not taken from the introduction" testUserBadgeIntroduced
     it "supporter badge of member invited via contact is not forwarded in the introduction" testUserBadgeInvitedIntroduced
     it "supporter badge of inviting host in the reply to the invited contact" testUserBadgeInvitingHost
+    it "supporter badge proof of member is deleted with a profile without badge" testUserBadgeMemberRemoved
+    it "supporter badge proof of member with contact is deleted with a profile without badge" testUserBadgeContactMemberRemoved
     it "supporter badge in one-time link data" testUserBadgeInvitationLinkData
     it "supporter badge in data of address getting its first short link" testUserBadgeAddressFirstShortLink
   describe "user contact link" $ do
@@ -228,6 +237,131 @@ testUpdateProfile =
             bob <## "use @cat <message> to send messages"
         ]
 
+testUpdateProfileAddressDataError :: HasCallStack => TestParams -> IO ()
+testUpdateProfileAddressDataError ps = do
+  let cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
+  withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
+      withSmpServer' serverCfg' $ do
+        connectUsers alice bob
+        alice ##> "/ad"
+        _ <- getContactLinks alice True
+        pure ()
+      alice <## "disconnected 2 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
+      alice ##> "/p alisa"
+      alice <##. "smp agent error: BROKER"
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice)"
+      alice <## "use /p <name> [<bio>] to change it"
+      withSmpServer' serverCfg' $ do
+        alice <## "subscribed 2 connections on server localhost"
+        bob <## "subscribed 1 connections on server localhost"
+        alice ##> "/p alisa"
+        alice <## "user profile is changed to alisa (your 1 contacts are notified)"
+        bob <## "contact alice changed to alisa"
+        bob <## "use @alisa <message> to send messages"
+      alice <## "disconnected 2 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg (tmpPath ps)
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testUpdateProfileNameUsedByContact :: HasCallStack => TestParams -> IO ()
+testUpdateProfileNameUsedByContact =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      alice ##> "/ad"
+      (shortLink, _) <- getContactLinks alice True
+      alice ##> "/p bob"
+      alice <## "user profile is changed to bob (your 1 contacts are notified)"
+      bob <## "contact alice changed to bob_1"
+      bob <## "use @bob_1 <message> to send messages"
+      alice ##> "/p"
+      alice <## "user profile: bob"
+      alice <## "use /p <name> [<bio>] to change it"
+      alice ##> "/users"
+      alice <## "bob_1 (active)"
+      alice #> "@bob hi"
+      bob <# "bob_1> hi"
+      cath ##> ("/_connect plan 1 " <> shortLink)
+      cath <## "contact address: ok to connect"
+      sLinkData <- getTermLine cath
+      sLinkData `shouldContain` "\"displayName\":\"bob\""
+      alice ##> "/p alice"
+      alice <## "user profile is changed to alice (your 1 contacts are notified)"
+      bob <## "contact bob_1 changed to alice"
+      bob <## "use @alice <message> to send messages"
+      alice ##> "/users"
+      alice <## "alice (active)"
+
+testUpdateProfileNameUsedByHiddenUser :: HasCallStack => TestParams -> IO ()
+testUpdateProfileNameUsedByHiddenUser =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/hide user my_password"
+      alice <## "current user alisa:"
+      alice <## "messages are hidden (use /tail to view)"
+      alice <## "profile is hidden"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 1 contacts are notified)"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+      alice ##> "/users"
+      alice <## "alisa_1 (active)"
+      alice ##> "/create user alisa"
+      alice <## "user with the name alisa already exists"
+      alice ##> "/user alisa my_password"
+      showActiveUser alice "alisa"
+      alice ##> "/unhide user my_password"
+      alice <## "user with the name alisa already exists"
+      alice ##> "/users"
+      alice <## "alisa (active, hidden, muted)"
+      alice <## "alisa_1"
+
+testUpdateProfileNameUsedByUser :: HasCallStack => TestParams -> IO ()
+testUpdateProfileNameUsedByUser =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice ##> "/p alisa"
+      alice <## "user with the name alisa already exists"
+      alice ##> "/p alisa_1"
+      alice <## "invalid display name: alisa_1"
+      alice <## "you could use this one: alisa-1"
+      alice ##> "/p alisa-1"
+      alice <## "user profile is changed to alisa-1 (your 1 contacts are notified)"
+      bob <## "contact alice changed to alisa-1"
+      bob <## "use @alisa-1 <message> to send messages"
+      alice ##> "/create user alisa-1"
+      alice <## "user with the name alisa-1 already exists"
+      alice ##> "/create user bob_2"
+      alice <## "invalid display name: bob_2"
+      alice <## "you could use this one: bob-2"
+      alice ##> "/users"
+      alice <## "alisa"
+      alice <## "alisa-1 (active)"
+
 -- Profile.description survives the connect-time round-trip and is shown in the contact /i view.
 testProfileDescriptionShown :: HasCallStack => TestParams -> IO ()
 testProfileDescriptionShown =
@@ -297,6 +431,9 @@ testBadgeKeys = M.singleton 1
 
 futureDate :: UTCTime
 futureDate = posixSecondsToUTCTime 4102444800 -- 2100-01-01
+
+pastDate :: UTCTime
+pastDate = posixSecondsToUTCTime 1577836800 -- 2020-01-01
 
 -- issue a supporter badge credential with the given expiry (test issuer)
 issueTestBadge :: BBSSecretKey -> UTCTime -> IO BadgeCredential
@@ -427,6 +564,32 @@ testUserBadgeGroupHandshake ps = do
       cath <## "connection not verified, use /code command to see security code"
       cath <## currentChatVRangeInfo
 
+testUserBadgeGroupHandshakeOldMember :: HasCallStack => TestParams -> IO ()
+testUserBadgeGroupHandshakeOldMember ps = do
+  Right (pk, sk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = testBadgeKeys pk}
+      oldCfg = cfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
+  withNewTestChatCfg ps oldCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps oldCfg "cath" cathProfile $ \cath -> do
+        connectUsers alice bob
+        addTestBadge bob =<< issueTestBadge sk futureDate
+        createGroup2' "team" alice (bob, GRAdmin) False
+        memberProofHeader alice "team" "bob" `shouldReturn` Nothing
+        connectUsers alice cath
+        addMember "team" alice cath GRAdmin
+        cath ##> "/j team"
+        concurrentlyN_
+          [ alice <## "#team: cath joined the group",
+            do
+              cath <## "#team: you joined the group"
+              cath <## "#team: member bob (Bob) is connected",
+            do
+              bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+              bob <## "#team: new member cath is connected"
+          ]
+        memberBadgeHeader cath "team" "bob" `shouldReturn` Nothing
+
 testUserBadgeGroupUpdate :: HasCallStack => TestParams -> IO ()
 testUserBadgeGroupUpdate ps = do
   Right (pk, sk) <- bbsKeyGen
@@ -524,7 +687,6 @@ testUserBadgeExpiredOld ps = do
       bob <## "connection not verified, use /code command to see security code"
       bob <## "quantum resistant end-to-end encryption"
       bob <## currentChatVRangeInfo
-    pastDate = posixSecondsToUTCTime 1577836800 -- 2020-01-01
 
 testUserBadgeIncognito :: HasCallStack => TestParams -> IO ()
 testUserBadgeIncognito ps = do
@@ -842,6 +1004,50 @@ testUserBadgeInvitingHost ps = do
       createGroup2' "team" alice (bob, GRAdmin) False
       memberBadgeHeader bob "team" "alice" `shouldReturn` Just ("CD", BSActive)
       memberProofHeader bob "team" "alice" `shouldReturn` Just "CG"
+
+testUserBadgeMemberRemoved :: HasCallStack => TestParams -> IO ()
+testUserBadgeMemberRemoved ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
+  where
+    test sk alice bob = do
+      addTestBadge bob =<< issueTestBadge sk futureDate
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+      memberProofHeader alice "team" "bob" `shouldReturn` Just "CG"
+      addTestBadge bob =<< issueTestBadge sk pastDate
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+      memberProofHeader alice "team" "bob" `shouldReturn` Nothing
+      memberBadgeHeader alice "team" "bob" `shouldReturn` Nothing
+
+testUserBadgeContactMemberRemoved :: HasCallStack => TestParams -> IO ()
+testUserBadgeContactMemberRemoved ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
+  where
+    test sk alice bob = do
+      createGroup2 "team" alice bob
+      addTestBadge bob =<< issueTestBadge sk futureDate
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      memberProofHeader alice "team" "bob" `shouldReturn` Just "CG"
+      addTestBadge bob =<< issueTestBadge sk pastDate
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+      memberProofHeader alice "team" "bob" `shouldReturn` Nothing
 
 testUserBadgeInvitationLinkData :: HasCallStack => TestParams -> IO ()
 testUserBadgeInvitationLinkData ps = do

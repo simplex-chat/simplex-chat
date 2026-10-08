@@ -11,6 +11,7 @@ import chat.simplex.common.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.database.*
+import chat.simplex.common.views.mkValidName
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
@@ -73,7 +74,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       ntfManager.cancelAllNotifications()
       val selfDestructPref = m.controller.appPrefs.selfDestruct
       val displayNamePref = m.controller.appPrefs.selfDestructDisplayName
-      val displayName = displayNamePref.get()
+      val displayName = displayNamePref.get()?.let { mkValidName(it) }
       selfDestructPref.set(false)
       displayNamePref.set(null)
       reinitChatController()

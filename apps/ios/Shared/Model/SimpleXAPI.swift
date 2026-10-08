@@ -1359,8 +1359,12 @@ func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     switch r {
     case .result(.userProfileNoChange): return (profile, [])
     case let .result(.userProfileUpdated(_, _, toProfile, updateSummary)): return (toProfile, updateSummary.changedContacts)
-    case .error(.errorStore(.duplicateName)): return nil;
-    default: throw r.unexpected
+    case .error(.errorStore(.duplicateName)), .error(.error(.userExists)): return nil;
+    default:
+        await MainActor.run {
+            showErrorAlert(r.unexpected, NSLocalizedString("Error saving profile", comment: "alert title"))
+        }
+        throw r.unexpected
     }
 }
 

@@ -565,27 +565,27 @@ deleteUnusedProfile_ db userId profileId =
 updateContactProfile :: DB.Connection -> StoreCxt -> User -> Contact -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db cxt user@User {userId} c presHeader_ p' = do
   currentTs <- liftIO getCurrentTime
-  (p''', badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) (Just lp) p''
+  (p'', badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) (Just lp) claimProfile
   let nameVerified = if claimChanged then Nothing else prevVerification
-      profile = toLocalProfile profileId p''' localAlias currentTs badgeVerified nameVerified
-  updateContactProfile' currentTs p''' badgeVerified profile
+      profile = toLocalProfile profileId p'' localAlias currentTs badgeVerified nameVerified
+  updateContactProfile' currentTs p'' badgeVerified profile
   where
     Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, contactDomain = prevClaim, contactDomainVerified = prevVerification}, userPreferences} = c
     Profile {displayName = newName, contactDomain, preferences} = p'
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
     claimChanged = (domain <$> prevClaim) /= (domain <$> contactDomain)
-    p'' = (p' :: Profile) {contactDomain = (\d -> d {proof = if claimChanged then Nothing else proof =<< prevClaim}) <$> contactDomain}
+    claimProfile = (p' :: Profile) {contactDomain = (\d -> d {proof = if claimChanged then Nothing else proof =<< prevClaim}) <$> contactDomain}
     clearVerificationIfClaimChanged =
       when claimChanged $
         DB.execute db "UPDATE contact_profiles SET contact_domain_verified = NULL WHERE user_id = ? AND contact_profile_id = ?" (userId, profileId)
-    updateContactProfile' currentTs p''' badgeVerified profile
+    updateContactProfile' currentTs p'' badgeVerified profile
       | displayName == newName = do
-          liftIO $ updateContactProfile_' db userId profileId p''' badgeVerified currentTs
+          liftIO $ updateContactProfile_' db userId profileId p'' badgeVerified currentTs
           liftIO clearVerificationIfClaimChanged
           pure c {profile, mergedPreferences}
       | otherwise =
           ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-            updateContactProfile_' db userId profileId p''' badgeVerified currentTs
+            updateContactProfile_' db userId profileId p'' badgeVerified currentTs
             updateContactLDN_ db user contactId localDisplayName ldn currentTs
             clearVerificationIfClaimChanged
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}

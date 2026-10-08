@@ -1157,6 +1157,13 @@ testGetSetSMPServers =
       alice <## "  SMP servers"
       alice <## "    smp://2345-w==@smp2.example.im"
       alice <## "    smp://3456-w==@smp3.example.im:5224"
+      alice #$> ("/smp smp://2345-w==@smp2.example.im,smp4.example.im", id, "ok")
+      alice ##> "/smp smp://2345-w==@smp2.example.im,smp4.example.im,smp5.example.im"
+      alice <##. "bad chat command: user servers validation error(s): [USETooManyHosts"
+      alice ##> "/smp"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://2345-w==@smp2.example.im,smp4.example.im"
 
 testTestSMPServerConnection :: HasCallStack => TestParams -> IO ()
 testTestSMPServerConnection =
