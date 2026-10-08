@@ -255,6 +255,8 @@
   <string name="error_preparing_contact">Error opening chat</string>
   <string name="error_preparing_group">Error opening group</string>
   <string name="error_changing_user">Error changing profile</string>
+  <string name="error_saving_profile">Error saving profile</string>
+  <string name="error_saving_preferences">Error saving preferences</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>

@@ -934,7 +934,10 @@ final class ChatModel: ObservableObject {
 
     func updateCurrentUser(_ newProfile: Profile, _ preferences: FullPreferences? = nil) {
         if let current = currentUser {
-            currentUser?.profile = toLocalProfile(current.profile.profileId, newProfile, "")
+            var profile = toLocalProfile(current.profile.profileId, newProfile, current.profile.localAlias)
+            profile.localBadge = current.profile.localBadge
+            profile.contactDomainVerified = current.profile.contactDomainVerified
+            currentUser?.profile = profile
             if let preferences = preferences {
                 currentUser?.fullPreferences = preferences
             }

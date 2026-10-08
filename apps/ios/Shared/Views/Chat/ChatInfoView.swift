@@ -630,6 +630,9 @@ struct ChatInfoView: View {
                 }
             } catch {
                 logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
+                await MainActor.run {
+                    showErrorAlert(error, NSLocalizedString("Error saving preferences", comment: "alert title"))
+                }
             }
         }
     }

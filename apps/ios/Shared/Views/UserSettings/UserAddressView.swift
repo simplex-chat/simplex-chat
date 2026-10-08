@@ -139,7 +139,7 @@ struct UserAddressView: View {
                     title: Text("Share address with SimpleX contacts?"),
                     message: Text("Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts."),
                     primaryButton: .default(Text("Share")) {
-                        setProfileAddress($progressIndicator, true)
+                        setProfileAddress($progressIndicator, true) { shareViaProfile = false }
                         shareViaProfile = true
                     }, secondaryButton: .cancel()
                 )
@@ -318,7 +318,7 @@ struct UserAddressView: View {
                             alert = .shareOnCreate
                             progressIndicator = false
                         } else {
-                            setProfileAddress($progressIndicator, true)
+                            setProfileAddress($progressIndicator, true) { shareViaProfile = false }
                             shareViaProfile = true
                         }
                     } else {
@@ -444,6 +444,7 @@ struct UserAddressView: View {
         } label: {
             Text("Address settings")
         }
+        .disabled(progressIndicator)
     }
 
     private func learnMoreButton() -> some View {
@@ -601,7 +602,7 @@ struct AddressSettingsState: Equatable {
     }
 }
 
-private func setProfileAddress(_ progressIndicator: Binding<Bool>, _ on: Bool) {
+private func setProfileAddress(_ progressIndicator: Binding<Bool>, _ on: Bool, revert: @escaping () -> Void) {
     progressIndicator.wrappedValue = true
     Task {
         do {
@@ -613,7 +614,11 @@ private func setProfileAddress(_ progressIndicator: Binding<Bool>, _ on: Bool) {
             await MainActor.run { progressIndicator.wrappedValue = false }
         } catch let error {
             logger.error("apiSetProfileAddress: \(responseError(error))")
-            await MainActor.run { progressIndicator.wrappedValue = false }
+            await MainActor.run {
+                progressIndicator.wrappedValue = false
+                revert()
+                showErrorAlert(error, NSLocalizedString("Error saving profile", comment: "alert title"))
+            }
         }
     }
 }
@@ -688,6 +693,7 @@ struct UserAddressSettingsView: View {
     private func shareWithContactsButton() -> some View {
         settingsRow("person", color: theme.colors.secondary) {
             Toggle("Share with SimpleX contacts", isOn: $shareViaProfile)
+                .disabled(progressIndicator)
                 .onChange(of: shareViaProfile) { on in
                     if ignoreShareViaProfileChange {
                         ignoreShareViaProfileChange = false
@@ -709,7 +715,10 @@ struct UserAddressSettingsView: View {
                                         title: NSLocalizedString("Share", comment: "alert action"),
                                         style: .default,
                                         handler: { _ in
-                                            setProfileAddress($progressIndicator, on)
+                                            setProfileAddress($progressIndicator, on) {
+                                                ignoreShareViaProfileChange = true
+                                                shareViaProfile = !on
+                                            }
                                         }
                                     )
                                 ]}
@@ -731,7 +740,10 @@ struct UserAddressSettingsView: View {
                                         title: NSLocalizedString("Stop sharing", comment: "alert action"),
                                         style: .default,
                                         handler: { _ in
-                                            setProfileAddress($progressIndicator, on)
+                                            setProfileAddress($progressIndicator, on) {
+                                                ignoreShareViaProfileChange = true
+                                                shareViaProfile = !on
+                                            }
                                         }
                                     )
                                 ]}

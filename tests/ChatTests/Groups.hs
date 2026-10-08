@@ -8036,8 +8036,8 @@ testForwardQuoteMention =
       bob <# "alice> -> forwarded"
       bob <## "      hello @alice @cath"
       -- member renamed to duplicate name
-      cath ##> "/p alice_1"
-      cath <## "user profile is changed to alice_1 (your 1 contacts are notified)"
+      cath ##> "/p alice"
+      cath <## "user profile is changed to alice (your 1 contacts are notified)"
       alice <## "contact cath changed to alice_1"
       alice <## "use @alice_1 <message> to send messages"
       -- mention changed in quoted mentions
