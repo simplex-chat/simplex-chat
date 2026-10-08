@@ -537,7 +537,7 @@ data GroupInfo = GroupInfo
     rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupDomainVerified :: Maybe Bool
+    groupDomainVerified :: Maybe DomainVerification
   }
   deriving (Eq, Show)
 
@@ -831,14 +831,17 @@ data LocalProfile = LocalProfile
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
     contactDomain :: Maybe SimplexDomainClaim,
-    contactDomainVerified :: Maybe Bool
+    contactDomainVerified :: Maybe DomainVerification
   }
+  deriving (Eq, Show)
+
+data DomainVerification = DVFailed | DVVerified | DVMoved
   deriving (Eq, Show)
 
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe DomainVerification -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now badgeVerified contactDomainVerified =
   LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified}
   where
@@ -2313,6 +2316,8 @@ $(JQ.deriveJSON defaultJSON ''UserContact)
 
 $(JQ.deriveJSON defaultJSON ''Profile)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "DV") ''DomainVerification)
+
 $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
@@ -2381,6 +2386,13 @@ $(JQ.deriveJSON defaultJSON ''GroupLink)
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
+
+instance FromField DomainVerification where
+  fromField = fromIntField_ $ \case
+    0 -> Just DVFailed
+    1 -> Just DVVerified
+    2 -> Just DVMoved
+    _ -> Nothing
 
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 

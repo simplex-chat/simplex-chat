@@ -1412,8 +1412,8 @@ struct SimplexNameView: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) var autoVerify = false
     let simplexName: String
-    let verified: Bool?
-    let verify: () async -> (Bool?, String?)?
+    let verified: DomainVerification?
+    let verify: () async -> (DomainVerification?, String?)?
     var verifiable: Bool = true
     @State private var inFlight = false
     @State private var showSpinner = false
@@ -1427,7 +1427,7 @@ struct SimplexNameView: View {
     private var nameText: Text {
         Text(simplexName)
             .font(.subheadline)
-            .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
+            .foregroundColor(verified == .verified ? theme.colors.primary : theme.colors.secondary)
     }
 
     // Size the inline check/cross to the name's cap height so it reads like a capital letter, not an oversized glyph.
@@ -1439,7 +1439,7 @@ struct SimplexNameView: View {
                 nameText
                 ProgressView()
             }
-        } else if verified == true {
+        } else if verified == .verified {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 nameText
                 Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
@@ -1452,10 +1452,10 @@ struct SimplexNameView: View {
             }
         } else if !verifiable {
             nameText
-        } else if verified == false {
+        } else if verified == .failed || verified == .moved {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 nameText
-                Image(systemName: "xmark").font(iconFont).foregroundColor(.red)
+                Image(systemName: "xmark").font(iconFont).foregroundColor(verified == .failed ? .red : theme.colors.secondary)
                     .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
             }
             .contentShape(Rectangle())

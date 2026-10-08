@@ -73,7 +73,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), USDCents (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -217,7 +217,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation showFullLinks ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged showFullLinks u c nu c'
-  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName
+  CRConnectionPlan u connLink planSimplexName otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink planSimplexName connectionPlan <> otherSimplexNameNote otherSimplexName
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -473,6 +473,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CEvtRcvFileProgressXFTP {} -> []
   CEvtContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
+  CEvtNameMoved {} -> []
   CEvtGroupMemberUpdated {} -> []
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _chat -> ttyUser u $ viewReceivedContactRequest c (fromLocalProfile profile)
   CEvtServiceRequest u reqId sigKey_ req ->
@@ -1171,13 +1172,14 @@ viewDomainVerified nameType domain_ result =
         Just reason -> [plain nameStr <> " not verified: " <> plain reason]
 
 -- §4.7: show a peer's claimed name only with its verification context — "verified" / "verification
--- failed" when a status is recorded, "unverified" when there is a proof but no status yet, and nothing
+-- failed" / "moved" when a status is recorded, "unverified" when there is a proof but no status yet, and nothing
 -- at all when there is neither (an unproven, unverifiable claim is not shown).
-simplexDomainLine :: SimplexNameType -> Maybe SimplexDomainClaim -> Maybe Bool -> [StyledString]
+simplexDomainLine :: SimplexNameType -> Maybe SimplexDomainClaim -> Maybe DomainVerification -> [StyledString]
 simplexDomainLine _ Nothing _ = []
 simplexDomainLine nameType (Just SimplexDomainClaim {domain, proof}) status = case status of
-  Just True -> [line "verified"]
-  Just False -> [line "verification failed"]
+  Just DVVerified -> [line "verified"]
+  Just DVFailed -> [line "verification failed"]
+  Just DVMoved -> [line "moved"]
   Nothing
     | isJust proof -> [line "unverified"]
     | otherwise -> []
@@ -2235,8 +2237,8 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
-viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
-viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
+viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> Maybe SimplexNameInfo -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
@@ -2255,7 +2257,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
-  CPContactAddress cap -> case cap of
+  p@(CPContactAddress cap nc_) -> (<> viewNameChange (connectionPlanOwnLink p) nc_) $ case cap of
     CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
@@ -2273,7 +2275,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
-  CPGroupLink glp -> case glp of
+  p@(CPGroupLink glp nc_) -> (<> viewNameChange (connectionPlanOwnLink p) nc_) $ case glp of
     GLPOk groupSLinkInfo_ groupSLinkData ov ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
        in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
@@ -2312,6 +2314,17 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Nothing -> "group"
   CPError e -> viewChatError False logLevel testView e
   where
+    viewNameChange :: Bool -> Maybe NameChange -> [StyledString]
+    viewNameChange own = \case
+      Just (NCLapsed w) -> maybe [] (\SimplexNameInfo {nameDomain} -> [viewNameWarning own nameDomain w]) planSimplexName
+      Just (NCMoved (AChatInfo _ c)) -> case c of
+        DirectChat ct -> ["known contact @" <> ttyContact' ct]
+        GroupChat g@GroupInfo {businessChat} _
+          | isJust businessChat -> ["known business " <> ttyGroup' g]
+          | useRelays' g -> ["known channel " <> ttyGroup' g]
+          | otherwise -> ["known group " <> ttyGroup' g]
+        _ -> []
+      Nothing -> []
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
@@ -2326,6 +2339,29 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
       Nothing -> []
+
+viewNameWarning :: Bool -> SimplexDomain -> NameWarning -> StyledString
+viewNameWarning own d = \case
+  NWExpired e g -> yours <> simplexNameStr d <> " expired on " <> plain (day e) <> maybe "" ((renewal <>) . plain . day) g
+  NWAvailable p -> yours <> simplexNameStr d <> " is no longer registered, available: " <> namePriceStr p
+  NWReservedForCommunity -> simplexNameStr d <> " is reserved for community"
+  NWNotRegistered -> simplexNameStr d <> " is not registered"
+  where
+    yours = if own then "your " else ""
+    renewal = if own then ", renew it before " else ", its owner can renew it until "
+
+viewNameNotConnectable :: SimplexDomain -> NameWarning -> StyledString
+viewNameNotConnectable d = \case
+  NWAvailable p -> simplexNameStr d <> " is available: " <> namePriceStr p
+  w -> viewNameWarning False d w
+
+simplexNameStr :: SimplexDomain -> StyledString
+simplexNameStr d = "SimpleX name " <> plain (fullDomainName d)
+
+namePriceStr :: NamePrice -> StyledString
+namePriceStr NamePrice {amount = USDCents c, years} =
+  let (dollars, cents) = c `divMod` 100
+   in plain $ "$" <> tshow dollars <> (if cents == 0 then "" else "." <> T.justifyRight 2 '0' (tshow cents)) <> " for " <> tshow years <> " years"
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
@@ -2795,6 +2831,7 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
+    CESimplexDomainNotReady domain (SDENameWarning w) -> [viewNameNotConnectable domain w]
     CESimplexDomainNotReady domain domainErr ->
       let reason = case domainErr of
             SDENoValidLink -> "has no valid connection link"

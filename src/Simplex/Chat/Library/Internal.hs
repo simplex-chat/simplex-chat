@@ -1627,7 +1627,7 @@ updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe Simp
 updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_
   | profileChanged || countChanged || verifyResolved = do
       cxt <- chatStoreCxt
-      withStore $ \db -> do
+      r@(gInfo', _) <- withStore $ \db -> do
         g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
         g' <- case publicGroupData of
           Just PublicGroupData {publicMemberCount} | countChanged ->
@@ -1635,28 +1635,48 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
           _ -> pure g
         g'' <- if verifyResolved then liftIO $ setGroupDomainVerified db user g' True else pure g'
         pure (g'', profileChanged)
+      when verifyResolved $ setOtherNameChatsMoved user (GroupChat gInfo' Nothing)
+      pure r
   | otherwise = pure (gInfo, False)
   where
     profileChanged = p /= groupProfile
     countChanged = case publicGroupData of
       Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
       _ -> False
-    groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
     newClaim = groupClaim groupProfile
     verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
+
+groupClaim :: GroupProfile -> Maybe SimplexDomain
+groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
 
 updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
 updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
-      withFastStore $ \db -> do
+      ct'' <- withFastStore $ \db -> do
         ct' <- updateContactProfile db cxt user ct linkProfile
         if verifyChanged then liftIO $ setContactDomainVerified db user ct' True else pure ct'
+      when verifyChanged $ setOtherNameChatsMoved user (DirectChat ct'')
+      pure ct''
   | otherwise = pure ct
   where
     profileChanged = fromLocalProfile profile /= linkProfile
     claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
-    verifyChanged = contactDomainVerified /= Just True || claimChanged
+    verifyChanged = contactDomainVerified /= Just DVVerified || claimChanged
+
+setOtherNameChatsMoved :: User -> ChatInfo c -> CM ()
+setOtherNameChatsMoved user = \case
+  DirectChat Contact {contactId, profile = LocalProfile {contactDomain = Just d}} -> setMoved (SimplexNameInfo NTContact $ claimDomain d) (Just contactId) Nothing
+  GroupChat GroupInfo {groupId, businessChat = Just BusinessChatInfo {businessDomain = Just d}} _ -> setMoved (SimplexNameInfo NTContact $ claimDomain d) Nothing (Just groupId)
+  GroupChat GroupInfo {groupId, businessChat = Nothing, groupProfile} _ | Just d <- groupClaim groupProfile -> setMoved (SimplexNameInfo NTPublicGroup d) Nothing (Just groupId)
+  _ -> pure ()
+  where
+    setMoved ni@SimplexNameInfo {nameType, nameDomain} ctId_ gId_ = do
+      (ctIds, gIds) <- withFastStore' $ \db ->
+        (,)
+          <$> (if nameType == NTContact then setNameContactsMoved db user nameDomain ctId_ else pure [])
+          <*> setNameGroupsMoved db user ni gId_
+      unless (null ctIds && null gIds) $ toView $ CEvtNameMoved user ctIds gIds
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfoKeys -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)

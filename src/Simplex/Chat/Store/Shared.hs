@@ -493,7 +493,7 @@ type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe
 
 type ContactRow = Only ContactId :. ContactRow'
 
-type ContactDomainRow = (Maybe SimplexDomain, Maybe SimplexDomainProof, Maybe BoolInt)
+type ContactDomainRow = (Maybe SimplexDomain, Maybe SimplexDomainProof, Maybe DomainVerification)
 
 toContact :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
 toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. domainRow) :. connRow) =
@@ -511,8 +511,8 @@ toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName
 rowToContactDomain :: ContactDomainRow -> Maybe SimplexDomainClaim
 rowToContactDomain (domain_, domainProof_, _) = (`SimplexDomainClaim` domainProof_) . StrJSON <$> domain_
 
-rowToDomainVerified :: ContactDomainRow -> Maybe Bool
-rowToDomainVerified (_, _, domainVerification_) = unBI <$> domainVerification_
+rowToDomainVerified :: ContactDomainRow -> Maybe DomainVerification
+rowToDomainVerified (_, _, domainVerification_) = domainVerification_
 
 contactDomainToRow :: Maybe SimplexDomainClaim -> (Maybe SimplexDomain, Maybe SimplexDomainProof)
 contactDomainToRow d = (claimDomain <$> d, proof =<< d)
@@ -695,7 +695,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. GroupKeysRow :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe DomainVerification) :. GroupKeysRow :. GroupMemberRow
 
 type PublicGroupAccessRow = (Maybe Text, Maybe SimplexDomain, Maybe BoolInt, Maybe BoolInt, Maybe SimplexDomainProof)
 
@@ -714,7 +714,7 @@ toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayN
       businessChat = toBusinessChatInfo (toPublicGroupAccess accessRow >>= groupDomainClaim) businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
+      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified}
    in (gInfo, groupKeysRow)
 
 toGroupInfo_ :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo

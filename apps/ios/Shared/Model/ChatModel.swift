@@ -635,7 +635,7 @@ final class ChatModel: ObservableObject {
         updateChat(.group(groupInfo: groupInfo, groupChatScope: nil))
     }
 
-    private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
+    func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
         } else if addMissing {

@@ -1104,6 +1104,8 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
                     NSLocalizedString("Unconfirmed name", comment: ""),
                     message: String.localizedStringWithFormat(NSLocalizedString("The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.", comment: ""), domain.fullDomainName)
                 )
+            case let .nameWarning(warning):
+                showNameWarningAlert(domain: domain, warning: warning, own: false, openExistingChat: nil, cleanup: nil)
             }
         case .errorAgent(.NO_NAME_SERVERS):
             showAlert(
@@ -2599,6 +2601,23 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 let cInfo = ChatInfo.direct(contact: toContact)
                 m.updateChatInfo(cInfo)
+            }
+        }
+    case let .nameMoved(user, contactIds, groupIds):
+        if active(user) {
+            await MainActor.run {
+                for contactId in contactIds {
+                    if case var .direct(contact)? = m.getContactChat(contactId)?.chatInfo {
+                        contact.profile.contactDomainVerified = .moved
+                        m.updateChatInfo(.direct(contact: contact))
+                    }
+                }
+                for groupId in groupIds {
+                    if case var .group(groupInfo, _)? = m.getGroupChat(groupId)?.chatInfo {
+                        groupInfo.groupDomainVerified = .moved
+                        m.updateChatInfo(.group(groupInfo: groupInfo, groupChatScope: nil))
+                    }
+                }
             }
         }
     case let .groupMemberUpdated(user, groupInfo, _, toMember):

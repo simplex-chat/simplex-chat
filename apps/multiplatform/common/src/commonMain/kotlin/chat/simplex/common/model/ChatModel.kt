@@ -492,7 +492,7 @@ object ChatModel {
 
     suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo, groupChatScope = null))
 
-    private suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
+    suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
       if (hasChat(rhId, cInfo.id)) {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
@@ -2125,7 +2125,7 @@ data class LocalProfile(
   val peerType: ChatPeerType? = null,
   val localBadge: LocalBadge? = null,
   val contactDomain: SimplexDomainClaim? = null,
-  val contactDomainVerified: Boolean? = null
+  val contactDomainVerified: DomainVerification? = null
 ): NamedChat {
   override val profileDescription: String? get() = description
 
@@ -2435,7 +2435,7 @@ enum class BadgeAlertKind {
   @SerialName("issueFailed") IssueFailed
 }
 
-private fun badgeDateText(date: Instant): String {
+fun badgeDateText(date: Instant): String {
   val ts = date.toLocalDateTime(TimeZone.currentSystemDefault())
   return ts.toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
 }
@@ -2491,7 +2491,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
-  val groupDomainVerified: Boolean? = null,
+  val groupDomainVerified: DomainVerification? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -2621,6 +2621,13 @@ data class SimplexDomainClaim(
   val proof: SimplexDomainProof? = null
 ) {
   val shortName: String get() = domain.removeSuffix(".simplex")
+}
+
+@Serializable
+enum class DomainVerification {
+  @SerialName("failed") Failed,
+  @SerialName("verified") Verified,
+  @SerialName("moved") Moved,
 }
 
 @Serializable
