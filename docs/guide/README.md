@@ -30,6 +30,12 @@ After downloading SimpleX Chat via the links at https://simplex.chat:
 
 This profile is local to the device, it is not stored anywhere else
 
+### Watch how to get started
+
+<a href="https://youtu.be/MjZFHTLeOrE"><img src="./images/Welcome_video.jpg" alt="Video: how to create your SimpleX Chat profile" width="330"></a>
+
+Prefer to watch rather than read? This video shows how to create your profile and add a profile picture.
+
 ### Choose notifications mode
 
 After you have created the chat profile the app will ask you to choose notifications mode.
@@ -82,13 +88,3 @@ Most app settings are shared for all profiles, but some settings are specific to
 Read more in [App settings](./app-settings.md) page.
 
 Many conversation actions are available via long-press or swipe – try them!
-
-### Tutorial video
-
-[![SimpleX Chat tutorial video](./images/Welcome_video.jpg)](https://youtu.be/MjZFHTLeOrE)
-
-When you create a profile in SimpleX Chat, it is stored only on your phone - nobody can compromise your profile via the servers.
-
-It also makes SimpleX Chat the safest messenger: you only talk to people you shared the link with.
-
-[Watch the tutorial video](https://youtu.be/MjZFHTLeOrE)
