@@ -5458,7 +5458,7 @@ runStoreReceiptWorker a userId Worker {doWork} = do
   forever $ do
     lift $ waitForWork doWork
     withWork_ a doWork (getDueReceipt scheduled) $ \case
-      BadgeReceiptRecord {receiptId, status = RSHeld {stash, payment, retryDelay}} -> creditStoreReceipt a userId receiptId stash payment retryDelay
+      BadgeReceiptRecord {receiptId, status = RSHeld {stash, invoiceId, payment, retryDelay}} -> creditStoreReceipt a userId receiptId stash invoiceId payment retryDelay
       BadgeReceiptRecord {receiptId} -> notHeld receiptId
   where
     getDueReceipt scheduled =
@@ -5479,31 +5479,36 @@ runStoreReceiptWorker a userId Worker {doWork} = do
         atomically $ modifyTVar' scheduled $ S.delete receiptId
         void $ atomically $ tryPutTMVar doWork ()
 
-data StoreReceiptOutcome = SROCredited (Maybe User) | SRORefused | SRORetry | SRODeferred
+data StoreReceiptOutcome = SROCredited (Maybe User) | SRORefused BadgeIssueFailure | SRORetry | SRODeferred
 
 -- | Under the owner's badge lock, which keeps a profile's requests to the service serial.
-creditStoreReceipt :: AgentClient -> UserId -> Int64 -> BadgeStash -> Text -> Maybe Int64 -> CM ()
-creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} payment retryDelay = do
+creditStoreReceipt :: AgentClient -> UserId -> Int64 -> BadgeStash -> Maybe Text -> Text -> Maybe Int64 -> CM ()
+creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ payment retryDelay = do
   ChatConfig {badgeRetryInterval = ri, badgeConsecutiveRetries} <- asks config
   withRetryIntervalCount (maybe ri (\d -> ri {initialInterval = d, increaseAfter = 0}) retryDelay) $ \n delay loop -> do
     liftIO $ waitWhileSuspended a
     liftIO $ waitForUserNetwork a
+    -- decided under the lock and acted on outside it: the retry sleeps, and announcing takes the chat lock
     outcome <- withEntityLock "badgePurchase" (CLBadgeUser userId) $
       tryAllErrors attempt >>= \case
         Right (Right (present_, _)) -> pure $ SROCredited present_
         Right (Left (code, retryAfter))
-          | storeReceiptRefused code -> SRORefused <$ withStore' (\db -> refuseStoreReceipt db receiptId $ serviceFailure code retryAfter)
+          | storeReceiptRefused code -> do
+              let failure = serviceFailure code retryAfter
+              SRORefused failure <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
           | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
         Left e -> failed ri delay (badgeIssueFailure e) Nothing
-    -- only a settlement is announced, and the sweep it prompts signals this worker only for a receipt still held, so it cannot loop
+    -- the invoice id is the app's only key to the store transaction, so without one nothing is emitted and its sweep finishes it
     case outcome of
       SROCredited present_ -> do
         user <- withStore $ \db -> getUser db userId
         toView . CEvtBadgeChanged user =<< getUserBadgeState user
-        toView $ CEvtStorePurchaseResolved user
-        -- last, so a failed broadcast cannot lose the settlement; outside the badge lock, as it takes the chat lock
+        forM_ invoiceId_ $ toView . CEvtStorePurchaseCredited user
+        -- last, so a failed broadcast cannot lose the settlement
         mapM_ presentUserBadgeToContacts present_
-      SRORefused -> withStore (`getUser` userId) >>= toView . CEvtStorePurchaseResolved
+      SRORefused failure -> forM_ invoiceId_ $ \invoiceId -> do
+        user <- withStore (`getUser` userId)
+        toView $ CEvtStorePurchaseRefused user invoiceId failure
       SRORetry | n + 1 < badgeConsecutiveRetries -> loop
       _ -> pure ()
   where

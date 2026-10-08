@@ -7,10 +7,8 @@ import androidx.compose.runtime.remember
 import chat.simplex.common.model.BadgeModel
 import chat.simplex.common.model.BadgeState
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.ModalView
-import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -31,14 +29,6 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
       } else if (purchaseState != null) {
         // holds the purchase screens' slot, so a consumable cannot be bought twice
         BadgesPurchaseStateView(purchaseState.title, purchaseState.message, BadgeStore.creditError(chatModel.currentUser.value?.userId), onDismiss = close)
-        LaunchedEffect(purchaseState) {
-          BadgeStore.refusals.collect { refusal ->
-            // only the issuing screen belongs to the active profile's held purchase, so a refusal shown there reads as its own
-            if (purchaseState == BadgePurchaseState.Issuing) {
-              AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_purchase_error), text = chatModel.controller.redeemErrorText(refusal, purchase = true))
-            }
-          }
-        }
       } else if (checkingPurchases) {
         BadgesPurchaseStateView(MR.strings.badges_checking_purchases_title, null, onDismiss = close)
       } else {

@@ -1283,7 +1283,8 @@ enum ChatEvent: Decodable, ChatAPIResult {
     // badges
     case badgeChanged(user: User, badgeState: BadgeState?)
     case badgeAlert(user: UserRef, badgeAlert: BadgeAlert)
-    case storePurchaseResolved(user: UserRef)
+    case storePurchaseCredited(user: UserRef, invoiceId: String)
+    case storePurchaseRefused(user: UserRef, invoiceId: String, refusal: BadgeIssueFailure)
 
     var responseType: String {
         switch self {
@@ -1358,7 +1359,8 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .contactPQEnabled: "contactPQEnabled"
         case .badgeChanged: "badgeChanged"
         case .badgeAlert: "badgeAlert"
-        case .storePurchaseResolved: "storePurchaseResolved"
+        case .storePurchaseCredited: "storePurchaseCredited"
+        case .storePurchaseRefused: "storePurchaseRefused"
         }
     }
 
@@ -1443,7 +1445,8 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
         case let .badgeChanged(u, badgeState): return withUser(u, String(describing: badgeState))
         case let .badgeAlert(u, badgeAlert): return withUser(u, String(describing: badgeAlert))
-        case .storePurchaseResolved: return noDetails
+        case let .storePurchaseCredited(u, invoiceId): return withUser(u, "invoiceId: \(invoiceId)")
+        case let .storePurchaseRefused(u, invoiceId, refusal): return withUser(u, "invoiceId: \(invoiceId)\nrefusal: \(refusal.tag)")
         }
     }
 }

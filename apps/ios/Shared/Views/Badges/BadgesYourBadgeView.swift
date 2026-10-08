@@ -14,7 +14,6 @@ struct BadgesYourBadgeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) private var dismiss
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @ObservedObject private var store = BadgeStore.shared
     let badgeState: BadgeState
     var showsAsSheet: Bool = false
 
@@ -77,15 +76,6 @@ struct BadgesYourBadgeView: View {
                                 .foregroundColor(.red)
                             Text("Error")
                         }
-                    }
-                }
-                if store.purchaseState(chatModel.currentUser?.userId) != nil {
-                    Section {
-                        Text("A store purchase is being processed.")
-                            .foregroundColor(theme.colors.secondary)
-                    } header: {
-                        Text("Store purchase")
-                            .foregroundColor(theme.colors.secondary)
                     }
                 }
                 if developerTools {

@@ -3612,9 +3612,10 @@ object ChatController {
             BadgeModel.setAlert(rhId, r.user.userId, r.badgeAlert)
           }
         }
-      is CR.StorePurchaseResolved ->
-        // whichever profile owns it: only the app can finish the store purchase
-        withLongRunningApi { BadgeStore.presentUnfinished() }
+      is CR.StorePurchaseCredited ->
+        withLongRunningApi { BadgeStore.storePurchaseResolved(rhId, r.user, r.invoiceId) }
+      is CR.StorePurchaseRefused ->
+        withLongRunningApi { BadgeStore.storePurchaseRefused(rhId, r.user, r.invoiceId, r.refusal) }
       else ->
         Log.d(TAG , "unsupported event: ${msg.responseType}")
     }
@@ -6963,7 +6964,8 @@ sealed class CR {
   @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
-  @Serializable @SerialName("storePurchaseResolved") class StorePurchaseResolved(val user: UserRef): CR()
+  @Serializable @SerialName("storePurchaseCredited") class StorePurchaseCredited(val user: UserRef, val invoiceId: String): CR()
+  @Serializable @SerialName("storePurchaseRefused") class StorePurchaseRefused(val user: UserRef, val invoiceId: String, val refusal: BadgeIssueFailure): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -7156,7 +7158,8 @@ sealed class CR {
     is BadgeLedger -> "badgeLedger"
     is BadgeChanged -> "badgeChanged"
     is BadgeAlertR -> "badgeAlert"
-    is StorePurchaseResolved -> "storePurchaseResolved"
+    is StorePurchaseCredited -> "storePurchaseCredited"
+    is StorePurchaseRefused -> "storePurchaseRefused"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -7366,7 +7369,8 @@ sealed class CR {
     is BadgeLedger -> withUser(user, json.encodeToString(badgeLedger))
     is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
     is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))
-    is StorePurchaseResolved -> withUser(user, noDetails())
+    is StorePurchaseCredited -> withUser(user, "invoiceId: $invoiceId")
+    is StorePurchaseRefused -> withUser(user, "invoiceId: $invoiceId\nrefusal: ${refusal.tag}")
     is Response -> json
     is Invalid -> str
   }
