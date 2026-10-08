@@ -641,7 +641,7 @@ smpServerCfg p =
       maxJournalMsgCount = 24,
       maxJournalStateLines = 4,
       queueIdBytes = 24,
-      msgIdBytes = 6,
+      msgIdBytes = 24,
       serverStoreCfg = SSCMemory Nothing, -- $ Just StorePaths {storeLogFile = "tmp/smp-server-store.log", storeMsgsFile = Just "tmp/smp-server-messages.log"},
       storeNtfsFile = Nothing,
       allowNewQueues = True,
