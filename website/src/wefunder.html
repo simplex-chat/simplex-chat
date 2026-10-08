@@ -5,6 +5,7 @@ templateEngineOverride: njk
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <script>location.replace('https://wefunder.com/simplex.chat' + location.search);</script>
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Invest in SimpleX Chat</title>
@@ -18,12 +19,5 @@ templateEngineOverride: njk
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
         <noscript><meta http-equiv="refresh" content="0; url=https://wefunder.com/simplex.chat" /></noscript>
     </head>
-    <body>
-        <p><a id="destination" href="https://wefunder.com/simplex.chat">Invest on Wefunder</a></p>
-        <script>
-            const destination = new URL(document.getElementById('destination').href);
-            new URLSearchParams(location.search).forEach((value, name) => destination.searchParams.append(name, value));
-            location.replace(destination);
-        </script>
-    </body>
+    <body></body>
 </html>
