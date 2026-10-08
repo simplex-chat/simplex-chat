@@ -15,8 +15,15 @@ import chat.simplex.common.platform.onlyOwnerCanWrite
 import chat.simplex.common.platform.registerAppImageScheme
 import chat.simplex.common.platform.registerWindowsSchemes
 import chat.simplex.common.platform.runProcess
+import chat.simplex.common.platform.windowsCommandProgram
+import chat.simplex.common.platform.windowsApplicationValues
 import chat.simplex.common.platform.windowsOpenCommand
+import chat.simplex.common.platform.WindowsShell
+import chat.simplex.common.platform.windowsProgIdValues
 import chat.simplex.common.platform.windowsSchemeValues
+import com.sun.jna.platform.win32.Win32Exception
+import com.sun.jna.platform.win32.WinError
+import com.sun.jna.platform.win32.WinNT
 import org.junit.Assume.assumeNoException
 import org.junit.Assume.assumeTrue
 import java.io.File
@@ -47,6 +54,8 @@ class AppLinkSchemeTest {
   private val windowsExe = "C:\\Program Files\\SimpleX\\SimpleX.exe"
   private val appLinkCommandKey = "Software\\Classes\\simplexchat\\shell\\open\\command"
   private val connectionCommandKey = "Software\\Classes\\simplex\\shell\\open\\command"
+  private val appLinkCommand = appLinkCommandKey to ""
+  private val connectionCommand = connectionCommandKey to ""
   private val olderWindowsCommand = "\"C:\\Old\\SimpleX.exe\" \"%1\""
   private val appImagePath = "/home/user/$APPIMAGE_FILE_NAME"
 
@@ -59,13 +68,14 @@ class AppLinkSchemeTest {
   }
 
   @Test
-  fun windowsSchemeIsAUrlProtocolThatOpensTheExe() {
+  fun windowsSchemeIsAUrlProtocolNamingItsProgId() {
     assertEquals(
       listOf(
         RegistryValue(key = "Software\\Classes\\simplexchat", name = "", value = "URL:SimpleX Chat"),
         RegistryValue(key = "Software\\Classes\\simplexchat", name = "URL Protocol", value = ""),
         RegistryValue(key = "Software\\Classes\\simplexchat\\DefaultIcon", name = "", value = "\"$windowsExe\",0"),
         RegistryValue(key = appLinkCommandKey, name = "", value = "\"$windowsExe\" \"%1\""),
+        RegistryValue(key = "Software\\chat.simplex.app\\Capabilities\\URLAssociations", name = "simplexchat", value = "SimpleX.simplexchat"),
       ),
       windowsSchemeValues("simplexchat", windowsExe),
       "app link scheme"
@@ -76,6 +86,7 @@ class AppLinkSchemeTest {
         RegistryValue(key = "Software\\Classes\\simplex", name = "URL Protocol", value = ""),
         RegistryValue(key = "Software\\Classes\\simplex\\DefaultIcon", name = "", value = "\"$windowsExe\",0"),
         RegistryValue(key = connectionCommandKey, name = "", value = "\"$windowsExe\" \"%1\""),
+        RegistryValue(key = "Software\\chat.simplex.app\\Capabilities\\URLAssociations", name = "simplex", value = "SimpleX.simplex"),
       ),
       windowsSchemeValues("simplex", windowsExe),
       "connection link scheme"
@@ -83,45 +94,207 @@ class AppLinkSchemeTest {
   }
 
   @Test
-  fun windowsRegistrationWritesEveryValueWhenTheCommandsPointElsewhere() {
-    val registry = FakeRegistry(mutableMapOf(appLinkCommandKey to olderWindowsCommand, connectionCommandKey to olderWindowsCommand))
-    assertTrue(registerWindowsSchemes(windowsExe, registry::readDefault, registry::write), "the command now opens this exe")
-    assertEquals(windowsSchemeValues("simplexchat", windowsExe) + windowsSchemeValues("simplex", windowsExe), registry.writes)
-    assertEquals(windowsOpenCommand(windowsExe), registry.readDefault(connectionCommandKey), "connection links open this exe too")
+  fun windowsProgIdOpensTheExe() {
+    assertEquals(
+      listOf(
+        RegistryValue(key = "Software\\Classes\\SimpleX.simplexchat", name = "", value = "URL:SimpleX Chat"),
+        RegistryValue(key = "Software\\Classes\\SimpleX.simplexchat\\DefaultIcon", name = "", value = "\"$windowsExe\",0"),
+        RegistryValue(key = "Software\\Classes\\SimpleX.simplexchat\\shell\\open\\command", name = "", value = "\"$windowsExe\" \"%1\""),
+      ),
+      windowsProgIdValues("simplexchat", windowsExe)
+    )
   }
 
   @Test
-  fun windowsRegistrationLeavesMatchingCommandsAlone() {
-    val command = windowsOpenCommand(windowsExe)
-    val registry = FakeRegistry(mutableMapOf(appLinkCommandKey to command, connectionCommandKey to command))
-    assertTrue(registerWindowsSchemes(windowsExe, registry::readDefault, registry::write))
-    assertEquals(listOf(), registry.writes, "nothing is written again")
+  fun windowsApplicationIsListedInDefaultAppsAfterItsCapabilities() {
+    assertEquals(
+      listOf(
+        RegistryValue(key = "Software\\chat.simplex.app\\Capabilities", name = "ApplicationName", value = "SimpleX Chat"),
+        RegistryValue(
+          key = "Software\\chat.simplex.app\\Capabilities",
+          name = "ApplicationDescription",
+          value = "Private and secure open-source messenger - no user IDs (not even random numbers)"
+        ),
+        RegistryValue(key = "Software\\RegisteredApplications", name = "SimpleX Chat", value = "Software\\chat.simplex.app\\Capabilities"),
+      ),
+      windowsApplicationValues
+    )
   }
 
   @Test
-  fun windowsRegistrationFailsWhenTheAppLinkCommandIsNotStored() {
-    val registry = FakeRegistry(mutableMapOf(appLinkCommandKey to olderWindowsCommand), refusedKeys = setOf(appLinkCommandKey))
-    assertFalse(registerWindowsSchemes(windowsExe, registry::readDefault, registry::write), "the older command stayed")
-    assertEquals(windowsSchemeValues("simplexchat", windowsExe) + windowsSchemeValues("simplex", windowsExe), registry.writes)
+  fun windowsRegistrationWritesEveryValueWhenTheCommandsPointAtAMissingProgram() {
+    val shell = FakeWindowsShell(user = mutableMapOf(appLinkCommand to olderWindowsCommand, connectionCommand to olderWindowsCommand))
+    registerWindowsSchemes(windowsExe, shell)
+    assertEquals(fullRegistration(), shell.writes)
+    assertTrue(shell.notified, "Windows is told that associations changed")
   }
 
   @Test
-  fun windowsRegistrationSucceedsWhenOnlyTheConnectionCommandIsNotStored() {
-    val registry = FakeRegistry(mutableMapOf(), refusedKeys = setOf(connectionCommandKey))
-    assertTrue(registerWindowsSchemes(windowsExe, registry::readDefault, registry::write), "only simplexchat: decides the badge page")
-    assertNull(registry.readDefault(connectionCommandKey), "the connection command was refused")
+  fun windowsCommandProgramIsTheQuotedOrFirstArgument() {
+    assertEquals("C:\\Program Files\\Other\\Other.exe", windowsCommandProgram("\"C:\\Program Files\\Other\\Other.exe\" \"%1\""), "quoted")
+    assertEquals("C:\\Other\\Other.exe", windowsCommandProgram("C:\\Other\\Other.exe %1"), "unquoted")
+    assertEquals("C:\\Other\\Other.exe", windowsCommandProgram("C:\\Other\\Other.exe"), "no arguments")
   }
 
-  private class FakeRegistry(private val defaults: MutableMap<String, String>, private val refusedKeys: Set<String> = setOf()) {
+  @Test
+  fun windowsRegistrationLeavesAFullRegistrationAlone() {
+    val shell = FakeWindowsShell(user = registered())
+    registerWindowsSchemes(windowsExe, shell)
+    assertEquals(listOf(), shell.writes, "nothing is written again")
+    assertFalse(shell.notified, "an unchanged registration does not clear Explorer's caches")
+  }
+
+  @Test
+  fun windowsRegistrationRepairsAValueMissingBesideAMatchingCommand() {
+    val shell = FakeWindowsShell(user = registered().apply { remove("Software\\Classes\\simplexchat" to "URL Protocol") })
+    registerWindowsSchemes(windowsExe, shell)
+    assertEquals(windowsSchemeValues("simplexchat", windowsExe), shell.writes, "only the incomplete scheme is rewritten")
+  }
+
+  @Test
+  fun windowsRegistrationAnnouncesARepairedApplicationListing() {
+    val shell = FakeWindowsShell(user = registered().apply { remove("Software\\RegisteredApplications" to "SimpleX Chat") })
+    registerWindowsSchemes(windowsExe, shell)
+    assertEquals(windowsApplicationValues, shell.writes, "only the application listing is rewritten")
+    assertTrue(shell.notified, "Windows is told that associations changed")
+  }
+
+  @Test
+  fun windowsRegistrationKeepsAnotherInstalledHandler() = withTempDir { dir ->
+    val otherCommand = "\"${Files.createFile(dir.resolve("Other.exe"))}\" \"%1\""
+    val shell = FakeWindowsShell(user = mutableMapOf(appLinkCommand to otherCommand, connectionCommand to otherCommand))
+    registerWindowsSchemes(windowsExe, shell)
+    assertEquals(
+      windowsProgIdValues("simplexchat", windowsExe) + windowsProgIdValues("simplex", windowsExe),
+      shell.writes,
+      "only this app's own ProgIds are written; no scheme is taken and no application is listed without one"
+    )
+  }
+
+  @Test
+  fun windowsRegistrationKeepsAMachineWideHandler() = withTempDir { dir ->
+    val otherCommand = "\"${Files.createFile(dir.resolve("Other.exe"))}\" \"%1\""
+    val shell = FakeWindowsShell(machine = mutableMapOf(appLinkCommand to otherCommand))
+    registerWindowsSchemes(windowsExe, shell)
+    assertTrue(shell.writes.none { it.key == appLinkCommandKey }, "a per-user key would hide the machine-wide handler")
+    assertTrue(windowsSchemeValues("simplex", windowsExe).all { it in shell.writes }, "the free scheme is taken")
+  }
+
+  @Test
+  fun windowsRegistrationRepairsItsProgIdWhileAnotherProgramHoldsTheScheme() = withTempDir { dir ->
+    val otherCommand = "\"${Files.createFile(dir.resolve("Other.exe"))}\" \"%1\""
+    val staleProgId = windowsProgIdValues("simplexchat", "C:\\Old\\SimpleX.exe").associate { (it.key to it.name) to it.value }
+    val shell = FakeWindowsShell(user = (staleProgId + (appLinkCommand to otherCommand)).toMutableMap())
+    registerWindowsSchemes(windowsExe, shell)
+    assertEquals(windowsProgIdValues("simplexchat", windowsExe), shell.writes.take(3), "the ProgId points at this exe again")
+  }
+
+  @Test
+  fun windowsRegistrationReportsTheProgramTheShellStarts() {
+    assertFalse(registerWindowsSchemes(windowsExe, FakeWindowsShell(user = registered(), handler = "C:\\Other\\Other.exe")), "another app picked in settings")
+    assertTrue(registerWindowsSchemes(windowsExe, FakeWindowsShell(user = registered(), handler = windowsExe.uppercase())), "paths differ only in case")
+    assertFalse(registerWindowsSchemes(windowsExe, FakeWindowsShell(user = registered(), handler = null)), "the shell has no answer")
+  }
+
+  @Test
+  fun windowsRegistrationContinuesPastARegistryError() {
+    val shell = FakeWindowsShell(failingWrites = setOf("Software\\Classes\\simplexchat"))
+    registerWindowsSchemes(windowsExe, shell)
+    assertTrue(windowsSchemeValues("simplexchat", windowsExe).none { it in shell.writes }, "the app link scheme could not be written")
+    assertTrue(windowsSchemeValues("simplex", windowsExe).all { it in shell.writes }, "the connection link scheme is still written")
+    assertTrue(windowsApplicationValues.all { it in shell.writes }, "the application is listed for the scheme that is ours")
+  }
+
+  @Test
+  fun windowsRegistrationTakesNoSchemeWhoseHandlerCannotBeRead() {
+    val shell = FakeWindowsShell(failingReads = setOf(appLinkCommandKey, connectionCommandKey))
+    registerWindowsSchemes(windowsExe, shell)
+    assertEquals(
+      windowsProgIdValues("simplexchat", windowsExe) + windowsProgIdValues("simplex", windowsExe),
+      shell.writes,
+      "an unreadable handler is left alone, and no application is listed without a scheme"
+    )
+  }
+
+  @Test
+  fun windowsRegistrationTakesNoSchemeWhoseMachineWideHandlerCannotBeRead() {
+    val shell = FakeWindowsShell(failingMachineReads = setOf(appLinkCommandKey))
+    registerWindowsSchemes(windowsExe, shell)
+    assertTrue(windowsSchemeValues("simplexchat", windowsExe).none { it in shell.writes }, "the app link scheme is left alone")
+    assertTrue(windowsSchemeValues("simplex", windowsExe).all { it in shell.writes }, "the readable scheme is taken")
+  }
+
+  @Test
+  fun windowsRegistrationTakesNoSchemeWhoseProgIdCannotBeWritten() {
+    val shell = FakeWindowsShell(failingWrites = setOf("Software\\Classes\\SimpleX.simplexchat"))
+    registerWindowsSchemes(windowsExe, shell)
+    assertTrue(windowsSchemeValues("simplexchat", windowsExe).none { it in shell.writes }, "URLAssociations must not name a missing ProgId")
+  }
+
+  @Test
+  fun windowsRegistrationKeepsAnotherInstalledCopysProgId() = withTempDir { dir ->
+    val otherCopy = Files.createFile(dir.resolve("SimpleX.exe")).toString()
+    val otherProgId = windowsProgIdValues("simplexchat", otherCopy).associate { (it.key to it.name) to it.value }
+    val shell = FakeWindowsShell(user = otherProgId.toMutableMap())
+    registerWindowsSchemes(windowsExe, shell)
+    assertTrue(shell.writes.none { it.key.contains("simplexchat") }, "links picked for the other copy keep reaching it: neither its ProgId nor the scheme is taken")
+  }
+
+  @Test
+  fun windowsRegistrationTreatsItsOwnProgramAsItsOwnHandler() = withTempDir { dir ->
+    val exe = Files.createFile(dir.resolve("SimpleX.exe")).toString()
+    val otherExe = Files.createFile(dir.resolve("Other.exe")).toString()
+    val shell = FakeWindowsShell(
+      user = mutableMapOf(appLinkCommand to "\"$exe\" %1"),
+      machine = mutableMapOf(appLinkCommand to "\"$otherExe\" \"%1\""),
+    )
+    registerWindowsSchemes(exe, shell)
+    assertTrue(windowsSchemeValues("simplexchat", exe).all { it in shell.writes }, "a command for this exe is updated, and the hidden machine-wide one is ignored")
+  }
+
+  private fun fullRegistration(): List<RegistryValue> =
+    windowsProgIdValues("simplexchat", windowsExe) + windowsSchemeValues("simplexchat", windowsExe) +
+      windowsProgIdValues("simplex", windowsExe) + windowsSchemeValues("simplex", windowsExe) + windowsApplicationValues
+
+  private fun registered(): MutableMap<Pair<String, String>, String> =
+    fullRegistration().associate { (it.key to it.name) to it.value }.toMutableMap()
+
+  private inner class FakeWindowsShell(
+    private val user: MutableMap<Pair<String, String>, String> = mutableMapOf(),
+    private val machine: Map<Pair<String, String>, String> = mapOf(),
+    private val handler: String? = windowsExe,
+    private val failingReads: Set<String> = setOf(),
+    private val failingMachineReads: Set<String> = setOf(),
+    private val failingWrites: Set<String> = setOf(),
+  ) : WindowsShell {
     val writes = mutableListOf<RegistryValue>()
+    var notified = false
 
-    fun readDefault(key: String): String? = defaults[key]
+    override fun readUser(key: String, name: String): String? {
+      if (key in failingReads) throw AccessDenied()
+      return user[key to name]
+    }
 
-    fun write(value: RegistryValue) {
+    override fun readMachine(key: String, name: String): String? {
+      if (key in failingMachineReads) throw AccessDenied()
+      return machine[key to name]
+    }
+
+    override fun writeUser(value: RegistryValue) {
+      if (value.key in failingWrites) throw AccessDenied()
       writes += value
-      if (value.key !in refusedKeys && value.name == "") defaults[value.key] = value.value
+      user[value.key to value.name] = value.value
+    }
+
+    override fun linkHandler(scheme: String): String? = handler
+
+    override fun notifyAssociationsChanged() {
+      notified = true
     }
   }
+
+  // Win32Exception's public constructors format the message through kernel32, which only Windows has.
+  private class AccessDenied : Win32Exception(WinError.ERROR_ACCESS_DENIED, WinNT.HRESULT(WinError.ERROR_ACCESS_DENIED), "access denied")
 
   @Test
   fun execArgumentOfAPlainPathIsLeftBare() {

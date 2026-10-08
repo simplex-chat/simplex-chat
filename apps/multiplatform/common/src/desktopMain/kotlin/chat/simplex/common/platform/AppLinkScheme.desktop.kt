@@ -2,9 +2,14 @@ package chat.simplex.common.platform
 
 import chat.simplex.common.views.chatlist.appLinkScheme
 import chat.simplex.common.views.chatlist.connectionLinkScheme
+import com.sun.jna.NativeLibrary
+import com.sun.jna.WString
 import com.sun.jna.platform.win32.Advapi32Util
 import com.sun.jna.platform.win32.Win32Exception
+import com.sun.jna.platform.win32.WinReg.HKEY
 import com.sun.jna.platform.win32.WinReg.HKEY_CURRENT_USER
+import com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE
+import com.sun.jna.ptr.IntByReference
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
@@ -17,7 +22,18 @@ import kotlin.concurrent.thread
 internal const val APP_LINK_MIME_TYPE = "x-scheme-handler/$appLinkScheme"
 internal const val CONNECTION_LINK_MIME_TYPE = "x-scheme-handler/$connectionLinkScheme"
 private const val WINDOWS_CLASSES_KEY = "Software\\Classes"
+private const val WINDOWS_PROG_ID_PREFIX = "SimpleX."
+private const val WINDOWS_CAPABILITIES_KEY = "Software\\chat.simplex.app\\Capabilities"
+private const val WINDOWS_REGISTERED_APPLICATIONS_KEY = "Software\\RegisteredApplications"
+private const val APP_DESCRIPTION = "Private and secure open-source messenger - no user IDs (not even random numbers)"
 private const val WINDOWS_FIRST_ICON_INDEX = 0
+// values from shlwapi.h and shlobj_core.h
+private const val ASSOCF_IS_PROTOCOL = 0x1000
+private const val ASSOCSTR_EXECUTABLE = 2
+private const val S_OK = 0
+private const val S_FALSE = 1
+private const val SHCNE_ASSOCCHANGED = 0x08000000
+private const val SHCNF_IDLIST = 0
 // the Win32 name of a key's default value
 private const val REGISTRY_DEFAULT_VALUE = ""
 internal const val APPIMAGE_ENTRY_NAME = "chat.simplex.app-links.desktop"
@@ -82,7 +98,7 @@ private fun registerForThisInstallation(): Boolean =
   when (val installation = desktopInstallation(desktopPlatform, System.getProperty("jpackage.app-path"), System.getenv())) {
     // The bundle's Info.plist and the Flatpak's exported desktop entry register the schemes.
     DesktopInstallation.MacBundle, DesktopInstallation.Flatpak -> true
-    is DesktopInstallation.WindowsExe -> registerWindowsSchemes(installation.path, ::registryDefault, ::writeRegistryValue)
+    is DesktopInstallation.WindowsExe -> registerWindowsSchemes(installation.path, SystemWindowsShell)
     is DesktopInstallation.AppImage ->
       registerAppImageScheme(installation.path, File(unixDataHome, APPLICATIONS_DIR), systemApplicationsDirs(), ::runProcess)
     DesktopInstallation.LinuxPackage -> linuxPackageRegistered(::runProcess)
@@ -91,49 +107,152 @@ private fun registerForThisInstallation(): Boolean =
 
 internal fun windowsOpenCommand(appPath: String): String = "\"$appPath\" \"%1\""
 
+internal fun windowsCommandProgram(command: String): String =
+  if (command.startsWith("\"")) command.substring(1).substringBefore('"') else command.substringBefore(' ')
+
 internal data class RegistryValue(val key: String, val name: String, val value: String)
 
 private fun windowsSchemeKey(scheme: String): String = "$WINDOWS_CLASSES_KEY\\$scheme"
 
 private fun windowsCommandKey(scheme: String): String = "${windowsSchemeKey(scheme)}\\shell\\open\\command"
 
-// The command goes last, so finding it means every value before it was written.
+private fun windowsProgId(scheme: String): String = "$WINDOWS_PROG_ID_PREFIX$scheme"
+
+private fun windowsProgIdKey(scheme: String): String = "$WINDOWS_CLASSES_KEY\\${windowsProgId(scheme)}"
+
+private fun windowsProgIdCommandKey(scheme: String): String = "${windowsProgIdKey(scheme)}\\shell\\open\\command"
+
+private fun windowsIcon(appPath: String): String = "\"$appPath\",$WINDOWS_FIRST_ICON_INDEX"
+
+// The scheme key declares the URL scheme, but its command opens links only while no app registered through
+// Capabilities claims the scheme: Windows settings offer only the ProgIds that Capabilities name.
 internal fun windowsSchemeValues(scheme: String, appPath: String): List<RegistryValue> {
   val schemeKey = windowsSchemeKey(scheme)
   return listOf(
     RegistryValue(key = schemeKey, name = REGISTRY_DEFAULT_VALUE, value = "URL:$APP_DISPLAY_NAME"),
     // without this value Windows does not treat the key as a URL scheme
     RegistryValue(key = schemeKey, name = "URL Protocol", value = ""),
-    RegistryValue(key = "$schemeKey\\DefaultIcon", name = REGISTRY_DEFAULT_VALUE, value = "\"$appPath\",$WINDOWS_FIRST_ICON_INDEX"),
+    RegistryValue(key = "$schemeKey\\DefaultIcon", name = REGISTRY_DEFAULT_VALUE, value = windowsIcon(appPath)),
     RegistryValue(key = windowsCommandKey(scheme), name = REGISTRY_DEFAULT_VALUE, value = windowsOpenCommand(appPath)),
+    RegistryValue(key = "$WINDOWS_CAPABILITIES_KEY\\URLAssociations", name = scheme, value = windowsProgId(scheme)),
   )
 }
 
-internal fun registerWindowsSchemes(appPath: String, readDefault: (key: String) -> String?, write: (RegistryValue) -> Unit): Boolean {
-  val registered = registerWindowsScheme(appLinkScheme, appPath, readDefault, write)
-  registerWindowsScheme(connectionLinkScheme, appPath, readDefault, write)
-  return registered
+// The ProgId is what links resolve to once the user picks SimpleX in settings, so it is repaired even while
+// another program holds the scheme key, but another installed copy's ProgId is kept like any other handler.
+internal fun windowsProgIdValues(scheme: String, appPath: String): List<RegistryValue> {
+  val progIdKey = windowsProgIdKey(scheme)
+  return listOf(
+    RegistryValue(key = progIdKey, name = REGISTRY_DEFAULT_VALUE, value = "URL:$APP_DISPLAY_NAME"),
+    RegistryValue(key = "$progIdKey\\DefaultIcon", name = REGISTRY_DEFAULT_VALUE, value = windowsIcon(appPath)),
+    RegistryValue(key = windowsProgIdCommandKey(scheme), name = REGISTRY_DEFAULT_VALUE, value = windowsOpenCommand(appPath)),
+  )
 }
 
-private fun registerWindowsScheme(scheme: String, appPath: String, readDefault: (key: String) -> String?, write: (RegistryValue) -> Unit): Boolean {
-  val command = windowsOpenCommand(appPath)
-  return try {
-    if (readDefault(windowsCommandKey(scheme)) != command) windowsSchemeValues(scheme, appPath).forEach(write)
-    readDefault(windowsCommandKey(scheme)) == command
+// The application is listed last, so Windows never lists it before its capabilities are complete.
+internal val windowsApplicationValues: List<RegistryValue> = listOf(
+  RegistryValue(key = WINDOWS_CAPABILITIES_KEY, name = "ApplicationName", value = APP_DISPLAY_NAME),
+  RegistryValue(key = WINDOWS_CAPABILITIES_KEY, name = "ApplicationDescription", value = APP_DESCRIPTION),
+  RegistryValue(key = WINDOWS_REGISTERED_APPLICATIONS_KEY, name = APP_DISPLAY_NAME, value = WINDOWS_CAPABILITIES_KEY),
+)
+
+internal interface WindowsShell {
+  fun readUser(key: String, name: String): String?
+  fun readMachine(key: String, name: String): String?
+  fun writeUser(value: RegistryValue)
+  // the program the shell starts for a link, after any choice made in Windows settings
+  fun linkHandler(scheme: String): String?
+  fun notifyAssociationsChanged()
+}
+
+internal fun registerWindowsSchemes(appPath: String, shell: WindowsShell): Boolean {
+  var changed = false
+  val tracked = object : WindowsShell by shell {
+    override fun writeUser(value: RegistryValue) {
+      shell.writeUser(value)
+      changed = true
+    }
+  }
+  val associated = listOf(appLinkScheme, connectionLinkScheme).filter { registerWindowsScheme(it, appPath, tracked) }
+  if (associated.isNotEmpty()) writeMissing(windowsApplicationValues, tracked, "the application")
+  // The notification also clears Explorer's icon cache, so it is sent only after a change.
+  if (changed) shell.notifyAssociationsChanged()
+  return shell.linkHandler(appLinkScheme)?.let { isThisProgram(it, appPath) } == true
+}
+
+private fun registerWindowsScheme(scheme: String, appPath: String, shell: WindowsShell): Boolean =
+  !heldByAnotherProgram(windowsProgIdCommandKey(scheme), appPath, shell) &&
+    writeMissing(windowsProgIdValues(scheme, appPath), shell, "the $scheme: ProgId") &&
+    !heldByAnotherProgram(windowsCommandKey(scheme), appPath, shell) &&
+    writeMissing(windowsSchemeValues(scheme, appPath), shell, "the $scheme: scheme")
+
+private fun isThisProgram(program: String, appPath: String): Boolean =
+  File(program).absolutePath.equals(File(appPath).absolutePath, ignoreCase = true)
+
+// A per-user key hides the machine-wide one, so the machine-wide command counts only without it.
+private fun heldByAnotherProgram(commandKey: String, appPath: String, shell: WindowsShell): Boolean =
+  try {
+    val current = shell.readUser(commandKey, REGISTRY_DEFAULT_VALUE) ?: shell.readMachine(commandKey, REGISTRY_DEFAULT_VALUE)
+    val program = current?.let(::windowsCommandProgram)
+    program != null && !isThisProgram(program, appPath) && File(program).isFile
   } catch (e: Win32Exception) {
-    Log.w(TAG, "link scheme: cannot register $scheme: in the registry: ${e.message}")
+    Log.w(TAG, "link scheme: cannot read the handler under $commandKey: ${e.message}")
+    true
+  }
+
+private fun writeMissing(values: List<RegistryValue>, shell: WindowsShell, what: String): Boolean {
+  fun stored() = values.all { shell.readUser(it.key, it.name) == it.value }
+  return try {
+    if (!stored()) values.forEach(shell::writeUser)
+    stored()
+  } catch (e: Win32Exception) {
+    Log.w(TAG, "link scheme: cannot register $what in the registry: ${e.message}")
     false
   }
 }
 
-private fun writeRegistryValue(value: RegistryValue) {
-  Advapi32Util.registryCreateKey(HKEY_CURRENT_USER, value.key)
-  Advapi32Util.registrySetStringValue(HKEY_CURRENT_USER, value.key, value.name, value.value)
+private object SystemWindowsShell : WindowsShell {
+  override fun readUser(key: String, name: String): String? = registryString(HKEY_CURRENT_USER, key, name)
+
+  override fun readMachine(key: String, name: String): String? = registryString(HKEY_LOCAL_MACHINE, key, name)
+
+  override fun writeUser(value: RegistryValue) {
+    Advapi32Util.registryCreateKey(HKEY_CURRENT_USER, value.key)
+    Advapi32Util.registrySetStringValue(HKEY_CURRENT_USER, value.key, value.name, value.value)
+  }
+
+  // jna-platform 5.14 binds neither AssocQueryStringW nor SHChangeNotify.
+  override fun linkHandler(scheme: String): String? =
+    try {
+      val assocQueryString = NativeLibrary.getInstance("shlwapi").getFunction("AssocQueryStringW")
+      val length = IntByReference(0)
+      // with no buffer the call reports the length it needs
+      val sized = assocQueryString.invokeInt(arrayOf(ASSOCF_IS_PROTOCOL, ASSOCSTR_EXECUTABLE, WString(scheme), null, null, length))
+      if (sized != S_FALSE) {
+        null
+      } else {
+        val out = CharArray(length.value)
+        val result = assocQueryString.invokeInt(arrayOf(ASSOCF_IS_PROTOCOL, ASSOCSTR_EXECUTABLE, WString(scheme), null, out, length))
+        if (result == S_OK) String(out).substringBefore('\u0000') else null
+      }
+    } catch (e: UnsatisfiedLinkError) {
+      Log.w(TAG, "link scheme: cannot query the $scheme: handler: ${e.message}")
+      null
+    }
+
+  override fun notifyAssociationsChanged() {
+    try {
+      NativeLibrary.getInstance("shell32").getFunction("SHChangeNotify").invokeVoid(arrayOf(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, null, null))
+    } catch (e: UnsatisfiedLinkError) {
+      Log.w(TAG, "link scheme: cannot announce changed associations: ${e.message}")
+    }
+  }
 }
 
-private fun registryDefault(key: String): String? =
-  if (Advapi32Util.registryValueExists(HKEY_CURRENT_USER, key, REGISTRY_DEFAULT_VALUE)) {
-    Advapi32Util.registryGetStringValue(HKEY_CURRENT_USER, key, REGISTRY_DEFAULT_VALUE)
+// registryGetStringValue throws a RuntimeException for a value of another type, which another program could write.
+private fun registryString(hive: HKEY, key: String, name: String): String? =
+  if (Advapi32Util.registryValueExists(hive, key, name)) {
+    Advapi32Util.registryGetValue(hive, key, name) as? String
   } else {
     null
   }
