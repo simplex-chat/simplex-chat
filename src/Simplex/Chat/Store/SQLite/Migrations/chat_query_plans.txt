@@ -1136,6 +1136,15 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH h USING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
 
 Query: 
+            SELECT s.member_relations_vector, r.index_in_group
+            FROM group_members s, group_members r
+            WHERE s.local_display_name = ? AND r.local_display_name = ?
+          
+Plan:
+SCAN s
+SEARCH r USING AUTOMATIC PARTIAL COVERING INDEX (local_display_name=?)
+
+Query: 
             SELECT t.roster_transfer_id, t.roster_version, t.roster_digest, t.sending_owner_gm_id, t.broker_ts,
                    t.roster_msg_chat_binding, t.roster_msg_signatures, t.roster_msg_body
             FROM rcv_roster_transfers t
@@ -1849,11 +1858,15 @@ SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE group_members
-          SET contact_id = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+          SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
+          WHERE (user_id = ? AND group_id = ? AND group_member_id = ?) OR contact_id = ?
         
 Plan:
+MULTI-INDEX OR
+INDEX 1
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+INDEX 2
+SEARCH group_members USING INDEX idx_group_members_contact_id (contact_id=?)
 
 Query: 
           UPDATE group_members
@@ -4212,15 +4225,6 @@ SEARCH s USING PRIMARY KEY (file_id=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH cs USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: 
-        SELECT s.member_relations_vector, r.index_in_group
-        FROM group_members s, group_members r
-        WHERE s.local_display_name = ? AND r.local_display_name = ?
-      
-Plan:
-SCAN s
-SEARCH r USING AUTOMATIC PARTIAL COVERING INDEX (local_display_name=?)
 
 Query: 
         SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled,
@@ -7364,6 +7368,10 @@ Query: SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND ms
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=? AND item_sent=?)
 
+Query: SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'
+Plan:
+SCAN commands
+
 Query: SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -7464,11 +7472,7 @@ Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_suppo
 Plan:
 SCAN chat_items
 
-Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '!2 SB-8H8V3-PF8CV-PQMA2-A54M3!%'
-Plan:
-SCAN chat_items
-
-Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '!2 SB-Y14GX-Z83KW-0E3PK-DEN7X!%'
+Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE ? || '%'
 Plan:
 SCAN chat_items
 
@@ -7548,9 +7552,9 @@ Query: SELECT connection_id FROM connections WHERE user_id = ? AND group_member_
 Plan:
 SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 
-Query: SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
+Query: SELECT contact_id FROM contacts WHERE user_id = ? AND (chat_item_ttl > 0 OR chat_item_ttl IS NULL)
 Plan:
-SCAN contacts
+SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 
 Query: SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0
 Plan:
@@ -7646,9 +7650,9 @@ Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMI
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
-Query: SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
+Query: SELECT group_id FROM groups WHERE user_id = ? AND (chat_item_ttl > 0 OR chat_item_ttl IS NULL)
 Plan:
-SCAN groups
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
 Query: SELECT group_id FROM groups WHERE user_id = ? AND creating_in_progress = 1 AND created_at <= ?
 Plan:
@@ -7685,6 +7689,10 @@ SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=? AN
 Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
+
+Query: SELECT index_in_group, member_relations_vector FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
 
 Query: SELECT issue_failed_since, issue_error FROM badge_purchases
 Plan:
@@ -7766,6 +7774,10 @@ Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_member
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT next_wake_at, badge_purchase_id FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ?
 Plan:
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
@@ -7837,6 +7849,10 @@ SCAN badge_ledger
 Query: SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SCAN chat_items
+
+Query: SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1
+Plan:
+SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
 
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:

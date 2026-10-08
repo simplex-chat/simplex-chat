@@ -31,7 +31,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/direct-sqlcipher.git
-    tag: f814ee68b16a9447fbb467ccc8f29bdd3546bfd9
+    tag: 2330df3dc8c4b660674d3c02d76bb86f66c2abee
 
 source-repository-package
     type: git

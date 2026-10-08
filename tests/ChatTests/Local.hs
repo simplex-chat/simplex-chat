@@ -121,7 +121,7 @@ testFiles :: TestParams -> IO ()
 testFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   -- setup
   createCCNoteFolder alice
-  let files = "./tests/tmp/app_files"
+  let files = tmpFile ps "app_files"
   alice ##> ("/_files_folder " <> files)
   alice <## "ok"
 
@@ -170,10 +170,10 @@ testFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
 
 testOtherFiles :: TestParams -> IO ()
 testOtherFiles =
-  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> withXFTPServer alice $ do
     connectUsers alice bob
     createCCNoteFolder bob
-    bob ##> "/_files_folder ./tests/tmp/"
+    bob ##> ("/_files_folder " <> tmpDir bob)
     bob <## "ok"
 
     alice #> "/f @bob ./tests/fixtures/test.jpg"
@@ -197,7 +197,7 @@ testOtherFiles =
     bob ##> "/tail *"
     bob ##> "/fs 1"
     bob <## "receiving file 1 (test.jpg) complete, path: test.jpg"
-    doesFileExist "./tests/tmp/test.jpg" `shouldReturn` True
+    doesFileExist (tmpFile bob "test.jpg") `shouldReturn` True
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
 
@@ -212,9 +212,10 @@ testCreateMulti ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
 testCreateMultiFiles :: TestParams -> IO ()
 testCreateMultiFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
-  alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
-  copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
-  copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
+  let files = tmpFile ps "alice_app_files"
+  alice #$> ("/_files_folder " <> files, id, "ok")
+  copyFile "./tests/fixtures/test.jpg" (files </> "test.jpg")
+  copyFile "./tests/fixtures/test.pdf" (files </> "test.pdf")
 
   let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message without file\"}}"
       cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
@@ -227,8 +228,8 @@ testCreateMultiFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <# "* sending file 2"
   alice <# "* file 2 (test.pdf)"
 
-  doesFileExist "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` True
-  doesFileExist "./tests/tmp/alice_app_files/test.pdf" `shouldReturn` True
+  doesFileExist (files </> "test.jpg") `shouldReturn` True
+  doesFileExist (files </> "test.pdf") `shouldReturn` True
 
   alice ##> "/_get chat *1 count=3"
   r <- chatF <$> getTermLine alice

@@ -1402,6 +1402,10 @@ Query: SELECT conn_id, rc_verify_code_ad, rc_verify_code_pq, CASE WHEN rc_verify
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 
+Query: SELECT count(1) FROM commands
+Plan:
+SCAN commands USING COVERING INDEX idx_commands_conn_id
+
 Query: SELECT count(1) FROM connections
 Plan:
 SCAN connections USING COVERING INDEX idx_connections_deleted

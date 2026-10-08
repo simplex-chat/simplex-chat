@@ -66,6 +66,7 @@ data DirectoryEvent
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
   | DEContactCommand Contact ChatItemId ADirectoryCmd
+  | DEVoiceUploadEnded FilePath
   | DELogChatResponse Text
   deriving (Show)
 
@@ -110,11 +111,17 @@ crDirectoryEvent_ = \case
     where
       ciId = chatItemId' ci
       err = ADC SDRUser DCUnknownCommand
+  CEvtSndFileCompleteXFTP {chatItem, fileTransferMeta} -> voiceUploadEnded (Just chatItem) fileTransferMeta
+  CEvtSndFileError {chatItem_, fileTransferMeta} -> voiceUploadEnded chatItem_ fileTransferMeta
   CEvtMessageError {severity, errorMessage} -> Just $ DELogChatResponse $ "message error: " <> severity <> ", " <> errorMessage
   CEvtChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
   where
     pending m = memberStatus m == GSMemPendingApproval
+    voiceUploadEnded :: Maybe AChatItem -> FileTransferMeta -> Maybe DirectoryEvent
+    voiceUploadEnded ci_ FileTransferMeta {filePath} = case ci_ of
+      Just (AChatItem _ SMDSnd _ ChatItem {content = CISndMsgContent MCVoice {}}) -> Just $ DEVoiceUploadEnded filePath
+      _ -> Nothing
 
 data DirectoryRole = DRUser | DRAdmin | DRSuperUser
 
