@@ -50,8 +50,10 @@ idle_seconds = 60
 
 ; verifies Play purchases with the Google Play Developer API. Omit the whole section and the service answers
 ; every Play receipt provider_not_configured, which the app retries later.
-; service_account_file is the JSON key Google issues for a service account that may view this app's
-; financial data in Play Console; keep it readable by this service alone.
+; service_account_file is the JSON key Google issues for a service account with the Play Console
+; permissions "View financial data, orders, and cancellation survey responses" and "Manage orders and
+; subscriptions", to read and acknowledge purchases. Without the second, no Play purchase is credited:
+; each is answered internal until the permission is granted. Keep the file readable by this service alone.
 ;[google]
 ;package_name = chat.simplex.app
 ;service_account_file = /etc/simplex-badge-service/play-service-account.json

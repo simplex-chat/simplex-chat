@@ -40,18 +40,20 @@ badgeStoreVerifierTests :: Spec
 badgeStoreVerifierTests = describe "badge store verifiers" $ do
   describe "App Store signed transactions" $ do
     it "vouches for a transaction a chain to the trusted root signed, naming the transaction it was claimed by" testAppleVerdict
-    it "refuses an intermediate a look-alike of the trusted root signed" testAppleLookAlikeRoot
-    it "fails, rather than refuses, a chain issued by a root other than the trusted one" testAppleOtherRoot
+    it "fails, rather than refuses, an intermediate the trusted root did not sign, since the root may be misconfigured" testAppleRootNotTrusted
+    it "refuses a leaf the intermediate did not sign, though the intermediate is genuine" testAppleForgedLeaf
+    it "fails, rather than refuses, a leaf signature the library cannot check" testAppleLeafUncheckable
     it "refuses a tampered payload" testAppleTamperedPayload
-    it "refuses a chain missing its intermediate" testAppleMissingIntermediate
+    it "refuses a chain that is not exactly leaf, intermediate and root" testAppleChainLength
     it "refuses a header that names another algorithm" testAppleOtherAlgorithm
-    it "refuses another app's bundle id" testAppleOtherBundle
+    it "fails, rather than refuses, another app's bundle id, since ours may be misconfigured" testAppleOtherBundle
     it "refuses a refunded transaction" testAppleRevoked
-    it "reports Sandbox and Xcode transactions as test purchases" testAppleSandbox
-    it "fails, rather than refuses, a chain Apple did not issue to sign receipts" testAppleUnmarkedLeaf
+    it "reports Sandbox, Xcode and LocalTesting transactions as test purchases" testAppleSandbox
+    it "fails, rather than refuses, a chain Apple did not mark for signing receipts" testAppleUnmarkedChain
     it "fails, rather than refuses, a payload Apple signed in a shape it does not know" testAppleUnknownShape
     it "records the price in the currency's minor units, or not at all" testApplePrice
     it "reads the trusted root from a DER file, and reports one it cannot read" testReadAppleRoot
+    it "has nothing to acknowledge" testAppleNoAcknowledgement
   describe "Google Play purchases" $ do
     it "vouches for a purchased token, asking Play about that token in this app" testPlayPurchased
     it "reports a license tester's purchase as a test purchase, and a promo code's as paid" testPlayTestAndPromo
@@ -63,14 +65,17 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "fails on a body it cannot read, another product, or an unknown state" testPlayUnreadable
     it "answers a Play that does not answer, or cannot be reached, as unreachable" testPlayHangsOrIsGone
     it "reuses its access token while it is valid" testPlayTokenCached
+    it "asks for a new access token once the one it holds is about to expire" testPlayTokenExpires
     it "sends no token that is only dots, and describes a token outside the grammar without quoting it" testPlayTokensNotSent
+    it "acknowledges a purchase, unless it is acknowledged or consumed already" testPlayAcknowledges
+    it "reports an acknowledgement Play refuses or does not answer" testPlayAcknowledgementFails
 
 -- * App Store
 
 data Outcome = Invalid | Pending | Unreachable | Failed | NotConfigured | Verdict
   deriving (Eq, Show)
 
-outcome :: Either StoreRefusal VerifiedStoreTransaction -> Outcome
+outcome :: Either StoreRefusal a -> Outcome
 outcome = \case
   Left (SRInvalid _) -> Invalid
   Left SRPending -> Pending
@@ -79,7 +84,7 @@ outcome = \case
   Left SRNotConfigured -> NotConfigured
   Right _ -> Verdict
 
-reason :: Either StoreRefusal VerifiedStoreTransaction -> Text
+reason :: Either StoreRefusal a -> Text
 reason = \case
   Left (SRInvalid r) -> r
   Left (SRUnreachable r) -> r
@@ -115,19 +120,19 @@ receiptLeafMarker, intermediateMarker :: [Integer]
 receiptLeafMarker = [1, 2, 840, 113635, 100, 6, 11, 1]
 intermediateMarker = [1, 2, 840, 113635, 100, 6, 2, 1]
 
--- | Shaped as Apple's chain, under a root of the given name; the leaf carries the given markers.
-newChain :: DistinguishedName -> [[Integer]] -> IO TestChain
-newChain rootName leafMarkers = do
+-- | Shaped as Apple's chain, under a root of the given name; the intermediate and the leaf carry the given markers.
+newChain :: DistinguishedName -> [[Integer]] -> [[Integer]] -> IO TestChain
+newChain rootName intermediateMarkers leafMarkers = do
   (rootKey, rootPub) <- newKeyPair
   (intermediateKey, intermediatePub) <- newKeyPair
   (leafKey, leafPub) <- newKeyPair
   rootCert <- certify rootKey rootName rootName rootPub []
-  intermediateCert <- certify rootKey rootName intermediateName intermediatePub [intermediateMarker]
+  intermediateCert <- certify rootKey rootName intermediateName intermediatePub intermediateMarkers
   leafCert <- certify intermediateKey intermediateName leafName leafPub leafMarkers
   pure TestChain {rootCert, intermediateCert, leafCert, leafKey}
 
 trustedChain :: IO TestChain
-trustedChain = newChain appleRootName [receiptLeafMarker]
+trustedChain = newChain appleRootName [intermediateMarker] [receiptLeafMarker]
 
 newKeyPair :: IO (ECDSA.PrivateKey, PubKey)
 newKeyPair = do
@@ -140,10 +145,12 @@ p256 :: ECC.Curve
 p256 = ECC.getCurveByName ECC.SEC_p256r1
 
 certify :: ECDSA.PrivateKey -> DistinguishedName -> DistinguishedName -> PubKey -> [[Integer]] -> IO SignedCertificate
-certify issuerKey issuerName subjectName subjectKey markers =
+certify = certifyWith $ SignatureALG HashSHA256 PubKeyALG_EC
+
+certifyWith :: SignatureALG -> ECDSA.PrivateKey -> DistinguishedName -> DistinguishedName -> PubKey -> [[Integer]] -> IO SignedCertificate
+certifyWith alg issuerKey issuerName subjectName subjectKey markers =
   objectToSignedExactF sign certificate
   where
-    alg = SignatureALG HashSHA256 PubKeyALG_EC
     certificate =
       Certificate
         { certVersion = 2,
@@ -208,19 +215,33 @@ testAppleVerdict = do
     `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD")}
   appleTransactionId jws `shouldBe` Just "2000000900000001"
 
-testAppleLookAlikeRoot :: IO ()
-testAppleLookAlikeRoot = do
+testAppleRootNotTrusted :: IO ()
+testAppleRootNotTrusted = do
   trusted <- trustedChain
-  forged <- trustedChain
-  jws <- signedBy forged $ transactionPayload [] []
-  outcome <$> appleVerdict (rootCert trusted) jws `shouldReturn` Invalid
+  forM_ [appleRootName, otherRootName] $ \rootName -> do
+    untrusted <- newChain rootName [intermediateMarker] [receiptLeafMarker]
+    jws <- signedBy untrusted $ transactionPayload [] []
+    r <- appleVerdict (rootCert trusted) jws
+    outcome r `shouldBe` Failed
+    reason r `shouldSatisfy` ("configured root" `T.isInfixOf`)
 
-testAppleOtherRoot :: IO ()
-testAppleOtherRoot = do
-  trusted <- trustedChain
-  other <- newChain otherRootName [receiptLeafMarker]
-  jws <- signedBy other $ transactionPayload [] []
-  outcome <$> appleVerdict (rootCert trusted) jws `shouldReturn` Failed
+testAppleForgedLeaf :: IO ()
+testAppleForgedLeaf = do
+  chain@TestChain {rootCert, intermediateCert} <- trustedChain
+  (forgedKey, forgedPub) <- newKeyPair
+  forgedLeaf <- certify forgedKey intermediateName leafName forgedPub [receiptLeafMarker]
+  jws <- signedTransaction chain {leafKey = forgedKey} [forgedLeaf, intermediateCert, rootCert] es256 $ transactionPayload [] []
+  outcome <$> appleVerdict rootCert jws `shouldReturn` Invalid
+
+testAppleLeafUncheckable :: IO ()
+testAppleLeafUncheckable = do
+  chain@TestChain {rootCert, intermediateCert} <- trustedChain
+  (otherKey, otherPub) <- newKeyPair
+  rsaLabelled <- certifyWith (SignatureALG HashSHA256 PubKeyALG_RSA) otherKey intermediateName leafName otherPub [receiptLeafMarker]
+  jws <- signedTransaction chain {leafKey = otherKey} [rsaLabelled, intermediateCert, rootCert] es256 $ transactionPayload [] []
+  r <- appleVerdict rootCert jws
+  outcome r `shouldBe` Failed
+  reason r `shouldSatisfy` ("cannot check" `T.isInfixOf`)
 
 testAppleTamperedPayload :: IO ()
 testAppleTamperedPayload = do
@@ -232,11 +253,12 @@ testAppleTamperedPayload = do
       outcome <$> appleVerdict (rootCert chain) tampered `shouldReturn` Invalid
     _ -> expectationFailure "not a JWS"
 
-testAppleMissingIntermediate :: IO ()
-testAppleMissingIntermediate = do
-  chain@TestChain {rootCert, leafCert} <- trustedChain
-  jws <- signedTransaction chain [leafCert, rootCert] es256 $ transactionPayload [] []
-  outcome <$> appleVerdict rootCert jws `shouldReturn` Invalid
+testAppleChainLength :: IO ()
+testAppleChainLength = do
+  chain@TestChain {rootCert, intermediateCert, leafCert} <- trustedChain
+  forM_ [[leafCert, rootCert], [leafCert, intermediateCert], [leafCert, intermediateCert, rootCert, rootCert]] $ \x5c -> do
+    jws <- signedTransaction chain x5c es256 $ transactionPayload [] []
+    outcome <$> appleVerdict rootCert jws `shouldReturn` Invalid
 
 testAppleOtherAlgorithm :: IO ()
 testAppleOtherAlgorithm = do
@@ -250,7 +272,9 @@ testAppleOtherBundle :: IO ()
 testAppleOtherBundle = do
   chain <- trustedChain
   jws <- signedBy chain $ transactionPayload [("bundleId", "com.example.other")] []
-  outcome <$> appleVerdict (rootCert chain) jws `shouldReturn` Invalid
+  r <- appleVerdict (rootCert chain) jws
+  outcome r `shouldBe` Failed
+  reason r `shouldSatisfy` ("bundle id" `T.isInfixOf`)
 
 testAppleRevoked :: IO ()
 testAppleRevoked = do
@@ -261,15 +285,16 @@ testAppleRevoked = do
 testAppleSandbox :: IO ()
 testAppleSandbox = do
   chain <- trustedChain
-  forM_ ["Sandbox", "Xcode"] $ \environment -> do
+  forM_ ["Sandbox", "Xcode", "LocalTesting"] $ \environment -> do
     jws <- signedBy chain $ transactionPayload [("environment", J.String environment)] []
     fmap testPurchase <$> appleVerdict (rootCert chain) jws `shouldReturn` Right True
 
-testAppleUnmarkedLeaf :: IO ()
-testAppleUnmarkedLeaf = do
-  developer <- newChain appleRootName []
-  jws <- signedBy developer $ transactionPayload [] []
-  outcome <$> appleVerdict (rootCert developer) jws `shouldReturn` Failed
+testAppleUnmarkedChain :: IO ()
+testAppleUnmarkedChain =
+  forM_ [([intermediateMarker], []), ([], [receiptLeafMarker])] $ \(intermediateMarkers, leafMarkers) -> do
+    unmarked <- newChain appleRootName intermediateMarkers leafMarkers
+    jws <- signedBy unmarked $ transactionPayload [] []
+    outcome <$> appleVerdict (rootCert unmarked) jws `shouldReturn` Failed
 
 testAppleUnknownShape :: IO ()
 testAppleUnknownShape = do
@@ -309,13 +334,26 @@ testReadAppleRoot = do
     readAppleRoot (d </> "root.pem") >>= (`shouldSatisfy` either ("not a DER certificate" `isInfixOf`) (const False))
     readAppleRoot (d </> "absent.cer") >>= (`shouldSatisfy` either ("could not be read" `isInfixOf`) (const False))
 
+testAppleNoAcknowledgement :: IO ()
+testAppleNoAcknowledgement = do
+  chain <- trustedChain
+  jws <- signedBy chain $ transactionPayload [] []
+  withFakePlay $ \fake -> do
+    verifier <- playVerifier fake
+    acknowledgement verifier {verifyApple = Just (verifyAppleTransaction (rootCert chain) ourBundleId)} SPApple {jws} `shouldReturn` Nothing
+
 -- * Google Play
 
 playVerifier :: FakePlay -> IO StoreVerifier
 playVerifier fake =
   playStoreVerifier (fpConfig fake) >>= \case
-    Right verify -> pure noStoreVerifier {verifyGoogle = Just verify, verifyTimeout = 2000000}
+    Right (verify, acknowledge) -> pure noStoreVerifier {verifyGoogle = Just verify, acknowledgeGoogle = Just acknowledge, verifyTimeout = 2000000}
     Left e -> expectationFailure e >> undefined
+
+acknowledgement :: StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
+acknowledgement verifier payment = case toStoreReceipt verifier payment of
+  Just (Right StoreReceipt {acknowledgeReceipt}) -> sequence acknowledgeReceipt
+  _ -> expectationFailure "not a store receipt" >> undefined
 
 playVerdict :: StoreVerifier -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
 playVerdict verifier token = seamVerdict verifier SPGoogle {productId = "badge_supporter_01", token}
@@ -418,7 +456,7 @@ testPlayUnreadable = withFakePlay $ \fake -> do
       PlayRecord $ purchaseRecord 0 [("productId", "badge_legend_01")],
       PlayRecord $ purchaseRecord 3 [],
       PlayRecord $ purchaseRecord 0 [("purchaseType", J.toJSON (2 :: Int))],
-      PlayBody $ LB.replicate (1024 * 1024 + 1) 32
+      PlayBody $ J.encode (purchaseRecord 0 []) <> LB.replicate (1024 * 1024) 32
     ]
     $ \answer -> do
       answerPurchase fake testToken answer
@@ -441,6 +479,15 @@ testPlayTokenCached = withFakePlay $ \fake -> do
   answeredAs verifier testToken Verdict
   length <$> readTVarIO (fpGrantedTokens fake) `shouldReturn` 1
 
+testPlayTokenExpires :: IO ()
+testPlayTokenExpires = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
+  grantTokensFor fake 300
+  answeredAs verifier testToken Verdict
+  answeredAs verifier testToken Verdict
+  length <$> readTVarIO (fpGrantedTokens fake) `shouldReturn` 2
+
 testPlayTokensNotSent :: IO ()
 testPlayTokensNotSent = withFakePlay $ \fake -> do
   verifier <- playVerifier fake
@@ -450,4 +497,33 @@ testPlayTokensNotSent = withFakePlay $ \fake -> do
   outcome r `shouldBe` Unreachable
   reason r `shouldBe` "a Play token this service will not send: 34 characters: lowercase, uppercase, digits, '-', other printable ASCII"
   readTVarIO (fpPurchasePaths fake) `shouldReturn` []
+
+testPlayAcknowledges :: IO ()
+testPlayAcknowledges = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let acknowledging = acknowledgement verifier SPGoogle {productId = "badge_supporter_01", token = testToken}
+  answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
+  acknowledging `shouldReturn` Just (Right ())
+  readTVarIO (fpAcknowledged fake) `shouldReturn` [testToken]
+  forM_ ["acknowledgementState", "consumptionState"] $ \state -> do
+    answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 [(state, J.toJSON (1 :: Int))]
+    acknowledging `shouldReturn` Just (Right ())
+  readTVarIO (fpAcknowledged fake) `shouldReturn` [testToken]
+
+testPlayAcknowledgementFails :: IO ()
+testPlayAcknowledgementFails = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let acknowledgedAs expected = do
+        r <- acknowledgement verifier SPGoogle {productId = "badge_supporter_01", token = testToken}
+        outcome <$> r `shouldBe` Just expected
+        maybe "" reason r `shouldNotSatisfy` (testToken `T.isInfixOf`)
+  answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
+  answerAcknowledgements fake $ Just 403
+  acknowledgedAs Failed
+  answerAcknowledgements fake $ Just 503
+  acknowledgedAs Unreachable
+  answerAcknowledgements fake Nothing
+  answerPurchase fake testToken PlayHang
+  acknowledgedAs Unreachable
+  readTVarIO (fpAcknowledged fake) `shouldReturn` []
 

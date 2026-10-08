@@ -7,7 +7,9 @@ module Bots.BadgeService.FakePlay
     PlayAnswer (..),
     withFakePlay,
     answerPurchase,
+    answerAcknowledgements,
     answerTokenRequests,
+    grantTokensFor,
     fakePackageName,
   )
 where
@@ -45,8 +47,11 @@ data FakePlay = FakePlay
     fpAnswers :: TVar (M.Map Text PlayAnswer),
     -- a status the token endpoint answers instead of granting
     fpTokenRefusal :: TVar (Maybe Int),
+    fpTokenSeconds :: TVar Int,
     fpGrantedTokens :: TVar [B.ByteString],
-    fpPurchasePaths :: TVar [[Text]]
+    fpPurchasePaths :: TVar [[Text]],
+    fpAcknowledgeRefusal :: TVar (Maybe Int),
+    fpAcknowledged :: TVar [Text]
   }
 
 fakePackageName :: Text
@@ -62,8 +67,11 @@ withFakePlay action = do
   (key, privateKey) <- RSA.generate 128 65537
   fpAnswers <- newTVarIO M.empty
   fpTokenRefusal <- newTVarIO Nothing
+  fpTokenSeconds <- newTVarIO 3600
   fpGrantedTokens <- newTVarIO []
   fpPurchasePaths <- newTVarIO []
+  fpAcknowledgeRefusal <- newTVarIO Nothing
+  fpAcknowledged <- newTVarIO []
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "fake-play" $ \d -> do
     let accountFile = d </> "service-account.json"
@@ -72,8 +80,11 @@ withFakePlay action = do
             { fpConfig = PlayStoreConfig {gPackageName = fakePackageName, gServiceAccountFile = accountFile, gApiHost = base, gTokenUrl = base <> "/token"},
               fpAnswers,
               fpTokenRefusal,
+              fpTokenSeconds,
               fpGrantedTokens,
-              fpPurchasePaths
+              fpPurchasePaths,
+              fpAcknowledgeRefusal,
+              fpAcknowledged
             }
     LB.writeFile accountFile $ J.encode $ J.object ["client_email" J..= fakeClientEmail, "private_key" J..= decodeUtf8 (pkcs8Pem privateKey)]
     Warp.testWithApplication (pure $ \req respond -> fakeApp key (fake $ origin req) req respond) $ \prt ->
@@ -108,26 +119,42 @@ answerPurchase FakePlay {fpAnswers} token answer = atomically $ modifyTVar' fpAn
 answerTokenRequests :: FakePlay -> Maybe Int -> IO ()
 answerTokenRequests FakePlay {fpTokenRefusal} = atomically . writeTVar fpTokenRefusal
 
+grantTokensFor :: FakePlay -> Int -> IO ()
+grantTokensFor FakePlay {fpTokenSeconds} = atomically . writeTVar fpTokenSeconds
+
+answerAcknowledgements :: FakePlay -> Maybe Int -> IO ()
+answerAcknowledgements FakePlay {fpAcknowledgeRefusal} = atomically . writeTVar fpAcknowledgeRefusal
+
 fakeApp :: RSA.PublicKey -> FakePlay -> Application
-fakeApp key FakePlay {fpConfig = PlayStoreConfig {gTokenUrl}, fpAnswers, fpTokenRefusal, fpGrantedTokens, fpPurchasePaths} req respond =
+fakeApp key FakePlay {fpConfig = PlayStoreConfig {gTokenUrl}, fpAnswers, fpTokenRefusal, fpTokenSeconds, fpGrantedTokens, fpPurchasePaths, fpAcknowledgeRefusal, fpAcknowledged} req respond =
   case (requestMethod req, pathInfo req) of
     (m, ["token"]) | m == methodPost -> strictRequestBody req >>= grant
     (m, path@["androidpublisher", "v3", "applications", pkg, "purchases", "products", _, "tokens", token])
-      | m == methodGet && pkg == fakePackageName -> do
+      | m == methodGet && pkg == fakePackageName -> authorized $ do
           atomically $ modifyTVar' fpPurchasePaths (<> [path])
-          granted <- readTVarIO fpGrantedTokens
-          case lookup hAuthorization (requestHeaders req) of
-            Just auth | Just bearer <- B.stripPrefix "Bearer " auth, take 1 (reverse granted) == [bearer] -> purchase token
-            _ -> respond $ status unauthorized401
+          purchase token
+      | m == methodPost && pkg == fakePackageName, Just acknowledgedToken <- T.stripSuffix ":acknowledge" token -> authorized $ acknowledge acknowledgedToken
     _ -> respond $ status notFound404
   where
+    authorized act = do
+      granted <- readTVarIO fpGrantedTokens
+      case lookup hAuthorization (requestHeaders req) of
+        Just auth | Just bearer <- B.stripPrefix "Bearer " auth, take 1 (reverse granted) == [bearer] -> act
+        _ -> respond $ status unauthorized401
+    acknowledge token =
+      readTVarIO fpAcknowledgeRefusal >>= \case
+        Just code -> respond $ status (mkStatus code "Refused")
+        Nothing -> do
+          atomically $ modifyTVar' fpAcknowledged (<> [token])
+          respond $ responseLBS ok200 [] ""
     grant body =
       readTVarIO fpTokenRefusal >>= \case
         Just code -> respond $ status (mkStatus code "Refused")
         Nothing
           | validAssertion (parseSimpleQuery $ LB.toStrict body) -> do
               bearer <- atomically $ stateTVar fpGrantedTokens $ \ts -> let t = "fake-access-" <> B8.pack (show (length ts)) in (t, ts <> [t])
-              respond $ json ok200 $ J.object ["access_token" J..= B8.unpack bearer, "expires_in" J..= (3600 :: Int), "token_type" J..= ("Bearer" :: Text)]
+              seconds <- readTVarIO fpTokenSeconds
+              respond $ json ok200 $ J.object ["access_token" J..= B8.unpack bearer, "expires_in" J..= seconds, "token_type" J..= ("Bearer" :: Text)]
           | otherwise -> respond $ json badRequest400 $ J.object ["error" J..= ("invalid_grant" :: Text)]
     validAssertion form = case (lookup "grant_type" form, B8.split '.' <$> lookup "assertion" form) of
       (Just "urn:ietf:params:oauth:grant-type:jwt-bearer", Just [header, claims, sig])

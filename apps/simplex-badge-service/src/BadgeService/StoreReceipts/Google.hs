@@ -14,6 +14,7 @@ import Crypto.Hash.Algorithms (SHA256 (..))
 import qualified Crypto.PubKey.RSA as RSA
 import qualified Crypto.PubKey.RSA.PKCS15 as RSA
 import qualified Data.Aeson as J
+import Data.Bifunctor (bimap)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.URL as B64U
@@ -52,14 +53,15 @@ data PlayEnv = PlayEnv
     accessToken :: TVar (Maybe (ByteString, UTCTime))
   }
 
-playStoreVerifier :: PlayStoreConfig -> IO (Either String (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)))
+playStoreVerifier :: PlayStoreConfig -> IO (Either String (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction), Text -> Text -> IO (Either StoreRefusal ())))
 playStoreVerifier config@PlayStoreConfig {gServiceAccountFile} =
   readServiceAccount gServiceAccountFile >>= \case
     Left e -> pure $ Left e
     Right account -> do
       manager <- newTlsManager
       accessToken <- newTVarIO Nothing
-      pure $ Right $ verifyPurchase PlayEnv {config, account, manager, accessToken}
+      let env = PlayEnv {config, account, manager, accessToken}
+      pure $ Right (verifyPurchase env, acknowledgePurchase env)
 
 readServiceAccount :: FilePath -> IO (Either String ServiceAccount)
 readServiceAccount path =
@@ -77,43 +79,64 @@ instance J.FromJSON ServiceAccountFile where
   parseJSON = J.withObject "service account key" $ \o -> ServiceAccountFile <$> o J..: "client_email" <*> o J..: "private_key"
 
 verifyPurchase :: PlayEnv -> Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
-verifyPurchase env@PlayEnv {config = PlayStoreConfig {gApiHost, gPackageName}, accessToken} productId token
+verifyPurchase env productId token
   | T.all (== '.') token = pure $ Left $ SRUnreachable "a Play token this service will not send: only dots, which a URL path resolves away"
-  | otherwise =
-      bearerToken env >>= \case
-        Left refusal -> pure $ Left refusal
-        Right bearer ->
-          playRequest env (\req -> req {requestHeaders = [(hAuthorization, "Bearer " <> bearer)]}) purchaseUrl >>= \case
-            Left refusal -> pure $ Left refusal
-            Right (200, body) -> pure $ purchaseVerdict productId token body
-            Right (401, _) -> atomically (writeTVar accessToken Nothing) $> Left (SRVerifierFailed "Play refused this service's access token")
-            Right (403, _) -> pure $ Left $ SRVerifierFailed "the service account may not read this app's purchases"
-            -- a 404 among them: Play answers it for a token it issued but has not yet recorded
-            Right (code, _) -> pure $ Left $ SRUnreachable $ "Play answered HTTP " <> tshow code
-  where
-    purchaseUrl = T.intercalate "/" [gApiHost, "androidpublisher/v3/applications", gPackageName, "purchases/products", productId, "tokens", token]
+  | otherwise = (>>= purchaseVerdict productId token) <$> readPurchase env productId token
 
-purchaseVerdict :: Text -> Text -> LB.ByteString -> Either StoreRefusal VerifiedStoreTransaction
-purchaseVerdict productId token body = case J.eitherDecode' body of
-  Left _ -> Left $ SRVerifierFailed "could not read Play's purchase record"
-  Right ProductPurchase {purchaseState, purchaseType, purchaseQuantity, purchaseProductId}
-    | maybe False (/= productId) purchaseProductId -> Left $ SRVerifierFailed "Play answered about another product"
-    | otherwise -> case purchaseState of
-        0 -> purchased <$> testPurchaseOf purchaseType
-        -- a canceled purchase stays canceled, and buying again issues a new token
-        1 -> Left $ SRInvalid "canceled"
-        2 -> Left SRPending
-        s -> Left $ SRVerifierFailed $ "an unknown purchaseState " <> tshow s
-      where
-        purchased testPurchase =
-          VerifiedStoreTransaction
-            { transactionRef = googlePurchaseRef token,
-              productId,
-              quantity = fromMaybe 1 purchaseQuantity,
-              testPurchase,
-              paid = Nothing
-            }
+-- | Acknowledged, never consumed: consuming drops the purchase from the app's purchase query,
+-- which is how the app finds a purchase it has not yet settled.
+acknowledgePurchase :: PlayEnv -> Text -> Text -> IO (Either StoreRefusal ())
+acknowledgePurchase env productId token =
+  readPurchase env productId token >>= \case
+    Left refusal -> pure $ Left refusal
+    Right ProductPurchase {alreadyAcknowledged = True} -> pure $ Right ()
+    Right _ -> bimap acknowledging (const ()) <$> playCall env (\req -> req {method = methodPost}) (purchaseUrl env productId token <> ":acknowledge")
   where
+    acknowledging = \case
+      SRUnreachable reason -> SRUnreachable $ "acknowledging: " <> reason
+      SRVerifierFailed reason -> SRVerifierFailed $ "acknowledging: " <> reason
+      refusal -> refusal
+
+readPurchase :: PlayEnv -> Text -> Text -> IO (Either StoreRefusal ProductPurchase)
+readPurchase env productId token = (>>= decoded) <$> playCall env id (purchaseUrl env productId token)
+  where
+    decoded = either (const $ Left $ SRVerifierFailed "could not read Play's purchase record") Right . J.eitherDecode'
+
+purchaseUrl :: PlayEnv -> Text -> Text -> Text
+purchaseUrl PlayEnv {config = PlayStoreConfig {gApiHost, gPackageName}} productId token =
+  T.intercalate "/" [gApiHost, "androidpublisher/v3/applications", gPackageName, "purchases/products", productId, "tokens", token]
+
+playCall :: PlayEnv -> (Request -> Request) -> Text -> IO (Either StoreRefusal LB.ByteString)
+playCall env@PlayEnv {accessToken} prepare url =
+  bearerToken env >>= \case
+    Left refusal -> pure $ Left refusal
+    Right bearer ->
+      playRequest env (\req -> (prepare req) {requestHeaders = [(hAuthorization, "Bearer " <> bearer)]}) url >>= \case
+        Left refusal -> pure $ Left refusal
+        Right (code, body) | code >= 200 && code < 300 -> pure $ Right body
+        Right (401, _) -> atomically (writeTVar accessToken Nothing) $> Left (SRVerifierFailed "Play refused this service's access token")
+        Right (403, _) -> pure $ Left $ SRVerifierFailed "the service account lacks the Play Console permission for this call"
+        -- a 404 among them: Play answers it for a token it issued but has not yet recorded
+        Right (code, _) -> pure $ Left $ SRUnreachable $ "Play answered HTTP " <> tshow code
+
+purchaseVerdict :: Text -> Text -> ProductPurchase -> Either StoreRefusal VerifiedStoreTransaction
+purchaseVerdict productId token ProductPurchase {purchaseState, purchaseType, purchaseQuantity, purchaseProductId}
+  | maybe False (/= productId) purchaseProductId = Left $ SRVerifierFailed "Play answered about another product"
+  | otherwise = case purchaseState of
+      0 -> purchased <$> testPurchaseOf purchaseType
+      -- a canceled purchase stays canceled, and buying again issues a new token
+      1 -> Left $ SRInvalid "canceled"
+      2 -> Left SRPending
+      s -> Left $ SRVerifierFailed $ "an unknown purchaseState " <> tshow s
+  where
+    purchased testPurchase =
+      VerifiedStoreTransaction
+        { transactionRef = googlePurchaseRef token,
+          productId,
+          quantity = fromMaybe 1 purchaseQuantity,
+          testPurchase,
+          paid = Nothing
+        }
     testPurchaseOf = \case
       Nothing -> Right False
       Just 0 -> Right True
@@ -125,12 +148,20 @@ data ProductPurchase = ProductPurchase
   { purchaseState :: Int,
     purchaseType :: Maybe Int,
     purchaseQuantity :: Maybe Int,
-    purchaseProductId :: Maybe Text
+    purchaseProductId :: Maybe Text,
+    alreadyAcknowledged :: Bool
   }
 
 instance J.FromJSON ProductPurchase where
-  parseJSON = J.withObject "ProductPurchase" $ \o ->
-    ProductPurchase <$> o J..: "purchaseState" <*> o J..:? "purchaseType" <*> o J..:? "quantity" <*> o J..:? "productId"
+  parseJSON = J.withObject "ProductPurchase" $ \o -> do
+    purchaseState <- o J..: "purchaseState"
+    purchaseType <- o J..:? "purchaseType"
+    purchaseQuantity <- o J..:? "quantity"
+    purchaseProductId <- o J..:? "productId"
+    acknowledgementState <- o J..:? "acknowledgementState"
+    consumptionState <- o J..:? "consumptionState"
+    let alreadyAcknowledged = acknowledgementState == Just (1 :: Int) || consumptionState == Just (1 :: Int)
+    pure ProductPurchase {purchaseState, purchaseType, purchaseQuantity, purchaseProductId, alreadyAcknowledged}
 
 bearerToken :: PlayEnv -> IO (Either StoreRefusal ByteString)
 bearerToken env@PlayEnv {accessToken} = do

@@ -124,6 +124,7 @@ badgeServiceTests = do
       it "should refuse a receipt the store does not vouch for, with no retry" testStoreReceiptInvalid
       it "should answer a store it cannot reach as retryable, writing nothing" testStoreUnreachable
       it "should write nothing for a pending purchase, and credit it once when it settles" testStorePending
+      it "should acknowledge a Play purchase before crediting it, and credit nothing when acknowledging fails" testStoreAcknowledgesBeforeCrediting
       it "should refuse a product that grants no badge" testStoreUnknownProduct
       it "should refuse a store purchase that carries an upgrade" testStoreUpgradeRefused
       it "should grant the badge of the product the receipt proves" testStoreBadgeTypeFromProduct
@@ -1520,6 +1521,34 @@ testStorePending ps =
     credentialOf again `shouldBe` credentialOf settled
     rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
     storePayments cc `shouldReturn` [("google", Nothing, Nothing, 1)]
+
+testStoreAcknowledgesBeforeCrediting :: HasCallStack => TestParams -> IO ()
+testStoreAcknowledgesBeforeCrediting ps = do
+  acknowledged <- newIORef []
+  acknowledgement <- newIORef $ Right ()
+  let acknowledging store = (fakeVerifier store) {acknowledgeGoogle = Just $ \_ token -> modifyIORef' acknowledged (token :) >> readIORef acknowledgement}
+  withBadgeServiceVerifier ps acknowledging $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    let purchase payment = serviceCmd env purchaseKey $ purchaseCmd masterKey payment
+    unsettled <- purchase $ googlePayment "badge_supporter_01" googlePendingToken
+    fst (refusalOf unsettled) `shouldBe` BSEPaymentPending
+    unpriced <- purchase $ googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
+    refusalOf unpriced `shouldBe` (BSEProductUnavailable, Nothing)
+    readIORef acknowledged `shouldReturn` []
+    writeIORef acknowledgement $ Left $ SRUnreachable "acknowledging: fake store is down"
+    unacknowledged <- purchase supporterPlay
+    refusalOf unacknowledged `shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter
+    writeIORef acknowledgement $ Left $ SRVerifierFailed "acknowledging: the service account lacks the Play Console permission for this call"
+    forbidden <- purchase supporterPlay
+    refusalOf forbidden `shouldBe` (BSEInternal, Nothing)
+    nothingPurchased cc
+    writeIORef acknowledgement $ Right ()
+    purchased <- purchase supporterPlay
+    badgeTypeOf purchased `shouldBe` Just BTSupporter
+    replayed <- purchase supporterPlay
+    credentialOf replayed `shouldBe` credentialOf purchased
+    readIORef acknowledged `shouldReturn` replicate 3 googleSupporterToken
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
 testStoreUnknownProduct :: HasCallStack => TestParams -> IO ()
 testStoreUnknownProduct ps =

@@ -44,8 +44,10 @@ idle_seconds = 60
 ;root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
 
 ; optional; without it every Play receipt is answered provider_not_configured, which the app retries later.
-; service_account_file is the JSON key of a service account that may view this app's financial data in
-; Play Console; mount it read-only beside this ini, readable by the service's user alone.
+; service_account_file is the JSON key of a service account with the Play Console permissions "View
+; financial data, orders, and cancellation survey responses" and "Manage orders and subscriptions", to
+; read and acknowledge purchases. Without the second, no Play purchase is credited: each is answered
+; internal until the permission is granted. Mount it read-only beside this ini, readable by the service's user alone.
 ;[google]
 ;package_name = chat.simplex.app
 ;service_account_file = /etc/simplex-badge-service/play-service-account.json
