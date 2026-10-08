@@ -2,7 +2,7 @@ package chat.simplex.common.views.helpers
 
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.serialization.*
 import java.io.File
 import java.security.SecureRandom

@@ -22,7 +22,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.call.RcvCallInvitation
 import kotlinx.datetime.Clock
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 object NtfManager {
   const val MessageChannel: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
