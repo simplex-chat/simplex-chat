@@ -7637,7 +7637,8 @@ enum class RcvSwitchStatus {
   @SerialName("switch_started") SwitchStarted,
   @SerialName("sending_qadd") SendingQADD,
   @SerialName("sending_quse") SendingQUSE,
-  @SerialName("received_message") ReceivedMessage
+  @SerialName("received_message") ReceivedMessage,
+  @SerialName("received_qend") ReceivedQEND
 }
 
 @Serializable
