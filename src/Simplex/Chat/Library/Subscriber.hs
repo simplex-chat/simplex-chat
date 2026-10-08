@@ -3945,7 +3945,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           let allowCreate = toCMEventTag chatMsgEvent /= XGrpLeave_
           withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownRole allowCreate) >>= \case
             Just (author, unknown)
-              | groupMemberId' author == groupMemberId' membership ->
+              | not (useRelays' gInfo) && groupMemberId' author == groupMemberId' membership ->
                   messageError $ "x.grp.msg.forward: content attributed to own membership, forwarder " <> tshow (groupMemberId' m) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | memberRemoved author ->
                   logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
