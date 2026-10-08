@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,6 +11,9 @@ module Simplex.Chat.Messages.Batch
     BatchMode (..),
     encodeBatchElement,
     encodeFwdElement,
+    encodeLegacyFwdElement,
+    legacyFwdBodies,
+    batchJsonElements,
     encodeBinaryBatch,
     batchMessages,
     batchDeliveryTasks1,
@@ -34,7 +38,7 @@ import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, mapMaybe)
 import Simplex.Chat.Types (GroupMember (..), LocalProfile (..), VersionRangeChat)
 import Simplex.Messaging.Encoding (Large (..), smpEncode, smpEncodeList)
 
@@ -126,6 +130,35 @@ encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString
 encodeFwdElement fwd verifiedMsg = ">" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
   where
     (_, signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
+
+encodeLegacyFwdElement :: VersionRangeChat -> GrpMsgForward -> ChatMessage 'Json -> ByteString
+encodeLegacyFwdElement vr fwd chatMsg = chatMsgToBody ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = XGrpMsgForward fwd chatMsg}
+
+legacyFwdBodies :: VersionRangeChat -> Int -> ByteString -> ([ByteString], Int)
+legacyFwdBodies vr maxLen body = case B.uncons body of
+  Just ('=', _) -> batchJsonElements maxLen $ mapMaybe legacyElement $ parseChatMessages body
+  _ -> ([body], 0)
+  where
+    legacyElement = \case
+      Right (APMsg SJson (ParsedMsg (Just fwd) _ chatMsg)) -> Just $ encodeLegacyFwdElement vr fwd chatMsg
+      _ -> Nothing
+
+batchJsonElements :: Int -> [ByteString] -> ([ByteString], Int)
+batchJsonElements maxLen = finish . foldl' addToBatch ([], [], 0, 0, 0)
+  where
+    addToBatch (batches, els, len, n, dropped) el
+      | elLen > maxLen = (batches, els, len, n, dropped + 1)
+      | n == 0 = (batches, [el], elLen, 1, dropped)
+      | n < maxBatchElementCount && len + 1 + elLen + 2 <= maxLen = (batches, el : els, len + 1 + elLen, n + 1, dropped)
+      | otherwise = (closeBatch els : batches, [el], elLen, 1, dropped)
+      where
+        elLen = B.length el
+    closeBatch = \case
+      [el] -> el
+      els -> B.concat ["[", B.intercalate "," (reverse els), "]"]
+    finish (batches, els, _, n, dropped)
+      | n == 0 = (reverse batches, dropped)
+      | otherwise = (reverse (closeBatch els : batches), dropped)
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty

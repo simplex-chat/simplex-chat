@@ -60,7 +60,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchElements, batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchElements, batchJsonElements, batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement, encodeLegacyFwdElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -1412,9 +1412,13 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   unless (null errors) $ toView $ CEvtChatErrors errors
   -- signed items keep the author's original bytes/signature, unsigned are re-encoded; the welcome message
   -- (regular groups only; never channels) is an authored element -- all batch together in order.
-  let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
+  vr <- chatVersionRange
   welcomeEl <- welcomeElement
-  let (batches, dropped) = batchElements maxEncodedMsgLength (fwdEls <> maybe [] (: []) welcomeEl)
+  let fwdMsgs = concat fwdMsgsByItem
+      welcomeEls = maybe [] (: []) welcomeEl
+      (batches, dropped)
+        | m `supportsVersion` relayWebCapVersion = batchElements maxForwardBatchLength (map (uncurry encodeFwdElement) fwdMsgs <> welcomeEls)
+        | otherwise = batchJsonElements maxForwardBatchLength (map (\(fwd, verifiedMsg) -> encodeLegacyFwdElement vr fwd (verifiedChatMsg verifiedMsg)) fwdMsgs <> welcomeEls)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
   forM_ batches $ \body ->
     void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
@@ -1552,9 +1556,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
 
 memberShortenedName :: GroupMember -> ContactName
-memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
-  | T.length displayName <= 16 = displayName
-  | otherwise = T.take 16 displayName `T.snoc` '…'
+memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}} = fwdMemberName displayName
 
 -- the description proof travels on the last part, so that part leaves room for it
 badgeDescrPartSize :: Int
@@ -2457,9 +2459,10 @@ compressToLimit maxLen s
     s' = compressedBatchMsgBody_ s
 
 compressConnInfo :: PQSupport -> MsgBody -> CM MsgBody
-compressConnInfo pqSup = compressToLimit $ case pqSup of
-  PQSupportOn -> maxEncodedInfoLengthPQ
-  PQSupportOff -> maxEncodedInfoLength
+compressConnInfo pqSup = compressToLimit $ e2eEncConnInfoLength pqSup - 2 - maxReplyQueueFraming
+
+maxReplyQueueFraming :: Int
+maxReplyQueueFraming = 256
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo = encodeConnInfoPQ PQSupportOff
@@ -2468,7 +2471,7 @@ encodeConnInfoPQ :: MsgEncodingI e => PQSupport -> ChatMsgEvent e -> CM ByteStri
 encodeConnInfoPQ pqSup chatMsgEvent = do
   cxt <- chatStoreCxt
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxEncodedInfoLength info of
+  case encodeChatMessage maxEncodedProfileMsgLength info of
     ECMEncoded connInfo -> compressConnInfo pqSup connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
@@ -2477,7 +2480,7 @@ encodeSignedConnInfo :: MsgEncodingI e => PQSupport -> MsgSigning -> ChatMsgEven
 encodeSignedConnInfo pqSup signing chatMsgEvent = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxEncodedInfoLength info of
+  case encodeChatMessage maxEncodedProfileMsgLength info of
     ECMEncoded body -> compressConnInfo pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 
@@ -2843,7 +2846,10 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
 sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
 sendFwdMemberMessage member fwd verifiedMsg =
   forM_ (readyMemberConn member) $ \(_, conn) -> do
-    let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
+    vr <- chatVersionRange
+    let body
+          | member `supportsVersion` relayWebCapVersion = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
+          | otherwise = encodeLegacyFwdElement vr fwd (verifiedChatMsg verifiedMsg)
     void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages

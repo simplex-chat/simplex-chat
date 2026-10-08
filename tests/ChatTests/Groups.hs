@@ -38,7 +38,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XInfo, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -119,6 +119,7 @@ chatGroupTests = do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
+    it "join via group link with group profile near the size limit" testGroupLinkLargeGroupProfile
     it "invitees were previously connected as contacts" testGroupLinkInviteesWereConnected
     it "all members were previously connected as contacts" testGroupLinkAllMembersWereConnected
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
@@ -176,6 +177,8 @@ chatGroupTests = do
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
+    it "forward messages to member below version 18 as x.grp.msg.forward" testGroupMsgForwardOldMember
+    it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -191,6 +194,7 @@ chatGroupTests = do
     it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
+    it "text messages to member below version 18" testGroupHistoryOldMember
     it "history is sent when joining via group link" testGroupHistoryGroupLink
     it "file with badge proof is received from history" testGroupHistoryFileBadgeProof
     it "file received from member with badge proof is received from history" testGroupHistoryRcvFileBadgeProof
@@ -3042,6 +3046,39 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "group link: known group #team_1"
       bob <## "use #team_1 <message> to send messages"
 
+testGroupLinkLargeGroupProfile :: HasCallStack => TestParams -> IO ()
+testGroupLinkLargeGroupProfile =
+  testChatOpts2 testOptsNoFullLinks aliceProfile bobProfile $
+    \alice bob -> do
+      threadDelay 100000
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+      withCCTransaction alice $ \db ->
+        DB.execute db "UPDATE group_profiles SET description = ? WHERE display_name = ?" (T.pack welcome, "team" :: T.Text)
+      alice ##> "/create link #team"
+      gLink <- getGroupLink_ alice "team" GRMember True
+      alice <// 100000
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+      alice #> "#team hello"
+      let waitHello = do
+            l <- getTermLine bob
+            if "alice> hello" `isSuffixOf` l then pure () else waitHello
+      waitHello
+  where
+    welcome = unwords $ replicate 1775 "welcome"
+
 testGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupLink =
   testChatOpts3 testOptsNoFullLinks aliceProfile bobProfile cathProfile $
@@ -5399,6 +5436,48 @@ testGroupMsgForwardMessage =
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
 
+testGroupMsgForwardOldMember :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardOldMember ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps oldCfg "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        setupGroupForwarding alice bob cath
+
+        bob #> "#team hi there"
+        alice <# "#team bob> hi there"
+        cath <# "#team bob> hi there [>>]"
+
+        threadDelay 1000000
+
+        cath #> "#team hey team"
+        alice <# "#team cath> hey team"
+        bob <# "#team cath> hey team [>>]"
+  where
+    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
+
+testGroupMsgForwardOwnMembershipRejected :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardOwnMembershipRejected =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      [Only bobMemId] <- withCCTransaction bob $ \db ->
+        DB.query db "SELECT member_id FROM group_members WHERE member_category = ?" (Only ("user" :: T.Text)) :: IO [Only ByteString]
+      connId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      let ChatController {smpAgent = aliceAgent} = chatController alice
+          forgedProfile = (bobProfile :: Profile) {displayName = "mallory", fullName = "Mallory"}
+          chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "forged_info1") (XInfo forgedProfile Nothing)
+          fwd = GrpMsgForward (FwdMember (MemberId bobMemId) "bob") ts
+          body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+      sent <- runExceptT $ sendMessages aliceAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+      either (fail . show) (const $ pure ()) sent
+      bob <##. "error: x.grp.msg.forward: content attributed to own membership"
+      bob ##> "/p"
+      bob <## "user profile: bob (Bob)"
+      bob <## "use /p <name> [<bio>] to change it"
+
 testGroupMsgForwardBatched :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardBatched =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -5925,6 +6004,45 @@ testGroupHistory =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+
+testGroupHistoryOldMember :: HasCallStack => TestParams -> IO ()
+testGroupHistoryOldMember ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps oldCfg "cath" cathProfile $ \cath -> do
+        createGroup2 "team" alice bob
+
+        threadDelay 1000000
+
+        alice #> "#team hello"
+        bob <# "#team alice> hello"
+
+        threadDelay 1000000
+
+        bob #> "#team hey!"
+        alice <# "#team bob> hey!"
+
+        connectUsers alice cath
+        addMember "team" alice cath GRAdmin
+        cath ##> "/j team"
+        concurrentlyN_
+          [ alice <## "#team: cath joined the group",
+            cath
+              <### [ "#team: you joined the group",
+                     WithTime "#team alice> hello [>>]",
+                     WithTime "#team bob> hey! [>>]",
+                     "#team: member bob (Bob) is connected"
+                   ],
+            do
+              bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+              bob <## "#team: new member cath is connected"
+          ]
+
+        cath ##> "/_get chat #1 count=100"
+        r <- chat <$> getTermLine cath
+        r `shouldContain` [(0, "hello"), (0, "hey!")]
+  where
+    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
 
 testGroupHistoryGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupHistoryGroupLink =
