@@ -170,6 +170,7 @@ module.exports = function (ty) {
     const { document } = dom.window
     const body = document.querySelector('body')
     const allContentNodes = document.querySelectorAll('p, td, a, h1, h2, h3, h4')
+    const contentHtml = Array.from(allContentNodes, (node) => node.innerHTML)
     const overlayIds = []
 
     glossary.forEach((term, index) => {
@@ -177,13 +178,14 @@ module.exports = function (ty) {
       const id = term.term.toLowerCase().replace(/\s/g, '-')
 
       const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
-      allContentNodes.forEach((node) => {
-        const beforeContent = node.innerHTML
+      allContentNodes.forEach((node, nodeIndex) => {
+        const beforeContent = contentHtml[nodeIndex]
         const afterContent = beforeContent.replace(regex, (match) => {
           return `<span data-glossary="tooltip-${id}" class="glossary-term">${match}</span>`
         })
         if (afterContent !== beforeContent) {
           node.innerHTML = afterContent
+          contentHtml[nodeIndex] = node.innerHTML
           changeNoted = true
         }
       })

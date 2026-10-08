@@ -1,7 +1,7 @@
 const fs = require("fs")
 const path = require("path")
 const matter = require("gray-matter")
-const { JSDOM } = require("jsdom")
+const parse5 = require("parse5")
 
 const siteLocation = "https://simplex.chat"
 
@@ -22,7 +22,7 @@ const htmlPages = new Set([
   "directory",
 ])
 
-const removedSelectors = [
+const removedTags = new Set([
   "script",
   "style",
   "noscript",
@@ -31,14 +31,18 @@ const removedSelectors = [
   "select",
   "input",
   "textarea",
-  "template:not([data-markdown])",
-  "[data-markdown-skip]",
-  "#navbar",
-  "#mobile-header",
-  ".footer",
-  ".glossary-tooltip",
-  ".glossary-overlay",
-].join(", ")
+])
+
+const removedIds = new Set([
+  "navbar",
+  "mobile-header",
+])
+
+const removedClasses = new Set([
+  "footer",
+  "glossary-tooltip",
+  "glossary-overlay",
+])
 
 const blockTags = new Set([
   "address",
@@ -65,6 +69,7 @@ const linkTargetPattern = /\]\((<[^>]*>|[^)\s]+)/g
 const referenceTargetPattern = /^( {0,3}\[[^\]]+\]:[ \t]*)(<[^>]*>|\S+)/gm
 const textEntityPattern = /&(?!lt;|gt;|amp;)(#\d+|#x[0-9a-f]+|[a-z]+\d*);/gi
 const headingPattern = /^#\s+(.+)$/m
+const invisibleCharacters = /[​⁠]/g
 
 function markdownKind(inputPath, langs) {
   const relativePath = path.relative("src", inputPath)
@@ -120,6 +125,35 @@ function markdownTitle(inputPath) {
   return plainText(data.title || content.match(headingPattern)?.[1] || "")
 }
 
+function attribute(node, name) {
+  return node.attrs.find((attr) => attr.name === name)?.value
+}
+
+function isRemoved(element) {
+  const classes = (attribute(element, "class") || "").split(/\s+/)
+  return removedTags.has(element.tagName)
+    || (element.tagName === "template" && attribute(element, "data-markdown") === undefined)
+    || attribute(element, "data-markdown-skip") !== undefined
+    || removedIds.has(attribute(element, "id"))
+    || classes.some((name) => removedClasses.has(name))
+}
+
+function childElements(node) {
+  return node.childNodes.filter((child) => child.tagName && !isRemoved(child))
+}
+
+function findElements(node, predicate) {
+  return childElements(node).flatMap((child) => predicate(child) ? [child] : findElements(child, predicate))
+}
+
+function findElement(node, predicate) {
+  return findElements(node, predicate)[0]
+}
+
+function textContent(node) {
+  return node.nodeName === "#text" ? node.value : (node.childNodes || []).map(textContent).join("")
+}
+
 function singleLine(text) {
   return text.trim().replace(/\s*\n\s*/g, " ")
 }
@@ -130,22 +164,23 @@ function emphasis(marker, content) {
 }
 
 function linkMarkdown(element, content, pageUrl) {
-  const href = element.getAttribute("href")
+  const href = attribute(element, "href")
   if (href && href.startsWith("javascript:")) return ""
-  const label = element.getAttribute("aria-label") || singleLine(content) || element.getAttribute("title") || element.querySelector("img[alt]")?.getAttribute("alt") || ""
+  const image = findElement(element, (child) => child.tagName === "img" && attribute(child, "alt") !== undefined)
+  const label = attribute(element, "aria-label") || singleLine(content) || attribute(element, "title") || (image && attribute(image, "alt")) || ""
   if (!href) return label
   return label ? `[${label}](${new URL(href, siteLocation + pageUrl).href})` : ""
 }
 
 function listMarkdown(element, ordered, pageUrl) {
-  const items = Array.from(element.children).filter((child) => child.tagName === "LI")
+  const items = childElements(element).filter((child) => child.tagName === "li")
   const lines = items.map((item, index) => (ordered ? `${index + 1}. ` : "- ") + singleLine(childrenMarkdown(item, pageUrl)))
   return `\n\n${lines.join("\n")}\n\n`
 }
 
 function tableMarkdown(element, pageUrl) {
-  const rows = Array.from(element.querySelectorAll("tr")).map((row) =>
-    Array.from(row.children).map((cell) => singleLine(childrenMarkdown(cell, pageUrl)).replace(/\|/g, "\\|")))
+  const rows = findElements(element, (child) => child.tagName === "tr").map((row) =>
+    childElements(row).map((cell) => singleLine(childrenMarkdown(cell, pageUrl)).replace(/\|/g, "\\|")))
   if (rows.length === 0) return ""
   const width = Math.max(...rows.map((row) => row.length))
   const line = (cells) => "| " + Array.from({ length: width }, (_, index) => cells[index] || "").join(" | ") + " |"
@@ -154,9 +189,9 @@ function tableMarkdown(element, pageUrl) {
 }
 
 function nodeMarkdown(node, pageUrl) {
-  if (node.nodeType === node.TEXT_NODE) return node.textContent.replace(/[​⁠]/g, "").replace(/\s+/g, " ")
-  if (node.nodeType !== node.ELEMENT_NODE) return ""
-  const tag = node.tagName.toLowerCase()
+  if (node.nodeName === "#text") return node.value.replace(invisibleCharacters, "").replace(/\s+/g, " ")
+  if (!node.tagName || isRemoved(node)) return ""
+  const tag = node.tagName
   const content = () => childrenMarkdown(node, pageUrl)
   switch (tag) {
     case "h1":
@@ -181,9 +216,9 @@ function nodeMarkdown(node, pageUrl) {
     case "i":
       return emphasis("*", content())
     case "code":
-      return "`" + node.textContent + "`"
+      return "`" + textContent(node) + "`"
     case "pre":
-      return "\n\n```\n" + node.textContent.trim() + "\n```\n\n"
+      return "\n\n```\n" + textContent(node).trim() + "\n```\n\n"
     case "sup":
       return `[${content().trim()}]`
     case "img":
@@ -203,7 +238,7 @@ function nodeMarkdown(node, pageUrl) {
 }
 
 function childrenMarkdown(node, pageUrl) {
-  return Array.from(node.childNodes).map((child) => nodeMarkdown(child, pageUrl)).join("")
+  return node.childNodes.map((child) => nodeMarkdown(child, pageUrl)).join("")
 }
 
 function normalizedMarkdown(markdown) {
@@ -216,14 +251,15 @@ function normalizedMarkdown(markdown) {
 }
 
 function markdownFromHtml(html, pageUrl) {
-  const { document } = new JSDOM(html).window
-  document.querySelectorAll(removedSelectors).forEach((element) => element.remove())
-  const title = document.querySelector("h1") ? "" : `# ${document.title}\n\n`
-  return normalizedMarkdown(title + childrenMarkdown(document.body, pageUrl))
+  const document = parse5.parse(html)
+  const body = findElement(document, (node) => node.tagName === "body")
+  const title = findElement(document, (node) => node.tagName === "title")
+  const heading = findElement(body, (node) => node.tagName === "h1") ? "" : `# ${singleLine(title ? textContent(title) : "")}\n\n`
+  return normalizedMarkdown(heading + childrenMarkdown(body, pageUrl))
 }
 
 function plainText(html) {
-  return JSDOM.fragment(`<p>${html}</p>`).textContent
+  return textContent(parse5.parseFragment(html))
 }
 
 module.exports = {
