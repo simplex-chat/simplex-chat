@@ -21,6 +21,9 @@ private const val WINDOWS_FIRST_ICON_INDEX = 0
 // the Win32 name of a key's default value
 private const val REGISTRY_DEFAULT_VALUE = ""
 internal const val APPIMAGE_ENTRY_NAME = "chat.simplex.app-links.desktop"
+private const val APPLICATIONS_DIR = "applications"
+// the XDG Base Directory default when XDG_DATA_DIRS is unset
+private const val DEFAULT_XDG_DATA_DIRS = "/usr/local/share:/usr/share"
 private const val APP_DISPLAY_NAME = "SimpleX Chat"
 private const val XDG_MIME = "xdg-mime"
 // jpackage names the deb's desktop entry <package>-<app>.desktop
@@ -80,7 +83,8 @@ private fun registerForThisInstallation(): Boolean =
     // The bundle's Info.plist and the Flatpak's exported desktop entry register the schemes.
     DesktopInstallation.MacBundle, DesktopInstallation.Flatpak -> true
     is DesktopInstallation.WindowsExe -> registerWindowsSchemes(installation.path, ::registryDefault, ::writeRegistryValue)
-    is DesktopInstallation.AppImage -> registerAppImageScheme(installation.path, File(unixDataHome, "applications"), ::runProcess)
+    is DesktopInstallation.AppImage ->
+      registerAppImageScheme(installation.path, File(unixDataHome, APPLICATIONS_DIR), systemApplicationsDirs(), ::runProcess)
     DesktopInstallation.LinuxPackage -> linuxPackageRegistered(::runProcess)
     DesktopInstallation.Unpackaged -> false
   }
@@ -173,7 +177,7 @@ internal fun onlyOwnerCanWrite(attributes: PosixFileAttributes, user: String): B
     (PosixFilePermission.GROUP_WRITE !in permissions || attributes.group().name == user)
 }
 
-internal fun registerAppImageScheme(appImagePath: String, applicationsDir: File, run: (List<String>) -> String?): Boolean {
+internal fun registerAppImageScheme(appImagePath: String, applicationsDir: File, systemApplicationsDirs: List<File>, run: (List<String>) -> String?): Boolean {
   if (!onlyOwnerCanReplace(Path.of(appImagePath), System.getProperty("user.name"))) {
     Log.w(TAG, "link scheme: not registered, as other users may replace $appImagePath")
     return false
@@ -190,19 +194,26 @@ internal fun registerAppImageScheme(appImagePath: String, applicationsDir: File,
     Log.w(TAG, "link scheme: cannot write desktop entry: ${e.message}")
     return false
   }
-  val registered = makeAppImageEntryDefault(APP_LINK_MIME_TYPE, run)
-  makeAppImageEntryDefault(CONNECTION_LINK_MIME_TYPE, run)
+  val entryDirs = listOf(applicationsDir) + systemApplicationsDirs
+  val registered = makeAppImageEntryDefault(APP_LINK_MIME_TYPE, entryDirs, run)
+  makeAppImageEntryDefault(CONNECTION_LINK_MIME_TYPE, entryDirs, run)
   return registered
 }
 
-private fun makeAppImageEntryDefault(mimeType: String, run: (List<String>) -> String?): Boolean {
-  if (xdgDefaultSchemeHandler(mimeType, run) == APPIMAGE_ENTRY_NAME) return true
+private fun makeAppImageEntryDefault(mimeType: String, entryDirs: List<File>, run: (List<String>) -> String?): Boolean {
+  val current = xdgDefaultSchemeHandler(mimeType, run)
+  if (current == APPIMAGE_ENTRY_NAME) return true
+  // another installed handler keeps the default; only a missing one is replaced
+  if (current != null && entryDirs.any { File(it, current).isFile }) return false
   run(listOf(XDG_MIME, "default", APPIMAGE_ENTRY_NAME, mimeType))
   return xdgDefaultSchemeHandler(mimeType, run) == APPIMAGE_ENTRY_NAME
 }
 
 private fun xdgDefaultSchemeHandler(mimeType: String, run: (List<String>) -> String?): String? =
-  run(listOf(XDG_MIME, "query", "default", mimeType))?.trim()
+  run(listOf(XDG_MIME, "query", "default", mimeType))?.trim()?.takeIf { it.isNotEmpty() }
+
+private fun systemApplicationsDirs(): List<File> =
+  (System.getenv("XDG_DATA_DIRS")?.takeIf { it.isNotEmpty() } ?: DEFAULT_XDG_DATA_DIRS).split(File.pathSeparator).map { File(it, APPLICATIONS_DIR) }
 
 internal fun linuxPackageRegistered(run: (List<String>) -> String?): Boolean =
   xdgDefaultSchemeHandler(APP_LINK_MIME_TYPE, run) == DEB_ENTRY_NAME

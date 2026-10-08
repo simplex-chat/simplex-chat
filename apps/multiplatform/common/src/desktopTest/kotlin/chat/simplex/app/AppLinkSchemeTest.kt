@@ -376,7 +376,7 @@ class AppLinkSchemeTest {
   @Test
   fun appImageRegistrationWritesTheEntryAndMakesItTheDefault() = withRegistration { appImage, applicationsDir ->
     val xdg = FakeXdgMime(default = null)
-    assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run), "the entry became the default handler")
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, listOf(), xdg::run), "the entry became the default handler")
     assertEquals(appImageDesktopEntry(appImage), File(applicationsDir, APPIMAGE_ENTRY_NAME).readText(), "the missing directory is created")
     assertEquals(listOf(updateDatabase(applicationsDir)) + setBothDefaults, xdg.calls)
   }
@@ -386,16 +386,16 @@ class AppLinkSchemeTest {
     applicationsDir.mkdirs()
     File(applicationsDir, APPIMAGE_ENTRY_NAME).writeText(appImageDesktopEntry(appImage)!!)
     val xdg = FakeXdgMime(default = APPIMAGE_ENTRY_NAME)
-    assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run))
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, listOf(), xdg::run))
     assertEquals(queryBothDefaults, xdg.calls, "nothing is rewritten or set again")
   }
 
   @Test
-  fun appImageRegistrationSetsTheDefaultAgainForAnUnchangedEntry() = withRegistration { appImage, applicationsDir ->
+  fun appImageRegistrationTakesTheDefaultFromAHandlerNoLongerInstalled() = withRegistration { appImage, applicationsDir ->
     applicationsDir.mkdirs()
     File(applicationsDir, APPIMAGE_ENTRY_NAME).writeText(appImageDesktopEntry(appImage)!!)
     val xdg = FakeXdgMime(default = "other.desktop")
-    assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run), "the entry became the default handler again")
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, listOf(), xdg::run), "the entry became the default handler again")
     assertEquals(setBothDefaults, xdg.calls, "the entry is not rewritten, only made the default")
   }
 
@@ -404,7 +404,7 @@ class AppLinkSchemeTest {
     applicationsDir.mkdirs()
     File(applicationsDir, APPIMAGE_ENTRY_NAME).writeText(appImageDesktopEntry(appImage)!!)
     val xdg = FakeXdgMime(default = APPIMAGE_ENTRY_NAME, connectionDefault = "other.desktop")
-    assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run))
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, listOf(), xdg::run))
     assertEquals(
       listOf(queryDefault(APP_LINK_MIME_TYPE), queryDefault(CONNECTION_LINK_MIME_TYPE), setDefault(CONNECTION_LINK_MIME_TYPE), queryDefault(CONNECTION_LINK_MIME_TYPE)),
       xdg.calls
@@ -416,7 +416,7 @@ class AppLinkSchemeTest {
     applicationsDir.mkdirs()
     File(applicationsDir, APPIMAGE_ENTRY_NAME).writeText(appImageDesktopEntry("/old/SimpleX.AppImage")!!)
     val xdg = FakeXdgMime(default = APPIMAGE_ENTRY_NAME)
-    assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run))
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, listOf(), xdg::run))
     assertEquals(appImageDesktopEntry(appImage), File(applicationsDir, APPIMAGE_ENTRY_NAME).readText())
     assertEquals(listOf(updateDatabase(applicationsDir)) + queryBothDefaults, xdg.calls)
   }
@@ -424,22 +424,46 @@ class AppLinkSchemeTest {
   @Test
   fun appImageRegistrationFailsWhenAnotherHandlerKeepsTheAppLinkDefault() = withRegistration { appImage, applicationsDir ->
     val xdg = FakeXdgMime(default = "other.desktop", keptMimeTypes = setOf(APP_LINK_MIME_TYPE))
-    assertFalse(registerAppImageScheme(appImage, applicationsDir, xdg::run), "the default handler did not change")
+    assertFalse(registerAppImageScheme(appImage, applicationsDir, listOf(), xdg::run), "the default handler did not change")
     assertEquals(listOf(updateDatabase(applicationsDir)) + setBothDefaults, xdg.calls, "the connection link default is still set")
   }
 
   @Test
   fun appImageRegistrationSucceedsWhenAnotherHandlerKeepsOnlyTheConnectionDefault() = withRegistration { appImage, applicationsDir ->
     val xdg = FakeXdgMime(default = "other.desktop", keptMimeTypes = setOf(CONNECTION_LINK_MIME_TYPE))
-    assertTrue(registerAppImageScheme(appImage, applicationsDir, xdg::run), "only simplexchat: decides the badge page")
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, listOf(), xdg::run), "only simplexchat: decides the badge page")
     assertEquals(listOf(updateDatabase(applicationsDir)) + setBothDefaults, xdg.calls)
+  }
+
+  @Test
+  fun appImageRegistrationKeepsAnotherInstalledHandler() = withRegistration { appImage, applicationsDir ->
+    val systemDir = File(applicationsDir.parentFile, "system-applications").apply { mkdirs() }
+    File(systemDir, "other.desktop").writeText("[Desktop Entry]\n")
+    val xdg = FakeXdgMime(default = "other.desktop")
+    assertFalse(registerAppImageScheme(appImage, applicationsDir, listOf(systemDir), xdg::run), "links stay with the installed handler")
+    assertEquals(listOf(updateDatabase(applicationsDir)) + queryBothDefaults, xdg.calls, "the user's handler is not replaced")
+  }
+
+  @Test
+  fun appImageRegistrationKeepsAnotherInstalledConnectionHandlerOnly() = withRegistration { appImage, applicationsDir ->
+    val systemDir = File(applicationsDir.parentFile, "system-applications").apply { mkdirs() }
+    File(systemDir, "other.desktop").writeText("[Desktop Entry]\n")
+    val xdg = FakeXdgMime(default = null, connectionDefault = "other.desktop")
+    assertTrue(registerAppImageScheme(appImage, applicationsDir, listOf(systemDir), xdg::run), "app links have no handler, so the entry takes them")
+    assertEquals(
+      listOf(
+        updateDatabase(applicationsDir), queryDefault(APP_LINK_MIME_TYPE), setDefault(APP_LINK_MIME_TYPE), queryDefault(APP_LINK_MIME_TYPE),
+        queryDefault(CONNECTION_LINK_MIME_TYPE),
+      ),
+      xdg.calls
+    )
   }
 
   @Test
   fun appImageRegistrationIsRefusedForAPathTheEntryCannotRun() =
     withRegistration(fileName = "Simple%X.AppImage") { appImage, applicationsDir ->
       val xdg = FakeXdgMime(default = null)
-      assertFalse(registerAppImageScheme(appImage, applicationsDir, xdg::run), "a path with % cannot be registered")
+      assertFalse(registerAppImageScheme(appImage, applicationsDir, listOf(), xdg::run), "a path with % cannot be registered")
       assertEquals(listOf(), xdg.calls, "nothing is run")
       assertFalse(applicationsDir.exists(), "no entry is written")
     }
