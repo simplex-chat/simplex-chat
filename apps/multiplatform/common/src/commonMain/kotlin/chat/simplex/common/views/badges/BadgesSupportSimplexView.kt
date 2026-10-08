@@ -130,7 +130,7 @@ private fun BuyInBrowserTextButton() {
   val uriHandler = LocalUriHandler.current
   TextButtonBelowOnboardingButton(
     text = stringResource(MR.strings.badges_buy_in_browser),
-    onClick = { uriHandler.openUriCatching(badgePageUrl) }
+    onClick = { uriHandler.openUriCatching(badgePageUrl(appLinkSchemeRegistered())) }
   )
 }
 
@@ -142,9 +142,10 @@ private fun BuyInBrowserButton(modalManager: ModalManager, unwindToDepth: Int) {
     labelId = MR.strings.badges_buy_in_browser,
     onboarding = null,
     onclick = {
-      uriHandler.openUriCatching(badgePageUrl)
-      // desktop has no scheme to bring the code back, so the code is pasted into this screen, opened beside the browser
-      if (appPlatform.isDesktop && !modalManager.hasModalOpen(ModalViewId.BADGE_REDEEM_CODE)) {
+      val linkReturns = appLinkSchemeRegistered()
+      uriHandler.openUriCatching(badgePageUrl(linkReturns))
+      // with no scheme to bring the code back, the code is pasted into this screen, opened beside the browser
+      if (!linkReturns && !modalManager.hasModalOpen(ModalViewId.BADGE_REDEEM_CODE)) {
         modalManager.showModal(id = ModalViewId.BADGE_REDEEM_CODE) { BadgesRedeemCodeView(modalManager, unwindToDepth) }
       }
     }

@@ -22,7 +22,7 @@ Everything in the app sections below is both platforms unless it says otherwise.
 4. **`purchaseBadge` with store receipts**, which depends on none of the above and can run alongside it.
 5. **The app's store lane**, last, because nothing in it completes without 4.
 
-(*) **Desktop deep links** sit outside this order entirely — any time or never, blocking nothing. Own section below.
+(*) **Desktop deep links** sat outside this order entirely.
 
 ## The page
 
@@ -66,15 +66,17 @@ Two invariants that are easy to miss. A store transaction must not be finished u
 
 ## Desktop (D1, D2)
 
-No deep link. *Buy in browser* opens the page with `app=desktop` and the Redeem code screen at the same time, so the code has somewhere to go the moment it appears. This is also the fallback for any platform where the scheme turns out not to work: nothing else in the app depends on the link existing.
+Where the scheme is not registered, there is no deep link: *Buy in browser* opens the page with `app=desktop` and the Redeem code screen at the same time, so the code has somewhere to go the moment it appears. This is also the fallback for any platform where the scheme turns out not to work: nothing else in the app depends on the link existing.
 
 ## Desktop deep links (*)
 
-Optional, off the critical path, and blocking nothing — D1 works without it. Worth investigating on its own; if it lands, desktop joins lane A and D1 becomes the fallback rather than the design.
+This was optional and off the critical path, and it blocked nothing, since D1 works without it.
 
-Nothing registers a scheme on desktop today. `appOpenUrl` is wired in commonMain with no desktop implementation behind it, and `desktop/build.gradle.kts` declares Deb, Dmg, Msi and Exe with no protocol entry. Registration is per-OS, three separate small jobs: `CFBundleURLTypes` in the bundle plist plus `Desktop.setOpenURIHandler` on macOS, registry keys under `HKCU\Software\Classes` that the installer would have to write on Windows, and a `.desktop` entry with `MimeType=x-scheme-handler/simplexchat` on Linux. None of them covers an unpackaged run, so the fallback stays either way.
+The plan is `plans/2026-09-28-desktop-deep-links.md`. The feature is implemented, and verification on real machines is pending. Desktop joins lane A wherever the scheme is registered, and D1 is the fallback rather than the design.
 
-Getting the URL to an app that is already running is the part that half exists. `SingleInstance.kt` takes a file lock and uses a watched file to bring the running instance forward on a second launch; carrying a URL means giving that channel a payload rather than inventing IPC for it.
+Before that work, nothing registered a scheme on desktop. `appOpenUrl` was wired in commonMain with no desktop implementation behind it, and `desktop/build.gradle.kts` declared Deb, Dmg, Msi and Exe with no protocol entry. Registration is per-OS, three separate small jobs: `CFBundleURLTypes` in the bundle plist plus `Desktop.setOpenURIHandler` on macOS, registry keys under `HKCU\Software\Classes` on Windows (the app now writes them at runtime), and a `.desktop` entry with `MimeType=x-scheme-handler/simplexchat` on Linux. None of them covers an unpackaged run, so the fallback stays either way.
+
+Getting the URL to an app that is already running was the part that half existed. `SingleInstance.kt` took a file lock and used a watched file to bring the running instance forward on a second launch; the implementation gives that channel a payload rather than inventing IPC for it.
 
 ## The service
 

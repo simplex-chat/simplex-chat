@@ -262,7 +262,7 @@ private fun SubmitButton(enabled: Boolean, onClick: () -> Unit) {
 private var badgeLinkStep: MutableState<BadgeLinkStep>? = null
 
 private fun isBadgeLinkOpen(): Boolean =
-  ModalManager.end.hasModalOpen(ModalViewId.BADGE_LINK)
+  ModalManager.start.hasModalOpen(ModalViewId.BADGE_LINK)
 
 fun isBadgeLinkIssuing(): Boolean =
   isBadgeLinkOpen() && badgeLinkStep?.value == BadgeLinkStep.Issuing
@@ -275,7 +275,7 @@ fun openBadgeLink(rhId: Long?, codeText: String) {
   // held by the modal, not remembered: a modal is composed only while on top, and rotation recreates the activity,
   // either of which would reset remembered state to Confirming with a request in flight
   val step = mutableStateOf(BadgeLinkStep.Confirming)
-  ModalManager.end.showCustomModal(id = ModalViewId.BADGE_LINK) { close ->
+  ModalManager.start.showCustomModal(id = ModalViewId.BADGE_LINK) { close ->
     BadgesRedeemLinkView(rhId, code, step, close)
   }
   badgeLinkStep = step
@@ -298,7 +298,7 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
     badgeLinkStep === step && isBadgeLinkOpen()
 
   fun isShowing(): Boolean =
-    isOpen() && ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)
+    isOpen() && ModalManager.start.isLastModalOpen(ModalViewId.BADGE_LINK)
 
   // An outcome can arrive after this screen was closed or covered: it must not close another screen,
   // and a covered one goes back to asking, so it is never left locked on the spinner.
@@ -352,7 +352,7 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
       }
     }
     BadgeLinkStep.Issuing -> ModalView(::closeIfShowing) { BeingIssued(onDismiss = ::closeIfShowing) }
-    BadgeLinkStep.Redeemed, BadgeLinkStep.ViewingBadge -> BadgesView(ModalManager.end, close)
+    BadgeLinkStep.Redeemed, BadgeLinkStep.ViewingBadge -> BadgesView(ModalManager.start, close)
   }
 }
 
