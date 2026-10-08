@@ -5488,6 +5488,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
   withRetryIntervalCount (maybe ri (\d -> ri {initialInterval = d, increaseAfter = 0}) retryDelay) $ \n delay loop -> do
     liftIO $ waitWhileSuspended a
     liftIO $ waitForUserNetwork a
+    -- decided under the lock and acted on outside it: the retry sleeps, and announcing takes the chat lock
     outcome <- withEntityLock "badgePurchase" (CLBadgeUser userId) $
       tryAllErrors attempt >>= \case
         Right (Right (present_, _)) -> pure $ SROCredited present_
@@ -5503,7 +5504,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
         user <- withStore $ \db -> getUser db userId
         toView . CEvtBadgeChanged user =<< getUserBadgeState user
         forM_ invoiceId_ $ toView . CEvtStorePurchaseCredited user
-        -- last, so a failed broadcast cannot lose the settlement; outside the badge lock, as it takes the chat lock
+        -- last, so a failed broadcast cannot lose the settlement
         mapM_ presentUserBadgeToContacts present_
       SRORefused failure -> forM_ invoiceId_ $ \invoiceId -> do
         user <- withStore (`getUser` userId)
