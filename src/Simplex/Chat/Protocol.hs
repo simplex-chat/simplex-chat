@@ -92,7 +92,7 @@ import Simplex.Messaging.Version hiding (version)
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 20
+currentChatVersion = VersionChat 21
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -139,6 +139,9 @@ groupRosterVersion = VersionChat 19
 -- members sign messages in p2p groups; member keys are distributed for verification
 groupMemberKeyVersion :: VersionChat
 groupMemberKeyVersion = VersionChat 20
+
+anyTextCommandsVersion :: VersionChat
+anyTextCommandsVersion = VersionChat 21
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -922,8 +925,8 @@ maxEncodedMsgLength :: Int
 maxEncodedMsgLength = 15602
 
 -- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
-maxCompressedMsgLength :: Int
-maxCompressedMsgLength = 13380
+maxEncodedMsgLengthPQ :: Int
+maxEncodedMsgLengthPQ = 13380
 
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
@@ -931,6 +934,9 @@ maxDecompressedMsgLength = 65536
 -- Applies to all batch formats; 255 is the maximum for the 1-byte count in the binary batch format.
 maxBatchElementCount :: Int
 maxBatchElementCount = 255
+
+maxFwdDepth :: Int
+maxFwdDepth = 1
 
 -- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
 -- promotion cap over the promoted (member/moderator/admin) set.
@@ -959,8 +965,8 @@ rosterBlobP = do
 maxEncodedInfoLength :: Int
 maxEncodedInfoLength = 14694
 
-maxCompressedInfoLength :: Int
-maxCompressedInfoLength = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
+maxEncodedInfoLengthPQ :: Int
+maxEncodedInfoLengthPQ = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
@@ -1384,8 +1390,8 @@ appBinaryToCM AppMessageBinary {msgId, tag, body} = do
     msg = \case
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
 
-appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
-appJsonToCM AppMessageJson {v, msgId, event, params} = do
+appJsonToCM :: Int -> AppMessageJson -> Either String (ChatMessage 'Json)
+appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
   pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent}
@@ -1460,11 +1466,12 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
       XGrpRosterRequest_ -> XGrpRosterRequest <$> opt "version"
       XGrpMsgForward_ -> do
+        when (fwdDepth >= maxFwdDepth) $ Left "forward depth exceeds limit"
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
           Nothing -> pure FwdChannel
         fwdBrokerTs <- p "msgTs"
-        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> p "msg"
+        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> (appJsonToCM (fwdDepth + 1) =<< p "msg")
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1577,7 +1584,7 @@ instance ToJSON (ChatMessage 'Json) where
   toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage
 
 instance FromJSON (ChatMessage 'Json) where
-  parseJSON v = appJsonToCM <$?> parseJSON v
+  parseJSON v = appJsonToCM 0 <$?> parseJSON v
 
 instance FromField (ChatMessage 'Json) where
   fromField = blobFieldDecoder J.eitherDecodeStrict'

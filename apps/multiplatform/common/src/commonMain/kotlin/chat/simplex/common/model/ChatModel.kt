@@ -3561,6 +3561,7 @@ data class ChatItem (
         is RcvGroupEvent.MemberCreatedContact -> false
         is RcvGroupEvent.MemberProfileUpdated -> false
         is RcvGroupEvent.NewMemberPendingReview -> true
+        is RcvGroupEvent.MsgBadSignature -> false
       }
       is CIContent.SndGroupEventContent -> false
       is CIContent.RcvConnEventContent -> false
@@ -5467,6 +5468,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberCreatedContact") class MemberCreatedContact(): RcvGroupEvent()
   @Serializable @SerialName("memberProfileUpdated") class MemberProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvGroupEvent()
   @Serializable @SerialName("newMemberPendingReview") class NewMemberPendingReview(): RcvGroupEvent()
+  @Serializable @SerialName("msgBadSignature") class MsgBadSignature(): RcvGroupEvent()
 
   val text: String get() = text(isChannel = false)
 
@@ -5491,6 +5493,7 @@ sealed class RcvGroupEvent() {
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
     is NewMemberPendingReview -> generalGetString(MR.strings.rcv_group_event_new_member_pending_review)
+    is MsgBadSignature -> generalGetString(MR.strings.rcv_group_event_msg_bad_signature)
   }
 
   private fun profileUpdatedText(from: Profile, to: Profile): String =

@@ -143,6 +143,7 @@ kotlin {
         }
         // For jSystemThemeDetector only
         implementation("net.java.dev.jna:jna-platform:5.14.0")
+        implementation("com.github.oshi:oshi-core:6.4.13")
         implementation("com.sshtools:two-slices:0.9.1")
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
@@ -157,13 +158,13 @@ kotlin {
 
 android {
   namespace = "chat.simplex.common"
-  compileSdk = 35
+  compileSdk = 36
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26
   }
-  testOptions.targetSdk = 34
-  lint.targetSdk = 34
+  testOptions.targetSdk = 36
+  lint.targetSdk = 36
   val isAndroid = gradle.startParameter.taskNames.find {
     val lower = it.lowercase()
     lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")

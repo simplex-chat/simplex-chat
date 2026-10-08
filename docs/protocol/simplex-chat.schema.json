@@ -338,7 +338,13 @@
         "callType": {"ref": "callType"}
       },
       "optionalProperties": {
-        "callDhPubKey": {"ref": "base64url"}
+        "callDhPubKey": {"ref": "base64url"},
+        "callVRange": {
+          "type": "string",
+          "metadata": {
+            "format": "call version range, e.g. \"1-2\", or a single version \"1\""
+          }
+        }
       }
     },
     "callOffer": {
@@ -347,7 +353,8 @@
         "rtcSession": {"ref": "webRTCSession"}
       },
       "optionalProperties": {
-        "callDhPubKey": {"ref": "base64url"}
+        "callDhPubKey": {"ref": "base64url"},
+        "callVersion": {"type": "uint16"}
       }
     },
     "callAnswer": {
