@@ -2261,7 +2261,7 @@ testStoreReceiptAfterRestart ps = do
       pure invoiceId
     writeIORef broken False
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      mapM_ (alice <##.) $ creditedLines "" invoiceId "1: supporter"
+      inAnyOrder alice [["subscribed 1 connections on server localhost"], creditedLines "" invoiceId "1: supporter"]
       heldStoreReceipts (chatController alice) `shouldReturn` 0
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
