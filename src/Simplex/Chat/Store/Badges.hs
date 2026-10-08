@@ -125,8 +125,9 @@ data BadgeReceiptStatus
 -- | Resolves a store transaction to the record that owns it, looking up by its reference again after each step
 -- rather than trusting the write: finding none still leaves the echoed invoice's record to attach it to, and a
 -- concurrent hand-over of the same transaction may win either write. It stays with the record that already has
--- it, whose keys the service may have credited; failing that it joins the record Buy created; and only when the
--- store echoed no invoice does the presenting profile get a new one, nothing else saying who paid.
+-- it, whose keys the service may have credited; failing that it joins the record Buy created; and when no record
+-- can take it - the store echoed no invoice, or the one it echoed is already held by another transaction - the
+-- presenting profile gets a new one, nothing else saying who paid.
 holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe BadgeReceiptRecord)
 holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
   getReceiptRecord db txRef >>= \case
