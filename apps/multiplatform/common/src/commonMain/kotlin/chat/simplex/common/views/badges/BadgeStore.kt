@@ -6,10 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.helpers.AlertManager
+import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.res.MR
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Currency
@@ -157,7 +159,6 @@ object BadgeStore {
   // set once presentUnfinished has read the store, or failed to: until then, a slow payment completed while
   // the app was closed, or a purchase it died before handing over, are both unknown, so canBuy refuses
   private val reconciledOnce = mutableStateOf(false)
-  val refusals = MutableSharedFlow<ChatError>()
 
   fun purchaseState(userId: Long?): BadgePurchaseState? {
     if (!badgeStoreAvailable) return null
@@ -292,27 +293,50 @@ object BadgeStore {
             if (r.badgeState?.shown == true) appPrefs.supporterBannerShown.set(true)
           }
         }
-        resolve(receipt, refusal = null)
+        finish(receipt)
       }
-      // a refusal is announced where it reads as its own, so only an unexpected answer reaches the buyer
+      // a refusal is announced from core's event for it, so only an unexpected answer reaches the buyer
       is BadgePurchaseResult.Failed ->
         if (badgeReceiptRefused(r.err)) {
           Log.e(TAG, "BadgeStore.handOver: ${r.err?.string}")
-          resolve(receipt, refusal = r.err)
+          finish(receipt)
         } else {
           throw r.err?.let(BadgeStoreError::ApiError) ?: Exception("apiPurchaseBadge: unexpected response")
         }
     }
   }
 
-  private suspend fun resolve(receipt: BadgeStoreReceipt, refusal: ChatError?) {
-    finish(receipt)
-    if (refusal != null) {
-      withContext(Dispatchers.Main) { refusals.emit(refusal) }
+  suspend fun storePurchaseRefused(rhId: Long?, user: UserRef, invoiceId: String, refusal: BadgeIssueFailure) {
+    withContext(Dispatchers.Main) {
+      if (chatModel.controller.activeUser(rhId, user) && openStorePurchases(user.userId).any { it.invoiceId == invoiceId }) {
+        AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_purchase_error), text = refusal.purchaseText)
+      }
+    }
+    storePurchaseResolved(rhId, user, invoiceId)
+  }
+
+  suspend fun storePurchaseResolved(rhId: Long?, user: UserRef, invoiceId: String) {
+    // the row goes before the store is read, or the screen shows it open while the store answers;
+    // the purchase is finished whoever owns it, as only the app can, while the cached row is the active profile's
+    withContext(Dispatchers.Main) {
+      val (readOn, readFor, purchases) = storePurchases.value ?: return@withContext
+      if (chatModel.controller.activeUser(rhId, user) && readOn == rhId && readFor == user.userId) {
+        storePurchases.value = Triple(readOn, readFor, purchases.filter { it.invoiceId != invoiceId })
+      }
+    }
+    if (rhId != null || useBadgeTestProducts || !platform.androidHasPlatformStore) return
+    try {
+      platform.androidUnfinishedBadgePurchases()
+        .firstNotNullOfOrNull { (it as? BadgePurchaseOutcome.Purchased)?.receipt?.takeIf { r -> r.invoiceId == invoiceId } }
+        ?.let { finish(it) }
+    } catch (e: Exception) {
+      if (e is CancellationException) throw e
+      // the purchase stays unfinished, and the next sweep hands it over and finishes it
+      Log.e(TAG, "BadgeStore.storePurchaseResolved: ${e.message}")
     }
   }
 
-  // at launch, on return to the foreground, on a profile switch and when core resolves a purchase, never on a timer
+  // at launch, on return to the foreground and on a profile switch, never on a timer
   suspend fun presentUnfinished() {
     try {
       if (!useBadgeTestProducts && platform.androidHasPlatformStore) {
@@ -390,7 +414,8 @@ private fun compactPrice(product: BadgeProduct): String {
   }
 }
 
-// the codes core refuses a receipt with for good, after which the store may stop re-delivering it
+// the codes core refuses a receipt with for good, after which the store may stop re-delivering it;
+// a sweep that hands over a receipt refused while the app was not running learns it only from this answer
 private fun badgeReceiptRefused(err: ChatError?): Boolean {
   val redeemError = ((err as? ChatError.ChatErrorChat)?.errorType as? ChatErrorType.CEBadgeRedeemError)?.badgeRedeemError
   val code = (redeemError as? BadgeRedeemError.ServiceError)?.serviceError
