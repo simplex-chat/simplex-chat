@@ -10,6 +10,7 @@ const path = require("path")
 const matter = require('gray-matter')
 const pluginRss = require('@11ty/eleventy-plugin-rss')
 const { JSDOM } = require('jsdom')
+const markdownPages = require('./markdown_pages')
 
 
 // Links page data
@@ -117,6 +118,8 @@ fs.readdir(translationsDirectoryPath, (err, files) => {
 })
 
 const translations = require("./translations.json")
+
+const outputDir = '_site'
 
 module.exports = function (ty) {
   // Add this after your markdownLib definition
@@ -334,6 +337,31 @@ module.exports = function (ty) {
     }
   })
 
+  ty.addFilter("markdownUrl", (url) => markdownPages.markdownUrl(url, supportedLangs))
+
+  ty.addFilter("markdownAlternate", (page) =>
+    markdownPages.markdownKind(page.inputPath, supportedLangs) ? markdownPages.markdownUrl(page.url, supportedLangs) : "")
+
+  ty.addFilter("markdownSource", (inputPath) => markdownPages.markdownFromSource(inputPath, replaceLink))
+
+  ty.addFilter("markdownTitle", markdownPages.markdownTitle)
+
+  ty.addFilter("plainText", markdownPages.plainText)
+
+  ty.addTransform("markdownPages", function (content) {
+    const kind = markdownPages.markdownKind(this.inputPath, supportedLangs)
+    if (kind && this.outputPath) {
+      const pageUrl = "/" + path.relative(outputDir, this.outputPath).replace(/index\.html$/, "")
+      const markdown = kind === "source"
+        ? markdownPages.markdownFromSource(this.inputPath, replaceLink)
+        : markdownPages.markdownFromHtml(content, pageUrl)
+      const markdownPath = path.join(outputDir, markdownPages.markdownUrl(pageUrl, supportedLangs))
+      fs.mkdirSync(path.dirname(markdownPath), { recursive: true })
+      fs.writeFileSync(markdownPath, markdown)
+    }
+    return content
+  })
+
   ty.addPlugin(pluginRss)
 
   ty.addPlugin(i18n, {
@@ -453,6 +481,11 @@ module.exports = function (ty) {
     return newDocs
   })
 
+  ty.addCollection("markdownDocs", (collection) =>
+    collection.getFilteredByGlob("src/docs/**/*.md")
+      .filter((doc) => markdownPages.markdownKind(doc.inputPath, supportedLangs) === "source")
+      .sort((a, b) => a.url.localeCompare(b.url)))
+
   ty.addWatchTarget("src/css")
   ty.addWatchTarget("markdown/")
   ty.addWatchTarget("components/Card.js")
@@ -509,7 +542,7 @@ module.exports = function (ty) {
     dir: {
       input: 'src',
       includes: '_includes',
-      output: '_site',
+      output: outputDir,
     },
     templateFormats: ['md', 'njk', 'html'],
     markdownTemplateEngine: 'njk',

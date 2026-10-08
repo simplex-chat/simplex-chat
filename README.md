@@ -16,6 +16,8 @@ Invest in SimpleX Chat. [Learn more on Wefunder](https://wefunder.com/simplex.ch
 
 **[Why we are building SimpleX Network](./docs/WHY.md)**
 
+For AI assistants and agents: [simplex.chat/llms.txt](https://simplex.chat/llms.txt).
+
 ## Welcome to SimpleX Chat!
 
 1. 📲 [Install the app](#install-the-app).
