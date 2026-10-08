@@ -1672,7 +1672,7 @@
     <string name="set_passphrase">Iestatīt frāzi</string>
     <string name="enter_correct_current_passphrase">Ievadiet pareizo pašreizējo frāzi</string>
     <string name="database_is_not_encrypted">Datubāze nav šifrēta</string>
-    <string name="keychain_is_storing_securely">Atslēgu glabātuve tiek droši glabāta</string>
+    <string name="keychain_is_storing_securely">Atslēgu glabātuve%s tiek droši glabāta</string>
     <string name="settings_is_storing_in_clear_text">Iestatījumi tiek glabāti parastā tekstā</string>
     <string name="encrypted_with_random_passphrase">Šifrēts ar nejaušu frāzi</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[Nav iespējams atgūt frāzi]]></string>

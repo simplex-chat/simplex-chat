@@ -659,7 +659,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               ct' = ct {activeConn = Just conn'} :: Contact
           -- [incognito] print incognito profile used for this contact
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
           let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just pqEnc) Nothing
           -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
           when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
@@ -674,6 +673,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               withStore' (\db -> getContactRequest' db user connReqId) >>= \case
                 Just UserContactRequest {pqSupport} | CR.pqSupportToEnc pqSupport == pqEnc -> pure ()
                 _ -> createE2EItem
+          toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
           when (contactConnInitiated conn') $ do
             probeMatchingMembers ct' (contactConnIncognito ct')
             withStore' $ \db -> resetContactConnInitiated db user conn'
@@ -884,7 +884,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     pure gInfo {membership = membership {memberStatus = GSMemConnected}}
                   else pure gInfo
               pure (m {memberStatus = GSMemConnected}, gInfo')
-            toView $ CEvtUserJoinedGroup user gInfo' m'
             when (isRelay membership) $ do
               cc <- ask
               atomically $ channelProfileUpdated cc groupId groupProfile
@@ -898,10 +897,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   let prepared = preparedGroup gInfo''
                   unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
                   memberConnectedChatItem gInfo'' scopeInfo m''
+                  toView $ CEvtUserJoinedGroup user gInfo' m'
                   let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
                   unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
               )
-              (memberConnectedChatItem gInfo'' scopeInfo m'')
+              ( do
+                  memberConnectedChatItem gInfo'' scopeInfo m''
+                  toView $ CEvtUserJoinedGroup user gInfo' m'
+              )
             where
               firstConnectedHost
                 | useRelays' gInfo = do
@@ -1247,7 +1250,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
                       let incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
                       profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo incognitoProfile
-                      dm <- encodeXMemberConnInfo g relayMemberId profileToSend
+                      dm <- encodeXMemberConnInfo pqSup g relayMemberId profileToSend
                       subMode <- chatReadVar subscriptionMode
                       (cmdId, connId') <- prepareAgentJoin user (Just conn) True cReq
                       joinAgentConnectionAsync cmdId True connId' True cReq dm subMode
@@ -2826,7 +2829,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     xGrpLinkAcpt :: GroupInfoKeys -> GroupMember -> GroupAcceptance -> GroupMemberRole -> MemberId -> RcvMessage -> UTCTime -> CM ()
     xGrpLinkAcpt g@(GIK gInfo@GroupInfo {membership} _) m acceptance role memberId msg brokerTs
-      | memberRole' m < GRModerator || memberRole' m < role =
+      -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
+      | memberRole' m < roleRequiredToChange GRMember role =
           messageError "x.grp.link.acpt with insufficient member permissions"
       | sameMemberId memberId membership = processUserAccepted
       | otherwise =
@@ -2896,7 +2900,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               pure m'
             Just mContactId -> do
               mCt <- withStore $ \db -> getContact db cxt user mContactId
-              if canUpdateProfile mCt
+              if contactUpdatableFromMember mCt
                 then do
                   (m', ct') <- withStore $ \db -> updateContactMemberProfile db cxt user m mCt p'
                   unless (muteEventInChannel gInfo m') $ do
@@ -2905,12 +2909,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     toView $ CEvtContactUpdated user mCt ct'
                   pure m'
                 else pure m
-              where
-                canUpdateProfile ct
-                  | not (contactActive ct) = True
-                  | otherwise = case contactConn ct of
-                      Nothing -> True
-                      Just conn -> not (connReady conn) || (authErrCounter conn >= 1)
       | otherwise =
           pure m
       where
@@ -3009,15 +3007,23 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> CM ()
-    xCallInv ct@Contact {contactId} callId CallInvitation {callType, callDhPubKey} msg@RcvMessage {sharedMsgId_} msgMeta = do
+    xCallInv ct@Contact {contactId} callId CallInvitation {callType, callDhPubKey, callVRange = peerCallVRange} msg@RcvMessage {sharedMsgId_} msgMeta = do
       if featureAllowed SCFCalls forContact ct
         then do
+          ChatConfig {callVRange = callVR} <- asks config
+          case callVR `compatibleVersion` maybe callInitialVRange fromCallVRange peerCallVRange of
+            Just (Compatible callVersion) -> createCallInvitation callVersion
+            Nothing -> messageError "x.call.inv: incompatible call version"
+        else featureRejected CFCalls
+      where
+        brokerTs = metaBrokerTs msgMeta
+        createCallInvitation callVersion = do
           g <- asks random
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           (ci, cInfo) <- saveCallItem CISCallPending
           callUUID <- UUID.toText <$> liftIO V4.nextRandom
-          let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
-              callState = CallInvitationReceived {peerCallType = callType, localDhPubKey = fst <$> dhKeyPair, sharedKey}
+          let sharedKey = callMediaKey callVersion callId <$> callDhPubKey <*> (snd <$> dhKeyPair)
+              callState = CallInvitationReceived {peerCallType = callType, localDhPubKey = fst <$> dhKeyPair, sharedKey, callVersion = Just callVersion}
               call' = Call {contactId, callId, callUUID, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
           calls <- asks currentCalls
           -- theoretically, the new call invitation for the current contact can mark the in-progress call as ended
@@ -3028,9 +3034,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
           toView $ CEvtCallInvitation RcvCallInvitation {user, contact = ct, callType, sharedKey, callUUID, callTs = chatItemTs' ci}
           toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
-        else featureRejected CFCalls
-      where
-        brokerTs = metaBrokerTs msgMeta
         saveCallItem status = saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs (CIRcvCall status 0)
         featureRejected f = do
           let content = ciContentNoParse $ CIRcvChatFeatureRejected f
@@ -3039,18 +3042,25 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     -- to party initiating call
     xCallOffer :: Contact -> CallId -> CallOffer -> RcvMessage -> CM ()
-    xCallOffer ct callId CallOffer {callType, rtcSession, callDhPubKey} msg = do
+    xCallOffer ct callId CallOffer {callType, rtcSession, callDhPubKey, callVersion = peerCallVersion} msg = do
+      ChatConfig {callVRange = callVR} <- asks config
       msgCurrentCall ct callId "x.call.offer" msg $
         \call -> case callState call of
-          CallInvitationSent {localCallType, localDhPrivKey} -> do
-            let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> localDhPrivKey)
-                callState' = CallOfferReceived {localCallType, peerCallType = callType, peerCallSession = rtcSession, sharedKey}
-                askConfirmation = encryptedCall localCallType && not (encryptedCall callType)
-            toView CEvtCallOffer {user, contact = ct, callType, offer = rtcSession, sharedKey, askConfirmation}
-            pure (Just call {callState = callState'}, Just . ACIContent SMDSnd $ CISndCall CISCallAccepted 0)
+          CallInvitationSent {localCallType, localDhPrivKey}
+            | callVersion `isCompatible` callVR -> do
+                let sharedKey = callMediaKey callVersion callId <$> callDhPubKey <*> localDhPrivKey
+                    callState' = CallOfferReceived {localCallType, peerCallType = callType, peerCallSession = rtcSession, sharedKey}
+                    askConfirmation = encryptedCall localCallType && isNothing sharedKey
+                toView CEvtCallOffer {user, contact = ct, callType, offer = rtcSession, sharedKey, askConfirmation}
+                pure (Just call {callState = callState'}, Just . ACIContent SMDSnd $ CISndCall CISCallAccepted 0)
+            | otherwise -> do
+                messageError "x.call.offer: unsupported call version"
+                pure (Just call, Nothing)
           _ -> do
             msgCallStateError "x.call.offer" call
             pure (Just call, Nothing)
+      where
+        callVersion = fromMaybe initialCallVersion peerCallVersion
 
     -- to party accepting call
     xCallAnswer :: Contact -> CallId -> CallAnswer -> RcvMessage -> CM ()

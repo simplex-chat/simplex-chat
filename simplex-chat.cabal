@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        7.1.0.7
+version:        7.1.0.10
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -431,7 +431,10 @@ executable simplex-badge-service
       StrictData
   other-modules:
       BadgeService.Catalog
+      BadgeService.Codes
       BadgeService.Config
+      BadgeService.Group
+      BadgeService.Group.Command
       BadgeService.Log
       BadgeService.Options
       BadgeService.Orders
@@ -726,7 +729,10 @@ test-suite simplex-chat-test
       API.Docs.Types
       API.TypeInfo
       BadgeService.Catalog
+      BadgeService.Codes
       BadgeService.Config
+      BadgeService.Group
+      BadgeService.Group.Command
       BadgeService.Log
       BadgeService.Options
       BadgeService.Orders
@@ -752,6 +758,8 @@ test-suite simplex-chat-test
       Bots.BadgeService.FakePlay
       Bots.BadgeService.FakeStore
       Bots.BadgeService.FakeStripe
+      Bots.BadgeService.GroupIntegrationTests
+      Bots.BadgeService.GroupTests
       Bots.BadgeService.StoreVerifierTests
       Bots.BadgeService.StripeTests
       Bots.BadgeService.WaitersTests
@@ -787,7 +795,7 @@ test-suite simplex-chat-test
   default-extensions:
       StrictData
   -- add -fhpc to ghc-options below to run tests with coverage
-  ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded
+  ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts "-with-rtsopts=-N"
   build-depends:
       QuickCheck ==2.14.*
     , aeson ==2.2.*
@@ -854,5 +862,6 @@ test-suite simplex-chat-test
     build-depends:
         bytestring ==0.10.*
       , hspec ==2.7.*
+      , hspec-core ==2.7.*
       , process >=1.6 && <1.6.18
       , text >=1.2.4.0 && <1.3

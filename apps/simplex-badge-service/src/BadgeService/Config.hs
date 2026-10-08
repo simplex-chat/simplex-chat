@@ -13,6 +13,7 @@ module BadgeService.Config
     AppleStoreConfig (..),
     PlayStoreConfig (..),
     BadgeIssuerKey (..),
+    GroupConfig (..),
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
@@ -23,14 +24,15 @@ where
 
 import qualified Control.Exception as E
 import BadgeService.Log (logWarn)
-import Control.Monad (when)
+import Control.Monad (mfilter, when)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import Simplex.Chat.Library.Commands (mkValidName)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 import System.IO.Error (ioeGetErrorString)
@@ -115,6 +117,12 @@ data BadgeIssuerKey = BadgeIssuerKey
 instance Show BadgeIssuerKey where
   show BadgeIssuerKey {keyIdx} = "issuer key " <> show keyIdx
 
+data GroupConfig = GroupConfig
+  { gDisplayName :: Text,
+    gDescription :: Maybe Text
+  }
+  deriving (Eq, Show)
+
 data ServiceConfig = ServiceConfig
   { listener :: ListenerConfig,
     btcpay :: Maybe BTCPayConfig,
@@ -123,8 +131,7 @@ data ServiceConfig = ServiceConfig
     appleStore :: Maybe AppleStoreConfig,
     playStore :: Maybe PlayStoreConfig,
     issuer :: Maybe BadgeIssuerKey,
-    -- Local testing only; signs credentials with a master key this service can link.
-    devChatRedeem :: Bool,
+    group :: Maybe GroupConfig,
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
     devAcceptUnverifiedStoreReceipts :: Bool
   }
@@ -185,7 +192,8 @@ knownSettings =
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("apple", ["bundle_id", "root_certificate"]),
     ("google", ["package_name", "service_account_file"]),
-    ("dev", ["chat_redeem", "accept_unverified_store_receipts"]),
+    ("group", ["display_name", "description"]),
+    ("dev", ["accept_unverified_store_receipts"]),
     ("issuer", ["index", "private_key"])
   ]
 
@@ -209,18 +217,16 @@ parseConfig ini = do
     p <- num "listener" "port" 8080
     if 1 <= p && p <= 65535 then Right p else Left "listener.port must be between 1 and 65535"
   lServeWebapp <- bool "listener" "serve_webapp" True
-  let lWebappExportDir = case fmap T.strip (look "listener" "webapp_export_dir") of
-        Just v | not (T.null v) -> Just (T.unpack v)
-        _ -> Nothing
+  let lWebappExportDir = T.unpack <$> present "listener" "webapp_export_dir"
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
   btc <- btcpaySection
   str <- stripeSection
   iss <- issuerSection
+  grp <- groupSection
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   apple <- appleSection
   google <- googleSection
-  devRedeem <- bool "dev" "chat_redeem" False
   devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
   when (devUnverifiedReceipts && (isJust apple || isJust google)) $
     Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
@@ -233,18 +239,15 @@ parseConfig ini = do
         appleStore = apple,
         playStore = google,
         issuer = iss,
-        devChatRedeem = devRedeem,
+        group = grp,
         devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts
       }
   where
     hasSection s = s `elem` sections ini
     look s k = either (const Nothing) Just (lookupValue s k ini)
-    required s k = case look s k of
-      Just v | not (T.null (T.strip v)) -> Right (T.strip v)
-      _ -> Left (T.unpack s <> "." <> T.unpack k <> " is required")
-    optional s k d = case fmap T.strip (look s k) of
-      Just v | not (T.null v) -> Right v
-      _ -> Right d
+    present s k = mfilter (not . T.null) (T.strip <$> look s k)
+    required s k = maybe (Left (T.unpack s <> "." <> T.unpack k <> " is required")) Right (present s k)
+    optional s k d = Right (fromMaybe d (present s k))
     -- Integer, because readMaybe at Int wraps silently, reading 2^64+4 as 4.
     num s k d = case look s k of
       Nothing -> Right d
@@ -306,6 +309,20 @@ parseConfig ini = do
       Just v -> case readMaybe (T.unpack (T.strip v)) of
         Just d | d >= 0 && d <= maxTolerance -> Right d
         _ -> Left ("btcpay.payment_tolerance must be a percentage between 0 and " <> show maxTolerance)
+    groupSection
+      | not (hasSection "group") = Right Nothing
+      | otherwise = do
+          gDisplayName <- required "group" "display_name" >>= validGroupName
+          pure (Just GroupConfig {gDisplayName, gDescription = present "group" "description"})
+    -- The core refuses a group name that mkValidName would change, so it is rejected here.
+    validGroupName n =
+      let valid = T.pack (mkValidName (T.unpack n))
+       in if n == valid
+            then Right n
+            else Left ("group.display_name \"" <> T.unpack n <> "\" is not a valid group name" <> closest valid)
+    closest valid
+      | T.null valid = ""
+      | otherwise = ", the closest valid name is \"" <> T.unpack valid <> "\""
     stripeSection
       | not (hasSection "stripe") = Right Nothing
       | otherwise = do

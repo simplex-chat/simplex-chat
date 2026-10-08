@@ -35,6 +35,8 @@
     </intent>
   </queries>
 
+  <!-- enableOnBackInvokedCallback="false": Activity.onBackPressed() overrides are not called on Android 16+ without it.
+       UnusedAttribute is ignored because the attribute only exists on API 33+, older versions call onBackPressed() anyway -->
   <application
       android:name="SimplexApp"
       android:allowBackup="false"
@@ -44,7 +46,9 @@
       android:largeHeap="true"
       android:extractNativeLibs="${extract_native_libs}"
       android:supportsRtl="true"
-      android:theme="@style/Theme.SimpleX">
+      android:enableOnBackInvokedCallback="false"
+      android:theme="@style/Theme.SimpleX"
+      tools:ignore="UnusedAttribute">
     <!--      android:localeConfig="@xml/locales_config"-->
 
     <!-- Main activity -->
@@ -109,12 +113,18 @@
         <data android:host="smp4.simplexonflux.com" />
         <data android:host="smp5.simplexonflux.com" />
         <data android:host="smp6.simplexonflux.com" />
-        <data android:pathPrefix="/invitation" />
-        <data android:pathPrefix="/contact" />
-        <data android:pathPrefix="/a" />
-        <data android:pathPrefix="/c" />
-        <data android:pathPrefix="/g" />
-        <data android:pathPrefix="/i" />
+        <data android:path="/invitation" />
+        <data android:path="/contact" />
+        <data android:path="/a" />
+        <data android:path="/c" />
+        <data android:path="/g" />
+        <data android:path="/i" />
+        <data android:pathPrefix="/invitation/" />
+        <data android:pathPrefix="/contact/" />
+        <data android:pathPrefix="/a/" />
+        <data android:pathPrefix="/c/" />
+        <data android:pathPrefix="/g/" />
+        <data android:pathPrefix="/i/" />
       </intent-filter>
       <!-- Receive files from other apps -->
       <intent-filter>

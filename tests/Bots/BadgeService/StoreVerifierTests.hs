@@ -5,6 +5,7 @@
 
 module Bots.BadgeService.StoreVerifierTests (badgeStoreVerifierTests) where
 
+import BadgeService.Config (PlayStoreConfig (..))
 import BadgeService.StoreReceipts
 import BadgeService.StoreReceipts.Apple (readAppleRoot, verifyAppleTransaction)
 import BadgeService.StoreReceipts.Google (playStoreVerifier)
@@ -463,12 +464,12 @@ testPlayUnreadable = withFakePlay $ \fake -> do
       answeredAs verifier testToken Failed
 
 testPlayHangsOrIsGone :: IO ()
-testPlayHangsOrIsGone = do
-  gone <- withFakePlay $ \fake -> do
-    verifier <- playVerifier fake
-    answerPurchase fake testToken PlayHang
-    answeredAs verifier testToken Unreachable
-    pure verifier
+testPlayHangsOrIsGone = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  answerPurchase fake testToken PlayHang
+  answeredAs verifier testToken Unreachable
+  -- not a stopped stub's port, which a test running alongside may already have been given
+  gone <- playVerifier fake {fpConfig = (fpConfig fake) {gApiHost = "http://127.0.0.1:1"}}
   answeredAs gone testToken Unreachable
 
 testPlayTokenCached :: IO ()

@@ -29,6 +29,7 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
 import Simplex.Chat.Badges (badgeServerCredential, defaultFileSizeLimits)
+import Simplex.Chat.Call (supportedCallVRange)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -68,6 +69,7 @@ defaultChatConfig =
             tbqSize = 1024
           },
       chatVRange = supportedChatVRange,
+      callVRange = supportedCallVRange,
       badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
       badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
       badgeCurrentTime = getCurrentTime,
@@ -124,6 +126,7 @@ defaultChatConfig =
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
+      callInvitationTTL = 180, -- 3 minutes, the apps stop ringing for older invitations
       highlyAvailable = False,
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,

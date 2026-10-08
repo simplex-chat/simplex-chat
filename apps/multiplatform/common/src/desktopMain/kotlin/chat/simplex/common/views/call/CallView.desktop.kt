@@ -20,6 +20,7 @@ import java.io.IOException
 import java.net.BindException
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.concurrent.atomic.AtomicBoolean
 
 private const val SERVER_HOST = "localhost"
 private const val SERVER_PORT = 50395
@@ -31,7 +32,7 @@ val connections = ArrayList<WebSocket>()
 actual fun ActiveCallView() {
   val scope = rememberCoroutineScope()
   WebRTCController(chatModel.callCommand) { apiMsg ->
-    Log.d(TAG, "received from WebRTCController: $apiMsg")
+    Log.d(TAG, "received from WebRTCController: ${apiMsg.resp.javaClass.simpleName}")
     val call = chatModel.activeCall.value
     if (call != null) {
       Log.d(TAG, "has active call $call")
@@ -202,7 +203,7 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
         }
         while (callCommand.isNotEmpty()) {
           val cmd = callCommand.removeFirstOrNull()
-          Log.d(TAG, "WebRTCController LaunchedEffect executing $cmd")
+          Log.d(TAG, "WebRTCController LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
           if (cmd != null) {
             processCommand(cmd)
           }
@@ -232,10 +233,16 @@ fun startServer(
 
     val resourceNotFound = newFixedLengthResponse(Status.NOT_FOUND, "text/plain", "This page couldn't be found")
 
+    val webSocketAccepted = AtomicBoolean(false)
+
     override fun handle(session: IHTTPSession): Response {
       return when {
         session.headers["upgrade"] == "websocket" ->
-          if (hasValidCallServerToken(session.parameters, token)) {
+          if (
+            session.headers["origin"] == "http://${SERVER_HOST}:${listeningPort}"
+            && hasValidCallServerToken(session.parameters, token)
+            && webSocketAccepted.compareAndSet(false, true)
+          ) {
             super.handle(session)
           } else {
             unauthorizedResponse()
@@ -289,7 +296,7 @@ class MyWebSocket(val onResponse: (WVAPIMessage) -> Unit, handshakeRequest: IHTT
       // onResponse(message.textPayload)
       onResponse(json.decodeFromString(message.textPayload))
     } catch (e: Exception) {
-      Log.e(TAG, "failed parsing browser message: $message")
+      Log.e(TAG, "failed parsing browser message")
     }
   }
 
