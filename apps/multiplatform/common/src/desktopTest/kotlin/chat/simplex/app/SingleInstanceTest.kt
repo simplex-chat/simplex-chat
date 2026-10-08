@@ -8,6 +8,7 @@ import chat.simplex.common.ShowSignal
 import chat.simplex.common.TAKEN_SHOW_FILE
 import chat.simplex.common.deleteStaleSignalFiles
 import chat.simplex.common.signalRunningInstance
+import chat.simplex.common.startDespiteRunningInstance
 import chat.simplex.common.takeSignal
 import chat.simplex.common.watchShowSignals
 import org.junit.Assume.assumeFalse
@@ -38,6 +39,8 @@ import kotlin.test.assertTrue
 
 // generous for a loaded build machine; the watcher normally delivers within milliseconds
 private const val SIGNAL_WAIT_SECONDS = 15L
+// short, as the running instance in these tests never answers within the wait
+private const val RUNNING_INSTANCE_WAIT_MILLIS = 300L
 
 class SingleInstanceTest {
   @Test
@@ -70,6 +73,44 @@ class SingleInstanceTest {
     assertNotNull(secondLock, "after release, a fresh acquirer must succeed")
     secondLock.release()
     second.close()
+  }
+
+  @Test
+  fun secondProcessExitsWhenTheRunningInstanceTakesTheSignal() = withTempDir { dir ->
+    val taken = LinkedBlockingQueue<ShowSignal>()
+    val runningInstance = thread {
+      while (!Files.exists(dir.resolve(SHOW_FILE))) Thread.sleep(5)
+      takeSignal(dir)?.let(taken::add)
+    }
+    val start = startDespiteRunningInstance(dir, BADGE_LINK, TimeUnit.SECONDS.toMillis(SIGNAL_WAIT_SECONDS)) {
+      error("a responsive instance must not raise the alert")
+    }
+    runningInstance.join()
+    assertFalse(start, "the second process must exit")
+    assertEquals(BADGE_LINK, taken.poll()?.link, "the running instance opens the link")
+  }
+
+  @Test
+  fun secondProcessExitsWhenTheUserDeclinesToStart() = withTempDir { dir ->
+    assertFalse(startDespiteRunningInstance(dir, BADGE_LINK, RUNNING_INSTANCE_WAIT_MILLIS) { false })
+    assertEquals(BADGE_LINK, takeSignal(dir)?.link, "the signal stays for the running instance to take once it recovers")
+  }
+
+  @Test
+  fun secondProcessStartsAndWithdrawsTheSignalWhenTheUserStartsAnyway() = withTempDir { dir ->
+    assertTrue(startDespiteRunningInstance(dir, BADGE_LINK, RUNNING_INSTANCE_WAIT_MILLIS) { true })
+    assertEquals(listOf(), fileNames(dir), "the withdrawn signal must not open the link in the running instance too")
+  }
+
+  @Test
+  fun secondProcessExitsWhenTheRunningInstanceRecoversDuringTheAlert() = withTempDir { dir ->
+    var opened: String? = null
+    val start = startDespiteRunningInstance(dir, BADGE_LINK, RUNNING_INSTANCE_WAIT_MILLIS) {
+      opened = takeSignal(dir)?.link
+      true
+    }
+    assertEquals(BADGE_LINK, opened, "the recovered instance opened the link")
+    assertFalse(start, "starting anyway would open the same link a second time")
   }
 
   @Test

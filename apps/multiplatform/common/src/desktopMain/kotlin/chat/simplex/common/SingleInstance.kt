@@ -28,9 +28,10 @@ internal const val SHOW_TMP_SUFFIX = ".tmp"
 internal const val TAKEN_SHOW_FILE = "$SHOW_FILE.taken$SHOW_TMP_SUFFIX"
 // File times can lag the system clock by a clock tick, and by 2 s on FAT.
 internal val FILE_TIME_TOLERANCE: Duration = Duration.ofSeconds(2)
+private const val SIGNAL_WAIT_MILLIS = 1000L
+private const val SIGNAL_POLL_MILLIS = 50L
 
 private val lockPath get() = dataDir.resolve("simplex.started").toPath()
-private val showPath get() = dataDir.resolve(SHOW_FILE).toPath()
 
 var singleInstanceLock = false
   private set
@@ -58,16 +59,7 @@ fun acquireSingleInstance(link: String?): Boolean {
     }
     LockResult.Taken -> {
       if (desktopPlatform.isWindows()) allowPrimaryForeground()
-      signalRunningInstance(dataDir.toPath(), link)
-      // a signal still present after 1 s means the running instance is hung, so the user decides
-      val deadline = System.currentTimeMillis() + 1000
-      while (Files.exists(showPath) && System.currentTimeMillis() < deadline) {
-        try { Thread.sleep(50) } catch (_: InterruptedException) { break }
-      }
-      if (!Files.exists(showPath)) return false
-      val start = showSingleInstanceAlert()
-      if (start) deleteSignalFile(showPath)
-      return start
+      return startDespiteRunningInstance(dataDir.toPath(), link, SIGNAL_WAIT_MILLIS, ::showSingleInstanceAlert)
     }
   }
 }
@@ -93,6 +85,24 @@ private fun tryAcquireLock(): LockResult {
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: tryLock failed: ${e.message}")
     channel.close(); LockResult.Failed
+  }
+}
+
+// A signal still present after the wait means the running instance is hung, so the user decides.
+internal fun startDespiteRunningInstance(dir: Path, link: String?, waitMillis: Long, askToStart: () -> Boolean): Boolean {
+  signalRunningInstance(dir, link)
+  val show = dir.resolve(SHOW_FILE)
+  val deadline = System.currentTimeMillis() + waitMillis
+  while (Files.exists(show) && System.currentTimeMillis() < deadline) {
+    try { Thread.sleep(SIGNAL_POLL_MILLIS) } catch (_: InterruptedException) { break }
+  }
+  if (!Files.exists(show) || !askToStart()) return false
+  // The running instance can recover while the alert is up; once it has taken the signal, it opens the link itself.
+  return try {
+    Files.deleteIfExists(show)
+  } catch (e: IOException) {
+    Log.w(TAG, "single-instance: cannot withdraw signal file: ${e.message}")
+    true
   }
 }
 
