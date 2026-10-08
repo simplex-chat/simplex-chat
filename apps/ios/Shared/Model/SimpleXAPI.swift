@@ -3094,9 +3094,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 BadgeModel.shared.setAlert(userId: user.userId, alert: badgeAlert)
             }
         }
-    case .storePurchaseResolved:
-        // whichever profile owns it: only the app can finish the store transaction
-        Task { await BadgeStore.shared.presentUnfinished() }
+    case let .storePurchaseCredited(user, invoiceId):
+        Task { await BadgeStore.shared.storePurchaseResolved(user, invoiceId) }
+    case let .storePurchaseRefused(user, invoiceId, refusal):
+        Task { await BadgeStore.shared.storePurchaseRefused(user, invoiceId, refusal) }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }

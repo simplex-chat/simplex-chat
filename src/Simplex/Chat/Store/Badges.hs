@@ -118,7 +118,7 @@ data BadgeReceiptRecord = BadgeReceiptRecord
   }
 
 data BadgeReceiptStatus
-  = RSHeld {stash :: BadgeStash, payment :: Text, nextAttemptAt :: UTCTime, retryDelay :: Maybe Int64}
+  = RSHeld {stash :: BadgeStash, invoiceId :: Maybe Text, payment :: Text, nextAttemptAt :: UTCTime, retryDelay :: Maybe Int64}
   | RSCredited {badgePurchaseId :: Int64}
   | RSRefused {refusal :: Maybe BadgeIssueFailure}
 
@@ -171,18 +171,18 @@ getReceiptRecord db StoreTransactionRef {provider, transactionRef} =
       db
       [sql|
         SELECT r.badge_store_receipt_id, r.user_id, r.purchase_key, r.purchase_priv_key, r.master_key,
-          r.payment, r.next_attempt_at, r.retry_delay, p.badge_purchase_id, r.credit_error
+          r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay, p.badge_purchase_id, r.credit_error
         FROM badge_store_receipts r
         LEFT JOIN badge_purchases p ON p.badge_store_receipt_id = r.badge_store_receipt_id
         WHERE r.provider = ? AND r.transaction_ref = ?
       |]
       (provider, transactionRef)
   where
-    toReceiptRecord ((receiptId, ownerId, purchaseKey, purchasePrivKey, mk) :. (payment_, nextAttemptAt_, retryDelay, purchaseId_, refusal)) =
+    toReceiptRecord ((receiptId, ownerId, purchaseKey, purchasePrivKey, mk) :. (invoiceId, payment_, nextAttemptAt_, retryDelay, purchaseId_, refusal)) =
       BadgeReceiptRecord {receiptId, ownerId, status}
       where
         status = case (payment_, nextAttemptAt_) of
-          (Just payment, Just nextAttemptAt) -> RSHeld {stash = toBadgeStash BSRStoreReceipt (receiptId, purchaseKey, purchasePrivKey, mk), payment, nextAttemptAt, retryDelay}
+          (Just payment, Just nextAttemptAt) -> RSHeld {stash = toBadgeStash BSRStoreReceipt (receiptId, purchaseKey, purchasePrivKey, mk), invoiceId, payment, nextAttemptAt, retryDelay}
           _ -> maybe (RSRefused refusal) RSCredited purchaseId_
 
 -- | The record made when Buy is tapped, before any receipt: the store echoes its invoice id.
@@ -220,7 +220,7 @@ getNextHeldStoreReceipt db userId =
     DB.query
       db
       [sql|
-        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.payment, r.next_attempt_at, r.retry_delay
+        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay
         FROM badge_store_receipts r
         JOIN users u ON u.user_id = r.user_id
         WHERE r.user_id = ? AND r.payment IS NOT NULL AND u.shown_badge_id IS NULL
@@ -229,8 +229,8 @@ getNextHeldStoreReceipt db userId =
       |]
       (Only userId)
   where
-    toHeld (stashRow@(receiptId, _, _, _) :. (payment, nextAttemptAt, retryDelay)) =
-      BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, payment, nextAttemptAt, retryDelay}}
+    toHeld (stashRow@(receiptId, _, _, _) :. (invoiceId, payment, nextAttemptAt, retryDelay)) =
+      BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, invoiceId, payment, nextAttemptAt, retryDelay}}
 
 recordStoreReceiptFailure :: DB.Connection -> Int64 -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
 recordStoreReceiptFailure db receiptId retryDelay nextAttemptAt failure =
