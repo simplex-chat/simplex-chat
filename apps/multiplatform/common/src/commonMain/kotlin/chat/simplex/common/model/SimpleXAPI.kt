@@ -34,6 +34,7 @@ import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
+import chat.simplex.common.views.newchat.showNameWarningAlert
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.defaultConditionsLink

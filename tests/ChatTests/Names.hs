@@ -26,7 +26,7 @@ chatNamesTests = do
   it "connect by resolved name" testConnectByName
   it "connect by name not claimed in link profile is rejected" testConnectByNameNotClaimed
   it "prepare with a name not claimed in link profile is not verified" testPrepareNameNotClaimed
-  it "prepared chat moved to another user unverifies its chat with the name" testPrepareNameChangeUser
+  it "prepared chat moved to another user sets the user's other chat with the name moved" testPrepareNameChangeUser
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name reports it is available" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress

@@ -4502,13 +4502,13 @@ processChatCommand cxt nm = \case
                         setOtherNameChatsMoved user (GroupChat g' Nothing)
                         pure (con l' cReq, CPGroupLink (GLPKnown g' u o os) knownMoved)
                       _ -> pure (con l' cReq, plan)
-              knownLinkPlans :: CM (Maybe (ACreatedConnLink, Maybe NameChange -> ConnectionPlan))
+              knownLinkPlans :: CM (Maybe (ACreatedConnLink, ConnectionPlan))
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getUserContactLinkViaTarget db user nl') >>= \case
-                  Just UserContactLink {connLinkContact} -> pure $ Just (ACCL SCMContact connLinkContact, CPContactAddress CAPOwnLink)
+                  Just UserContactLink {connLinkContact} -> pure $ Just (ACCL SCMContact connLinkContact, CPContactAddress CAPOwnLink Nothing)
                   Nothing ->
                     getContactToConnect db cxt user nl' >>= \case
-                      Just (ccl, ct') -> pure $ if contactDeleted ct' then Nothing else Just (ACCL SCMContact ccl, CPContactAddress (CAPKnown ct'))
+                      Just (ccl, ct') -> pure $ if contactDeleted ct' then Nothing else Just (ACCL SCMContact ccl, CPContactAddress (CAPKnown ct') Nothing)
                       Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
           CCTGroup -> groupShortLinkPlan
           CCTChannel -> groupShortLinkPlan
@@ -4525,12 +4525,12 @@ processChatCommand cxt nm = \case
             CTLink l' -> pure l'
             CTName n -> serverShortLink <$> resolveNameLink n
           con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
-          gPlan (ccl, g) = if memberRemoved (membership g) then Nothing else Just (ACCL SCMContact ccl, CPGroupLink (GLPKnown g False Nothing (ListDef [])))
+          gPlan (ccl, g) = if memberRemoved (membership g) then Nothing else Just (ACCL SCMContact ccl, CPGroupLink (GLPKnown g False Nothing (ListDef [])) Nothing)
           groupShortLinkPlan :: CM (ACreatedConnLink, ConnectionPlan)
           groupShortLinkPlan =
             knownLinkPlans >>= \case
-              Just (_, plan)
-                | resolveMode == PRMAllGroups, isNothing simplexName_, CPGroupLink (GLPKnown g _ _ _) _ <- plan Nothing -> resolveKnownGroup g
+              Just (_, CPGroupLink (GLPKnown g _ _ _) _)
+                | resolveMode == PRMAllGroups, isNothing simplexName_ -> resolveKnownGroup g
               Just r -> knownNamePlan r groupLinkPlan
               Nothing -> do
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
@@ -4576,10 +4576,10 @@ processChatCommand cxt nm = \case
               unsupportedGroupType = \case
                 Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
                 _ -> False
-              knownLinkPlans :: CM (Maybe (ACreatedConnLink, Maybe NameChange -> ConnectionPlan))
+              knownLinkPlans :: CM (Maybe (ACreatedConnLink, ConnectionPlan))
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getGroupInfoViaUserTarget db cxt user nl') >>= \case
-                  Just (ccl, g) -> pure $ Just (ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g))
+                  Just (ccl, g) -> pure $ Just (ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g) Nothing)
                   Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
               resolveKnownGroup g = do
                 l' <- resolveSLink
@@ -4596,19 +4596,19 @@ processChatCommand cxt nm = \case
             DirectChat ct'@Contact {profile = p} -> DirectChat ct' {profile = p {contactDomainVerified = Just DVMoved}}
             GroupChat g s -> GroupChat g {groupDomainVerified = Just DVMoved} s
             _ -> c
-          knownNamePlan :: (ACreatedConnLink, Maybe NameChange -> ConnectionPlan) -> (Maybe AChatInfo -> ShortLinkContact -> CM (ACreatedConnLink, ConnectionPlan)) -> CM (ACreatedConnLink, ConnectionPlan)
-          knownNamePlan (l, plan) linkPlan
-            | resolveMode == PRMNever = localPlan Nothing
+          knownNamePlan :: (ACreatedConnLink, ConnectionPlan) -> (Maybe AChatInfo -> ShortLinkContact -> CM (ACreatedConnLink, ConnectionPlan)) -> CM (ACreatedConnLink, ConnectionPlan)
+          knownNamePlan r@(l, plan) linkPlan
+            | resolveMode == PRMNever || isNothing simplexName_ = pure r
             | otherwise =
                 tryAllErrors resolveSLink >>= \case
                   Right l'
-                    | ACCL SCMContact (CCLink _ (Just sl)) <- l, sameShortLinkContact sl l' -> localPlan Nothing
-                    | otherwise -> (linkPlan knownChat_ l' >>= \r@(_, p) -> pure $ if isKnownChat p then (l, setNameChange Nothing p) else r) `catchAllErrors` \_ -> localPlan Nothing
-                  Left (ChatError (CESimplexDomainNotReady _ (SDENameWarning w))) | w /= NWNotRegistered -> localPlan $ Just $ NCLapsed w
-                  Left _ -> localPlan Nothing
+                    | ACCL SCMContact (CCLink _ (Just sl)) <- l, sameShortLinkContact sl l' -> pure r
+                    | otherwise -> (knownChatLink <$> linkPlan knownChat_ l') `catchAllErrors` \_ -> pure r
+                  Left (ChatError (CESimplexDomainNotReady _ (SDENameWarning w))) | w /= NWNotRegistered -> pure (l, setNameChange (Just $ NCLapsed w) plan)
+                  Left _ -> pure r
             where
-              localPlan nc_ = pure (l, plan nc_)
-              knownChat_ = planChat (plan Nothing)
+              knownChat_ = planChat plan
+              knownChatLink r'@(_, p) = if isKnownChat p then (l, setNameChange Nothing p) else r'
               isKnownChat p = isJust knownChat_ && refOf (planChat p) == refOf knownChat_
               refOf = (>>= \(AChatInfo _ c) -> chatInfoToRef c)
           setNameChange :: Maybe NameChange -> ConnectionPlan -> ConnectionPlan
