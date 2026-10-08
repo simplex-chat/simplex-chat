@@ -140,6 +140,7 @@
   <string name="no_message_servers_configured">No message servers.</string>
   <string name="no_message_servers_configured_for_receiving">No servers to receive messages.</string>
   <string name="no_message_servers_configured_for_private_routing">No servers for private message routing.</string>
+  <string name="server_has_too_many_hosts">Server %1$s has more than two host names.</string>
   <string name="no_media_servers_configured">No media &amp; file servers.</string>
   <string name="no_media_servers_configured_for_sending">No servers to send files.</string>
   <string name="no_media_servers_configured_for_private_routing">No servers to receive files.</string>
