@@ -139,6 +139,7 @@ Platform-specific section (expect/actual composable):
 |---|---|
 | App updates (Desktop) | App update checker and installer |
 | Developer tools | Toggle developer mode |
+| Storage (developer options) | Opens `StorageView`: size of each top-level entry in the app's data, config and temp folders |
 | Chat console | Opens `ChatConsoleView` terminal |
 | Terminal always visible (Desktop) | Keep terminal window open |
 | Install terminal app | Link to CLI app on GitHub |
