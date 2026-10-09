@@ -5752,92 +5752,114 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
         <target state="translated">Üzvləri qeyd edin 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Menus" xml:space="preserve">
+      <trans-unit id="Menus" xml:space="preserve" approved="no">
         <source>Menus</source>
+        <target state="translated">Menyular</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message delivery error" xml:space="preserve">
+      <trans-unit id="Message delivery error" xml:space="preserve" approved="no">
         <source>Message delivery error</source>
+        <target state="translated">Mesajın çatdırılma xətası</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message delivery receipts!" xml:space="preserve">
+      <trans-unit id="Message delivery receipts!" xml:space="preserve" approved="no">
         <source>Message delivery receipts!</source>
+        <target state="translated">Mesajın çatdırılma bildirişləri!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message delivery warning" xml:space="preserve">
+      <trans-unit id="Message delivery warning" xml:space="preserve" approved="no">
         <source>Message delivery warning</source>
+        <target state="translated">Mesajın çatdırılması ilə bağlı xəbərdarlıq</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message draft" xml:space="preserve">
+      <trans-unit id="Message draft" xml:space="preserve" approved="no">
         <source>Message draft</source>
+        <target state="translated">Mesaj qaralaması</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message error" xml:space="preserve">
+      <trans-unit id="Message error" xml:space="preserve" approved="no">
         <source>Message error</source>
+        <target state="translated">Mesaj xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message forwarded" xml:space="preserve">
+      <trans-unit id="Message forwarded" xml:space="preserve" approved="no">
         <source>Message forwarded</source>
+        <target state="translated">Mesaj yönləndirildi</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
+      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve" approved="no">
         <source>Message instantly once you tap Connect.</source>
+        <target state="translated">"Qoşul" (Connect) düyməsinə toxunan kimi dərhal mesaj göndərin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
+      <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve" approved="no">
         <source>Message may be delivered later if member becomes active.</source>
+        <target state="translated">Üzv aktivləşərsə, mesaj daha sonra çatdırıla bilər.</target>
         <note>item status description</note>
       </trans-unit>
-      <trans-unit id="Message queue info" xml:space="preserve">
+      <trans-unit id="Message queue info" xml:space="preserve" approved="no">
         <source>Message queue info</source>
+        <target state="translated">Mesaj növbəsi haqqında məlumat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions" xml:space="preserve">
+      <trans-unit id="Message reactions" xml:space="preserve" approved="no">
         <source>Message reactions</source>
+        <target state="translated">Mesaj reaksiyaları</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited in this chat.</source>
+        <target state="translated">Bu çatda mesaj reaksiyaları qadağandır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited." xml:space="preserve">
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited.</source>
+        <target state="translated">Mesajlara reaksiya vermək qadağandır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reception" xml:space="preserve">
+      <trans-unit id="Message reception" xml:space="preserve" approved="no">
         <source>Message reception</source>
+        <target state="translated">Mesajların qəbulu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message servers" xml:space="preserve">
+      <trans-unit id="Message servers" xml:space="preserve" approved="no">
         <source>Message servers</source>
+        <target state="translated">Mesaj serverləri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message shape" xml:space="preserve">
+      <trans-unit id="Message shape" xml:space="preserve" approved="no">
         <source>Message shape</source>
+        <target state="translated">Mesajın forması</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message signing is not required." xml:space="preserve">
+      <trans-unit id="Message signing is not required." xml:space="preserve" approved="no">
         <source>Message signing is not required.</source>
+        <target state="translated">Mesajın imzalanması tələb olunmur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message signing is required." xml:space="preserve">
+      <trans-unit id="Message signing is required." xml:space="preserve" approved="no">
         <source>Message signing is required.</source>
+        <target state="translated">Mesajın imzalanması tələb olunur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message source remains private." xml:space="preserve">
+      <trans-unit id="Message source remains private." xml:space="preserve" approved="no">
         <source>Message source remains private.</source>
+        <target state="translated">Mesajın mənbəyi gizli qalır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message status" xml:space="preserve">
+      <trans-unit id="Message status" xml:space="preserve" approved="no">
         <source>Message status</source>
+        <target state="translated">Mesajın statusu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message status: %@" xml:space="preserve">
+      <trans-unit id="Message status: %@" xml:space="preserve" approved="no">
         <source>Message status: %@</source>
+        <target state="translated">Mesajın statusu: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Message text" xml:space="preserve">
+      <trans-unit id="Message text" xml:space="preserve" approved="no">
         <source>Message text</source>
+        <target state="translated">Mesaj mətni</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message too large" xml:space="preserve">
