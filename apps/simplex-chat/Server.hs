@@ -95,15 +95,25 @@ newChatServerClient qSize = do
   pure ChatClient {rcvQ, sndQ}
 
 runChatServer :: ChatServerConfig -> ChatController -> IO ()
-runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
-  started <- newEmptyTMVarIO
-  runLocalTCPServer started chatPort $ \sock -> do
-    ws <- liftIO $ getConnection sock
-    c <- atomically $ newChatServerClient clientQSize
-    putStrLn "client connected"
-    raceAny_ [send ws c, client c, output c, receive ws c]
-      `finally` clientDisconnected c
+runChatServer ChatServerConfig {chatPort, clientQSize} cc =
+  case logFilePath cc of
+    -- Without a log file, each client drains the controller output queue directly (as before).
+    Nothing -> runServer $ outputQ cc
+    -- With a log file, a single server-lifetime loop logs every event - including while no client
+    -- is connected - and forwards it through clientQ for delivery.
+    Just path -> do
+      let ChatConfig {tbqSize} = config cc
+      clientQ <- newTBQueueIO tbqSize -- same depth as outputQ, so logging is not bounded by clients
+      raceAny_ [logEvents path clientQ, runServer clientQ]
   where
+    runServer eventQ = do
+      started <- newEmptyTMVarIO
+      runLocalTCPServer started chatPort $ \sock -> do
+        ws <- liftIO $ getConnection sock
+        c <- atomically $ newChatServerClient clientQSize
+        putStrLn "client connected"
+        raceAny_ [send ws c, client c, output eventQ c, receive ws c]
+          `finally` clientDisconnected c
     getConnection sock = WS.makePendingConnection sock WS.defaultConnectionOptions >>= WS.acceptRequest
     send ws ChatClient {sndQ} =
       forever $
@@ -112,8 +122,15 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
       atomically (readTBQueue rcvQ)
         >>= processCommand
         >>= atomically . writeTBQueue sndQ . ACR
-    output ChatClient {sndQ} = forever $ do
-      (_, r) <- atomically . readTBQueue $ outputQ cc
+    -- Logs each event before forwarding it, so events are still written to the file while no
+    -- client is connected (a full clientQ would otherwise block the forward below). A failed
+    -- write is caught so it cannot crash the server or drop connected clients.
+    logEvents path clientQ = forever $ do
+      out@(_, r) <- atomically . readTBQueue $ outputQ cc
+      logResponseToFile (config cc) r path `catchAny` \e -> putStrLn ("log-file write error: " <> show e)
+      atomically $ writeTBQueue clientQ out
+    output eventQ ChatClient {sndQ} = forever $ do
+      (_, r) <- atomically $ readTBQueue eventQ
       atomically $ writeTBQueue sndQ $ ACR ChatSrvResponse {corrId = Nothing, resp = CSRBody r}
     receive ws ChatClient {rcvQ, sndQ} = forever $ do
       s <- WS.receiveData ws
