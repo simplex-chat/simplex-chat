@@ -1,0 +1,159 @@
+/* The rules the name screens add to web/public/styles.css; they move there in stage 4. Below the
+   marked line are the board's own frames (the app, the operator), which never ship. */
+
+/* the name field: the input and its fixed ".simplex" on one line, in the field card */
+.name-field { margin-top: auto; padding-bottom: 14px; }
+.name-box {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.name-box input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 1.375rem;
+  outline: none;
+}
+.name-box input::placeholder { color: var(--ink-soft); opacity: .6; }
+.name-box .tld { flex: none; white-space: nowrap; color: var(--ink-soft); font-size: 1.375rem; }
+.name-box.ok { border-color: var(--ok-line); }
+.name-box.bad { border-color: var(--danger-line); }
+
+/* the line under the field: the length as typed, then the service's answer */
+.name-status { margin: 12px 0 0; font-size: .875rem; font-weight: 600; color: var(--ink-soft); text-align: left; }
+.name-status.ok { color: var(--ok-fg); }
+.name-status.bad { color: var(--danger-fg); }
+
+/* the three price tiers, the one the typed name falls in marked */
+.tiers { display: flex; gap: 10px; margin: 18px 0 0; }
+.tier {
+  flex: 1 1 0;
+  padding: 10px 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+}
+.tier[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.tier-len { display: block; font-weight: 600; font-size: .875rem; }
+.tier-price { display: block; color: var(--ink-soft); font-size: .875rem; font-weight: 500; }
+
+/* the years: one figure between a minus and a plus, the total under it */
+.panel > .stepper { margin-top: auto; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 32px; }
+.step {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+.step:not([disabled]):hover { border-color: var(--accent); }
+.step[disabled] { background: var(--tint); color: var(--on-disabled); cursor: default; }
+.term { min-width: 96px; font-variant-numeric: tabular-nums; }
+.term .years { display: block; font-family: var(--display); font-size: 3.25rem; line-height: 1; font-weight: 700; color: var(--ink); }
+.term .unit { display: block; margin-top: 4px; color: var(--ink-soft); font-weight: 500; }
+.term-total { margin-top: 18px; font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* the landing's second way in, under the first */
+.panel > .primary.next { margin-top: 12px; }
+
+/* a name's mark in the history list, where a badge row has its badge art */
+.name-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background-image: var(--title);
+  color: var(--on-accent);
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.entry-sub { margin-top: 2px; color: var(--ink-soft); font-size: .875rem; font-weight: 500; }
+
+@media (max-width: 560px) {
+  .name-box input, .name-box .tld { font-size: 1.125rem; }
+  .tier-len, .tier-price { font-size: .75rem; }
+  .step { width: 48px; height: 48px; }
+}
+
+/* ---------------------------------------------- the board only, never shipped */
+
+/* Stripe's Payment Element, drawn as a stand-in: on the real page it is Stripe's iframe */
+.stripe-standin { display: block; padding: 4px 0 0; }
+.stripe-standin .sl { display: block; margin: 10px 0 4px; font-size: .875rem; color: var(--ink); }
+.stripe-standin .sf { padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink-soft); }
+.stripe-standin .sr { display: flex; gap: 12px; }
+.stripe-standin .sr > div { flex: 1 1 0; }
+
+body.plain { display: block; padding: 0; min-height: 0; background: #ffffff; background-image: none; }
+#shot { display: inline-block; }
+
+/* the app, drawn in its iOS idiom as the canvases draw it */
+.app-screen {
+  width: 390px;
+  min-height: 720px;
+  padding: 14px 16px 24px;
+  background: #f2f2f7;
+  color: #000000;
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+}
+.app-nav { color: #007aff; font-size: 16px; }
+.app-title { margin: 10px 0 18px; font-size: 30px; font-weight: 700; }
+.app-label { margin: 18px 0 6px 14px; color: #6d6d72; font-size: 12px; letter-spacing: .03em; }
+.app-card { border-radius: 10px; background: #ffffff; }
+.app-row { display: flex; justify-content: space-between; padding: 12px 14px; }
+.app-ok { color: #34c759; font-weight: 600; }
+.app-x { color: #8e8e93; }
+.app-note { margin: 8px 14px 0; color: #6d6d72; font-size: 12px; }
+.app-button { margin-top: 28px; padding: 13px; border-radius: 12px; background: #007aff; color: #ffffff; font-weight: 600; text-align: center; }
+.app-link { margin-top: 14px; color: #007aff; text-align: center; }
+.app-alert { margin: 120px 24px 0; padding: 18px 16px 0; border-radius: 14px; background: #ffffff; text-align: center; }
+.app-alert p { color: #3c3c43; font-size: 13px; }
+.app-alert-button { margin: 14px -16px 0; padding: 12px; border-top: 1px solid #d1d1d6; color: #007aff; font-weight: 600; }
+
+/* the operator's terminal and the managed group */
+.term-screen {
+  width: 720px;
+  margin: 0;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: #15171c;
+  color: #e7eaf0;
+  font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+.term-screen .out { color: #8fd18b; }
+.chat-screen {
+  width: 480px;
+  padding: 14px 16px 18px;
+  border-radius: 10px;
+  background: #ffffff;
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+}
+.chat-title { padding-bottom: 10px; border-bottom: 1px solid #e5e5ea; font-weight: 700; }
+.bubble { max-width: 86%; margin-top: 10px; padding: 8px 12px; border-radius: 14px; background: #e9e9eb; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+.bubble b { display: block; margin-bottom: 2px; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 12px; color: #6d6d72; }
+.bubble.out { margin-left: auto; background: #dbeafe; }
+.chat-note { margin-top: 10px; color: #8e8e93; font-size: 12px; text-align: center; }
