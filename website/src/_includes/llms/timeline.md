@@ -9,12 +9,12 @@ Key milestones, with links to the announcements. All posts: [SimpleX blog](https
 | March 2022 | [Mobile apps for iOS and Android](https://simplex.chat/blog/20220308-simplex-chat-mobile-apps.md) |
 | November 2022 | [Implementation security assessment by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md) |
 | March 2023 | [XFTP – SimpleX File Transfer Protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.md) |
-| April 2023 | [Pre-seed funding from Village Global and angel investors](https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md) |
+| April 2023 | [Pre-seed funding from Village Global and angel investors](https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md) announced (received in June–July 2022) |
 | September 2023 | [Desktop app and group directory service](https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md) |
 | March 2024 | [Post-quantum end-to-end encryption](https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md) |
 | April 2024 | [Post-quantum encryption on by default in direct conversations](https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md) |
 | June 2024 | [Private message routing protects IP addresses](https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md) |
-| August 2024 | [Investment from Jack Dorsey and Asymmetric Capital Partners](https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md) |
+| August 2024 | [Investment from Jack Dorsey and Asymmetric Capital Partners](https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md) announced (received in June–July 2023) |
 | October 2024 | [Cryptographic design review by Trail of Bits](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md) |
 | December 2024 | [Preset servers operated by Flux; business chats](https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.md) |
 | January 2025 | [Large groups and privacy-preserving content moderation](https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md) |

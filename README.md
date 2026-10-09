@@ -16,8 +16,6 @@ Invest in SimpleX Chat. [Learn more on Wefunder](https://wefunder.com/simplex.ch
 
 **[Why we are building SimpleX Network](./docs/WHY.md)**
 
-For AI assistants and agents: [simplex.chat/llms.txt](https://simplex.chat/llms.txt).
-
 ## Welcome to SimpleX Chat!
 
 1. 📲 [Install the app](#install-the-app).
@@ -181,6 +179,7 @@ SimpleX Chat founder
 - [Privacy and security: technical details and limitations](#privacy-and-security-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Develop a chat bot](#develop-a-chat-bot)
+- [Agents](#agents)
 - [Roadmap](#roadmap)
 - [Disclaimers, Security contact, License](#disclaimers)
 
@@ -332,6 +331,17 @@ You can create a chat bot or any chat-based service in any language running Simp
 See [our new bot API reference](./bots/README.md). Most of it is automatically generated from core library types, so it stays up to date.
 
 Also see [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
+
+## Agents
+
+- For AI assistants: [simplex.chat/llms.txt](https://simplex.chat/llms.txt), an index of the documentation in Markdown, and [SimpleX for AI agents and developers](https://simplex.chat/llms/agents.md).
+- Libraries: [Node.js](./packages/simplex-chat-nodejs/) ([npm](https://www.npmjs.com/package/simplex-chat)) and [Python](./packages/simplex-chat-python/) ([PyPI](https://pypi.org/project/simplex-chat/)).
+- [Bot API guide](./bots/README.md) and [API reference](./bots/api/README.md): commands, events and types.
+- Example bots: [support bot](./apps/simplex-support-bot/) and [calculator](./apps/simplex-calculator-bot/) in TypeScript, [support bot light](./apps/simplex-support-bot-light/) in Python, [directory service](./apps/simplex-directory-service/) and [broadcast bot](./apps/simplex-broadcast-bot/) in Haskell.
+- [Terminal client](./docs/CLI.md): installation, building from source and usage.
+- Servers: [SMP](./docs/SERVER.md), [XFTP](./docs/XFTP-SERVER.md) and [chat relay](./docs/CHAT-RELAY.md).
+- Protocols: [SimpleX network](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md), [chat](./docs/protocol/simplex-chat.md), [channels](./docs/protocol/channels-overview.md) and [public names](./docs/protocol/names-overview.md).
+- For coding agents working in this repository: [project structure](./docs/contributing/PROJECT.md) and [coding and building](./docs/contributing/CODE.md).
 
 ## Roadmap
 

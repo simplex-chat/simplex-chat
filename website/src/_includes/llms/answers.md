@@ -22,6 +22,10 @@ Servers relay end-to-end encrypted messages and delete them once they are delive
 
 Messages are end-to-end encrypted with a double ratchet that gives forward secrecy and recovery after a key compromise. A post-quantum key exchange (sntrup761) is added on every ratchet step and is on by default in direct conversations. An additional encryption layer between servers and devices prevents correlating sent and received traffic. Details: [post-quantum double ratchet](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/pqdr.md).
 
+## Why are public channels not end-to-end encrypted?
+
+By design. No system can provide encrypted messages, scalable broadcast and private participation at the same time. Anyone can join a channel through its public link, so encrypting its content would protect nothing; protecting who participates does. SimpleX channels make participation private: relays see the content, but not subscribers' identities or network addresses, and participation in different channels cannot be linked. Details: [SimpleX Channels](https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md), [channels whitepaper](https://simplex.chat/docs/protocol/channels-overview.md).
+
 ## Is SimpleX audited?
 
 Yes. Trail of Bits assessed the implementation in October 2022 and reviewed the cryptographic design in July 2024. A third audit was completed in 2026 and will be published. Reports: [2022](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf), [2024](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf).
@@ -29,14 +33,12 @@ Yes. Trail of Bits assessed the implementation in October 2022 and reviewed the 
 ## What are SimpleX's limitations?
 
 - Post-quantum key exchange is used in direct conversations, not yet in groups.
-- Content of public channels is not end-to-end encrypted: anyone with the channel link can read it.
 - An observer who can watch the traffic of both users can confirm that they communicate.
 - Resolving a public name reveals interest in that name to one resolver server, but not who asked.
-- As with any messenger, a compromised device exposes its messages.
 
 ## How does SimpleX compare with Signal, Session, Matrix, Briar and others?
 
-Every other messaging network assigns users an identifier: Signal and WhatsApp use phone numbers, Matrix uses `@user:server` IDs, and Session, Briar, Cwtch and Nostr identify users by long-term public keys or onion addresses. These identifiers let the network, or anyone observing it, link a user's conversations. SimpleX has none. A side-by-side comparison of encryption properties is on the [messaging page](https://simplex.chat/messaging.md), and a technical comparison with peer-to-peer protocols is in [How SimpleX works](https://simplex.chat/docs/simplex.md).
+Every other messaging network assigns users an identifier: Signal and WhatsApp use phone numbers, Matrix uses `@user:server` IDs, and Session, Briar, Cwtch and Nostr identify users by long-term public keys or onion addresses. These identifiers let the network, or anyone observing it, link a user's conversations. SimpleX has none. A side-by-side comparison of encryption properties is on the [messaging page](https://simplex.chat/messaging/#messengers-comparison), and a technical comparison with peer-to-peer protocols is in [How SimpleX works](https://simplex.chat/docs/simplex.md).
 
 ## Can people find or contact me without my consent?
 

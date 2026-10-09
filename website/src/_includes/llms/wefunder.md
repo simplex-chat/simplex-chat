@@ -103,9 +103,19 @@ Every service developers build on SimpleX Network may increase its value, and br
 
 ### Why SimpleX cannot be copied
 
-No other communication system combines participation privacy, sovereign ownership, infrastructure independence, and scalable one-to-many delivery.
+No other communication system combines participation privacy, sovereign ownership, infrastructure independence, and scalable one-to-many delivery:
 
-Only SimpleX can protect participants' privacy, because it would require other networks to remove user identifiers – not adding a feature to an existing system but designing a different one. That is hard for three reasons, each stopping a different kind of competitor.
+| Property | Telegram | Nostr | Signal | Matrix | Mastodon | **SimpleX** |
+|---|---|---|---|---|---|---|
+| Content visible to operator | Yes | Yes | No | Configurable | Yes | **Yes** |
+| Participant identity visible to operator | Yes | Yes | Yes | Yes | Yes | **No** |
+| Channel identity independent of infrastructure | No | Yes | No | No | No | **Yes** |
+| Sovereign ownership (no 3rd party can seize) | No | Yes | No | No | No | **Yes** |
+| Programmable governance | No | No | No | No | No | **Planned** |
+| Cryptographic content deniability | No | No | Yes | Yes | No | **Yes (default)** |
+| Scalable one-to-many delivery | Yes | Yes | No | Limited | Yes | **Yes** |
+
+Of these networks, only SimpleX can protect participants' privacy, because it would require other networks to remove user identifiers – not adding a feature to an existing system but designing a different one. That is hard for three reasons, each stopping a different kind of competitor.
 
 Technically. Other networks rely on user IDs to route messages between users. Signal, Session, Matrix, and Nostr cannot simply drop IDs – they would have to rebuild from scratch.
 

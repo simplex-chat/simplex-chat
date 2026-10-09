@@ -69,6 +69,7 @@ Every page of simplex.chat is also available as Markdown: replace `.html` with `
 - [Crowdfunding page](https://simplex.chat/crowdfunding.md)
 - [Wefunder memo](https://simplex.chat/wefunder.md): the full memo from the Wefunder page
 - [Wefunder page](https://wefunder.com/simplex.chat) and [Wefunder AI profile](https://wefunder.com/simplex.chat.ai.txt)
+- [SimpleX Crowdfunding News](https://simplex.chat/crowdfunding-news.md): the crowdfunding news channel, with links to its recent posts in JSON
 - [Livestream: Foundation for the Future](https://simplex.chat/livestream.md)
 - [About SimpleX Chat](https://simplex.chat/about.md)
 - [Donate](https://simplex.chat/donate.md)
@@ -76,6 +77,7 @@ Every page of simplex.chat is also available as Markdown: replace `.html` with `
 ## Blog
 
 - [All posts](https://simplex.chat/blog.md)
+- [SimpleX Network News](https://simplex.chat/news.md): the news channel, with links to its recent posts in JSON
 {% for post in collections.blogs.slice(0, 10) -%}
 - [{{ post.data.title | plainText | safe }}](https://simplex.chat{{ post.url | markdownUrl }}) ({{ post.date.toISOString().slice(0, 10) }})
 {% endfor %}
