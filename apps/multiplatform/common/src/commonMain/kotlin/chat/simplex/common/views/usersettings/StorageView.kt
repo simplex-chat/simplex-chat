@@ -74,7 +74,7 @@ private fun rootEntries(root: File): List<Path> =
   try {
     Files.newDirectoryStream(root.toPath()).use { it.toList() }
   } catch (e: Exception) {
-    Log.e(TAG, "StorageView rootEntries: $e")
+    Log.e(TAG, "StorageView rootEntries: ${e.javaClass.simpleName}")
     emptyList()
   }
 
@@ -87,12 +87,12 @@ private fun treeSize(path: Path): Long {
     }
 
     override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
-      Log.e(TAG, "StorageView visitFileFailed: $exc")
+      Log.e(TAG, "StorageView visitFileFailed: ${exc.javaClass.simpleName}")
       return FileVisitResult.CONTINUE
     }
 
     override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
-      if (exc != null) Log.e(TAG, "StorageView postVisitDirectory: $exc")
+      if (exc != null) Log.e(TAG, "StorageView postVisitDirectory: ${exc.javaClass.simpleName}")
       return FileVisitResult.CONTINUE
     }
   })
