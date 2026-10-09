@@ -111,6 +111,8 @@ final class BadgeStore: ObservableObject {
     // set once presentUnfinished has read the store: until then, an Ask to Buy approved while the app was
     // closed, or a purchase it died before handing over, are both unknown, so canBuy refuses to buy again
     @Published private var reconciledOnce = false
+    // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
+    private var sweepFailureShown = false
     private var transactionUpdates: Task<Void, Never>? = nil
 
     private init() {}
@@ -321,9 +323,15 @@ final class BadgeStore: ObservableObject {
         if !badgeOneTimeProductIds.contains(receipt.productId) {
             await receipt.transaction.finish()
         } else if receipt.signatureVerified {
-            // no buyer to tell: the receipt stays unfinished and the next sweep hands it over again
+            // the receipt stays unfinished, so the next sweep hands it over again
             do { try await handOver(receipt) } catch let error {
                 logger.error("BadgeStore.reconcile: \(responseError(error))")
+                await MainActor.run {
+                    if !sweepFailureShown {
+                        sweepFailureShown = true
+                        showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(error, purchase: true))
+                    }
+                }
             }
         }
     }
