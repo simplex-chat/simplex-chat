@@ -1,0 +1,1931 @@
+# SimpleX: full text of the core pages
+
+The core pages of simplex.chat in one file. The index of all pages is at https://simplex.chat/llms.txt.
+
+---
+
+Source: https://simplex.chat/docs/why.md
+
+# Why we are building SimpleX Network
+
+You were born without an account.
+
+Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature — it was the way of life.
+
+Then we moved online, and every platform asked for a piece of you — your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way — telephone, email, messengers, social media. It seemed the only way possible.
+
+There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected.
+
+Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it — you are sovereign.
+
+Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public.
+
+The oldest human freedom — to speak to another person without being watched — built on infrastructure that cannot betray it.
+
+Because we destroyed the power to know who you are. So that your power can never be taken.
+
+Be free in your network.
+
+[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+
+---
+
+Source: https://simplex.chat/llms/facts.md
+
+# SimpleX: key facts
+
+Facts about SimpleX network and SimpleX Chat, each with the date it was stated and its source. Updated 2026-10-08. Machine-readable version: [simplex.chat/llms/facts.json](https://simplex.chat/llms/facts.json).
+
+## Network and users
+
+| Fact | Value | As of | Source |
+|---|---|---|---|
+| User identifiers on the network | None – no phone numbers, usernames, account IDs or random user IDs | 2026 | [How SimpleX works](https://simplex.chat/docs/simplex.md) |
+| Monthly active users | 600,000+ | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| User growth | about 70% in the last six months | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| App downloads | 3 million+ | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| Messages per day via preset servers | 20 million+ | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| Paid marketing | none before the equity crowdfunding campaign | until August 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| Independent publications about SimpleX | 200+ reviews, posts and videos in 20+ languages | October 2026 | [Links](https://simplex.chat/links.md) |
+
+## Network participants
+
+| Fact | Value | As of | Source |
+|---|---|---|---|
+| Servers run by volunteers | about 1,000 | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| Preset server operators | SimpleX Chat and Flux | since December 2024 | [Blog](https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.md) |
+| Public channels created | 12,500+ in the five months since scalable channels shipped | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| Curated directory | 500+ public groups and channels, 30% active daily | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md), [Directory](https://simplex.chat/directory.md) |
+| Businesses supporting customers over SimpleX | 50+ | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| GitHub | 19,000+ stars, 1,400+ forks | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md), [GitHub](https://github.com/simplex-chat/simplex-chat) |
+
+## Security
+
+| Fact | Value | As of | Source |
+|---|---|---|---|
+| End-to-end encryption | double ratchet with post-quantum key exchange (sntrup761) on every ratchet step, on by default in direct conversations | since v5.7, April 2024 | [Blog](https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md) |
+| IP address protection | private message routing: 2-hop routing where the sender chooses the forwarding relay and the recipient chooses the destination relay, so neither side observes the other's IP address | since v5.8, June 2024 | [Blog](https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md) |
+| Implementation security assessment | Trail of Bits | October 2022 | [Blog](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md), [Report](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf) |
+| Cryptographic design review | Trail of Bits | July 2024 | [Blog](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md), [Report](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf) |
+| Third Trail of Bits audit | completed, to be published | 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| Licence | AGPL-3.0 | 2026 | [LICENSE](https://github.com/simplex-chat/simplex-chat/blob/stable/LICENSE) |
+
+## Company and funding
+
+| Fact | Value | As of | Source |
+|---|---|---|---|
+| Founder | Evgeny Poberezkin, creator of the Ajv JSON Schema validator | 2026 | [Ajv](https://github.com/ajv-validator/ajv) |
+| Total investment to date | $1.7M | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| User donations | $650,000+, including from Vitalik Buterin | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+| Prior investors | Village Global and angel investors (pre-seed, closed in July 2022); Jack Dorsey and Asymmetric Capital Partners (closed in July 2023) | announced April 2023 and August 2024 | [Blog](https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md) |
+| Equity crowdfunding | on Wefunder, launched 20 August 2026 | October 2026 | [Blog](https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.md), [Crowdfunding](https://simplex.chat/crowdfunding.md) |
+| Governance | SimpleX Network Consortium: an agreement between the non-profit SimpleX Network Foundation and SimpleX Chat | 2026 | [Blog](https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md) |
+| Business model | free private messaging; channels and businesses pay for public names, business messaging and servers for big channels | October 2026 | [Wefunder memo](https://simplex.chat/wefunder.md) |
+
+## Public names
+
+| Fact | Value | As of | Source |
+|---|---|---|---|
+| Test names (.testing) | available since v7-beta | July 2026 | [Blog](https://simplex.chat/blog/20260722-simplex-public-names.md) |
+| .simplex names sale | starts 12 December 2026, 18:00 UTC | October 2026 | [simplex.domains](https://simplex.domains/) |
+| Registry | SimpleX Name Service, a fork of ENS on Ethereum, without off-chain indexer or metadata services | July 2026 | [Whitepaper](https://simplex.chat/docs/protocol/names-overview.md) |
+
+
+---
+
+Source: https://simplex.chat/llms/answers.md
+
+# SimpleX: answers to common questions
+
+Short answers with links to the full documentation. Numbers are in [key facts](https://simplex.chat/llms/facts.md).
+
+## What is SimpleX, in one sentence?
+
+SimpleX is the first messaging network without user identifiers of any kind – no phone numbers, usernames or random IDs – so nobody, including its servers, can see who talks to whom.
+
+## What is the difference between SimpleX network and SimpleX Chat?
+
+SimpleX network is the open protocol and the servers that relay messages. SimpleX Chat is the free, open-source app (iOS, Android, Linux, macOS, Windows and a terminal client) that uses the network, and also the company that builds both.
+
+## How does SimpleX deliver messages without user identifiers?
+
+Each conversation uses its own pair of one-way message queues, one for each direction, usually on different servers. A queue has a random address that is used only for that conversation. Contacts and groups are stored only on users' devices. To connect, people share a one-time link or a QR code, which also carries the keys for end-to-end encryption, so servers cannot substitute them. Details: [How SimpleX works](https://simplex.chat/docs/simplex.md), [protocol overview](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/overview-tjr.md).
+
+## What can servers and network observers see?
+
+Servers relay end-to-end encrypted messages and delete them once they are delivered. A server sees the random addresses of the queues it hosts and the times when messages arrive and are received. All messages are padded to the same size. With private message routing, the sender chooses the forwarding server and the recipient chooses the destination server, so neither side can observe the other's IP address. A server cannot see who talks to whom, cannot read messages, and cannot add or change them undetectably. Details: [security model](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/security.md).
+
+## How strong is the encryption?
+
+Messages are end-to-end encrypted with a double ratchet that gives forward secrecy and recovery after a key compromise. A post-quantum key exchange (sntrup761) is added on every ratchet step and is on by default in direct conversations. An additional encryption layer between servers and devices prevents correlating sent and received traffic. Details: [post-quantum double ratchet](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/pqdr.md).
+
+## Why are public channels not end-to-end encrypted?
+
+By design. No system can provide encrypted messages, scalable broadcast and private participation at the same time. Anyone can join a channel through its public link, so encrypting its content would protect nothing; protecting who participates does. SimpleX channels make participation private: relays see the content, but not subscribers' identities or network addresses, and participation in different channels cannot be linked. Details: [SimpleX Channels](https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md), [channels whitepaper](https://simplex.chat/docs/protocol/channels-overview.md).
+
+## Is SimpleX audited?
+
+Yes. Trail of Bits assessed the implementation in October 2022 and reviewed the cryptographic design in July 2024. A third audit was completed in 2026 and will be published. Reports: [2022](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf), [2024](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf).
+
+## What are SimpleX's limitations?
+
+- Post-quantum key exchange is used in direct conversations, not yet in groups.
+- An observer who can watch the traffic of both users can confirm that they communicate.
+- Resolving a public name reveals interest in that name to one resolver server, but not who asked.
+
+## How does SimpleX compare with Signal, Session, Matrix, Briar and others?
+
+Every other messaging network assigns users an identifier: Signal and WhatsApp use phone numbers, Matrix uses `@user:server` IDs, and Session, Briar, Cwtch and Nostr identify users by long-term public keys or onion addresses. These identifiers let the network, or anyone observing it, link a user's conversations. SimpleX has none. A side-by-side comparison of encryption properties is on the [messaging page](https://simplex.chat/messaging/#messengers-comparison), and a technical comparison with peer-to-peer protocols is in [How SimpleX works](https://simplex.chat/docs/simplex.md).
+
+## Can people find or contact me without my consent?
+
+No. Nobody can contact you unless you share a one-time link or your address. An address is optional and can be changed or deleted without losing contacts.
+
+## Who controls the network?
+
+Nobody alone. Anyone can run servers. SimpleX Chat and Flux are preset in the app, and when both are enabled the app uses servers of both operators in each conversation. The SimpleX Network Consortium, an agreement between the non-profit SimpleX Network Foundation and SimpleX Chat, licenses the protocol to the foundation permanently, so it stays available regardless of who owns the company. Details: [blog](https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md).
+
+## Is SimpleX free and open source?
+
+Yes. The apps are free, and the code is open source under AGPL-3.0: [github.com/simplex-chat](https://github.com/simplex-chat).
+
+## How will SimpleX Chat make money?
+
+Private messaging stays free. Channels and businesses will pay for public names, business messaging and servers for big channels. Users have already donated over $650,000. Details: [Wefunder memo](https://simplex.chat/wefunder.md).
+
+## What are SimpleX public names?
+
+Optional, human-readable names for channels and businesses, such as `#example` or `@example.simplex`, registered on a public blockchain and controlled only by their owner's key. Names do not identify users and are not needed to use the network. Sale starts on 12 December 2026. Details: [public names whitepaper](https://simplex.chat/docs/protocol/names-overview.md).
+
+## How can AI agents and developers use SimpleX?
+
+An agent connects to the network like a person: it holds its own keys and addresses, and no platform account is needed. See [SimpleX for AI agents and developers](https://simplex.chat/llms/agents.md).
+
+## How can I invest in SimpleX Chat?
+
+SimpleX Chat runs an equity crowdfunding offering on Wefunder: [wefunder.com/simplex.chat](https://wefunder.com/simplex.chat). The memo is reproduced at [simplex.chat/wefunder.md](https://simplex.chat/wefunder.md). Investing involves a high degree of risk, including the possible loss of your investment.
+
+## How do I contact the SimpleX team?
+
+In the SimpleX Chat app, open the "Ask SimpleX Team" chat, or connect via [simplex.chat/contact](https://simplex.chat/contact#/?v=2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). A support bot answers first; send `/team` to reach the team.
+
+---
+
+Source: https://simplex.chat/docs/simplex.md
+
+| Updated 07.02.2023 | Languages: EN, [FR](https://simplex.chat/docs/lang/fr/simplex.html), [CZ](https://simplex.chat/docs/lang/cs/simplex.html), [PL](https://simplex.chat/docs/lang/pl/simplex.html) |
+# SimpleX platform - motivation and comparison
+
+## Problems
+
+Existing chat platforms and protocols have some or all of the following problems:
+
+- Lack of privacy of the user profile and contacts (meta-data privacy).
+- No protection (or only optional protection) of [E2EE][1] implementations from MITM attacks via provider.
+- Unsolicited messages (spam and abuse).
+- Lack of data ownership and protection.
+- Complexity of usage for all non-centralized protocols to non-technical users.
+
+The concentration of the communication in a small number of centralized platforms makes resolving these problems quite difficult.
+
+## Proposed solution
+
+Proposed stack of protocols solves these problems by making both messages and contacts stored only on client devices, reducing the role of the servers to simple message relays that only require authorization of messages sent to the queues, but do NOT require user authentication - not only the messages but also the metadata is protected because users do not have any identifiers assigned to them - unlike with any other platforms.
+
+See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
+
+## Why use SimpleX
+
+## SimpleX unique approach to privacy and security
+
+Everyone should care about privacy and security of their communications - even ordinary conversations can put you in danger.
+
+### Full privacy of your identity, profile, contacts and metadata
+
+**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - it does not use phone numbers (like Signal or WhatsApp), domain-based addresses (like email, XMPP or Matrix), usernames (like Telegram), public keys or even random numbers (like all other messengers) to identify its users - we do not even know how many people use SimpleX.
+
+To deliver the messages instead of user identifiers that all other platforms use, SimpleX uses the addresses of unidirectional (simplex) message queues. Using SimpleX is like having a different email address or a phone number for each contact you have, but without the hassle of managing all these addresses. In the near future SimpleX apps will also change the message queues automatically, moving the conversations from one server to another, to provide even better privacy to the users.
+
+This approach protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. You can further improve your privacy by configuring your network access to connect to SimpleX servers via some overlay transport network, e.g. Tor.
+
+### The best protection against spam and abuse
+
+As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optional user addresses, while they can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.
+
+### Complete ownership, control and security of your data
+
+SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.
+
+We use portable database format that can be used on all supported devices - we will soon add the ability to export the chat database from the mobile app so it can be used on another device.
+
+Unlike servers of federated networks (email, XMPP or Matrix), SimpleX servers do not store user accounts, they simply relay messages to the recipients, protecting the privacy of both parties. There are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages. So if anybody is observing server traffic, they cannot easily determine who is communicating with whom (see [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for the known traffic correlation attacks).
+
+### Users own SimpleX network
+
+You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers.
+
+SimpleX platform uses an open protocol and provides SDK to create chat bots, allowing implementation of services that users can interact with via SimpleX Chat apps – we are really looking forward to see what SimpleX services can be built.
+
+If you are considering developing with the SimpleX platform, whether for chat bot services for SimpleX app users or to integrate the SimpleX Chat library into your mobile apps, please get in touch for any advice and support.
+
+## Comparison with other protocols
+
+|                                                |    SimpleX chat    | Signal, big platforms |  XMPP, Matrix   |  P2P protocols  |
+| :--------------------------------------------- | :----------------: | :-------------------: | :-------------: | :-------------: |
+| Requires user identifiers                      |    No = private    |    Yes<sup>1</sup>    | Yes<sup>2</sup> | Yes<sup>3</sup> |
+| Possibility of MITM                            |    No = secure     |    Yes<sup>4</sup>    |       Yes       |       Yes       |
+| Dependence on DNS                              |   No = resilient   |          Yes          |       Yes       |       No        |
+| Single operator or network                     | No = decentralized |          Yes          |       No        | Yes<sup>5</sup> |
+| Central component or other network-wide attack |   No = resilient   |          Yes          | Yes<sup>2</sup> | Yes<sup>6</sup> |
+
+1. Usually based on a phone number, in some cases on usernames.
+2. DNS based.
+3. Public key or some other globally unique ID.
+4. If operator’s servers are compromised.
+5. While P2P networks and cryptocurrency-based networks are distributed, they are not decentralized - they operate as a single network, with a single namespace of user addresses.
+6. P2P networks either have a central authority or the whole network can be compromised - see the next section.
+
+## Comparison with [P2P][9] messaging protocols
+
+There are several P2P chat/messaging protocols and implementations that aim to solve privacy and centralisation problem, but they have their own set of problems that makes them less reliable than the proposed design, more complex to implement and analyse and more vulnerable to attacks.
+
+1. [P2P][9] networks use some variant of [DHT][10] to route messages/requests through the network. DHT implementations have complex designs that have to balance reliability, delivery guarantee and latency. The proposed design has both better delivery guarantees and lower latency (the message is passed multiple times in parallel, through one node each time, using servers chosen by the recipient, while in P2P networks the message is passed through `O(log N)` nodes sequentially, using nodes chosen by the algorithm).
+
+2. The proposed design, unlike most P2P networks, has no global user identifiers of any kind, even temporary.
+
+3. P2P itself does not solve [MITM attack][2] problem, and most existing solutions do not use out-of-band messages for the initial key exchange. The proposed design uses out-of-band messages or, in some cases, pre-existing secure and trusted connections for the initial key exchange.
+
+4. P2P implementations can be blocked by some Internet providers (like [BitTorrent][11]). The proposed design is transport agnostic - it can work over standard web protocols, and the servers can be deployed on the same domains as the websites.
+
+5. All known P2P networks are likely to be vulnerable to [Sybil attack][12], because each node is discoverable, and the network operates as a whole. Known measures to reduce the probability of the Sybil attack either require a centralized component or expensive [proof of work][13]. The proposed design, on the opposite, has no server discoverability - servers are not connected, not known to each other and to all clients. The SimpleX network is fragmented and operates as multiple isolated connections. It makes network-wide attacks on SimpleX network impossible - even if some servers are compromised, other parts of the network can operate normally, and affected clients can switch to using other servers without losing contacts or messages.
+
+6. P2P networks are likely to be [vulnerable][14] to [DRDoS attack][15]. In the proposed design clients only relay traffic from known trusted connections and cannot be used to reflect and amplify the traffic in the whole network.
+
+[1]: https://en.wikipedia.org/wiki/End-to-end_encryption
+[2]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
+[9]: https://en.wikipedia.org/wiki/Peer-to-peer
+[10]: https://en.wikipedia.org/wiki/Distributed_hash_table
+[11]: https://en.wikipedia.org/wiki/BitTorrent
+[12]: https://en.wikipedia.org/wiki/Sybil_attack
+[13]: https://en.wikipedia.org/wiki/Proof_of_work
+[14]: https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent
+[15]: https://en.wikipedia.org/wiki/Denial-of-service_attack#Reflected_attack
+
+---
+
+Source: https://simplex.chat/docs/glossary.md
+
+# Glossary
+
+Choosing a private messenger requires the understanding of many technical terms, that many users, even quite technical, often misunderstand. This list is aiming to fill this knowledge gap. Please suggest any changes or additions.
+
+While this glossary aims to be factual and objective, it is not completely unbiased. We designed SimpleX to be the most private, secure and resilient communication network, and some definitions reflect this view.
+
+## 2-factor key exchange
+
+The ability of communication service to ensure the security of the [key agreement protocol](#key-agreement-protocol) against [man-in-the-middle](#man-in-the-middle-attack).
+
+## Address portability
+
+Similarly to [phone number portability](https://en.wikipedia.org/wiki/Local_number_portability) (the ability of the customer to transfer the service to another provider without changing the number), the address portability means the ability of a communication service customer to change the service provider without changing the service address. Many [federated networks](#federated-network) support SRV records to provide address portability, but allowing service users to set up their own domains for the addresses is not as commonly supported by the available server and client software as for email.
+
+## Anonymous credentials
+
+The credential that allows proving something, e.g. the right to access some resource, without identifying the user. This credential can either be generated by a trusted party or by the user themselves and provided together with the request to create the resource. The first approach creates some centralized dependency in most cases. The second approach does not require any trust - this is used in SimpleX network to authorize access to the messaging queues.
+
+[Digital credential on Wikipedia](https://en.wikipedia.org/wiki/Digital_credential)
+
+## Blockchain
+
+In a wide sense, blockchain means a sequence of blocks of data, where each block contains a cryptographic hash of the previous block, thus providing integrity to the whole chain. Blockchains are used in many communication and information storage systems to provide integrity and immutability of the data. For example, BluRay disks use blockchain. SimpleX messaging queues also use blockchain - each message includes the hash of the previous message, to ensure the integrity – if any message is modified it will be detected by the recipient when the next message is received. Blockchains are a subset of [Merkle directed acyclic graphs](#merkle-directed-acyclic-graph).
+
+In a more narrow sense, particularly in media, blockchain is used to refer specifically to distributed ledger, where each record also includes the hash of the previous record, but the blocks have to be agreed by the participating peers using some [consensus protocol](https://en.wikipedia.org/wiki/Consensus_(computer_science)).
+
+[Wikipedia](https://en.wikipedia.org/wiki/Blockchain)
+
+## Break-in recovery
+
+[Post-compromise security](#post-compromise-security).
+
+## Centralized network
+
+Centralized networks are provided or controlled by a single entity. The examples are Threema, Signal, WhatsApp and Telegram. The advantage of that design is that the provider can innovate faster, and has a centralized approach to security. But the disadvantage is that the provider can change or discontinue the service, and leak, sell or disclose in some other way all users' data, including who they are connected with.
+
+## Content padding
+
+[Message padding](#message-padding).
+
+## Decentralized network
+
+Decentralized network is often used to mean "the network based on decentralized blockchain". In its original meaning, decentralized network means that there is no central authority or any other point of centralization in the network, other than network protocols specification. The advantage of decentralized networks is that they are resilient to censorship and to the provider going out of business. The disadvantage is that they are often slower to innovate, and the security may be worse than with the centralized network.
+
+The examples of decentralized networks are email, web, DNS, XMPP, Matrix, BitTorrent, etc. All these examples have a shared global application-level address space. Cryptocurrency blockchains not only have a shared address space, but also a shared state, so they are more centralized than email. Tor network also has a shared global address space, but also a central authority. SimpleX network does not have a shared application-level address space (it relies on the shared transport-level addresses - SMP relay hostnames or IP addresses), and it does not have any central authority or any shared state.
+
+## Defense in depth
+
+Originally, it is a military strategy that seeks to delay rather than prevent the advance of an attacker, buying time and causing additional casualties by yielding space.
+
+In information security, defense in depth represents the use of multiple computer security techniques to help mitigate the risk of one component of the defense being compromised or circumvented. An example could be anti-virus software installed on individual workstations when there is already virus protection on the firewalls and servers within the same environment.
+
+SimpleX network applies defense in depth approach to security by having multiple layers for the communication security and privacy:
+- double ratchet algorithm for [end-to-end encryption](#end-to-end-encryption) with [perfect forward secrecy](#forward-secrecy) and [post-compromise security](#post-compromise-security),
+- additional layer of end-to-end encryption for each messaging queue and another encryption layer of encryption from the server to the recipient inside TLS to prevent correlation by ciphertext,
+- TLS with only strong ciphers allowed,
+- mitigation of [man-in-the-middle attack](#man-in-the-middle-attack) on client-server connection via server offline certificate verification,
+- mitigation of replay attacks via signing over transport channel binding,
+- multiple layers of [message padding](#message-padding) to reduce efficiency of traffic analysis,
+- mitigation of [man-in-the-middle attack](#man-in-the-middle-attack) on client-client out-of-band channel when sending the invitation,
+- rotation of delivery queues to reduce efficiency of traffic analysis,
+- etc.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Defence_in_depth)
+
+## Double ratchet algorithm
+
+It is used by two parties to exchange [end-to-end encrypted](#end-to-end-encryption) messages. The parties will use some [key agreement protocol](#key-agreement-protocol) to agree on the initial shared secret key.
+
+Double Ratchet algorithm provides [perfect forward secrecy](#forward-secrecy) and [post-compromise security](#post-compromise-security). It is [designed by Signal](https://signal.org/docs/specifications/doubleratchet), and used in SimpleX Chat and many other secure messengers. Most experts consider it the state-of-the-art encryption protocol in message encryption.
+
+## End-to-end encryption
+
+A communication system where only the communicating parties can read the messages. It is designed to protect message content from any potential eavesdroppers – telecom and Internet providers, malicious actors, and also the provider of the communication service.
+
+End-to-end encryption requires agreeing cryptographic keys between the sender and the recipient in a way that no eavesdroppers can access the agreed keys. See [key agreement protocol](#key-agreement-protocol). This key exchange can be compromised via [man-in-the-middle attack](#man-in-the-middle-attack), particularly if key exchange happens via the same communication provider and no out-of-band channel is used to verify key exchange.
+
+[Wikipedia](https://en.wikipedia.org/wiki/End-to-end_encryption)
+
+## Federated network
+
+Federated network is provided by several entities that agree upon the standards and operate the network collectively. This allows the users to choose their provider, that will hold their account, their messaging history and contacts, and communicate with other providers' servers on behalf of the user. The examples are email, XMPP, Matrix and Mastodon.
+
+The advantage of that design is that there is no single organization that all users depend on, and the standards are more difficult to change, unless it benefits all users. There are several disadvantages: 1) the innovation is slower, 2) each user account still depends on a single organization, and in most cases can't move to another provider without changing their network address – there is no [address portability](#address-portability), 3) the security and privacy are inevitably worse than with the centralized networks.
+
+[Federation on Wikipedia](https://en.wikipedia.org/wiki/Federation_(information_technology))
+
+## Forward secrecy
+
+Also known as perfect forward secrecy, it is a feature of a [key agreement protocol](#key-agreement-protocol) that ensures that session keys will not be compromised even if long-term secrets used in the session key exchange are compromised. Forward secrecy protects past sessions against future compromises of session or long-term keys.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Forward_secrecy)
+
+## Key agreement protocol
+
+Also known as key exchange, it is a process of agreeing cryptographic keys between the sender and the recipient(s) of the message. It is required for [end-to-end encryption](#end-to-end-encryption) to work. Unless it is possible to secure the key exchange via [some second factor](#2-factor-key-exchange), e.g. security code verification, it can be vulnerable to [man-in-the-middle attack](#man-in-the-middle-attack).
+
+[Wikipedia](https://en.wikipedia.org/wiki/Key-agreement_protocol)
+
+## Key exchange
+
+[Key agreement protocol](#key-agreement-protocol).
+
+## Man-in-the-middle attack
+
+The attack when the attacker secretly relays and possibly alters the communications between two parties who believe that they are directly communicating with each other.
+
+This attack can be used to compromise [end-to-end encryption](#end-to-end-encryption) by intercepting public keys during [key exchange](#key-agreement-protocol), substituting them with the attacker's keys, and then intercepting and re-encrypting all messages, without altering their content. With this attack, while the attacker does not change message content, but she can read the messages, while the communicating parties believe the messages are end-to-end encrypted.
+
+Such attack is possible with any system that uses the same channel for key exchange as used to send messages - it includes almost all communication systems except SimpleX, where the initial public key is always passed out-of-band. Even with SimpleX, the attacker may intercept and substitute the key sent via another channel, gaining access to communication. This risk is substantially lower, as attacker does not know in advance which channel will be used to pass the key.
+
+To mitigate such attack the communicating parties must verify the integrity of key exchange - SimpleX and many other messaging apps, e.g. Signal and WhatsApp, have the feature that allows it.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Man-in-the-middle_attack).
+
+## Merkle directed acyclic graph
+
+Also known as Merkle DAG, a data structure based on a general graph structure where node contains the cryptographic hashes of the previous nodes that point to it. Merkle trees are a subset of Merkle DAGs - in this case each leaf contains a cryptographic hash of the parent.
+
+This structure by design allows to verify the integrity of the whole structure by computing its hashes and comparing with the hashes included in the nodes, in the same way as with [blockchain](#blockchain).
+
+The motivation to use DAG in distributed environments instead of a simpler linear blockchain is to allow concurrent additions, when there is no requirement for a single order of added items. Merkle DAG is used, for example, in [IPFS](https://en.wikipedia.org/wiki/InterPlanetary_File_System) and will be used in decentralized SimpleX groups.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Merkle_tree).
+
+## Message padding
+
+Also known as content padding, it is the process of adding data to the beginning or the end of a message prior to encryption. Padding conceals the actual message size from any eavesdroppers. SimpleX has several encryption layers, and prior to each encryption the content is padded to a fixed size.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Padding_(cryptography)).
+
+## Onion routing
+
+A technique for anonymous communication over a computer network that uses multiple layers of message encryption, analogous to the layers of an onion. The encrypted data is transmitted through a series of network nodes called "onion routers," each of which "peels" away a single layer, revealing the data's next destination. The sender remains anonymous because each intermediary knows only the location of the immediately preceding and following nodes.
+
+The most widely used onion network is [Tor](https://en.wikipedia.org/wiki/Tor_(network)).
+
+Some elements of SimpleX network use similar ideas in their design - different addresses for the same resource used by different parties, and additional encryption layers. Currently though, SimpleX messaging protocol does not protect sender network address, as the relay server is chosen by the recipient. The delivery relays chosen by sender that are planned for the future would make SimpleX design closer to onion routing.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Onion_routing)
+
+## Overlay network
+
+Nodes in the overlay network can be thought of as being connected by virtual or logical links, each of which corresponds to a path, perhaps through many physical links, in the underlying network. Tor, for example, is an overlay network on top of IP network, which in its turn is also an overlay network over some underlying physical network.
+
+SimpleX Clients also form a network using SMP relays and IP or some other overlay network (e.g., Tor), to communicate with each other. SMP relays, on another hand, do not form a network.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Overlay_network)
+
+## Non-repudiation
+
+The property of the cryptographic or communication system that allows the recipient of the message to prove to any third party that the sender identified by some cryptographic key sent the message. It is the opposite to [repudiation](#repudiation). While in some context non-repudiation may be desirable (e.g., for contractually binding messages), in the context of private communications it may be undesirable.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Non-repudiation)
+
+## Pairwise pseudonymous identifier
+
+Generalizing [the definition](https://csrc.nist.gov/glossary/term/pairwise_pseudonymous_identifier) from NIST Digital Identity Guidelines, it is an opaque unguessable identifier generated by a service used to access a resource by only one party.
+
+In the context of SimpleX network, these are the identifiers generated by SMP relays to access anonymous messaging queues, with a separate identifier (and access credential) for each accessing party: recipient, sender and an optional notifications subscriber. The same approach is used by XFTP relays to access file chunks, with separate identifiers (and access credentials) for sender and each recipient.
+
+## Peer-to-peer
+
+Peer-to-peer (P2P) is the network architecture when participants have equal rights and communicate directly via a general purpose transport or overlay network. Unlike client-server architecture, all peers in a P2P network both provide and consume the resources. In the context of messaging, P2P architecture usually means that the messages are sent between peers, without user accounts or messages being stored on any servers. Examples are Tox, Briar, Cwtch and many others.
+
+The advantage is that the participants do not depend on any servers. There are [multiple downsides](https://simplex.chat/docs/simplex.md#comparison-with-p2p-messaging-protocols) to that architecture, such as no asynchronous message delivery, the need for network-wide peer addresses, possibility of network-wide attacks, that are usually mitigated only by using a centralized authority. These disadvantages are avoided with [proxied P2P](#proxied-peer-to-peer) architecture.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Peer-to-peer).
+
+## Perfect forward secrecy
+
+[Forward secrecy](#forward-secrecy).
+
+## Post-compromise security
+
+The quality of the end-to-end encryption scheme allowing to recover security against a passive attacker who observes encrypted messages after compromising one (or both) of the parties. Also known as recovery from compromise or break-in recovery. [Double-ratchet algorithm](#double-ratchet-algorithm) has this quality.
+
+## Post-quantum cryptography
+
+Any of the proposed cryptographic systems or algorithms that are thought to be secure against an attack by a quantum computer. It appears that as of 2025 there is no system or algorithm that is *proven* to be secure against such attacks, or even to be secure against attacks by massively parallel conventional computers, so a general recommendation is to use post-quantum hybrid cryptography - combining post-quantum and traditional algorithms.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Post-quantum_cryptography)
+
+## Privacy
+
+Someone's right to keep (or the state when they keep) their personal matters and relationships secret (e.g., [Cambridge dictionary](https://dictionary.cambridge.org/dictionary/english/privacy)). Privacy of communication systems should include the privacy of connections and meta-data, not only the privacy of the content of messages. [End-to-end encryption](#end-to-end-encryption) on its own does not provide privacy, as it only protects message content and not connections or meta-data.
+
+[Wikipedia](https://en.wikipedia.org/wiki/Privacy)
+
+## Proxied peer-to-peer
+
+Network topology of the communication system when peers communicate via proxies that do not form the network themselves. Such design is used in Pond, that has a fixed home server for each user, and in SimpleX, that uses multiple relays providing temporary connections.
+
+## Recovery from compromise
+
+[Post-compromise security](#post-compromise-security).
+
+## Repudiation
+
+The property of the cryptographic or communication system that allows the sender of the message to plausibly deny having sent the message, because while the recipient can verify that the message was sent by the sender, they cannot prove it to any third party - the recipient has a technical ability to forge the same encrypted message. This is an important quality of private communications, as it allows to have the conversation that can later be denied, similarly to having a private face-to-face conversation.
+
+See also [non-repudiation](#non-repudiation).
+
+## User identity
+
+In a communication system it refers to anything that uniquely identifies the users to the network. Depending on the communication network, it can be a phone number, email address, username, public key or a random opaque identifier. Most messaging networks rely on some form of user identity. SimpleX appears to be the only messaging network that does not rely on any kind of user identity - see [this comparison](https://en.wikipedia.org/wiki/Comparison_of_instant_messaging_protocols).
+
+---
+
+Source: https://simplex.chat/faq.md
+
+# Frequently Asked Questions
+
+[How to use it](#how-to-use-it)
+- [How do I connect to people?](#how-do-i-connect-to-people)
+- [I have nobody to chat with! Where can I find any groups?](#i-have-nobody-to-chat-with-where-can-i-find-any-groups)
+- [What is database? What can I do with it?](#what-is-database-what-can-i-do-with-it)
+- [Can I send files over SimpleX? ](#can-i-send-files-over-simplex)
+- [What’s incognito profile?](#whats-incognito-profile)
+- [How do invitations work?](#how-do-invitations-work)
+- [How to configure and delete groups?](#how-to-configure-and-delete-groups)
+- [Are there any reactions to messages? Can I answer specific messages directly?](#are-there-any-reactions-to-messages-can-i-answer-specific-messages-directly)
+- [What do checkmarks mean?](#what-do-checkmarks-mean)
+- [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
+- [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
+- [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
+- [What do group roles mean?](#what-do-group-roles-mean)
+- [I don't want to share a web link or a QR code. How can I connect?](#i-dont-want-to-share-a-web-link-or-a-qr-code-how-can-i-connect)
+- [How to change servers to my own](#how-to-change-servers-to-my-own)
+
+[Troubleshooting](#troubleshooting)
+- [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
+- [I do not see the second tick on the messages I sent](#i-do-not-see-the-second-tick-on-the-messages-i-sent)
+- [I see image preview but cannot open the image](#i-see-image-preview-but-cannot-open-the-image)
+- [I cannot play a voice message](#i-cannot-play-a-voice-message)
+- [Audio or video calls do not connect](#audio-or-video-calls-do-not-connect)
+- [Audio or video calls without e2e encryption](#audio-or-video-calls-without-e2e-encryption)
+- [I clicked the link to connect, but could not connect](#i-clicked-the-link-to-connect-but-could-not-connect)
+- [I do not know my database passphrase](#i-do-not-know-my-database-passphrase)
+- [My mobile app does not connect to desktop app](#my-mobile-app-does-not-connect-to-desktop-app)
+
+[Privacy and security](#privacy-and-security)
+- [Does SimpleX support post quantum cryptography?](#does-simplex-support-post-quantum-cryptography)
+- [Why can't I use the same profile on different devices?](#why-cant-i-use-the-same-profile-on-different-devices)
+- [What user data can be provided on request?](#what-user-data-can-be-provided-on-request)
+- [Does SimpleX protect my IP address?](#does-simplex-protect-my-ip-address)
+- [Doesn't private message routing reinvent Tor?](#doesnt-private-message-routing-reinvent-tor)
+- [Why don't you embed Tor in SimpleX Chat app?](#why-dont-you-embed-tor-in-simplex-chat-app)
+- [Can I host my own relays?](#can-i-host-my-own-relays)
+
+[Funding and business model](#funding-and-business-model)
+- [How are you funded?](#how-are-you-funded)
+- [Why VCs?](#why-vcs)
+- [What will be the business model?](#what-will-be-the-business-model)
+
+## How to use it
+
+### How do I connect to people?
+
+Tap "pencil" button in the right corner, then "Create 1-time link". Share the link with the person you want to connect to. Your contact has to paste the link to the app's search bar. The link can also be opened via the browser, once the app is installed.
+
+Alternatively, you can show the QR code when meeting in person or in a video call.
+
+It is safe to share this link over any communication channel, it contains only public keys and can only be used once.
+
+If you want to share your address publicly, so that many people can connect to you, use your SimpleX address instead of 1-time links. Tap your profile image/avatar, then Your SimpleX address. Once you create the address, you can share it in social media profiles, email signature, etc. See [the comparison of SimpleX address with 1-time links](https://simplex.chat/docs/guide/making-connections.md#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).
+
+### I have nobody to chat with! Where can I find any groups?
+
+Please check our [Groups Directory](https://simplex.chat/docs/directory.md) in the first place. You might find some interesting groups and meet even more interesting people.
+
+### What is database? What can I do with it?
+
+Database is essential for SimpleX Chat to function properly. In comparison to centralized messaging providers, it is _the user_ who is responsible for taking care of their data. On the other hand, user is sure that _nobody but them_ has access to it. Please read more about it: [Database](https://simplex.chat/docs/guide/managing-data.md).
+
+### Can I send files over SimpleX?
+
+Of course! While doing so, you are using a _state-of-the-art_ protocol that greatly reduces metadata leaks. Please read more about it: [XFTP Protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.md).
+
+### What’s incognito profile?
+
+This feature is unique to SimpleX Chat – it is independent from chat profiles.
+
+When "Incognito Mode” is turned on, your currently chosen profile name and image are hidden from your new contacts. It allows anonymous connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each connection.
+
+### How do invitations work?
+
+It is quite a complex process, but fortunately all of this happens in the background, so it's simple to use.
+
+Whenever somebody connects to you via your address, they basically ask your client whether they want to establish connection. After that, you can either agree or disagree.
+If interested, please read more: [Addresses and invitations](https://simplex.chat/docs/guide/making-connections.md).
+
+### How to configure and delete groups?
+
+Please check: [Users guide](https://simplex.chat/docs/guide/secret-groups.md).
+
+### Are there any reactions to messages? Can I answer specific messages directly?
+
+Yes! Currently, there are six emojis available. What's more, you can respond to specific message by holding it and selecting _Reply_.
+
+### What do checkmarks mean?
+
+It's quite simple:
+- one checkmark - message is delivered to the relay (the server).
+- two checkmarks - message is delivered to the recipient's device.
+"sent" means accepted by the relay for delivery, "delivered" - stored on the recipient device.
+
+Also see: [I do not see the second tick on the messages I sent](#i-do-not-see-the-second-tick-on-the-messages-i-sent)
+
+### I want to see when my contacts read my messages
+
+To know when your contact reads your messages, your contact's app has to send you a confirmation message. And vice versa, for your contact to know when you read the message, your app has to send a confirmation message.
+
+The important questions for this feature:
+- do you always want that your contacts can see when you read all their messages? Probably, even with your close friends, sometimes you would prefer to have time before you answer their message, and also have a plausible deniability that you have not seen the message. And this should be ok - in the end, this is your device, and it should be for you to decide whether this confirmation message is sent or not, and when it is sent.
+- what practical problems an automatic notification sent to your contacts when you read the message solves for you compared with you simply adding a reaction to a message or sending a quick reply?
+
+Overall, it seems that this feature is more damaging to your communications with your contacts than it is helpful. It keeps senders longer in the app, nervously waiting for read receipts, exploiting addictive patterns - having you spend more time in the app is the reason why it is usually present in most messaging apps. It also creates a pressure on the recipients to reply sooner, and if read receipts are opt-in, it creates a pressure to enable it, that can be particularly damaging in any relationships with power imbalance.
+
+We think that delivery receipts are important and equally benefit both sides as the conversation, as they confirm that communication network functions properly. But we strongly believe that read receipts are an anti-feature that only benefits the app developers, and hurts the relations between the app users. So we are not planning to add it even as opt-in. In case you want your contact to know you've read the message put a reaction to it. And if you don't want them to know it - it is also ok, what your device sends should be under your control.
+
+### Can I use the same profile on desktop? Do messages sync cross-platform?
+
+You can use your profile from mobile device on desktop. However, to do so you need to be on the same network, both on your mobile and desktop. More about it: [Release info](https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol).
+
+### Why cannot I delete messages I sent from my contact's device?
+
+In SimpleX Chat, you and your contacts can delete the messages you send from recipients' devices if you both agree to that within 24 hours of sending it. To be able to do that you both have to enable "Delete for everyone" option in Contact preferences - tap on the contact's name above the conversation to get there.
+
+You can also revoke the files you send. If the recipients did not yet receive the file, they will not be able to receive it after the file is revoked.
+
+This is different from most other messengers that allow deleting messages from the recipients' devices without any agreement with the recipients.
+
+We believe that allowing deleting information from your device to your contacts is a very wrong design decision for several reasons:
+1) it violates your data sovereignty as the device owner - once you are in possession of any information, you have the rights to retain it, and any deletion should be agreed with you. And security and privacy is not possible if users don't have sovereignty over their devices.
+2) it may be a business communication, and either your organization policy or a compliance requirement is that every message you receive must be preserved for some time.
+3) the message can contain a legally binding promise, effectively a contract between you and your contact, in which case you both need to keep it.
+4) the messages may contain threat or abuse and you may want to keep them as a proof.
+5) you may have paid for the message (e.g., it can be a design project or consulting report), and you don't want it to suddenly disappear before you had a chance to store it outside of the conversation.
+
+It is also important to remember, that even if your contact enabled "Delete for everyone", you cannot really see it as a strong guarantee that the message will be deleted. Your contact's app can have a very simple modification (a one-line code change), that would prevent this deletion from happening when you request it. So you cannot see it as something that guarantees your security from your contacts.
+
+When "Delete for everyone" is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as "deleted message", and will be able to reveal the original message.
+
+### What do group roles mean?
+
+Groups support 5 member roles: owner, admin, moderator, member and observer.
+
+An observer can:
+- add reactions
+- send reports
+- talk to admins via "Chat with admins"
+
+A member can:
+- send messages
+
+A moderator can:
+- approve members in review ("knocking")
+- moderate messages<sup>*</sup>
+- block members temporarily<sup>*</sup>
+- participate in "Chats with members"
+
+An admin can:
+- add and remove members<sup>*</sup>
+- change member roles<sup>*</sup>, including their own
+- create group links (but the new members will join via them, so use links of admins who are always online).
+
+A group owner can:
+- edit group profile
+- delete the group
+
+Each role can do everything that the previous roles can, except moderators and higher cannot send reports or "Chat with admins".
+
+<sup>*</sup>Any actions affecting members or their messages can only be applied to members of the same or lower role (so admins can't demote owners or promote anybody to owners, etc., but they can demote other admins and themselves, or make anybody an admin).
+
+### I don't want to share a web link or a QR code. How can I connect?
+
+You can replace the server part of the link (e.g., `https://smp18.simplex.im/`) with `simplex:/` and add `?h=smp18.simplex.im` (replace it with server of your link) to the end of the link. Then it will not be possible to use it in a web browser, but it will be recognized by SimpleX Chat app.
+
+For example, this link: `https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ`
+
+becomes: `simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im`
+
+### How to change servers to my own?
+
+Add your server in Settings -> Network & servers -> Your servers. If you have multiple profiles, you need to add your server in every profile.
+After that, disable all preset servers. If you have multiple profiles, you must first add your server to all profiles for this option to be available.
+
+To resolve SimpleX public names, if your server does not support it, you may leave preset servers enabled only for resolving the public names.
+
+Please note: configured servers only determine which servers will be used for the new connections (members/contacts). Previously created connections don't switch automatically. You can manually switch all existing contacts and small/important groups (each member needs to be switched), and then leave and re-join all large groups.
+You can switch contacts/members manually to another server by going to their profile and clicking on "Change receiving address", note that the current server must be online for the address change to work.
+
+## Troubleshooting
+
+### I do not receive messages or message notifications
+
+There may be several reasons messages are not delivered to you from your contact:
+
+**You or your contact cannot connect to the server that you use to receive messages from your contact.**
+
+You can check which server is used to receive messages by tapping the contact name above the conversation.
+
+You can also run tests for this server from the app Network settings.
+
+Please ask your contact if they have a single tick on the message to determine if the message failed to send or if you fail to receive it.
+
+**Message delivery got stuck because of some unresolved bug.**
+
+Fully restarting the app is the workaround to resume message delivery.
+
+To do it on iOS, simply close the app (swipe up from the opened apps) and open it again.
+
+To do it on Android - choose Restart from the app settings, simply closing and re-opening the app will not restart the messaging service.
+
+**Your Android operating system kills the app while it is in background.**
+
+Check battery settings for the app - it should be set to Unrestricted.
+
+For some devices, there may be additional options to prevent the app from being killed - e.g., on Xiaomi you need to enable Auto Start setting for the app. Please consult https://dontkillmyapp.com site for any additional settings for your device.
+
+**Why my notifications aren't working on iOS**
+
+Check the color of the bolt icon next to Notifications in app settings - it should be green.
+
+If it's not, please open notifications, disable them (choose Off / Local), and then enable again - you should do it when you have Internet connection.
+
+Check if your push server has been restarted at time of the issue (Notifications -> Push server) at https://status.simplex.chat if it has been restarted, you may not receive notifications from that time.
+
+If device was offline, you may need to open the app to start receiving notifications.
+
+If the above didn't help, the reason could be that iOS failed to issue notification token - we have seen this issue several times. In this case, restarting the whole device should help.
+
+In some cases notifications may still not work, iOS notifications are hard to do right in a decentralized app, we will be improving them soon to be more reliable.
+
+**Messaging server or notification server is under maintenance**
+
+Please check the current status of preset servers at [https://status.simplex.chat](https://status.simplex.chat). You can also connect to status bot via QR code on that page - it will send the updates when the server is offline for maintenance, and also when the new versions of the app are released.
+
+### I do not see the second tick on the messages I sent
+
+You may not have the second tick on your sent messages for these reasons:
+
+- your contact is not online, and did not receive your message.
+- possibly, message delivery to your contact or to you is disrupted - see [I do not receive messages](#i-do-not-receive-messages-or-message-notifications) - please check with your contact via some other channel if they received your message. If the message was delivered, then it means your device could fail to receive the delivery notification.
+- possibly, your contact disabled sending delivery receipts - it can be disabled for specific or for all contacts - please check with your contact.
+
+### I see image preview but cannot open the image
+
+It can be for these reasons:
+- your contact did not finish uploading the image file, possibly closing the app too quickly. When the image file is fully uploaded there will be a tick in the _top right corner_ of the image.
+- your device fails to receive it. Please check server connectivity and run server tests, and also try increasing network timeouts in Advanced network settings. File reception was substantially improved in v5.7 - please make sure you are using the latest version.
+- file expired and can no longer be received. Files can be received only for 2 days after they were sent, after that they won't be available and will show X in the top right corner.
+
+### I cannot play a voice message
+
+This can happen for similar reasons as for [images](#i-see-image-preview-but-cannot-open-the-image).
+
+Please check your network settings and make sure you use the latest version of the app.
+
+Please report such issues if you use v5.7 or newer.
+
+### Audio or video calls do not connect
+
+App uses WebRTC for calls. Please check that you can connect to the servers configured in the app: stun.simplex.im and turn.simplex.im - see [troubleshooting WebRTC](https://simplex.chat/docs/webrtc.md#troubleshoot).
+
+If you can connect to the server, please report this issue to us privately, including the following information:
+
+- how you connect to the network: WiFi, mobile network, VPN provider - the more information you can provide the better.
+
+- app version and platform. For mobile apps, it would help if you can make a screen recording from both devices during unsuccessful calls and share with us.
+
+- if the issue is on desktop app, which browser is used for calls. In this case also please check browser console during the call and send us the log, ideally from both sides of the unsuccessful calls.
+
+Thank you for helping us debug and improve calls.
+
+### Audio or video calls without e2e encryption
+
+During the call, the app indicates whether or not the call has end-to-end encryption.
+
+If one of the call parties uses Android (or desktop) app, the call would use Android system webview (or browser). Some older systems do not support media stream encryption, in which case the call will connect without it.
+
+To determine whether it is the limitation of your, your contact's or both devices:
+- if some of your calls have e2e encryption but some don't, then it's certainly the old webview version or browser of your contacts - please ask them to upgrade.
+- if you are not sure, you can check at what point "no e2e encryption" appears:
+  - if it is shown when the call rings on your device, then your contact's device does not support call encryption.
+  - if it is shown on your screen as soon as you start the call, then your device does not support call encryption.
+  - if in the beginning of the call your device shows "e2e encryption" but when your contact accepts the call it changes to "no e2e encryption", then it is only your contact's device that does not support it.
+
+You need to upgrade webview (some Android systems allow it), Android system or the device to have support for e2e encryption in the calls - all modern WebViews (and browsers) support it.
+
+### I clicked the link to connect, but could not connect
+
+If you confirmed the connection in the app, pending connection will be shown in the list of chats - you can assign the name to it, so you know who it was when your contact is connected (e.g., if they choose some name you don't recognize).
+
+For connection to complete, your contact has to be online and have the app running - please ask them to open the app, and try to have the app open at the same time - it will help to complete the connection faster.
+
+Once the connection is established you don't need to be online at the same time to send messages.
+
+### I do not know my database passphrase
+
+If you are prompted to enter database passphrase and you do not know it, this could have happened due to:
+- You may have forgotten the passphrase. (There is no other way to access your data).
+- Migration of app data from one device to another while using unsupported migration process, e.g. via iCloud backup. Use SimpleX Chat's own migration process in the app Settings.
+
+In the previous desktop app versions it could also happen in case of error during SimpleX Chat installation.
+
+You can resolve it by deleting the app's database: (WARNING: this results in deletion of all profiles, contacts and messages)
+- on Android/iOS, uninstall the app and install it again.
+- on Windows, delete folder `C:\AppData\Roaming\SimpleX`, you can find it by pressing Windows key + R and entering `%appdata%`.
+- on Linux/Mac, delete directories `~/.local/share/simplex` and `~/.config/simplex`, where `~` represents your home directory (/home/user)
+- on Flatpak, delete directory `~/.var/app/chat.simplex.simplex`.
+
+### My mobile app does not connect to desktop app
+
+1. Check that both devices are connected to the same network (e.g., it won't work if mobile is connected to mobile Internet and desktop to WiFi).
+2. If you use VPN on mobile, allow connections to local network in your VPN settings, or disable VPN.
+3. Allow SimpleX Chat on desktop to accept network connections in system firewall settings. You may choose a specific port in desktop app to accept connections, by default it uses a random port every time.
+4. Check that your WiFi router allows connections between devices (e.g., it may have an option for "device isolation", or similar).
+5. If you see an error "certificate expired", please check that your device clocks are synchronized within a few seconds.
+6. If iOS app fails to connect and shows an error containing "no route", check that local network connections are allowed for the app in system settings.
+
+Also see this post: https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol
+
+If none of the suggestions work for you, you can create a separate profile on each device and create a small group inviting both of your device profiles and your contact.
+
+## Privacy and security
+
+### Does SimpleX support post quantum cryptography?
+
+Yes! Please read more about how quantum-resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in [this post](https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md).
+
+### Why can't I use the same profile on different devices?
+
+SimpleX Chat apps support [linking of mobile and desktop apps](https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol) via secure quantum-resistant protocol. It allows using the profile on your mobile device from desktop clients.
+
+Seamlessly and securely using the same profile from two or more devices is a complex and unsolved problem. All apps that provide multi-device support do so at a cost of compromising security of end-to-end encryption. E.g., Session removed the Double Ratchet algorithm entirely to enable multi-device support, sacrificing forward secrecy. Signal provides multi-device support with Double Ratchet algorithm, but by [compromising its "break-in recovery" property](https://eprint.iacr.org/2021/626.pdf) (aka post-compromise security).
+
+To the best of our knowledge there is no end-to-end encrypted messenger that solved this problem without compromising security, but we believe that the solution is possible. We have considered several approaches:
+
+1. Convert each direct conversation into a group, where each device participates as a member. This is the approach that Signal and WhatsApp use, and while Signal implementation does not protect from a temporary compromise of long-term identity key (break-in recovery), such protection is possible. The downside of this approach is that the contacts and groups you participate in would know which device you use. Another possible attack is to send different messages to different devices, or to send messages to some devices but not to the others. This could lead to message history inconsistency or enable targeted attacks.
+
+2. Store the state of the Double Ratchet algorithm for each conversation in an encrypted container on the server, allowing concurrent access and modification by each device for encrypting and decrypting messages. We did not see this approach used in any of the messaging apps, but it is technically viable. This approach has no downsides of the first, but it would increase the time it takes to send and to receive messages, as each message would require additional access to the server.
+
+3. "Thin client" approach when user profile is stored on the server. The main challenge with this approach is to prevent the server knowing who connects to whom.
+
+Whichever approach we choose for multi-device support, it requires careful design and implementation, and there is no existing secure solution to copy from. While we value usability very highly, we will not be improving usability in a way that compromises users' security. We will take a slower path of designing and implementing a solution for multi-device that achieves a better trade-off between usability and security than currently offered.
+
+In the meantime, here are several secure options to enhance usability:
+- link mobile profiles with desktop app. It does not compromise security in any way.
+- create small groups with trusted contacts. These contacts would still know which device you use when you send the message, but it won't be shared with all contacts and groups you participate in. This approach is also secure, and it prevents devices being added to the conversation without user noticing.
+- use "[business address](https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html#business-chats)" - the app would create a new small group with everybody who connects to you via your address, and you will be able to add your other devices to these groups.
+
+While these approaches are not as convenient as seamless multi-device support offered by other apps, they also do not compromise security to achieve that convenience.
+
+### What user data can be provided on request?
+
+Our objective is to consistently ensure that no user data and absolute minimum of the metadata required for the network to function is available for disclosure by any infrastructure operators, under any circumstances.
+
+Please see our [Privacy Policy](https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md) and [Transparency Reports](https://simplex.chat/transparency/index.html).
+
+### Does SimpleX protect my IP address?
+
+Yes!
+
+SimpleX Chat from version 6.0 uses *private message routing* whenever you send messages to unknown servers (all servers in app network settings, both enabled and not, are considered "known").
+
+For private routing to work, the servers chosen by your contacts (and by the group members in your groups) must be upgraded to the recent versions. Messaging servers include support for private routing from v5.8, but we recommend using the latest versions.
+
+If the servers didn't upgrade, the messages would temporarily fail to deliver. You will see an orange warning icon on the message, and you can decide if you want to deliver them by connecting to these servers directly (it would require changing network settings). At the time of writing (August 2024), all preset servers and absolute majority of self-hosted servers we can see on the network support private message routing.
+
+With private routing enabled, instead of connecting to your contact's server directly, your client would "instruct" one of the known servers to forward the message, preventing the destination server from observing your IP address.
+
+Your messages are additionally end-to-end encrypted between your client and the destination server, so that the forwarding server cannot observe the destination addresses and server responses – similarly to how onion routing works. Private message routing is, effectively, a two-hop onion packet routing.
+
+Also, this connection is protected from man-in-the-middle attack by the forwarding server, as your client will validate destination server certificate using its fingerprint in the server address.
+
+You can optionally enable private message routing for all servers in Advanced network settings to complicate traffic correlation for known servers too. This will be default once the clients are improved to "know about" and to take into account network server operators.
+
+See [this post](https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md#private-message-routing) for more details about how private message routing works.
+
+### Doesn't private message routing reinvent Tor?
+
+No, it does not!
+
+It provides better privacy for messaging than Tor, and it can be used with and without Tor or other means to additionally protect your traffic from known servers as well.
+
+Tor, VPN and other transport overlay networks route sockets, by creating long-lived TCP circuits between you and the destination server. While it protects your IP address, it does not protect your activity within this circuit. E.g., if you visit a website via Tor, it can still observe all pages you view within a session. Likewise, if you were connecting directly to a messaging server via Tor, this server would be able to list all message queues you send messages to.
+
+Private message routing routes packets (each message is one 16kb packet), not sockets. Unlike Tor and VPN, it does not create circuits between your client and destination servers. The forwarding server creates one shared session between itself and the destination, and forwards all messages from you and other clients to that destination server, mixing messages from many clients into a single TCP session.
+
+As each message uses its own random encryption key and random (non-sequential) identifier, the destination server cannot link multiple message queue addresses to the same client. At the same time, the forwarding server cannot observe which (and how many) addresses on the destination server your client sends messages to, thanks to e2e encryption between the client and destination server. In that regard, this design is similar to onion routing, but with per-packet anonymity, not per-circuit.
+
+This design is similar to mixnets (e.g. [Nym network](https://nymtech.net)), and it is tailored to the needs of message routing, providing better transport anonymity than general-purpose networks, like Tor or VPN. You still can use Tor or VPN to connect to known servers, to protect your IP address from them.
+
+### Why don't you embed Tor in SimpleX Chat app?
+
+[Tor](https://www.torproject.org) is a fantastic transport overlay network - we believe it might be the best there is right now. If its [threat model](https://support.torproject.org/about/attacks-on-onion-routing/) works for you, you absolutely should use it - SimpleX Chat app supports Tor via SOCKS proxy [since v3.1](https://simplex.chat/blog/20220808-simplex-chat-v3.1-chat-groups.html#access-messaging-servers-via-tor), and SimpleX network servers can be available on both public and onion address at the same time [since v3.2](https://simplex.chat/blog/20220901-simplex-chat-v3.2-incognito-mode.html#using-onion-server-addresses-with-tor), improving anonymity of the users who use Tor.
+
+If you host your messaging server on the onion address only, the users who don't use Tor would still be able to message you via private message routing - all preset servers are configured to forward messages to onion-only servers.
+
+But there are many reasons not to embed Tor in the app:
+- it increases response latency, error rate, and battery usage, and we believe that for most users enabling Tor by default would be a bad trade-off.
+- it would require us regularly updating Tor library in the app, and your Tor integrity would depend on us – you would be "putting too many eggs in one basket".
+- some networks restrict Tor traffic, so the app UI would have to support advanced Tor configuration, diverting our limited resources from the core app features that benefit all users.
+- some countries have legislative restrictions on Tor usage, so we would have to support multiple app versions, also increasing our costs and slowing down the progress.
+
+The last, but not the least, it would create an unfair competitive advantage to Tor. We believe in competition, and we want our users to be able to choose which transport overlay network to use, based on what network threat model works best for them.
+
+If you want to use Tor or any other overlay network, such as i2p, [Nym network](https://nymtech.net), [Katzenpost](https://katzenpost.network), etc., you need to research their limitations, because none of them provides absolute anonymity against all possible attackers.
+
+And if after that research you decide to use Tor, it takes about 2 minutes to install and start [Orbot app](https://guardianproject.info/apps/org.torproject.android/). We believe that if it seems complex, then you *should not* be using Tor - it is an advanced technology that can only improve your privacy and anonymity if you understand its limitations and know how to configure it.
+
+### Can I host my own relays?
+
+Of course! Please check these tutorials: [SMP server](https://simplex.chat/docs/server.md) and [XFTP server](https://simplex.chat/docs/xftp-server.md).
+
+## Funding and business model
+
+### How are you funded?
+
+SimpleX Chat Ltd is funded by private investors and venture capital. As an open-source project, it is also being generously supported by donations as well. Read the posts [from 2023](https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md#how-is-it-funded-and-what-is-the-business-model) and [from 2024](https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md) for more details.
+
+### Why VCs?
+
+Here are some reflections on VC funding being a necessity for a project at this scale, as well as sustainability and profitability for longtime operations: https://www.poberezkin.com/posts/2023-10-31-why-privacy-impossible-without-venture-funding.html
+
+And another perspective from a team member on the delicate balance of venture-backed and nonprofit structures, and the plans for the SimpleX network protocols to evolve under the stewardship of nonprofit entities in various jurisdictions, so that its continued evolution aligns more closely with the vision of community-driven, independent and transparent governance:
+[https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html](https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.md).
+
+### What will be the business model?
+
+We are focusing on product-market fit, and as such the business model is still a work in progress. However, the app will have a freemium model with extra features or capabilities for paid users (taking into consideration a potential formula like 5% paying $5/month is $3/user/year - ~90% gross profit margin).
+
+The other income stream would be via business services, for entities needing direct and customized support to integrate with the SimpleX protocol or related resources. There will also be a revenue-sharing model from customers to network operators, to provide an incentive for them to continue running nodes, which will increase decentralization and reliability of the network.
+
+Non-exploitative commercial models with fully open source code are not easy to achieve, and we’re committed to finding the best possible fit for our context. Everything will be fully communicated as this plan progresses.
+
+---
+
+Source: https://simplex.chat/docs/protocol/names-overview.md
+
+Revision 1, 2026-07-14
+
+# SimpleX Public Names for Channels and Businesses
+
+## Table of contents
+
+- [Introduction](#introduction)
+  - [Names](#names)
+  - [Use cases](#use-cases)
+  - [On-chain registry](#on-chain-registry)
+  - [Privacy considerations](#privacy-considerations)
+- [Architecture](#architecture)
+  - [Names and records](#names-and-records)
+  - [Resolution](#resolution)
+  - [Private decentralized RPC layer](#private-decentralized-rpc-layer)
+  - [Claiming and verification](#claiming-and-verification)
+- [Differences from ENS](#differences-from-ens)
+- [Security](#security)
+  - [Design objectives](#design-objectives)
+  - [Threat model](#threat-model)
+  - [Current gaps](#current-gaps)
+- [Future work](#future-work)
+- [Conclusion](#conclusion)
+
+
+## Introduction
+
+The SimpleX network provides communication without user identifiers - people connect by exchanging links out of band. This protects private communication, but public entities - channels and businesses - need to be discoverable. Today this requires distributing a long link, which is impossible to remember and can be deleted by the router that hosts it. SimpleX public names provide memorability and ease of connection without adding user identifiers.
+
+### Names
+
+A SimpleX name is a human-readable name, registered on a public blockchain, that resolves to SimpleX links: `#example.simplex` opens a channel (for the `.simplex` namespace, the short variant `#example` can also be used for channel names) and `@example.simplex` connects to a contact or business address. One name can include both links - a business can publish `@example.simplex` for customer conversations and `#example.simplex` for its announcement channel from a single registration. Names support subnames (`support.example.simplex`). A separate test namespace (`.testing`) is deployed for early adopters before the main namespace launches.
+
+A name is not an account and not an identity. It is a record that maps a human-readable string to the links a channel or business already has, controlled by a cryptographic key that only its owner holds. The network does not use or require names; they are a discovery layer on top of it, described in this document.
+
+This document covers the naming layer built for [SimpleX Channels](https://simplex.chat/docs/protocol/channels-overview.md) and the [SimpleX network](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md). For the user-facing registration steps see [Registering a SimpleX name](https://simplex.chat/docs/guide/register-simplex-name.md); for protocol-level details see the resolver commands in the [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md).
+
+### Use cases
+
+Names are intended for entities that are already public:
+
+- **Channels.** A channel reachable as `#example` can be easily shared in many ways - conversation, print, social media, and messages. If the channel's link is removed or blocked, the owner can point the name to a new link, and the channel remains reachable via the same name.
+
+- **Businesses and organizations.** A business address reachable as `@example.simplex` gives customers a way to start a conversation without scanning a QR code or trusting a link from a search result.
+
+- **Creators and public figures.** Anyone publishing to an audience can be reachable by name while their audience remains private.
+
+Names are opt-in and are only useful for public entities. Private users do not need them. Even when an entity uses a name, the network cannot track who connects to it - the communication graph remains private.
+
+### On-chain registry
+
+Names must be globally unique, so they require a shared registry. Every conventional registry design places names under an operator's control:
+
+- **A platform registry** (usernames in messaging apps) is owned by the operator: names can be revoked, impersonated, or reassigned, and the platform sees who looks up whom.
+
+- **DNS** is subject to domain seizure at the registrar and registry level, and requires registrant records.
+
+A record on a public blockchain has no operator: only the holder of the registration key can change what a name points to, and no authority can delete it. This mitigates censorship at these levels:
+
+- **SMP routers.** The router that hosts a link can delete it, and the link stops working for everyone who saved it. A name is not affected: the owner points it to a new link on a different router, and clients connect via the same name as before.
+
+- **Centralized registries.** An on-chain record cannot be revoked, because there is no intermediary.
+
+### Privacy considerations
+
+Names do not:
+
+- **Identify users.** There is no user directory, no requirement to register a name, and nothing links a name to the people who connect to it.
+
+- **Put communication on the chain.** The blockchain stores only the mapping from a name to links and optional public profile fields. Messages, membership, and channel content are never stored on the blockchain.
+
+- **Certify identity.** A verified name proves that the name's owner controls the address it points to - not who the owner is. It is the same trust model as a domain name.
+
+- **Replace links.** Links remain the primary and the more private connection mechanism, since resolving a name reveals interest in it to one resolver operator. Names are for public entities that choose to be contactable more easily.
+
+
+## Architecture
+
+### Names and records
+
+Names are lowercase labels of ASCII letters, digits, and single hyphens, forming domains under the `.simplex` top-level name (`example.simplex`, `my-channel.simplex`), with `.simplex` implied when omitted for channels: `#example` is interpreted as `#example.simplex`. The restricted alphabet prevents homograph attacks: visually identical names from mixed scripts cannot exist as distinct records.
+
+A name's on-chain record stores:
+
+- **Channel links and contact links** - each an ordered list, primary first. Multiple links give redundancy across SMP routers: clients try them in order, so the name remains usable if one router becomes unavailable. Client support for this redundancy is planned for the `.simplex` namespace launch.
+- **Optional profile fields** - a display name, website, location.
+- **Optional donation addresses** (Monero, Bitcoin, Ethereum, etc.) that apps can show to channel subscribers.
+
+Registration is a two-transaction commit-reveal process from the owner's wallet: the first transaction records only a hash, so an observer of the pending registration cannot see the name and front-run it; the second transaction reveals the name and completes the registration. The name is held as an ordinary token in the owner's wallet and is renewable and transferable. Subnames are created by the name's owner, are transferred together with the name, and cannot be separately sold - the same ownership model as DNS subdomains.
+
+### Resolution
+
+Connecting by name is two independent resolutions:
+
+1. **Name to link.** The client queries the on-chain record through the SimpleX network (next section) and obtains the channel or contact link.
+
+2. **Link to connection.** The link resolves through the existing SimpleX short-link protocol: the client retrieves the link's immutable data - cryptographically bound to the link's owner keys - and the entity's profile, and connects.
+
+The second step is unchanged from connecting by link. A name adds discoverability on top of the link protocol; it does not weaken the link's own verification, and everything a client checks when joining by link is still checked when joining by name.
+
+### Private decentralized RPC layer
+
+Reading blockchain state normally requires querying an RPC service, and in practice almost all applications - including wallets and name services - use a handful of centralized API providers. Those providers see every query, the account it concerns, and the querier's IP address, and can censor or falsify responses. Resolving names through such a provider would reveal every lookup and the client's IP address to a third party.
+
+SimpleX resolves names through the network itself. Operators can enable a *names role* on their SMP routers: a names router runs its own resolver process and its own Ethereum node, holding a full copy of the relevant chain state - operators must not share this backend with other operators. The lookup is a protocol command sent as ordinary SimpleX traffic:
+
+1. The client selects a names router among its configured servers and sends the lookup *through an SMP proxy operated by a different operator*, encrypted so the proxy cannot read it.
+2. The proxy forwards the lookup without access to its content; the names router responds from its local chain state.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant P as SMP proxy<br/>(operator A)
+    participant N as Names router<br/>(operator B)
+    participant E as Ethereum node<br/>(operator B, local)
+
+    C->>P: lookup, encrypted for the names router
+    note over P: sees the client,<br/>not the name
+    P->>N: forwarded lookup
+    note over N: sees the name,<br/>not the client
+    N->>E: read name record (eth_call)
+    E-->>N: name record
+    N-->>P: response, encrypted for the client
+    P-->>C: name record: channel and contact links
+```
+
+The result is a knowledge split with no single observer: the proxy sees which client communicates with a names router, but not the name; the names router sees the name, but not which client sent the query - no client address, session, or identity. A passive network observer sees fixed-size encrypted blocks indistinguishable from other traffic. Clients also keep the set of parties that see a lookup minimal: a query is sent to one names router, and after an authoritative response the client does not repeat the name to other servers.
+
+This layer is not specific to names. Private access to blockchain state via independent operators is a network capability that can be used in other contexts in the future.
+
+### Claiming and verification
+
+A name is trustworthy when:
+
+1. **The on-chain record points to the link.** Only the name owner's wallet key can set this.
+2. **The link's profile claims the name.** Only the link owner's keys can publish this, and the claim is signed by the link's owner key, binding it to that specific link.
+
+For name resolution to succeed, SimpleX clients require both to be true. This mutual binding prevents abuse, such as:
+
+- Registering a name that points to someone else's address. The profile does not claim the name, so clients refuse to connect to it.
+- Claiming a name in a profile without owning it. The on-chain record does not point to that profile's address, so the claim fails verification.
+
+Apps display the outcome next to the name - verified (the record and the claim match), failed, or not yet verified - and can re-verify on demand or automatically. Verification is a fresh resolution through the private RPC layer, so it reflects the current on-chain state.
+
+Names are used only to establish connections, not to deliver messages. Once connected, a contact or channel subscription is an ordinary SimpleX connection, independent of the name. A name expiring or being transferred affects future connections only; existing conversations and subscriptions are not affected.
+
+
+## Differences from ENS
+
+The on-chain layer is the SimpleX Name Service (SNS), a fork of the [Ethereum Name Service](https://ens.domains) (ENS). ENS is the most widely used decentralized naming system, and SNS retains its core design: the registry and resolver contracts, commit-reveal registration, and expiry-based ownership.
+
+Each top-level name (`.testing`, `.simplex`) is an independent deployment of the same contracts:
+
+```mermaid
+flowchart TD
+    CT["Controller<br/>commit-reveal registration"]
+    RG["Registrar<br/>name tokens, on-chain name index"]
+    PR["Resolver<br/>simplex.contact / simplex.channel records"]
+    R["Registry<br/>owner and resolver of every name"]
+    MR["Metadata renderer<br/>token metadata as on-chain JSON + SVG"]
+    SR["Subname registrar<br/>creates and indexes subnames"]
+
+    CT -->|registers names| RG
+    CT -->|writes records| PR
+    RG -->|sets name ownership| R
+    RG -->|renders tokens| MR
+    SR -->|owns subname nodes| R
+```
+
+ENS, however, is not fully decentralized in use. Its applications depend on two off-chain services: an indexer (the subgraph) for queries such as listing the names held by an address (without it the ENS app is unusable), and a hosted metadata service to render name tokens in wallets. SNS removes both dependencies, and simplifies the ownership model:
+
+1. **No indexer.** The SNS contracts index names on-chain: reverse lookup from an address to the names it holds, from a token to its plaintext label, and from a name to its subnames are all direct contract reads. Every view in the SNS web app (currently, the app for test names is https://testing-names.simplex.chat) - the list of owned names, their subnames, and each name's records - is served by plain `eth_call`s against an Ethereum RPC.
+
+2. **Fully on-chain tokens.** A name's token metadata and image are generated by the contract as inline JSON and SVG. There is no metadata server; wallets render the name from chain data alone.
+
+3. **No name wrapper, no separate subname ownership.** ENS's wrapper system lets subnames be split off and owned independently, at the cost of a second token standard and a complex permission system. SNS subnames are owned together with the name and are transferred with it (the DNS model), removing the need for the wrapper.
+
+Resolution also differs. ENS names are resolved by applications through their RPC providers, so lookups are as centralized and observable as the provider. SNS records are read through the private RPC layer described above: many independent operators hold the chain state, and no single party sees who resolves which name.
+
+The result is a naming system with no off-chain services: registration, ownership, enumeration, rendering, and resolution are all either on-chain or served by the SimpleX network itself.
+
+The current implementation uses a web app for registration, which accesses the chain via a centralized RPC provider. We plan to add name purchases to the SimpleX apps, using the same decentralized blockchain access that is already used for name resolution.
+
+
+## Security
+
+### Design objectives
+
+1. **Non-custodial.** Only the holder of the name's key can change or transfer the record; there is no registrar, operator, or intermediary with override authority.
+2. **No infrastructure censorship.** A name does not depend on any single router: the links it points to can be replaced without changing the name, and resolution uses chain state held by many independent operators.
+3. **Impersonation resistance.** A name is shown as verified only when the on-chain record and the signed claim in the link's profile match.
+4. **Lookup privacy.** No single party observes both the user and the name being resolved.
+5. **Availability.** A record can list multiple links across routers, and any names-capable router of the user's choosing can respond to a lookup.
+
+### Threat model
+
+This threat model assumes the [SimpleX network threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md) and the [channels threat model](https://simplex.chat/docs/protocol/channels-overview.md#threat-model), and addresses the naming layer.
+
+**A compromised names router (or its chain backend)**
+
+*can:*
+
+- Deny that a name exists, or serve a stale record, to the clients that query it. Detectable by resolving through a different operator's router.
+- Serve a false record - effective only against a client that queries this router *and* only if the false record's target cooperates by claiming the name, since the claim check runs against the attacker-supplied record. Resolver agreement across operators ([future work](#future-work)) makes this require collusion of the queried operators.
+- Observe which names are looked up, and how often.
+
+*cannot:*
+
+- Learn who is looking up a name - it never sees the client's address, session, or identity.
+- Alter the on-chain record, or affect clients resolving through other routers.
+- Affect existing connections - they do not depend on names.
+
+**An SMP proxy forwarding lookups**
+
+*can:*
+
+- See that a client communicates with a names router (which is an ordinary SMP router).
+
+*cannot:*
+
+- See that a request forwarded to a destination router is a name resolution request.
+- See the name being looked up, or the response - both are encrypted between client and names router.
+
+**An impersonator**
+
+*can:*
+
+- Register a confusingly similar name. The restricted alphabet keeps such names visibly different - homographs are not possible.
+
+*cannot:*
+
+- Register a visually identical variant of an existing name using other scripts or invisible characters.
+- Achieve verified status for a name pointing to someone else's address, or for an address whose name points elsewhere.
+
+**Compromise of the owner's wallet key**
+
+An attacker holding the registration key can repoint or transfer the name. New lookups then resolve to the attacker's links; the owner's profile claim no longer matches the record, so clients verifying the owner's profile see a failure. Existing connections are unaffected. Protecting the registration key is the owner's responsibility, the same as protecting the channel's own keys. An expired name that is not renewed can also be registered by someone else, so the key must be backed up and the name renewed on time.
+
+**A passive network observer**
+
+*can:*
+
+- See SimpleX traffic between clients and routers.
+
+*cannot:*
+
+- Distinguish name lookups from any other traffic, or learn which names anyone resolves. Inherited from SMP transport.
+
+### Current gaps
+
+1. **Single-resolver lookups.** A client currently accepts the response of one names router per lookup. Cross-checking two operators' resolvers is designed but not implemented - see below.
+2. **No state proofs.** The names router is trusted to report chain state correctly; responses do not yet include proofs verifiable against a chain header.
+3. **Self-hosted routers.** All pre-configured routers support name resolution, but most self-hosted routers do not support it yet. Name resolution requires at least one configured server with the names role.
+
+
+## Future work
+
+- **Two-resolver agreement.** Resolve each name through two independent operators via two different proxies and compare the responses: a match is trusted; a mismatch is shown as a warning and the record is not used. This removes the single-resolver trust noted above and makes record substitution require cross-operator collusion.
+
+- **State proofs.** Responses including Merkle proofs of Ethereum state, verified by the client - removing the need to trust the resolver, with or without agreement.
+
+- **Main namespace launch.** The `.testing` namespace is deployed for early adopters; the `.simplex` namespace launches after the testing period.
+
+- **Registration via an app.** Registration currently requires an on-chain transaction from a wallet.
+
+- **DNS-based names.** The client already parses arbitrary domains (`example.com`) as web links. In the future, it will be possible to register owned domains in the SNS contract to use them as channel and contact names (`#example.com` and `@example.com`).
+
+
+## Conclusion
+
+SimpleX names give channels and businesses memorable addresses that do not depend on any single server and cannot be revoked by a platform or registrar. Resolution runs through the SimpleX network, so no party observes who looks up which name. The naming system is fully decentralized on-chain, with no indexer or metadata service, and access to it is private, with no RPC provider observing requests. Names are optional and used only by public entities; private communication in SimpleX remains identifier-free.
+
+---
+
+Source: https://simplex.chat/docs/protocol/channels-overview.md
+
+Revision 1, 2026-04-28
+
+# SimpleX Channels: stateful information delivery and management
+
+## Table of contents
+
+- [Introduction](#introduction)
+  - [What are SimpleX Channels](#what-are-simplex-channels)
+  - [Channels as transport layer](#channels-as-transport-layer)
+  - [Content visibility and participant privacy](#content-visibility-and-participant-privacy)
+  - [In comparison](#in-comparison)
+  - [Non-goals](#non-goals)
+- [Architecture](#architecture)
+  - [State and distribution](#state-and-distribution)
+  - [Identity and ownership](#identity-and-ownership)
+  - [Governance](#governance)
+  - [Roles](#roles)
+- [Cryptographic primitives](#cryptographic-primitives)
+- [Security](#security)
+  - [Design objectives](#design-objectives)
+  - [Signing scope: roster only, content optional](#signing-scope-roster-only-content-optional)
+  - [Threat model](#threat-model)
+  - [Current gaps](#current-gaps)
+- [Future work](#future-work)
+  - [Stateful access and history navigation](#stateful-access-and-history-navigation)
+  - [Transcript integrity](#transcript-integrity)
+  - [End-to-end encrypted side conversations](#end-to-end-encrypted-side-conversations)
+  - [Relay addition and removal](#relay-addition-and-removal)
+  - [Governance evolution](#governance-evolution)
+  - [Pre-moderation](#pre-moderation)
+  - [Scheduled delivery](#scheduled-delivery)
+  - [Link preview proxying](#link-preview-proxying)
+- [Conclusion](#conclusion)
+
+
+## Introduction
+
+The SimpleX network provides private point-to-point communication without user or endpoint identifiers, but most speech that matters is public. Every existing platform that distributes content at scale identifies both publishers and their audiences to the operator - none protect participation privacy. SimpleX Chat supported peer-to-peer groups, but they cannot scale to large audiences. SimpleX Channels close this gap.
+
+### What are SimpleX Channels
+
+SimpleX Channels are a stateful information delivery and management layer built on the [SimpleX network](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md). SMP queues provide stateless, unidirectional packet delivery between two endpoints. Channels add persistence, state, and scalable distribution - enabling one-to-many publishing with cryptographic identity independent of infrastructure operators.
+
+[SimpleX Chat](https://simplex.chat) is the first application, presenting channels as a broadcast publication model where owners publish and subscribers read, react, and comment. But channels are not limited to this use case - they are a general-purpose layer for distributing and managing stateful information (feeds, telemetry, automated pipelines, coordination services, social media). This document describes channels as a transport mechanism - the same mechanism will also be used for large groups, communities, wikis, forums, and other social media primitives.
+
+The critical difference from conventional publish-subscribe systems is that channel identity and governance are controlled cryptographically by the channel owners, not by the infrastructure operators. Relays - SimpleX network clients that forward and optionally cache channel content - can be added, removed, and replaced without changing the channel's identity, address, content, or cryptographic trust chain. A channel's relationship with its relays is transient; its identity is permanent. The authoritative record of content is hosted on channel owners' devices; relays perform transmission and caching similar to CDN infrastructure.
+
+Channel owners hold full control of the channel - its identity, content, governance rules, and membership - through self-custody of cryptographic keys. No infrastructure operator, relay provider, or third party can control or alter a channel without the owner's keys. Blockchain systems achieve a related property for financial assets - no third party can control holdings - through network-wide consensus. Channels achieve it through local authority and cryptographic signatures, without global consensus or a public ledger. Unlike blockchain state, channel state is mutable by the owner and not publicly verifiable by third parties.
+
+### Channels as transport layer
+
+The SimpleX network has three transport layers, each built on the one below:
+
+1. **SMP** ([SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md)) - stateless, unidirectional packet delivery between two endpoints through SMP routers. Provides fixed-size blocks, 2-node onion routing, and transport metadata protection.
+
+2. **SimpleX agents** ([agent protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md)) - bidirectional, redundant connections between endpoints, with end-to-end post-quantum double ratchet encryption. The [SimpleX Chat Protocol](https://simplex.chat/docs/protocol/simplex-chat.md) runs on top of this layer, providing direct messaging, group communication, and metadata delivery for file transfers via [XFTP protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/xftp.md).
+
+3. **Channels** - stateful, one-to-many information delivery and management with cryptographic ownership and programmable governance. This layer runs on top of chat and agent layer 2, and it is described in this document.
+
+No network-wide user profile identifiers exist at any of these layers. Just as SMP enables private messaging by providing transport without user identifiers, channels enable public communication while preserving participation privacy at the distribution layer.
+
+Channel relays are themselves SimpleX clients in the SMP network, connecting to SMP routers using the same protocol, the same 2-node onion routing, and the same fixed-size transport blocks as any other endpoint. Even though the SMP network can distinguish a relay from a person's phone by its transport patterns, it prevents relays from learning anything about other network endpoints. In the case of SimpleX Chat, any CLI client can act as a chat relay without modifications.
+
+Channels therefore inherit all of SMP's transport privacy properties:
+
+- **Relays cannot observe subscriber network addresses.** The relay sees SMP queue addresses, not IP addresses or network sessions. The subscriber's IP is known only to their SMP router, which cannot see the message content (encrypted at the agent layer) or the IP addresses of whoever sends messages.
+
+- **SMP routers cannot see channel content.** Messages between relay and subscriber are end-to-end encrypted. The SMP router forwards fixed-size encrypted blocks without knowing whether they carry channel messages, direct messages, or anything else.
+
+- **Participation in multiple channels is unlinkable.** Each channel connection uses independent SMP queues with separate cryptographic credentials. Because of packet-level anonymity in 2-node routing, even if a subscriber uses the same SMP routers for all channels, the sending relays cannot determine this without collusion with those routers. Clients choose independently operated routers by default.
+
+No single point in the system sees both content and network identity. SMP routers see network addresses but not content, and no single SMP router can see which endpoints are communicating because clients choose independently operated routers. Relays see content but not network addresses.
+
+### Content visibility and participant privacy
+
+Any channel joinable via a public link, whether encrypted or not, must be considered completely public - the cost of joining through automated means has collapsed with large language models and is approaching zero. End-to-end encrypting such content provides no privacy; it only undermines users' security by creating false expectations and increases infrastructure operators' risks by making them unable to see what they deliver. Private channels with encrypted content are a separate use case discussed in [Future work](#end-to-end-encrypted-side-conversations).
+
+Content of public channels is therefore not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. Relay operators cannot undetectably alter channel content when multiple relays serve the channel, and cannot alter signed content at all - the authoritative state is held by owners. That each channel can use multiple chat relays provides both technical reliability and censorship resistance against any relay-specific content policies.
+
+The achievable privacy property for public communication is participation privacy - protecting who reads and writes content. The SMP transport carries no user identifiers, and relays are ordinary SMP clients, so subscribers connect without revealing their identity, network address, or any information that persists across channels. If an adversary joins a SimpleX channel, they see everything that is sent, but cannot determine who sent it or link any participant to anything outside the channel.
+
+Other systems make the opposite choice: content encryption in exchange for participant identification. For groups and channels joinable via public links this is the opposite of what is needed - the content encryption is meaningless (anyone can join and read), while the participant identification is the security threat.
+
+### In comparison
+
+**Telegram channels** - the operator controls channel identity (usernames are revocable), has full access to both content and participant identity. Channels cannot exist without Telegram's permission.
+
+**Nostr relays** - a single persistent key is used for publishing, following, and identity. Relays see content, the user's key, and their IP address. All posts and follow lists are signed and non-repudiable, linked to the same key - making both publishing and reading activity traceable and undeniable.
+
+**Signal groups** - content is end-to-end encrypted, but the operator manages group state and can observe the membership graph. Groups are capped at 1,000 members with no concept of a channel.
+
+**Matrix rooms** - server operators see room membership and metadata. Room identity is bound to the creating server's domain - if the server disappears, the room identity is lost.
+
+**Mastodon / ActivityPub** - publisher identity is bound to a server domain - if the server disappears, the identity is lost. Server operators see all content and all follower relationships. No encryption or privacy of any kind.
+
+| Property | Telegram | Nostr | Signal | Matrix | Mastodon | **SimpleX** |
+|---|---|---|---|---|---|---|
+| Content visible to operator | Yes | Yes | No | Configurable | Yes | **Yes** |
+| Participant identity visible to operator | Yes | Yes | Yes | Yes | Yes | **No** |
+| Channel identity independent of infrastructure | No | Yes | No | No | No | **Yes** |
+| Sovereign ownership (no 3rd party can seize) | No | Yes | No | No | No | **Yes** |
+| Programmable governance | No | No | No | No | No | **Planned** |
+| Cryptographic content deniability | No | No | Yes | Yes | No | **Yes (default)** |
+| Scalable one-to-many delivery | Yes | Yes | No | Limited | Yes | **Yes** |
+
+### Non-goals
+
+Channels do not attempt to:
+
+- **Encrypt public content from relay operators.** See [Content visibility and participant privacy](#content-visibility-and-participant-privacy).
+- **Assign persistent identities to participants.** There are no usernames, public keys, or any identifiers that persist across channels or link activity across contexts.
+- **Require network-wide consensus.** Channel state is authoritative on owner devices. The network does not validate channel transactions.
+- **Guarantee immutability of content.** Channel state is fully controlled and mutable by owners, unlike blockchain state, which is immutable by design.
+
+## Architecture
+
+The introduction established what channels provide and why. This section describes how: where state lives, how identity and ownership work, how governance evolves, and what each participant does.
+
+### State and distribution
+
+The authoritative record of a channel - content, member roster, profile, cryptographic keys, governance rules - is held by channel owners on their own devices, not on relays, not on any server, and not on any shared ledger. Relays hold transient copies for distribution and optional caching, analogous to CDN edge nodes: the origin holds the truth, CDN nodes come and go. Consensus is only required between channel owners, not across the entire network.
+
+```
+                     ┌──────────┐
+                     │  Owner   │  <- authoritative state
+                     └────┬─────┘
+                          │
+              ┌───────────┼───────────┐
+              │           │           │
+         ┌────▼───┐  ┌────▼───┐  ┌────▼───┐
+         │Relay A │  │Relay B │  │Relay C │  <- cache / distribution
+         └────┬───┘  └────┬───┘  └────┬───┘
+              │           │           │
+        ┌─────┼─────┐    ...    ┌─────┼─────┐
+        │     │     │           │     │     │
+       S1    S2    S3          S7    S8    S9   <- received copies
+```
+
+Content originates on the owner's device and flows through relays to subscribers. Each relay independently forwards to all of its subscribers. Subscribers do not connect to owners or to each other - this provides better scalability than peer-to-peer SimpleX groups, where adding a member requires N new connections. When multiple relays serve the same channel, subscribers deduplicate at the client level.
+
+**Failure modes:**
+
+- **Loss of a relay is loss of a cache node, not loss of data.** The owner can send the same content through a replacement relay.
+
+- **Loss of all owner devices is the catastrophic event** - relay caches become orphaned and the channel's private keys are gone. Multiple owners and backups mitigate this risk.
+
+- **Disagreements between relays are resolved by the origin.** The owner's version is authoritative, settling cache inconsistency through any reachable relay.
+
+Subscribers hold their own received copies. Signed messages are independently verifiable without consulting the relay or owner. Unsigned content depends on cross-relay consistency or future transcript integrity mechanisms.
+
+### Identity and ownership
+
+A channel's identity is the SHA-256 hash of the genesis root public key, computed at creation time and never changed - even if relays are added, removed, or the channel link is rotated. It is self-authenticating: derived from a key pair that only the channel creator held. It is embedded in the channel's link, distributed in the profile to all members, and used as a binding prefix in all signed messages.
+
+Subscribers validate that the identity in the link matches the identity in the profile, preventing link substitution. Profile updates that attempt to change the identity are rejected. Full validation that the identity equals the hash of the root key is deferred: if current clients enforced this check, they would reject future rotated links as invalid. The identity is correctly managed today; validation will be enforced with the key rotation protocol. See the [group identity binding RFC](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2026-03-28-group-identity-binding.md).
+
+The root key does not sign messages directly. Instead, it authorizes owner keys through a signed chain. At creation, the owner generates a root key pair and a separate member key pair for signing. The member key is published as an authorization entry signed by the root key. New owners can be added by any previously authorized owner signing a new entry. Anyone retrieving the channel link can verify this chain without network access.
+
+The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which - provided multiple owners were signed by the root key - conceals the creator's identity.
+
+The channel link is the out-of-band trust anchor - relays and SMP routers cannot modify link content. All members announce their signing keys on joining. Owner keys are verifiable against the link. Role changes (promoting members to admin, moderator) are signed by owners at the protocol level.
+
+A planned extension will record role changes as a linearly ordered signed roster log with consistent sequencing across all owners, relays, and subscribers. This linearization prevents ambiguous roster states from concurrent unordered changes, and creates a verifiable chain of trust from the channel link through owners to all elevated roles. Out-of-band key verification for non-owner members will further extend this to E2E encrypted conversations.
+
+### Governance
+
+"Management" in "information delivery and management" refers not only to managing content but to managing the channel itself - who can make decisions, and how.
+
+The low-level protocol supports multiple owners from the initial release. The application-level governance model evolves through a planned progression:
+
+**Current (v6.5): Single owner.** One owner controls the channel. All administrative actions (profile changes, roster modifications, relay management) are decided by this single owner. The protocol-level owners chain supports verification of multiple entries, but the application creates and manages only one.
+
+**Near-term (v7): Multiple owners, any-owner-decides.** Multiple owners share control of the channel. Any owner can independently make any administrative decision - add or remove members, change the profile, manage relays. This is the most common decision-making model in practice (equivalent to "all admins are equal" in most online platforms). No coordination between owners is required for any action.
+
+**Future: Multisig and programmable governance.** Further stages include M-of-N multisig for administrative actions and, eventually, programmable governance rules defined as code in the channel's definition. The protocol must support these without prescribing a specific governance model.
+
+### Roles
+
+- **Owners** create the channel, hold the authoritative state and private keys on their devices, publish content, and manage the member roster. Owners sign administrative messages and optionally content messages. A channel must have at least one owner.
+
+- **Relays** receive content from owners and members with posting rights, optionally cache it, and forward it to subscribers. They accept new subscriber connections and introduce them to the channel owners. Relays cannot author messages. A channel must have at least one active relay. Relays are ordinary SimpleX clients - a relay can be operated by anyone (a channel operator, a third-party service provider, or a self-hosted instance) and each creates its own contact address link, bound to the channel's identity. The relay's relationship with the channel is transient - owners can add and remove relays without changing the channel's identity.
+
+- **Subscribers** connect to relays and receive content. They cannot send messages by default, but can be given posting rights.
+
+Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol. The owner-signed roster tracks the promoted set - members, moderators, and admins; subscribers are observers until an owner promotes them.
+
+For protocol-level detail - wire formats, message types, signing and verification mechanics, delivery pipeline - see [SimpleX Channels Protocol](https://simplex.chat/docs/protocol/channels-protocol.md).
+
+
+## Cryptographic primitives
+
+- **Ed25519** - channel identity (root key pair), owner authorization chain, and message signing. The signature binding prefix includes the channel's entity ID and the sender's member ID, preventing cross-channel replay.
+
+- **SHA-256** - derives the channel's entity ID from the genesis root public key. Immutable, serves as the channel's permanent identity.
+
+- **Double ratchet with post-quantum KEM** (inherited from [SimpleX agent layer](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md)) - end-to-end encryption for all SMP transport. Not channel-specific - channels inherit it by being built on the agent layer. Future E2E side conversations (support scope, member DMs, private channels) will use the same mechanism.
+
+Content messages are not signed by default to preserve cryptographic deniability - see [Signing scope](#signing-scope-roster-only-content-optional). Owners may opt into signing all content in a future release.
+
+
+## Security
+
+This section examines what the architectural properties protect against, where they hold, and where gaps remain.
+
+### Design objectives
+
+The channel protocol is designed to achieve the following security objectives:
+
+1. **Stable message delivery** between channel participants, resilient to individual relay failures.
+2. **No possibility for a relay to substitute the channel** - the channel's identity is cryptographically bound to the link and profile controlled by channel owners.
+3. **No possibility for a relay to impersonate an owner** - administrative messages require valid signatures.
+4. **Prevention of relay-initiated roster manipulation** - member removal, role changes, and other roster modifications require valid owner signatures.
+5. **Relay transience** - the owner can add and remove relays, including the last relay, without permanently losing the channel. Subscribers can restore connectivity by retrieving updated link data.
+6. **Sender anonymity within multi-owner channels** - owners can publish as the channel, hiding which specific owner authored a message from subscribers.
+7. **Participant privacy** - relay operators cannot determine subscriber identity or network address, and subscribers cannot determine each other's identity. This is inherited from the SMP transport layer.
+
+### Signing scope: roster only, content optional
+
+By default, only roster-modifying and administrative messages are signed. Content messages are not signed. Two reasons:
+
+1. **Cryptographic deniability.** Signing creates non-repudiable proof of authorship verifiable by any third party. Without signatures, no such proof exists - a relay could have fabricated any unsigned message.
+
+2. **Proportional defense.** Changes to roster, channel profile, and permissions can be disruptive and irreversible - they must be authenticated at processing time. Content manipulation is detectable post-hoc through cross-relay consistency, and the authoritative record on the owner's device is unaffected.
+
+Owners will be able to opt into signing content on a per-channel or per-message basis - some publishers want non-repudiable authorship, others prefer deniability.
+
+### Threat model
+
+This threat model assumes the [SimpleX network threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md) and addresses threats specific to the channel layer.
+
+**A single compromised relay**
+
+*can:*
+
+- Substitute unsigned content or selectively drop messages for its subscribers. Detectable by subscribers connected to other relays - the owner's version is authoritative. TODO: difference detection not yet implemented.
+- Selectively target specific subscribers while delivering correctly to others.
+- Ignore the "message from channel" directive, revealing which owner sent a message. Detectable out-of-band.
+- Fabricate or hide subscriber connections, inflating or deflating counts. Detectable if subscribers are connected to other relays.
+
+*cannot:*
+
+- Undetectably substitute content - subscribers on honest relays receive the original.
+- Alter the channel's authoritative state on the owner's device.
+- Substitute the channel profile or impersonate an owner - these require valid signatures.
+- Replay an old roster or role change to re-elevate a removed or demoted member for existing subscribers - they reject anything older than the roster version they applied (a new joiner with no prior roster can still be served an old one, until it syncs from another relay).
+- Redirect subscribers to a different channel - the entity ID is validated across link and profile.
+- Determine subscriber identity or network address - inherited from SMP transport.
+- Correlate subscriber participation across channels - each connection uses independent SMP queues. The subscriber chooses their SMP router independently, so collusion between a relay and the relay's SMP router does not compromise connections through a different router.
+
+**All relays compromised and colluding**
+
+*can:*
+
+- Undetectably substitute unsigned content for all subscribers, unless owners sign content messages.
+- Prevent delivery of any messages, including signed ones (signing prevents substitution, not dropping).
+- Fabricate or hide subscriber connections undetectably.
+
+*cannot:*
+
+- Forge signed administrative messages or substitute the channel profile.
+- Alter the authoritative state on the owner's device.
+
+**Compromise of owner keys**
+
+An attacker who obtains the root private key or an owner's member private key (through device compromise, backup theft, or coercion) can impersonate the owner and sign arbitrary administrative messages. This is a different threat from key loss - the channel continues operating, but under adversarial control. Mitigation depends on owner-side operational security and future multisig governance. For the threat model of the channel link itself (the trust anchor), see the [short links for groups RFC](https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/2025-04-04-short-links-for-groups.md).
+
+**Loss of all owner devices**
+
+The channel can have no new content, no administrative updates, no new owners. Relay caches continue delivering existing content but cannot be refreshed, and will eventually expire in the absence of the owner connection. Multiple owners and key backups mitigate this risk.
+
+**A subscriber**
+
+*can:*
+
+- See all public content, by design.
+- Join multiple times with different profiles, inflating counts.
+
+*cannot:*
+
+- Identify other subscribers, send messages to the channel (unless given posting rights), or forge messages of the owner or other subscribers.
+
+**A passive network observer**
+
+*can:*
+
+- Observe communication with an SMP router, but not whether it is channel-related.
+
+*cannot:*
+
+- Determine which channel a subscriber uses, correlate channel activity with other SimpleX activity, or identify a relay as distinct from an ordinary user, other than by traffic volume. Inherited from SMP transport.
+
+### Current gaps
+
+1. **Cross-relay consistency detection.** Duplicate messages are silently deduplicated without hash comparison. Designed but not implemented.
+2. **Link entity ID validation.** Deferred to a future version with key rotation. See [group identity binding RFC](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2026-03-28-group-identity-binding.md).
+3. **Multi-relay UX.** Protocol supports multiple relays per subscriber; no UX for monitoring relay-level delivery health. It will be added in v6.5.x.
+
+
+## Future work
+
+### Stateful access and history navigation
+
+Currently, relays send recent cached history on join but do not support navigation or search. Planned: history pagination by timestamp or message ID, remote search against relay caches, and selective retrieval of specific message ranges. Relay operators can differentiate on cache depth and search capabilities.
+
+### Transcript integrity
+
+- **Opt-in content signing.** Per-channel or per-message choice to sign content, making it non-repudiable. This will be released in SimpleX Chat v7.
+- **Subscriber transcript acknowledgment.** Subscribers periodically sign a digest of received history ("I've seen it" rather than "I've authored it"), enabling detection of relay manipulation through diverging digests.
+- **Merkle tree signing.** Owner periodically publishes a signed Merkle root. Subscribers verify their copies against the owner's authoritative record.
+
+### End-to-end encrypted side conversations
+
+- **E2E encrypted support scope** between subscriber and moderator/owner.
+- **E2E encrypted DMs between members** where channel settings permit, using standard SimpleX connection establishment.
+- **Private channels** where the entire content stream is encrypted to authorized subscribers. The relay becomes a conduit that sees neither content nor identity.
+
+### Relay addition and removal
+
+Dynamic relay addition with cache population from existing relays or owner. Relay removal with subscriber migration. Relay rotation with continuity - new relay connects before old relay is removed. It will be added in v6.5.x.
+
+### Governance evolution
+
+- **Multiple owners (v7):** concurrent administrative authority, any owner acts independently.
+- **Multisig:** M-of-N approval for administrative actions, with per-action quorums.
+- **Programmable governance:** rules defined as code in the channel definition.
+
+### Pre-moderation
+
+Subscriber messages reviewed by moderators before becoming visible to all subscribers.
+
+### Scheduled delivery
+
+Messages scheduled for future delivery, cached by relay until the scheduled time.
+
+### Link preview proxying
+
+The relay loads link previews on behalf of the sender - it already sees message content, so it learns nothing new, and unlike the sender its IP is not linked to any identity.
+
+
+## Conclusion
+
+SimpleX Channels enable a publisher to reach an unlimited audience without any infrastructure operator knowing who that audience is. No third party can seize the channel because owners hold the keys and the authoritative state on their own devices - relays only cache and forward. Owner signatures protect content integrity and the trust chain extends to all administrative roles. These properties require a network without participant identifiers - they cannot be added to a system that has them.
+
+---
+
+Source: https://simplex.chat/llms/agents.md
+
+# SimpleX for AI agents and developers
+
+SimpleX is a messaging network without user identifiers. A program connects to it the same way a person does: it holds its own keys, creates addresses it can share and delete, and needs no phone number, platform account or API key. The network does not distinguish a person from an agent, and no platform can suspend an agent's identity or see who it talks to.
+
+What you can build:
+
+- an assistant that its owner reaches privately from the SimpleX Chat app, on any device;
+- a support or search bot for many users, with an LLM or without one;
+- communication between agents with no platform in the middle;
+- moderation, broadcast and bridge bots for groups and channels.
+
+## Make a bot in five minutes
+
+### Node.js
+
+```sh
+npm i simplex-chat
+```
+
+```javascript
+(async () => {
+  const {bot} = await import("simplex-chat")
+  await bot.run({
+    profile: {displayName: "Squaring bot example", fullName: ""},
+    dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
+    options: {
+      addressSettings: {welcomeMessage: "Send a number, I will square it."},
+    },
+    onMessage: async (ci, content, chat) => {
+      const n = +content.text
+      const reply = typeof n === "number" && !isNaN(n)
+                    ? `${n} * ${n} = ${n * n}`
+                    : `this is not a number`
+      await chat.apiSendTextReply(ci, reply)
+    }
+  })
+})()
+```
+
+On start, the bot creates its SimpleX address and prints it (`Bot address: ...`). Open this address in the SimpleX Chat app to talk to the bot. Library: [simplex-chat on npm](https://www.npmjs.com/package/simplex-chat), [source and examples](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-nodejs).
+
+### Python (3.11+)
+
+```sh
+pip install simplex-chat
+```
+
+```python
+import re
+from simplex_chat import Bot, BotProfile, Message, SqliteDb, TextMessage
+
+bot = Bot(
+    profile=BotProfile(display_name="Squaring bot"),
+    db=SqliteDb(file_prefix="./squaring_bot"),
+    welcome="Send me a number, I'll square it.",
+)
+
+@bot.on_message(content_type="text", text=re.compile(r"^-?\d+(\.\d+)?$"))
+async def square(msg: TextMessage) -> None:
+    n = float(msg.text or "0")
+    await msg.reply(f"{n} * {n} = {n * n}")
+
+@bot.on_message(content_type="text")
+async def fallback(msg: Message) -> None:
+    await msg.reply("Send me a number, like 7 or 3.14.")
+
+if __name__ == "__main__":
+    bot.run()
+```
+
+The bot logs its address on start. Library: [simplex-chat on PyPI](https://pypi.org/project/simplex-chat/), [source and examples](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-python).
+
+## Use the terminal client as an API server, from any language
+
+Install the terminal client on Linux or macOS:
+
+```sh
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash
+```
+
+Run it as a local WebSocket server:
+
+```sh
+simplex-chat -p 5225
+```
+
+Your program connects to `ws://localhost:5225` and sends JSON commands, for example to create a long-term address:
+
+```json
+{"corrId": "1", "cmd": "/address"}
+```
+
+Responses carry the same `corrId`; chat events, such as received messages, arrive as separate messages. The command strings are the same as in the app's chat console. The WebSocket API has no authentication and binds to localhost: run your program on the same machine, or put a TLS proxy with authentication in front of it.
+
+- [Bot API guide](https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/bots/README.md)
+- [Commands](https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/bots/api/COMMANDS.md)
+- [Events](https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/bots/api/EVENTS.md)
+- [Types](https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/bots/api/TYPES.md)
+- [Terminal client guide](https://simplex.chat/docs/cli.md)
+
+## Build the terminal client from source
+
+With Docker, on Linux:
+
+```sh
+git clone https://github.com/simplex-chat/simplex-chat.git
+cd simplex-chat
+git checkout stable
+DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
+```
+
+With GHC 9.6.3 and cabal 3.10.1.0 installed via [GHCup](https://www.haskell.org/ghcup/), on Linux:
+
+```sh
+git clone https://github.com/simplex-chat/simplex-chat.git
+cd simplex-chat
+git checkout stable
+apt-get update && apt-get install -y build-essential libgmp3-dev zlib1g-dev
+cp scripts/cabal.project.local.linux cabal.project.local
+cabal update
+cabal install simplex-chat
+```
+
+On macOS, install OpenSSL with `brew install openssl@3.0` and use `scripts/cabal.project.local.mac` instead. Full instructions: [terminal client guide](https://simplex.chat/docs/cli.md).
+
+## OpenClaw
+
+A community plugin connects [OpenClaw](https://github.com/openclaw/openclaw) to SimpleX through a locally running terminal client, so you can talk to your OpenClaw assistant from the SimpleX Chat app:
+
+```sh
+openclaw plugins install @dangoldbj/openclaw-simplex
+openclaw plugins enable openclaw-simplex
+```
+
+Source: [github.com/dangoldbj/openclaw-simplex](https://github.com/dangoldbj/openclaw-simplex).
+
+## Run your own servers
+
+- [SMP messaging server](https://simplex.chat/docs/server.md)
+- [XFTP file server](https://simplex.chat/docs/xftp-server.md)
+
+## Protocol specifications
+
+- [SimpleX network overview](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/overview-tjr.md)
+- [SimpleX Messaging Protocol](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/simplex-messaging.md)
+- [Agent protocol](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/agent-protocol.md)
+- [Post-quantum double ratchet](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/pqdr.md)
+- [Security model](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/security.md)
+- [XFTP file transfer protocol](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/xftp.md)
+- [Chat protocol](https://simplex.chat/docs/protocol/simplex-chat.md)
+
+## Ask the SimpleX team
+
+In the SimpleX Chat app, open the "Ask SimpleX Team" chat, or connect via [simplex.chat/contact](https://simplex.chat/contact#/?v=2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). A support bot answers first:
+
+- send `/team` to reach the team – not a bot; the team replies within 24 hours, or 48 hours at weekends;
+- send `/grok` for an instant answer from an AI assistant.
+
+---
+
+Source: https://simplex.chat/wefunder.md
+
+# SimpleX Chat equity crowdfunding on Wefunder
+
+SimpleX Chat is conducting an equity crowdfunding offering under Regulation Crowdfunding through Wefunder Portal LLC: [wefunder.com/simplex.chat](https://wefunder.com/simplex.chat). The offering terms are on Wefunder, including its AI-readable profile: [wefunder.com/simplex.chat.ai.txt](https://wefunder.com/simplex.chat.ai.txt).
+
+This page reproduces the memo from the Wefunder page, for AI assistants that cannot read Wefunder.
+
+## Memo
+
+For most of human history, conversations were private by default, and the communities people built belonged to them. The internet made communication easier, but it also placed companies between people and the relationships they created. SimpleX exists to bring that privacy and ownership back to the people.
+
+### In short
+
+SimpleX is the first and the only messaging network without any user identifiers – no phone numbers or usernames, not even random numbers. No one, including the servers, can see who talks to whom.
+
+No paid marketing. Hundreds of community publications. Over 3 million downloads. About 600,000 monthly users. $650,000 user donations. Over 1,000 community servers. Three security audits by Trail of Bits, the last to be published.
+
+Why now? Accelerating surveillance and deplatforming, and the rise of AI agents may increase demand for identity-free messaging that no other network can provide.
+
+SimpleX is more than a messenger – it's an open platform others can build on. Developers already built moderation and AI bots, bridges, and other services. Every service may increase the value of the network and bring new people in.
+
+We plan to charge businesses and channels for public names, business messaging and paid servers beyond the free tier, while private messaging remains free.
+
+### Current perks for investors
+
+If you invest $500 or more, you will receive a free SimpleX public name for your channel or business – 8+ letters with $500+ investment, 7+ letters with $1,000+, and 6+ letters with $5,000+.
+
+The name will be registered for 5 years while early bird terms apply, and for 3 years after that.
+
+All investors receive free SimpleX supporter badges as perks. More details: [SimpleX Supporter Badges](https://simplex.chat/blog/20260919-simplex-supporter-badges.md).
+
+### Every other network can identify users
+
+For 150 years, all networks required user identifiers. From the telephone invented in the 19th century, to email services, social media, and messaging – using phone numbers, usernames, random IDs or public keys – before SimpleX Network, to be reachable, you had to be identifiable.
+
+#### Every other messenger knows who you talk to
+
+User identification gives networks power over users to surveil their private life, to sell their data, and to revoke access. Even encrypted platforms see who you talk to, when, and where. Pseudonyms don't help – your contacts are a fingerprint.
+
+And being identified puts your identity and data at risk of being used by criminals.
+
+#### Every other platform can censor users without due process
+
+Telegram blocked 44 million groups and channels in 2025 alone. YouTube creators lose channels and can't recover them even after winning in legal proceedings.
+
+Every platform that distributes content at scale identifies both the publisher and the audience – giving platform owners the power to censor public speech.
+
+Publishers and content creators build audiences on borrowed infrastructure. One policy change, and the audience that took years to build can be gone.
+
+The root cause of these problems is user identification. The solution is not better policies or stronger encryption with the same architecture – it is a different architecture, without user IDs.
+
+### We invented and built SimpleX Network without any user identifiers
+
+It uses no phone numbers, emails, or user accounts – to take power from the network and give it back to the users. The network runs on multiple independent operators – SimpleX Chat and Flux are preconfigured in the app, and anyone can run their own servers.
+
+And we built a free SimpleX Chat app, for mobile and desktop, that uses SimpleX Network to connect to other users.
+
+SimpleX Chat provides private messaging without any user IDs – it protects the users, because no one can see who they talk to. As one X user wrote: "As long as I don't invite anyone to a chat, nobody can find me – and that's the best part about it. That's how privacy works". And families tell us they use SimpleX Chat with their children, because they feel safe knowing no one can reach them.
+
+SimpleX Chat also enables public groups and channels, where owners fully control them, and nobody can take their work, because only the users hold the keys.
+
+Every conversation in SimpleX Chat has its own network address, removing the need for any user IDs on the network. There is no user data on the servers that could be breached or sold – all user data exists only on user devices.
+
+SimpleX software is open-source and based on open protocols. It was audited by Trail of Bits in 2022, 2024, and 2026 (will be published soon).
+
+### 600,000+ users – organic growth
+
+Over 600,000 people use SimpleX Chat every month – up roughly 70% in the last six months – and all of them found it without any paid marketing. Among them are security and cryptography experts – the hardest users to win over.
+
+200+ independent reviews, posts, and videos in 20+ languages ([simplex.chat/links](https://simplex.chat/links.md)).
+
+3 million people have downloaded the app.
+
+Users send over 20 million messages a day via pre-configured servers.
+
+Users have donated over $650,000 (including the donation from Vitalik Buterin), paying for something they could use for free.
+
+All of it was built on a total investment of just $1.7M.
+
+### SimpleX is a network, not just an app
+
+Not only the people who use SimpleX primarily for private messaging, but also four other kinds of participants came to the network:
+
+- Creators, with thousands of public groups and channels.
+- Businesses: 50+ support customers over SimpleX.
+- Developers: 19K+ GitHub stars, 1,400+ forks.
+- Operators: ~1,000 servers run by volunteers at their own cost, plus Flux and StormyCloud.
+
+Each user group makes the network more valuable to the rest – more users attract creators and businesses, creators attract servers and developers, more content and network utility attracts more users – driving organic growth.
+
+### Channels accelerate SimpleX Network growth
+
+Messaging grows person-by-person: whole social graphs have to move together, which is slow against widely used networks, such as WhatsApp or Telegram. Channels accelerate it – one creator who brings a channel to SimpleX can bring thousands of subscribers, some of whom would then create their own channels.
+
+Users have created over 12,500 scalable channels in the five months since they shipped. 500+ public groups and channels are in the curated directory, 30% of them are active daily. Telegram channels tried to migrate in 2024/25, before SimpleX channels could scale. All that growth happened without in-app discovery of groups and channels – we are planning to release it this year, to further accelerate the growth.
+
+Each channel can also be published on the open web – like [simplex.chat/news](https://simplex.chat/news). Search engines index these pages, and anyone can read them in a browser without installing the SimpleX Chat app, so a channel can reach more people than use the app, and some of them may install it.
+
+### Developers already bet on SimpleX success
+
+Developers have already started building on SimpleX Network, with some projects defining themselves as SimpleX-first – they run all communications of their applications over the SimpleX Network. They built moderation, swap, and AI bots, bridges (Telegram/Matterbridge), a public server registry, and the OpenClaw plugin. To enable their work, we provide the JavaScript and Python libraries, a customer-support bot for businesses, and binaries to self-host servers.
+
+Every service developers build on SimpleX Network may increase its value, and bring new users to SimpleX Chat. In 2027, we are planning to release secure chat widgets and activities – to accelerate community innovation, by allowing custom UI for bots and services right in the conversation.
+
+### Why SimpleX cannot be copied
+
+No other communication system combines participation privacy, sovereign ownership, infrastructure independence, and scalable one-to-many delivery:
+
+| Property | Telegram | Nostr | Signal | Matrix | Mastodon | **SimpleX** |
+|---|---|---|---|---|---|---|
+| Content visible to operator | Yes | Yes | No | Configurable | Yes | **Yes** |
+| Participant identity visible to operator | Yes | Yes | Yes | Yes | Yes | **No** |
+| Channel identity independent of infrastructure | No | Yes | No | No | No | **Yes** |
+| Sovereign ownership (no 3rd party can seize) | No | Yes | No | No | No | **Yes** |
+| Programmable governance | No | No | No | No | No | **Planned** |
+| Cryptographic content deniability | No | No | Yes | Yes | No | **Yes (default)** |
+| Scalable one-to-many delivery | Yes | Yes | No | Limited | Yes | **Yes** |
+
+Of these networks, only SimpleX can protect participants' privacy, because it would require other networks to remove user identifiers – not adding a feature to an existing system but designing a different one. That is hard for three reasons, each stopping a different kind of competitor.
+
+Technically. Other networks rely on user IDs to route messages between users. Signal, Session, Matrix, and Nostr cannot simply drop IDs – they would have to rebuild from scratch.
+
+Economically. Large platforms monetize user identifiers: Telegram and Meta earn from ads and data, and that requires linking every action and connection to a single user ID. Removing IDs would destroy their revenue model. A large company is highly unlikely to do that.
+
+Cold start. A new company could build a no-ID network from scratch. But a network needs users, creators, businesses, developers, and servers, all at the same time. A newcomer would have to achieve it from zero, while competing with the SimpleX Network.
+
+### Why now: three trends that may grow SimpleX
+
+Growing surveillance of private life. Big centralized platforms are keen to scan private messages to train their AI models, supported by proposed laws. More people would move to use private messaging that keeps no record of who they talk to.
+
+Accelerating deplatforming. More and more creators are removed from centralized platforms, without any due process. An audience built over years can disappear with one policy change. Affected or at risk content creators would use decentralized networks where they own their work.
+
+AI agents acting for people. A growing number of AI agents are beginning to handle logins and money on behalf of people. If a platform controls an agent's identity, the platform can shut the agent down or turn it against the person it works for. User-controlled IDs are a basic security for the agentic Internet, not a preference.
+
+All three trends increase the demand for identity-free messaging. No other existing network can provide it.
+
+### Revenue plan: free for users, channels & businesses pay
+
+Private messaging should remain free for the users. While additional storage and transfer capacity may be paid, charging users for features would erode the trust that helps the network grow organically. Instead, we plan to earn from the infrastructure and services that channels and businesses need. On average, users donated ~$1.24 each per year, which shows they are willing to pay before any paid features exist.
+
+#### Public network names
+
+Most users want to be reachable only by people they choose. But businesses, creators, and publishers need to be found, so they need a public name they control. Even with a public name, the network cannot see who they talk to.
+
+SimpleX public names are globally unique names for a public channel or business, paid yearly and controlled by the owner's key, so no one can seize it. The public test is already released; sales are planned in 3–6 months. Pricing is based on name length. SimpleX Chat plans to earn approximately 80-90% of namespace revenue. At an average expected price of $50 a year (to be confirmed) for a name, 10,000 registered names would cover our current $360,000 annual operating cost.
+
+If you invest $500 or more in this community round, you would receive a name as a perk, registered for 5 years during early bird terms and for 3 years after that, when the names launch.
+
+#### Business messaging
+
+We are developing a web widget that would add encrypted chat to any website with one line of code, allowing visitors to talk to the business in their browser without installing anything. It is built for privacy-first businesses and business sectors where anonymity is legally required: whistleblowing, ethics, HR, security, legal, sensitive customers, sources, and tip lines.
+
+50+ businesses use SimpleX Chat for support, and they would be the first customers. The proof-of-concept is done; planned in 6–9 months from closing the round, with an expected price of $20–100/month per business.
+
+It grows the network as well. Someone who talks to a few businesses is already using SimpleX without having installed it, and a QR code scan would bring those conversations into the app.
+
+#### Paid servers for big channels
+
+Big public channels that have grown beyond the free tier would pay for the servers that deliver their messages. The proof-of-concept is ready, planned within 12 months of closing the community round, with an expected price of $20–50/month, depending on the channel size. We plan that server operators would earn up to 65% of the revenue, several times their cost, and SimpleX Chat earns the rest.
+
+### An open network others can build on
+
+The network is open, and it would help if other developers built their own apps on it – one app cannot reach every audience, and many apps may grow the network faster than we could alone. A bigger network may also bring more users and revenue for SimpleX Chat.
+
+The SimpleX Network Consortium, an agreement between a non-profit SimpleX Network Foundation and SimpleX Chat, prevents any single company from controlling the network. The protocol and the right to use the SimpleX mark for the network are licensed to the foundation permanently, so that operators and users can trust that the network protocols and software remain available regardless of who owns the company.
+
+SimpleX Chat business is protected too: the company owns the app, the brand, mobile application store distribution, preset relay infrastructure, and will retain its revenue share from the infrastructure payments, a position protected by its veto power over Consortium decisions.
+
+### The goal: the universal private transport layer
+
+Every network before messaging converged to one protocol – telephony, email, the web. Messaging is the exception, because each app's experience can't reduce to a shared protocol. Once we add custom user experiences in the chat, SimpleX might become the network messaging converges on.
+
+The planned revenue above is the first layer. The same network and protocol can deliver: private messages, public channels, businesses, and traffic between AI agents. The optional directory and payment system would create revenue for the server operators and SimpleX Chat.
+
+AI agents are the next layer, and developers already build AI bots. The network does not distinguish between a person and an agent. Agents need exactly what SimpleX provides: an identity no platform controls, and communication no one can observe.
+
+The same public names and payment system can be used by any service on the network, not only messaging or channels, so the revenue may grow with everything built on it.
+
+### Why this team wins
+
+We have worked on publishing, messaging, protocol design, blockchains, and cryptography. We have built large-scale systems and open-source software that millions of systems and projects rely on.
+
+We believe that what SimpleX Network achieved comes from listening to users' criticism. Unlike most technology startups, we announce our plans in advance, and change them before they become products, saving time and resources to get to product-market fit.
+
+We are also fortunate to have great advisors. Some of them are: Moritz Angermann (IOHK, Haskell compiler core contributor), Bruce McCarthy (Product Culture founder), Tom Ritter (Tor, Mozilla, an expert in secure protocol design), and Nick Rogers (ex-CPTO of Stream, an expert in agentic products). Three of them invested in this round.
+
+### Invest in SimpleX Chat
+
+By investing in SimpleX Chat, you benefit from the company growth. You also help build the first network that protects private life because it has no user identifiers – a design decision that cannot be retrofitted into any existing network.
+
+We are building a network that people own. Businesses, creators, and publishers keep the audiences and communities they build, and no company can take them away or unilaterally shut them down. All users can talk, read, and buy without being watched or tracked from one site to the next. None of this is new. Before the Internet, people's conversations were private, and the groups and audiences they built were their own, with no company in the middle. We lost that when we moved online, and we need it back – the future we set out in our [network philosophy](https://simplex.chat/why.md).
+
+We're building the network to support that future. We invite you to own a part of it: [wefunder.com/simplex.chat](https://wefunder.com/simplex.chat).
+
+This Regulation Crowdfunding offering is made available through Wefunder Portal LLC. This investment involves a high degree of risk, including the possible loss of your investment.
+
+---
+
+Source: https://simplex.chat/llms/timeline.md
+
+# SimpleX: timeline
+
+Key milestones, with links to the announcements. All posts: [SimpleX blog](https://simplex.chat/blog.md).
+
+| Date | Milestone |
+|---|---|
+| May 2021 | [SimpleX Chat prototype announced](https://simplex.chat/blog/20210512-simplex-chat-terminal-ui.md) |
+| January 2022 | [SimpleX Chat v1](https://simplex.chat/blog/20220112-simplex-chat-v1-released.md) |
+| March 2022 | [Mobile apps for iOS and Android](https://simplex.chat/blog/20220308-simplex-chat-mobile-apps.md) |
+| November 2022 | [Implementation security assessment by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md) |
+| March 2023 | [XFTP – SimpleX File Transfer Protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.md) |
+| April 2023 | [Pre-seed funding from Village Global and angel investors](https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md) announced (closed in July 2022) |
+| September 2023 | [Desktop app and group directory service](https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md) |
+| March 2024 | [Post-quantum end-to-end encryption](https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md) |
+| April 2024 | [Post-quantum encryption on by default in direct conversations](https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md) |
+| June 2024 | [Private message routing protects IP addresses](https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md) |
+| August 2024 | [Investment from Jack Dorsey and Asymmetric Capital Partners](https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md) announced (closed in July 2023) |
+| October 2024 | [Cryptographic design review by Trail of Bits](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md) |
+| December 2024 | [Preset servers operated by Flux; business chats](https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.md) |
+| January 2025 | [Large groups and privacy-preserving content moderation](https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md) |
+| April 2026 | [SimpleX Channels and SimpleX Network Consortium](https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md) |
+| July 2026 | [SimpleX public names in test](https://simplex.chat/blog/20260722-simplex-public-names.md) |
+| August 2026 | [Equity crowdfunding launched on Wefunder](https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.md) |
+| September 2026 | [Supporter badges](https://simplex.chat/blog/20260919-simplex-supporter-badges.md) |
+| 12 December 2026 | `.simplex` names sale starts ([simplex.domains](https://simplex.domains/)) |
+| June 2027 | Planned: Community Credits for sustainable communities and servers ([roadmap](https://simplex.chat/index.md)) |
+| December 2027 | Planned: tools to promote communities ([roadmap](https://simplex.chat/index.md)) |
+

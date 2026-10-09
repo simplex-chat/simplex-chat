@@ -1,0 +1,25 @@
+# SimpleX Chat - Get the app via F-Droid
+
+## SimpleX Chat en F-Droid
+
+### Repositorio SimpleX Chat
+
+Versiones estables y beta compilados por los desarrolladores
+
+Para añadirlo al cliente F-Droid, escanea el código QR o usa esta URL:
+
+[`https://app.simplex.chat/fdroid/repo`](https://app.simplex.chat/fdroid/repo?fingerprint=9F358FF284D1F71656A2BFAF0E005DEAE6AA14143720E089F11FF2DDCFEB01BA)
+
+Huella de la clave (SHA-256):
+
+> 9F 35 8F F2 84 D1 F7 16 56 A2 BF AF 0E 00 5D EA E6 AA 14 14 37 20 E0 89 F1 1F F2 DD CF EB 01 BA
+
+### Repositorio F-Droid.org
+
+[SimpleX F-Droid Repository](https://f-droid.org/en/packages/chat.simplex.app/)
+
+Versión estable compilada por F-Droid.org
+
+Las versiones se publican varios días más tarde en este repositorio.
+
+Los repositorios de SimpleX Chat y F-Droid.org firman con claves distintas. Para pasar de uno a otro, por favor [exporta](https://simplex.chat/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device) la base de datos y reinstala la aplicación.
