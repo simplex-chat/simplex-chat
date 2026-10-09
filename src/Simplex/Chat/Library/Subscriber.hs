@@ -774,7 +774,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 hostConnId <- withStore $ \db -> do
                   liftIO $ setConnConnReqInv db user connId cReq
                   getHostConnId db user groupId
-                sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
+                sendXGrpMemInv hostConnId XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _pqSupport _ connInfo -> do
@@ -3304,10 +3304,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
-    sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> CM ()
-    sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
+    sendXGrpMemInv :: Int64 -> XGrpMemIntroCont -> CM ()
+    sendXGrpMemInv hostConnId XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
       hostConn <- withStore $ \db -> getConnectionById db cxt user hostConnId
-      let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
+      let msg = XGrpMemInv memberId IntroInvitation {groupConnReq}
       void $ sendDirectMemberMessage hostConn msg groupId
       withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
 
@@ -3321,7 +3321,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
-    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq} = do
       let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
       toMember <- withStore $ \db -> do
@@ -3341,20 +3341,16 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         liftIO $ updateGroupMemberStatus db userId toMember newMemberStatus
         pure toMember
       subMode <- chatReadVar subscriptionMode
-      -- [incognito] send membership incognito profile, create direct connection as incognito
+      -- [incognito] send membership incognito profile
       membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       let enableNtfsGrp = chatHasNtfs chatSettings
       groupConnIds@(gCmdId, gAcId) <- prepareAgentJoin user Nothing enableNtfsGrp groupConnReq
-      directConnIds <- mapM (prepareAgentJoin user Nothing True) directConnReq
-      let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
-          mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
+      let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr cxt `peerConnChatVersion` mcvr
-      withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
+      withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds subMode
       joinAgentConnectionAsync gCmdId False gAcId enableNtfsGrp groupConnReq dm subMode
-      forM_ ((,) <$> directConnIds <*> directConnReq) $ \((dCmdId, dAcId), dcr) ->
-        joinAgentConnectionAsync dCmdId False dAcId True dcr dm subMode
 
     -- rollback defense (channels): apply an owner-signed role/removal only at a version >= the persisted
     -- roster_version (not the batch-constant gInfo, which a relay can stale by reordering events in one

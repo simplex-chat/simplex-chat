@@ -1085,8 +1085,7 @@ data MemberIdRole = MemberIdRole
   deriving (Eq, Show)
 
 data IntroInvitation = IntroInvitation
-  { groupConnReq :: ConnReqInvitation,
-    directConnReq :: Maybe ConnReqInvitation
+  { groupConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show)
 
