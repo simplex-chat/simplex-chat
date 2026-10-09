@@ -40,9 +40,9 @@ Deliverables, all under `plans/names-codes/`:
    - arrows labelled with the action or outcome ("Check availability", "Continue", "Pay with Monero", "it confirms", "429")
    - arrow colours: blue for the normal path, orange for a variant or failure, grey for a platform difference, dashed for anything crossing between the site and the app
    - a footer of design notes
-2. **`screens/*.png`**: each screen of the board on its own, rendered from `mockups/*.html` with Playwright Chromium. Light at 1280 wide; phone at 390; dark only for N0, N1b, N3 and N4, to check the palette.
-3. **`mockups/*.html`**: one static page per screen state, built only from existing `web/public/styles.css` classes plus the new rules for the name field and the years stepper, which move into `styles.css` in stage 4.
-4. **`2026-10-09-name-codes.md`**: the spec, following `plans/badges-codes/2026-08-27-badge-codes.md`. It covers the flow, the API, the codes, the schema and the copy, and embeds `screens/*.png` per section and the board at the top.
+2. **`screens/*.jpg`**: each screen of the board on its own, rendered with Playwright Chromium: desktop at 1024 wide, phone at 390, dark only for N0, N1b, N3 and N4 to check the palette. JPEG at quality 85, since the page's background wash makes PNGs four times larger.
+3. **`mockups/screens.js` and `mockups/mockups.css`**: every screen, built in the browser on the webapp's compiled modules. Shared screens call the real `screens.js`, and name screens are prototypes for `nameScreens.ts`. The new rules in `mockups.css` (name field, tiers, stepper) move into `styles.css` in stage 4.
+4. **`2026-10-09-name-codes.md`**: the spec, following `plans/badges-codes/2026-08-27-badge-codes.md`. It covers the flow, the API, the codes, the schema and the copy, and embeds `screens/*.jpg` per section and the board at the top.
 
 **Screen inventory**: the board holds every screen below. "Shared" means the badge screen is reused, drawn with name content.
 
@@ -114,9 +114,9 @@ Deliverables, all under `plans/names-codes/`:
 - OP2: group `/issue name 6 years 2` and `/bulk name 8 count 3`, with the service's replies.
 
 **How the board is built** (owner, 2026-10-09):
-- `mockups/board.mjs` (committed) reads one layout table: per screen its ID, mockup file, frame kind, section, position and caption, plus the arrows with their labels and colours.
-- It renders each mockup with Playwright (`screens/*.png`) and writes `names-flow.svg`: vector title bar, section headings, frames, arrows, labels and captions, with each screen embedded as a base64 PNG.
-- Editing a mockup or the layout and running `node plans/names-codes/mockups/board.mjs` regenerates both the PNGs and the board.
+- `mockups/board.mjs` (committed) reads one layout table, `mockups/layout.mjs`: per frame its tag, screen, kind, section, position and caption, plus its incoming arrow with label and colour.
+- It renders each frame with Playwright (`screens/*.jpg`) and writes `names-flow.svg`: vector title bar, section headings, frames, arrows, labels and captions, with each screen embedded as a base64 JPEG.
+- Editing a mockup or the layout and running `node plans/names-codes/mockups/board.mjs` regenerates both the screens and the board.
 - Playwright is not added to `web/package.json`. The script states its one-off install, as `web/README.md` does for its rendered review.
 
 ### 1. Rename to ShopService (pure refactor)
