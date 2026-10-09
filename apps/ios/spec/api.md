@@ -35,7 +35,7 @@ The iOS app communicates with the Haskell core exclusively through a command/res
 - [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift) -- `ChatCommand` ([L15](../Shared/Model/AppAPITypes.swift#L15)), `ChatResponse0` ([L657](../Shared/Model/AppAPITypes.swift#L657)), `ChatResponse1` ([L779](../Shared/Model/AppAPITypes.swift#L779)), `ChatResponse2` ([L919](../Shared/Model/AppAPITypes.swift#L919)), `ChatEvent` ([L1069](../Shared/Model/AppAPITypes.swift#L1069)) enums
 - [`SimpleXChat/APITypes.swift`](../SimpleXChat/APITypes.swift) -- `APIResult<R>` ([L27](../SimpleXChat/APITypes.swift#L27)), `ChatAPIResult` ([L65](../SimpleXChat/APITypes.swift#L65)), `ChatError` ([L699](../SimpleXChat/APITypes.swift#L699))
 - [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) -- FFI bridge functions (`chatSendCmd` [L121](../Shared/Model/SimpleXAPI.swift#L121), `chatRecvMsg` [L237](../Shared/Model/SimpleXAPI.swift#L237))
-- [`SimpleXChat/API.swift`](../SimpleXChat/API.swift) -- Low-level FFI (`sendSimpleXCmd` [L115](../SimpleXChat/API.swift#L115), `recvSimpleXMsg` [L137](../SimpleXChat/API.swift#L137))
+- [`SimpleXChat/API.swift`](../SimpleXChat/API.swift) -- Low-level FFI (`sendSimpleXCmd` [L119](../SimpleXChat/API.swift#L119), `recvSimpleXMsg` [L141](../SimpleXChat/API.swift#L141))
 - `SimpleXChat/ChatTypes.swift` -- Data types used in commands/responses (User, Contact, GroupInfo, ChatItem, etc.)
 - `../../src/Simplex/Chat/Controller.hs` -- Haskell controller (function `chat_send_cmd_retry`, `chat_recv_msg_wait`)
 
@@ -543,7 +543,7 @@ func chatApiSendCmdWithRetry<R: ChatAPIResult>(    // SimpleXAPI.swift L127
 
 ```swift
 // Direct C FFI call -- serializes cmd.cmdString, calls chat_send_cmd_retry, decodes response
-public func sendSimpleXCmd<R: ChatAPIResult>(      // API.swift L115
+public func sendSimpleXCmd<R: ChatAPIResult>(      // API.swift L119
     _ cmd: ChatCmdProtocol,
     _ ctrl: chat_ctrl?,
     retryNum: Int32 = 0

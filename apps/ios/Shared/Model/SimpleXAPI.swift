@@ -896,8 +896,8 @@ func setNetworkConfig(_ cfg: NetCfg, ctrl: chat_ctrl? = nil) throws {
     throw r.unexpected
 }
 
-func apiSetNetworkInfo(_ networkInfo: UserNetworkInfo) throws {
-    let r: ChatResponse2 = try chatSendCmdSync(.apiSetNetworkInfo(networkInfo: networkInfo))
+func apiSetNetworkInfo(_ networkInfo: UserNetworkInfo, ctrl: chat_ctrl) throws {
+    let r: ChatResponse2 = try chatSendCmdSync(.apiSetNetworkInfo(networkInfo: networkInfo), ctrl: ctrl)
     if case .cmdOk = r { return }
     throw r.unexpected
 }
