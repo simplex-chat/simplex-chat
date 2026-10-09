@@ -63,6 +63,7 @@ fun UserAddressView(
           chatModel.updateUser(u)
         }
       } catch (e: Exception) {
+        shareViaProfile.value = !on
         Log.e(TAG, "UserAddressView apiSetProfileAddress: ${e.stackTraceToString()}")
       } finally {
         progressIndicator.value = false

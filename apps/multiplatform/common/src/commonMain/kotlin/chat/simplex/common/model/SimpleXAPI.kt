@@ -1959,8 +1959,10 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiUpdateProfile(userId, profile))
     if (r is API.Result && r.res is CR.UserProfileNoChange) return profile to emptyList()
     if (r is API.Result && r.res is CR.UserProfileUpdated) return r.res.toProfile to r.res.updateSummary.changedContacts
-    if (r is API.Error && r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName) {
+    if (r is API.Error && (r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName || r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.UserExists)) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
+    } else if (!(networkErrorAlert(r))) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_profile), "${r.responseType}: ${r.details}")
     }
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
     return null
@@ -1972,7 +1974,12 @@ object ChatController {
     return when {
       r is API.Result && r.res is CR.UserProfileNoChange -> null
       r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
-      else -> throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiSetProfileAddress", generalGetString(MR.strings.error_saving_profile), r)
+        }
+        throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+      }
     }
   }
 
@@ -4948,6 +4955,7 @@ sealed class UserServersError {
   @Serializable @SerialName("storageMissing") data class StorageMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("proxyMissing") data class ProxyMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("duplicateServer") data class DuplicateServer(val protocol: ServerProtocol, val duplicateServer: String, val duplicateHost: String): UserServersError()
+  @Serializable @SerialName("tooManyHosts") data class TooManyHosts(val protocol: ServerProtocol, val tooManyHostsServer: String): UserServersError()
   @Serializable @SerialName("duplicateChatRelayAddress") data class DuplicateChatRelayAddress(val duplicateChatRelay: String, val duplicateAddress: String): UserServersError()
 
   val globalError: String?
@@ -4963,6 +4971,7 @@ sealed class UserServersError {
       is StorageMissing -> this.protocol
       is ProxyMissing -> this.protocol
       is DuplicateServer -> this.protocol
+      is TooManyHosts -> this.protocol
       is DuplicateChatRelayAddress -> null
     }
 
@@ -4977,6 +4986,8 @@ sealed class UserServersError {
 
         is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_private_routing)}" }
           ?: generalGetString(MR.strings.no_message_servers_configured_for_private_routing)
+
+        is TooManyHosts -> String.format(generalGetString(MR.strings.server_has_too_many_hosts), ServerAddress.parseServerAddress(this.tooManyHostsServer)?.hostnames?.firstOrNull() ?: this.tooManyHostsServer)
 
         else -> null
       }
@@ -7651,7 +7662,8 @@ enum class RcvSwitchStatus {
   @SerialName("switch_started") SwitchStarted,
   @SerialName("sending_qadd") SendingQADD,
   @SerialName("sending_quse") SendingQUSE,
-  @SerialName("received_message") ReceivedMessage
+  @SerialName("received_message") ReceivedMessage,
+  @SerialName("received_qend") ReceivedQEND
 }
 
 @Serializable

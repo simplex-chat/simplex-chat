@@ -1972,6 +1972,7 @@ viewRcvQueuesInfo = plain . T.intercalate ", " . map showQueueInfo
       RSSendingQADD -> "switch started"
       RSSendingQUSE -> "switch confirmed"
       RSReceivedMessage -> "switch secured"
+      RSReceivedQEND -> "switch completed"
 
 viewSndQueuesInfo :: [SndQueueInfo] -> StyledString
 viewSndQueuesInfo = plain . T.intercalate ", " . map showQueueInfo

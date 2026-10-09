@@ -119,6 +119,20 @@ fun ChatView(
     }
     chat
   } }
+  if (chatsCtx.secondaryContextFilter == null) {
+    // cleared when the view is gone rather than on back: Android keeps it on screen while it slides out,
+    // and by then a channel being created may already be using this state
+    DisposableEffect(Unit) {
+      onDispose {
+        if (chatModel.chatId.value == null && chatModel.creatingChannelId.value == null) {
+          chatModel.groupMembers.value = emptyList()
+          chatModel.groupMembersIndexes.value = emptyMap()
+          chatModel.membersLoaded.value = false
+          ChannelRelaysModel.reset()
+        }
+      }
+    }
+  }
   val user = chatModel.currentUser.value
   val chatInfo = activeChat.value?.chatInfo
   if (chat == null || chatInfo == null || user == null) {
@@ -382,10 +396,6 @@ fun ChatView(
               hideKeyboard(view)
               AudioPlayer.stop()
               chatModel.chatId.value = null
-              chatModel.groupMembers.value = emptyList()
-              chatModel.groupMembersIndexes.value = emptyMap()
-              chatModel.membersLoaded.value = false
-              ChannelRelaysModel.reset()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
