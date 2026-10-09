@@ -13,6 +13,9 @@
     "@simplex-chat/types": "^0.10.3",
     "simplex-chat": "7.0.2"
   },
+  "allowScripts": {
+    "simplex-chat": true
+  },
   "peerDependencies": {
     "openclaw": ">=2026.9.9"
   },

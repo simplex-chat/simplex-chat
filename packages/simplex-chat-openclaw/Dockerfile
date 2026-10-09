@@ -11,6 +11,6 @@ COPY --chown=node:node src /opt/simplex-chat-openclaw/src
 
 USER node
 WORKDIR /opt/simplex-chat-openclaw
-RUN npm install --omit=dev --omit=peer --allow-scripts=simplex-chat --no-audit --no-fund
+RUN npm install --omit=dev --omit=peer --no-audit --no-fund
 
 WORKDIR /app
