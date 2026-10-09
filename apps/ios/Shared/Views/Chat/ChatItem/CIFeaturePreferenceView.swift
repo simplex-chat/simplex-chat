@@ -69,9 +69,6 @@ func allowFeatureToContact(_ contact: Contact, _ feature: ChatFeature, param: In
             }
         } catch {
             logger.error("allowFeatureToContact apiSetContactPrefs error: \(responseError(error))")
-            await MainActor.run {
-                showErrorAlert(error, NSLocalizedString("Error saving preferences", comment: "alert title"))
-            }
         }
     }
 }

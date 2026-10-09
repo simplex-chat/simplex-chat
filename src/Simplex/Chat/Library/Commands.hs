@@ -555,14 +555,13 @@ processChatCommand cxt nm = \case
             salt <- drgRandomBytes 16
             let hash = B64UrlByteString $ C.sha512Hash $ encodeUtf8 viewPwd <> salt
             pure $ Just UserPwdHash {hash, salt = B64UrlByteString salt}
-  APIUnhideUser userId' viewPwd@(UserPwd pwd) -> withUser $ \user -> withUserNamesLock $ do
-    user'@User {profile = LocalProfile {displayName}} <- privateGetUser userId'
+  APIUnhideUser userId' viewPwd@(UserPwd pwd) -> withUser $ \user -> do
+    user' <- privateGetUser userId'
     case viewPwdHash user' of
       Nothing -> throwChatError $ CEUserNotHidden userId'
       _ -> do
         when (T.null pwd) $ throwChatError $ CEEmptyUserPassword userId'
         validateUserPassword user user' $ Just viewPwd
-        checkOtherUsersName userId' displayName
         setUserPrivacy user user' {viewPwdHash = Nothing, showNtfs = True}
   APIMuteUser userId' -> setUserNotifications userId' False
   APIUnmuteUser userId' -> setUserNotifications userId' True
@@ -571,9 +570,9 @@ processChatCommand cxt nm = \case
   MuteUser -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIMuteUser userId
   UnmuteUser -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIUnmuteUser userId
   SetClientService userId' name enable -> checkChatStopped $ withUser' $ \currUser@User {userId} -> do
-    user@User {agentUserId = AgentUserId auId, clientService, localDisplayName} <-
+    user@User {agentUserId = AgentUserId auId, clientService, profile = LocalProfile {displayName}} <-
       if userId == userId' then pure currUser else privateGetUser userId'
-    unless (name == localDisplayName) $ throwChatError CEUserUnknown
+    unless (name == displayName) $ throwChatError CEUserUnknown
     if enable == isTrue clientService
       then ok user
       else do
@@ -1616,7 +1615,9 @@ processChatCommand cxt nm = \case
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
         let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
-        updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
+        updateProfile_ user p' True $ withFastStore $ \db -> do
+          user' <- updateUserProfile db user p'
+          liftIO $ setUserSimplexDomain db user' domain_
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
     ct <- withFastStore $ \db -> getContact db cxt user contactId
     updateContactPrefs user ct prefs'
@@ -2457,7 +2458,7 @@ processChatCommand cxt nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db cxt user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APIListContacts userId
-  APICreateMyAddress userId server_ pqRatchet_ -> withUserId userId $ \u -> withUserProfileLock u $ \user@User {userChatRelay} -> do
+  APICreateMyAddress userId server_ pqRatchet_ -> withUserId userId $ \user@User {userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
@@ -2501,11 +2502,11 @@ processChatCommand cxt nm = \case
     CRUserContactLink user <$> withFastStore (`getUserAddress` user)
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand cxt nm $ APIShowMyAddress userId
-  APIAddMyAddressShortLink userId pqRatchet_ -> withUserId' userId $ \u -> withUserProfileLock u $ \user -> do
+  APIAddMyAddressShortLink userId pqRatchet_ -> withUserId' userId $ \user -> do
     -- TODO [address DR] remove the option, and use IKUsePQ
     let pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
     CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData False pqInitKeys user)
-  APIRotateAddressRatchetKeys userId -> withUserId' userId $ \u -> withUserProfileLock u $ \user ->
+  APIRotateAddressRatchetKeys userId -> withUserId' userId $ \user ->
     CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData True (Just IKUsePQ) user)
   APISetProfileAddress userId False -> withUserProfileLock "setProfileAddress" $ withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing, contactDomain = Nothing}
@@ -2517,7 +2518,7 @@ processChatCommand cxt nm = \case
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APISetProfileAddress userId onOff
-  APISetAddressSettings userId pqRatchet_ settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \u -> withUserProfileLock u $ \user -> do
+  APISetAddressSettings userId pqRatchet_ settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
     ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
     forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
       when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
@@ -3598,7 +3599,8 @@ processChatCommand cxt nm = \case
     updateProfile user p
   UpdateProfileImageFromFile path -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     img <- readProfileImageFile path
-    updateProfile user $ \User {profile} -> (fromLocalProfile profile :: Profile) {image = Just img}
+    let p = (fromLocalProfile profile :: Profile) {image = Just img}
+    updateProfile user p
   ShowProfileImage -> withUser $ \user@User {profile} -> pure $ CRUserProfileImage user $ fromLocalProfile profile
   SetUserFeature (ACF f) allowed -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
@@ -3621,7 +3623,8 @@ processChatCommand cxt nm = \case
   SetUserTimedMessages onOff -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let allowed = if onOff then FAYes else FANo
         pref = TimedMessagesPreference allowed Nothing
-     in (fromLocalProfile profile :: Profile) {preferences = Just . setPreference' SCFTimedMessages (Just pref) $ preferences' user'}
+        p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference' SCFTimedMessages (Just pref) $ preferences' user}
+    updateProfile user p
   SetContactTimedMessages cName timedMessagesEnabled_ -> withUser $ \user -> do
     ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withFastStore $ \db -> getContactByName db cxt user cName
     let currentTTL = timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
@@ -4019,7 +4022,7 @@ processChatCommand cxt nm = \case
       where
         p' = (p :: Profile) {contactDomain}
     updateProfile_ :: User -> Profile -> Bool -> CM User -> CM ChatResponse
-    updateProfile_ user@User {userId, profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
+    updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
           when (n /= n') $ do
@@ -5212,21 +5215,22 @@ verifyOwnBadge cred@(BadgeCredential keyIdx _ _ _) = do
 -- attach an issued badge credential to the user's own profile and present it to all current contacts.
 -- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
 addUserBadge :: User -> BadgeCredential -> CM ()
-addUserBadge user@User {userId} cred@(BadgeCredential _ _ _ info) =
+addUserBadge user cred@(BadgeCredential _ _ _ info) =
   verifyOwnBadge cred >>= \case
     Nothing -> throwCmdError "unknown badge key index"
     Just False -> throwCmdError "badge credential does not verify against configured key"
     Just True -> do
       now <- liftIO getCurrentTime
-      withUserProfileLock_ userId $ do
-        user' <- withFastStore $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
-        presentUserBadgeToContacts user'
+      user' <- withFastStore $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+      presentUserBadgeToContacts user'
 
 presentUserBadgeToContacts :: User -> CM ()
-presentUserBadgeToContacts user'@User {profile = LocalProfile {localBadge}} = do
+presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadge}} = do
   -- a badge worker runs for every profile, not only the active one, so this refreshes the active
   -- record where it is the same profile and must never switch to another
-  updateCurrentUser user'
+  chatModifyVar currentUser $ \case
+    Just User {userId = activeId} | activeId == userId -> Just user'
+    active_ -> active_
   lift $ withAgent' $ \a -> setUserEntitlement a (aUserId user') (badgeServerCredential localBadge)
   cxt <- chatStoreCxt
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
@@ -5268,7 +5272,7 @@ redeemBadgeCode nm user@User {userId} codeText = do
       J.Success BSPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user redemption cred statement
       J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
   -- outside the badge lock: the chat lock must not be taken under it
-  forM_ present_ $ \u -> withUserProfileLock u presentUserBadgeToContacts
+  mapM_ presentUserBadgeToContacts present_
   pure redeemed
   where
     -- the code will never work, so the keys stashed for it are dead; a timeout keeps them
@@ -5642,7 +5646,7 @@ verifyIssuedCredential masterKey (Just cred@(BadgeCredential _ credMasterKey _ _
 -- | Present the newest issued credential once the one on the profile has run out. It is written in
 -- a separate transaction from the issuance, so a crash between the two is repaired at the next run.
 presentIssuedBadge :: User -> UserBadgePurchase -> UTCTime -> CM ()
-presentIssuedBadge user@User {userId} p@UserBadgePurchase {badgePurchaseId, shown} now
+presentIssuedBadge user p@UserBadgePurchase {badgePurchaseId, shown} now
   | not shown = pure ()
   | otherwise = do
       cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
@@ -5658,7 +5662,7 @@ presentIssuedBadge user@User {userId} p@UserBadgePurchase {badgePurchaseId, show
 
 -- | The visible half of "the badge expired".
 retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> StatementEntry -> CM Bool
-retireExpiredBadge user@User {userId} UserBadgePurchase {badgePurchaseId, shown} now balance
+retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
   | not (shown && L.paidThrough balance <= now) = pure False
   | otherwise = withUserProfileLock "retireExpiredBadge" $ do
       user' <- withStore $ \db -> do
@@ -5691,15 +5695,12 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
       now <- badgeNow
       let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
       -- TODO [badges] retire a previously held badge
-      (user', newBadge, applied) <- withUserProfileLock_ userId $ do
-        r@(user', newBadge, _) <- withStore $ \db -> do
-          (purchaseId, newBadge) <- liftIO $ createCodeBadgePurchase db user redemption cred now
-          applied <- liftIO $ applyBadgeStatement db g purchaseId badgeType statement (Just cred) now
-          -- a replay must not put a superseded badge back, or tell every contact again
-          user' <- if newBadge then setUserBadge db user (Just badge) else getUser db userId
-          pure (user', newBadge, applied)
-        when newBadge $ updateCurrentUser user'
-        pure r
+      (user', newBadge, applied) <- withStore $ \db -> do
+        (purchaseId, newBadge) <- liftIO $ createCodeBadgePurchase db user redemption cred now
+        applied <- liftIO $ applyBadgeStatement db g purchaseId badgeType statement (Just cred) now
+        -- a replay must not put a superseded badge back, or tell every contact again
+        user' <- if newBadge then setUserBadge db user (Just badge) else getUser db userId
+        pure (user', newBadge, applied)
       unless applied $ eToView $ ChatError $ CEInternalError "redeemed badge credential has no ledger row to store it against"
       -- nothing is due yet, but a pass is what arms the next wake, and this is the first purchase
       lift $ startBadgeWork user'

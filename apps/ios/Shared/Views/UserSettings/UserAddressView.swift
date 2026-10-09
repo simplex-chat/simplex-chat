@@ -444,7 +444,6 @@ struct UserAddressView: View {
         } label: {
             Text("Address settings")
         }
-        .disabled(progressIndicator)
     }
 
     private func learnMoreButton() -> some View {
@@ -693,7 +692,6 @@ struct UserAddressSettingsView: View {
     private func shareWithContactsButton() -> some View {
         settingsRow("person", color: theme.colors.secondary) {
             Toggle("Share with SimpleX contacts", isOn: $shareViaProfile)
-                .disabled(progressIndicator)
                 .onChange(of: shareViaProfile) { on in
                     if ignoreShareViaProfileChange {
                         ignoreShareViaProfileChange = false

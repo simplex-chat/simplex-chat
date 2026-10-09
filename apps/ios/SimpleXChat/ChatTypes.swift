@@ -598,8 +598,7 @@ public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
         image: profile.image,
         contactLink: profile.contactLink,
         preferences: profile.preferences,
-        peerType: profile.peerType,
-        contactDomain: profile.contactDomain
+        peerType: profile.peerType
     )
 }
 

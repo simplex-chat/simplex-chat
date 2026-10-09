@@ -29,7 +29,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl', partition)
+import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import qualified Data.IntSet as IS
@@ -54,7 +54,7 @@ import Simplex.Chat.Files (getChatTempDirectory, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, legacyFwdBodies, maxBatchElementSize)
+import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
@@ -4420,15 +4420,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                   && maxVersion (memberChatVRange m) >= groupKnockingVersion
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
-                deliver msgBody mems = do
-                  let (mems', legacyMems) = partition (`supportsVersion` relayWebCapVersion) mems
-                  unless (null mems') $ deliverBody msgBody mems'
-                  unless (null legacyMems) $ do
-                    let (legacyBodies, dropped) = legacyFwdBodies (vr cxt) maxForwardBatchLength msgBody
-                    when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("delivery job: dropped " <> show dropped <> " oversized forwarded messages")]
-                    forM_ legacyBodies (`deliverBody` legacyMems)
-                deliverBody :: ByteString -> [GroupMember] -> CM ()
-                deliverBody msgBody mems =
+                deliver msgBody mems =
                   let mConns = mapMaybe (fmap snd . readyMemberConn) mems
                       msgReqs = foldMemConns mConns
                    in void $ withAgent (`sendMessages` msgReqs)

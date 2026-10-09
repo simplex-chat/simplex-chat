@@ -1986,9 +1986,7 @@ object ChatController {
   suspend fun apiSetContactPrefs(rh: Long?, contactId: Long, prefs: ChatPreferences): Contact? {
     val r = sendCmd(rh, CC.ApiSetContactPrefs(contactId, prefs))
     if (r is API.Result && r.res is CR.ContactPrefsUpdated) return r.res.toContact
-    if (!(networkErrorAlert(r))) {
-      apiErrorAlert("apiSetContactPrefs", generalGetString(MR.strings.error_saving_preferences), r)
-    }
+    Log.e(TAG, "apiSetContactPrefs bad response: ${r.responseType} ${r.details}")
     return null
   }
 

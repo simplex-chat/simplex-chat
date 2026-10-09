@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -29,23 +27,18 @@ import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages (SndMessage (..))
 import Simplex.Chat.Protocol
-  ( AParsedMsg (..),
-    ChatMessage (ChatMessage),
-    ChatMsgEvent (XGrpMsgForward, XMsgNew),
-    FwdSender (FwdChannel, FwdMember),
+  ( ChatMessage (ChatMessage),
+    ChatMsgEvent (XMsgNew),
+    FwdSender (FwdChannel),
     GrpMsgForward (GrpMsgForward),
     MsgContent (MCText),
-    MsgEncoding (Json),
-    ParsedMsg (..),
-    SMsgEncoding (SJson),
     VerifiedMsg (VMUnsigned),
     fwdMemberName,
     maxBatchElementCount,
     maxEncodedMsgLength,
     mcSimple,
-    parseChatMessages,
   )
-import Simplex.Chat.Types (MemberId (..), SharedMsgId (..), chatInitialVRange)
+import Simplex.Chat.Types (SharedMsgId (..), chatInitialVRange)
 import Simplex.Messaging.Encoding (Large (..), smpEncodeList)
 import Test.Hspec
 

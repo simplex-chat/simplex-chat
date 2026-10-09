@@ -60,7 +60,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchElements, batchJsonElements, batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement, encodeLegacyFwdElement)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchElements, batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -1419,9 +1419,8 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   unless (null errors) $ toView $ CEvtChatErrors errors
   -- signed items keep the author's original bytes/signature, unsigned are re-encoded; the welcome message
   -- (regular groups only; never channels) is an authored element -- all batch together in order.
-  vr <- chatVersionRange
-  welcomeEl <- welcomeElement
   let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
+  welcomeEl <- welcomeElement
   let (batches, dropped) = batchElements maxForwardBatchLength (fwdEls <> maybe [] (: []) welcomeEl)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
   forM_ batches $ \body ->
@@ -2902,10 +2901,7 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
 sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
 sendFwdMemberMessage member fwd verifiedMsg =
   forM_ (readyMemberConn member) $ \(_, conn) -> do
-    vr <- chatVersionRange
-    let body
-          | member `supportsVersion` relayWebCapVersion = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-          | otherwise = encodeLegacyFwdElement vr fwd (verifiedChatMsg verifiedMsg)
+    let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
     void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages

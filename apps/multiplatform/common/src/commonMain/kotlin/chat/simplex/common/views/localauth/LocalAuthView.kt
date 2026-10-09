@@ -73,7 +73,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       ntfManager.cancelAllNotifications()
       val selfDestructPref = m.controller.appPrefs.selfDestruct
       val displayNamePref = m.controller.appPrefs.selfDestructDisplayName
-      val displayName = displayNamePref.get()?.let { mkValidName(it) }
+      val displayName = displayNamePref.get()
       selfDestructPref.set(false)
       displayNamePref.set(null)
       reinitChatController()
