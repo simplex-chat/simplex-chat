@@ -4,23 +4,44 @@ const markdownItReplaceLink = require('markdown-it-replace-link')
 const markdownItFootnote = require('markdown-it-footnote')
 const slugify = require("slugify")
 const uri = require('fast-uri')
-const i18n = require('eleventy-plugin-i18n')
 const fs = require("fs")
 const path = require("path")
 const matter = require('gray-matter')
 const pluginRss = require('@11ty/eleventy-plugin-rss')
 const { JSDOM } = require('jsdom')
+const parse5 = require('parse5')
 const markdownPages = require('./markdown_pages')
 
 
 // Links page data
 const parseLinks = require('./parse_links')
 const linksFilePath = path.resolve(__dirname, '../docs/LINKS.md')
-const linksData = fs.existsSync(linksFilePath) ? parseLinks(linksFilePath) : []
 const linkImagesDir = path.resolve(__dirname, 'src/link-images')
-linksData.forEach(entry => {
-  entry.imageExists = entry.image && fs.existsSync(path.join(linkImagesDir, entry.image))
-})
+
+function readLinksPage() {
+  const entries = fs.existsSync(linksFilePath) ? parseLinks(linksFilePath) : []
+  entries.forEach(entry => {
+    entry.imageExists = entry.image && fs.existsSync(path.join(linkImagesDir, entry.image))
+  })
+
+  const catCounts = {}
+  entries.forEach(e => { if (e.category) { const c = e.category.toLowerCase(); catCounts[c] = (catCounts[c] || 0) + 1 } })
+  const mediaPills = ["Video", "Audio"].filter(p => entries.some(e => e.mediaType === p.toLowerCase()))
+  const catPills = Object.keys(catCounts).sort()
+
+  return {
+    entries,
+    languages: [...new Set(entries.map(e => e.language).filter(Boolean))].sort(),
+    pills: mediaPills.concat(catPills),
+  }
+}
+
+const permalinks = new Map()
+
+function filePermalink(file) {
+  if (!permalinks.has(file)) permalinks.set(file, matter(fs.readFileSync(file, 'utf8')).data?.permalink)
+  return permalinks.get(file)
+}
 
 // Rewrites relative markdown links to website permalinks or GitHub URLs.
 // Shared by the main markdown renderer (markdownLib) and the glossary renderer
@@ -40,8 +61,7 @@ function replaceLink(link, _env) {
 
   if (fs.existsSync(linkFile) && fs.statSync(linkFile).isFile()) {
     // this condition works if the link is a valid website file
-    const fileContent = fs.readFileSync(linkFile, 'utf8')
-    parsed.path = (matter(fileContent).data?.permalink || parsed.path).replace(/\.md$/, ".html").toLowerCase()
+    parsed.path = (filePermalink(linkFile) || parsed.path).replace(/\.md$/, ".html").toLowerCase()
   } else if (!fs.existsSync(linkFile)) {
     linkFile = linkFile.replace('/website/src', '')
     if (fs.existsSync(linkFile)) {
@@ -99,9 +119,36 @@ glossary.forEach(item => {
   const definitionLinks = new JSDOM(item.definition).window.document.querySelectorAll('a[href*="#"]')
   item.linkedHashes = Array.from(definitionLinks, a => a.href.substring(a.href.indexOf("#") + 1))
   item.id = item.term.toLowerCase().replace(/\s/g, '-')
+  item.pattern = new RegExp(`(?<![/#])\\b${item.term}\\b`, 'gi')
 })
 
 const glossaryById = new Map(glossary.map(item => [item.id, item]))
+const glossaryTermPattern = new RegExp(`(?<![/#])\\b(${glossary.map(item => item.term).join('|')})\\b`, 'i')
+const glossaryContentTags = new Set(['p', 'td', 'a', 'h1', 'h2', 'h3', 'h4'])
+const htmlParseOptions = { scriptingEnabled: false }
+const closeOverlayIcon = '<svg class="close-overlay-btn" id="cross" width="16" height="16" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg"><path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.805 0.002228 0.430001 0.002228 0.135211 0.182228C-0.159579 0.362228 -0.159579 0.697228 0.135211 0.877228L5.68885 6.27528L0.4918 11.3295C0.231501 11.5825 0.220703 12.0042 0.467664 12.2709C0.714625 12.5376 1.12625 12.5486 1.38655 12.2956L6.63302 7.196L12.1867 12.5941C12.4815 12.7741 12.8565 12.7741 13.1513 12.5941C13.4461 12.4141 13.4461 12.0791 13.1513 11.8991L12.7973 11.5525Z"></path></svg>'
+
+function glossaryTooltipHtml(term) {
+  const readMoreButton = term.hasMultipleParagraphs
+    ? `<button class="read-more-btn open-overlay-btn" data-show-overlay="${term.id}">Read more</button>`
+    : ''
+  return `<div id="tooltip-${term.id}" class="glossary-tooltip"><div class="tooltip-content"><h4 class="tooltip-title">${term.term}</h4><p>${term.tooltip}</p>${readMoreButton}</div></div>`
+}
+
+function glossaryOverlayHtml(term) {
+  return `<div id="${term.id}" class="overlay glossary-overlay hidden"><div class="overlay-card"><h1 class="overlay-title">${term.term}</h1><div class="overlay-content">${term.definition}</div>${closeOverlayIcon}</div></div>`
+}
+
+function descendantElements(node, tags) {
+  return (node.childNodes || []).flatMap((child) =>
+    tags.has(child.tagName) ? [child, ...descendantElements(child, tags)] : descendantElements(child, tags))
+}
+
+function parseChildren(node, html) {
+  const children = parse5.parseFragment(node, html, htmlParseOptions).childNodes
+  children.forEach((child) => child.parentNode = node)
+  return children
+}
 
 
 const globalConfig = {
@@ -128,6 +175,8 @@ const translations = require("./translations.json")
 const outputDir = '_site'
 
 module.exports = function (ty) {
+  ty.on("eleventy.before", () => permalinks.clear())
+
   // Add this after your markdownLib definition
   ty.addShortcode("mdInclude", function (filepath) {
     const fullPath = path.join(__dirname, 'src/_includes', filepath);
@@ -135,14 +184,8 @@ module.exports = function (ty) {
     return markdownLib.render(content);
   });
 
-  ty.addGlobalData("links", linksData)
-  ty.addGlobalData("linkLanguages", [...new Set(linksData.map(e => e.language).filter(Boolean))].sort())
-
-  const catCounts = {}
-  linksData.forEach(e => { if (e.category) { const c = e.category.toLowerCase(); catCounts[c] = (catCounts[c] || 0) + 1 } })
-  const mediaPills = ["Video", "Audio"].filter(p => linksData.some(e => e.mediaType === p.toLowerCase()))
-  const catPills = Object.keys(catCounts).sort()
-  ty.addGlobalData("linkPills", mediaPills.concat(catPills))
+  ty.addGlobalData("linksPage", readLinksPage)
+  ty.addWatchTarget(linksFilePath)
 
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
@@ -169,25 +212,24 @@ module.exports = function (ty) {
   })
 
   ty.addFilter('applyGlossary', function (content) {
-    const dom = new JSDOM(content)
-    const { document } = dom.window
-    const body = document.querySelector('body')
-    const allContentNodes = document.querySelectorAll('p, td, a, h1, h2, h3, h4')
-    const contentHtml = Array.from(allContentNodes, (node) => node.innerHTML)
+    if (!glossaryTermPattern.test(content)) return content
+    const document = parse5.parse(content, htmlParseOptions)
+    const body = document.childNodes.find((node) => node.tagName === 'html').childNodes.find((node) => node.tagName === 'body')
+    const allContentNodes = descendantElements(document, glossaryContentTags)
+    const contentHtml = allContentNodes.map((node) => parse5.serialize(node))
     const overlayIds = []
     const matchedIds = new Set()
 
     glossary.forEach((term) => {
       const id = term.id
-      const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
       allContentNodes.forEach((node, nodeIndex) => {
         const beforeContent = contentHtml[nodeIndex]
-        const afterContent = beforeContent.replace(regex, (match) => {
+        const afterContent = beforeContent.replace(term.pattern, (match) => {
           return `<span data-glossary="tooltip-${id}" class="glossary-term">${match}</span>`
         })
         if (afterContent !== beforeContent) {
-          node.innerHTML = afterContent
-          contentHtml[nodeIndex] = node.innerHTML
+          node.childNodes = parseChildren(node, afterContent)
+          contentHtml[nodeIndex] = parse5.serialize(node)
           matchedIds.add(id)
         }
       })
@@ -202,68 +244,20 @@ module.exports = function (ty) {
       const id = term.id
 
       if (matchedIds.has(id)) {
-        const definitionTooltipDiv = document.createElement('div')
-        definitionTooltipDiv.id = `tooltip-${id}`
-        definitionTooltipDiv.className = "glossary-tooltip"
-        const titleH4 = document.createElement('h4')
-        titleH4.innerHTML = term.term
-        titleH4.className = "tooltip-title"
-        const p = document.createElement('p')
-        p.innerHTML = term.tooltip
-        const innerDiv = document.createElement('div')
-        innerDiv.appendChild(titleH4)
-        innerDiv.appendChild(p)
-        if (term.hasMultipleParagraphs) {
-          const readMoreBtn = document.createElement('button')
-          readMoreBtn.innerHTML = "Read more"
-          readMoreBtn.className = "read-more-btn open-overlay-btn"
-          readMoreBtn.setAttribute('data-show-overlay', id)
-          innerDiv.appendChild(readMoreBtn)
-        }
-        innerDiv.className = "tooltip-content"
-        definitionTooltipDiv.appendChild(innerDiv)
-        body.appendChild(definitionTooltipDiv)
+        body.childNodes.push(...parseChildren(body, glossaryTooltipHtml(term)))
       }
 
       const hashList = [id, ...term.linkedHashes]
 
       hashList.forEach(hash => {
         if (neededIds.has(hash) && !overlayIds.includes(hash)) {
-          const termFromHash = glossaryById.get(hash)
-
-          const overlayDiv = document.createElement('div')
-          overlayDiv.id = hash
-          overlayDiv.className = "overlay glossary-overlay hidden"
-          const overlayCardDiv = document.createElement('div')
-          overlayCardDiv.className = "overlay-card"
-          const overlayTitleH1 = document.createElement('h1')
-          overlayTitleH1.className = "overlay-title"
-          overlayTitleH1.innerHTML = termFromHash.term
-          const overlayContent = document.createElement('div')
-          overlayContent.className = "overlay-content"
-          overlayContent.innerHTML = termFromHash.definition
-          const crossSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-          crossSVG.setAttribute('class', 'close-overlay-btn')
-          crossSVG.setAttribute('id', 'cross')
-          crossSVG.setAttribute('width', '16')
-          crossSVG.setAttribute('height', '16')
-          crossSVG.setAttribute('viewBox', '0 0 13 13')
-          crossSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-          const crossPath = document.createElementNS("http://www.w3.org/2000/svg", "path")
-          crossPath.setAttribute('d', 'M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.805 0.002228 0.430001 0.002228 0.135211 0.182228C-0.159579 0.362228 -0.159579 0.697228 0.135211 0.877228L5.68885 6.27528L0.4918 11.3295C0.231501 11.5825 0.220703 12.0042 0.467664 12.2709C0.714625 12.5376 1.12625 12.5486 1.38655 12.2956L6.63302 7.196L12.1867 12.5941C12.4815 12.7741 12.8565 12.7741 13.1513 12.5941C13.4461 12.4141 13.4461 12.0791 13.1513 11.8991L12.7973 11.5525Z')
-          crossSVG.appendChild(crossPath)
-
-          overlayCardDiv.appendChild(overlayTitleH1)
-          overlayCardDiv.appendChild(overlayContent)
-          overlayCardDiv.appendChild(crossSVG)
-          overlayDiv.appendChild(overlayCardDiv)
-          body.appendChild(overlayDiv)
+          body.childNodes.push(...parseChildren(body, glossaryOverlayHtml(glossaryById.get(hash))))
           overlayIds.push(hash)
         }
       })
     })
 
-    return dom.serialize()
+    return parse5.serialize(document)
   })
 
   ty.addFilter('wrapH3s', function (content, page) {
@@ -355,6 +349,33 @@ module.exports = function (ty) {
 
   ty.addFilter("plainText", markdownPages.plainText)
 
+  const outputSections = ["pages", "blog pages", "doc pages", "language pages", "other files", "Markdown files"]
+  const outputCounts = new Map()
+
+  function countOutput(section) {
+    outputCounts.set(section, (outputCounts.get(section) || 0) + 1)
+  }
+
+  function outputSection(outputPath) {
+    const [folder] = path.relative(outputDir, outputPath).split(path.sep)
+    if (supportedLangs.includes(folder)) return "language pages"
+    if (folder === "blog") return "blog pages"
+    if (folder === "docs") return "doc pages"
+    return outputPath.endsWith(".html") ? "pages" : "other files"
+  }
+
+  ty.on("eleventy.before", () => outputCounts.clear())
+
+  ty.on("eleventy.after", () => {
+    const counts = outputSections.filter((section) => outputCounts.has(section)).map((section) => `${outputCounts.get(section)} ${section}`)
+    console.log(`[11ty] Wrote ${counts.join(", ")}`)
+  })
+
+  ty.addTransform("countOutputs", function (content) {
+    if (this.outputPath) countOutput(outputSection(this.outputPath))
+    return content
+  })
+
   ty.addTransform("markdownPages", function (content) {
     const kind = markdownPages.markdownKind(this.inputPath, supportedLangs)
     if (kind && this.outputPath) {
@@ -365,18 +386,33 @@ module.exports = function (ty) {
       const markdownPath = path.join(outputDir, markdownPages.markdownUrl(pageUrl, supportedLangs))
       fs.mkdirSync(path.dirname(markdownPath), { recursive: true })
       fs.writeFileSync(markdownPath, markdown)
+      countOutput("Markdown files")
     }
     return content
   })
 
   ty.addPlugin(pluginRss)
 
-  ty.addPlugin(i18n, {
-    translations,
-    fallbackLocales: {
-      '*': 'en'
-    },
-    defaultLocale: 'en',
+  const unknownStrings = new Set()
+
+  ty.addFilter("i18n", function (key, _data, lang) {
+    const locale = lang || (this.page || this.ctx.page)?.url?.split("/")[1]
+    const strings = translations[key] || {}
+    if (strings.en === undefined) unknownStrings.add(key)
+    return strings[locale] ?? strings.en ?? key
+  })
+
+  ty.on("eleventy.before", () => unknownStrings.clear())
+
+  ty.on("eleventy.after", () => {
+    const allStrings = Object.values(translations)
+    const untranslated = supportedLangs.filter((lang) => lang !== "en").sort()
+      .map((lang) => [lang, allStrings.filter((strings) => strings[lang] === undefined).length])
+      .filter(([, count]) => count > 0)
+    if (untranslated.length > 0) {
+      console.warn(`[i18n] Untranslated of ${allStrings.length} strings, English used: ${untranslated.map(([lang, count]) => `${lang} ${count}`).join(", ")}`)
+    }
+    if (unknownStrings.size > 0) console.warn(`[i18n] Missing in en.json: ${Array.from(unknownStrings).join(", ")}`)
   })
 
   // Keeps the same directory structure.
@@ -493,6 +529,8 @@ module.exports = function (ty) {
       .filter((doc) => markdownPages.markdownKind(doc.inputPath, supportedLangs) === "source")
       .sort((a, b) => a.url.localeCompare(b.url)))
 
+  ty.setQuietMode(true)
+  ty.setWatchThrottleWaitTime(100)
   ty.addWatchTarget("src/css")
   ty.addWatchTarget("markdown/")
   ty.addWatchTarget("components/Card.js")

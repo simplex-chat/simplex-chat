@@ -335,6 +335,7 @@ Also see [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [
 ## Agents
 
 - For AI assistants: [simplex.chat/llms.txt](https://simplex.chat/llms.txt), an index of the documentation in Markdown, and [SimpleX for AI agents and developers](https://simplex.chat/llms/agents.md).
+- Every page of simplex.chat is also available as Markdown: replace `.html` with `.md` ([simplex.chat/docs/simplex.md](https://simplex.chat/docs/simplex.md)), or add `.md` to the path ([simplex.chat/why.md](https://simplex.chat/why.md)).
 - Libraries: [Node.js](./packages/simplex-chat-nodejs/) ([npm](https://www.npmjs.com/package/simplex-chat)) and [Python](./packages/simplex-chat-python/) ([PyPI](https://pypi.org/project/simplex-chat/)).
 - [Bot API guide](./bots/README.md) and [API reference](./bots/api/README.md): commands, events and types.
 - Example bots: [support bot](./apps/simplex-support-bot/) and [calculator](./apps/simplex-calculator-bot/) in TypeScript, [support bot light](./apps/simplex-support-bot-light/) in Python, [directory service](./apps/simplex-directory-service/) and [broadcast bot](./apps/simplex-broadcast-bot/) in Haskell.
