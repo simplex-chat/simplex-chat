@@ -11,13 +11,11 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.ContentType
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.User
 import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.newPasswordContentType
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.UserProfileRow
@@ -72,10 +70,10 @@ private fun HiddenProfileLayout(
     val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || !passwordValid || confirmHidePassword.value == "" || !confirmValid } }
     SectionView(stringResource(MR.strings.hidden_profile_password)) {
       SectionItemViewWithoutMinPadding {
-        PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), isValid = { passwordValid }, showStrength = true, contentType = newPasswordContentType())
+        PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), isValid = { passwordValid }, showStrength = true, contentType = null)
       }
       SectionItemViewWithoutMinPadding {
-        PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword, contentType = newPasswordContentType())
+        PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword, contentType = null)
       }
       SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {
         Text(generalGetString(MR.strings.save_profile_password), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)

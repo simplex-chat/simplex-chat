@@ -331,7 +331,7 @@ fun PassphraseField(
   keyboardActions: KeyboardActions = KeyboardActions(),
   dependsOn: State<Any?>? = null,
   requestFocus: Boolean = false,
-  contentType: ContentType = ContentType.Password,
+  contentType: ContentType? = ContentType.Password,
 ) {
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
@@ -371,7 +371,7 @@ fun PassphraseField(
         minWidth = TextFieldDefaults.MinWidth,
         minHeight = TextFieldDefaults.MinHeight
       )
-      .semantics { this.contentType = contentType }
+      .semantics { if (contentType != null) this.contentType = contentType }
       .focusRequester(focusRequester),
     onValueChange = {
       state.value = it
