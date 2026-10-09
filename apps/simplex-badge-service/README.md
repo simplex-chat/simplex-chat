@@ -51,7 +51,7 @@ simplex-badge-service --help
   `simplex-directory-service --run-cli`). This mode is the chat/RPC side and the `//` commands
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
-  revoked. `[dev] accept_unverified_store_receipts` applies to it.
+  revoked. `[apple]`, `[google]` and `[dev] accept_unverified_store_receipts` apply to it.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -84,7 +84,7 @@ Other options:
 - `--service-config INI_FILE`: path to `badge_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
   `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
-  uses only its `[issuer]` section and `[dev] accept_unverified_store_receipts`. An issuer key is
+  uses only its `[issuer]`, `[apple]` and `[google]` sections and `[dev] accept_unverified_store_receipts`. An issuer key is
   still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
 - `--client-service`: use the client service certificate.
@@ -209,6 +209,41 @@ the exception: each answers 200, 400 or 413 with an empty body, because its prov
 caller and nothing it could read would change what the route does. A wrong verb on any route, those
 two included, answers `method_not_allowed`.
 
+### Store purchases (App Store and Google Play)
+
+Each store is verified only when its section is present; without one, every receipt from that store
+is answered `provider_not_configured` and the app keeps the purchase to present again. A section
+missing a key, an unreadable root certificate or service account key, or either section beside
+`[dev] accept_unverified_store_receipts = on`, stops the service at startup.
+
+```ini
+[apple]
+bundle_id = chat.simplex.app
+root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+
+[google]
+package_name = chat.simplex.app
+service_account_file = /etc/simplex-badge-service/play-service-account.json
+```
+
+- `[apple]` verifies the signed transaction offline, against Apple Root CA - G3 in DER as Apple
+  publishes it at <https://www.apple.com/certificateauthority/AppleRootCA-G3.cer>. A transaction
+  for another bundle id, or a chain this root does not verify, is answered `internal` and logged as
+  an error rather than refused, since `bundle_id` or `root_certificate` may be the wrong one; check
+  both when those errors appear.
+- `[google]` asks the Google Play Developer API about each purchase, and acknowledges it before
+  crediting it, as the service account whose JSON key `service_account_file` holds. The account
+  needs both Play Console permissions Google's
+  [getting started](https://developers.google.com/android-publisher/getting_started) lists for its
+  billing APIs: "View financial data, orders, and cancellation survey responses" to read a
+  purchase, and "Manage orders and subscriptions" to acknowledge it. Without the second, no Play
+  purchase is credited: each is answered `internal` and logged as an error naming the
+  acknowledgement, and the app presents it again once the permission is granted. The key signs in
+  for an access token, so keep the file readable by this service alone.
+
+Which answers are terminal for a purchase and which leave it to be presented again is listed per
+store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
+
 ### Accepting store receipts unverified, for local testing
 
 ```ini
@@ -221,7 +256,7 @@ the service accepts any well-formed receipt without asking or verifying anything
 the `transactionId` and `productId` its payload names, unsigned or not, and a Play product id and
 token as given. It applies to both run modes, since `--run-cli` answers service requests too, and
 the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
-parse.
+parse. The service refuses to start with it on beside an `[apple]` or `[google]` section.
 
 With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
 That is harmless only while this deployment signs with an issuer key released apps do not carry, so

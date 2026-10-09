@@ -978,6 +978,8 @@ testServiceConfig staticDir trustForwarded =
       btcpay = Nothing,
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
+      appleStore = Nothing,
+      playStore = Nothing,
       issuer = Nothing,
       group = Nothing,
       devAcceptUnverifiedStoreReceipts = False
