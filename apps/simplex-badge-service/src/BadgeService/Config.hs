@@ -113,7 +113,9 @@ data ServiceConfig = ServiceConfig
     stripe :: Maybe StripeConfig,
     poll :: PollConfig,
     issuer :: Maybe BadgeIssuerKey,
-    group :: Maybe GroupConfig
+    group :: Maybe GroupConfig,
+    -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
+    devAcceptUnverifiedStoreReceipts :: Bool
   }
   deriving (Eq, Show)
 
@@ -165,6 +167,7 @@ knownSettings =
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("group", ["display_name", "description"]),
+    ("dev", ["accept_unverified_store_receipts"]),
     ("issuer", ["index", "private_key"])
   ]
 
@@ -196,6 +199,7 @@ parseConfig ini = do
   grp <- groupSection
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
+  devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
   pure
     ServiceConfig
       { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
@@ -203,7 +207,8 @@ parseConfig ini = do
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
         issuer = iss,
-        group = grp
+        group = grp,
+        devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts
       }
   where
     hasSection s = s `elem` sections ini

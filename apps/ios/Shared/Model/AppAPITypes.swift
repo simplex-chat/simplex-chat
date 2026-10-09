@@ -193,6 +193,8 @@ enum ChatCommand: ChatCmdProtocol {
     case apiStandaloneFileInfo(url: String)
     // badges
     case apiRedeemBadgeCode(userId: Int64, code: String)
+    case apiPurchaseBadge(userId: Int64, echoedInvoiceId: String?, payment: ServicePayment)
+    case apiCreateBadgeInvoice(userId: Int64)
     case apiGetBadgeState(userId: Int64)
     case apiGetBadgeLedger(userId: Int64, badgePurchaseId: Int64)
     case apiAckBadgeAlert(userId: Int64, badgePurchaseId: Int64, alertKind: BadgeAlertKind, snooze: Bool, episode: String)
@@ -419,6 +421,9 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case let .apiRedeemBadgeCode(userId, code): return "/_redeem_badge_code \(userId) \(code)"
+            case let .apiPurchaseBadge(userId, echoedInvoiceId, payment):
+                return "/_badge purchase \(userId)\(echoedInvoiceId.map { " invoice=\($0)" } ?? "") \(encodeJSON(payment))"
+            case let .apiCreateBadgeInvoice(userId): return "/_badge invoice \(userId)"
             case let .apiGetBadgeState(userId): return "/_badge state \(userId)"
             case let .apiGetBadgeLedger(userId, badgePurchaseId): return "/_badge ledger \(userId) \(badgePurchaseId)"
             case let .apiAckBadgeAlert(userId, badgePurchaseId, alertKind, snooze, episode):
@@ -611,6 +616,8 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .apiRedeemBadgeCode: return "apiRedeemBadgeCode"
+            case .apiPurchaseBadge: return "apiPurchaseBadge"
+            case .apiCreateBadgeInvoice: return "apiCreateBadgeInvoice"
             case .apiGetBadgeState: return "apiGetBadgeState"
             case .apiGetBadgeLedger: return "apiGetBadgeLedger"
             case .apiAckBadgeAlert: return "apiAckBadgeAlert"
@@ -667,9 +674,11 @@ enum ChatCommand: ChatCmdProtocol {
             return .apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: obfuscate(viewPwd))
         case let .testStorageEncryption(key):
             return .testStorageEncryption(key: obfuscate(key))
-        // a code is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
+        // a code or a store receipt is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
         case let .apiRedeemBadgeCode(userId, code):
             return .apiRedeemBadgeCode(userId: userId, code: obfuscate(code))
+        case let .apiPurchaseBadge(userId, echoedInvoiceId, .apple(jws)):
+            return .apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, payment: .apple(jws: obfuscate(jws)))
         default: return self
         }
     }
@@ -717,6 +726,29 @@ enum ChatCommand: ChatCmdProtocol {
             ""
         }
     }
+}
+
+enum ServicePayment: Encodable {
+    case apple(jws: String)
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .apple(jws):
+            try container.encode("apple", forKey: .type)
+            try container.encode(jws, forKey: .jws)
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case type, jws
+    }
+}
+
+struct OpenStorePurchase: Decodable {
+    var invoiceId: String?
+    var transactionRef: String?
+    var creditError: BadgeIssueFailure?
 }
 
 // ChatResponse is split to three enums to reduce stack size used when parsing it, parsing large enums is very inefficient.
@@ -1051,7 +1083,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     // badges
     // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
     case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool, badgeState: BadgeState?)
-    case badgeState(user: UserRef, badgeState: BadgeState?)
+    case badgeInvoice(user: UserRef, invoiceId: String)
+    case badgeState(user: UserRef, badgeState: BadgeState?, storePurchases: [OpenStorePurchase]?)
     case badgeLedger(user: UserRef, badgeLedger: [StatementEntry])
 
     var responseType: String {
@@ -1105,6 +1138,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .archiveImported: "archiveImported"
         case .appSettings: "appSettings"
         case .badgeRedeemed: "badgeRedeemed"
+        case .badgeInvoice: "badgeInvoice"
         case .badgeState: "badgeState"
         case .badgeLedger: "badgeLedger"
         }
@@ -1161,7 +1195,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
         case let .appSettings(appSettings): return String(describing: appSettings)
         case let .badgeRedeemed(u, redeemedBadge, newBadge, badgeState): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)\nbadgeState: \(String(describing: badgeState))")
-        case let .badgeState(u, badgeState): return withUser(u, String(describing: badgeState))
+        case let .badgeInvoice(u, invoiceId): return withUser(u, invoiceId)
+        case let .badgeState(u, badgeState, storePurchases): return withUser(u, "\(String(describing: badgeState))\nstorePurchases: \(String(describing: storePurchases ?? []))")
         case let .badgeLedger(u, badgeLedger): return withUser(u, String(describing: badgeLedger))
         }
     }
@@ -1248,6 +1283,8 @@ enum ChatEvent: Decodable, ChatAPIResult {
     // badges
     case badgeChanged(user: User, badgeState: BadgeState?)
     case badgeAlert(user: UserRef, badgeAlert: BadgeAlert)
+    case storePurchaseCredited(user: UserRef, invoiceId: String)
+    case storePurchaseRefused(user: UserRef, invoiceId: String, refusal: BadgeIssueFailure)
 
     var responseType: String {
         switch self {
@@ -1322,6 +1359,8 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .contactPQEnabled: "contactPQEnabled"
         case .badgeChanged: "badgeChanged"
         case .badgeAlert: "badgeAlert"
+        case .storePurchaseCredited: "storePurchaseCredited"
+        case .storePurchaseRefused: "storePurchaseRefused"
         }
     }
 
@@ -1406,6 +1445,8 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
         case let .badgeChanged(u, badgeState): return withUser(u, String(describing: badgeState))
         case let .badgeAlert(u, badgeAlert): return withUser(u, String(describing: badgeAlert))
+        case let .storePurchaseCredited(u, invoiceId): return withUser(u, "invoiceId: \(invoiceId)")
+        case let .storePurchaseRefused(u, invoiceId, refusal): return withUser(u, "invoiceId: \(invoiceId)\nrefusal: \(refusal.tag)")
         }
     }
 }

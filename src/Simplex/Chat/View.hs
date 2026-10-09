@@ -46,7 +46,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
 import Simplex.Chat.Badges.Service (StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..), OpenStorePurchase (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -193,7 +193,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   -- the badge is only shown when it is the one now on the profile; a replayed code's badge may not be
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
-  CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
+  CRBadgeInvoice u invoiceId -> ttyUser u ["badge invoice: " <> plain invoiceId]
+  CRBadgeState u st storePurchases -> ttyUser u $ viewUserBadgeState st <> map viewOpenStorePurchase storePurchases
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
@@ -483,6 +484,8 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtServiceReplySent (AgentConnId cId) -> [plain $ "service reply sent, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   CEvtBadgeChanged u st -> ttyUser u $ viewUserBadgeState st
   CEvtBadgeAlert u alert -> ttyUser u $ viewBadgeAlert alert
+  CEvtStorePurchaseCredited u invoiceId -> ttyUser u ["store purchase credited: invoice " <> plain invoiceId]
+  CEvtStorePurchaseRefused u invoiceId refusal -> ttyUser u ["store purchase refused: invoice " <> plain invoiceId <> ", " <> plain (safeDecodeUtf8 $ strEncode refusal)]
   CEvtContactRequestRejected u Contact {localDisplayName = c} _reason -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
@@ -1863,6 +1866,14 @@ viewBadgeIssueError BadgeIssueError {failedSince, lastAttemptAt, reason} =
 viewBadgeAlert :: BadgeAlert -> [StyledString]
 viewBadgeAlert BadgeAlert {kind, date} = [plain $ "badge alert: " <> textEncode kind <> " " <> day date]
 
+viewOpenStorePurchase :: OpenStorePurchase -> StyledString
+viewOpenStorePurchase OpenStorePurchase {invoiceId, transactionRef, creditError} =
+  plain $
+    "store purchase open: invoice "
+      <> fromMaybe "none" invoiceId
+      <> maybe "" (", transaction " <>) transactionRef
+      <> maybe "" ((", not credited: " <>) . safeDecodeUtf8 . strEncode) creditError
+
 viewBadgeLedger :: [StatementEntry] -> [StyledString]
 viewBadgeLedger [] = ["no ledger entries"]
 viewBadgeLedger entries = map viewEntry entries
@@ -2868,13 +2879,14 @@ viewChatError isCmd logLevel testView = \case
     CEBadgeRedeemError e ->
       let reason = case e of
             BREInvalidCode -> "invalid code"
+            BREInvalidReceipt -> "invalid store receipt"
             BREServiceNotConfigured -> "badge service not configured"
             BREBadgeActive -> "badge already active"
             BREServiceError code -> "badge service error: " <> T.unpack (badgeServiceErrorText code)
             BREInvalidResponse m -> "invalid service response: " <> m
             BREUnknownKeyIndex -> "credential names an unknown badge key index"
             BRECredentialNotVerified -> "credential does not verify against configured key"
-       in ["cannot redeem badge code: " <> plain reason]
+       in ["cannot get badge: " <> plain reason]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]

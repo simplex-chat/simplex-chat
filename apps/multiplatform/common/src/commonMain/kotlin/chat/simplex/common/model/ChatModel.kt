@@ -2271,6 +2271,12 @@ sealed class BadgeIssueFailure {
     is Unexpected -> String.format(generalGetString(MR.strings.badges_error_unexpected), message)
   }
 
+  val purchaseText: String get() = when (this) {
+    is ServiceError -> badgeServiceErrorText(code) ?: String.format(generalGetString(MR.strings.badges_error_purchase_refused), code.text)
+    is InvalidCredential -> generalGetString(MR.strings.badges_error_credential_not_verified)
+    is ServiceTimeout, is Network, is Unexpected -> text
+  }
+
   // the stored form, for support
   val tag: String get() = when (this) {
     is ServiceError -> "serviceError ${if (retryable) "retry" else "final"} ${code.text}"

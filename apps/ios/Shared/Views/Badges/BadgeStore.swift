@@ -9,6 +9,7 @@
 import Foundation
 import Combine
 import StoreKit
+import SimpleXChat
 
 // TODO [badges] product ids will come from app config and prices from the badge service catalog;
 // hardcoded here so the App Store integration can be tested before the purchase API lands.
@@ -27,10 +28,26 @@ let badgeProductIds: [String] = BadgeLevel.allCases.flatMap { level in
     BadgePeriod.allCases.map { badgeProductId(level, $0) }
 }
 
-// TODO [badges] replaced by APIGetBadgeInvoice, which creates the invoice row and returns its id.
-// Apple requires a UUID - it is sent as appAccountToken and echoed back in the signed transaction,
-// which is how the service learns which invoice a store transaction settles.
+// the only products sent to the badge service: nothing delivers a subscription yet
+let badgeOneTimeProductIds: Set<String> = Set(BadgeLevel.allCases.map { badgeProductId($0, .oneMonth) })
+
+// subscriptions are for sale once renewals are delivered
+let badgePeriodsForSale: [BadgePeriod] = [.oneMonth]
+
+// A subscription's id only: core mints a one-time purchase's, and a subscription is never sent to core.
+// Apple requires a UUID - it is sent as appAccountToken and echoed back in the signed transaction.
 func newBadgeInvoiceId() -> UUID { UUID() }
+
+// the page's app flag rides in the fragment, which never reaches the service
+// TEST ONLY: pointed at the dev deployment; restore the line below before merging
+let badgePageUrl = "https://smp7.simplex.im/#/tier?app=true"
+// let badgePageUrl = "https://badges.simplex.chat/#/tier?app=true"
+
+// where the store allows a link out to the badge page: the US for now, a set expected to widen.
+// An unknown storefront does not count, as this decides whether the store sees a link out of the app.
+var badgeBrowserAllowed: Bool {
+    SKPaymentQueue.default().storefront?.countryCode == "USA"
+}
 
 enum BadgePrice {
     case loading
@@ -49,21 +66,32 @@ struct BadgeStoreReceipt {
     // the signed token the badge service verifies - never transaction.jsonRepresentation
     let jws: String
     let productId: String
-    let transactionId: UInt64
     let invoiceId: UUID?
-    let environment: String?
     let signatureVerified: Bool
+    let transaction: Transaction
+
+    var echoedInvoiceId: String? { invoiceId.map(coreInvoiceId) }
 }
+
+// core mints the id in lower case, and UUID formats it in upper case
+func coreInvoiceId(_ invoiceId: UUID) -> String { invoiceId.uuidString.lowercased() }
 
 enum BadgePurchaseOutcome {
     case purchased(BadgeStoreReceipt)
-    case pending
+    case pending(invoiceId: String?)
     case cancelled
+}
+
+enum BadgePurchaseState {
+    case issuing
+    case waitingForApproval
 }
 
 enum BadgeStoreError: Error {
     case productUnavailable(productId: String)
     case unknownPurchaseResult
+    case noActiveProfile
+    case invalidInvoiceId(String)
 }
 
 final class BadgeStore: ObservableObject {
@@ -73,14 +101,53 @@ final class BadgeStore: ObservableObject {
 
     @Published private var state: LoadState = .notLoaded
     private var products: [String: Product] = [:]
+    // core's open store purchases for the profile they were read for: core knows whose a purchase is
+    @Published private var storePurchases: (userId: Int64, purchases: [OpenStorePurchase])? = nil
+    // whether a store sheet this run opened has not returned
+    @Published private var buying = false
+    // kept for this run only: StoreKit lists no deferred purchase, and a declined one delivers nothing
+    // by invoice id, so a pending purchase shows only under the profile whose record it names
+    @Published private var waitingForApproval: Set<String> = []
+    // set once presentUnfinished has read the store: until then, an Ask to Buy approved while the app was
+    // closed, or a purchase it died before handing over, are both unknown, so canBuy refuses to buy again
+    @Published private var reconciledOnce = false
+    // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
+    private var sweepFailureShown = false
+    private var transactionUpdates: Task<Void, Never>? = nil
 
     private init() {}
 
-    func price(_ level: BadgeLevel, _ period: BadgePeriod) -> BadgePrice {
+    func purchaseState(_ userId: Int64?) -> BadgePurchaseState? {
+        let purchases = openStorePurchases(userId)
+        if purchases.contains(where: { $0.transactionRef != nil }) { return .issuing }
+        if purchases.contains(where: { $0.invoiceId.map(waitingForApproval.contains) == true }) { return .waitingForApproval }
+        return nil
+    }
+
+    func creditError(_ userId: Int64?) -> BadgeIssueFailure? {
+        openStorePurchases(userId).compactMap(\.creditError).first
+    }
+
+    var checkingPurchases: Bool { !reconciledOnce }
+
+    func canBuy(_ userId: Int64?) -> Bool {
+        reconciledOnce && !buying && purchaseState(userId) == nil
+    }
+
+    func setStorePurchases(_ userId: Int64, _ purchases: [OpenStorePurchase]) {
+        storePurchases = (userId, purchases)
+    }
+
+    private func openStorePurchases(_ userId: Int64?) -> [OpenStorePurchase] {
+        guard let storePurchases, storePurchases.userId == userId else { return [] }
+        return storePurchases.purchases
+    }
+
+    func price(_ level: BadgeLevel, _ period: BadgePeriod, compact: Bool = true) -> BadgePrice {
         switch state {
         case .notLoaded, .loading: return .loading
         case .loaded, .failed:
-            if let p = products[badgeProductId(level, period)] { return .price(compactPrice(p)) }
+            if let p = products[badgeProductId(level, period)] { return .price(compact ? compactPrice(p) : p.displayPrice) }
             return .unavailable
         }
     }
@@ -119,30 +186,155 @@ final class BadgeStore: ObservableObject {
         }
     }
 
-    func purchase(_ level: BadgeLevel, _ period: BadgePeriod, invoiceId: UUID) async throws -> BadgePurchaseOutcome {
+    // A one-time purchase has its core record before the store charges, and every store outcome reaches it.
+    func purchase(_ level: BadgeLevel, _ period: BadgePeriod) async throws -> BadgePurchaseOutcome {
         let productId = badgeProductId(level, period)
         guard let product = await MainActor.run(body: { products[productId] }) else {
             throw BadgeStoreError.productUnavailable(productId: productId)
         }
-        switch try await product.purchase(options: [.appAccountToken(invoiceId)]) {
-        case let .success(verification):
-            let transaction: Transaction
-            let signatureVerified: Bool
-            switch verification {
-            case let .verified(t):
-                transaction = t
-                signatureVerified = true
-            case let .unverified(t, _):
-                transaction = t
-                signatureVerified = false
+        // a subscription is never sent to core, so nothing would ever finish it later
+        guard badgeOneTimeProductIds.contains(productId) else {
+            let outcome = try await storePurchase(product, newBadgeInvoiceId())
+            if case let .purchased(receipt) = outcome { await receipt.transaction.finish() }
+            return outcome
+        }
+        guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else {
+            throw BadgeStoreError.noActiveProfile
+        }
+        let invoice = try await apiCreateBadgeInvoice(userId)
+        guard let invoiceId = UUID(uuidString: invoice) else { throw BadgeStoreError.invalidInvoiceId(invoice) }
+        await MainActor.run { buying = true }
+        await loadBadgeStateAsync(userId)
+        do {
+            let outcome = try await storePurchase(product, invoiceId)
+            if case let .purchased(receipt) = outcome, receipt.signatureVerified {
+                try await handOver(receipt)
             }
-            // nothing is delivered in this build, so the transaction is finished right away; once the
-            // service issues credentials it must only be finished after the credential is stored
-            await transaction.finish()
-            return .purchased(storeReceipt(verification.jwsRepresentation, transaction, signatureVerified))
-        case .pending: return .pending
+            await MainActor.run { buying = false }
+            return outcome
+        } catch let error {
+            await MainActor.run { buying = false }
+            throw error
+        }
+    }
+
+    private func storePurchase(_ product: Product, _ invoiceId: UUID) async throws -> BadgePurchaseOutcome {
+        switch try await product.purchase(options: [.appAccountToken(invoiceId)]) {
+        case let .success(verification): return .purchased(storeReceipt(verification))
+        case .pending:
+            let pending = coreInvoiceId(invoiceId)
+            await MainActor.run { _ = waitingForApproval.insert(pending) }
+            return .pending(invoiceId: pending)
         case .userCancelled: return .cancelled
         @unknown default: throw BadgeStoreError.unknownPurchaseResult
+        }
+    }
+
+    // Core holds the receipt and credits it; the transaction stays unfinished until core answers it credited
+    // or refused, as an unfinished transaction is what the store re-delivers if anything is lost on the way.
+    private func handOver(_ receipt: BadgeStoreReceipt) async throws {
+        guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else { return }
+        // a refusal is announced from core's event for it, so only an unexpected answer reaches the buyer
+        do {
+            switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, .apple(jws: receipt.jws)) {
+            case let .held(user, badgeState, storePurchases):
+                await MainActor.run {
+                    // the answer is the owner's, which may be another profile and a hidden one
+                    if active(user) {
+                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
+                        setStorePurchases(user.userId, storePurchases)
+                    }
+                }
+            case let .credited(user, badgeState):
+                await MainActor.run {
+                    if active(user) {
+                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
+                        ChatModel.shared.updateUser(user)
+                        if badgeState?.shown == true { UserDefaults.standard.set(true, forKey: DEFAULT_SUPPORTER_BANNER_SHOWN) }
+                    }
+                }
+                await receipt.transaction.finish()
+            }
+        } catch let error where badgeReceiptRefused(error) {
+            logger.error("BadgeStore.handOver: \(responseError(error))")
+            await receipt.transaction.finish()
+        }
+    }
+
+    func storePurchaseCredited(_ user: UserRef, _ invoiceId: String) async {
+        await MainActor.run {
+            // an open badges screen is the notice only for the active profile, whose badge it shows
+            if !active(user) || !badgesViewShown { showBadgeAddedAlert(user) }
+        }
+        await storePurchaseResolved(user, invoiceId)
+    }
+
+    func storePurchaseRefused(_ user: UserRef, _ invoiceId: String, _ refusal: BadgeIssueFailure) async {
+        await MainActor.run {
+            if active(user) && openStorePurchases(user.userId).contains(where: { $0.invoiceId == invoiceId }) {
+                showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: refusal.purchaseText)
+            }
+        }
+        await storePurchaseResolved(user, invoiceId)
+    }
+
+    private func storePurchaseResolved(_ user: UserRef, _ invoiceId: String) async {
+        // the row goes before the store is read, or the screen shows it open while the store answers;
+        // the transaction is finished whoever owns it, as only the app can, while the cached row is the active profile's
+        await MainActor.run {
+            if active(user), let open = storePurchases, open.userId == user.userId {
+                storePurchases = (open.userId, open.purchases.filter { $0.invoiceId != invoiceId })
+            }
+        }
+        for await verification in Transaction.unfinished {
+            let receipt = storeReceipt(verification)
+            if receipt.echoedInvoiceId == invoiceId {
+                await receipt.transaction.finish()
+                return
+            }
+        }
+    }
+
+    // at launch, on return to the foreground and on a profile switch, never on a timer
+    func presentUnfinished() async {
+        await listenForTransactions()
+        for await verification in Transaction.unfinished {
+            await reconcile(verification)
+        }
+        await loadCurrentBadgeState()
+        await MainActor.run { reconciledOnce = true }
+    }
+
+    // transactions the store settles outside a purchase call, such as an approved Ask to Buy
+    @MainActor
+    private func listenForTransactions() {
+        if transactionUpdates == nil {
+            transactionUpdates = Task.detached {
+                for await verification in Transaction.updates {
+                    await BadgeStore.shared.reconcile(verification)
+                }
+            }
+        }
+    }
+
+    // an unverified one-time transaction is never sent, and left unfinished rather than lost
+    private func reconcile(_ verification: VerificationResult<Transaction>) async {
+        let receipt = storeReceipt(verification)
+        if !badgeOneTimeProductIds.contains(receipt.productId) {
+            await receipt.transaction.finish()
+        } else if receipt.signatureVerified {
+            // the receipt stays unfinished, so the next sweep hands it over again
+            do { try await handOver(receipt) } catch let error {
+                logger.error("BadgeStore.reconcile: \(responseError(error))")
+                await MainActor.run {
+                    // showAlert presents on the top view controller, which the launch sweep can precede;
+                    // an alert with nowhere to go must not spend the one this run gets
+                    if !sweepFailureShown, getTopViewController() != nil {
+                        sweepFailureShown = true
+                        showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(error, purchase: true))
+                    }
+                }
+            }
         }
     }
 
@@ -169,15 +361,25 @@ private func compactPrice(_ product: Product) -> String {
         : product.displayPrice
 }
 
-private func storeReceipt(_ jws: String, _ t: Transaction, _ signatureVerified: Bool) -> BadgeStoreReceipt {
-    var environment: String? = nil
-    if #available(iOS 16.0, *) { environment = t.environment.rawValue }
+private func storeReceipt(_ verification: VerificationResult<Transaction>) -> BadgeStoreReceipt {
+    let (t, signatureVerified) = switch verification {
+    case let .verified(t): (t, true)
+    case let .unverified(t, _): (t, false)
+    }
     return BadgeStoreReceipt(
-        jws: jws,
+        jws: verification.jwsRepresentation,
         productId: t.productID,
-        transactionId: t.id,
         invoiceId: t.appAccountToken,
-        environment: environment,
-        signatureVerified: signatureVerified
+        signatureVerified: signatureVerified,
+        transaction: t
     )
+}
+
+// the codes core refuses a receipt with for good, after which the store may stop re-delivering it;
+// a sweep that hands over a receipt refused while the app was not running learns it only from this answer
+private func badgeReceiptRefused(_ error: Error) -> Bool {
+    if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError {
+        return code == .receiptInvalid || code == .receiptUsed
+    }
+    return false
 }

@@ -60,3 +60,8 @@ idle_seconds = 60
 ;[group]
 ;display_name = SimpleX Badges
 ;description = Welcome to the badges group
+
+; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
+; verifying it, so anyone who can reach this service can mint badges
+[dev]
+accept_unverified_store_receipts = off

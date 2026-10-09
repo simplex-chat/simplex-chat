@@ -47,6 +47,10 @@ badgeConfigTests = describe "badge service config" $ do
   it "refuses an index that is not a positive whole number" testIssuerIndexInvalid
   it "refuses a private key that is not a valid issuer secret" testIssuerBadSecret
   it "names the old default and key_<n> settings, then refuses the boot" testIssuerOldFormat
+  it "verifies store receipts when the dev section is absent" testDevUnverifiedReceiptsAbsent
+  it "reads accept_unverified_store_receipts = on" testDevUnverifiedReceiptsOn
+  it "reads accept_unverified_store_receipts = off" testDevUnverifiedReceiptsOff
+  it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
   groupConfigTests
 
 fullIni :: T.Text
@@ -352,6 +356,29 @@ testIssuerOldFormat = do
     Right ini <- readIniFile p
     unknownKeys ini `shouldMatchList` ["issuer.default", "issuer.key_1"]
   issuerRefusal old `shouldReturn` "issuer.index is required"
+
+testDevUnverifiedReceiptsAbsent :: IO ()
+testDevUnverifiedReceiptsAbsent = withIni fullIni $ \p -> do
+  Right cfg <- readServiceConfig p
+  devAcceptUnverifiedStoreReceipts cfg `shouldBe` False
+
+testDevUnverifiedReceiptsOn :: IO ()
+testDevUnverifiedReceiptsOn = withDev "accept_unverified_store_receipts = on\n" $ \r -> case r of
+  Right cfg -> devAcceptUnverifiedStoreReceipts cfg `shouldBe` True
+  Left e -> expectationFailure ("[dev] accept_unverified_store_receipts = on is legal: " <> e)
+
+testDevUnverifiedReceiptsOff :: IO ()
+testDevUnverifiedReceiptsOff = withDev "accept_unverified_store_receipts = off\n" $ \r -> case r of
+  Right cfg -> devAcceptUnverifiedStoreReceipts cfg `shouldBe` False
+  Left e -> expectationFailure ("[dev] accept_unverified_store_receipts = off is legal: " <> e)
+
+testDevUnverifiedReceiptsNotBoolean :: IO ()
+testDevUnverifiedReceiptsNotBoolean = withDev "accept_unverified_store_receipts = yes\n" $ \r -> case r of
+  Left e -> e `shouldContain` "accept_unverified_store_receipts"
+  Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently arm the mock"
+
+withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
+withDev keys act = withIni (fullIni <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act
 
 parseIni :: T.Text -> IO (Either String ServiceConfig)
 parseIni t = withIni t readServiceConfig

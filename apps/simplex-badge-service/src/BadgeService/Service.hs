@@ -13,16 +13,19 @@ module BadgeService.Service
     badgeServiceCLI,
     badgeServiceResponse,
     badgeErrorRetryAfter,
+    shownServiceRequest,
+    survive,
     IssueCodeOpts (..),
     issueBadgeCode,
   )
 where
 
-import BadgeService.Catalog (defaultCatalog)
+import BadgeService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import BadgeService.Codes (issueFailedText, issueOneCode, singleUse)
 import BadgeService.Config (BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import BadgeService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
+import BadgeService.Log (logError, logInfo, logWarn)
 import BadgeService.Options
 import BadgeService.Poller (newPollerEnv, newReadHints, runPoller)
 import BadgeService.Providers.BTCPay (btcpayProvider)
@@ -30,11 +33,12 @@ import BadgeService.Providers.Stripe (stripeProvider)
 import BadgeService.Store
 import BadgeService.Store.Invoices (seedCatalog, truncateToSecond)
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
+import BadgeService.StoreReceipts
+import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
-import BadgeService.Log (logError, logInfo)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
@@ -43,6 +47,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight)
 import Data.Functor (($>), (<&>))
+import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import qualified Data.Text as T
@@ -58,14 +63,16 @@ import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
+import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), User (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (catchOwn', raceAny_, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -73,15 +80,18 @@ import System.Exit (exitFailure)
 data ServiceState = ServiceState
   { serviceCC :: TMVar ChatController,
     serviceRequestQ :: TQueue (User, AgentInvId, Maybe C.PublicKeyEd25519, J.Object),
-    groupEventQ :: TQueue GroupEvent
+    groupEventQ :: TQueue GroupEvent,
+    storeVerifier :: StoreVerifier
   }
 
+-- | No store verifier exists yet, so every store receipt not already credited is answered
+-- provider_not_configured, terminal for the request: retrying cannot deploy one.
 newServiceState :: IO ServiceState
 newServiceState = do
   serviceCC <- newEmptyTMVarIO
   serviceRequestQ <- newTQueueIO
   groupEventQ <- newTQueueIO
-  pure ServiceState {serviceCC, serviceRequestQ, groupEventQ}
+  pure ServiceState {serviceCC, serviceRequestQ, groupEventQ, storeVerifier = noStoreVerifier}
 
 welcomeGetOpts :: IO BadgeServiceOpts
 welcomeGetOpts = do
@@ -120,11 +130,19 @@ readConfigOrExit path =
     Left e -> putStrLn (path <> ": " <> e) >> exitFailure
     Right sc -> pure sc
 
+devStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
+devStoreVerifier serviceCfg env
+  | maybe False devAcceptUnverifiedStoreReceipts serviceCfg = do
+      logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
+      pure env {storeVerifier = mockStoreVerifier}
+  | otherwise = pure env
+
 badgeService :: BadgeServiceOpts -> ChatConfig -> ServiceState -> IO ()
 badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
+  requestEnv <- devStoreVerifier serviceCfg env
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
       readEvents cc =
@@ -139,7 +157,7 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
         lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
         groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc (groupEventQ env) <$> ensureManagedGroup cc gc
-        raceAny_ $ processQueuedRequests key trackerQ_ env : maybeToList groupLane_ <> lanes
+        raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
@@ -175,13 +193,12 @@ badgeServiceCLI :: BadgeServiceOpts -> IO ()
 badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
-  env <- newServiceState
-  let eventHook _cc ev = do
-        case ev of
-          Right (CEvtServiceRequest u reqId sigKey reqData) ->
-            atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
-          _ -> pure ()
-        pure ev
+  env <- newServiceState >>= devStoreVerifier serviceCfg
+  let eventHook _cc = \case
+        Right (CEvtServiceRequest u reqId sigKey reqData) -> do
+          atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
+          pure $ Right $ CEvtServiceRequest u reqId sigKey (shownServiceRequest reqData)
+        ev -> pure ev
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
@@ -193,6 +210,12 @@ badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
     [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
       processQueuedRequests key Nothing env
     ]
+
+-- | The terminal prints each request, and requests carry codes and store receipts, which are bearer secrets.
+shownServiceRequest :: J.Object -> J.Object
+shownServiceRequest reqData = case KM.lookup "request" reqData of
+  Just (J.Object cmd) | Just t <- KM.lookup "type" cmd -> KM.singleton "request" $ J.object ["type" J..= t]
+  _ -> KM.empty
 
 badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
 badgeCmdHook cc = \case
@@ -246,7 +269,12 @@ processQueuedRequests key trackerQ_ env = do
   cc <- atomically $ readTMVar $ serviceCC env
   forever $ do
     (u, reqId, sigKey, reqData) <- atomically $ readTQueue $ serviceRequestQ env
-    handleServiceRequest key cc trackerQ_ u reqId sigKey reqData
+    survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ handleServiceRequest key (storeVerifier env) cc trackerQ_ u reqId sigKey reqData
+
+-- | Cancellation is rethrown, since that is how the race stops this thread. The
+-- exception itself is not logged: it can quote the request, which carries codes and store receipts.
+survive :: T.Text -> IO () -> IO ()
+survive what action = action `catchOwn'` \_ -> logError $ "badge service: " <> what <> " failed; the next one will be handled"
 
 badgePreStartHook :: BadgeServiceOpts -> ChatController -> IO ()
 badgePreStartHook opts ChatController {config, chatStore} =
@@ -263,11 +291,13 @@ badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do
       unless noAddress $ initializeBotAddress' (not testing) (Just True) False cc
       void $ atomically $ tryPutTMVar (serviceCC env) cc
 
-handleServiceRequest :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
-handleServiceRequest key cc trackerQ_ User {userId} reqId sigKey reqData = do
+handleServiceRequest :: BadgeIssuerKey -> StoreVerifier -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
+handleServiceRequest key verifier cc trackerQ_ User {userId} reqId sigKey reqData = do
   let reqIdT = safeDecodeUtf8 (strEncode reqId)
   logInfo $ "badge service request " <> reqIdT
-  resp <- badgeServiceResponse key cc trackerQ_ sigKey reqData
+  resp <-
+    badgeServiceResponse key verifier cc trackerQ_ sigKey reqData `catchOwn'` \_ ->
+      logError ("badge service request " <> reqIdT <> " failed") $> errorResponse BSEInternal
   sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
@@ -289,8 +319,8 @@ badgeErrorRetryAfter = \case
 
 
 -- | The agent verified the signature, so sigKey is a key the sender holds; a differing purchaseKey would let a client claim a purchase it cannot sign for.
-badgeServiceResponse :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
-badgeServiceResponse key cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object reqData) of
+badgeServiceResponse :: BadgeIssuerKey -> StoreVerifier -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
+badgeServiceResponse key verifier cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Error _ -> pure $ errorResponse BSEBadRequest
   J.Success BadgeServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
@@ -299,10 +329,16 @@ badgeServiceResponse key cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc trackerQ_ k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
+        BSCPurchaseBadge {masterKey, payment, upgrade}
+          | Just receipt_ <- toStoreReceipt verifier payment -> case (purchaseKey, upgrade) of
+              (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc k masterKey) receipt_
+              -- store upgrades are not built, and ignoring one would credit its months at the discounted price
+              (Just _, Just _) -> pure $ errorResponse BSEBadRequest
+              (Nothing, _) -> pure $ errorResponse BSEBadRequest
         BSCIssueBadge {balance} -> case purchaseKey of
           Just k -> issueBadgeCmd key cc k balance
           Nothing -> pure $ errorResponse BSEBadRequest
-        -- Every command but redeemBadgeCode needs a key the service already knows; that one creates the purchase, so its key is unknown on a first redemption.
+        -- Every command but redeemBadgeCode and purchaseBadge from a store needs a key the service already knows; those two create the purchase, so their key is unknown on a first purchase.
         _ -> case purchaseKey of
           Nothing -> pure $ errorResponse BSEUnsupportedVersion
           Just k ->
@@ -339,31 +375,21 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
     withDB "getBadgeCode" cc (readCode now code) >>= \case
       Left _ -> pure $ errorResponse BSEInternal
       Right (Left resp) -> pure resp
-      Right (Right IssuedCode {badgeCodeId, badgeType, months, redeemLimit}) -> do
-        (grantUuid, issueUuid) <- (,) <$> randomId cc <*> randomId cc
-        -- TODO [badges] a top-up grants onto an existing ledger, and must lapse before it or the
-        -- months it adds are counted from a start already in the past
-        let granted = grantEntry now grantUuid months SCCode $ emptyEntry now badgeType
-        -- A grant of at least one month starting now always has a month to issue.
-        case issueEntry now issueUuid granted of
-          Nothing -> pure $ errorResponse BSEInternal
-          Just issued -> credentialForEntry key masterKey issued >>= \case
-            Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
-            Right signed -> do
-              -- If the code was revoked or used up while signing, the claim fails. Read the code again to tell the client why.
-              r <- withDB "writeCodeRedemption" cc $ \db ->
-                liftIO (createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now) >>= \case
-                  Nothing ->
-                    readCode now code db >>= \case
-                      Left resp -> pure (resp, False)
-                      Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> (errorResponse BSEInternal, False)
-                  Just purchaseId -> liftIO $ do
-                    appendLedgerPlan db purchaseId [granted] $ Just $ issuanceAfter granted signed
-                    entries_ <- getLedgerEntries db purchaseId 0
-                    pure (maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_, True)
-              let (resp, claimed) = fromRight (errorResponse BSEInternal, False) r
-              when (claimed && hasTracker redeemLimit) $ refreshTracker cc trackerQ_ badgeCodeId code
-              pure resp
+      Right (Right IssuedCode {badgeCodeId, badgeType, months, redeemLimit}) ->
+        signFirstMonth key cc masterKey badgeType months SCCode now >>= \case
+          Left resp -> pure resp
+          Right firstMonth -> do
+            -- If the code was revoked or used up while signing, the claim fails. Read the code again to tell the client why.
+            r <- withDB "writeCodeRedemption" cc $ \db ->
+              liftIO (createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now) >>= \case
+                Nothing ->
+                  readCode now code db >>= \case
+                    Left resp -> pure (resp, False)
+                    Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> (errorResponse BSEInternal, False)
+                Just purchaseId -> liftIO $ (,True) <$> firstMonthResponse db purchaseId Nothing firstMonth
+            let (resp, claimed) = fromRight (errorResponse BSEInternal, False) r
+            when (claimed && hasTracker redeemLimit) $ refreshTracker cc trackerQ_ badgeCodeId code
+            pure resp
   where
     readCode now code db = liftIO $
       getBadgeCode db (badgeCodeHash code) >>= \case
@@ -386,6 +412,94 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
               | redeemCount >= redeemLimit -> pure $ Left $ errorResponse BSECodeUsed
               | maybe False (now >=) expiresAt -> pure $ Left $ errorResponse BSECodeExpired
               | otherwise -> pure $ Right c
+
+-- | Every refusal is answered before anything is written, so it leaves the receipt unclaimed; and
+-- nothing is written until the credential is signed.
+purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
+purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, verifyReceipt} =
+  withDB' "getStorePayment" cc (\db -> getStorePaymentCredit db provider providerRef) >>= \case
+    Left _ -> pure $ errorResponse BSEInternal
+    Right credit
+      -- only the key it credited can ask, and it is told only what it was given, so the store is not asked
+      | creditedBy credit -> answerCredit credit
+      | otherwise ->
+          verifyReceipt >>= \case
+            Left refusal -> storeRefusalResponse refusal
+            -- the claim was read from the evidence before it was verified, so it must name the transaction the store vouched for
+            Right VerifiedStoreTransaction {transactionRef}
+              | transactionRef /= providerRef -> storeRefusalResponse $ SRVerifierFailed "verified a transaction other than the one claimed"
+            Right VerifiedStoreTransaction {quantity}
+              | quantity /= 1 -> storeRefusalResponse $ SRVerifierFailed $ "verified a quantity of " <> tshow quantity
+            Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse $ SRInvalid "test purchase"
+            -- another key's credit is told only once the store vouched for the receipt, or it would reveal which transactions were credited
+            Right tx -> case credit of
+              Uncredited -> newPurchase tx
+              _ -> answerCredit credit
+  where
+    creditedBy = \case
+      Credited CreditedPurchase {purchaseKey = k} -> k == purchaseKey
+      _ -> False
+    answerCredit credit =
+      withDB' "answerStoreCredit" cc (\db -> creditedResponse db purchaseKey credit) <&> \case
+        Right (Left resp) -> resp
+        _ -> errorResponse BSEInternal
+    -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
+    newPurchase VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
+      Nothing -> pure $ errorResponse BSEProductUnavailable
+      Just StoreProduct {badgeType, months} -> do
+        now <- badgeNow cc
+        signFirstMonth key cc masterKey badgeType months (SCPayment Nothing) now >>= \case
+          Left resp -> pure resp
+          Right firstMonth -> do
+            paymentId <- randomId cc
+            r <- withDB "writeStorePurchase" cc $ \db ->
+              liftIO (createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType} now) >>= \case
+                -- Credited to another key, or to this one by a request that ran alongside it, while signing.
+                Nothing ->
+                  liftIO (getStorePaymentCredit db provider providerRef >>= creditedResponse db purchaseKey) >>= \case
+                    Left resp -> pure resp
+                    Right () -> logError ("badge service: a payment for " <> providerRef <> " exists but funds no purchase") $> errorResponse BSEInternal
+                Just purchaseId -> liftIO $ firstMonthResponse db purchaseId (Just paymentId) firstMonth
+            pure $ fromRight (errorResponse BSEInternal) r
+
+-- | The client learns only the code: a forged receipt, a refunded purchase and a test one are all receipt_invalid.
+storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
+storeRefusalResponse = \case
+  SRInvalid reason -> logInfo ("store receipt refused: " <> reason) $> errorResponse BSEReceiptInvalid
+  SRPending -> pure $ errorResponse BSEPaymentPending
+  SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
+  SRVerifierFailed reason -> logError ("store receipt not verified: " <> reason) $> errorResponse BSEInternal
+  SRNotConfigured -> logWarn "store receipt refused: no verifier for this store is configured" $> errorResponse BSEProviderNotConfigured
+
+creditedResponse :: DB.Connection -> C.PublicKeyEd25519 -> FundingCredit -> IO (Either BadgeServiceResponse ())
+creditedResponse db purchaseKey = \case
+  Uncredited -> pure $ Right ()
+  CreditedUnreadable -> pure $ Left $ errorResponse BSEInternal
+  Credited CreditedPurchase {purchaseKey = k, badgePurchaseId, credential}
+    | k /= purchaseKey -> pure $ Left $ errorResponse BSEReceiptUsed
+    | otherwise ->
+        maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
+          <$> getLedgerEntries db badgePurchaseId 0
+
+signFirstMonth :: BadgeIssuerKey -> ChatController -> BadgeMasterKey -> BadgeType -> Int -> StatementCreditType -> UTCTime -> IO (Either BadgeServiceResponse (StatementEntry, (StatementEntry, BadgeCredential)))
+signFirstMonth key cc masterKey badgeType months credit now = do
+  (grantUuid, issueUuid) <- (,) <$> randomId cc <*> randomId cc
+  -- TODO [badges] a top-up grants onto an existing ledger, and must lapse before it or the
+  -- months it adds are counted from a start already in the past
+  let granted = grantEntry now grantUuid months credit $ emptyEntry now badgeType
+  -- A grant of at least one month starting now always has a month to issue.
+  case issueEntry now issueUuid granted of
+    Nothing -> pure $ Left $ errorResponse BSEInternal
+    Just issued ->
+      credentialForEntry key masterKey issued >>= \case
+        Left e -> logError ("badge service signing failed: " <> T.pack e) $> Left (errorResponse BSEInternal)
+        Right signed -> pure $ Right (granted, signed)
+
+firstMonthResponse :: DB.Connection -> Int64 -> Maybe T.Text -> (StatementEntry, (StatementEntry, BadgeCredential)) -> IO BadgeServiceResponse
+firstMonthResponse db purchaseId creditPaymentId_ (granted, signed) = do
+  appendLedgerPlan db purchaseId creditPaymentId_ [granted] $ Just $ issuanceAfter granted signed
+  entries_ <- getLedgerEntries db purchaseId 0
+  pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_
 
 -- | The purchase is reached through the verified signer key and no other way.
 issueBadgeCmd :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeBalance -> IO BadgeServiceResponse
@@ -414,7 +528,7 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
     writeIssued purchaseId tip rows t issuance_ = do
       r <- withDB "issueBadge" cc $ \db -> liftIO $ do
         tip' <- getLedgerTip db purchaseId
-        when (fmap entryId tip' == fmap entryId tip) $ appendLedgerPlan db purchaseId rows issuance_
+        when (fmap entryId tip' == fmap entryId tip) $ appendLedgerPlan db purchaseId Nothing rows issuance_
         issueResponse db purchaseId t
       pure $ fromRight (errorResponse BSEInternal) r
     -- Only the asserted entry's identity is read, never the months it claims.

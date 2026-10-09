@@ -51,7 +51,7 @@ simplex-badge-service --help
   `simplex-directory-service --run-cli`). This mode is the chat/RPC side and the `//` commands
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
-  revoked.
+  revoked. `[dev] accept_unverified_store_receipts` applies to it.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -84,7 +84,8 @@ Other options:
 - `--service-config INI_FILE`: path to `badge_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
   `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
-  uses only its `[issuer]` section. An issuer key is still required either way.
+  uses only its `[issuer]` section and `[dev] accept_unverified_store_receipts`. An issuer key is
+  still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
 - `--client-service`: use the client service certificate.
 - also accepts the standard SimpleX Chat core options — database path, SMP/XFTP servers,
@@ -207,6 +208,24 @@ ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The two 
 the exception: each answers 200, 400 or 413 with an empty body, because its provider is the only
 caller and nothing it could read would change what the route does. A wrong verb on any route, those
 two included, answers `method_not_allowed`.
+
+### Accepting store receipts unverified, for local testing
+
+```ini
+[dev]
+accept_unverified_store_receipts = on
+```
+
+Without a store verifier every store purchase is answered `provider_not_configured`. With this on,
+the service accepts any well-formed receipt without asking or verifying anything: an Apple JWS for
+the `transactionId` and `productId` its payload names, unsigned or not, and a Play product id and
+token as given. It applies to both run modes, since `--run-cli` answers service requests too, and
+the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
+parse.
+
+With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
+That is harmless only while this deployment signs with an issuer key released apps do not carry, so
+they refuse what it signs — never turn it on where the key is one those apps trust.
 
 ## Issuing codes
 

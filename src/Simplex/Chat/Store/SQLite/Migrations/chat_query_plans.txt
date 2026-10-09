@@ -1232,8 +1232,17 @@ Plan:
 
 Query: 
           INSERT INTO badge_purchases
-            (user_id, purchase_key, purchase_priv_key, master_key, initial_badge_type, current_badge_type, status, badge_code_redemption_id, created_at, updated_at)
+            (user_id, purchase_key, purchase_priv_key, master_key, initial_badge_type, current_badge_type, status,
+             badge_code_redemption_id, badge_store_receipt_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        
+Plan:
+
+Query: 
+          INSERT INTO badge_store_receipts
+            (user_id, invoice_id, provider, transaction_ref, payment, next_attempt_at, purchase_key, purchase_priv_key, master_key, created_at)
           VALUES (?,?,?,?,?,?,?,?,?,?)
+          ON CONFLICT DO NOTHING
         
 Plan:
 
@@ -4048,6 +4057,15 @@ Plan:
 SCAN group_members
 
 Query: 
+        SELECT invoice_id, transaction_ref, credit_error
+        FROM badge_store_receipts
+        WHERE user_id = ? AND (transaction_ref IS NULL OR payment IS NOT NULL)
+        ORDER BY badge_store_receipt_id
+      
+Plan:
+SEARCH badge_store_receipts USING INDEX idx_badge_store_receipts_user (user_id=?)
+
+Query: 
         SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
                l.was_paused_since, l.service_created_at, l.entry_type, l.entry_credit_type, l.entry_debit_type, l.entry_type_value
         FROM badge_ledger l
@@ -4104,6 +4122,30 @@ Query:
       
 Plan:
 SEARCH file_badge_proofs USING INDEX idx_file_badge_proofs_file_id_kind (file_id=?)
+
+Query: 
+        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay
+        FROM badge_store_receipts r
+        JOIN users u ON u.user_id = r.user_id
+        WHERE r.user_id = ? AND r.payment IS NOT NULL AND u.shown_badge_id IS NULL
+        ORDER BY r.next_attempt_at, r.retry_count, r.badge_store_receipt_id
+        LIMIT 1
+      
+Plan:
+SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH r USING INDEX idx_badge_store_receipts_user (user_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+        SELECT r.badge_store_receipt_id, r.user_id, r.purchase_key, r.purchase_priv_key, r.master_key,
+          r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay, p.badge_purchase_id, r.credit_error
+        FROM badge_store_receipts r
+        LEFT JOIN badge_purchases p ON p.badge_store_receipt_id = r.badge_store_receipt_id
+        WHERE r.provider = ? AND r.transaction_ref = ?
+      
+Plan:
+SEARCH r USING INDEX sqlite_autoindex_badge_store_receipts_2 (provider=? AND transaction_ref=?)
+SEARCH p USING COVERING INDEX idx_badge_purchases_store_receipt (badge_store_receipt_id=?) LEFT-JOIN
 
 Query: 
         SELECT r.contact_id, g.group_id, r.group_member_id
@@ -4431,14 +4473,25 @@ SEARCH ug USING AUTOMATIC COVERING INDEX (group_id=?)
 
 Query: 
       DELETE FROM badge_code_redemptions
-      WHERE badge_code_redemption_id = ?
-        AND NOT EXISTS (SELECT 1 FROM badge_purchases WHERE badge_code_redemption_id = ?)
+      WHERE user_id = ? AND code = ?
+        AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_code_redemption_id = badge_code_redemptions.badge_code_redemption_id)
     
 Plan:
-SEARCH badge_code_redemptions USING INTEGER PRIMARY KEY (rowid=?)
-SCALAR SUBQUERY 1
+SEARCH badge_code_redemptions USING INDEX sqlite_autoindex_badge_code_redemptions_1 (user_id=? AND code=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH p USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
 SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
-SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
+
+Query: 
+      DELETE FROM badge_store_receipts
+      WHERE payment IS NULL AND created_at < ?
+        AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_store_receipt_id = badge_store_receipts.badge_store_receipt_id)
+    
+Plan:
+SCAN badge_store_receipts
+CORRELATED SCALAR SUBQUERY 1
+SEARCH p USING COVERING INDEX idx_badge_purchases_store_receipt (badge_store_receipt_id=?)
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_store_receipt (badge_store_receipt_id=?)
 
 Query: 
       DELETE FROM chat_items
@@ -4933,6 +4986,12 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO badge_store_receipts (user_id, invoice_id, purchase_key, purchase_priv_key, master_key, created_at)
+      VALUES (?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
       INSERT INTO calls
         (contact_id, shared_call_id, call_uuid, chat_item_id, call_state, call_ts, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?,?,?,?)
@@ -5165,6 +5224,14 @@ Query:
     
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE badge_store_receipts
+      SET retry_delay = ?, next_attempt_at = ?, retry_count = retry_count + 1, credit_error = ?
+      WHERE badge_store_receipt_id = ? AND payment IS NOT NULL
+    
+Plan:
+SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items
@@ -7117,6 +7184,7 @@ SEARCH connections USING COVERING INDEX idx_connections_user_contact_link_id (us
 Query: DELETE FROM users WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH badge_store_receipts USING COVERING INDEX idx_badge_store_receipts_user (user_id=?)
 SEARCH badge_code_redemptions USING COVERING INDEX idx_badge_code_redemptions_user (user_id=?)
 SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_user (user_id=?)
 SEARCH chat_relays USING COVERING INDEX idx_chat_relays_user_id (user_id=?)
@@ -7274,6 +7342,14 @@ Query: SELECT 1 FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 
+Query: SELECT COUNT(*) FROM badge_store_receipts
+Plan:
+SCAN badge_store_receipts USING COVERING INDEX idx_badge_store_receipts_user
+
+Query: SELECT COUNT(*) FROM badge_store_receipts WHERE payment IS NOT NULL
+Plan:
+SCAN badge_store_receipts
+
 Query: SELECT COUNT(*) FROM groups WHERE relay_own_status IS NOT NULL
 Plan:
 SCAN groups
@@ -7376,6 +7452,14 @@ SCAN contact_profiles
 Query: SELECT badge_purchase_id FROM badge_purchases WHERE badge_code_redemption_id = ?
 Plan:
 SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
+
+Query: SELECT badge_purchase_id FROM badge_purchases WHERE badge_store_receipt_id = ?
+Plan:
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_store_receipt (badge_store_receipt_id=?)
+
+Query: SELECT badge_store_receipt_id FROM badge_store_receipts WHERE invoice_id = ?
+Plan:
+SEARCH badge_store_receipts USING COVERING INDEX sqlite_autoindex_badge_store_receipts_1 (invoice_id=?)
 
 Query: SELECT balance_checked FROM badge_ledger ORDER BY entry_id
 Plan:
@@ -7521,6 +7605,10 @@ SCAN group_members USING COVERING INDEX idx_group_members_invited_by_group_membe
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
 SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id
+
+Query: SELECT credit_error FROM badge_store_receipts WHERE payment IS NOT NULL AND credit_error IS NOT NULL
+Plan:
+SCAN badge_store_receipts
 
 Query: SELECT entry_id FROM badge_ledger WHERE badge_purchase_id = ? AND entry_uuid = ?
 Plan:
@@ -7808,6 +7896,10 @@ Query: SELECT user_id FROM users WHERE local_display_name = ?
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_2 (local_display_name=?)
 
+Query: SELECT user_id, invoice_id, transaction_ref IS NOT NULL FROM badge_store_receipts ORDER BY badge_store_receipt_id
+Plan:
+SCAN badge_store_receipts
+
 Query: SELECT via_contact_uri FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -7831,6 +7923,26 @@ SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_store_receipts SET payment = ?
+Plan:
+SCAN badge_store_receipts
+
+Query: UPDATE badge_store_receipts SET payment = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL
+Plan:
+SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0 WHERE badge_store_receipt_id = ?
+Plan:
+SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ? WHERE badge_store_receipt_id = ?
+Plan:
+SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_store_receipts SET provider = ?, transaction_ref = ?, payment = ?, next_attempt_at = ? WHERE invoice_id = ? AND transaction_ref IS NULL
+Plan:
+SEARCH badge_store_receipts USING INDEX sqlite_autoindex_badge_store_receipts_1 (invoice_id=?)
 
 Query: UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?
 Plan:

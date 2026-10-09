@@ -32,7 +32,7 @@ import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.*
 
 @Composable
-fun BadgesSupportSimplexView(modalManager: ModalManager) {
+fun BadgesSupportSimplexView(modalManager: ModalManager, unwindToDepth: Int) {
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -55,8 +55,6 @@ fun BadgesSupportSimplexView(modalManager: ModalManager) {
       modifier = Modifier.fillMaxWidth()
     )
 
-    // TODO [badges] restore WhyBuiltButton() when in-app purchase lands: the level screen
-    // returns to the flow and HowItWorksButton() moves there, leaving this one alone here.
     HowItWorksButton(modalManager)
 
     Spacer(Modifier.weight(1f))
@@ -66,21 +64,30 @@ fun BadgesSupportSimplexView(modalManager: ModalManager) {
     Spacer(Modifier.weight(1f))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      RedeemCodeButton(modalManager)
-      GetCodeButton()
+      if (badgeStoreAvailable) {
+        ChooseLevelButton(modalManager, unwindToDepth)
+        if (badgeBrowserAllowed()) {
+          BuyInBrowserTextButton()
+        } else {
+          RedeemCodeButton(modalManager, unwindToDepth)
+        }
+      } else {
+        BuyInBrowserButton(modalManager, unwindToDepth)
+        RedeemCodeButton(modalManager, unwindToDepth)
+      }
     }
   }
 }
 
-// the in-app purchase path, kept compiling and uncalled until payments return after the MVP
 @Composable
-private fun ChooseLevelButton(modalManager: ModalManager) {
+private fun ChooseLevelButton(modalManager: ModalManager, unwindToDepth: Int) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-    labelId = MR.strings.badges_choose_your_level,
+    labelId = MR.strings.badges_choose_your_badge_title,
     onboarding = null,
+    enabled = BadgeStore.canBuy(chatModel.currentUser.value?.userId),
     onclick = {
-      modalManager.showModal { BadgesYourLevelView(modalManager) }
+      modalManager.showModal { BadgesChooseBadgeView(modalManager, unwindToDepth) }
     }
   )
 }
@@ -111,23 +118,37 @@ private fun HowItWorksButton(modalManager: ModalManager) {
 }
 
 @Composable
-private fun RedeemCodeButton(modalManager: ModalManager) {
-  OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-    labelId = MR.strings.badges_redeem_code_button,
-    onboarding = null,
-    onclick = {
-      modalManager.showModal { BadgesRedeemCodeView(modalManager) }
-    }
+fun RedeemCodeButton(modalManager: ModalManager, unwindToDepth: Int) {
+  TextButtonBelowOnboardingButton(
+    text = stringResource(MR.strings.badges_redeem_code_button),
+    onClick = { modalManager.showModal { BadgesRedeemCodeView(modalManager, unwindToDepth) } }
   )
 }
 
 @Composable
-private fun GetCodeButton() {
+private fun BuyInBrowserTextButton() {
   val uriHandler = LocalUriHandler.current
   TextButtonBelowOnboardingButton(
-    text = stringResource(MR.strings.badges_get_your_code),
-    onClick = { uriHandler.openExternalLink("https://simplex.chat/badges/") }
+    text = stringResource(MR.strings.badges_buy_in_browser),
+    onClick = { uriHandler.openUriCatching(badgePageUrl(appLinkSchemeRegistered())) }
+  )
+}
+
+@Composable
+private fun BuyInBrowserButton(modalManager: ModalManager, unwindToDepth: Int) {
+  val uriHandler = LocalUriHandler.current
+  OnboardingActionButton(
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    labelId = MR.strings.badges_buy_in_browser,
+    onboarding = null,
+    onclick = {
+      val linkReturns = appLinkSchemeRegistered()
+      uriHandler.openUriCatching(badgePageUrl(linkReturns))
+      // with no scheme to bring the code back, the code is pasted into this screen, opened beside the browser
+      if (!linkReturns && !modalManager.hasModalOpen(ModalViewId.BADGE_REDEEM_CODE)) {
+        modalManager.showModal(id = ModalViewId.BADGE_REDEEM_CODE) { BadgesRedeemCodeView(modalManager, unwindToDepth) }
+      }
+    }
   )
 }
 

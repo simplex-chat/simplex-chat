@@ -979,7 +979,8 @@ testServiceConfig staticDir trustForwarded =
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
-      group = Nothing
+      group = Nothing,
+      devAcceptUnverifiedStoreReceipts = False
     }
 
 testServeWebappOff :: IO ()
