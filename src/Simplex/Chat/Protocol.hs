@@ -924,6 +924,14 @@ $(JQ.deriveJSON defaultJSON ''MsgContainer)
 maxEncodedMsgLength :: Int
 maxEncodedMsgLength = 15602
 
+maxForwardBatchLength :: Int
+maxForwardBatchLength = maxEncodedMsgLength + 161
+
+fwdMemberName :: ContactName -> ContactName
+fwdMemberName displayName
+  | T.length displayName <= 16 = displayName
+  | otherwise = T.take 16 displayName `T.snoc` '…'
+
 -- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
 maxEncodedMsgLengthPQ :: Int
 maxEncodedMsgLengthPQ = 13380
@@ -965,8 +973,8 @@ rosterBlobP = do
 maxEncodedInfoLength :: Int
 maxEncodedInfoLength = 14694
 
-maxEncodedInfoLengthPQ :: Int
-maxEncodedInfoLengthPQ = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
+maxEncodedProfileMsgLength :: Int
+maxEncodedProfileMsgLength = 16384
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 

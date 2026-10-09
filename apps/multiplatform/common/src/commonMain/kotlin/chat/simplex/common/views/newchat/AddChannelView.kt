@@ -32,7 +32,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
 import chat.simplex.common.views.chat.group.hostFromRelayLink
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.net.URI
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*

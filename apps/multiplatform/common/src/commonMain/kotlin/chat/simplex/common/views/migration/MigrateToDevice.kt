@@ -29,7 +29,7 @@ import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.OnionRelatedLayout
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
@@ -453,7 +453,7 @@ private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: S
           }
         }
       ) {}
-      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted = true, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, true)
+      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted = true, remember { mutableStateOf(false) }, null, remember { mutableStateOf(false) }, true)
     }
     if (verifyingPassphrase.value) {
       ProgressView()

@@ -38,7 +38,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XInfo, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -119,6 +119,7 @@ chatGroupTests = do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
+    it "join via group link with group profile near the size limit" testGroupLinkLargeGroupProfile
     it "invitees were previously connected as contacts" testGroupLinkInviteesWereConnected
     it "all members were previously connected as contacts" testGroupLinkAllMembersWereConnected
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
@@ -176,6 +177,7 @@ chatGroupTests = do
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
+    it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -2003,7 +2005,7 @@ testGroupDelayedModerationFullDelete ps = do
 testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 750000
       alice ##> "/set delete #team on"
@@ -2022,10 +2024,13 @@ testDeleteMemberWithMessages =
         ]
       threadDelay 750000
 
-      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
-      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
-      cath #$> ("/_files_folder ./tests/tmp/cath_app_files", id, "ok")
-      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/bob_app_files/test.jpg"
+      let aliceFiles = tmpFile alice "alice_app_files"
+          bobFiles = tmpFile bob "bob_app_files"
+          cathFiles = tmpFile cath "cath_app_files"
+      alice #$> ("/_files_folder " <> aliceFiles, id, "ok")
+      bob #$> ("/_files_folder " <> bobFiles, id, "ok")
+      cath #$> ("/_files_folder " <> cathFiles, id, "ok")
+      copyFile "./tests/fixtures/test.jpg" (bobFiles </> "test.jpg")
 
       bob ##> "/_send #1 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"file from bob\"}}]"
       bob <# "#team file from bob"
@@ -2057,9 +2062,9 @@ testDeleteMemberWithMessages =
       cath <## "completed receiving file 1 (test.jpg) from bob"
 
       src <- B.readFile "./tests/fixtures/test.jpg"
-      B.readFile "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` src
-      B.readFile "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` src
-      B.readFile "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` src
+      B.readFile (aliceFiles </> "test.jpg") `shouldReturn` src
+      B.readFile (bobFiles </> "test.jpg") `shouldReturn` src
+      B.readFile (cathFiles </> "test.jpg") `shouldReturn` src
 
       threadDelay 1000000
       alice ##> "/rm #team bob messages=on"
@@ -2068,9 +2073,9 @@ testDeleteMemberWithMessages =
       bob <## "use /d #team to delete the group"
       cath <## "#team: alice removed bob from the group with all messages (signed)"
 
-      doesFileExist "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` False
-      doesFileExist "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` False
-      doesFileExist "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` False
+      doesFileExist (aliceFiles </> "test.jpg") `shouldReturn` False
+      doesFileExist (bobFiles </> "test.jpg") `shouldReturn` False
+      doesFileExist (cathFiles </> "test.jpg") `shouldReturn` False
 
       -- Under fullDelete, bob's items are physically deleted on all sides; only the system event remains.
       alice #$> ("/_get chat #1 count=1", chat, [(1, "removed bob (signed)")])
@@ -2253,11 +2258,15 @@ testSharedMessageBody ps' =
         withTestChatOpts ps opts' "cath" $ \cath -> do
           concurrentlyN_
             [ alice <## "subscribed 4 connections on server localhost",
-              bob <## "subscribed 3 connections on server localhost",
-              cath <## "subscribed 3 connections on server localhost"
+              bob
+                <### [ "subscribed 3 connections on server localhost",
+                       WithTime "#team alice> hello"
+                     ],
+              cath
+                <### [ "subscribed 3 connections on server localhost",
+                       WithTime "#team alice> hello"
+                     ]
             ]
-          bob <# "#team alice> hello"
-          cath <# "#team alice> hello"
           threadDelay 500000
           checkMsgBodyCount alice 0
 
@@ -2266,8 +2275,8 @@ testSharedMessageBody ps' =
     ps = ps' {printOutput = True} :: TestParams
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -2320,8 +2329,8 @@ testSharedBatchBody ps =
   where
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -2525,8 +2534,8 @@ testSharedBatchBodyMixed ps =
     oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -2931,10 +2940,10 @@ testPlanGroupLinkOwn ps =
     alice <## "group link: own link for group #team"
 
     alice ##> ("/c " <> gLink)
-    alice <## "connection request sent!"
-    alice <## "alice_1 (Alice): accepting request to join group #team..."
     alice
-      <### [ "#team: alice_1 joined the group",
+      <### [ "connection request sent!",
+             "alice_1 (Alice): accepting request to join group #team...",
+             "#team: alice_1 joined the group",
              "#team_1: joining the group...",
              "#team_1: you joined the group"
            ]
@@ -3034,6 +3043,39 @@ testPlanGroupLinkLeaveRejoin =
       bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team_1"
       bob <## "use #team_1 <message> to send messages"
+
+testGroupLinkLargeGroupProfile :: HasCallStack => TestParams -> IO ()
+testGroupLinkLargeGroupProfile =
+  testChatOpts2 testOptsNoFullLinks aliceProfile bobProfile $
+    \alice bob -> do
+      threadDelay 100000
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+      withCCTransaction alice $ \db ->
+        DB.execute db "UPDATE group_profiles SET description = ? WHERE display_name = ?" (T.pack welcome, "team" :: T.Text)
+      alice ##> "/create link #team"
+      gLink <- getGroupLink_ alice "team" GRMember True
+      alice <// 100000
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+      alice #> "#team hello"
+      let waitHello = do
+            l <- getTermLine bob
+            if "alice> hello" `isSuffixOf` l then pure () else waitHello
+      waitHello
+  where
+    welcome = unwords $ replicate 1775 "welcome"
 
 testGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupLink =
@@ -3319,7 +3361,7 @@ testGroupLinkMemberRole =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 250000
+      getProfileShortDescrByName bob "alice" `shouldEventuallyReturn` Just "Alice"
 
       alice ##> "/ms team"
       alice
@@ -3489,10 +3531,7 @@ testGroupLinkHostProfileReceived =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 250000
-
-      aliceImage <- getProfilePictureByName bob "alice"
-      aliceImage `shouldBe` Just profileImage
+      getProfilePictureByName bob "alice" `shouldEventuallyReturn` Just profileImage
 
 testGroupLinkExistingContactMerged :: HasCallStack => TestParams -> IO ()
 testGroupLinkExistingContactMerged =
@@ -3553,12 +3592,8 @@ testGLinkRejectBlockedName =
       bob <## "#team: joining the group..."
       bob <## "#team: join rejected, reason: GRRBlockedName"
 
-      threadDelay 100000
-
+      withCCTransaction alice (\db -> DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]) `shouldEventuallyReturn` [[1]]
       alice `hasContactProfiles` ["alice"]
-      memCount <- withCCTransaction alice $ \db ->
-        DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]
-      memCount `shouldBe` [[1]]
 
       -- rejected member can't send messages to group
       bob ##> "#team hello"
@@ -4116,10 +4151,13 @@ testPlanGroupLinkConnecting ps = do
       <### [ "subscribed 1 connections on server localhost",
              "bob (Bob): accepting request to join group #team..."
            ]
+    withCCAgentTransaction alice (\db -> DB.query_ db "SELECT count(1) FROM commands" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
   withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
-    bob <## "subscribed 1 connections on server localhost"
-    bob <## "#team: joining the group..."
+    bob
+      <### [ "subscribed 1 connections on server localhost",
+             "#team: joining the group..."
+           ]
     bob <## "#team: you joined the group"
 
     bob ##> ("/_connect plan 1 " <> gLink)
@@ -4214,8 +4252,8 @@ testGroupSyncRatchet ps =
       bob <## "#team alice: connection synchronized"
 
       threadDelay 100000
-      bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+      (bob ##> "/_get chat #1 count=3" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")]
+      (alice ##> "/_get chat #1 count=2" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(0, "connection synchronization agreed"), (0, "connection synchronized")]
 
       alice #> "#team hello again"
       bob <# "#team alice> hello again"
@@ -4254,8 +4292,8 @@ testGroupSyncRatchetCodeReset ps =
       bob <## "#team alice: connection synchronized"
 
       threadDelay 100000
-      bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+      (bob ##> "/_get chat #1 count=4" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")]
+      (alice ##> "/_get chat #1 count=2" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(0, "connection synchronization agreed"), (0, "connection synchronized")]
 
       -- connection not verified
       bob ##> "/i #team alice"
@@ -4748,13 +4786,13 @@ testMergeGroupLinkHostMultipleContacts =
       concurrentlyN_
         [ bob
             <### [ EndsWith "joined the group",
-                   "contact and member are merged: cath, #party cath_2",
+                   Predicate (`elem` ["contact and member are merged: cath, #party cath_2", "contact and member are merged: cath_1, #party cath_2"]),
                    StartsWith "use @cath"
                  ],
           cath
             <### [ "#party: joining the group...",
                    "#party: you joined the group",
-                   "contact and member are merged: bob, #party bob_2",
+                   Predicate (`elem` ["contact and member are merged: bob, #party bob_2", "contact and member are merged: bob_1, #party bob_2"]),
                    StartsWith "use @bob"
                  ]
         ]
@@ -4809,8 +4847,10 @@ testMemberContactMessage =
       alice <##> bob
 
       alice `send` "@bob hi"
-      alice <## "bob: quantum resistant end-to-end encryption enabled"
-      alice <# "@bob hi"
+      alice
+        <### [ "bob: quantum resistant end-to-end encryption enabled",
+               WithTime "@bob hi"
+             ]
       bob <## "alice: quantum resistant end-to-end encryption enabled"
       bob <# "alice> hi"
 
@@ -5394,6 +5434,28 @@ testGroupMsgForwardMessage =
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
 
+testGroupMsgForwardOwnMembershipRejected :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardOwnMembershipRejected =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      [Only bobMemId] <- withCCTransaction bob $ \db ->
+        DB.query db "SELECT member_id FROM group_members WHERE member_category = ?" (Only ("user" :: T.Text)) :: IO [Only ByteString]
+      connId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      let ChatController {smpAgent = aliceAgent} = chatController alice
+          forgedProfile = (bobProfile :: Profile) {displayName = "mallory", fullName = "Mallory"}
+          chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "forged_info1") (XInfo forgedProfile Nothing)
+          fwd = GrpMsgForward (FwdMember (MemberId bobMemId) "bob") ts
+          body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+      sent <- runExceptT $ sendMessages aliceAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+      either (fail . show) (const $ pure ()) sent
+      bob <##. "error: x.grp.msg.forward: content attributed to own membership"
+      bob ##> "/p"
+      bob <## "user profile: bob (Bob)"
+      bob <## "use /p <name> [<bio>] to change it"
+
 testGroupMsgForwardBatched :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardBatched =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -5539,7 +5601,15 @@ setupGroupForwardingVectors :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwardingVectors host invitee1 invitee2 = do
   invitee1Name <- userName invitee1
   invitee2Name <- userName invitee2
+  groupForwardingRelations host invitee1Name invitee2Name `shouldEventuallyReturn` (MRConnected, MRConnected)
   updateGroupForwardingVectors host invitee1Name invitee2Name MRIntroduced
+
+groupForwardingRelations :: TestCC -> String -> String -> IO (MemberRelation, MemberRelation)
+groupForwardingRelations host invitee1Name invitee2Name =
+  withCCTransaction host $ \db -> do
+    [(invitee1Index, invitee1Vec)] <- DB.query db "SELECT index_in_group, member_relations_vector FROM group_members WHERE local_display_name = ?" (Only invitee1Name)
+    [(invitee2Index, invitee2Vec)] <- DB.query db "SELECT index_in_group, member_relations_vector FROM group_members WHERE local_display_name = ?" (Only invitee2Name)
+    pure (getRelation invitee2Index (fromMaybe B.empty invitee1Vec), getRelation invitee1Index (fromMaybe B.empty invitee2Vec))
 
 updateGroupForwardingVectors :: TestCC -> String -> String -> MemberRelation -> IO ()
 updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
@@ -5675,7 +5745,7 @@ testGroupMsgForwardDeletion =
 testGroupMsgForwardFile :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardFile =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       createGroup3 "team" alice bob cath
       setupGroupForwarding alice bob cath
 
@@ -5690,12 +5760,14 @@ testGroupMsgForwardFile =
             cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
             cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
         ]
-      cath ##> "/fr 1 ./tests/tmp"
-      cath <## "saving file 1 from bob to ./tests/tmp/test.jpg"
-      cath <## "started receiving file 1 (test.jpg) from bob"
+      cath ##> ("/fr 1 " <> tmpDir cath)
+      cath
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
       cath <## "completed receiving file 1 (test.jpg) from bob"
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest <- B.readFile (tmpFile cath "test.jpg")
       dest `shouldBe` src
 
 testGroupMsgForwardChangeRole :: HasCallStack => TestParams -> IO ()
@@ -6047,7 +6119,7 @@ testGroupHistoryPreferenceOff =
 testGroupHistoryHostFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryHostFile =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       createGroup2 "team" alice bob
 
       alice #> "/f #team ./tests/fixtures/test.jpg"
@@ -6073,20 +6145,20 @@ testGroupHistoryHostFile =
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       cath
-        <### [ "saving file 1 from alice to ./tests/tmp/test.jpg",
+        <### [ ConsoleString $ "saving file 1 from alice to " <> tmpFile cath "test.jpg",
                "started receiving file 1 (test.jpg) from alice"
              ]
       cath <## "completed receiving file 1 (test.jpg) from alice"
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest <- B.readFile (tmpFile cath "test.jpg")
       dest `shouldBe` src
 
 testGroupHistoryMemberFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryMemberFile =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       createGroup2 "team" alice bob
 
       bob #> "/f #team ./tests/fixtures/test.jpg"
@@ -6112,27 +6184,28 @@ testGroupHistoryMemberFile =
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/test.jpg",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "test.jpg",
                "started receiving file 1 (test.jpg) from bob"
              ]
       cath <## "completed receiving file 1 (test.jpg) from bob"
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest <- B.readFile (tmpFile cath "test.jpg")
       dest `shouldBe` src
 
 testGroupHistoryLargeFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryLargeFile =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      xftpCLI ["rand", "./tests/tmp/testfile", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile"]
+    \alice bob cath -> withXFTPServer alice $ do
+      let testfile = tmpFile bob "testfile"
+      xftpCLI ["rand", testfile, "17mb"] `shouldReturn` ["File created: " <> testfile]
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}]"
+      bob ##> ("/_send #1 json [{\"filePath\": \"" <> testfile <> "\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}]")
       bob <# "#team hello"
-      bob <# "/f #team ./tests/tmp/testfile"
+      bob <# ("/f #team " <> testfile)
       bob <## "use /fc 1 to cancel sending"
       bob <## "completed uploading file 1 (testfile) for #team"
 
@@ -6141,14 +6214,14 @@ testGroupHistoryLargeFile =
       alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
       -- admin receiving file does not prevent the new member from receiving it later
-      alice ##> "/fr 1 ./tests/tmp"
+      alice ##> ("/fr 1 " <> tmpDir alice)
       alice
-        <### [ "saving file 1 from bob to ./tests/tmp/testfile_1",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile alice "testfile_1",
                "started receiving file 1 (testfile) from bob"
              ]
       alice <## "completed receiving file 1 (testfile) from bob"
-      src <- B.readFile "./tests/tmp/testfile"
-      destAlice <- B.readFile "./tests/tmp/testfile_1"
+      src <- B.readFile testfile
+      destAlice <- B.readFile (tmpFile alice "testfile_1")
       destAlice `shouldBe` src
 
       connectUsers alice cath
@@ -6168,14 +6241,14 @@ testGroupHistoryLargeFile =
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/testfile_2",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "testfile_2",
                "started receiving file 1 (testfile) from bob"
              ]
       cath <## "completed receiving file 1 (testfile) from bob"
 
-      destCath <- B.readFile "./tests/tmp/testfile_2"
+      destCath <- B.readFile (tmpFile cath "testfile_2")
       destCath `shouldBe` src
   where
     cfg = testCfg {xftpDescrPartSize = 200}
@@ -6183,17 +6256,19 @@ testGroupHistoryLargeFile =
 testGroupHistoryMultipleFiles :: HasCallStack => TestParams -> IO ()
 testGroupHistoryMultipleFiles =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
-      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+    \alice bob cath -> withXFTPServer alice $ do
+      let testfileBob = tmpFile bob "testfile_bob"
+          testfileAlice = tmpFile alice "testfile_alice"
+      xftpCLI ["rand", testfileBob, "2mb"] `shouldReturn` ["File created: " <> testfileBob]
+      xftpCLI ["rand", testfileAlice, "1mb"] `shouldReturn` ["File created: " <> testfileAlice]
 
       createGroup2 "team" alice bob
 
       threadDelay 1000000
 
-      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
+      bob ##> ("/_send #1 json [{\"filePath\": \"" <> testfileBob <> "\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]")
       bob <# "#team hi alice"
-      bob <# "/f #team ./tests/tmp/testfile_bob"
+      bob <# ("/f #team " <> testfileBob)
       bob <## "use /fc 1 to cancel sending"
       bob <## "completed uploading file 1 (testfile_bob) for #team"
 
@@ -6203,9 +6278,9 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
+      alice ##> ("/_send #1 json [{\"filePath\": \"" <> testfileAlice <> "\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]")
       alice <# "#team hey bob"
-      alice <# "/f #team ./tests/tmp/testfile_alice"
+      alice <# ("/f #team " <> testfileAlice)
       alice <## "use /fc 2 to cancel sending"
       alice <## "completed uploading file 2 (testfile_alice) for #team"
 
@@ -6233,45 +6308,47 @@ testGroupHistoryMultipleFiles =
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/testfile_bob_1",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "testfile_bob_1",
                "started receiving file 1 (testfile_bob) from bob"
              ]
       cath <## "completed receiving file 1 (testfile_bob) from bob"
-      srcBob <- B.readFile "./tests/tmp/testfile_bob"
-      destBob <- B.readFile "./tests/tmp/testfile_bob_1"
+      srcBob <- B.readFile testfileBob
+      destBob <- B.readFile (tmpFile cath "testfile_bob_1")
       destBob `shouldBe` srcBob
 
-      cath ##> "/fr 2 ./tests/tmp"
+      cath ##> ("/fr 2 " <> tmpDir cath)
       cath
-        <### [ "saving file 2 from alice to ./tests/tmp/testfile_alice_1",
+        <### [ ConsoleString $ "saving file 2 from alice to " <> tmpFile cath "testfile_alice_1",
                "started receiving file 2 (testfile_alice) from alice"
              ]
       cath <## "completed receiving file 2 (testfile_alice) from alice"
-      srcAlice <- B.readFile "./tests/tmp/testfile_alice"
-      destAlice <- B.readFile "./tests/tmp/testfile_alice_1"
+      srcAlice <- B.readFile testfileAlice
+      destAlice <- B.readFile (tmpFile cath "testfile_alice_1")
       destAlice `shouldBe` srcAlice
 
       cath ##> "/_get chat #1 count=100"
       r <- chatF <$> getTermLine cath
       r
-        `shouldContain` [ ((0, "hi alice"), Just "./tests/tmp/testfile_bob_1"),
-                          ((0, "hey bob"), Just "./tests/tmp/testfile_alice_1")
+        `shouldContain` [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
+                          ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
                         ]
 
 testGroupHistoryFileCancel :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancel =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
-      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+    \alice bob cath -> withXFTPServer alice $ do
+      let testfileBob = tmpFile bob "testfile_bob"
+          testfileAlice = tmpFile alice "testfile_alice"
+      xftpCLI ["rand", testfileBob, "2mb"] `shouldReturn` ["File created: " <> testfileBob]
+      xftpCLI ["rand", testfileAlice, "1mb"] `shouldReturn` ["File created: " <> testfileAlice]
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
+      bob ##> ("/_send #1 json [{\"filePath\": \"" <> testfileBob <> "\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]")
       bob <# "#team hi alice"
-      bob <# "/f #team ./tests/tmp/testfile_bob"
+      bob <# ("/f #team " <> testfileBob)
       bob <## "use /fc 1 to cancel sending"
       bob <## "completed uploading file 1 (testfile_bob) for #team"
 
@@ -6285,9 +6362,9 @@ testGroupHistoryFileCancel =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
+      alice ##> ("/_send #1 json [{\"filePath\": \"" <> testfileAlice <> "\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]")
       alice <# "#team hey bob"
-      alice <# "/f #team ./tests/tmp/testfile_alice"
+      alice <# ("/f #team " <> testfileAlice)
       alice <## "use /fc 2 to cancel sending"
       alice <## "completed uploading file 2 (testfile_alice) for #team"
 
@@ -6318,9 +6395,11 @@ testGroupHistoryFileCancel =
 testGroupHistoryFileCancelNoText :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancelNoText =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
-      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+    \alice bob cath -> withXFTPServer alice $ do
+      let testfileBob = tmpFile bob "testfile_bob"
+          testfileAlice = tmpFile alice "testfile_alice"
+      xftpCLI ["rand", testfileBob, "2mb"] `shouldReturn` ["File created: " <> testfileBob]
+      xftpCLI ["rand", testfileAlice, "1mb"] `shouldReturn` ["File created: " <> testfileAlice]
 
       createGroup2 "team" alice bob
 
@@ -6329,7 +6408,7 @@ testGroupHistoryFileCancelNoText =
 
       -- bob file
 
-      bob #> "/f #team ./tests/tmp/testfile_bob"
+      bob #> ("/f #team " <> testfileBob)
       bob <## "use /fc 1 to cancel sending"
       bob <## "completed uploading file 1 (testfile_bob) for #team"
 
@@ -6342,7 +6421,7 @@ testGroupHistoryFileCancelNoText =
 
       -- alice file
 
-      alice #> "/f #team ./tests/tmp/testfile_alice"
+      alice #> ("/f #team " <> testfileAlice)
       alice <## "use /fc 2 to cancel sending"
       alice <## "completed uploading file 2 (testfile_alice) for #team"
 
@@ -6533,12 +6612,12 @@ testGroupHistoryDisappearingMessage =
       threadDelay 1000000
 
       -- 3 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
-      alice ##> "/set disappear #team on 4"
+      alice ##> "/set disappear #team on 15"
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages: on (4 sec)"
+      alice <## "Disappearing messages: on (15 sec)"
       bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages: on (4 sec)"
+      bob <## "Disappearing messages: on (15 sec)"
 
       bob #> "#team 2"
       alice <# "#team bob> 2"
@@ -6582,6 +6661,7 @@ testGroupHistoryDisappearingMessage =
       r1 <- chat <$> getTermLine cath
       r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
 
+      threadDelay 11000000
       concurrentlyN_
         [ alice
             <### [ "timed message deleted: 2",
@@ -7665,6 +7745,7 @@ testGroupMemberInactive ps = do
         bob <# "#team alice> hi"
         bob #> "#team hey"
         alice <# "#team bob> hey"
+        threadDelay 1000000
 
       -- bob is offline
       alice #> "#team 1"
@@ -7682,8 +7763,10 @@ testGroupMemberInactive ps = do
       threadDelay 1500000
 
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
-        bob <## "subscribed 2 connections on server localhost"
-        bob <# "#team alice> 1"
+        bob
+          <### [ "subscribed 2 connections on server localhost",
+                 WithTime "#team alice> 1"
+               ]
         bob <# "#team alice> 2"
         bob <#. "#team alice> skipped message ID"
         alice <## "[#team bob] inactive connection is marked as active"
@@ -7702,8 +7785,8 @@ testGroupMemberInactive ps = do
         alice <# "#team bob> hey"
   where
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           msgQueueQuota = 2
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50_000} -- same as in agent tests
@@ -7786,9 +7869,10 @@ testGroupMemberReports =
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
       alice ##> "\\\\ #jokes cath inappropriate joke"
       concurrentlyN_
-        [ do
-            alice <## "#jokes: 1 messages deleted by user"
-            alice <## "message marked deleted by you",
+        [ alice
+            <### [ "#jokes: 1 messages deleted by user",
+                   "message marked deleted by you"
+                 ],
           do
             bob <# "#jokes cath> [marked deleted by alice] inappropriate joke"
             bob <## "#jokes: 1 messages deleted by member alice",
@@ -7952,8 +8036,8 @@ testForwardQuoteMention =
       bob <# "alice> -> forwarded"
       bob <## "      hello @alice @cath"
       -- member renamed to duplicate name
-      cath ##> "/p alice_1"
-      cath <## "user profile is changed to alice_1 (your 1 contacts are notified)"
+      cath ##> "/p alice"
+      cath <## "user profile is changed to alice (your 1 contacts are notified)"
       alice <## "contact cath changed to alice_1"
       alice <## "use @alice_1 <message> to send messages"
       -- mention changed in quoted mentions
@@ -8356,7 +8440,7 @@ testScopedSupportDontForwardBetweenScopes =
 
 testScopedSupportForwardFile :: HasCallStack => TestParams -> IO ()
 testScopedSupportForwardFile =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> withXFTPServer $ do
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> withXFTPServer alice $ do
     createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
     setupGroupForwarding alice bob dan
 
@@ -8379,9 +8463,9 @@ testScopedSupportForwardFile =
 
     bob <## "completed uploading file 1 (test.jpg) for #team"
 
-    dan ##> "/fr 1 ./tests/tmp"
+    dan ##> ("/fr 1 " <> tmpDir dan)
     dan
-      <### [ "saving file 1 from bob to ./tests/tmp/test.jpg",
+      <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile dan "test.jpg",
               "started receiving file 1 (test.jpg) from bob"
             ]
     dan <## "completed receiving file 1 (test.jpg) from bob"
@@ -9202,7 +9286,7 @@ testChannels1RelayDeliver ps =
             alice <## "group ID: 1"
             alice <## "subscribers: 4"
             -- subscriber refreshes count via short link
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 4"
@@ -9424,20 +9508,26 @@ memberJoinChannelIncognito gName relays owners shortLink fullLink member = do
 -- | Assert that sender's member_relations_vector has 'MRIntroduced' at
 -- the recipient's index, looked up by display name on the same DB.
 memberIntroducedTo :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
-memberIntroducedTo cc senderName recipientName = do
-  rows <- withCCTransaction cc $ \db ->
-    DB.query
-      db
-      [sql|
-        SELECT s.member_relations_vector, r.index_in_group
-        FROM group_members s, group_members r
-        WHERE s.local_display_name = ? AND r.local_display_name = ?
-      |]
-      (senderName, recipientName) ::
-      IO [(Maybe ByteString, Int64)]
-  case rows of
-    [(mv, idx)] -> getRelation idx (fromMaybe B.empty mv) `shouldBe` MRIntroduced
-    _ -> expectationFailure $ "memberIntroducedTo: expected exactly one row for " <> show (senderName, recipientName) <> ", got " <> show (length rows)
+memberIntroducedTo cc senderName recipientName = go (50 :: Int)
+  where
+    go n = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          [sql|
+            SELECT s.member_relations_vector, r.index_in_group
+            FROM group_members s, group_members r
+            WHERE s.local_display_name = ? AND r.local_display_name = ?
+          |]
+          (senderName, recipientName) ::
+          IO [(Maybe ByteString, Int64)]
+      case rows of
+        [(mv, idx)]
+          | relation == MRIntroduced || n == 0 -> relation `shouldBe` MRIntroduced
+          | otherwise -> threadDelay 100000 >> go (n - 1)
+          where
+            relation = getRelation idx (fromMaybe B.empty mv)
+        _ -> expectationFailure $ "memberIntroducedTo: expected exactly one row for " <> show (senderName, recipientName) <> ", got " <> show (length rows)
 
 testChannels1RelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
 testChannels1RelayDeliverLoop deliveryBucketSize ps =
@@ -9488,9 +9578,9 @@ testChannelsSenderDeduplicateOwn ps = do
           dan #> "#team 6"
 
           withTestChatCfgOpts ps cfg relayTestOpts "bob" $ \bob -> do
-            bob <## "subscribed 6 connections on server localhost"
             bob
-              <### [ WithTime "#team> 1",
+              <### [ "subscribed 6 connections on server localhost",
+                     WithTime "#team> 1",
                      WithTime "#team> 2",
                      WithTime "#team> 3",
                      WithTime "#team cath> 4",
@@ -9923,6 +10013,7 @@ testChannelLinkAfterProfileUpdate ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          waitQueuedLinkUpdates alice
 
           -- owner updates channel profile
           alice ##> "/gp team my_team My team description"
@@ -9957,6 +10048,7 @@ testChannelLinkAfterWelcomeUpdate ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          waitQueuedLinkUpdates alice
 
           -- owner updates channel welcome message
           alice ##> "/set welcome #team welcome to team"
@@ -9995,6 +10087,7 @@ testChannelOwnerKeyAfterLinkUpdate ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          waitQueuedLinkUpdates alice
 
           threadDelay 100000
 
@@ -10201,10 +10294,31 @@ testChannelBlockMemberSigned ps =
             r2 `shouldEndWith` "(signed)"
 
 checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
-checkMemberRow cc name expectedRole = do
-  roles <- withCCTransaction cc $ \db ->
-    DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
-  map (\(Only r) -> r) roles `shouldBe` maybeToList expectedRole
+checkMemberRow cc name expectedRole = memberRoles cc name `shouldReturn` maybeToList expectedRole
+
+waitMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
+waitMemberRow cc name expectedRole = go (50 :: Int)
+  where
+    expected = maybeToList expectedRole
+    go n = do
+      roles <- memberRoles cc name
+      if roles == expected || n == 0
+        then roles `shouldBe` expected
+        else threadDelay 100000 >> go (n - 1)
+
+memberRoles :: TestCC -> T.Text -> IO [T.Text]
+memberRoles cc name =
+  map (\(Only r) -> r) <$> withCCTransaction cc (\db -> DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name))
+
+waitQueuedLinkUpdates :: HasCallStack => TestCC -> IO ()
+waitQueuedLinkUpdates cc = go (100 :: Int)
+  where
+    go n = do
+      [[queued]] <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'" :: IO [[Int]]
+      if queued == 0 || n == 0
+        then queued `shouldBe` 0
+        else threadDelay 100000 >> go (n - 1)
 
 -- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to
 -- find a member by id on a subscriber that only knows it by member-id hash (e.g. after roster recovery).
@@ -10285,7 +10399,7 @@ testChannelModeratorActionViaRoster ps =
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
               -- the late joiner learns the roster from the served snapshot (verified below); under the
               -- no-broadcast model the apply finds no role change to surface, so no item here
-              threadDelay 1000000 -- the served roster arrives async
+              waitMemberRow frank "cath" (Just "moderator")
               checkMemberRole frank "cath" "moderator"
   where
     checkMemberRole :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
@@ -10322,7 +10436,7 @@ testChannelSubscriberRosterCatchUp ps =
               -- the next privileged change (frank -> v2) reaches cath at a jumped version, triggering catch-up:
               -- cath requests the roster from the forwarding relay, which re-serves the current snapshot
               promoteChannelMember "team" alice bob frank [cath, dan, eve]
-              threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
+              withCCTransaction cath (\db -> DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only danId) :: IO [(T.Text, Maybe ByteString)]) `shouldEventuallyReturn` [("member", danKey)]
               -- cath recovered dan from the re-served roster: same member id, role, and owner-pinned key
               (recRole, recKey) <- getMemberRoleKey cath danId
               recRole `shouldBe` "member"
@@ -10382,7 +10496,7 @@ testChannel2RelaysSubscriberRosterCatchUp ps =
                   dan <### [EndsWith "from member to moderator (signed)"],
                   frank <### [EndsWith "from member to moderator (signed)"]
                 ]
-              threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
+              withCCTransaction frank (\db -> DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only danId) :: IO [(T.Text, Maybe ByteString)]) `shouldEventuallyReturn` [("member", danKey)]
               (recRole, recKey) <- getMemberRoleKey frank danId
               recRole `shouldBe` "member"
               recKey `shouldBe` danKey
@@ -10447,8 +10561,7 @@ testChannelRoleTransitionsUpdateRoster ps =
               -- no separate role-change item under the no-broadcast model)
               threadDelay 100000
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
-              threadDelay 1000000 -- the served roster arrives async; wait before reading the applied state
-              checkMemberRow dan "cath" (Just "moderator")
+              waitMemberRow dan "cath" (Just "moderator")
               -- moderator -> admin: dan now knows cath, role event lands cleanly
               threadDelay 100000
               alice ##> "/mr #team cath admin"
@@ -10461,8 +10574,7 @@ testChannelRoleTransitionsUpdateRoster ps =
               -- eve joins; cached roster has cath as admin (learned from the served snapshot)
               threadDelay 100000
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink eve
-              threadDelay 1000000 -- the served roster arrives async; wait before reading the applied state
-              checkMemberRow eve "cath" (Just "admin")
+              waitMemberRow eve "cath" (Just "admin")
               -- admin -> observer (crossing out of roster, since member is now in-roster): roster drops cath
               threadDelay 100000
               alice ##> "/mr #team cath observer"
@@ -10538,7 +10650,7 @@ testChannelRelayCannotForgePrivilegedMember ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
-        threadDelay 1000000
+        waitMemberRow cath "alice" (Just "owner")
         -- the forged attribution only resolves to a privileged author if the victim already holds the
         -- owner at GROwner (established via the group link on join) - this documents and guards that premise
         checkMemberRow cath "alice" (Just "owner")
@@ -10613,7 +10725,7 @@ testChannelRemoveMemberSigned ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 4"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 4"
@@ -10645,7 +10757,7 @@ testChannelRemoveMemberSigned ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 3"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 3"
@@ -10674,7 +10786,7 @@ testChannelRemoveMemberSigned ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 2"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 2"
@@ -10802,7 +10914,7 @@ testChannelSubscriberLeave ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 4"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             eve ##> "/_get group link data #1"
             eve <## "group ID: 1"
             eve <## "subscribers: 4"
@@ -10826,7 +10938,7 @@ testChannelSubscriberLeave ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 3"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             eve ##> "/_get group link data #1"
             eve <## "group ID: 1"
             eve <## "subscribers: 3"
@@ -10856,7 +10968,7 @@ testChannelSubscriberLeave ps =
             alice ##> "/_info #1"
             alice <## "group ID: 1"
             alice <## "subscribers: 2"
-            threadDelay 100000 -- wait for async short link data update
+            waitQueuedLinkUpdates alice
             eve ##> "/_get group link data #1"
             eve <## "group ID: 1"
             eve <## "subscribers: 2"
@@ -10872,10 +10984,9 @@ testChannelSubscriberLeave ps =
             checkMemberStatus cath "dan" Nothing
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
-    checkMemberStatus cc name expected = do
-      statuses <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_status FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
-      map (\(Only s) -> s) statuses `shouldBe` maybeToList expected
+    checkMemberStatus cc name expected =
+      (map (\(Only s) -> s) <$> withCCTransaction cc (\db -> DB.query db "SELECT member_status FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]))
+        `shouldEventuallyReturn` maybeToList expected
 
 testChannelRelayLeave :: HasCallStack => TestParams -> IO ()
 testChannelRelayLeave ps =
@@ -10941,7 +11052,7 @@ testChannelRelayLeave ps =
               (eve </)
 
               -- new subscriber tries to join channel with no relays - gets proper error
-              threadDelay 100000
+              waitQueuedLinkUpdates alice
               frank ##> ("/_connect plan 1 " <> shortLink)
               frank <## "group link: channel has no active relays, please try to join later"
   where
@@ -11265,8 +11376,7 @@ testChannelRosterMultipartReassembly ps =
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
           -- dan reassembles the multi-chunk roster from the served snapshot (arrives async)
-          threadDelay 1000000
-          checkMemberRow dan "cath" (Just "moderator")
+          waitMemberRow dan "cath" (Just "moderator")
   where
     cfg = testCfg {fileChunkSize = 30}
 
@@ -11295,7 +11405,7 @@ testChannelRosterDigestMismatchRejected ps =
           -- frank joins; bob re-serves the valid header with the corrupted blob, frank rejects it
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
-          threadDelay 1000000
+          waitMemberRow frank "cath" (Just "observer")
           -- the rejected roster never elevates cath: the intro caps her to the channel default, so she
           -- stays observer (not moderator), and the version must not advance to the corrupted roster's version 1
           checkMemberRow frank "cath" (Just "observer")
@@ -11590,7 +11700,7 @@ testChannelRemoveLeftRelay ps =
           alice <## "#team: you removed cath from the group (signed)"
 
           -- dan syncs with link - should clean up cath's stale record
-          threadDelay 100000
+          waitQueuedLinkUpdates alice
           dan ##> "/_get group link data #1"
           dan <## "group ID: 1"
           void $ getTermLine dan -- subscribers: N
@@ -11690,7 +11800,7 @@ testRelayRejectAfterLeave ps =
 
         -- bob's transient row was created with relay_own_status='rejected';
         -- after INFO arrives the cleanup arm deletes it. Original row 1 remains rejected.
-        threadDelay 1000000
+        listRelayOwnStatuses bob `shouldEventuallyReturn` [(1, "rejected")]
         checkRelayGroupCount bob 1
         finalStatuses <- listRelayOwnStatuses bob
         finalStatuses `shouldBe` [(1, "rejected")]
@@ -11841,7 +11951,7 @@ testRelayRejectRaceConcurrentInvitations ps =
         alice <## "#team: group relays:"
         alice .<##. ("  - relay id", ": invited")
         alice <## "#team: relay rejected, reason: RRRRejoinRejected"
-        threadDelay 1000000
+        listRelayOwnStatuses bob `shouldEventuallyReturn` [(1, "rejected")]
         checkRelayGroupCount bob 1
 
         -- subscriber doesn't receive between rejections (no active relay)
@@ -11861,7 +11971,7 @@ testRelayRejectRaceConcurrentInvitations ps =
         alice #> "#team after second rejection"
         (cath </)
 
-        threadDelay 1000000
+        listRelayOwnStatuses bob `shouldEventuallyReturn` [(1, "rejected")]
         checkRelayGroupCount bob 1
         finalStatuses <- listRelayOwnStatuses bob
         finalStatuses `shouldBe` [(1, "rejected")]
@@ -12010,7 +12120,7 @@ testChannelMessageFile ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
             -- the roster arrives as a file before this one; Postgres assigns it a new id and does not
             -- reuse it on delete (SQLite does), so the received message file is id 2 here, 1 on SQLite.
@@ -12047,7 +12157,7 @@ testChannelMessageFile ps =
               ]
   where
     receiveFile cc name fileId src = do
-      let path = "./tests/tmp/test_" <> name <> ".jpg"
+      let path = tmpFile cc $ "test_" <> name <> ".jpg"
       cc ##> ("/fr " <> show fileId <> " " <> path)
       cc
         <### [ ConsoleString ("saving file " <> show fileId <> " from #team to " <> path),
@@ -12062,7 +12172,7 @@ testChannelMessageFileCancel ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
 #if defined(dbPostgres)
             let rcvFileId = 2 :: Int
@@ -12242,7 +12352,7 @@ testChannelOwnerFileTransferAsMember ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
 #if defined(dbPostgres)
             let rcvFileId = 2 :: Int
@@ -12278,7 +12388,7 @@ testChannelOwnerFileTransferAsMember ps =
               ]
   where
     receiveFile cc name fileId src = do
-      let path = "./tests/tmp/test_" <> name <> ".jpg"
+      let path = tmpFile cc $ "test_" <> name <> ".jpg"
       cc ##> ("/fr " <> show fileId <> " " <> path)
       cc
         <### [ ConsoleString ("saving file " <> show fileId <> " from alice to " <> path),
@@ -12293,7 +12403,7 @@ testGroupHistoryFileBadgeProof ps = do
   let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
   testChatCfg3 cfg aliceProfile bobProfile cathProfile (test sk) ps
   where
-    test sk alice bob cath = withXFTPServer $ do
+    test sk alice bob cath = withXFTPServer ps $ do
       createGroup2 "team" alice bob
       addTestBadge alice =<< issueTestBadge sk futureDate
 
@@ -12322,14 +12432,14 @@ testGroupHistoryFileBadgeProof ps = do
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir ps)
       cath
-        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+        <### [ ConsoleString $ "saving file 1 from alice to " <> tmpFile ps "test.pdf",
                "started receiving file 1 (test.pdf) from alice"
              ]
       cath <## "completed receiving file 1 (test.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test.pdf"
-      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest <- B.readFile (tmpFile ps "test.pdf")
       dest `shouldBe` src
 
 testGroupHistoryRcvFileBadgeProof :: HasCallStack => TestParams -> IO ()
@@ -12338,7 +12448,7 @@ testGroupHistoryRcvFileBadgeProof ps = do
   let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
   testChatCfg3 cfg aliceProfile bobProfile cathProfile (test sk) ps
   where
-    test sk alice bob cath = withXFTPServer $ do
+    test sk alice bob cath = withXFTPServer ps $ do
       createGroup2 "team" alice bob
       addTestBadge bob =<< issueTestBadge sk futureDate
 
@@ -12346,11 +12456,11 @@ testGroupHistoryRcvFileBadgeProof ps = do
       bob <## "use /fc 1 to cancel sending"
       alice <# "#team bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
       alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice ##> "/fr 1 ./tests/tmp"
+      alice ##> ("/fr 1 " <> tmpDir ps)
       concurrentlyN_
         [ bob <## "completed uploading file 1 (test.pdf) for #team",
           alice
-            <### [ "saving file 1 from bob to ./tests/tmp/test.pdf",
+            <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile ps "test.pdf",
                    "started receiving file 1 (test.pdf) from bob"
                  ]
         ]
@@ -12375,14 +12485,14 @@ testGroupHistoryRcvFileBadgeProof ps = do
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir ps)
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/test_1.pdf",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile ps "test_1.pdf",
                "started receiving file 1 (test.pdf) from bob"
              ]
       cath <## "completed receiving file 1 (test.pdf) from bob"
       src <- B.readFile "./tests/fixtures/test.pdf"
-      dest <- B.readFile "./tests/tmp/test_1.pdf"
+      dest <- B.readFile (tmpFile ps "test_1.pdf")
       dest `shouldBe` src
 
 testChannelFileBadgeProof :: HasCallStack => TestParams -> IO ()
@@ -12393,7 +12503,7 @@ testChannelFileBadgeProof ps = do
     withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps cfg "cath" cathProfile $ \cath ->
         withNewTestChatCfg ps cfg "dan" danProfile $ \dan ->
-          withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
             addTestBadge alice =<< issueTestBadge sk futureDate
 #if defined(dbPostgres)
@@ -12420,7 +12530,7 @@ testChannelFileBadgeProof ps = do
               ]
 
             src <- B.readFile "./tests/fixtures/test.jpg"
-            let path = "./tests/tmp/test_cath.jpg"
+            let path = tmpFile ps "test_cath.jpg"
             cath ##> ("/fr " <> show rcvFileId <> " " <> path)
             cath
               <### [ ConsoleString ("saving file " <> show rcvFileId <> " from alice to " <> path),
@@ -12446,7 +12556,7 @@ testChannelFileBadgeProof ps = do
                   eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
                   eve <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it [>>]")
               ]
-            let path2 = "./tests/tmp/test_cath_2.jpg"
+            let path2 = tmpFile ps "test_cath_2.jpg"
             cath ##> ("/fr " <> show (rcvFileId + 1) <> " " <> path2)
             cath
               <### [ ConsoleString ("saving file " <> show (rcvFileId + 1) <> " from #team to " <> path2),
@@ -12461,7 +12571,7 @@ testChannelOwnerFileCancelAsMember ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
 #if defined(dbPostgres)
             let rcvFileId = 2 :: Int
@@ -12805,8 +12915,9 @@ testChannelSignedFile ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
-            xftpCLI ["rand", "./tests/tmp/testfile", "1mb"] `shouldReturn` ["File created: ./tests/tmp/testfile"]
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
+            let testfile = tmpFile ps "testfile"
+            xftpCLI ["rand", testfile, "1mb"] `shouldReturn` ["File created: " <> testfile]
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
             -- roster serves arrive as files that Postgres deletes without reusing the id (SQLite reuses
@@ -12836,9 +12947,9 @@ testChannelSignedFile ps =
               ]
 
             -- cath sends a signed file
-            cath ##> "/_send #1 sign=on json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"signed file\",\"type\":\"file\"}}]"
+            cath ##> ("/_send #1 sign=on json [{\"filePath\": \"" <> testfile <> "\", \"msgContent\": {\"text\":\"signed file\",\"type\":\"file\"}}]")
             cath <# "#team signed file (signed)"
-            cath <# "/f #team ./tests/tmp/testfile"
+            cath <# ("/f #team " <> testfile)
             cath <## ("use /fc " <> show fileId <> " to cancel sending")
             cath <## ("completed uploading file " <> show fileId <> " (testfile) for #team")
 
@@ -12859,14 +12970,14 @@ testChannelSignedFile ps =
               ]
 
             -- dan downloads: the signed digest is verified and the file completes
-            dan ##> ("/fr " <> show fileId <> " ./tests/tmp")
+            dan ##> ("/fr " <> show fileId <> " " <> tmpDir ps)
             dan
-              <### [ ConsoleString ("saving file " <> show fileId <> " from cath to ./tests/tmp/testfile_1"),
+              <### [ ConsoleString ("saving file " <> show fileId <> " from cath to " <> tmpFile ps "testfile_1"),
                      ConsoleString ("started receiving file " <> show fileId <> " (testfile) from cath")
                    ]
             dan <## ("completed receiving file " <> show fileId <> " (testfile) from cath")
-            src <- B.readFile "./tests/tmp/testfile"
-            destDan <- B.readFile "./tests/tmp/testfile_1"
+            src <- B.readFile testfile
+            destDan <- B.readFile (tmpFile ps "testfile_1")
             destDan `shouldBe` src
             -- the signed digest was carried to dan and stored, so verification ran (not skipped) and passed
             digestCount <- withCCTransaction dan $ \db ->
@@ -12911,11 +13022,10 @@ testChannelMemberUpdateEnforcement ps =
             either (fail . show) (const $ pure ()) sent
             -- dan rejects the unsigned mutation of the held-signed item (RGEMsgBadSignature, stored not shown live),
             -- and the original signed content is not overwritten
-            threadDelay 2000000
+            -- the rejection is recorded as a bad-signature item
+            (dan ##> "/_get chat #1 count=100 search=bad signature" >> chat <$> getTermLine dan) `shouldEventuallyReturn` [(0, "message rejected: bad signature")]
             -- (critical) the forged content did NOT overwrite the original signed item
             dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
-            -- the rejection is recorded as a bad-signature item
-            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
 
             -- a legitimate signed edit by cath is accepted
             cathMsgId <- lastItemId cath
@@ -13292,9 +13402,8 @@ testChannelMemberDeleteEnforcement ps =
             sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
             either (fail . show) (const $ pure ()) sent
             -- dan rejects the unsigned delete of the held-signed item; item not deleted, rejection recorded
-            threadDelay 2000000
+            (dan ##> "/_get chat #1 count=100 search=bad signature" >> chat <$> getTermLine dan) `shouldEventuallyReturn` [(0, "message rejected: bad signature")]
             dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
-            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
 
             -- a legitimate signed self-delete by cath is accepted
             cathMsgId <- lastItemId cath

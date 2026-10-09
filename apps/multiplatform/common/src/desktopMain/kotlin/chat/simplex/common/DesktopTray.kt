@@ -17,7 +17,7 @@ import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import java.awt.AWTException

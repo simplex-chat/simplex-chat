@@ -160,6 +160,10 @@ withFileLock :: Text -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
+withUserProfileLock :: Text -> CM a -> CM a
+withUserProfileLock name = withEntityLock name CLUserProfile
+{-# INLINE withUserProfileLock #-}
+
 useServerCfgs :: forall p. UserProtocol p => SProtocolType p -> RandomAgentServers -> [(Text, ServerOperator)] -> [UserServer p] -> NonEmpty (ServerCfg p)
 useServerCfgs p RandomAgentServers {smpServers, xftpServers} opDomains =
   fromMaybe (rndAgentServers p) . L.nonEmpty . agentServerCfgs p opDomains
@@ -840,6 +844,16 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
         rcvSize = max (toInteger encSize) redirectSize
         -- 10 MB margin: encryption and chunk-size rounding make the transfer larger than the advertised size
         maxRcvSize = min expectedFileSize (toInteger FD.maxFileSizeHard) + toInteger (FD.mb 10 :: Int64)
+    -- TODO re-enable redirects with relay checks
+    when (isJust redirect) $ do
+      cxt <- chatStoreCxt
+      aci_ <- withStore $ \db -> do
+        liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
+        lookupChatItemByFileId db cxt user fileId
+      forM_ aci_ $ \aci -> do
+        cleanupACIFile aci
+        toView $ CEvtChatItemUpdated user aci
+      throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
       then receive' rd True
@@ -1404,7 +1418,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   -- (regular groups only; never channels) is an authored element -- all batch together in order.
   let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
   welcomeEl <- welcomeElement
-  let (batches, dropped) = batchElements maxEncodedMsgLength (fwdEls <> maybe [] (: []) welcomeEl)
+  let (batches, dropped) = batchElements maxForwardBatchLength (fwdEls <> maybe [] (: []) welcomeEl)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
   forM_ batches $ \body ->
     void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
@@ -1542,9 +1556,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
 
 memberShortenedName :: GroupMember -> ContactName
-memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
-  | T.length displayName <= 16 = displayName
-  | otherwise = T.take 16 displayName `T.snoc` '…'
+memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}} = fwdMemberName displayName
 
 -- the description proof travels on the last part, so that part leaves room for it
 badgeDescrPartSize :: Int
@@ -2447,9 +2459,10 @@ compressToLimit maxLen s
     s' = compressedBatchMsgBody_ s
 
 compressConnInfo :: PQSupport -> MsgBody -> CM MsgBody
-compressConnInfo pqSup = compressToLimit $ case pqSup of
-  PQSupportOn -> maxEncodedInfoLengthPQ
-  PQSupportOff -> maxEncodedInfoLength
+compressConnInfo pqSup = compressToLimit $ e2eEncConnInfoLength pqSup - 2 - maxReplyQueueFraming
+
+maxReplyQueueFraming :: Int
+maxReplyQueueFraming = 256
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo = encodeConnInfoPQ PQSupportOff
@@ -2458,7 +2471,7 @@ encodeConnInfoPQ :: MsgEncodingI e => PQSupport -> ChatMsgEvent e -> CM ByteStri
 encodeConnInfoPQ pqSup chatMsgEvent = do
   cxt <- chatStoreCxt
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxEncodedInfoLength info of
+  case encodeChatMessage maxEncodedProfileMsgLength info of
     ECMEncoded connInfo -> compressConnInfo pqSup connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
@@ -2467,7 +2480,7 @@ encodeSignedConnInfo :: MsgEncodingI e => PQSupport -> MsgSigning -> ChatMsgEven
 encodeSignedConnInfo pqSup signing chatMsgEvent = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxEncodedInfoLength info of
+  case encodeChatMessage maxEncodedProfileMsgLength info of
     ECMEncoded body -> compressConnInfo pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 

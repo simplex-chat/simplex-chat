@@ -23,7 +23,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar)
 import Control.Monad (forM_, void, when)
 import Control.Exception (finally)
@@ -50,8 +51,9 @@ import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
-import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
+import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -131,16 +133,16 @@ testIssuerKeyIdx :: Int
 testIssuerKeyIdx = 1
 
 mkBadgeServiceOpts :: TestParams -> BBSSecretKey -> BadgeServiceOpts
-mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
+mkBadgeServiceOpts ps secretKey =
   BadgeServiceOpts
     { coreOptions =
-        testCoreOpts
+        coreOpts
           { dbOptions =
               (dbOptions testCoreOpts)
 #if defined(dbPostgres)
-                {dbSchemaPrefix = "client_" <> serviceDbPrefix}
+                {dbSchemaPrefix = testSchemaPrefix ps serviceDbPrefix}
 #else
-                {dbFilePrefix = ps </> serviceDbPrefix}
+                {dbFilePrefix = tmpPath ps </> serviceDbPrefix}
 #endif
           },
       serviceName = badgeBotName,
@@ -151,6 +153,8 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
       issuerKey = Right (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey}),
       testing = True
     }
+  where
+    (_, ChatOpts {coreOptions = coreOpts}) = testPortsCfg ps testCfg testOpts
 
 -- | The clock tracks real time plus a test-controlled offset rather than freezing it, so a sleeping worker still waits the correct real duration.
 newtype TestClock = TestClock (IORef NominalDiffTime)
@@ -190,7 +194,9 @@ withBadgeServiceEnv ps test = do
   let opts = mkBadgeServiceOpts ps sk
       svcCfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk, badgeCurrentTime = testClockTime clock}
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
-  runBadgeService svcCfg opts $ \_ -> pure ()
+  -- First start: badge service takes the CreateMyAddress branch.
+  runBadgeService ps svcCfg opts $ \_ -> pure ()
+  -- Reopen the DB to read the link the service created.
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
     bs ##> "/sa"
@@ -201,7 +207,8 @@ withBadgeServiceEnv ps test = do
     pure sLink
   let clientCfg =
         svcCfg {badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
-  runBadgeService svcCfg opts $ \env -> do
+  -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
+  runBadgeService ps svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
     test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc}
 
@@ -227,14 +234,16 @@ issueCodeAs cc badgeType months status =
       _ -> error $ "unexpected issue response: " <> T.unpack response
     r -> error $ "issue failed: " <> show (() <$ r)
 
--- | The post-start hook fills serviceCC once the address exists, so the test waits on it rather than on a fixed delay that would race with startup and let one start's address output arrive during the next test.
-runBadgeService :: ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
-runBadgeService cfg opts action = do
+-- | The post-start hook fills serviceCC once the address exists, so waiting on it is the service
+-- being ready. A fixed delay here raced with startup and left the address output of one start
+-- arriving during the next test.
+runBadgeService :: TestParams -> ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
+runBadgeService ps cfg opts action = do
   env <- newServiceState
-  t <- forkIO $ badgeService opts cfg env
+  t <- async $ badgeService opts (fst $ testPortsCfg ps cfg testOpts) env
   ready <- timeout 30000000 $ atomically $ readTMVar $ serviceCC env
-  when (isNothing ready) $ killThread t >> error "badge service did not start"
-  action env `finally` killThread t
+  when (isNothing ready) $ cancel t >> error "badge service did not start"
+  action env `finally` (cancel t >> atomically (readTMVar $ serviceCC env) >>= disposeAgentClient . smpAgent)
 
 codeArg :: BadgeCode -> String
 codeArg = T.unpack . formatBadgeCode
@@ -501,11 +510,14 @@ testMultiUseRepeatAfterExpiry ps =
       redeemFirstBadge alice code
       rows <- ledgerRows (chatController alice) "badge_ledger"
       setClockAt bsClock $ dueAtOf rows
-      alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "badge alert: support_ended "
-      alice <##. "1: supporter"
-      alice <##. "badge alert: support_ended "
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               StartsWith "badge alert: support_ended ",
+               StartsWith "1: supporter",
+               StartsWith "badge alert: support_ended "
+             ]
       waitShownBadge (chatController alice) Nothing
       -- The repeat uses the same purchase key, so the service returns the credential it already issued.
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
@@ -787,6 +799,20 @@ redeemFirstBadge alice code = do
   alice <## "badge redeemed"
   alice <## "supporter badge - active"
   alice <##. "expires "
+  waitWakeArmed (chatController alice)
+
+waitWakeArmed :: HasCallStack => ChatController -> IO ()
+waitWakeArmed ChatController {chatStore} = loop (100 :: Int)
+  where
+    loop i = do
+      rows :: [(Maybe UTCTime, Int64)] <-
+        withTransaction chatStore $ \db ->
+          DB.query_ db "SELECT next_wake_at, badge_purchase_id FROM badge_purchases"
+      case rows of
+        [(Just _, _)] -> pure ()
+        _
+          | i == 0 -> error $ "expected one badge purchase with a wake, got " <> show rows
+          | otherwise -> threadDelay 50000 >> loop (i - 1)
 
 testWorkerRenews :: HasCallStack => TestParams -> IO ()
 testWorkerRenews ps =
@@ -987,11 +1013,14 @@ testWorkerRetiresExpired ps =
         bob <## currentChatVRangeInfo
         rows <- ledgerRows (chatController alice) "badge_ledger"
         setClockAt bsClock $ dueAtOf rows
-        alice ##> "/_app activate"
-        alice <## "ok"
-        alice <##. "badge alert: support_ended "
-        alice <##. "1: supporter"
-        alice <##. "badge alert: support_ended "
+        alice `send` "/_app activate"
+        alice
+          <### [ "/_app activate",
+                 "ok",
+                 StartsWith "badge alert: support_ended ",
+                 StartsWith "1: supporter",
+                 StartsWith "badge alert: support_ended "
+               ]
         waitShownBadge (chatController alice) Nothing
         alice ##> "/p"
         alice <## "user profile: alice (Alice)"
@@ -1033,11 +1062,14 @@ testEndedAlert ps =
       rows <- ledgerRows (chatController alice) "badge_ledger"
       let endsAt = dueAtOf rows
       setClockAt bsClock endsAt
-      alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "badge alert: support_ended "
-      alice <##. "1: supporter"
-      alice <##. "badge alert: support_ended "
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               StartsWith "badge alert: support_ended ",
+               StartsWith "1: supporter",
+               StartsWith "badge alert: support_ended "
+             ]
       pure endsAt
     withTestChatCfg ps bsClientCfg "alice" $ \alice -> do
       alice <##. "badge alert: support_ended "
@@ -1186,9 +1218,7 @@ testNoCredentialMonthsRanOut ps =
       rows' <- ledgerRows (chatController alice) "badge_ledger"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) rows' `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-2, 0, Just "support")]
       alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "1: supporter"
-      alice <##. "badge alert: support_ended "
+      alice <### ["ok", StartsWith "1: supporter", StartsWith "badge alert: support_ended "]
       waitShownBadge (chatController alice) Nothing
 
 -- The service issuing nothing while the ledger still owes a month is a fault the client cannot
@@ -1315,20 +1345,22 @@ testSnoozedAlertReturns ps =
       rows <- ledgerRows (chatController alice) "badge_ledger"
       let endsAt = dueAtOf rows
       setClockAt bsClock endsAt
-      alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "badge alert: support_ended "
-      alice <##. "1: supporter"
-      alice <##. "badge alert: support_ended "
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               StartsWith "badge alert: support_ended ",
+               StartsWith "1: supporter",
+               StartsWith "badge alert: support_ended "
+             ]
       alice ##> ("/_badge ack 1 1 support_ended on " <> T.unpack (safeDecodeUtf8 $ strEncode endsAt))
       alice <##. "1: supporter"
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
       setClockAt bsClock $ addUTCTime (nominalDay + 60) endsAt
-      alice ##> "/_app activate"
-      alice <## "ok"
-      alice <##. "badge alert: support_ended "
+      alice `send` "/_app activate"
+      alice <### ["/_app activate", "ok", StartsWith "badge alert: support_ended "]
 
 testRenewalKeepsProfileEdits :: HasCallStack => TestParams -> IO ()
 testRenewalKeepsProfileEdits ps =

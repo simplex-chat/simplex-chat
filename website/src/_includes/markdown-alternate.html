@@ -1,0 +1,3 @@
+{% set markdownAlternateUrl = page | markdownAlternate %}
+{% if markdownAlternateUrl %}<link rel="alternate" type="text/markdown" href="{{ markdownAlternateUrl }}"/>{% endif %}
+<link rel="describedby" href="/llms.txt"/>

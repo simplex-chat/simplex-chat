@@ -59,7 +59,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlin.math.absoluteValue
