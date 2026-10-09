@@ -2645,42 +2645,12 @@ createIntroReMemberConn
     liftIO $ setCommandConnId db user groupCmdId groupConnId
     pure (reMember :: GroupMember) {activeConn = Just conn}
 
-createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> VersionRangeChat -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> IO ()
-createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} chatV mcvr (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
+createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> VersionRangeChat -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
+createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId} chatV mcvr (groupCmdId, groupAgentConnId) subMode = do
   let cLevel = 1 + maybe 0 (\Connection {connLevel} -> connLevel) activeConn
   currentTs <- getCurrentTime
   Connection {connId = groupConnId} <- createMemberConnection_ db userId groupMemberId groupAgentConnId chatV mcvr viaContactId cLevel currentTs subMode
   setCommandConnId db user groupCmdId groupConnId
-  forM_ directConnIds $ \(directCmdId, directAgentConnId) -> do
-    Connection {connId = directConnId} <- createConnection_ db userId ConnContact Nothing directAgentConnId ConnNew chatV mcvr viaContactId Nothing customUserProfileId cLevel currentTs subMode PQSupportOff
-    setCommandConnId db user directCmdId directConnId
-    contactId <- createMemberContact_ directConnId currentTs
-    updateMember_ contactId currentTs
-  where
-    createMemberContact_ :: Int64 -> UTCTime -> IO Int64
-    createMemberContact_ connId ts = do
-      DB.execute
-        db
-        [sql|
-          INSERT INTO contacts (contact_profile_id local_display_name, user_id, created_at, updated_at, chat_ts)
-          SELECT contact_profile_id, ?, ?, ?, ?, ?
-          FROM group_members
-          WHERE group_member_id = ?
-        |]
-        (localDisplayName, userId, ts, ts, ts, groupMemberId)
-      contactId <- insertedRowId db
-      DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, ts, connId)
-      pure contactId
-    updateMember_ :: Int64 -> UTCTime -> IO ()
-    updateMember_ contactId ts =
-      DB.execute
-        db
-        [sql|
-          UPDATE group_members
-          SET contact_id = ?, updated_at = ?
-          WHERE group_member_id = ?
-        |]
-        (contactId, ts, groupMemberId)
 
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> VersionChat -> VersionRangeChat -> Maybe Int64 -> Int -> UTCTime -> SubscriptionMode -> IO Connection
 createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange viaContact connLevel currentTs subMode =
