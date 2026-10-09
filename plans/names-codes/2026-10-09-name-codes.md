@@ -180,6 +180,8 @@ Years default to 2 and the status to `free`. The group's command menu and usage 
 
 **Store:** an order record gains optional `kind: "name"`, `minLength`, `years` and `label`. The label is kept only in this browser, for N4 and the history. A record without `kind` is a badge.
 
+**The button's place:** each badge step keeps the Wefunder block under its main button. That block's fixed minimum height is what keeps the button at one height on every screen. The name steps (N1, N2, N3) and the name failure screen keep an empty block of that height (`.invest`, `aria-hidden`) without the badge offer. On N3 the slot holds "You get a code for any name of 7+ letters", where the badge checkout says "Or invest $10,000+". The history list (N10) keeps the real block.
+
 **New rules in `styles.css`:** `.name-box` (with `.tld`), `.name-status`, `.tiers`/`.tier`, `.stepper`/`.step`/`.term`, `.term-total`, `.primary.next` and `.name-mark`. All of them use the existing tokens, so the dark theme needs nothing of its own (D0–D4). They are prototyped in `mockups/mockups.css`.
 
 ### Buying, start to finish

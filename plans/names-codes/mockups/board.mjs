@@ -92,7 +92,8 @@ async function renderAll(frames) {
           if (error) throw new Error(`board: ${f.tag} failed to render: ${error}`);
           await page.evaluate(() => document.fonts.ready);
           const file = join(SCREENS_DIR, `${f.tag}.jpg`);
-          const shot = { path: file, type: "jpeg", quality: JPEG_QUALITY };
+          // animations frozen, or the waiting dot's pulse changes the bytes on every run
+          const shot = { path: file, type: "jpeg", quality: JPEG_QUALITY, animations: "disabled", caret: "hide" };
           if (kind.element) await page.locator("#shot").screenshot(shot);
           else await page.screenshot({ ...shot, fullPage: true });
           f.jpeg = readFileSync(file);

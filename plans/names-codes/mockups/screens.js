@@ -101,6 +101,11 @@ function qr(payload, caption) {
   return wrap;
 }
 
+// The invest block's fixed height without its badge offer, so the button above stands where it does on the badge steps.
+function reserve() {
+  return el("div", { class: "invest", "aria-hidden": "true" });
+}
+
 function nameMark() {
   return el("span", { class: "name-mark", "aria-hidden": "true" }, "#");
 }
@@ -150,7 +155,7 @@ function nameEntry(state, label = "") {
   }
   const action = state === "available" ? button("Continue", noop) : button("Check availability", noop);
   if (["empty", "short", "chars", "taken", "reserved", "limited"].includes(state)) action.setAttribute("disabled", "");
-  p.append(action);
+  p.append(action, reserve());
   return p;
 }
 
@@ -175,7 +180,8 @@ function nameYears(label, years) {
       plus),
     el("div", { class: "term-total" }, dollars(per * years)),
     el("div", { class: "notes" }, el("p", { class: "muted" }, "The years start when you register the name in the app.")),
-    button("Continue", noop));
+    button("Continue", noop),
+    reserve());
 }
 
 // ---------------------------------------------------------------- checkout
@@ -216,7 +222,8 @@ function nameSummary(label, years, selected, opts = {}) {
   p.append(el("span", { class: "label standalone" }, "Pay with"), methods(selected, opts.unavailable),
     el("div", { class: "notes slot" }, ...(selected === "card" ? [el("p", { class: "muted" }, "Card payments are processed by Stripe.")] : [])),
     button(`Pay ${total} with ${METHOD_NAMES[selected]}`, noop),
-    el("p", { class: "muted" }, `You get a code for any name of ${tierOf(label)}+ letters. Register ${label}.simplex with it in the app.`));
+    el("div", { class: "invest", "aria-hidden": "true" },
+      el("p", { class: "muted" }, `You get a code for any name of ${tierOf(label)}+ letters. Register ${label}.simplex with it in the app.`)));
   return p;
 }
 
@@ -230,7 +237,8 @@ function invoiceFailure() {
   return panel(back(), el("h1", {}, "That did not go through"),
     el("p", { class: "lede" }, el("span", { class: "half" }, "The order was not created,"), " ", el("span", { class: "half" }, "and nothing was charged.")),
     el("p", { class: "lede" }, "If this happens again, get in touch."),
-    button("Try again", noop));
+    button("Try again", noop),
+    reserve());
 }
 
 // ---------------------------------------------------------------- payment, shared with badges
@@ -316,10 +324,13 @@ function history() {
       method: "card", price: "$420.00", when: "2 October 2026, 09:40", code: "SB-JKN2E-E888G-5KK16-KZAK5" }),
     entry({ art: nameMark(), title: "orbital.simplex", sub: "Name code · 7+ letters · 2 years", status: "this invoice expired", tone: "lost",
       method: "btc", price: "$200.00", when: "28 September 2026, 18:03", open: true }));
-  return panel(el("h1", {}, "Your codes"),
+  const p = panel(el("h1", {}, "Your codes"),
     el("p", { class: "lede" }, "Every code you bought is in this browser, and nowhere else."),
     list,
     el("p", { class: "forget-line" }, button(s.FORGET_EVERYTHING, noop, "link danger")));
+  const invest = s.investPanel(undefined);
+  if (invest) p.append(invest);
+  return p;
 }
 
 // ---------------------------------------------------------------- landing
