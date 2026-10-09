@@ -25,6 +25,9 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -141,7 +144,10 @@ fun DatabaseEncryptionLayout(
           }
         }
 
-        if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
+        val hasCurrentField = !initialRandomDBPassphrase.value && chatDbEncrypted == true
+        val newKeyContentType =
+          if (hasCurrentField) ContentType.NewPassword else newPasswordContentType()
+        if (hasCurrentField) {
           PassphraseField(
             currentKey,
             generalGetString(MR.strings.current_passphrase),
@@ -158,6 +164,7 @@ fun DatabaseEncryptionLayout(
           showStrength = true,
           isValid = ::validKey,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
+          contentType = newKeyContentType,
         )
         val onClickUpdate = {
           // Don't do things concurrently. Shouldn't be here concurrently, just in case
@@ -187,6 +194,7 @@ fun DatabaseEncryptionLayout(
           generalGetString(MR.strings.confirm_new_passphrase),
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
           isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
+          contentType = newKeyContentType,
           keyboardActions = KeyboardActions(onDone = {
             if (!disabled) onClickUpdate()
             defaultKeyboardAction(ImeAction.Done)
@@ -323,6 +331,7 @@ fun PassphraseField(
   keyboardActions: KeyboardActions = KeyboardActions(),
   dependsOn: State<Any?>? = null,
   requestFocus: Boolean = false,
+  contentType: ContentType? = ContentType.Password,
 ) {
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
@@ -362,6 +371,7 @@ fun PassphraseField(
         minWidth = TextFieldDefaults.MinWidth,
         minHeight = TextFieldDefaults.MinHeight
       )
+      .semantics { if (contentType != null) this.contentType = contentType }
       .focusRequester(focusRequester),
     onValueChange = {
       state.value = it
@@ -372,7 +382,7 @@ fun PassphraseField(
     visualTransformation = if (showKey)
       VisualTransformation.None
     else
-      VisualTransformation { TransformedText(AnnotatedString(it.text.map { "*" }.joinToString(separator = "")), OffsetMapping.Identity) },
+      PasswordVisualTransformation('*'),
     keyboardOptions = keyboardOptions,
     keyboardActions = KeyboardActions(onDone = {
       keyboard?.hide()
