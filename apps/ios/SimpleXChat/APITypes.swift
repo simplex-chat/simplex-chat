@@ -438,8 +438,11 @@ public struct KeepAliveOpts: Codable, Equatable {
     public var keepIdle: Int // seconds
     public var keepIntvl: Int // seconds
     public var keepCnt: Int // times
+    // a connection with unacknowledged data gets no keep-alive probes, and the OS fails it only when it
+    // gives up retransmitting - ~15 minutes; when this is on it is failed after the keep-alive detection time
+    public var unackedDataTimeout: Bool? = nil
 
-    public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
+    public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4, unackedDataTimeout: nil)
 }
 
 public struct NetworkProxy: Equatable, Codable {

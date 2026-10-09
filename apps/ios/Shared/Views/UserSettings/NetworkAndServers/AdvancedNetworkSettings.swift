@@ -235,11 +235,16 @@ struct AdvancedNetworkSettings: View {
                         intSettingPicker("TCP_KEEPIDLE", selection: $keepAliveOpts.keepIdle, values: [15, 30, 60, 120, 180], label: secondsLabel)
                         intSettingPicker("TCP_KEEPINTVL", selection: $keepAliveOpts.keepIntvl, values: [5, 10, 15, 30, 60], label: secondsLabel)
                         intSettingPicker("TCP_KEEPCNT", selection: $keepAliveOpts.keepCnt, values: [1, 2, 4, 6, 8], label: "")
+                        Toggle("TCP_USER_TIMEOUT", isOn: Binding(
+                            get: { keepAliveOpts.unackedDataTimeout == true },
+                            set: { keepAliveOpts.unackedDataTimeout = $0 }
+                        ))
                     } else {
                         Group {
                             Text("TCP_KEEPIDLE")
                             Text("TCP_KEEPINTVL")
                             Text("TCP_KEEPCNT")
+                            Text("TCP_USER_TIMEOUT")
                         }
                         .foregroundColor(theme.colors.secondary)
                     }

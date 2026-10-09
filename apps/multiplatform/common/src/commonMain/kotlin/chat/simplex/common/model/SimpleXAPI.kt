@@ -5409,11 +5409,14 @@ enum class TransportSessionMode {
 data class KeepAliveOpts(
   val keepIdle: Int, // seconds
   val keepIntvl: Int, // seconds
-  val keepCnt: Int // times
+  val keepCnt: Int, // times
+  // a connection with unacknowledged data gets no keep-alive probes, and the OS fails it only when it gives
+  // up retransmitting - ~15 minutes; when this is on it is failed after the keep-alive detection time instead
+  val unackedDataTimeout: Boolean? = null
 ) {
   companion object {
     val defaults: KeepAliveOpts =
-      KeepAliveOpts(keepIdle = 30, keepIntvl = 15, keepCnt = 4)
+      KeepAliveOpts(keepIdle = 30, keepIntvl = 15, keepCnt = 4, unackedDataTimeout = null)
   }
 }
 
