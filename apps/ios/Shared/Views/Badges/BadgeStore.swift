@@ -327,7 +327,9 @@ final class BadgeStore: ObservableObject {
             do { try await handOver(receipt) } catch let error {
                 logger.error("BadgeStore.reconcile: \(responseError(error))")
                 await MainActor.run {
-                    if !sweepFailureShown {
+                    // showAlert presents on the top view controller, which the launch sweep can precede;
+                    // an alert with nowhere to go must not spend the one this run gets
+                    if !sweepFailureShown, getTopViewController() != nil {
                         sweepFailureShown = true
                         showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(error, purchase: true))
                     }
