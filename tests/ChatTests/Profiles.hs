@@ -46,6 +46,10 @@ chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
+    it "profile is not saved when its address data upload fails" testUpdateProfileAddressDataError
+    it "profile name used by a contact gets a local name with suffix" testUpdateProfileNameUsedByContact
+    it "profile name used by another user is rejected, names with _N suffix are invalid" testUpdateProfileNameUsedByUser
+    it "profile name used by a hidden user is rejected" testUpdateProfileNameUsedByHiddenUser
     it "profile description round-trips and shows in contact info" testProfileDescriptionShown
     it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
@@ -209,6 +213,117 @@ testUpdateProfile =
             bob <## "contact cate changed to cat (Cate)"
             bob <## "use @cat <message> to send messages"
         ]
+
+testUpdateProfileAddressDataError :: HasCallStack => TestParams -> IO ()
+testUpdateProfileAddressDataError ps = do
+  let cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
+  withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
+      withSmpServer' serverCfg' $ do
+        connectUsers alice bob
+        alice ##> "/ad"
+        _ <- getContactLinks alice True
+        pure ()
+      alice <## "disconnected 2 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
+      alice ##> "/p alisa"
+      alice <##. "smp agent error: BROKER"
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice)"
+      alice <## "use /p <name> [<bio>] to change it"
+      withSmpServer' serverCfg' $ do
+        alice <## "subscribed 2 connections on server localhost"
+        bob <## "subscribed 1 connections on server localhost"
+        alice ##> "/p alisa"
+        alice <## "user profile is changed to alisa (your 1 contacts are notified)"
+        bob <## "contact alice changed to alisa"
+        bob <## "use @alisa <message> to send messages"
+      alice <## "disconnected 2 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
+  where
+    serverCfg' =
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg (tmpPath ps)
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testUpdateProfileNameUsedByContact :: HasCallStack => TestParams -> IO ()
+testUpdateProfileNameUsedByContact =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      alice ##> "/ad"
+      (shortLink, _) <- getContactLinks alice True
+      alice ##> "/p bob"
+      alice <## "user profile is changed to bob (your 1 contacts are notified)"
+      bob <## "contact alice changed to bob_1"
+      bob <## "use @bob_1 <message> to send messages"
+      alice ##> "/p"
+      alice <## "user profile: bob"
+      alice <## "use /p <name> [<bio>] to change it"
+      alice ##> "/users"
+      alice <## "bob_1 (active)"
+      alice #> "@bob hi"
+      bob <# "bob_1> hi"
+      cath ##> ("/_connect plan 1 " <> shortLink)
+      cath <## "contact address: ok to connect"
+      sLinkData <- getTermLine cath
+      sLinkData `shouldContain` "\"displayName\":\"bob\""
+      alice ##> "/p alice"
+      alice <## "user profile is changed to alice (your 1 contacts are notified)"
+      bob <## "contact bob_1 changed to alice"
+      bob <## "use @alice <message> to send messages"
+      alice ##> "/users"
+      alice <## "alice (active)"
+
+testUpdateProfileNameUsedByHiddenUser :: HasCallStack => TestParams -> IO ()
+testUpdateProfileNameUsedByHiddenUser =
+  testChat aliceProfile $
+    \alice -> do
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/hide user my_password"
+      alice <## "current user alisa:"
+      alice <## "messages are hidden (use /tail to view)"
+      alice <## "profile is hidden"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice ##> "/p alisa"
+      alice <## "invalid display name: alisa"
+
+testUpdateProfileNameUsedByUser :: HasCallStack => TestParams -> IO ()
+testUpdateProfileNameUsedByUser =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice ##> "/p alisa"
+      alice <## "user with the name alisa already exists"
+      alice ##> "/p alisa_1"
+      alice <## "invalid display name: alisa_1"
+      alice <## "you could use this one: alisa-1"
+      alice ##> "/p alisa-1"
+      alice <## "user profile is changed to alisa-1 (your 1 contacts are notified)"
+      bob <## "contact alice changed to alisa-1"
+      bob <## "use @alisa-1 <message> to send messages"
+      alice ##> "/create user alisa-1"
+      alice <## "user with the name alisa-1 already exists"
+      alice ##> "/create user bob_2"
+      alice <## "invalid display name: bob_2"
+      alice <## "you could use this one: bob-2"
+      alice ##> "/users"
+      alice <## "alisa"
+      alice <## "alisa-1 (active)"
 
 -- Profile.description survives the connect-time round-trip and is shown in the contact /i view.
 testProfileDescriptionShown :: HasCallStack => TestParams -> IO ()

@@ -774,7 +774,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 hostConnId <- withStore $ \db -> do
                   liftIO $ setConnConnReqInv db user connId cReq
                   getHostConnId db user groupId
-                sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
+                sendXGrpMemInv hostConnId XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _pqSupport _ connInfo -> do
@@ -3304,10 +3304,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
-    sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> CM ()
-    sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
+    sendXGrpMemInv :: Int64 -> XGrpMemIntroCont -> CM ()
+    sendXGrpMemInv hostConnId XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
       hostConn <- withStore $ \db -> getConnectionById db cxt user hostConnId
-      let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
+      let msg = XGrpMemInv memberId IntroInvitation {groupConnReq}
       void $ sendDirectMemberMessage hostConn msg groupId
       withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
 
@@ -3321,7 +3321,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
-    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq} = do
       let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
       toMember <- withStore $ \db -> do
@@ -3341,20 +3341,16 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         liftIO $ updateGroupMemberStatus db userId toMember newMemberStatus
         pure toMember
       subMode <- chatReadVar subscriptionMode
-      -- [incognito] send membership incognito profile, create direct connection as incognito
+      -- [incognito] send membership incognito profile
       membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       let enableNtfsGrp = chatHasNtfs chatSettings
       groupConnIds@(gCmdId, gAcId) <- prepareAgentJoin user Nothing enableNtfsGrp groupConnReq
-      directConnIds <- mapM (prepareAgentJoin user Nothing True) directConnReq
-      let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
-          mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
+      let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr cxt `peerConnChatVersion` mcvr
-      withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
+      withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds subMode
       joinAgentConnectionAsync gCmdId False gAcId enableNtfsGrp groupConnReq dm subMode
-      forM_ ((,) <$> directConnIds <*> directConnReq) $ \((dCmdId, dAcId), dcr) ->
-        joinAgentConnectionAsync dCmdId False dAcId True dcr dm subMode
 
     -- rollback defense (channels): apply an owner-signed role/removal only at a version >= the persisted
     -- roster_version (not the batch-constant gInfo, which a relay can stale by reordering events in one
@@ -3937,7 +3933,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfoKeys -> Maybe GroupChatScopeInfo -> GroupMember -> GrpMsgForward -> ParsedMsg 'Json -> UTCTime -> CM ()
-    xGrpMsgForward g@(GIK gInfo _) scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs = do
+    xGrpMsgForward g@(GIK gInfo@GroupInfo {membership} _) scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs = do
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
       case fwdSender of
         FwdMember memberId memberName -> do
@@ -3945,6 +3941,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           let allowCreate = toCMEventTag chatMsgEvent /= XGrpLeave_
           withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownRole allowCreate) >>= \case
             Just (author, unknown)
+              | not (useRelays' gInfo) && groupMemberId' author == groupMemberId' membership ->
+                  messageError $ "x.grp.msg.forward: content attributed to own membership, forwarder " <> tshow (groupMemberId' m) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | memberRemoved author ->
                   logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | not (useRelays' gInfo) && not (expectedForwarder author) ->
@@ -4160,7 +4158,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
               | otherwise ->
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
-                    let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxEncodedMsgLength nextTasks
+                    let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxForwardBatchLength nextTasks
                         senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
                     withStore' $ \db -> do
                       forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds body
@@ -4290,8 +4288,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         else do
                           -- all members' profiles disseminate; privileged key/role come from the roster, not here
                           let (encoderErrs, validLabeled) = partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew (vr cxt) gInfo s | (s, _) <- senders]
-                              (extBody', inBody, overflowLabeled, large1) = batchProfilesWithBody maxEncodedMsgLength body validLabeled
-                              (overflowBatches', large2) = batchProfiles maxEncodedMsgLength overflowLabeled
+                              (extBody', inBody, overflowLabeled, large1) = batchProfilesWithBody maxForwardBatchLength body validLabeled
+                              (overflowBatches', large2) = batchProfiles maxForwardBatchLength overflowLabeled
                               packerErrs = [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | s <- large1 <> large2]
                               allErrs = encoderErrs <> packerErrs
                           unless (null allErrs) $ do

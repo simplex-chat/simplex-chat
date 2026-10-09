@@ -44,6 +44,7 @@ module Simplex.Chat.Store.Profiles
     updateUserAutoAcceptMemberContacts,
     updateUserAutoAcceptGroupInvitations,
     updateUserProfile,
+    updatedUserProfile,
     setUserBadge,
     setUserProfileContactLink,
     getUserContactProfiles,
@@ -169,7 +170,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order, displayName) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -344,21 +345,15 @@ updateUserProfile db user p'
       currentTs <- getCurrentTime
       updateUserProfileFields_' db userId profileId p' currentTs
       userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
-      pure user {profile = (toLocalProfile profileId p' localAlias currentTs (Just False) Nothing) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+      pure user {profile = updatedUserProfile user p' currentTs, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
-      checkConstraint SEDuplicateName . liftIO $ do
+      checkConstraint SEDuplicateName . ExceptT . withLocalDisplayName db userId newName $ \newLDN -> do
         currentTs <- getCurrentTime
-        -- Insert first: checkConstraint returns the violation as a value, so the
-        -- transaction commits, keeping whatever ran before the failing insert.
-        DB.execute
-          db
-          "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-          (newName, newName, userId, currentTs, currentTs)
-        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newLDN, currentTs, userId)
         userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
         updateUserProfileFields_' db userId profileId p' currentTs
-        updateContactLDN_ db user userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile = (toLocalProfile profileId p' localAlias currentTs (Just False) Nothing) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+        updateContactLDN_ db user userContactId localDisplayName newLDN currentTs
+        pure $ Right user {localDisplayName = newLDN, profile = updatedUserProfile user p' currentTs, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateUserMemberProfileUpdatedAt_ currentTs
       | userMemberProfileChanged = do
@@ -366,9 +361,13 @@ updateUserProfile db user p'
           pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
     userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || desc' /= description || img' /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, localBadge, localAlias}, userMemberProfileUpdatedAt} = user
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = fn', shortDescr = d', description = desc', image = img', preferences} = p'
     fullPreferences = fullPreferences' preferences
+
+updatedUserProfile :: User -> Profile -> UTCTime -> LocalProfile
+updatedUserProfile User {profile = LocalProfile {profileId, localBadge, localAlias}} p' ts =
+  (toLocalProfile profileId p' localAlias ts (Just False) Nothing) {localBadge}
 
 -- own profile field update; leaves the badge columns alone (the credential is owned by setUserBadge/addUserBadge)
 updateUserProfileFields_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
@@ -411,19 +410,20 @@ setUserSimplexDomain db user@User {userId, profile = p@LocalProfile {profileId}}
   pure (user :: User) {profile = p {contactDomain = mkDomainClaim <$> domain_}}
 
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
-setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do
+setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId, contactDomain}} ucl_ = do
   ts <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET contact_link = ?, updated_at = ?
+      SET contact_link = ?, contact_domain = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (contactLink, ts, userId, profileId)
-  pure (user :: User) {profile = p {contactLink}}
+    (contactLink, claimDomain <$> contactDomain', ts, userId, profileId)
+  pure (user :: User) {profile = p {contactLink, contactDomain = contactDomain'}}
   where
     contactLink = profileContactLink <$> ucl_
+    contactDomain' = if isJust contactLink then contactDomain else Nothing
 
 -- only used in tests
 getUserContactProfiles :: DB.Connection -> User -> IO [Profile]
