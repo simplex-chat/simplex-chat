@@ -161,6 +161,8 @@ object BadgeStore {
   // set once presentUnfinished has read the store, or failed to: until then, a slow payment completed while
   // the app was closed, or a purchase it died before handing over, are both unknown, so canBuy refuses
   private val reconciledOnce = mutableStateOf(false)
+  // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
+  private var sweepFailureShown = false
 
   fun purchaseState(userId: Long?): BadgePurchaseState? {
     if (!badgeStoreAvailable) return null
@@ -372,12 +374,22 @@ object BadgeStore {
     when (outcome) {
       is BadgePurchaseOutcome.Purchased ->
         if (outcome.receipt.productId !in badgeOneTimeProductIds) finish(outcome.receipt)
-        // no buyer to tell: the purchase stays unfinished and the next sweep hands it over again
+        // the purchase stays unfinished, so the next sweep hands it over again
         else try {
           handOver(outcome.receipt)
         } catch (e: Exception) {
           if (e is CancellationException) throw e
           Log.e(TAG, "BadgeStore.reconcile: ${e.stackTraceToString()}")
+          withContext(Dispatchers.Main) {
+            if (!sweepFailureShown) {
+              sweepFailureShown = true
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.badges_purchase_error),
+                text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
+                  else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+              )
+            }
+          }
         }
       is BadgePurchaseOutcome.Pending ->
         if (outcome.invoiceId != null) withContext(Dispatchers.Main) { waitingForApproval.value += outcome.invoiceId }
