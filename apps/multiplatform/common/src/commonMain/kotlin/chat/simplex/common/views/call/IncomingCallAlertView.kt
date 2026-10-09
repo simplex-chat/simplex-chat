@@ -19,7 +19,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.views.usersettings.ProfilePreview
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.datetime.Clock
 
 // Spec: spec/services/calls.md#IncomingCallAlertView

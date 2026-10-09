@@ -178,31 +178,6 @@ checkProfileSize p@Profile {contactDomain} = checkInfoSize "Profile" (XInfo p' N
   where
     p' = (p :: Profile) {badge = Nothing, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
 
-checkOtherUserName :: ContactName -> User -> CM ()
-checkOtherUserName name User {profile = LocalProfile {displayName}, activeUser, viewPwdHash} =
-  when (displayName == name && (activeUser || isNothing viewPwdHash)) $ throwChatError $ CEUserExists name
-
-checkOtherUsersName :: UserId -> ContactName -> CM ()
-checkOtherUsersName userId name = do
-  users <- withFastStore' getUsers
-  forM_ users $ \u@User {userId = uId} -> when (uId /= userId) $ checkOtherUserName name u
-
-withUserNamesLock :: CM a -> CM a
-withUserNamesLock = withEntityLock "userNames" CLUserNames
-
-withUserProfileLock :: User -> (User -> CM a) -> CM a
-withUserProfileLock User {userId} action =
-  withUserProfileLock_ userId $ withFastStore (`getUser` userId) >>= action
-
-withUserProfileLock_ :: UserId -> CM a -> CM a
-withUserProfileLock_ userId = withEntityLock "userProfile" (CLUserProfile userId)
-
-updateCurrentUser :: User -> CM ()
-updateCurrentUser user'@User {userId} =
-  chatModifyVar currentUser $ \case
-    Just User {userId = cuId} | cuId == userId -> Just user'
-    cu_ -> cu_
-
 checkGroupProfileSize :: GroupProfile -> CM ()
 checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p)
 
@@ -480,23 +455,23 @@ processChatCommand cxt nm = \case
       checkProfileSize p
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
-    withUserNamesLock $ do
-      users <- withFastStore' getUsers
-      forM_ users $ \otherUser@User {userChatRelay = userChatRelay'} -> do
-        checkOtherUserName displayName otherUser
-        when (isTrue userChatRelay && isTrue userChatRelay') $ throwChatError CEChatRelayExists
-      (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
-      let service = isTrue clientService
-      auId <- withAgent $ \a -> createUser a service smp' xftp'
-      ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
-      user <- withFastStore $ \db -> do
-        user <- createUserRecordAt db (AgentUserId auId) (isTrue userChatRelay) service p True ts
-        mapM_ (setUserServers db user ts) uss
-        createPresetContactCards db user `catchAllErrors` \_ -> pure ()
-        createNoteFolder db user
-        pure user
-      atomically . writeTVar u $ Just user
-      pure $ CRActiveUser user
+    users <- withFastStore' getUsers
+    forM_ users $ \User {profile = LocalProfile {displayName = n}, activeUser, viewPwdHash, userChatRelay = userChatRelay'} -> do
+      when (n == displayName) . throwChatError $
+        if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
+      when (isTrue userChatRelay && isTrue userChatRelay') $ throwChatError CEChatRelayExists
+    (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
+    let service = isTrue clientService
+    auId <- withAgent $ \a -> createUser a service smp' xftp'
+    ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
+    user <- withFastStore $ \db -> do
+      user <- createUserRecordAt db (AgentUserId auId) (isTrue userChatRelay) service p True ts
+      mapM_ (setUserServers db user ts) uss
+      createPresetContactCards db user `catchAllErrors` \_ -> pure ()
+      createNoteFolder db user
+      pure user
+    atomically . writeTVar u $ Just user
+    pure $ CRActiveUser user
     where
       createPresetContactCards :: DB.Connection -> User -> ExceptT StoreError IO ()
       createPresetContactCards db user = do
@@ -1624,8 +1599,8 @@ processChatCommand cxt nm = \case
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
-  APIUpdateProfile userId profile -> withUserId userId $ \user -> updateProfile user (const profile)
-  APISetUserDomain userId strDomain_ -> withUserId userId $ \u -> withUserProfileLock u $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} -> do
+  APIUpdateProfile userId profile -> withUserProfileLock "updateProfile" $ withUserId userId (`updateProfile` profile)
+  APISetUserDomain userId strDomain_ -> withUserProfileLock "setUserDomain" $ withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} -> do
     let domain_ = unStrJSON <$> strDomain_
     if (claimDomain <$> contactDomain) == domain_
       then pure $ CRUserProfileNoChange user
@@ -2509,7 +2484,7 @@ processChatCommand cxt nm = \case
     pure $ CRUserContactLinkCreated user ccLink''
   CreateMyAddress ratchetKeys_ -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APICreateMyAddress userId Nothing ratchetKeys_
-  APIDeleteMyAddress userId -> withUserId userId $ \u -> withUserProfileLock u $ \user@User {profile = p} -> do
+  APIDeleteMyAddress userId -> withUserProfileLock "deleteMyAddress" $ withUserId userId $ \user@User {profile = p} -> do
     conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
     withChatLock "deleteMyAddress" $ do
       deleteAgentConnectionAsync $ aConnId conn
@@ -2532,10 +2507,10 @@ processChatCommand cxt nm = \case
     CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData False pqInitKeys user)
   APIRotateAddressRatchetKeys userId -> withUserId' userId $ \u -> withUserProfileLock u $ \user ->
     CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData True (Just IKUsePQ) user)
-  APISetProfileAddress userId False -> withUserId userId $ \u -> withUserProfileLock u $ \user@User {profile = p} -> do
+  APISetProfileAddress userId False -> withUserProfileLock "setProfileAddress" $ withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing, contactDomain = Nothing}
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
-  APISetProfileAddress userId True -> withUserId userId $ \u -> withUserProfileLock u $ \user@User {profile = p} -> do
+  APISetProfileAddress userId True -> withUserProfileLock "setProfileAddress" $ withUserId userId $ \user@User {profile = p} -> do
     ucl <- withFastStore (`getUserAddress` user)
     -- TODO [short links] replace with short links
     let p' = (fromLocalProfile p :: Profile) {contactLink = Just $ profileContactLink ucl}
@@ -3610,20 +3585,24 @@ processChatCommand cxt nm = \case
     -- after the write, so the pass it signals arms a wake for the snooze rather than raising again
     lift $ startBadgeWork user
     CRBadgeState user <$> getUserBadgeState user
-  SetBotCommands commands -> withUser $ \user -> updateProfile user $ \User {profile} ->
+  SetBotCommands commands -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
-     in (fromLocalProfile profile :: Profile) {preferences = prefs, peerType = Just CPTBot}
-  UpdateProfile displayName shortDescr -> withUser $ \user -> updateProfile user $ \User {profile} ->
-    (fromLocalProfile profile :: Profile) {displayName, shortDescr, fullName = ""}
-  UpdateProfileImage image -> withUser $ \user -> updateProfile user $ \User {profile} ->
-    (fromLocalProfile profile :: Profile) {image}
-  UpdateProfileImageFromFile path -> withUser $ \user -> do
+        p = (fromLocalProfile profile :: Profile) {preferences = prefs, peerType = Just CPTBot}
+    updateProfile user p
+  UpdateProfile displayName shortDescr -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
+    let p = (fromLocalProfile profile :: Profile) {displayName, shortDescr, fullName = ""}
+    updateProfile user p
+  UpdateProfileImage image -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
+    let p = (fromLocalProfile profile :: Profile) {image}
+    updateProfile user p
+  UpdateProfileImageFromFile path -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     img <- readProfileImageFile path
     updateProfile user $ \User {profile} -> (fromLocalProfile profile :: Profile) {image = Just img}
   ShowProfileImage -> withUser $ \user@User {profile} -> pure $ CRUserProfileImage user $ fromLocalProfile profile
-  SetUserFeature (ACF f) allowed -> withUser $ \user -> updateProfile user $ \user'@User {profile} ->
-    (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user'}
+  SetUserFeature (ACF f) allowed -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
+    let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
+    updateProfile user p
   SetContactFeature (ACF f) cName allowed_ -> withUser $ \user -> do
     ct@Contact {userPreferences} <- withFastStore $ \db -> getContactByName db cxt user cName
     let prefs' = setPreference f allowed_ $ Just userPreferences
@@ -3639,7 +3618,7 @@ processChatCommand cxt nm = \case
       case memberAdmission of
         Nothing -> p {memberAdmission = Just (emptyGroupMemberAdmission :: GroupMemberAdmission) {review = reviewAdmissionApplication}}
         Just ma -> p {memberAdmission = Just (ma :: GroupMemberAdmission) {review = reviewAdmissionApplication}}
-  SetUserTimedMessages onOff -> withUser $ \user -> updateProfile user $ \user'@User {profile} ->
+  SetUserTimedMessages onOff -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let allowed = if onOff then FAYes else FANo
         pref = TimedMessagesPreference allowed Nothing
      in (fromLocalProfile profile :: Profile) {preferences = Just . setPreference' SCFTimedMessages (Just pref) $ preferences' user'}
@@ -3707,8 +3686,7 @@ processChatCommand cxt nm = \case
         CLContactRequest crId -> "ContactRequest " <> tshow crId
         CLFile fId -> "File " <> tshow fId
         CLBadgeUser uId -> "BadgeUser " <> tshow uId
-        CLUserProfile uId -> "UserProfile " <> tshow uId
-        CLUserNames -> "UserNames"
+        CLUserProfile -> "UserProfile"
   DebugEvent event -> toView event >> ok_
   GetAgentSubsTotal userId -> withUserId userId $ \user -> do
     users <- withStore' $ \db -> getUsers db
@@ -4036,37 +4014,33 @@ processChatCommand cxt nm = \case
       now <- liftIO getCurrentTime
       when (fileSize > maxSndXFTPFileSize lims now sndBadge) $ throwChatError $ CEFileSize f
       pure fileSize
-    updateProfile :: User -> (User -> Profile) -> CM ChatResponse
-    updateProfile user mkProfile = withUserProfileLock user $ \user'@User {profile = p} ->
-      let p'@Profile {contactLink} = mkProfile user'
-          Profile {contactDomain = claim} = fromLocalProfile p
-          p'' = (p' :: Profile) {contactDomain = if isJust contactLink then claim else Nothing}
-       in updateProfile_ user' p'' True $ withFastStore $ \db -> updateUserProfile db user' p''
+    updateProfile :: User -> Profile -> CM ChatResponse
+    updateProfile user@User {profile = LocalProfile {contactDomain}} p = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
+      where
+        p' = (p :: Profile) {contactDomain}
     updateProfile_ :: User -> Profile -> Bool -> CM User -> CM ChatResponse
     updateProfile_ user@User {userId, profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
-      | n /= n' = do
-          checkValidName n'
-          withUserNamesLock $ do
-            checkOtherUsersName userId n'
-            update
-      | otherwise = update
-      where
-        update = do
+      | otherwise = do
+          when (n /= n') $ do
+            checkValidName n'
+            users <- withFastStore' getUsers
+            forM_ users $ \User {profile = LocalProfile {displayName}, activeUser, viewPwdHash} ->
+              when (displayName == n') . throwChatError $
+                if activeUser || isNothing viewPwdHash then CEUserExists n' else CEInvalidDisplayName {displayName = n', validName = ""}
           checkProfileImageSize img'
           checkProfileSize p'
           when shouldUpdateAddressData $ do
             ts <- liftIO getCurrentTime
-            setMyAddressData' (user :: User) {profile = updatedUserProfile user p' ts} `catchAllErrors` \e -> restoreAddressData >> throwError e
-          withChatLock "updateProfile" (tryAllErrors updateUser >>= mapM sendUpdate) >>= \case
-            Right r -> pure r
-            Left e -> restoreAddressData >> throwError e
-        restoreAddressData = when shouldUpdateAddressData $ setMyAddressData' user `catchAllErrors` eToView
-        sendUpdate user' = do
-          updateCurrentUser user'
+            setMyAddressData' (user :: User) {profile = updatedUserProfile user p' ts}
+          -- read contacts before user update to correctly merge preferences
           contacts <- withFastStore' $ \db -> getUserContacts db cxt user
-          summary <- sendUpdateToContacts user' contacts
-          pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
+          user' <- updateUser
+          asks currentUser >>= atomically . (`writeTVar` Just user')
+          withChatLock "updateProfile" $ do
+            summary <- sendUpdateToContacts user' contacts
+            pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
+      where
         setMyAddressData' :: User -> CM ()
         setMyAddressData' user' =
           withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
@@ -5673,7 +5647,7 @@ presentIssuedBadge user@User {userId} p@UserBadgePurchase {badgePurchaseId, show
   | otherwise = do
       cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
       forM_ cred_ $ \cred@(BadgeCredential _ _ _ info) ->
-        when (presentDue cred) $ withUserProfileLock_ userId $ do
+        when (presentDue cred) $ withUserProfileLock "presentIssuedBadge" $ do
           user' <- withStore $ \db -> setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus now (Just True) info))
           presentUserBadgeToContacts user'
   where
@@ -5686,7 +5660,7 @@ presentIssuedBadge user@User {userId} p@UserBadgePurchase {badgePurchaseId, show
 retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> StatementEntry -> CM Bool
 retireExpiredBadge user@User {userId} UserBadgePurchase {badgePurchaseId, shown} now balance
   | not (shown && L.paidThrough balance <= now) = pure False
-  | otherwise = withUserProfileLock_ userId $ do
+  | otherwise = withUserProfileLock "retireExpiredBadge" $ do
       user' <- withStore $ \db -> do
         liftIO $ clearShownBadge db user badgePurchaseId
         setUserBadge db user Nothing

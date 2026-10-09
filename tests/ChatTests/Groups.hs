@@ -177,7 +177,6 @@ chatGroupTests = do
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
-    it "forward messages to member below version 18 as x.grp.msg.forward" testGroupMsgForwardOldMember
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
@@ -5436,26 +5435,6 @@ testGroupMsgForwardMessage =
       cath ##> "/tail #team 2"
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
-
-testGroupMsgForwardOldMember :: HasCallStack => TestParams -> IO ()
-testGroupMsgForwardOldMember ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChat ps "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps oldCfg "cath" cathProfile $ \cath -> do
-        createGroup3 "team" alice bob cath
-        setupGroupForwarding alice bob cath
-
-        bob #> "#team hi there"
-        alice <# "#team bob> hi there"
-        cath <# "#team bob> hi there [>>]"
-
-        threadDelay 1000000
-
-        cath #> "#team hey team"
-        alice <# "#team cath> hey team"
-        bob <# "#team cath> hey team [>>]"
-  where
-    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
 
 testGroupMsgForwardOwnMembershipRejected :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardOwnMembershipRejected =

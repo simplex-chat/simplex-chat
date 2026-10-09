@@ -39,7 +39,7 @@ import chat.simplex.common.views.helpers.ModalView
 import chat.simplex.common.views.helpers.ShareButton
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.withBGApi
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlin.math.abs
 
 @Composable

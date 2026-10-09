@@ -5374,7 +5374,7 @@ SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE contact_profiles
-      SET contact_link = ?, updated_at = ?
+      SET contact_link = ?, contact_domain = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     
 Plan:
@@ -7714,6 +7714,10 @@ Query: SELECT member_id FROM group_members WHERE local_display_name = ?
 Plan:
 SCAN group_members
 
+Query: SELECT member_id FROM group_members WHERE member_category = ?
+Plan:
+SCAN group_members
+
 Query: SELECT member_id FROM group_members WHERE member_role = ? LIMIT 1
 Plan:
 SCAN group_members
@@ -7990,6 +7994,10 @@ Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE contact_profiles SET contact_domain_verified = NULL WHERE user_id = ? AND contact_profile_id = ?
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE contact_profiles SET image = ? WHERE display_name = ?
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
@@ -8185,6 +8193,10 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_profiles SET description = ? WHERE display_name = ?
+Plan:
+SCAN group_profiles
 
 Query: UPDATE group_profiles SET public_group_id = ? WHERE group_profile_id = (SELECT group_profile_id FROM groups WHERE group_id = ?)
 Plan:

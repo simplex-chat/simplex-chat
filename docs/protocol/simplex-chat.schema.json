@@ -325,9 +325,6 @@
     "introInvitation": {
       "properties": {
         "groupConnReq": {"ref": "connReqUri"}
-      },
-      "optionalProperties": {
-        "directConnReq": {"ref": "connReqUri"}
       }
     },
     "groupMemberRole": {

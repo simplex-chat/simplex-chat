@@ -973,6 +973,9 @@ rosterBlobP = do
 maxEncodedInfoLength :: Int
 maxEncodedInfoLength = 14694
 
+maxEncodedProfileMsgLength :: Int
+maxEncodedProfileMsgLength = 16384
+
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
 encodeChatMessage :: MsgEncodingI e => Int -> ChatMessage e -> EncodedChatMessage

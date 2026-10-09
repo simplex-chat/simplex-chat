@@ -17,7 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlin.collections.ArrayList
 
 @Composable

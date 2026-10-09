@@ -40,7 +40,7 @@ import chat.simplex.common.views.usersettings.networkAndServers.defaultCondition
 import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.russhwolf.settings.Settings
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -1927,12 +1927,7 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiUpdateProfile(userId, profile))
     if (r is API.Result && r.res is CR.UserProfileNoChange) return profile to emptyList()
     if (r is API.Result && r.res is CR.UserProfileUpdated) return r.res.toProfile to r.res.updateSummary.changedContacts
-    if (
-      r is API.Error && (
-        r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName ||
-        r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.UserExists
-      )
-    ) {
+    if (r is API.Error && (r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName || r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.UserExists)) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
     } else if (!(networkErrorAlert(r))) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_profile), "${r.responseType}: ${r.details}")
@@ -7587,7 +7582,8 @@ enum class RcvSwitchStatus {
   @SerialName("switch_started") SwitchStarted,
   @SerialName("sending_qadd") SendingQADD,
   @SerialName("sending_quse") SendingQUSE,
-  @SerialName("received_message") ReceivedMessage
+  @SerialName("received_message") ReceivedMessage,
+  @SerialName("received_qend") ReceivedQEND
 }
 
 @Serializable

@@ -55,7 +55,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, sumTypeJSON)
-import Simplex.Messaging.Protocol (BlockingInfo, MsgBody, XFTPServer)
+import Simplex.Messaging.Protocol (BlockingInfo, MsgBody, XFTPServer, unMsgId)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
@@ -1228,7 +1228,7 @@ msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId
     { integrity = (decodeLatin1 . strEncode) integrity,
       rcvId,
       rcvTs,
-      serverId = (decodeLatin1 . B64.encode) serverId,
+      serverId = (decodeLatin1 . B64.encode . unMsgId) serverId,
       serverTs,
       sndId
     }

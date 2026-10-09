@@ -160,6 +160,10 @@ withFileLock :: Text -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
+withUserProfileLock :: Text -> CM a -> CM a
+withUserProfileLock name = withEntityLock name CLUserProfile
+{-# INLINE withUserProfileLock #-}
+
 useServerCfgs :: forall p. UserProtocol p => SProtocolType p -> RandomAgentServers -> [(Text, ServerOperator)] -> [UserServer p] -> NonEmpty (ServerCfg p)
 useServerCfgs p RandomAgentServers {smpServers, xftpServers} opDomains =
   fromMaybe (rndAgentServers p) . L.nonEmpty . agentServerCfgs p opDomains
@@ -1417,11 +1421,8 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   -- (regular groups only; never channels) is an authored element -- all batch together in order.
   vr <- chatVersionRange
   welcomeEl <- welcomeElement
-  let fwdMsgs = concat fwdMsgsByItem
-      welcomeEls = maybe [] (: []) welcomeEl
-      (batches, dropped)
-        | m `supportsVersion` relayWebCapVersion = batchElements maxForwardBatchLength (map (uncurry encodeFwdElement) fwdMsgs <> welcomeEls)
-        | otherwise = batchJsonElements maxForwardBatchLength (map (\(fwd, verifiedMsg) -> encodeLegacyFwdElement vr fwd (verifiedChatMsg verifiedMsg)) fwdMsgs <> welcomeEls)
+  let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
+  let (batches, dropped) = batchElements maxForwardBatchLength (fwdEls <> maybe [] (: []) welcomeEl)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
   forM_ batches $ \body ->
     void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
@@ -2515,7 +2516,7 @@ encodeConnInfoPQ :: MsgEncodingI e => PQSupport -> ChatMsgEvent e -> CM ByteStri
 encodeConnInfoPQ pqSup chatMsgEvent = do
   cxt <- chatStoreCxt
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxDecompressedMsgLength info of
+  case encodeChatMessage maxEncodedProfileMsgLength info of
     ECMEncoded connInfo -> compressConnInfo pqSup connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
@@ -2524,7 +2525,7 @@ encodeSignedConnInfo :: MsgEncodingI e => PQSupport -> MsgSigning -> ChatMsgEven
 encodeSignedConnInfo pqSup signing chatMsgEvent = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxDecompressedMsgLength info of
+  case encodeChatMessage maxEncodedProfileMsgLength info of
     ECMEncoded body -> compressConnInfo pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 

@@ -15,7 +15,7 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.newchat.ContactType
 import chat.simplex.common.views.newchat.chatContactType
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun ContactPreviewView(

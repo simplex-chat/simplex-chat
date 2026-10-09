@@ -160,30 +160,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, ldn, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order, ldn) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
-  where
-    showNtfs = True
-    sendRcptsContacts = True
-    sendRcptsSmallGroups = True
-    autoAcceptMemberContacts = False
-    autoAcceptGroupInvitations = False
-    insertUser :: Int64 -> Int -> Int -> ExceptT StoreError IO (UserId, Text, Int)
-    insertUser _ _ 0 = throwError SEDuplicateName
-    insertUser order ldnSuffix attempts =
-      liftIO (withSavepoint db "user_insert" insertUserRow) >>= \case
-        Right () -> (,ldn,ldnSuffix) <$> liftIO (insertedRowId db)
-        Left e
-          | constraintError e -> insertUser order (ldnSuffix + 1) (attempts - 1)
-          | otherwise -> liftIO $ E.throwIO e
-      where
-        ldn = displayName <> (if ldnSuffix == 0 then "" else T.pack $ '_' : show ldnSuffix)
-        insertUserRow =
-          DB.execute
-            db
-            "INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, auto_accept_group_invitations, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?,?)"
-            ( (auId, ldn, BI activeUser, BI userChatRelay, order)
-                :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, BI clientService, currentTs, currentTs)
-            )
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order, displayName) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -359,10 +336,10 @@ updateUserProfile db user p'
       updateUserProfileFields_' db userId profileId p' currentTs
       userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
       pure user {profile = updatedUserProfile user p' currentTs, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
-  | otherwise = do
-      currentTs <- liftIO getCurrentTime
-      let setUserLDN ldn = DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (ldn, currentTs, userId)
-      ExceptT . withLocalDisplayName_ db userId newName (Just setUserLDN) $ \newLDN -> do
+  | otherwise =
+      checkConstraint SEDuplicateName . ExceptT . withLocalDisplayName db userId newName $ \newLDN -> do
+        currentTs <- getCurrentTime
+        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newLDN, currentTs, userId)
         userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
         updateUserProfileFields_' db userId profileId p' currentTs
         updateContactLDN_ db user userContactId localDisplayName newLDN currentTs

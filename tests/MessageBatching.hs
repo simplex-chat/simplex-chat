@@ -57,8 +57,6 @@ batchingTests = describe "message batching tests" $ do
   it "splits a batch that exceeds the element count limit" testBatchElementCountLimit
   it "does not create a relay delivery body when every task is oversized" testRelayBatchAllLarge
   it "classifies a task that fits raw but not as a framed singleton as large" testRelayBatchSingletonOverflow
-  testJsonElementsBatching
-  it "converts binary forward batch to JSON forward events" testLegacyFwdBodies
   it "shortens forwarded member names" testFwdMemberName
 
 instance IsString SndMessage where
@@ -200,39 +198,6 @@ testRelayBatchSingletonOverflow = do
   body_ `shouldBe` Nothing
   map deliveryTaskId accepted `shouldBe` []
   map deliveryTaskId large `shouldBe` [1]
-
-testJsonElementsBatching :: Spec
-testJsonElementsBatching = describe "JSON elements batching" $ do
-  runJsonElementsTest 8 ["a"] ["a"] 0
-  runJsonElementsTest 8 ["a", "b"] ["[a,b]"] 0
-  runJsonElementsTest 8 ["a", "b", "c", "d"] ["[a,b,c]", "d"] 0
-  runJsonElementsTest 8 ["8aaaaaaa", "b"] ["8aaaaaaa", "b"] 0
-  runJsonElementsTest 8 ["9aaaaaaaa", "bb"] ["bb"] 1
-  runJsonElementsTest 8 ["aa", "9aaaaaaaa", "bb"] ["[aa,bb]"] 1
-  it "splits by element count" $
-    batchJsonElements maxEncodedMsgLength (replicate (maxBatchElementCount + 1) "a")
-      `shouldBe` (["[" <> B.intercalate "," (replicate maxBatchElementCount "a") <> "]", "a"], 0)
-  where
-    runJsonElementsTest maxLen els batches dropped =
-      it (show els <> ", limit " <> show maxLen) $ batchJsonElements maxLen els `shouldBe` (batches, dropped)
-
-testLegacyFwdBodies :: IO ()
-testLegacyFwdBodies = do
-  let fwd1 = GrpMsgForward (FwdMember (MemberId "member1") "alice") (systemToUTCTime $ MkSystemTime 1000 0)
-      fwd2 = GrpMsgForward FwdChannel (systemToUTCTime $ MkSystemTime 2000 0)
-      msg1 = ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText "hello"
-      msg2 = ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText "world"
-      body = encodeBinaryBatch [encodeFwdElement fwd1 (VMUnsigned msg1), encodeFwdElement fwd2 (VMUnsigned msg2)]
-      (bodies, dropped) = legacyFwdBodies chatInitialVRange maxEncodedMsgLength body
-  length bodies `shouldBe` 1
-  dropped `shouldBe` 0
-  legacyFwdBodies chatInitialVRange maxEncodedMsgLength "{\"json\":true}" `shouldBe` (["{\"json\":true}"], 0)
-  map forwardedEvent (concatMap parseChatMessages bodies) `shouldBe` [Just (fwd1, msg1), Just (fwd2, msg2)]
-  where
-    forwardedEvent :: Either String AParsedMsg -> Maybe (GrpMsgForward, ChatMessage 'Json)
-    forwardedEvent = \case
-      Right (APMsg SJson (ParsedMsg Nothing Nothing (ChatMessage _ _ (XGrpMsgForward fwd chatMsg)))) -> Just (fwd, chatMsg)
-      _ -> Nothing
 
 testFwdMemberName :: IO ()
 testFwdMemberName = do
