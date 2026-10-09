@@ -49,6 +49,7 @@ let DEFAULT_SHOULD_IMPORT_APP_SETTINGS = "shouldImportAppSettings"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_ENCRYPTION_STARTED = "encryptionStarted"
 let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
+let DEFAULT_SHOULD_DELETE_DATABASE_BACKUPS = "shouldDeleteDatabaseBackups"
 let DEFAULT_ACCENT_COLOR_RED = "accentColorRed" // deprecated, only used for migration
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for migration
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
@@ -206,6 +207,8 @@ let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey
 let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED)
 
 let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED_AT)
+
+let shouldDeleteDatabaseBackupsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOULD_DELETE_DATABASE_BACKUPS)
 
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
 

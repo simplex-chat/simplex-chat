@@ -1,12 +1,13 @@
 package chat.simplex.common.platform
 
+import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
@@ -96,6 +97,7 @@ abstract class NtfManager {
   }
 
   fun acceptCallAction(chatId: ChatId) {
+    AppLock.recheckAuthState()
     chatModel.clearOverlays.value = true
     val invitation = chatModel.callInvitations[chatId]
     if (invitation == null) {

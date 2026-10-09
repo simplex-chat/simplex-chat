@@ -5,7 +5,6 @@
 
 module SchemaDump where
 
-import ChatClient (withTmpFiles)
 import ChatTests.DBUtils
 import Control.Concurrent.STM
 import Control.DeepSeq
@@ -62,7 +61,7 @@ schemaDumpTest = do
   it "verify strict tables" testVerifyStrict
 
 testVerifySchemaDump :: IO ()
-testVerifySchemaDump = withTmpFiles $ do
+testVerifySchemaDump = do
   savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
   savedSchema `deepseq` pure ()
   void $ createChatStore (DBOpts testDB chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing)
@@ -70,7 +69,7 @@ testVerifySchemaDump = withTmpFiles $ do
   removeFile testDB
 
 testVerifyLintFKeyIndexes :: IO ()
-testVerifyLintFKeyIndexes = withTmpFiles $ do
+testVerifyLintFKeyIndexes = do
   savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
   savedLint `deepseq` pure ()
   void $ createChatStore (DBOpts testDB chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing)
@@ -78,7 +77,7 @@ testVerifyLintFKeyIndexes = withTmpFiles $ do
   removeFile testDB
 
 testSchemaMigrations :: IO ()
-testSchemaMigrations = withTmpFiles $ do
+testSchemaMigrations = do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
   Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) noDownMigrations (MigrationConfig MCError Nothing)
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations

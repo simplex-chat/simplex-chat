@@ -8,7 +8,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.ImageResource
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import java.util.concurrent.Executors
 

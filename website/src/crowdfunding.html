@@ -19,6 +19,7 @@ templateEngineOverride: njk
     <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg" />
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    {% include "markdown-alternate.html" %}
     <meta name="theme-color" content="#050920">
 
     <link rel="preload" href="/img/design_3/cover.webp" as="image" type="image/webp">
@@ -1019,13 +1020,14 @@ templateEngineOverride: njk
                 <div class="cf-hero-text">
                     <h1>The only<br>messaging network<br>without any <br class="cf-br-narrow">user identifiers</h1>
                     <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or user accounts.</p>
-                    <p class="lead lead-short">No phone numbers, emails, or accounts.</p>
+                    <p class="lead lead-short" data-markdown-skip>No phone numbers, emails, or accounts.</p>
                     <div class="cf-hero-cta">
                         <a class="cf-pill cf-primary" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
                             Invest on {{ wfLogo() }}
                         </a>
                         <a class="cf-cta-link" id="cf-hero-subscribe" href="#request">Subscribe for updates</a>
                     </div>
+                    <template data-markdown><p>The full crowdfunding memo, in Markdown for AI assistants: <a href="/wefunder.md">simplex.chat/wefunder.md</a></p></template>
                     <div class="cf-stats">
                         <div class="cf-stat">
                             <img src="/img/crowdfunding/cloud-download.png" alt="">
@@ -1033,7 +1035,7 @@ templateEngineOverride: njk
                         </div>
                         <div class="cf-stat">
                             <img src="/img/crowdfunding/p2p.png" alt="">
-                            <div><b>520K</b><span>Monthly users</span></div>
+                            <div><b>600K</b><span>Monthly users</span></div>
                         </div>
                     </div>
                 </div>
@@ -1048,8 +1050,8 @@ templateEngineOverride: njk
         <section class="page cf cf-light cf-left cf-growth" data-section="growth">
             <div class="area">
                 <div class="text-container">
-                    <h2>520,000<br>monthly users</h2>
-                    <p>Grown with <span>zero marketing spend</span>: hundreds of user posts, podcasts and videos, and <span>$650,000 in user donations</span>, before any paid features.</p>
+                    <h2>Over 600,000<br>monthly users</h2>
+                    <p><span>Organic growth</span>: hundreds of user posts, podcasts and videos, and <span>$650,000 in user donations</span>, before any paid features.</p>
                     <p>Only <span>$1.7M investment over 4 years</span> &mdash; more capital efficient than most startups.</p>
                 </div>
             </div>
@@ -1074,7 +1076,7 @@ templateEngineOverride: njk
                 <img class="cf-tags-art" src="/img/design_3/section-3-mobile-light.webp" alt="">
                 <div class="cf-tag" style="left: 40.8%; top: 70.1%;">
                     <div class="n">Users</div>
-                    <div class="v"><b>520,000</b> active monthly,</div>
+                    <div class="v"><b>600,000</b> active monthly,</div>
                     <div class="v">organic growth</div>
                 </div>
                 <div class="cf-tag" style="left: 45.8%; top: 47.6%;">
@@ -1084,7 +1086,7 @@ templateEngineOverride: njk
                 </div>
                 <div class="cf-tag" style="left: 45.2%; top: 30%;">
                     <div class="n">Businesses</div>
-                    <div class="v"><b>20+</b> offer customer</div>
+                    <div class="v"><b>50+</b> offer customer</div>
                     <div class="v">support</div>
                 </div>
                 <div class="cf-tag" style="left: 31.9%; top: 29.4%;">

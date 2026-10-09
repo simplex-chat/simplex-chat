@@ -295,7 +295,13 @@ data ProofPresHeader
   | PHFileDescr {chatBinding :: ByteString, fileSize :: Int64, descrHash :: ByteString, fileExpires :: Maybe UTCTime}
   | PHUnknown Char ByteString
   deriving (Eq, Show)
-  deriving (ToJSON, FromJSON) via (StrJSON "ProofPresHeader" ProofPresHeader)
+
+instance ToJSON ProofPresHeader where
+  toJSON = toJSON . BBSPresHeader . strEncode
+  toEncoding = toEncoding . BBSPresHeader . strEncode
+
+instance FromJSON ProofPresHeader where
+  parseJSON v = parseJSON v >>= \(BBSPresHeader ph) -> either fail pure $ strDecode ph
 
 instance StrEncoding ProofPresHeader where
   strEncode = \case

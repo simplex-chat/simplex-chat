@@ -19,7 +19,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.themedBackground
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.newchat.ActiveProfilePicker
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
