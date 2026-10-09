@@ -98,7 +98,10 @@ glossary.forEach(item => {
 
   const definitionLinks = new JSDOM(item.definition).window.document.querySelectorAll('a[href*="#"]')
   item.linkedHashes = Array.from(definitionLinks, a => a.href.substring(a.href.indexOf("#") + 1))
+  item.id = item.term.toLowerCase().replace(/\s/g, '-')
 })
+
+const glossaryById = new Map(glossary.map(item => [item.id, item]))
 
 
 const globalConfig = {
@@ -172,11 +175,10 @@ module.exports = function (ty) {
     const allContentNodes = document.querySelectorAll('p, td, a, h1, h2, h3, h4')
     const contentHtml = Array.from(allContentNodes, (node) => node.innerHTML)
     const overlayIds = []
+    const matchedIds = new Set()
 
-    glossary.forEach((term, index) => {
-      let changeNoted = false
-      const id = term.term.toLowerCase().replace(/\s/g, '-')
-
+    glossary.forEach((term) => {
+      const id = term.id
       const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
       allContentNodes.forEach((node, nodeIndex) => {
         const beforeContent = contentHtml[nodeIndex]
@@ -186,11 +188,20 @@ module.exports = function (ty) {
         if (afterContent !== beforeContent) {
           node.innerHTML = afterContent
           contentHtml[nodeIndex] = node.innerHTML
-          changeNoted = true
+          matchedIds.add(id)
         }
       })
+    })
 
-      if (changeNoted) {
+    const neededIds = new Set(matchedIds)
+    neededIds.forEach((id) => glossaryById.get(id).linkedHashes.forEach((hash) => {
+      if (glossaryById.has(hash)) neededIds.add(hash)
+    }))
+
+    glossary.forEach((term) => {
+      const id = term.id
+
+      if (matchedIds.has(id)) {
         const definitionTooltipDiv = document.createElement('div')
         definitionTooltipDiv.id = `tooltip-${id}`
         definitionTooltipDiv.className = "glossary-tooltip"
@@ -217,9 +228,8 @@ module.exports = function (ty) {
       const hashList = [id, ...term.linkedHashes]
 
       hashList.forEach(hash => {
-        if (!overlayIds.includes(hash)) {
-          let termFromHash = glossary.find(term => term.term.toLowerCase().replace(/\s/g, '-') === hash)
-          if (!termFromHash) return
+        if (neededIds.has(hash) && !overlayIds.includes(hash)) {
+          const termFromHash = glossaryById.get(hash)
 
           const overlayDiv = document.createElement('div')
           overlayDiv.id = hash
