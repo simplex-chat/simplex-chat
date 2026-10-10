@@ -774,7 +774,7 @@ SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT
-              relay_request_inv_id, relay_request_group_link,
+              relay_request_inv_id, relay_request_group_link, relay_request_public_group_id,
               relay_request_peer_chat_min_version, relay_request_peer_chat_max_version,
               relay_request_delay, relay_request_retries, created_at, relay_request_execute_at
             FROM groups
@@ -1911,6 +1911,7 @@ Query:
           UPDATE groups
           SET relay_request_inv_id = ?,
               relay_request_group_link = ?,
+              relay_request_public_group_id = ?,
               relay_request_peer_chat_min_version = ?,
               relay_request_peer_chat_max_version = ?,
               relay_request_delay = ?,
@@ -3954,7 +3955,7 @@ Query:
         SELECT g.group_id, gp.group_link
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-        WHERE g.user_id = ? AND gp.public_group_id = ? AND gp.group_link IS NOT NULL
+        WHERE g.user_id = ? AND gp.public_group_id = ?
         LIMIT 1
       
 Plan:
@@ -7427,6 +7428,10 @@ Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_i
 Plan:
 SEARCH operator_usage_conditions USING INDEX idx_operator_usage_conditions_conditions_commit (conditions_commit=? AND server_operator_id=?)
 
+Query: SELECT agent_conn_id FROM connections
+Plan:
+SCAN connections USING COVERING INDEX sqlite_autoindex_connections_1
+
 Query: SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1
 Plan:
 SEARCH connections USING INDEX idx_connections_conn_req_inv (user_id=? AND conn_req_inv=?)
@@ -8198,11 +8203,9 @@ Query: UPDATE group_profiles SET description = ? WHERE display_name = ?
 Plan:
 SCAN group_profiles
 
-Query: UPDATE group_profiles SET public_group_id = ? WHERE group_profile_id = (SELECT group_profile_id FROM groups WHERE group_id = ?)
+Query: UPDATE group_profiles SET public_group_id = ?
 Plan:
-SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
-SCALAR SUBQUERY 1
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+SCAN group_profiles
 
 Query: UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?
 Plan:
@@ -8259,6 +8262,10 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET member_priv_key = ?
+Plan:
+SCAN groups
 
 Query: UPDATE groups SET member_priv_key = NULL
 Plan:
