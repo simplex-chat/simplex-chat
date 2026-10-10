@@ -30,7 +30,7 @@ The screen can be shown in that state in three ways:
    - If another screen is on top of it, it crashes when the user goes back to it.
 
    `UserAddressView` closes itself when the user changes (`KeyChangeEffect` on the user), but with a null user it is never reached.
-2. **The row is clicked with no active user.** With no profile and no connected mobile, the user picker opens by itself (`App.kt`, `desktopNoUserNoRemote`) and still shows the "Create SimpleX address" row. Clicking it crashes immediately.
+2. **The row is clicked with no active user.** With no profile and no connected mobile, the user picker still shows the "Create SimpleX address" row. The picker even opens by itself in this state, at startup or when the state begins while no left-panel screen is open (`App.kt`, `desktopNoUserNoRemote`). Clicking the row crashes immediately.
 
    At startup this state needs a mobile that was linked before; with no linked mobile, startup shows onboarding instead (`Core.kt`).
 

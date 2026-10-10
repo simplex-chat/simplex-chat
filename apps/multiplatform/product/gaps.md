@@ -329,30 +329,30 @@ Close the modal when there is no active user, as the "SimpleX address" row does 
 
 ### Description
 
-`ModalManager` keeps its stack in an `ArrayList` (`modalViews`) and a set of pending removals (`toRemove`). `closeModal` and the animation cleanup update `toRemove` inside the `runAtomically` spin lock. `closeModals()` clears both collections without that lock, and the push in `showCustomModal` and the non-animated removal in `closeModal` change `modalViews` without it.
+`ModalManager` keeps its stack in an `ArrayList` (`modalViews`) and a set of pending removals (`toRemove`), and derives the modal count from both. Only some updates to `toRemove` go through the `runAtomically` spin lock. `closeModals()`, the push in `showCustomModal` and the non-animated removal in `closeModal` change the collections without it, and `showInView` and `isLastModal` read them without it.
 
-These methods are called from background threads as well as the main thread. For example:
+Several of these methods are called from background threads as well as the main thread. For example:
 - `closeModals()` through `closeAllModalsEverywhere`, in the self-destruct flow and when switching profile or remote host from the user picker;
 - `closeModals()` in core event handlers: `start` on `RemoteHostConnected`, `fullscreen` on `RemoteCtrlStopped`, and `end` after a delay on `Dispatchers.Default`;
-- `closeModal` when a modal's `close` is called from `withBGApi`, for example after creating or deleting a profile (`WelcomeView.kt`, `UserProfilesView.kt`).
+- `closeModal` when a modal's `close` is called from `withBGApi`, for example after creating or deleting a profile.
 
 On Android `start`, `center`, `end` and `fullscreen` are one shared stack, so all of these calls change the same collections.
 
-`closeModal`, `isLastModal` and the cleanup at the end of the close animation can therefore interleave with `closeModals()`. If the clear lands while `closeModal` is computing the index to add to `toRemove`, then `toRemove` holds a stale index on an empty list and the modal count becomes -1. The next cleanup or push then throws `IndexOutOfBoundsException`.
+If calls on different threads overlap, the list, `toRemove` and the modal count can become inconsistent. A later push, animation cleanup or read can then throw `IndexOutOfBoundsException`.
 
 ### Affected Locations
 
-- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt:105-108` (`modalViews`, `toRemove`)
-- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt:170-189` (`closeModal`, `closeModals`)
-- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt:262` (`closeAllModalsEverywhere`)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt`: `modalViews` and `toRemove` (105-108), `showCustomModal` (133-152), `closeModal` and `closeModals` (170-189), the cleanup in `showInView` (224-226), `closeAllModalsEverywhere` (262)
 - `common/src/commonMain/kotlin/chat/simplex/common/views/localauth/LocalAuthView.kt:93`
 - `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt:166`, `:679`
-- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt:3440` (`RemoteHostConnected`)
+- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt:3272-3276` (`end`), `:3440` (`RemoteHostConnected`), `:3512` (`RemoteCtrlStopped`)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/WelcomeView.kt:365`, `:384`, `:409`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/UserProfilesView.kt:336`
 
 ### Impact
 
-A crash is possible but needs two calls to land within microseconds of each other; no reproduction is known.
+A crash is possible when calls on different threads overlap; no reproduction is known.
 
 ### Recommendation
 
-Make every `ModalManager` mutation run on the main thread, for example by dispatching `closeAllModalsEverywhere` and the event-handler calls to `Dispatchers.Main`, or take the same lock in every method that changes the stack.
+Make every `ModalManager` mutation run on the main thread, for example by dispatching `closeAllModalsEverywhere`, the event-handler calls and `close` callbacks to `Dispatchers.Main`, or take the same lock in every method that reads or changes the stack.
