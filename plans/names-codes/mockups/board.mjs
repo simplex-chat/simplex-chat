@@ -16,7 +16,7 @@ const SCREENS_DIR = join(OUT, "screens");
 const DIST = join(HERE, "../../../apps/simplex-badge-service/web/dist/assets");
 // A made-up origin: module scripts do not load from file://, and intercepting requests needs no server.
 const ORIGIN = "http://mockups.local";
-// JPEG, not PNG: the page's background wash makes a PNG about four times larger, and the board embeds 49 of them.
+// JPEG, not PNG: the page's background wash makes a PNG about four times larger, and the board embeds one per frame.
 const JPEG_QUALITY = 85;
 const CONTENT_TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2" };
 
@@ -177,12 +177,12 @@ function drawFrame(f) {
     out.push(`<rect x="${x + 0.5}" y="${y + 0.5}" width="${w - 1}" height="${DESKTOP_BAR}" rx="5" fill="#EEF0F3"/>`);
     ["#FF5F57", "#FEBC2E", "#28C840"].forEach((c, i) => out.push(`<circle cx="${x + 12 + i * 11}" cy="${y + 13}" r="3.6" fill="${c}"/>`));
     out.push(`<rect x="${x + 52}" y="${y + 5}" width="${w - 64}" height="16" rx="8" fill="#ffffff"/>`);
-    if (f.url) out.push(text(x + 62, y + 16.5, fit(f.url, w - 84, 9.5), 9.5, `fill="#5F6368" font-family="ui-monospace, Menlo, Consolas, monospace"`));
+    out.push(text(x + 62, y + 16.5, fit(f.url, w - 84, 9.5), 9.5, `fill="#5F6368" font-family="ui-monospace, Menlo, Consolas, monospace"`));
   } else if (f.kind === "phone" || f.kind === "app") {
     const dashed = f.kind === "app" ? ` stroke-dasharray="6 5"` : "";
     const stroke = f.kind === "app" ? COLORS.grey : "#1F2328";
     out.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="24" fill="#ffffff" stroke="${stroke}" stroke-width="2.5"${dashed}/>`);
-    const label = f.kind === "app" ? "SimpleX app" : fit(f.url ?? "", w - 24, 8.5);
+    const label = f.kind === "app" ? "SimpleX app" : fit(f.url, w - 24, 8.5);
     out.push(text(x + w / 2, y + PHONE_PAD + 11, label, 8.5, `text-anchor="middle" fill="#5F6368" font-family="ui-monospace, Menlo, Consolas, monospace"`));
   } else {
     out.push(`<rect x="${x - 1}" y="${y - 1}" width="${w + 2}" height="${h + 2}" rx="10" fill="none" stroke="#D0D5DD"/>`);
@@ -251,7 +251,7 @@ function arrows(frames, byTag) {
       const by = t.row.top + 24 + lane * LANE_STEP;
       d = `M${sx},${sy} H${gx} V${by} H${cx} V${ty} H${t.box.x - 3}`;
     }
-    const color = t.color ?? "grey";
+    const color = t.color;
     const dash = t.dashed ? ` stroke-dasharray="9 6"` : "";
     out.push(`<path d="${d}" fill="none" stroke="${COLORS[color]}" stroke-width="2"${dash} marker-end="url(#arrow-${color})"/>`);
   }
@@ -260,8 +260,7 @@ function arrows(frames, byTag) {
 
 function arrowLabels(frames) {
   return frames.map((f) => {
-    if (f.label === undefined) return "";
-    const color = f.from === undefined ? "#8A8F98" : COLORS[f.color ?? "grey"];
+    const color = f.from === undefined ? "#8A8F98" : COLORS[f.color];
     return text(f.box.x, f.box.y - 12, f.label, 13, `font-weight="700" fill="${color}"`);
   }).join("\n");
 }
@@ -274,7 +273,7 @@ function compose(frames) {
   const total = notesTop + 40 + noteLines.length * 20 + 50;
   const out = [];
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${total}" viewBox="0 0 ${width} ${total}" font-family="${FONT}">`);
-  out.push(`<defs>${Object.entries(COLORS).map(([name, c]) =>
+  out.push(`<defs>${["blue", "orange"].map((name) => [name, COLORS[name]]).map(([name, c]) =>
     `<marker id="arrow-${name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`).join("")}</defs>`);
   out.push(`<rect width="${width}" height="${total}" fill="#ffffff"/>`);
   out.push(`<rect width="${width}" height="120" fill="#1D2026"/>`);
