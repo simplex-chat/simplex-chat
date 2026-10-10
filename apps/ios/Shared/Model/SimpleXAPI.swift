@@ -1359,8 +1359,12 @@ func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     switch r {
     case .result(.userProfileNoChange): return (profile, [])
     case let .result(.userProfileUpdated(_, _, toProfile, updateSummary)): return (toProfile, updateSummary.changedContacts)
-    case .error(.errorStore(.duplicateName)): return nil;
-    default: throw r.unexpected
+    case .error(.errorStore(.duplicateName)), .error(.error(.userExists)): return nil;
+    default:
+        await MainActor.run {
+            showErrorAlert(r.unexpected, NSLocalizedString("Error saving profile", comment: "alert title"))
+        }
+        throw r.unexpected
     }
 }
 
@@ -2361,6 +2365,10 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+    if shouldDeleteDatabaseBackupsDefault.get() {
+        deleteDatabaseBackups()
+        shouldDeleteDatabaseBackupsDefault.set(false)
+    }
 }
 
 func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
@@ -2910,23 +2918,19 @@ func processReceivedMsg(_ res: ChatEvent) async {
             m.callInvitations[invitation.contact.id] = invitation
         }
         activateCall(invitation)
-    case let .callOffer(_, contact, callType, offer, sharedKey, _):
+    case let .callOffer(_, contact, callType, offer, sharedKey, askConfirmation):
         await withCall(contact) { call in
             await MainActor.run {
                 call.callState = .offerReceived
                 call.sharedKey = sharedKey
             }
-            let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
-            let iceServers = getIceServers()
-            logger.debug(".callOffer useRelay \(useRelay)")
-            logger.debug(".callOffer iceServers \(String(describing: iceServers))")
-            await m.callCommand.processCommand(.offer(
-                offer: offer.rtcSession,
-                iceCandidates: offer.rtcIceCandidates,
-                media: callType.media, aesKey: sharedKey,
-                iceServers: iceServers,
-                relay: useRelay
-            ))
+            if askConfirmation {
+                showUnencryptedCallAlert(call) {
+                    Task { await processCallOffer(callType, offer, sharedKey) }
+                }
+            } else {
+                await processCallOffer(callType, offer, sharedKey)
+            }
         }
     case let .callAnswer(_, contact, answer):
         await withCall(contact) { call in
@@ -3061,6 +3065,43 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await perform(call)
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
+        }
+    }
+
+    func processCallOffer(_ callType: CallType, _ offer: WebRTCSession, _ sharedKey: String?) async {
+        let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
+        let iceServers = getIceServers()
+        logger.debug(".callOffer useRelay \(useRelay)")
+        logger.debug(".callOffer iceServers \(String(describing: iceServers))")
+        await m.callCommand.processCommand(.offer(
+            offer: offer.rtcSession,
+            iceCandidates: offer.rtcIceCandidates,
+            media: callType.media, aesKey: sharedKey,
+            iceServers: iceServers,
+            relay: useRelay
+        ))
+    }
+
+    func showUnencryptedCallAlert(_ call: Call, onContinue: @escaping () -> Void) {
+        DispatchQueue.main.async {
+            showAlert(
+                NSLocalizedString("Call is not encrypted", comment: "alert title"),
+                message: String.localizedStringWithFormat(NSLocalizedString("%@ accepted the call without end-to-end encryption.", comment: "alert message"), call.contact.displayName),
+                actions: {[
+                    UIAlertAction(title: NSLocalizedString("End call", comment: "alert action"), style: .destructive) { _ in
+                        // the call may have ended, or a new one started with the same contact, while the alert was shown
+                        guard m.activeCall === call else { return }
+                        if let uuid = call.callUUID {
+                            CallController.shared.endCall(callUUID: uuid)
+                        } else {
+                            CallController.shared.endCall(call: call) {}
+                        }
+                    },
+                    UIAlertAction(title: NSLocalizedString("Continue", comment: "alert action"), style: .default) { _ in
+                        if m.activeCall === call { onContinue() }
+                    }
+                ]}
+            )
         }
     }
 }

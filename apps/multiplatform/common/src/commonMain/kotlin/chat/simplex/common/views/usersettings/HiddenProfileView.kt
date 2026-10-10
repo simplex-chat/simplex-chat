@@ -21,7 +21,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.database.PassphraseField
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun HiddenProfileView(

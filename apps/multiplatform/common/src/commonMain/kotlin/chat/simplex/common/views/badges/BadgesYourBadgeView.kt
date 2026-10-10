@@ -34,7 +34,7 @@ import chat.simplex.common.views.helpers.badgeTypeName
 import chat.simplex.common.views.helpers.openVerifiedSimplexUri
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.views.usersettings.simplexTeamUri
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
