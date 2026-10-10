@@ -15,7 +15,7 @@ The "SimpleX address" screen crashes whenever it is shown while there is no acti
 
 ## Solution summary
 
-When there is no current user, the address modal closes itself instead of composing `UserAddressView`. It closes only while it is the top modal, so it never closes a different screen. The new `ModalManager.isLastModal` checks that.
+When there is no current user, the address modal closes itself instead of composing `UserAddressView`. It closes only while it is the top modal, so it does not close a different screen (for stack changes on the main thread). The new `ModalManager.isLastModal` checks that.
 
 ## Technical design
 
@@ -69,7 +69,7 @@ An early `return@showCustomModal`, as the "Chat preferences" row does, would avo
    - `spec/client/navigation.md`: list `isLastModal` among the `ModalManager` methods, and add a `[GAP]` note for GAP-09.
    - `spec/client/chat-list.md`, UserPicker section: describe the address row closing itself with no active user, and add a `[GAP]` note for GAP-08.
    - `product/views/user-profiles.md`: describe the address row with no active profile.
-   - `product/gaps.md`: add GAP-08 ("Chat preferences" leaves an invisible modal with no active user) and GAP-09 (`ModalManager` is not synchronized with background threads).
+   - `product/gaps.md`: add GAP-08 ("Chat preferences" leaves an invisible modal with no active user) and GAP-09 (`ModalManager` is not fully synchronized with background threads).
 
 ## Verification
 

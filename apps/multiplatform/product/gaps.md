@@ -14,7 +14,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 8. [UI: Chat Preferences Leaves an Invisible Modal Without a Profile](#gap-08-ui-chat-preferences-leaves-an-invisible-modal-without-a-profile)
-9. [Concurrency: ModalManager Not Synchronized](#gap-09-concurrency-modalmanager-not-synchronized)
+9. [Concurrency: ModalManager Not Fully Synchronized](#gap-09-concurrency-modalmanager-not-fully-synchronized)
 
 ---
 
@@ -302,12 +302,14 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 ### Description
 
-The "Chat preferences" row of the user picker opens `PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)`. With no active user, which happens on a desktop with no profile and no connected mobile, the modal content returns early. The modal stays on `ModalManager.start` with nothing drawn and no back button. "Chat preferences" in Settings uses the same pattern.
+The "Chat preferences" row of the user picker opens `PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)`. With no active user, the modal content returns early. The modal stays on `ModalManager.start` with nothing drawn and no back button.
+
+This happens when the row is clicked on a desktop with no active user (no profile and no connected mobile, or a connected mobile with no visible profile). It also happens when the user becomes null while the preferences screen is open, for example when the mobile disconnects.
 
 ### Affected Locations
 
 - `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt:240`
-- `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt:231`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt:231` (`ChatPreferencesItem`) has the same pattern but is not called anywhere.
 
 ### Impact
 
@@ -319,7 +321,7 @@ Close the modal when there is no active user, as the "SimpleX address" row does 
 
 ---
 
-## GAP-09: Concurrency: ModalManager Not Synchronized
+## GAP-09: Concurrency: ModalManager Not Fully Synchronized
 
 **Severity:** Low
 **Category:** Concurrency
@@ -327,9 +329,11 @@ Close the modal when there is no active user, as the "SimpleX address" row does 
 
 ### Description
 
-`ModalManager` keeps its stack in an `ArrayList` (`modalViews`) and a set of pending removals (`toRemove`) without synchronization. `closeModals()` clears both. It is also called from background threads, for example through `closeAllModalsEverywhere` in the self-destruct flow and when switching profile or remote host from the user picker, and on the `RemoteHostConnected` event.
+`ModalManager` keeps its stack in an `ArrayList` (`modalViews`) and a set of pending removals (`toRemove`). Updates to `toRemove` go through the `runAtomically` spin lock. `closeModals()`, the push in `showCustomModal` and the non-animated removal in `closeModal` do not take that lock. `closeModals()` clears both collections, and it is also called from background threads:
+- through `closeAllModalsEverywhere`, in the self-destruct flow and when switching profile or remote host from the user picker;
+- on the `RemoteHostConnected` event.
 
-Main-thread `closeModal`, `isLastModal` and the cleanup at the end of the close animation can interleave with it. If the clear lands between `closeModal` reading the last index and adding it to `toRemove`, then `toRemove` holds index 0 on an empty list and the modal count becomes -1. The next cleanup or push then throws `IndexOutOfBoundsException`.
+Main-thread `closeModal`, `isLastModal` and the cleanup at the end of the close animation can interleave with it. If the clear lands while `closeModal` is computing the index to add to `toRemove`, then `toRemove` holds a stale index on an empty list and the modal count becomes -1. The next cleanup or push then throws `IndexOutOfBoundsException`.
 
 ### Affected Locations
 
@@ -338,6 +342,7 @@ Main-thread `closeModal`, `isLastModal` and the cleanup at the end of the close 
 - `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt:262` (`closeAllModalsEverywhere`)
 - `common/src/commonMain/kotlin/chat/simplex/common/views/localauth/LocalAuthView.kt:93`
 - `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt:166`, `:679`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt:3440` (`RemoteHostConnected`)
 
 ### Impact
 
@@ -345,4 +350,4 @@ A crash is possible but needs two calls to land within microseconds of each othe
 
 ### Recommendation
 
-Make every `ModalManager` mutation run on the main thread, for example by dispatching `closeAllModalsEverywhere` and the event-handler calls to `Dispatchers.Main`, or guard the stack with a lock.
+Make every `ModalManager` mutation run on the main thread, for example by dispatching `closeAllModalsEverywhere` and the event-handler calls to `Dispatchers.Main`, or take the same lock in every method that changes the stack.
