@@ -25,7 +25,7 @@ The screen can be shown in that state in three ways:
 2. **The row is clicked with no active user.** With no profile and no mobile, the user picker opens by itself (`App.kt`, `desktopNoUserNoRemote`) and still shows the "Create SimpleX address" row. Clicking it crashes immediately.
 
    The row is also offered after deleting the active profile when no other visible profile remains, including the only profile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
-3. **The self-destruct passcode is entered while the screen is open.** `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does it create the new profile and call `closeAllModalsEverywhere`. In between, the address screen recomposes with a null user. This applies on Android too: there the shared modal stack stays composed under the lock screen.
+3. **The self-destruct passcode is entered while the screen is open.** `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does it create the new profile and call `closeAllModalsEverywhere`. On Android, the shared modal stack stays composed under the lock screen, so in between the address screen recomposes with a null user. On desktop, `initChatController` replaces the main screen with the splash screen shortly afterwards (`localUserCreated = null`), so the crash needs a frame to fall in that short window.
 
 ## Fix
 
@@ -33,7 +33,7 @@ When there is no current user, the modal closes itself instead of composing `Use
 
 `ModalManager.closeModal` closes the top modal. So the effect closes only when this modal is the top one that is not being removed, using a new `ModalManager.isLastModal(data)`.
 
-The effect is keyed on the modal and on the left-panel modal count. So it checks again when the count changes, or when its composition is reused for another modal, while this content is still composed. Other than the top modal, a modal stays composed only while it animates out (250 ms). For example, a quick second click on the row reuses the composition of the first modal, which is still animating out.
+The effect is keyed on the modal and on the modal count of `ModalManager.start` (the left panel on desktop, the shared stack on Android). So it checks again when the count changes, or when its composition is reused for another modal, while this content is still composed. Other than the top modal, a modal stays composed only while it animates out (250 ms). For example, a quick second click on the row reuses the composition of the first modal, which is still animating out.
 
 A modal that is covered after an animation ends is disposed. It is composed afresh when it becomes the top again, for example when the user goes back to it, and the effect runs then.
 
@@ -41,7 +41,7 @@ With the `isLastModal` check, the effect does not close a different screen, such
 
 Two visible effects when there is no active user:
 - Clicking the row now only hides the picker, as opening any modal does. The modal closes itself, and the picker is not reopened.
-- After the mobile disconnects with the address screen open, the picker does not reopen by itself, because a left-panel modal was open when the user became null. Master does the same when any other left-panel screen is open.
+- After the mobile disconnects with the address screen open, the picker does not reopen by itself (observed in testing). The app checks for open left-panel modals when the user becomes null, and the address modal closes itself only after that check. Master does the same when any other left-panel screen is open.
 
 The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding. The only Android path is case 3, where the screen now closes itself instead of crashing. With an active user, behaviour does not change on any platform.
 
