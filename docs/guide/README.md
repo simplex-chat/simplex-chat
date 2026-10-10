@@ -30,6 +30,12 @@ After downloading SimpleX Chat via the links at https://simplex.chat:
 
 This profile is local to the device, it is not stored anywhere else
 
+### Watch how to get started
+
+<a href="https://youtu.be/MjZFHTLeOrE"><img src="./images/Welcome_video.jpg" alt="Video: how to create your SimpleX Chat profile" width="330"></a>
+
+Prefer to watch rather than read? This video shows how to create your profile and add a profile picture.
+
 ### Choose notifications mode
 
 After you have created the chat profile the app will ask you to choose notifications mode.
