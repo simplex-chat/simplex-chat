@@ -64,6 +64,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 |---|---|
 | `GROK_API_KEY` | xAI API key; enables Grok replies |
 | `SIMPLEX_LIBS_DIR` | directory with a local libsimplex build for the `--db` backend, instead of the downloaded one |
+| `SIMPLEX_ADDON_PATH` | locally built Node.js add-on (`simplex.node`), instead of the downloaded one |
 
 ## Local development against unreleased lib changes
 
@@ -71,10 +72,12 @@ This package depends on `simplex-chat` from npm. To test against an in-tree vers
 
 ```bash
 # In packages/simplex-chat-nodejs
+npm install && npm run build
 npm link
 
 # In apps/simplex-support-bot
 npm link simplex-chat
+export SIMPLEX_ADDON_PATH=../../packages/simplex-chat-nodejs/build/Release/simplex.node
 ```
 
 `npm unlink simplex-chat && npm install` reverts to the registry version.

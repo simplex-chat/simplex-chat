@@ -53,7 +53,7 @@ function buildCommand(): Command {
     .option("--complete-hours <n>", "auto-complete chats after N hours idle (0 disables)", parseNonNegativeInt("--complete-hours"), 3)
     .option("--card-flush-seconds <n>", "debounce card state writes", parseNonNegativeInt("--card-flush-seconds"), 300)
     .option("--context-file <path>", "text file with Grok system context (required if GROK_API_KEY set)")
-    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY      xAI API key — enables Grok replies\n  SIMPLEX_LIBS_DIR  local libsimplex build for the --db backend\n")
+    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY        xAI API key — enables Grok replies\n  SIMPLEX_LIBS_DIR    local libsimplex build for the --db backend\n  SIMPLEX_ADDON_PATH  locally built Node.js add-on\n")
 }
 
 interface RawOpts {
