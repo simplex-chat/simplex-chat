@@ -96,8 +96,8 @@ createOrUpdateContactRequest
               Just (gInfo@GroupInfo {businessChat = Just BusinessChatInfo {customerId}}, keysData) -> do
                 clientMember <- getGroupMemberByMemberId db cxt user gInfo customerId
                 cr <- liftIO $ getContactRequestByXContactId xContactId
-                gInfoKeys <- mkGroupInfoKeys db cxt gInfo keysData
-                pure $ RSAcceptedRequest cr (REBusinessChat gInfoKeys clientMember)
+                gks <- mkGroupInfoKeys db cxt gInfo keysData
+                pure $ RSAcceptedRequest cr (REBusinessChat gks clientMember)
               Just (GroupInfo {businessChat = Nothing}, _) -> throwError SEInvalidBusinessChatContactRequest
               -- 2) if no legacy accepted contact or business chat was found, next we try to find an existing request
               Nothing ->
@@ -309,8 +309,8 @@ createOrUpdateContactRequest
             case gInfo of
               GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
                 clientMember <- getGroupMemberByMemberId db cxt user gInfo customerId
-                gInfoKeys <- mkGroupInfoKeys db cxt gInfo keysData
-                pure $ Just (REBusinessChat gInfoKeys clientMember)
+                gks <- mkGroupInfoKeys db cxt gInfo keysData
+                pure $ Just (REBusinessChat gks clientMember)
               _ -> throwError SEInvalidBusinessChatContactRequest
           (Nothing, Nothing) -> pure Nothing
           _ -> throwError $ SEInvalidContactRequestEntity contactRequestId

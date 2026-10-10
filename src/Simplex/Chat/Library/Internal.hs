@@ -2283,11 +2283,8 @@ directPresHeader = \case
 
 linkPresHeader :: ConnShortLink c -> ProofPresHeader
 linkPresHeader = \case
-  CSLInvitation _ _ _ linkKey -> linkKeyPresHeader linkKey
-  CSLContact _ _ _ linkKey -> linkKeyPresHeader linkKey
-
-linkKeyPresHeader :: LinkKey -> ProofPresHeader
-linkKeyPresHeader (LinkKey key) = PHLink key
+  CSLInvitation _ _ _ (LinkKey key) -> PHLink key
+  CSLContact _ _ _ (LinkKey key) -> PHLink key
 
 connPresHeader :: Connection -> CM (Maybe ProofPresHeader)
 connPresHeader conn = M.lookup (aConnId conn) <$> connsPresHeaders [conn]

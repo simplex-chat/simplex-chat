@@ -316,8 +316,8 @@ getGroupAndRegLink cc user@User {userId, userContactId} gId =
     (g, gksData, gr, gLink_) <-
       ExceptT $ firstRow (toGroupInfoKeysRegLink currentTs cxt user) ("group " ++ show gId ++ " not found") $
         DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
-    gInfoKeys <- withExceptT groupDBError $ mkGroupInfoKeys db cxt g gksData
-    pure (gInfoKeys, gr, gLink_)
+    gks <- withExceptT groupDBError $ mkGroupInfoKeys db cxt g gksData
+    pure (gks, gr, gLink_)
   where
     cxt = storeCxt cc
 

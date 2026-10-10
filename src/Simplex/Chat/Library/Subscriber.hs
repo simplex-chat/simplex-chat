@@ -149,7 +149,7 @@ processAgentMessage corrId connId msg = do
     -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
     -- as in this case no need to ACK message - we can't process messages for this connection anyway.
     critical connId (withStore $ getUserEntity cxt) >>= \case
-      Just (user, entity, gInfoKeys_) -> processAgentMessageConn cxt user entity gInfoKeys_ corrId connId msg `catchAllErrors` eToView
+      Just (user, entity, gks_) -> processAgentMessageConn cxt user entity gks_ corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
   where
     getUserEntity :: StoreCxt -> DB.Connection -> ExceptT StoreError IO (Maybe (User, ConnectionEntity, Maybe GroupInfoKeys))
@@ -157,10 +157,10 @@ processAgentMessage corrId connId msg = do
       liftIO (getUserByAConnId db $ AgentConnId connId)
         >>= mapM (\user -> do
               (entity, groupKeysData_) <- getConnectionEntityKeys db cxt user (AgentConnId connId)
-              gInfoKeys_ <- case entity of
+              gks_ <- case entity of
                 RcvGroupMsgConnection _ gInfo _ -> mapM (mkGroupInfoKeys db cxt gInfo) groupKeysData_
                 _ -> pure Nothing
-              (user,,gInfoKeys_) <$> liftIO (updateConnStatus db entity))
+              (user,,gks_) <$> liftIO (updateConnStatus db entity))
 
     updateConnStatus :: DB.Connection -> ConnectionEntity -> IO ConnectionEntity
     updateConnStatus db acEntity = case agentMsgConnStatus (entityConnection acEntity) msg of
@@ -448,7 +448,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
 type ShouldDeleteGroupConns = Bool
 
 processAgentMessageConn :: StoreCxt -> User -> ConnectionEntity -> Maybe GroupInfoKeys -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
-processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentConnId agentMessage =
+processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId agentMessage =
   case agentMessage of
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CEvtContactAnotherClient user ct
@@ -457,8 +457,8 @@ processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentCon
     _ -> case entity of
       RcvDirectMsgConnection conn contact_ ->
         processDirectMessage agentMessage entity conn contact_
-      RcvGroupMsgConnection conn _ m -> case gInfoKeys_ of
-        Just gInfoKeys -> processGroupMessage agentMessage entity conn gInfoKeys m
+      RcvGroupMsgConnection conn _ m -> case gks_ of
+        Just gks -> processGroupMessage agentMessage entity conn gks m
         Nothing -> throwChatError $ CEInternalError "group connection entity without group keys"
       UserContactConnection conn uc ->
         processContactConnMessage agentMessage entity conn uc
