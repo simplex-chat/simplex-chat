@@ -8,7 +8,7 @@
 
 > **chatWriteFile**(`ctrl`, `path`, `buffer`): `Promise`\<[`CryptoArgs`](core.Interface.CryptoArgs.md)\>
 
-Defined in: [src/core.ts:74](../src/core.ts#L74)
+Defined in: [src/core.ts:75](../src/core.ts#L75)
 
 Write buffer to encrypted file
 

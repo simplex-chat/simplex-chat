@@ -4,14 +4,14 @@ import * as https from "https"
 import * as os from "os"
 import * as path from "path"
 import {AddressInfo} from "net"
-import {cacheRoot, installLibs, LIBS_VERSION, libPath, libsUrl, MAX_REDIRECTS, platformTag, resolveLibsDir} from "../src/libs"
+import {addonUrl, cacheRoot, installAddon, installLibs, LIBS_VERSION, libPath, libsUrl, MAX_REDIRECTS, platformTag, resolveAddonPath, resolveLibsDir} from "../src/libs"
 import {main, parseInstallArgs} from "../src/cli"
 import * as libs from "../src/libs"
 import {storedZip} from "./zip"
 
 const LIB = "libtest.so"
 const LINUX_LIB = "libsimplex.so"
-const {XDG_CACHE_HOME, LOCALAPPDATA, SIMPLEX_LIBS_DIR} = process.env
+const {XDG_CACHE_HOME, LOCALAPPDATA, SIMPLEX_LIBS_DIR, SIMPLEX_ADDON_PATH} = process.env
 
 function setEnv(name: string, value: string | undefined): void {
   if (value === undefined) delete process.env[name]
@@ -27,12 +27,14 @@ beforeEach(() => {
   setEnv("XDG_CACHE_HOME", home)
   setEnv("LOCALAPPDATA", home)
   setEnv("SIMPLEX_LIBS_DIR", undefined)
+  setEnv("SIMPLEX_ADDON_PATH", undefined)
 })
 afterEach(() => {
   jest.restoreAllMocks()
   setEnv("XDG_CACHE_HOME", XDG_CACHE_HOME)
   setEnv("LOCALAPPDATA", LOCALAPPDATA)
   setEnv("SIMPLEX_LIBS_DIR", SIMPLEX_LIBS_DIR)
+  setEnv("SIMPLEX_ADDON_PATH", SIMPLEX_ADDON_PATH)
   fs.rmSync(home, {recursive: true, force: true})
 })
 
@@ -75,6 +77,7 @@ describe("paths", () => {
     const release = `https://github.com/simplex-chat/simplex-chat-libs/releases/download/v${LIBS_VERSION}`
     expect(libsUrl("sqlite", "macos-aarch64")).toBe(`${release}/simplex-chat-libs-macos-aarch64.zip`)
     expect(libsUrl("postgres", "linux-x86_64")).toBe(`${release}/simplex-chat-libs-linux-x86_64-postgres.zip`)
+    expect(addonUrl("windows-x86_64")).toBe(`${release}/simplex-chat-nodejs-windows-x86_64.node`)
   })
 
   it("resolves an absolute SIMPLEX_LIBS_DIR", async () => {
@@ -102,6 +105,17 @@ describe("paths", () => {
   ])("looks for the %s library name", async (platform, arch, lib) => {
     fs.rmSync(libPath(libsDir))
     await expect(resolveLibsDir("sqlite", {SIMPLEX_LIBS_DIR: libsDir}, platform, arch)).rejects.toThrow(`SIMPLEX_LIBS_DIR has no ${lib}: `)
+  })
+
+  it("returns a relative SIMPLEX_ADDON_PATH as absolute", async () => {
+    const addon = path.join(libsDir, "simplex.node")
+    fs.writeFileSync(addon, "addon")
+    await expect(resolveAddonPath({SIMPLEX_ADDON_PATH: path.relative(process.cwd(), addon)})).resolves.toBe(addon)
+  })
+
+  it("rejects a missing SIMPLEX_ADDON_PATH", async () => {
+    const addon = path.join(libsDir, "simplex.node")
+    await expect(resolveAddonPath({SIMPLEX_ADDON_PATH: addon})).rejects.toThrow(`SIMPLEX_ADDON_PATH does not exist: ${addon}`)
   })
 
   it("rejects a SIMPLEX_LIBS_DIR without libsimplex", async () => {
@@ -246,6 +260,41 @@ describe("installLibs", () => {
     expect(fs.readFileSync(path.join(dir, LINUX_LIB), "utf8")).toBe("lib")
   })
 
+  it("downloads the add-on into the cache", async () => {
+    routes["/addon.node"] = res => res.writeHead(200).end("addon")
+    const requested = mockHttps("/addon.node")
+    const addon = await resolveAddonPath({XDG_CACHE_HOME: tmp}, "linux", "x64")
+    const version = path.join(tmp, "simplex-chat", `v${LIBS_VERSION}`)
+    expect(requested).toEqual([addonUrl("linux-x86_64")])
+    expect(addon).toBe(path.join(version, "simplex-chat-nodejs-linux-x86_64.node"))
+    expect(fs.readFileSync(addon, "utf8")).toBe("addon")
+    expect(fs.readdirSync(version)).toEqual(["simplex-chat-nodejs-linux-x86_64.node"])
+  })
+
+  it("does not download a cached add-on", async () => {
+    const requested = mockHttps("/addon.node")
+    const cached = path.join(cacheRoot("darwin", {}), `v${LIBS_VERSION}`, "simplex-chat-nodejs-macos-aarch64.node")
+    fs.mkdirSync(path.dirname(cached), {recursive: true})
+    fs.writeFileSync(cached, "addon")
+    await expect(resolveAddonPath({}, "darwin", "arm64")).resolves.toBe(cached)
+    expect(requested).toEqual([])
+  })
+
+  it("rejects a missing add-on and cleans up", async () => {
+    const target = path.join(tmp, "simplex.node")
+    await expect(installAddon(`${base}/missing.node`, target)).rejects.toThrow("HTTP 404")
+    expect(fs.readdirSync(tmp)).toEqual([])
+  })
+
+  it("accepts EPERM from rename onto an installed add-on", async () => {
+    routes["/addon.node"] = res => res.writeHead(200).end("addon")
+    const target = path.join(tmp, "simplex.node")
+    fs.writeFileSync(target, "addon")
+    renameFails("EPERM")
+    await expect(installAddon(`${base}/addon.node`, target)).resolves.toBeUndefined()
+    expect(leftovers()).toEqual([])
+  })
+
   it("does not download a cached lib", async () => {
     const requested = mockHttps("/good.zip")
     const cached = path.join(tmp, "simplex-chat", `v${LIBS_VERSION}`, "postgres")
@@ -296,8 +345,9 @@ describe("installLibs", () => {
 })
 
 describe("cli", () => {
-  function installWithLibsDir(dir: string): Promise<number> {
-    setEnv("SIMPLEX_LIBS_DIR", dir)
+  function installWith(libsDir: string, addon: string): Promise<number> {
+    setEnv("SIMPLEX_LIBS_DIR", libsDir)
+    setEnv("SIMPLEX_ADDON_PATH", addon)
     return main(["install"])
   }
 
@@ -313,13 +363,29 @@ describe("cli", () => {
     expect(() => parseInstallArgs([])).toThrow("expected command: install")
   })
 
-  it("prints the libs directory", async () => {
+  it("prints the libs directory and the add-on", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "libs-cli-"))
+    const addon = path.join(dir, "simplex.node")
+    fs.writeFileSync(libPath(dir), "lib")
+    fs.writeFileSync(addon, "addon")
+    const log = jest.spyOn(console, "log").mockImplementation(() => {})
+    try {
+      await expect(installWith(dir, addon)).resolves.toBe(0)
+      expect(log.mock.calls).toEqual([[`libsimplex installed at: ${dir}`], [`Node.js add-on installed at: ${addon}`]])
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true})
+    }
+  })
+
+  it("returns 1 without the add-on", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "libs-cli-"))
     fs.writeFileSync(libPath(dir), "lib")
     const log = jest.spyOn(console, "log").mockImplementation(() => {})
+    const error = jest.spyOn(console, "error").mockImplementation(() => {})
     try {
-      await expect(installWithLibsDir(dir)).resolves.toBe(0)
-      expect(log).toHaveBeenCalledWith(`libsimplex installed at: ${dir}`)
+      await expect(installWith(dir, path.join(dir, "simplex.node"))).resolves.toBe(1)
+      expect(log).not.toHaveBeenCalled()
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("install failed: SIMPLEX_ADDON_PATH does not exist"))
     } finally {
       fs.rmSync(dir, {recursive: true, force: true})
     }
@@ -327,9 +393,11 @@ describe("cli", () => {
 
   it("returns 1 when install fails", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "libs-cli-"))
+    const addon = path.join(dir, "simplex.node")
+    fs.writeFileSync(addon, "addon")
     const error = jest.spyOn(console, "error").mockImplementation(() => {})
     try {
-      await expect(installWithLibsDir(dir)).resolves.toBe(1)
+      await expect(installWith(dir, addon)).resolves.toBe(1)
       expect(error).toHaveBeenCalledWith(expect.stringContaining("install failed: SIMPLEX_LIBS_DIR has no"))
     } finally {
       fs.rmSync(dir, {recursive: true, force: true})
@@ -338,6 +406,7 @@ describe("cli", () => {
 
   it("installs the requested backend", async () => {
     const resolve = jest.spyOn(libs, "resolveLibsDir").mockResolvedValue("/libs")
+    jest.spyOn(libs, "resolveAddonPath").mockResolvedValue("/addon.node")
     jest.spyOn(console, "log").mockImplementation(() => {})
     await expect(main(["install", "--backend", "postgres"])).resolves.toBe(0)
     expect(resolve).toHaveBeenCalledWith("postgres")

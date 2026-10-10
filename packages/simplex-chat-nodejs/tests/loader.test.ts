@@ -2,13 +2,14 @@ import {spawnSync} from "child_process"
 import * as path from "path"
 
 jest.mock("../src/simplex", () => ({load: jest.fn()}))
-jest.mock("../src/libs", () => ({libPath: jest.requireActual("../src/libs").libPath, resolveLibsDir: jest.fn()}))
+jest.mock("../src/libs", () => ({libPath: jest.requireActual("../src/libs").libPath, resolveLibsDir: jest.fn(), resolveAddonPath: jest.fn()}))
 
 const PACKAGE_DIR = path.join(__dirname, "..")
 const ADDON = path.join(PACKAGE_DIR, "build", "Release", "simplex.node")
 const CHILD_TIMEOUT_MS = 10000
 const LIBS_DIR = path.resolve("libs")
 const SWITCH_ERROR = "libsimplex already loaded with backend=sqlite; cannot switch to postgres in the same process"
+const ADDON_PATH = path.resolve("simplex.node")
 const {libPath} = jest.requireActual<typeof import("../src/libs")>("../src/libs")
 
 function runAddon(script: string): string {
@@ -19,9 +20,11 @@ function runAddon(script: string): string {
 function freshCore(): {core: typeof import("../src/core"), resolveLibsDir: jest.Mock, load: jest.Mock} {
   let modules!: ReturnType<typeof freshCore>
   jest.isolateModules(() => {
+    const libs = require("../src/libs")
+    libs.resolveAddonPath.mockResolvedValue(ADDON_PATH)
     modules = {
       core: require("../src/core"),
-      resolveLibsDir: require("../src/libs").resolveLibsDir,
+      resolveLibsDir: libs.resolveLibsDir,
       load: require("../src/simplex").load,
     }
   })
@@ -56,6 +59,13 @@ describe("native load", () => {
   })
 })
 
+describe("add-on module", () => {
+  it("rejects FFI calls before the add-on is loaded", () => {
+    const simplex = jest.requireActual<typeof import("../src/simplex")>("../src/simplex")
+    expect(() => simplex.chat_send_cmd(BigInt(1), "/v")).toThrow("libsimplex is not loaded, call core.loadLibrary(backend) first")
+  })
+})
+
 describe("loadLibrary", () => {
   it("shares one load between concurrent calls", async () => {
     const {core, resolveLibsDir, load} = freshCore()
@@ -65,7 +75,7 @@ describe("loadLibrary", () => {
     expect(second).toBe(first)
     await Promise.all([first, second])
     expect(resolveLibsDir).toHaveBeenCalledTimes(1)
-    expect(load.mock.calls).toEqual([[libPath(LIBS_DIR)]])
+    expect(load.mock.calls).toEqual([[ADDON_PATH, libPath(LIBS_DIR)]])
   })
 
   it("refuses to switch backend while the first load is in progress", async () => {

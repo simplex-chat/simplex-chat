@@ -45,9 +45,21 @@ export function cacheRoot(platform: string, env: NodeJS.ProcessEnv, home: string
   return path.join(env.XDG_CACHE_HOME || path.join(home, ".cache"), "simplex-chat")
 }
 
+function releaseUrl(asset: string): string {
+  return `https://github.com/${GITHUB_REPO}/releases/download/v${LIBS_VERSION}/${asset}`
+}
+
 export function libsUrl(backend: Backend, tag: string): string {
   const suffix = backend === "postgres" ? "-postgres" : ""
-  return `https://github.com/${GITHUB_REPO}/releases/download/v${LIBS_VERSION}/simplex-chat-libs-${tag}${suffix}.zip`
+  return releaseUrl(`simplex-chat-libs-${tag}${suffix}.zip`)
+}
+
+function addonName(tag: string): string {
+  return `simplex-chat-nodejs-${tag}.node`
+}
+
+export function addonUrl(tag: string): string {
+  return releaseUrl(addonName(tag))
 }
 
 export function libPath(dir: string): string {
@@ -75,31 +87,67 @@ export async function resolveLibsDir(
   return target
 }
 
-export async function installLibs(url: string, target: string, lib: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
-  const parent = path.dirname(target)
-  await fs.promises.mkdir(parent, {recursive: true})
-  const tmp = await fs.promises.mkdtemp(path.join(parent, ".download-"))
-  try {
+export async function resolveAddonPath(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: string = process.platform,
+  arch: string = process.arch
+): Promise<string> {
+  if (env.SIMPLEX_ADDON_PATH) {
+    const file = path.resolve(env.SIMPLEX_ADDON_PATH)
+    if (!fs.existsSync(file)) throw new Error(`SIMPLEX_ADDON_PATH does not exist: ${file}`)
+    return file
+  }
+  const tag = platformTag(platform, arch)
+  const target = path.resolve(cacheRoot(platform, env), `v${LIBS_VERSION}`, addonName(tag))
+  if (!fs.existsSync(target)) await installAddon(addonUrl(tag), target)
+  return target
+}
+
+export function installLibs(url: string, target: string, lib: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
+  return inTempDir(target, async tmp => {
     console.error(`Downloading libsimplex from ${url} ...`)
     const zipPath = path.join(tmp, "libs.zip")
     await download(url, zipPath, timeoutMs)
     await extract(zipPath, {dir: tmp})
     const extracted = path.join(tmp, "libs")
     if (!fs.existsSync(path.join(extracted, lib))) throw new Error(`libs/${lib} missing from ${url}`)
-    try {
-      await fs.promises.rename(extracted, target)
-    } catch (e) {
-      // Another process installed the same version first; its files are identical.
-      // Windows reports renaming onto an existing directory as EPERM.
-      const code = (e as NodeJS.ErrnoException).code
-      const lost = (code === "EEXIST" || code === "ENOTEMPTY" || code === "EPERM") && fs.existsSync(target)
-      if (!lost) throw e
-      if (!fs.existsSync(path.join(target, lib))) {
-        throw new Error(`another process partially populated ${target} but libsimplex is missing; remove the directory manually and retry`)
-      }
-    }
+    await renameInto(extracted, target, path.join(target, lib))
+  })
+}
+
+export function installAddon(url: string, target: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
+  return inTempDir(target, async tmp => {
+    console.error(`Downloading the Node.js add-on from ${url} ...`)
+    const file = path.join(tmp, path.basename(target))
+    await download(url, file, timeoutMs)
+    await renameInto(file, target, target)
+  })
+}
+
+// The temp dir is next to the target, so the final rename stays on one filesystem.
+async function inTempDir(target: string, install: (tmp: string) => Promise<void>): Promise<void> {
+  const parent = path.dirname(target)
+  await fs.promises.mkdir(parent, {recursive: true})
+  const tmp = await fs.promises.mkdtemp(path.join(parent, ".download-"))
+  try {
+    await install(tmp)
   } finally {
     await fs.promises.rm(tmp, {recursive: true, force: true})
+  }
+}
+
+async function renameInto(from: string, target: string, installed: string): Promise<void> {
+  try {
+    await fs.promises.rename(from, target)
+  } catch (e) {
+    // Another process installed the same version first; its files are identical.
+    // Windows reports renaming onto an existing directory or a loaded file as EPERM.
+    const code = (e as NodeJS.ErrnoException).code
+    const lost = (code === "EEXIST" || code === "ENOTEMPTY" || code === "EPERM") && fs.existsSync(target)
+    if (!lost) throw e
+    if (!fs.existsSync(installed)) {
+      throw new Error(`another process partially populated ${target} but ${path.basename(installed)} is missing; remove it manually and retry`)
+    }
   }
 }
 

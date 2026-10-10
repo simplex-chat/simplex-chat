@@ -8,7 +8,7 @@
 
 > **chatMigrateInit**(`dbPath`, `dbKey`, `confirm`, `queueSize?`): `Promise`\<`bigint`\>
 
-Defined in: [src/core.ts:29](../src/core.ts#L29)
+Defined in: [src/core.ts:30](../src/core.ts#L30)
 
 Initialize chat controller
 

@@ -8,7 +8,7 @@
 
 > **chatRecvMsgWait**(`ctrl`, `wait`): `Promise`\<`ChatEvent` \| `undefined`\>
 
-Defined in: [src/core.ts:61](../src/core.ts#L61)
+Defined in: [src/core.ts:62](../src/core.ts#L62)
 
 Receive chat event
 

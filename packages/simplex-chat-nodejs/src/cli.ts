@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {parseArgs} from "util"
 import type {Backend} from "./core"
-import {resolveLibsDir} from "./libs"
+import {resolveAddonPath, resolveLibsDir} from "./libs"
 
 const USAGE = "usage: simplex-chat install [--backend sqlite|postgres]"
 const EXIT_INSTALL_FAILED = 1
@@ -27,8 +27,9 @@ export async function main(argv: string[]): Promise<number> {
     return EXIT_USAGE
   }
   try {
-    const dir = await resolveLibsDir(backend)
+    const [dir, addon] = await Promise.all([resolveLibsDir(backend), resolveAddonPath()])
     console.log(`libsimplex installed at: ${dir}`)
+    console.log(`Node.js add-on installed at: ${addon}`)
     return 0
   } catch (e) {
     console.error(`install failed: ${(e as Error).message}`)

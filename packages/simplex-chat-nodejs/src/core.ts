@@ -15,7 +15,8 @@ export function loadLibrary(backend: Backend): Promise<void> {
     if (loading.backend === backend) return loading.promise
     return Promise.reject(new Error(`libsimplex already loaded with backend=${loading.backend}; cannot switch to ${backend} in the same process`))
   }
-  const promise = libs.resolveLibsDir(backend).then(dir => simplex.load(libs.libPath(dir)))
+  const promise = Promise.all([libs.resolveLibsDir(backend), libs.resolveAddonPath()])
+    .then(([dir, addon]) => simplex.load(addon, libs.libPath(dir)))
   loading = {backend, promise}
   // a failed download or load can be retried
   promise.catch(() => { loading = undefined })

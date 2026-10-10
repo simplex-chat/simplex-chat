@@ -7,9 +7,12 @@ import * as simplex from "../src/simplex";
 
 describe("Core tests", () => {
   let libPath: string;
+  let addonPath: string;
   // the first run downloads libsimplex
   beforeAll(async () => {
-    libPath = libs.libPath(await libs.resolveLibsDir("sqlite"));
+    const libsDir = await libs.resolveLibsDir("sqlite");
+    libPath = libs.libPath(libsDir);
+    addonPath = await libs.resolveAddonPath();
     await core.loadLibrary("sqlite");
   }, 300000);
   const tmpDir = "./tests/tmp";
@@ -200,11 +203,11 @@ describe("Core tests", () => {
   }, 10000);
 
   it("should accept loading libsimplex again from the same path", () => {
-    expect(() => simplex.load(libPath)).not.toThrow();
+    expect(() => simplex.load(addonPath, libPath)).not.toThrow();
   });
 
   it("should refuse to load libsimplex from another path", () => {
-    expect(() => simplex.load(path.resolve("other", "libsimplex.so"))).toThrow(`libsimplex already loaded from ${libPath}`);
+    expect(() => simplex.load(addonPath, path.resolve("other", "libsimplex.so"))).toThrow(`libsimplex already loaded from ${libPath}`);
   });
 
   it("should load libsimplex after a failed load and in several workers", () => {

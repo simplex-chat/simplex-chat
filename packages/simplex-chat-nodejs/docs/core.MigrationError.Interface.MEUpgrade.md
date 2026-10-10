@@ -6,7 +6,7 @@
 
 # Interface: MEUpgrade
 
-Defined in: [src/core.ts:198](../src/core.ts#L198)
+Defined in: [src/core.ts:199](../src/core.ts#L199)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:198](../src/core.ts#L198)
 
 > **type**: `"upgrade"`
 
-Defined in: [src/core.ts:199](../src/core.ts#L199)
+Defined in: [src/core.ts:200](../src/core.ts#L200)
 
 #### Overrides
 
@@ -30,4 +30,4 @@ Defined in: [src/core.ts:199](../src/core.ts#L199)
 
 > **upMigrations**: [`UpMigration`](core.Interface.UpMigration.md)[]
 
-Defined in: [src/core.ts:200](../src/core.ts#L200)
+Defined in: [src/core.ts:201](../src/core.ts#L201)
