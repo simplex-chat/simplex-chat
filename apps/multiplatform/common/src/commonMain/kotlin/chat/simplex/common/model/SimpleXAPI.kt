@@ -3774,6 +3774,7 @@ object ChatController {
   suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
     // TODO lock the switch so that two switches can't run concurrently?
     chatModel.chatId.value = null
+    ModalManager.start.closeModals()
     ModalManager.center.closeModals()
     ModalManager.end.closeModals()
     AlertManager.shared.hideAllAlerts()
