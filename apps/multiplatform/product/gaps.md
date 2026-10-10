@@ -13,6 +13,8 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
+8. [UI: Chat Preferences Leaves an Invisible Modal Without a Profile](#gap-08-ui-chat-preferences-leaves-an-invisible-modal-without-a-profile)
+9. [Concurrency: ModalManager Not Synchronized](#gap-09-concurrency-modalmanager-not-synchronized)
 
 ---
 
@@ -289,3 +291,58 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 - GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.
+
+---
+
+## GAP-08: UI: Chat Preferences Leaves an Invisible Modal Without a Profile
+
+**Severity:** Low
+**Category:** UI / UX
+**Platform:** Desktop
+
+### Description
+
+The "Chat preferences" row of the user picker opens `PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)`. With no active user, which happens on a desktop with no profile and no connected mobile, the modal content returns early. The modal stays on `ModalManager.start` with nothing drawn and no back button. "Chat preferences" in Settings uses the same pattern.
+
+### Affected Locations
+
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt:240`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt:231`
+
+### Impact
+
+Clicking the row hides the picker and shows nothing. The leftover modal stays until something closes the left-panel modals, such as a click on the centre panel. If a profile is created first, it reappears as the preferences screen.
+
+### Recommendation
+
+Close the modal when there is no active user, as the "SimpleX address" row does (`ModalManager.isLastModal` and `close`), or hide both rows when there is no active user.
+
+---
+
+## GAP-09: Concurrency: ModalManager Not Synchronized
+
+**Severity:** Low
+**Category:** Concurrency
+**Platforms:** Android, Desktop
+
+### Description
+
+`ModalManager` keeps its stack in an `ArrayList` (`modalViews`) and a set of pending removals (`toRemove`) without synchronization. `closeModals()` clears both. It is also called from background threads, for example through `closeAllModalsEverywhere` in the self-destruct flow and when switching profile or remote host from the user picker, and on the `RemoteHostConnected` event.
+
+Main-thread `closeModal`, `isLastModal` and the cleanup at the end of the close animation can interleave with it. If the clear lands between `closeModal` reading the last index and adding it to `toRemove`, then `toRemove` holds index 0 on an empty list and the modal count becomes -1. The next cleanup or push then throws `IndexOutOfBoundsException`.
+
+### Affected Locations
+
+- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt:105-108` (`modalViews`, `toRemove`)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt:170-189` (`closeModal`, `closeModals`)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt:262` (`closeAllModalsEverywhere`)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/localauth/LocalAuthView.kt:93`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt:166`, `:679`
+
+### Impact
+
+A crash is possible but needs two calls to land within microseconds of each other; no reproduction is known.
+
+### Recommendation
+
+Make every `ModalManager` mutation run on the main thread, for example by dispatching `closeAllModalsEverywhere` and the event-handler calls to `Dispatchers.Main`, or guard the stack with a lock.

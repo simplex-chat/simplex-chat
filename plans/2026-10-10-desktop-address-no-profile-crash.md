@@ -11,7 +11,15 @@ java.lang.NullPointerException
   at chat.simplex.common.views.helpers.ModalManager$showInView$4$1$1.invoke(ModalView.kt:218)
 ```
 
-## Cause
+The "SimpleX address" screen crashes whenever it is shown while there is no active user.
+
+## Solution summary
+
+When there is no current user, the address modal closes itself instead of composing `UserAddressView`. It closes only while it is the top modal, so it never closes a different screen. The new `ModalManager.isLastModal` checks that.
+
+## Technical design
+
+### Cause
 
 The "SimpleX address" row of the user picker opens `UserAddressView` with `shareViaProfile = it.currentUser.value!!.addressShared`. The modal content reads `currentUser`, so it recomposes whenever `currentUser` changes. It throws whenever it is composed while `currentUser` is null, that is, when there is no active user. A desktop that was only used with a linked mobile has no active user of its own.
 
@@ -22,32 +30,46 @@ The screen can be shown in that state in three ways:
    - If another screen is on top of it, it crashes when the user goes back to it.
 
    `UserAddressView` closes itself when the user changes (`KeyChangeEffect` on the user), but with a null user it is never reached.
-2. **The row is clicked with no active user.** With no profile and no connected mobile (a mobile was linked before, otherwise the desktop shows onboarding), the user picker opens by itself (`App.kt`, `desktopNoUserNoRemote`) and still shows the "Create SimpleX address" row. Clicking it crashes immediately.
+2. **The row is clicked with no active user.** With no profile and no connected mobile, the user picker opens by itself (`App.kt`, `desktopNoUserNoRemote`) and still shows the "Create SimpleX address" row. Clicking it crashes immediately.
 
-   The row is also offered after deleting the active profile when no other visible profile remains, including the only profile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
-3. **The self-destruct passcode is entered while the screen is open.** `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does it create the new profile and call `closeAllModalsEverywhere`. On Android, the shared modal stack stays composed under the lock screen, so in between the address screen recomposes with a null user. On desktop, `initChatController` replaces the main screen with the splash screen shortly afterwards (`localUserCreated = null`), so the crash needs a frame to fall in that short window.
+   At startup this state needs a mobile that was linked before; with no linked mobile, startup shows onboarding instead (`Core.kt`).
 
-## Fix
+   The state is also reached by deleting the active profile when no other visible profile remains, including the only profile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
+3. **The self-destruct passcode is entered while the screen is open.** `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does it create the new profile and call `closeAllModalsEverywhere`.
+   - On Android, the shared modal stack stays composed under the lock screen, so in between the address screen recomposes with a null user.
+   - On desktop, `initChatController` replaces the main screen with the splash screen shortly afterwards (`localUserCreated = null`), so the crash needs a frame to fall in that short window.
 
-When there is no current user, the modal closes itself instead of composing `UserAddressView`.
+### Self-closing modal
 
-`ModalManager.closeModal` closes the top modal. So the effect closes only when this modal is the top one that is not being removed, using a new `ModalManager.isLastModal(data)`.
+`ModalManager.closeModal` closes the top modal that is not already being removed, whichever modal calls it. So the effect closes only when `ModalManager.isLastModal(data)` reports that this modal is that one.
 
-The effect is keyed on the modal and on the modal count of `ModalManager.start` (the left panel on desktop, the shared stack on Android). So it checks again when the count changes, or when its composition is reused for another modal, while this content is still composed. Other than the top modal, a modal stays composed only while it animates out (250 ms). For example, a quick second click on the row reuses the composition of the first modal, which is still animating out.
+The effect is keyed on the modal and on the modal count of `ModalManager.start` (the left panel on desktop, the shared stack on Android). So it checks again when the count changes, or when its composition is reused for another modal, while this content is still composed. Other than the top modal, a modal stays composed only while it animates out (250 ms, longer if the animation is interrupted). For example, a quick second click on the row reuses the composition of the first modal, which is still animating out.
 
 A modal that is covered after an animation ends is disposed. It is composed afresh when it becomes the top again, for example when the user goes back to it, and the effect runs then.
 
-With the `isLastModal` check, the effect does not close a different screen, such as one opened just before or just after the address screen during an animation. This holds for stack changes on the main thread; as before, `ModalManager` is not synchronized with background calls such as `closeAllModalsEverywhere`.
+With the `isLastModal` check, the effect does not close a different screen, such as one opened just before or just after the address screen during an animation. This holds for stack changes on the main thread. As before, `ModalManager` is not synchronized with background calls such as `closeAllModalsEverywhere`; see GAP-09.
 
-Two visible effects when there is no active user:
+### Visible behaviour
+
+When there is no active user:
 - Clicking the row now only hides the picker, as opening any modal does. The modal closes itself, and the picker is not reopened.
 - After the mobile disconnects with the address screen open, the picker does not reopen by itself (observed in testing). The app checks for open left-panel modals when the user becomes null, and the address modal closes itself only after that check. Master does the same when any other left-panel screen is open.
 
 The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding. The only Android path is case 3, where the screen now closes itself instead of crashing. With an active user, behaviour does not change on any platform.
 
-An early `return@showCustomModal`, as the "Chat preferences" row does, would avoid the crash. But it would leave an invisible modal on the left-panel stack, with no back button. It stays until something closes the left-panel modals, such as a click on the centre panel. If a profile is created first, it comes back as the address screen. The "Chat preferences" row has this behaviour on master, and this change leaves it as is.
+### Rejected alternative
 
-Documentation: `apps/multiplatform/spec/client/navigation.md` lists `isLastModal` among the `ModalManager` methods, and `apps/multiplatform/product/views/user-profiles.md` describes the address row closing itself with no active profile.
+An early `return@showCustomModal`, as the "Chat preferences" row does, would avoid the crash. But it would leave an invisible modal on the left-panel stack, with no back button. It stays until something closes the left-panel modals, such as a click on the centre panel. If a profile is created first, it comes back as the address screen. The "Chat preferences" row has this behaviour on master, and this change leaves it as is; see GAP-08.
+
+## Implementation steps
+
+1. `views/helpers/ModalView.kt`: add `ModalManager.isLastModal(data)`, true when `data` belongs to the top modal that is not being removed.
+2. `views/chatlist/UserPicker.kt`: in the "SimpleX address" row, compose `UserAddressView` only when `currentUser` is not null. Otherwise run `LaunchedEffect(modal, ModalManager.start.modalCount.value)`, which closes the modal when `isLastModal(modal)` is true.
+3. Documentation, under `apps/multiplatform/`:
+   - `spec/client/navigation.md`: list `isLastModal` among the `ModalManager` methods, and add a `[GAP]` note for GAP-09.
+   - `spec/client/chat-list.md`, UserPicker section: describe the address row closing itself with no active user, and add a `[GAP]` note for GAP-08.
+   - `product/views/user-profiles.md`: describe the address row with no active profile.
+   - `product/gaps.md`: add GAP-08 ("Chat preferences" leaves an invisible modal with no active user) and GAP-09 (`ModalManager` is not synchronized with background threads).
 
 ## Verification
 
@@ -60,3 +82,4 @@ Desktop AppImages from master and from this branch, each with a fresh database. 
 - This branch, case 2, double click (seven runs, 8 to 40 ms apart): no crash, and no leftover. With `LaunchedEffect(Unit)` the address screen reappeared after onboarding in 2 of 3 runs at 30 ms.
 - This branch, case 2, "Settings" then "Create SimpleX address" 100 ms apart: no crash, and Settings stays open. With the close keyed on the modal count but without the `isLastModal` check, Settings was closed too.
 - This branch, with a local profile: the address screen opens and closes normally. When the mobile disconnects with its address screen open, the screen closes through `UserAddressView`'s own user-change effect, and the app returns to the local profile.
+- Case 3 (self-destruct) was not run; it is covered by the same branch as case 1.

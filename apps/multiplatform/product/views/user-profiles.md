@@ -28,7 +28,7 @@ Overlay panel triggered from `ChatListView` toolbar:
 | Device picker row | `DevicePickerRow` showing local device and connected remote hosts (Desktop only); pill-shaped buttons with connect/disconnect actions |
 | Active user profile | `ProfilePreview` of current user (Desktop: single row; Android: full user list) |
 | User list | `UserPickerUsersSection` with all visible non-hidden profiles; tap to switch, long-press disabled |
-| SimpleX address | Row to open `UserAddressView` (create or view address); with no active profile the screen closes itself, including when the profile goes away while it is open |
+| SimpleX address | Row to open `UserAddressView` (create or view address); with no active profile the screen closes itself (if another screen covers it, when the user goes back to it) |
 | Chat preferences | Row to open `PreferencesView` |
 | Chat profiles | Row to open `UserProfilesView` (or `CreateProfile` when no users exist on Desktop) |
 | Use from desktop/mobile | Android: "Use from desktop" (`ConnectDesktopView`); Desktop: "Link a mobile" / "Linked mobiles" (`ConnectMobileView`) |

@@ -257,6 +257,8 @@ Each `ModalManager` maintains a stack of `ModalViewHolder` objects with:
 | `closeModalsExceptFirst` | Pop all but the bottom modal |
 | `hasModalsOpen()` | Check if any modals are on the stack |
 | `isLastModal(data)` | Check if the modal with this `ModalData` is the top modal not being removed |
+
+[GAP] `ModalManager` keeps its stack in unsynchronized collections, but `closeModals` is also called from background threads (for example via `closeAllModalsEverywhere`), so it can interleave with main-thread `closeModal` and the animation cleanup (see `product/gaps.md` GAP-09).
 | `showInView` | Render the current modal stack into the composable tree |
 
 ### Usage Pattern
