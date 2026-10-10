@@ -2124,12 +2124,11 @@ processChatCommand cxt nm = \case
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    rootKey <- atomically . C.generateKeyPair =<< asks random
-    (preparedLink, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMInvitation rootKey Nothing False Nothing IKUsePQ False Nothing
+    (preparedReq, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareInvitationLink a (aUserId user) IKUsePQ Nothing
     linkProfile <- presentUserBadge user incognitoProfile (Just $ PHLink linkKey) $ userProfileDirect user incognitoProfile Nothing True
     let userData = contactShortLinkData linkProfile {contactDomain = Nothing} Nothing
         userLinkData = UserInvLinkData userData
-    (connId, ccLink) <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True preparedLink preparedParams userLinkData subMode
+    (connId, ccLink) <- withAgent $ \a -> createInvitationForLink a nm (aUserId user) True preparedReq preparedParams userLinkData subMode
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
     conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' Nothing ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
@@ -2170,10 +2169,9 @@ processChatCommand cxt nm = \case
         (agConnId, ccLink) <-
           if short
             then do
-              rootKey <- atomically . C.generateKeyPair =<< asks random
-              (preparedLink, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId newUser) SCMInvitation rootKey Nothing False Nothing IKPQOn False Nothing
+              (preparedReq, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareInvitationLink a (aUserId newUser) IKPQOn Nothing
               userLinkData <- UserInvLinkData . (`contactShortLinkData` Nothing) <$> presentUserBadge newUser Nothing (Just $ PHLink linkKey) (userProfileDirect newUser Nothing Nothing True)
-              withAgent $ \a -> createConnectionForLink a nm (aUserId newUser) True preparedLink preparedParams userLinkData subMode
+              withAgent $ \a -> createInvitationForLink a nm (aUserId newUser) True preparedReq preparedParams userLinkData subMode
             else withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation Nothing Nothing IKPQOn True subMode
         ccLink' <- shortenCreatedLink ccLink
         conn' <- withFastStore' $ \db -> do
@@ -2472,7 +2470,7 @@ processChatCommand cxt nm = \case
           Just True -> (IKUsePQ, True)
           Just False -> (IKPQOn, True)
           Nothing -> (IKPQOn, False)
-    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMContact rootKey (Just entityId) True Nothing pqInitKeys useDR server_
+    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing pqInitKeys useDR server_
     ccLink' <- shortenCreatedLink ccLink
     -- TODO [relays] relay: add identity, key to link data?
     userData <-
@@ -2480,7 +2478,7 @@ processChatCommand cxt nm = \case
         then pure $ relayShortLinkData (userProfileDirect user Nothing Nothing True)
         else (`contactShortLinkData` Nothing) <$> presentUserBadge user Nothing (linkPresHeader <$> connShortLink' ccLink) (userProfileDirect user Nothing Nothing True)
     let userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
-    (connId, _) <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
+    connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
     let ccLink'' = if isTrue userChatRelay then setShortLinkType CCTRelay ccLink' else ccLink'
     withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode rootPrivKey
     pure $ CRUserContactLinkCreated user ccLink''
@@ -2749,7 +2747,7 @@ processChatCommand cxt nm = \case
         let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
             crClientData = encodeJSON $ CRDataGroup groupLinkId
         -- prepare link with entityId as linkEntityId (no server request)
-        (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMContact rootKey (Just entityId) True (Just crClientData) IKPQOff False Nothing
+        (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True (Just crClientData) IKPQOff False Nothing
         ccLink' <- setShortLinkType CCTChannel <$> shortenCreatedLink ccLink
         sLnk <- case connShortLink' ccLink' of
           Just sl -> pure sl
@@ -2762,7 +2760,7 @@ processChatCommand cxt nm = \case
             userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Just (PublicGroupData 1)}
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData, ratchetKeys = Nothing}
         -- create connection with prepared link (single network call)
-        (connId, _) <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
+        connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
         let groupKeys = GKPublicGroup {groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
             setupLink gInfo = do
               -- TODO [relays] starting role should be communicated in protocol from owner to relays
