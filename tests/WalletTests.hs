@@ -146,7 +146,7 @@ testWalletAccountsPerProfile ps = withNewTestChat ps "alice" aliceProfile $ \ali
   alice ##> "/_wallet bind 2"
   alice `accountBound` "2"
   alice ##> "/_wallet bind 2 account=1"
-  alice <## "wallet: another profile holds this account"
+  alice <## "bad chat command: another profile holds this account"
 
 testWalletBindByIndexThenNext :: HasCallStack => TestParams -> IO ()
 testWalletBindByIndexThenNext ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -182,11 +182,6 @@ testWalletAddress :: HasCallStack => TestParams -> IO ()
 testWalletAddress ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
   alice <## "wallet, next account 1, no accounts for this profile"
-  alice ##> "/_wallet address"
-  addr <- getTermLine alice
-  alice ##> "/_wallet address"
-  getTermLine alice `shouldReturn` addr
-  words addr !! 1 `shouldBe` "m/44'/60'/1'/0/0"
   alice ##> "/_wallet address account=3"
   at3 <- getTermLine alice
   words at3 !! 1 `shouldBe` "m/44'/60'/3'/0/0"
@@ -227,13 +222,11 @@ testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet create mnemonic=" <> T.unpack testPhrase24)
   alice <## "wallet, next account unknown, no accounts for this profile"
   alice ##> "/_wallet bind 1"
-  alice <## "wallet: the next account is unknown after an import"
-  alice ##> "/_wallet address"
-  alice <## "wallet: the next account is unknown after an import"
+  alice <## "bad chat command: the next account is unknown after an import"
   alice ##> "/_wallet bind 1 account=4"
   alice `accountBound` "4"
   alice ##> "/_wallet bind 1"
-  alice <## "wallet: the next account is unknown after an import"
+  alice <## "bad chat command: the next account is unknown after an import"
 
 testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
@@ -279,9 +272,9 @@ testWalletExportNotHeld ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
   alice ##> "/_wallet export account 2 1"
-  alice <## "wallet: this profile does not hold this account"
+  alice <## "bad chat command: this profile does not hold this account"
   alice ##> "/_wallet export account 2 7"
-  alice <## "wallet: this profile does not hold this account"
+  alice <## "bad chat command: this profile does not hold this account"
 
 testWalletIndexTooLarge :: HasCallStack => TestParams -> IO ()
 testWalletIndexTooLarge ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -300,4 +293,4 @@ testWalletIndexTooLarge ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   alice ##> "/_wallet bind 1 account=2147483647"
   alice `accountBound` "2147483647"
   alice ##> "/_wallet bind 1"
-  alice <## "wallet: every account index is used"
+  alice <## "bad chat command: every account index is used"

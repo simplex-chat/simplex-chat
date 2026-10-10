@@ -60,7 +60,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Wallet (WalletAddress (..), WalletError (..), WalletInfo (..))
+import Simplex.Chat.Wallet (WalletAddress (..), WalletInfo (..))
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent (DatabaseDiff (..))
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
@@ -2815,14 +2815,6 @@ viewChatError isCmd logLevel testView = \case
             SDENoValidLink -> "has no valid connection link"
             SDEUnknownDomain -> "is not included in the connection link's profile"
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
-    CEWallet walletErr ->
-      let reason :: Text
-          reason = case walletErr of
-            WEAccountBound -> "another profile holds this account"
-            WEAccountNotHeld -> "this profile does not hold this account"
-            WECounterUnknown -> "the next account is unknown after an import"
-            WEAccountsExhausted -> "every account index is used"
-       in [plain $ "wallet: " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->

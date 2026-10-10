@@ -1180,7 +1180,6 @@ export type ChatErrorType =
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
   | ChatErrorType.SimplexDomainNotReady
-  | ChatErrorType.Wallet
   | ChatErrorType.NotResolvedLocally
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
@@ -1261,7 +1260,6 @@ export namespace ChatErrorType {
     | "chatStoreChanged"
     | "invalidConnReq"
     | "simplexDomainNotReady"
-    | "wallet"
     | "notResolvedLocally"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
@@ -1422,11 +1420,6 @@ export namespace ChatErrorType {
     type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
-  }
-
-  export interface Wallet extends Interface {
-    type: "wallet"
-    walletError: WalletError
   }
 
   export interface NotResolvedLocally extends Interface {
@@ -5305,36 +5298,6 @@ export interface UserPwdHash {
 export interface VersionRange {
   minVersion: number // int
   maxVersion: number // int
-}
-
-export type WalletError = 
-  | WalletError.AccountBound
-  | WalletError.AccountNotHeld
-  | WalletError.CounterUnknown
-  | WalletError.AccountsExhausted
-
-export namespace WalletError {
-  export type Tag = "accountBound" | "accountNotHeld" | "counterUnknown" | "accountsExhausted"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface AccountBound extends Interface {
-    type: "accountBound"
-  }
-
-  export interface AccountNotHeld extends Interface {
-    type: "accountNotHeld"
-  }
-
-  export interface CounterUnknown extends Interface {
-    type: "counterUnknown"
-  }
-
-  export interface AccountsExhausted extends Interface {
-    type: "accountsExhausted"
-  }
 }
 
 export type XFTPErrorType = 

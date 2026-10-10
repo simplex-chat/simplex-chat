@@ -71,7 +71,7 @@ These commands are an internal API, called by the names commands and by any late
 /_wallet bind <userId> account=<n>    bind an account to the profile and return its
                                       address; without account=, the next free one
 /_wallet address account=<n>          one address, with the account index it is
-                                      derived at; without account=, the next free one
+                                      derived at
 /_wallet export master                the master phrase
 /_wallet export account <userId> <n>  the secret of an account the profile holds,
                                       0x and 64 hex digits
@@ -84,22 +84,18 @@ A command that acts on a profile's accounts names the profile and is rejected wh
 
 `bind` without `account=` binds the account at a counter on the master, which is a high-water mark and not a count of bound accounts, and returns the bound account's index, path and address. With `account=<n>` it binds that account, which is how an account found by a scan is attached to the profile it belongs to, and it is rejected for an account another profile holds. After an import the counter is unknown rather than zero, because the phrase does not encode how many accounts it has been used for, so binding the next account is rejected until a scan sets the counter, while binding a known account is still allowed.
 
-BIP-32 marks an index as hardened by setting its top bit, so account 2^31 would derive account 0's key: a collision, not a loss of hardening. An account index is therefore a simplexmq type holding values below 2^31; the parser rejects larger values as a bad command, the columns have CHECK constraints for the bound, and a row outside it is an error. The counter's bound is one higher, because it holds the next index to bind; at 2^31 it has passed every index, which `bind` without an index reports. For the one key in 2^128 that BIP-32 declares invalid, simplexmq recomputes it as SLIP-0010 specifies, up to three times; a third failure is an internal error, since no input is expected to reach it.
+BIP-32 marks an index as hardened by setting its top bit, so account 2^31 would derive account 0's key: a collision, not a loss of hardening. An account index is therefore a simplexmq type holding values below 2^31; the parser rejects larger values as a bad command, the columns have CHECK constraints for the bound, and a row outside it is an error. The counter's bound is one higher, because it holds the next index to bind; at 2^31 it has passed every index, which `bind` without an index reports. For the one key in 2^128 that BIP-32 declares invalid, simplexmq recomputes it as SLIP-0010 specifies, up to two times; a third invalid key is an internal error, since no input is expected to reach it.
 
-`address` reads the counter without changing it, so two calls return the same address, and it derives an address for an account the database has no row for, which a device that lost its database requires. One address per call is sufficient: a caller that scans the tree calls it in a loop.
+`address` neither reads nor changes the counter, and it derives an address for an account the database has no row for, which a device that lost its database requires. One address per call is sufficient: a caller that scans the tree calls it in a loop.
 
 `export account` is rejected unless the profile holds the account, so every exported key belongs to a bound account, which `bind` without an index does not return again, except on a database restored from a backup (known limit 8). An export is a copy, not a transfer: the device still derives the key, so two parties can act as the owner until whatever the account holds is transferred on chain. Signing is not in this change; when it is added it is a command here that returns a signature, not `export account` followed by signing elsewhere. `delete` leaves whatever the accounts own on chain, recoverable only from the phrase.
 
 ```haskell
 data WalletAddress = WalletAddress {accountIndex :: AccountIndex, keyPath :: Text, address :: Address}
 data WalletInfo = WalletInfo {accountIndexes :: [AccountIndex], nextAccountIndex :: Maybe Word32} -- Nothing: unknown after an import
-
-data WalletError
-  = WEAccountBound    -- bind, on an account another profile holds
-  | WEAccountNotHeld  -- export account, on an account the profile does not hold
-  | WECounterUnknown  -- the counter is not set yet, after an import
-  | WEAccountsExhausted -- bind without an index, when the counter has passed every index
 ```
+
+Every failure is a command error. A typed error is added when an app requires one.
 
 ## Recovery
 
@@ -135,7 +131,7 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 ```
 
-The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is the only key material stored. `create` derives the first account before storing the entropy, so stored entropy is known to derive keys. Neither the master key nor an account key is stored, because the entropy and an account index derive them whenever they are required. So `wallet_accounts` contains what derivation cannot produce: which account indexes are recorded on the device and which profile each belongs to. A row with no `user_id` is an account no profile holds, which is the result of deleting a chat profile and what a scan writes.
+The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is the only key material stored. Neither the master key nor an account key is stored, because the entropy and an account index derive them whenever they are required. So `wallet_accounts` contains what derivation cannot produce: which account indexes are recorded on the device and which profile each belongs to. A row with no `user_id` is an account no profile holds, which is the result of deleting a chat profile and what a scan writes.
 
 `users` is not changed: the mapping is stored in the account row, and the index on `user_id` is not unique, because a profile can hold any number of accounts. One seed per device is enforced by `single_seed` and the unique index on it, which a later change removes with a `DROP INDEX` and a `DROP COLUMN`; it is a named index rather than an inline `UNIQUE` because SQLite cannot drop an inline constraint without rebuilding the table. Deleting the master deletes its account rows, because an account index without its entropy derives nothing. The down migration drops both tables, which deletes the master entropy; it runs only when the user confirms "Downgrade and open chat" in an older app.
 
@@ -144,7 +140,7 @@ The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is
 - **Someone with the database file.** Gets everything, now and later: the stored entropy is the master phrase in another encoding, so an archive exported to move devices contains every key on the device. No export granularity protects against a file copy. On SQLite the connection sets `secure_delete`, so a deleted row's pages are zeroed; the journal and any copy already made are not.
 - **A wallet the master phrase is imported into.** Enumerating BIP-44 accounts computes account extended public keys, and some wallets send them to a vendor, which gives that vendor every account on the device at once, across every profile. That is what an account for each name otherwise prevents.
 - **Whoever answers the recovery scan.** Receives every address the scan derives from the phrase, in one sequence of requests, so it can link every account on the device, across profiles, and recognise addresses that own nothing yet, which is where future accounts will be. This is the largest privacy cost of the design.
-- **A paired device.** Wallet commands are allowed from a paired device like other chat commands: `export master` returns the whole wallet, `create mnemonic=` on a device that has no seed imports a phrase that the paired device sends, and `delete` deletes the master entropy, which may have no other copy.
+- **A paired device.** `create`, `export master`, `export account` and `delete` are rejected from a paired device, as the archive and database encryption commands are, because they return, replace or delete key material. `bind` and `address` are allowed.
 - **Someone reading the logs.** The core logs no command and no response, so a phrase passed to `create` is not written to any log. On Postgres the client inlines parameters into the statement text, so server-side statement logging records the inserted entropy.
 - **A page open in the user's browser.** The websocket server in `apps/simplex-chat/Server.hs`, which runs only with `--chat-server-port` and listens on 127.0.0.1, accepts any local connection, requires no token and checks no `Origin`, and websockets are not bound by the same origin policy, so any page loaded while that server runs can send `export master` and read the response. It also prints every command it receives, that phrase included. Both are properties of that server, which this change makes a more valuable target, and closing them requires changes to that server rather than to the wallet.
 
@@ -174,5 +170,5 @@ The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is
 1. **Vectors.** The two addresses above are derived from `abandon ... about`, as is account 0's secret, pinned to the value another wallet shows for it. A 24 word phrase imported through the command derives a pinned address end to end, so a change of path fails here rather than in a release, and the account a command names is the account whose key is returned.
 2. **Isolation.** Ten accounts' addresses are all different, and the paths of accounts 0 and 7 have a hardened account component.
 3. **Rejections.** A second generate; a phrase with a bad checksum; `bind`, `delete` and `export master` on a device with no wallet; `bind` on an account another profile holds, and on an imported master whose counter is unknown; `export account` for an account the profile does not hold; `bind` without an index once the counter has passed 2^31 - 1; an index of 2^31 or more is rejected as a bad command on `address`, `bind` and `export account` alike.
-4. **Binding and reads.** Several accounts are bound to one profile, each `bind` returns the account it bound, and that profile's accounts can be exported; binding an account by index moves the counter past it so the next one does not collide, and never moves it back; `bind account=<n>` binds an account after an import; an account left unbound by deleting its profile is bound to another profile; and two consecutive `address` calls return the same address without changing the counter, and derive an address for an account with no row.
-5. **Encoding and persistence.** An account secret whose first byte is zero is rendered with 64 hex digits; the wallet, its accounts, the counter and the phrase persist across a restart; and deleting the wallet deletes its accounts and resets the counter.
+4. **Binding and reads.** Several accounts are bound to one profile, each `bind` returns the account it bound, and that profile's accounts can be exported; binding an account by index moves the counter past it so the next one does not collide, and never moves it back; `bind account=<n>` binds an account after an import; an account left unbound by deleting its profile is bound to another profile; and `address` derives an address for an account with no row without changing the counter.
+5. **Encoding and persistence.** An account secret whose first byte is zero is rendered with 64 hex digits; the wallet, its accounts, the counter and the phrase persist across a restart; and after the wallet is deleted, a new wallet starts its counter at 1.

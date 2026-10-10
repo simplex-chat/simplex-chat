@@ -65,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletError (..), WalletInfo (..), accountSecret, deriveAccount, masterMnemonic, newEntropy)
+import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletInfo (..), accountSecret, deriveAccount, masterMnemonic, newEntropy, nextAccount)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -96,7 +96,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Store.Wallets (Wallet (..), bindAccount, createWallet, deleteWallet, getUserAccounts, getWallet, heldAccount, resolveAccount)
+import Simplex.Chat.Store.Wallets (Wallet (..), bindAccount, createWallet, deleteWallet, getWallet, getWalletInfo, heldAccount)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -1506,34 +1506,31 @@ processChatCommand cxt nm = \case
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIGetWallet userId -> withUserId userId $ \user ->
-    CRWallet user <$> withFastStore (\db -> getWallet db >>= mapM (\Wallet {walletId, nextAccountIndex} -> liftIO $ (`WalletInfo` nextAccountIndex) <$> getUserAccounts db userId walletId))
+    CRWallet user <$> withFastStore (\db -> getWallet db >>= mapM (liftIO . getWalletInfo db userId))
   APICreateWallet mnemonic_ -> withUser $ \user -> do
-    wallet_ <- withFastStore getWallet
-    when (isJust wallet_) $ throwCmdError "this device already has a wallet"
-    -- the counter starts at 1 for a generated seed, leaving account 0 to other wallets, and is unknown for an imported one
-    (entropy, nextAccount) <- case mnemonic_ of
+    (entropy, counter) <- case mnemonic_ of
       Nothing -> (,Just 1) <$> (liftIO . newEntropy =<< asks random)
       Just phrase -> (,Nothing) <$> either (const $ throwCmdError "not a valid recovery phrase") pure (parsePhrase phrase)
-    -- derive the first account before storing, so stored entropy is valid for derivation
-    void $ walletAccount entropy =<< liftDerivation (pure $ mkAccountIndex $ fromMaybe 0 nextAccount)
-    created <- withFastStore' $ \db -> createWallet db entropy nextAccount
+    created <- withFastStore' $ \db -> createWallet db entropy counter
     unless created $ throwCmdError "this device already has a wallet"
-    pure $ CRWallet user (Just $ WalletInfo [] nextAccount)
+    pure $ CRWallet user (Just $ WalletInfo [] counter)
   APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user -> do
-    w@Wallet {entropy} <- deviceWallet
-    n <- liftWallet =<< withFastStore' (\db -> bindAccount db userId w accountIdx_)
+    (entropy, n) <- withWallet $ \db w@Wallet {entropy, nextAccountIndex} -> do
+      n <- maybe (liftEither $ nextAccount nextAccountIndex) pure accountIdx_
+      held <- liftIO $ bindAccount db userId w n
+      unless held $ throwError "another profile holds this account"
+      pure (entropy, n)
     CRWalletAddress user . snd <$> walletAccount entropy n
-  APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
-    w@Wallet {entropy} <- deviceWallet
-    n <- liftWallet $ resolveAccount w accountIdx_
+  APIGetWalletAddress n -> withUser $ \user -> do
+    entropy <- withWallet $ \_ Wallet {entropy} -> pure entropy
     CRWalletAddress user . snd <$> walletAccount entropy n
-  APIExportWalletMnemonic -> withUser $ \user -> do
-    Wallet {entropy} <- deviceWallet
-    pure $ CRWalletMnemonic user (masterMnemonic entropy)
+  APIExportWalletMnemonic -> withUser $ \user ->
+    CRWalletMnemonic user . masterMnemonic <$> withWallet (\_ Wallet {entropy} -> pure entropy)
   APIExportWalletAccount userId n -> withUserId userId $ \user -> do
-    Wallet {walletId, entropy} <- deviceWallet
-    held <- withFastStore' $ \db -> heldAccount db userId walletId n
-    unless held $ throwChatError $ CEWallet WEAccountNotHeld
+    entropy <- withWallet $ \db w@Wallet {entropy} -> do
+      held <- liftIO $ heldAccount db userId w n
+      unless held $ throwError "this profile does not hold this account"
+      pure entropy
     (k, a) <- walletAccount entropy n
     pure $ CRWalletAccountSecret user a (accountSecret k)
   APIDeleteWallet -> withUser_ $ do
@@ -6049,19 +6046,15 @@ withExpirationDate globalTTL chatItemTTL action = do
   let ttl = fromMaybe globalTTL chatItemTTL
   when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
-deviceWallet :: CM Wallet
-deviceWallet = withFastStore getWallet >>= maybe (throwCmdError "this device has no wallet") pure
-
-liftWallet :: Either WalletError a -> CM a
-liftWallet = liftEitherWith (ChatError . CEWallet)
+withWallet :: (DB.Connection -> Wallet -> ExceptT String IO a) -> CM a
+withWallet action =
+  liftEitherWith (ChatError . CECommandError)
+    =<< withFastStore (\db -> getWallet db >>= liftIO . runExceptT . maybe (throwError "this device has no wallet") (action db))
 
 walletAccount :: WalletEntropy -> AccountIndex -> CM (AccountKey, WalletAddress)
 walletAccount entropy n = do
   g <- asks random
-  liftDerivation $ deriveAccount g entropy n
-
-liftDerivation :: IO (Either String a) -> CM a
-liftDerivation = liftError' (ChatError . CEInternalError)
+  liftError' (ChatError . CEInternalError) $ deriveAccount g entropy n
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -6188,7 +6181,7 @@ chatCommandP =
       "/_wallet create new" $> APICreateWallet Nothing,
       "/_wallet create mnemonic=" *> (APICreateWallet . Just <$> textP),
       "/_wallet bind " *> (APIBindWalletAccount <$> A.decimal <*> optional (" account=" *> accountIndexP)),
-      "/_wallet address" *> (APIGetWalletAddress <$> optional (" account=" *> accountIndexP)),
+      "/_wallet address account=" *> (APIGetWalletAddress <$> accountIndexP),
       "/_wallet export master" $> APIExportWalletMnemonic,
       "/_wallet export account " *> (APIExportWalletAccount <$> A.decimal <* A.space <*> accountIndexP),
       "/_wallet delete" $> APIDeleteWallet,

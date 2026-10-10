@@ -69,7 +69,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
-import Simplex.Chat.Wallet (WalletAddress, WalletError, WalletInfo)
+import Simplex.Chat.Wallet (WalletAddress, WalletInfo)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Crypto.BIP44 (AccountIndex)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
@@ -443,7 +443,7 @@ data ChatCommand
   | APIGetWallet {userId :: UserId}
   | APICreateWallet {mnemonic :: Maybe Text}
   | APIBindWalletAccount {userId :: UserId, accountIndex_ :: Maybe AccountIndex}
-  | APIGetWalletAddress {accountIndex_ :: Maybe AccountIndex}
+  | APIGetWalletAddress {accountIndex :: AccountIndex}
   | APIExportWalletMnemonic
   | APIExportWalletAccount {userId :: UserId, accountIndex :: AccountIndex}
   | APIDeleteWallet
@@ -751,6 +751,10 @@ allowRemoteCommand = \case
   SetFilesFolder _ -> False
   SetRemoteHostsFolder _ -> False
   APISetEncryptLocalFiles _ -> False
+  APICreateWallet _ -> False
+  APIExportWalletMnemonic -> False
+  APIExportWalletAccount {} -> False
+  APIDeleteWallet -> False
 #if !defined(dbPostgres)
   APIExportArchive _ -> False
   APIImportArchive _ -> False
@@ -1526,7 +1530,6 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
-  | CEWallet {walletError :: WalletError}
   | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}

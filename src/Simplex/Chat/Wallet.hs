@@ -5,7 +5,7 @@ module Simplex.Chat.Wallet
   ( AccountKey,
     WalletAddress (..),
     WalletInfo (..),
-    WalletError (..),
+    nextAccount,
     newEntropy,
     masterMnemonic,
     deriveAccount,
@@ -16,16 +16,17 @@ where
 import Control.Concurrent.STM
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as JQ
+import Data.Bifunctor (first)
 import qualified Data.ByteArray.Encoding as BAE
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import Data.Word (Word32)
 import qualified Simplex.Messaging.Crypto.BIP32 as B32
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
-import Simplex.Messaging.Crypto.BIP44 (AccountIndex, CoinType (..), bip44Path)
+import Simplex.Messaging.Crypto.BIP44 (AccountIndex, CoinType (..), bip44Path, mkAccountIndex)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Eth.Address (Address, deriveAddress)
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON)
 
 type AccountKey = S.Secp256k1PrivateKey
 
@@ -42,12 +43,8 @@ data WalletInfo = WalletInfo
   }
   deriving (Show)
 
-data WalletError
-  = WEAccountBound
-  | WEAccountNotHeld
-  | WECounterUnknown
-  | WEAccountsExhausted
-  deriving (Eq, Show)
+nextAccount :: Maybe Word32 -> Either String AccountIndex
+nextAccount = maybe (Left "the next account is unknown after an import") (first (const "every account index is used") . mkAccountIndex)
 
 newEntropy :: TVar ChaChaDRG -> IO B39.WalletEntropy
 newEntropy = atomically . B39.randomEntropy B39.ES256
@@ -69,5 +66,3 @@ accountSecret k = "0x" <> decodeLatin1 (BAE.convertToBase BAE.Base16 $ S.unPriva
 $(JQ.deriveJSON defaultJSON ''WalletAddress)
 
 $(JQ.deriveJSON defaultJSON ''WalletInfo)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "WE") ''WalletError)
