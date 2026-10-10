@@ -38,16 +38,11 @@ Facts that shape the design:
 | Registration | After payment the service registers the name to its registrar address. The page shows Committing → Waiting 60s → Registering, as in the app (canvas 9) |
 | Ownership | The service holds the name until it is claimed: a claim code, and Open in SimpleX, move it to the app's wallet |
 | Secondary | "Buy a code for any name of N+ letters", for registering later in the app (#7530's `SN<len>-2Y-…` code) |
-| Code format | #7530 §6: `SN6-2Y-4K2P7-TQ9M1-ZX3RB-8HJ5W`, in core `Badges/Code.hs`, mirrored in `web/src/codes.ts`. A claim code is bound to its name in the service; its prefix is a proposal below |
+| Code format | #7530 §6: `SN6-2Y-4K2P7-TQ9M1-ZX3RB-8HJ5W`, in core `Badges/Code.hs`, mirrored in `web/src/codes.ts`. A claim code (`SC…`) is bound to its name in the service |
 | Storage | Name codes in the code table with `code_kind`; registrations in their own table |
 | Mockups | The board and screens generated from the real webapp modules (`plans/names-codes/mockups/`) |
-
-### Proposed, to confirm
-
-| Topic | Proposal | Why |
-|---|---|---|
-| One order per name | The service refuses a second order for a name that has an open invoice or a registration in progress (`name_pending`). Search shows such a name as "being registered" until that order expires or finishes | Without it, two buyers can pay for the same name and the second always ends in "someone was faster" |
-| Claim code prefix | Claim codes are `SC<len>-2Y-…`; length codes stay `SN<len>-2Y-…` | The app knows from the text whether to claim a held name or register a new one, before sending anything; with one prefix, #7530's `redeemNameCode` would be tried on a claim code |
+| One order per name | A second order for a name with an open invoice or a registration in progress is refused (`name_pending`); search shows it as "being registered" until that order expires or finishes (2026-10-10) |
+| Claim code prefix | Claim codes are `SC<len>-2Y-…`, length codes `SN<len>-2Y-…`, so the app knows from the text whether to claim or register (2026-10-10) |
 
 ## The names store, screen by screen
 
@@ -55,7 +50,7 @@ Facts that shape the design:
    - **available:** "Available for $X for 2 years" with Register enabled;
    - **taken:** "Used by" and one card per address or channel, each with picture, display name, Open (deep link) and the link;
    - **reserved:** "Reserved", with "Contact the SimpleX team";
-   - **being registered** (proposed): another buyer's order holds it;
+   - **being registered:** another buyer's order holds it;
    - **check failed or rate limited:** shown as such.
    
    Secondary links: "Buy a code for any name of 6+ letters" and "Badges".
@@ -84,7 +79,7 @@ Each stage is its own set of atomic commits. Stage 0 is reviewed before any code
 Redo `plans/names-codes/`: the board `names-flow.svg`, `screens/*.jpg`, the spec `2026-10-09-name-codes.md` and the generator `mockups/`, for the store above. The board's sections:
 
 - the names store start to finish;
-- what a search can find;
+- what a search can find, including a name another order holds;
 - registration steps and their outcomes;
 - the secondary code flow;
 - payment endings (shared);
@@ -110,7 +105,7 @@ As #7530 §5, with StoreService for ShopService:
 - `src/Simplex/Chat/Badges/Code.hs` gains `NameCode` (`parseNameCode`, `randomNameCode`, `nameCodeParams`, `nameCodeHash`, `formatNameCode`, `nameCodeText`).
   - The grammar is `SN` + minLength digit (6–8) + years + `Y` + 20 body characters, with a Luhn mod-32 check over the parameters and the payload.
   - The canonical form is hashed with SHA-256.
-  - If the claim code prefix is confirmed, the same module reads `SC` codes as claim codes, with an identical grammar.
+  - The same module reads `SC` claim codes, with an identical grammar.
 - `src/Simplex/Chat/Names.hs`: `validNameLabel`, `nameTier`.
 - The `Registration` ABI encoding and commitment, as one module both core and service use (#7530 D17). This is shared with #7530: build it once, where it lands first.
 - Tests with vectors shared with `web/test`.
@@ -125,7 +120,7 @@ As #7530 §5, with StoreService for ShopService:
   - uses the read rate limit and never logs the label;
   - caches link profiles briefly, so one search costs at most one fetch per link;
   - fetches each link with a timeout (3 s) and under its own rate limit, since a name's records can point at any server;
-  - answers `pending` for a name held by another open order (proposed).
+  - answers `pending` for a name held by another open order.
 - **Prices:** `Catalog.namePrice :: [NamePrice] -> Text -> Either CatalogRefusal CurrencyAmount`, over the rows `readCatalogRows` reads, as `priceOffer` takes badge prices. It starts from a per-length table seeded insert-only (`name_prices`), with per-name overrides possible. The page shows what the service answers. Checkout reprices and refuses a changed price with `catalog_changed`.
 - **Checkout:**
   - `POST /api/invoice` with `kind: "name"` (label, the price shown, method, and the hash of a claim code made in the browser), or `kind: "nameCode"` (minLength, price, method, codeHash).
@@ -137,7 +132,7 @@ As #7530 §5, with StoreService for ShopService:
   - New tables `name_prices` and `name_registrations`: invoice, label, code, secret, commitment, phase, tx hashes, block numbers, `expires_at`, claimed owner, timestamps.
 - **`GET /api/invoice/:id`** adds `registration {phase, label, commitTx, registerTx, revealAfter, expiresAt, error}` for a name invoice. The long poll also wakes on phase changes, which extends what `Waiters` compares.
 - **A `taken` order:** `POST /api/invoice/:id/name {label}` retargets it to another name at most its price, and `POST /api/invoice/:id/unbind` turns its claim code into a length code.
-- **One order per name** (proposed): creating a name invoice refuses `name_pending` while another open invoice or unfinished registration holds the label. The hold ends when that invoice expires or the registration finishes.
+- **One order per name:** creating a name invoice refuses `name_pending` while another open invoice or unfinished registration holds the label. The hold ends when that invoice expires or the registration finishes.
 - **The order view** carries `claimed`, so history can show a claimed name.
 - **New wire errors:** `invalid_name`, `name_taken` and `name_pending`.
 - **Operator:**

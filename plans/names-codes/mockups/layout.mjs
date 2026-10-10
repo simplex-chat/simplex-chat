@@ -16,7 +16,7 @@ export const SECTIONS = [
     note: "the names store, separate from the badges store: search a name, pay, and the service registers it for you",
     rows: [
       { label: "Registering a name, start to finish", kind: "desktop", cells: ["N1", "N1a", "N2", "N3", "N4", "N5", "N6", "N6a", "N6b", "N7"] },
-      { label: "What a search can find", kind: "desktop", cells: [null, "N1b", "N1c", "N2a", "N2b", "N2c", "N2d", "N2e"] },
+      { label: "What a search can find", kind: "desktop", cells: [null, "N1b", "N1c", "N2a", "N2b", "N2c", "N2d", "N2e", "N2f"] },
     ],
   },
   {
@@ -114,7 +114,7 @@ export const FRAMES = {
   N7: {
     url: ORDER, from: "N6b", label: "registered", color: "blue",
     title: "Yours, with a claim code",
-    text: "The service holds the name for the buyer. The claim code, made in this browser, moves it to the app's wallet; Open in SimpleX carries it there. It points nowhere until claimed, and the 2 years have started.",
+    text: "The service holds the name for the buyer. The claim code (SC…, so the app knows to claim, not register), made in this browser, moves it to the app's wallet; Open in SimpleX carries it there. It points nowhere until claimed, and the 2 years have started.",
   },
   N1b: {
     url: HOST, from: "N1", label: "5 letters or fewer", color: "orange",
@@ -150,6 +150,11 @@ export const FRAMES = {
     url: HOST, from: "N1a", label: "429", color: "orange",
     title: "Too many searches",
     text: "The read rate limit answered. Search stays off for Retry-After.",
+  },
+  N2f: {
+    url: HOST, from: "N1a", label: "held by another order", color: "orange",
+    title: "Being registered",
+    text: "Another buyer's order holds the name: an open invoice or a registration in progress. A second order is refused (name_pending), so two buyers never pay for one name.",
   },
   N9: {
     url: ORDER, from: "N6", label: "the commit fails", color: "orange",

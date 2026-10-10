@@ -72,7 +72,7 @@ Core rejects upper case, so the page folds it to lower case as the buyer types.
 | `registered`, with links | N2a: "Used by", one card per `simplexContact`/`simplexChannel` link, each with picture, display name, the link and Open in SimpleX (deep link) |
 | `registered`, no links | N2b: taken, and pointing nowhere (a name held for an unclaimed buyer reads like this) |
 | `reserved` | N2c: reserved, with "Contact the SimpleX team" |
-| held by another open order (proposed) | being registered: not offered until that order expires or finishes |
+| held by another open order | N2f: being registered, not offered until that order expires or finishes |
 | no answer, or an error | N2d (503) |
 | the read rate limit | N2e (429) |
 
@@ -105,14 +105,14 @@ Core rejects upper case, so the page folds it to lower case as the buyer types.
 
 - **Progress:** each phase is published to the order's long poll. The page shows the steps as the app does (canvas 9), with transaction links, and a reload or another device shows the same state.
 - **Taken (N8):** the order keeps its value. The buyer can register another name priced at or under what was paid (N8a, `POST /api/invoice/:id/name`); a cheaper name refunds nothing. Or they can turn the claim code into a code for any name of the original name's length (`POST /api/invoice/:id/unbind`); that is worth less if the name carried a per-name price above the length price.
-- **One order per name** (proposed): while an open invoice or an unfinished registration holds a label, a second order for it is refused with `name_pending`, and search shows it as being registered. This makes N8 rare. It still covers names registered outside the store.
+- **One order per name:** while an open invoice or an unfinished registration holds a label, a second order for it is refused with `name_pending`, and search shows it as being registered. This makes N8 rare. It still covers names registered outside the store.
 - **Refunds:** none in the service. A registration that fails for good is refunded manually by support.
 - **The chain client** is #7530's (§10 there): JSON-RPC to the resolver host's reth node, a dry run of every transaction, serial nonces from the registrar key, EIP-1559 fees, receipts with replacement, and 3 confirmations.
 - **Signing:** recoverable secp256k1 is in simplexmq #1843 (merged into `names`, not `master`); EIP-1559 transaction signing is on `ab/eth-tx`.
 
 ## 6. Claiming
 
-N7 shows the claim code with Copy, a QR and **Open in SimpleX** (`simplex:/name#code=<code>&label=<label>`). The link format is a proposal for the app team. The app (A1, #7530) sends a new service command:
+N7 shows the claim code (`SC7-2Y-…`) with Copy, a QR and **Open in SimpleX** (`simplex:/name#code=<code>&label=<label>`). The link format is a proposal for the app team. The app (A1, #7530) sends a new service command:
 
 ```
 claimName {code, owner, nameLinks}  →  name {registration}
@@ -128,7 +128,7 @@ It refuses an unknown or spent code with `code_invalid`, and a name it no longer
 
 **A lost claim code (N7b):** the operator's `//reissue <reference>` issues a new claim code for a held, unclaimed name, after support confirms the order, and revokes the old one.
 
-**Claim code prefix** (proposed): `SC<len>-2Y-…` for claim codes, `SN<len>-2Y-…` for length codes. The app then knows from the text whether to send `claimName` or #7530's `redeemNameCode`. The board still shows claim codes as `SN`, and changes if this is confirmed.
+**Claim code prefix:** `SC<len>-2Y-…` for claim codes, `SN<len>-2Y-…` for length codes. The app knows from the text whether to send `claimName` or #7530's `redeemNameCode`.
 
 ## 7. A code for any name
 
@@ -148,7 +148,7 @@ The app registers a name with it later, with the same steps (#7530's `redeemName
 | Stored | SHA-256 of the canonical form (`SN72Y` + 20 characters), nothing else |
 | Authority | The service row's `min_length` and `years`, not the text |
 
-A claim code has the same grammar, with the service row bound to its label, under the proposed `SC` prefix (§6). `Simplex.Chat.Badges.Code` gains `NameCode`, and `web/src/codes.ts` mirrors it.
+A claim code has the same grammar, with the service row bound to its label, under the `SC` prefix (§6). `Simplex.Chat.Badges.Code` gains `NameCode`, and `web/src/codes.ts` mirrors it.
 
 ## 8. Service API
 
@@ -166,7 +166,7 @@ GET /api/name/bakery
 GET /api/name/support
 200 {"status": "reserved", "label": "support"}
 
-GET /api/name/orbital   (proposed: held by another open order)
+GET /api/name/orbital   (held by another open order)
 200 {"status": "pending", "label": "orbital"}
 
 400 {"error": "invalid_name"}   503 {"error": "provider_unavailable"}   429 {"error": "rate_limited"}
@@ -182,7 +182,7 @@ POST /api/invoice  {"kind": "nameCode", "minLength": 7, "price": 20000, "method"
   - `catalog_changed`, with the new `price`;
   - `invalid_name`;
   - `name_taken`, when the name was taken since the search;
-  - `name_pending` (proposed), when another open order holds it;
+  - `name_pending`, when another open order holds it;
   - `bad_request`, `code_conflict`, `provider_unavailable` and `rate_limited`, as today.
 - **`GET /api/invoice/:id`** adds `registration {phase, label, commitTx, registerTx, revealAfter, expiresAt, claimed, error}`. The long poll also wakes on a phase change.
 - **`POST /api/invoice/:id/name {label}`** retargets a `taken` registration. It is refused if the new price exceeds what was paid.

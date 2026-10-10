@@ -26,9 +26,9 @@ function checkValue(values) {
   return (BASE - (sum % BASE)) % BASE;
 }
 
-// The proposed name code: "SN", the shortest name, the years and "Y", then 19 payload characters
-// and a check character taken over the parameters and the payload.
-function nameCode(minLength, seed) {
+// A name code: "SN" for a length code or "SC" for a claim code, the shortest name, the years and "Y",
+// then 19 payload characters and a check character taken over the parameters and the payload.
+function nameCode(minLength, seed, kind = "SN") {
   const params = [...`${minLength}2Y`].map((c) => ALPHABET.indexOf(c));
   let x = seed;
   const payload = Array.from({ length: PAYLOAD }, () => {
@@ -36,7 +36,7 @@ function nameCode(minLength, seed) {
     return x % BASE;
   });
   const body = [...payload, checkValue([...params, ...payload])].map((v) => ALPHABET[v]).join("");
-  return `SN${minLength}-2Y-${body.match(/.{5}/g).join("-")}`;
+  return `${kind}${minLength}-2Y-${body.match(/.{5}/g).join("-")}`;
 }
 
 // The service's answer for a name; the page shows only this price, never a list.
@@ -129,9 +129,9 @@ const BAKERY = [
   { initials: "BN", hue: 200, name: "Bakery news", kind: "channel", link: "https://smp9.simplex.im/c#Rk27xN4pDe9…" },
 ];
 
-// state: empty | typed | available | short | chars | taken | unlinked | reserved | unchecked | limited | credit
+// state: empty | typed | available | short | chars | taken | unlinked | reserved | pending | unchecked | limited | credit
 function search(state, label = "") {
-  const tone = { available: "ok", credit: "ok", short: "bad", chars: "bad", taken: "bad", unlinked: "bad", reserved: "bad" }[state];
+  const tone = { available: "ok", credit: "ok", short: "bad", chars: "bad", taken: "bad", unlinked: "bad", reserved: "bad", pending: "bad" }[state];
   const p = panel(el("h1", {}, "Your SimpleX domain"),
     el("p", { class: "lede" },
       el("span", { class: "half" }, "One name for your public channel"), " ",
@@ -185,6 +185,12 @@ function search(state, label = "") {
         el("div", { class: "result-title bad" }, `${label}.simplex is reserved`),
         el("div", { class: "result-note" }, "Reserved names are not sold here. If it is yours to use, contact the SimpleX team."),
         el("a", { class: "secondary inline", href: "#" }, "Contact the SimpleX team")));
+      action.setAttribute("disabled", "");
+      break;
+    case "pending":
+      p.append(el("div", { class: "result" },
+        el("div", { class: "result-title bad" }, `${label}.simplex is being registered`),
+        el("div", { class: "result-note" }, "Another order holds it. If that order lapses, it can be searched again.")));
       action.setAttribute("disabled", "");
       break;
     case "unchecked":
@@ -318,7 +324,7 @@ function registering(label, states) {
 }
 
 function registered(label, saved) {
-  const code = nameCode(Math.min(label.length, 8), 7);
+  const code = nameCode(Math.min(label.length, 8), 7, "SC");
   const p = panel(el("div", { class: "tick" }, "✓"),
     el("h1", { class: "tight center" }, `${label}.simplex is yours`),
     el("p", { class: "lede center" }, `Registered for 2 years, until ${UNTIL}.`),
@@ -422,7 +428,7 @@ function history() {
     el("p", { class: "lede" }, "Every name and code you bought is in this browser, and nowhere else."),
     el("ul", { class: "entries" },
       entry({ title: "dynamis.simplex", sub: `Registered until ${UNTIL} · claim code`, status: "registered", tone: "settled",
-        method: "btc", price: "$200.00", when: "10 October 2026, 12:18", code: nameCode(7, 7) }),
+        method: "btc", price: "$200.00", when: "10 October 2026, 12:18", code: nameCode(7, 7, "SC") }),
       entry({ title: "nebula.simplex", sub: "Committed, waiting for the minute to pass", status: "registering", tone: "pending",
         method: "xmr", price: "$400.00", when: "10 October 2026, 11:52", open: true }),
       entry({ title: "A code for any name", sub: "7+ letters · 2 years", status: "paid", tone: "settled",
@@ -500,6 +506,7 @@ const SCREENS = {
   N2c: () => search("reserved", "support"),
   N2d: () => search("unchecked", "dynamis"),
   N2e: () => search("limited", "dynamis"),
+  N2f: () => search("pending", "orbital"),
   N3: () => nameCheckout("dynamis", "btc"),
   N3a: () => nameCheckout("dynamis", "xmr", { unavailable: "btc" }),
   N3b: () => priceChanged(),
