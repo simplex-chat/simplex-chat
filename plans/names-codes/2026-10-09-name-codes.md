@@ -58,10 +58,11 @@ To the user these are two stores. One service (StoreService, the renamed badge s
 ## 3. Search
 
 **Typing (N1, N1a):** the page judges the label without asking anything (N1b, N1c). The rule is shared by `Simplex.Chat.Names.validNameLabel` and `web/src/names.ts`:
-- case folded to lower;
-- `a-z`, `0-9` and `-` only;
-- no leading or trailing hyphen, and no `--` at positions 3–4;
-- 6 to 63 characters.
+- `a-z`, `0-9` and `-` only, no leading or trailing hyphen, and no `--` at positions 3–4 (#7530's `validLabel`);
+- at least 6 characters (the controller's `minCharLength`, which the resolver reads);
+- at most 63 (simplexmq's label limit).
+
+Core rejects upper case, so the page folds it to lower case as the buyer types.
 
 **Searching:** `GET /api/name/<label>`. The service validates the label and hashes it, keccak256 over the ASCII bytes. It then asks `GET {resolver_url}/v2/resolve/[<hash hex>].<tld>`, so the resolver sees only the hash. The service never logs or stores the label.
 
@@ -71,14 +72,15 @@ To the user these are two stores. One service (StoreService, the renamed badge s
 | `registered`, with links | N2a: "Used by", one card per `simplexContact`/`simplexChannel` link, each with picture, display name, the link and Open in SimpleX (deep link) |
 | `registered`, no links | N2b: taken, and pointing nowhere (a name held for an unclaimed buyer reads like this) |
 | `reserved` | N2c: reserved, with "Contact the SimpleX team" |
+| held by another open order (proposed) | being registered: not offered until that order expires or finishes |
 | no answer, or an error | N2d (503) |
 | the read rate limit | N2e (429) |
 
-**What uses a taken name:** the service opens each link with its own chat core, as `APIConnectPlan` does, for the display name and picture, and builds the deep link. A short cache keeps one search to at most one fetch per link. This mirrors the app's own search result (canvas 3b).
+**What uses a taken name:** the service opens each link with its own chat core, as `APIConnectPlan` does, for the display name and picture, and builds the deep link. A short cache keeps one search to at most one fetch per link. Each fetch has a 3 s timeout and its own rate limit, since a name's records can point at any server. This mirrors the app's own search result (canvas 3b).
 
 ## 4. Price and term
 
-- **Term:** 2 years, fixed: the contract minimum (730 days), and nothing is charged for years whose price cannot be known yet. The term runs from registration, not from the claim.
+- **Term:** 2 years, fixed: the registry's minimum (730 days, `protocol/simplex-messaging.md`), and nothing is charged for years whose price cannot be known yet. The term runs from registration, not from the claim.
 - **Price:** the service's answer for the searched name. The page never shows a price list.
   - The price rule is internal: a seeded per-length table, with per-name entries able to override it, both insert-only. A change is a new price id.
   - The starting values are $100 for 8+ letters, $200 for 7 and $400 for 6, for the 2 years. They live in `Catalog.defaultNamePrices` and can change before launch.
@@ -95,15 +97,18 @@ To the user these are two stores. One service (StoreService, the renamed badge s
 | Phase | What happens | Page |
 |---|---|---|
 | `paid` → `committing` | Dry-run, then send `commit(makeCommitment(Registration{label, owner = registrar address, duration = 2 years, secret, …}))` | N6 |
-| `committed` | The commit is mined; wait `minCommitmentAge` (60 s) | N6a |
+| `committed` | The commit is mined; wait `minCommitmentAge`, read from the controller (60 s in the docs, set per deployment) | N6a |
 | `registering` | Dry-run, then send the register call | N6b |
 | `registered` | Receipt + 3 blocks; `expires_at` recorded; the claim code becomes claimable | N7 |
 | `taken` | The register dry run reverted `NameNotAvailable`; nothing was sent | N8 |
 | `failed` | Any other failure after retries; the payment is kept and retrying charges nothing | N9 |
 
 - **Progress:** each phase is published to the order's long poll. The page shows the steps as the app does (canvas 9), with transaction links, and a reload or another device shows the same state.
-- **Taken (N8):** the order keeps its value. The buyer can register another name priced at or under what was paid (N8a, `POST /api/invoice/:id/name`). Or they can turn the claim code into a code for any name of the original name's length (`POST /api/invoice/:id/unbind`).
-- **The chain client** is #7530's (§10 there): JSON-RPC to the resolver host's reth node, a dry run of every transaction, serial nonces from the registrar key, EIP-1559 fees, receipts with replacement, and 3 confirmations. Signing comes from simplexmq (#7530 D20).
+- **Taken (N8):** the order keeps its value. The buyer can register another name priced at or under what was paid (N8a, `POST /api/invoice/:id/name`); a cheaper name refunds nothing. Or they can turn the claim code into a code for any name of the original name's length (`POST /api/invoice/:id/unbind`); that is worth less if the name carried a per-name price above the length price.
+- **One order per name** (proposed): while an open invoice or an unfinished registration holds a label, a second order for it is refused with `name_pending`, and search shows it as being registered. This makes N8 rare. It still covers names registered outside the store.
+- **Refunds:** none in the service. A registration that fails for good is refunded manually by support.
+- **The chain client** is #7530's (§10 there): JSON-RPC to the resolver host's reth node, a dry run of every transaction, serial nonces from the registrar key, EIP-1559 fees, receipts with replacement, and 3 confirmations.
+- **Signing:** recoverable secp256k1 is in simplexmq #1843 (merged into `names`, not `master`); EIP-1559 transaction signing is on `ab/eth-tx`.
 
 ## 6. Claiming
 
@@ -120,6 +125,10 @@ The service handles it in four steps:
 4. It marks the code spent.
 
 It refuses an unknown or spent code with `code_invalid`, and a name it no longer holds with `name_not_held`. Until the claim, the name points nowhere (N7's warning) and its 2 years run.
+
+**A lost claim code (N7b):** the operator's `//reissue <reference>` issues a new claim code for a held, unclaimed name, after support confirms the order, and revokes the old one.
+
+**Claim code prefix** (proposed): `SC<len>-2Y-…` for claim codes, `SN<len>-2Y-…` for length codes. The app then knows from the text whether to send `claimName` or #7530's `redeemNameCode`. The board still shows claim codes as `SN`, and changes if this is confirmed.
 
 ## 7. A code for any name
 
@@ -139,7 +148,7 @@ The app registers a name with it later, with the same steps (#7530's `redeemName
 | Stored | SHA-256 of the canonical form (`SN72Y` + 20 characters), nothing else |
 | Authority | The service row's `min_length` and `years`, not the text |
 
-A claim code has the same format, with the service row bound to its label. `Simplex.Chat.Badges.Code` gains `NameCode`, and `web/src/codes.ts` mirrors it.
+A claim code has the same grammar, with the service row bound to its label, under the proposed `SC` prefix (§6). `Simplex.Chat.Badges.Code` gains `NameCode`, and `web/src/codes.ts` mirrors it.
 
 ## 8. Service API
 
@@ -157,6 +166,9 @@ GET /api/name/bakery
 GET /api/name/support
 200 {"status": "reserved", "label": "support"}
 
+GET /api/name/orbital   (proposed: held by another open order)
+200 {"status": "pending", "label": "orbital"}
+
 400 {"error": "invalid_name"}   503 {"error": "provider_unavailable"}   429 {"error": "rate_limited"}
 ```
 
@@ -170,12 +182,13 @@ POST /api/invoice  {"kind": "nameCode", "minLength": 7, "price": 20000, "method"
   - `catalog_changed`, with the new `price`;
   - `invalid_name`;
   - `name_taken`, when the name was taken since the search;
+  - `name_pending` (proposed), when another open order holds it;
   - `bad_request`, `code_conflict`, `provider_unavailable` and `rate_limited`, as today.
-- **`GET /api/invoice/:id`** adds `registration {phase, label, commitTx, registerTx, revealAfter, expiresAt, error}`. The long poll also wakes on a phase change.
+- **`GET /api/invoice/:id`** adds `registration {phase, label, commitTx, registerTx, revealAfter, expiresAt, claimed, error}`. The long poll also wakes on a phase change.
 - **`POST /api/invoice/:id/name {label}`** retargets a `taken` registration. It is refused if the new price exceeds what was paid.
 - **`POST /api/invoice/:id/unbind`** turns a `taken` order's claim code into a length code.
 - **`claimName`** is a service request over SMP, beside the badge commands, at the next version (§6).
-- **`invalid_name` and `name_taken`** join `WIRE_ERROR_CODES`.
+- **`invalid_name`, `name_taken` and `name_pending`** join `WIRE_ERROR_CODES`.
 
 ## 9. Storage
 
@@ -185,7 +198,7 @@ Migration `20261010_names`, in SQLite and Postgres:
   - adds `code_kind` (`badge`, `name`), `min_length`, `years` and `label`; the label is set for a claim code only;
   - `badge_type` and `months` become nullable, with a CHECK per kind;
   - SQLite rebuilds the table with `PRAGMA defer_foreign_keys = ON`, and an up/down test runs with referencing rows present.
-- **`sx_badge_service_badge_code_invoices`:** adds `name_price_id`, with a CHECK that exactly one of the two price ids is set.
+- **`sx_badge_service_badge_code_invoices`:** adds `name_price_id`, and `price_id` (`NOT NULL` today) becomes nullable, with a CHECK that exactly one of the two is set. In SQLite this is a second rebuild.
 - **`sx_badge_service_name_prices`:** `price_id`, `min_length`, `label` (null for a length rule), `price`, `currency`, `status`, `created_at`.
 - **`sx_badge_service_name_registrations`:** `invoice_id`, `label`, `badge_code_id`, `secret`, `commitment`, `phase`, `commit_tx`, `commit_block`, `register_tx`, `register_block`, `expires_at`, `claimed_owner`, `claimed_at`, `error`, `created_at`, `updated_at`.
 
@@ -220,6 +233,7 @@ Without `[names]`, search answers `provider_unavailable`. Without `[chain]`, a p
 |---|---|
 | `--run-cli` | `//issue name <6\|7\|8> [paid\|unpaid\|free]` prints a length code once |
 | `--run-cli` | `//revoke <code>`, for either kind |
+| `--run-cli` | `//reissue <reference>`: a new claim code for a held, unclaimed name, revoking the old one; CLI only, as group replies reach every member |
 | Managed group, moderators and above | `/issue name <6\|7\|8>`, `/bulk name <6\|7\|8> count <B>` |
 
 ## 12. The page
@@ -297,8 +311,15 @@ PLAYWRIGHT=/tmp/pw/node_modules/playwright/index.mjs node plans/names-codes/mock
 ## 15. Open questions
 
 1. **Funding:** the deployed `.testing` controller's `register` is payable in ETH, so the registrar key holds ETH. #7530's `registerWithCredit` (allowance-funded) replaces it once the `.simplex` contracts deploy.
-2. **Claim mechanics:** the token transfer, the registry node's owner and which records can be set before the transfer depend on the SNS contracts, whose source is not in these repositories.
+2. **Claim mechanics (blocking stage 4):** no source here shows a registrar registering a name to itself, setting its records, then transferring it on the deployed contracts.
+   - The SNS contract source is not in these repositories.
+   - The names v2 RFC registers with the user as `owner` from the start.
+   - Only its remark about auto-reclaim suggests the registry node follows the token.
+
+   This has to be confirmed on the contract source first. If it does not hold, ownership falls back to the buyer giving an owner address.
 3. **The open-in-app link format** (§6), for the app team.
-4. **Coordination with #7530:** the StoreService rename, the code kind, the `Registration` encoder, the chain client, and the app side of `claimName`.
-5. **Fetching link profiles** puts a load on the service that grows with searches. The cache bounds it per link, and the read rate limit per client.
-6. **simplex.domains today** is a countdown page; the store replaces it at launch. Its heading and line ("Your SimpleX domain", "One name for your public channel and contact address") are kept.
+4. **Coordination with #7530:** the StoreService rename (#7530 proposes `SHC`/`SHP`/`SHE` prefixes for ShopService; this plan uses `STC`/`STP`/`STE`), the code kind, the `Registration` encoder, the chain client, and the app side of `claimName`.
+5. **Fetching link profiles** puts a load on the service that grows with searches. The cache bounds it per link, and a timeout and a rate limit of its own bound it per fetch and per client.
+6. **Key custody:** the registrar key is a hot key in the ini, and it owns every unclaimed name. Should held names move to a separate holding address whose key is kept offline, with only registration on the hot key? Claim reminders keep the window short either way.
+7. **Cost risk:** the buyer pays a fixed USD price; the contract's ETH fee and gas are paid at registration time. A gas spike is the service's loss.
+8. **simplex.domains today** is a countdown page; the store replaces it at launch. Its heading and line ("Your SimpleX domain", "One name for your public channel and contact address") are kept.
