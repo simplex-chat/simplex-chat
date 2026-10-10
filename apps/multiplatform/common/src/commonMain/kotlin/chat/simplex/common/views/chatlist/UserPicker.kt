@@ -225,7 +225,7 @@ fun UserPicker(
           if (user != null) {
             UserAddressView(it, shareViaProfile = user.addressShared, close = close)
           } else {
-            LaunchedEffect(Unit) { close() }
+            LaunchedEffect(this, ModalManager.start.modalCount.value) { close() }
           }
         }, disabled = stopped
       )
