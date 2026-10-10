@@ -22,7 +22,7 @@ The screen can be shown in that state in three ways:
    - If another screen is on top of it, it crashes when the user goes back to it.
 
    `UserAddressView` closes itself when the user changes (`KeyChangeEffect` on the user), but with a null user it is never reached.
-2. **The row is clicked with no active user.** With no profile and no mobile, the user picker opens by itself (`App.kt`, `desktopNoUserNoRemote`) and still shows the "Create SimpleX address" row. Clicking it crashes immediately.
+2. **The row is clicked with no active user.** With no profile and no connected mobile (a mobile was linked before, otherwise the desktop shows onboarding), the user picker opens by itself (`App.kt`, `desktopNoUserNoRemote`) and still shows the "Create SimpleX address" row. Clicking it crashes immediately.
 
    The row is also offered after deleting the active profile when no other visible profile remains, including the only profile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
 3. **The self-destruct passcode is entered while the screen is open.** `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does it create the new profile and call `closeAllModalsEverywhere`. On Android, the shared modal stack stays composed under the lock screen, so in between the address screen recomposes with a null user. On desktop, `initChatController` replaces the main screen with the splash screen shortly afterwards (`localUserCreated = null`), so the crash needs a frame to fall in that short window.
