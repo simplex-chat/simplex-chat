@@ -4305,8 +4305,8 @@ testShortLinkDeletedAddress = testChat2 aliceProfile bobProfile test
 
 testShortLinkAddressConnectRetry :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressConnectRetry ps =
-  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
+  withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
       shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         (shortLink, fullLink) <- getContactLinks alice True
@@ -4350,6 +4350,7 @@ testShortLinkAddressConnectRetry ps =
         { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
+    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
     opts' =
       testOpts
         { coreOptions =
@@ -4360,8 +4361,8 @@ testShortLinkAddressConnectRetry ps =
 
 testShortLinkAddressConnectRetryIncognito :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressConnectRetryIncognito ps =
-  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
+  withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
       shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         (shortLink, fullLink) <- getContactLinks alice True
@@ -4413,6 +4414,7 @@ testShortLinkAddressConnectRetryIncognito ps =
         { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
+    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
     opts' =
       testOpts
         { coreOptions =
