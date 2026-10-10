@@ -230,8 +230,8 @@ def lib_for(backend: Backend) -> ctypes.CDLL:
         if _lib is not None:
             if _backend != backend:
                 raise RuntimeError(
-                    f"libsimplex already loaded with backend={_backend!r}; "
-                    f"cannot switch to {backend!r} in the same process"
+                    f"libsimplex already loaded with backend={_backend}; "
+                    f"cannot switch to {backend} in the same process"
                 )
             return _lib
         libs_dir = _resolve_libs_dir(backend)

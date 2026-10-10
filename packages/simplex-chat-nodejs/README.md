@@ -55,8 +55,10 @@ If you cloned this repository, you can:
 cd ./packages/simplex-chat-nodejs
 npm install
 npm run build
-node ./examples/squaring-bot-readme.js
+SIMPLEX_ADDON_PATH=build/Release/simplex.node node ./examples/squaring-bot-readme.js
 ```
+
+Building the Node.js add-on from source needs [node-gyp](https://github.com/nodejs/node-gyp) build tools.
 
 There is an example with more options in [./examples/squaring-bot.ts](./examples/squaring-bot.ts).
 
@@ -64,30 +66,26 @@ You can run it with: `npx ts-node ./examples/squaring-bot.ts`
 
 A larger example, with a business address and commands as keys: [SimpleX Calculator](../../apps/simplex-calculator-bot/).
 
-## PostgreSQL backend
+## Native library
 
-By default, the package uses SQLite. To use PostgreSQL instead:
+`libsimplex` and the prebuilt Node.js add-on are downloaded on first use into the user cache (`$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat` on Linux, `~/Library/Caches/simplex-chat` on macOS, `%LOCALAPPDATA%\simplex-chat` on Windows), shared with the Python library. To download them ahead of time, for example in a Dockerfile, run as the user that runs the app:
 
 ```bash
-npm install simplex-chat --simplex_backend=postgres
+npx simplex-chat install                     # sqlite (default)
+npx simplex-chat install --backend postgres  # Linux x86_64 only
 ```
 
-Or persist the setting in `.npmrc`:
+Set `SIMPLEX_LIBS_DIR` to a directory with a local build of `libsimplex` and its dependencies to use it instead; it must be built for the backend in use. Set `SIMPLEX_ADDON_PATH` to a locally built add-on (`build/Release/simplex.node`) to use it instead of the downloaded one.
 
-```ini
-simplex_backend=postgres
-```
+`ChatApi.init` loads the library for `DbConfig.type`; the low-level `core` functions require `core.loadLibrary(backend)` first.
 
-### Prerequisites (PostgreSQL)
+## PostgreSQL backend
+
+`DbConfig.type` selects the backend; one backend per process.
 
 - `libpq5` must be installed on the host system (`apt install libpq5` on Debian/Ubuntu)
 - PostgreSQL backend is only available for Linux x86_64
 - A PostgreSQL server accessible via connection string
-
-### Passing PostgreSQL connection
-
-The `DbConfig` type is a discriminated union — pick the variant that matches
-the backend you installed:
 
 ```ts
 // SQLite (default)

@@ -6,7 +6,7 @@
 
 # Interface: MTREDifferent
 
-Defined in: [src/core.ts:214](../src/core.ts#L214)
+Defined in: [src/core.ts:236](../src/core.ts#L236)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:214](../src/core.ts#L214)
 
 > **downMigrations**: `string`[]
 
-Defined in: [src/core.ts:216](../src/core.ts#L216)
+Defined in: [src/core.ts:238](../src/core.ts#L238)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:216](../src/core.ts#L216)
 
 > **type**: `"different"`
 
-Defined in: [src/core.ts:215](../src/core.ts#L215)
+Defined in: [src/core.ts:237](../src/core.ts#L237)
 
 #### Overrides
 

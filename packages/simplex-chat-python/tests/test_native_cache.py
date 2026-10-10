@@ -3,7 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from simplex_chat._native import _cache_root, _download, _resolve_libs_dir
+from simplex_chat import _native
+from simplex_chat._native import _cache_root, _download, _resolve_libs_dir, lib_for
 from simplex_chat._version import LIBS_VERSION
 
 
@@ -97,7 +98,18 @@ def test_libc_on_windows_is_ucrt(monkeypatch):
     loaded: list[str | None] = []
     monkeypatch.setattr("sys.platform", "win32")
     monkeypatch.setattr("ctypes.CDLL", lambda name: loaded.append(name))
-    from simplex_chat import _native
-
     _native._load_libc()
     assert loaded == ["ucrtbase"]
+
+
+def test_lib_for_rejects_backend_switch(monkeypatch):
+    monkeypatch.setattr(_native, "_lib", object())
+    monkeypatch.setattr(_native, "_backend", "sqlite")
+    monkeypatch.setattr(
+        _native, "_resolve_libs_dir", lambda _: pytest.fail("must not resolve libs")
+    )
+    with pytest.raises(RuntimeError) as exc:
+        lib_for("postgres")
+    assert str(exc.value) == (
+        "libsimplex already loaded with backend=sqlite; cannot switch to postgres in the same process"
+    )

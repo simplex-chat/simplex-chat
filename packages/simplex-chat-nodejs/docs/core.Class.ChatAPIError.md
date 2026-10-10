@@ -6,7 +6,7 @@
 
 # Class: ChatAPIError
 
-Defined in: [src/core.ts:95](../src/core.ts#L95)
+Defined in: [src/core.ts:117](../src/core.ts#L117)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:95](../src/core.ts#L95)
 
 > **new ChatAPIError**(`message`, `chatError?`): `ChatAPIError`
 
-Defined in: [src/core.ts:96](../src/core.ts#L96)
+Defined in: [src/core.ts:118](../src/core.ts#L118)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ Defined in: [src/core.ts:96](../src/core.ts#L96)
 
 > **chatError**: `ChatError` \| `undefined` = `undefined`
 
-Defined in: [src/core.ts:96](../src/core.ts#L96)
+Defined in: [src/core.ts:118](../src/core.ts#L118)
 
 ***
 
@@ -52,7 +52,7 @@ Defined in: [src/core.ts:96](../src/core.ts#L96)
 
 > **message**: `string`
 
-Defined in: [src/core.ts:96](../src/core.ts#L96)
+Defined in: [src/core.ts:118](../src/core.ts#L118)
 
 #### Inherited from
 

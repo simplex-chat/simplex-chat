@@ -57,10 +57,8 @@ interface EventSubscriber<K extends CEvt.Tag> {
 }
 
 /**
- * Database configuration. The native library is built against exactly one
- * backend (see `simplex_backend` / `SIMPLEX_BACKEND` at install time); this
- * type makes the caller state which one they are targeting so field names
- * can't lie about their meaning.
+ * Database configuration. `type` selects the libsimplex backend loaded by
+ * `ChatApi.init`; one backend per process.
  */
 export type DbConfig =
   | {
@@ -103,7 +101,7 @@ export class ChatApi {
   private constructor(protected ctrl_: bigint | undefined) {}
 
   /**
-   * Initializes the ChatApi.
+   * Initializes the ChatApi, loading libsimplex for `db.type` (downloaded on first use).
    * @param {DbConfig} db - Database configuration (sqlite or postgres).
    * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
    * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
@@ -114,6 +112,7 @@ export class ChatApi {
     queueSize?: number
   ): Promise<ChatApi> {
     const [path, key] = dbConfigToMigrateArgs(db)
+    await core.loadLibrary(db.type)
     const ctrl = await core.chatMigrateInit(path, key, confirm, queueSize)
     return new ChatApi(ctrl)
   }

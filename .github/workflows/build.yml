@@ -726,14 +726,14 @@ jobs:
 
   release-nodejs-libs:
     runs-on: ubuntu-latest
-    needs: [build-linux, build-linux-postgres, build-macos]
+    needs: [build-linux, build-linux-postgres, build-macos, build-nodejs-addon]
     if: startsWith(github.ref, 'refs/tags/v') && (!cancelled())
     steps:
       - name: Checkout current repository
         uses: actions/checkout@v6
 
       - name: Install packages for archiving
-        run: sudo apt install -y msitools gcc-mingw-w64
+        run: sudo apt install -y msitools
 
       - name: Download postgres libs artifact
         if: needs.build-linux-postgres.result == 'success'
@@ -749,8 +749,6 @@ jobs:
           TAG='${{ github.ref_name }}'
           URL='https://github.com/${{ github.repository }}/releases/download'
           PREFIX='${{ github.event.repository.name }}-libs'
-          # Windows-specific
-          FILE_URL='https://raw.githubusercontent.com/${{ github.repository }}/refs/tags/${{ github.ref_name }}'
 
           # Setup directories
           mkdir "$INIT_DIR" "$RELEASE_DIR" && cd "$INIT_DIR"
@@ -789,12 +787,7 @@ jobs:
           # Windows: x86_64
           # ---------------
           msiextract windows-x86_64.msi -C windows-out && cd windows-out/SimpleX/app/resources
-
-          # We need to generate library that exports symbols from Windows dll
-          curl --proto '=https' --tlsv1.2 -sSf -LO "${FILE_URL}/libsimplex.dll.def"
-          x86_64-w64-mingw32-dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
-
-          mkdir libs && cp *.dll *.lib libs/
+          mkdir libs && cp *.dll libs/
           zip -r "${PREFIX}-windows-x86_64.zip" libs
           mv "${PREFIX}-windows-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
 
@@ -809,6 +802,14 @@ jobs:
             mv "${PREFIX}-linux-x86_64-postgres.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
           fi
 
+      - name: Download Node.js add-on artifacts
+        if: needs.build-nodejs-addon.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: simplex-nodejs-addon-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/release-assets
+
       - name: Create release in libs repo and upload artifacts
         uses: softprops/action-gh-release@v2
         with:
@@ -816,3 +817,45 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: ${{ runner.temp }}/release-assets/*
           token: ${{ secrets.NODEJS_REPO_TOKEN }}
+
+  build-nodejs-addon:
+    name: "Node.js add-on ${{ matrix.platform }}"
+    needs: [maybe-release]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux-x86_64
+          - os: macos-latest
+            platform: macos-aarch64
+          - os: macos-15-intel
+            platform: macos-x86_64
+          - os: windows-latest
+            platform: windows-x86_64
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/simplex-chat-nodejs
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build add-on
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx --yes node-gyp rebuild
+          cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
+
+      - name: Upload add-on artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplex-nodejs-addon-${{ matrix.platform }}
+          path: packages/simplex-chat-nodejs/build/simplex-chat-nodejs-${{ matrix.platform }}.node
+          if-no-files-found: error
