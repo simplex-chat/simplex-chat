@@ -212,7 +212,7 @@ Routes between:
 
 ## 6. ModalManager
 
-**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 97)
+**Location:** [`ModalView.kt#L97`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt#L97)
 
 ```kotlin
 class ModalManager(private val placement: ModalPlacement?)
@@ -259,7 +259,7 @@ Each `ModalManager` maintains a stack of `ModalViewHolder` objects with:
 | `isLastModal(data)` | Check if the modal with this `ModalData` is the top modal not being removed |
 | `showInView` | Render the current modal stack into the composable tree |
 
-[GAP] `closeModals` clears the stack without the `runAtomically` lock that guards `toRemove` updates, and it is also called from background threads (for example via `closeAllModalsEverywhere`), so it can interleave with main-thread `closeModal` and the animation cleanup (see `product/gaps.md` GAP-09).
+[GAP] `closeModals` clears the stack without the `runAtomically` lock, and both it and `closeModal` are also called from background threads (for example `closeAllModalsEverywhere`, or a modal's `close` called from `withBGApi`), so stack changes can interleave with each other and with the animation cleanup (see `product/gaps.md` GAP-09).
 
 ### Usage Pattern
 

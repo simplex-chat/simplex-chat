@@ -304,7 +304,7 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 The "Chat preferences" row of the user picker opens `PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)`. With no active user, the modal content returns early. The modal stays on `ModalManager.start` with nothing drawn and no back button.
 
-This happens when the row is clicked on a desktop with no active user (no profile and no connected mobile, or a connected mobile with no visible profile). It also happens when the user becomes null while the preferences screen is open, for example when the mobile disconnects.
+This happens when the row is clicked with no active user, for example on a desktop with no profile and no connected mobile. It also happens when the user becomes null while the preferences screen is open, for example when the mobile disconnects.
 
 ### Affected Locations
 
@@ -329,11 +329,16 @@ Close the modal when there is no active user, as the "SimpleX address" row does 
 
 ### Description
 
-`ModalManager` keeps its stack in an `ArrayList` (`modalViews`) and a set of pending removals (`toRemove`). Updates to `toRemove` go through the `runAtomically` spin lock. `closeModals()`, the push in `showCustomModal` and the non-animated removal in `closeModal` do not take that lock. `closeModals()` clears both collections, and it is also called from background threads:
-- through `closeAllModalsEverywhere`, in the self-destruct flow and when switching profile or remote host from the user picker;
-- on the `RemoteHostConnected` event.
+`ModalManager` keeps its stack in an `ArrayList` (`modalViews`) and a set of pending removals (`toRemove`). `closeModal` and the animation cleanup update `toRemove` inside the `runAtomically` spin lock. `closeModals()` clears both collections without that lock, and the push in `showCustomModal` and the non-animated removal in `closeModal` change `modalViews` without it.
 
-Main-thread `closeModal`, `isLastModal` and the cleanup at the end of the close animation can interleave with it. If the clear lands while `closeModal` is computing the index to add to `toRemove`, then `toRemove` holds a stale index on an empty list and the modal count becomes -1. The next cleanup or push then throws `IndexOutOfBoundsException`.
+These methods are called from background threads as well as the main thread. For example:
+- `closeModals()` through `closeAllModalsEverywhere`, in the self-destruct flow and when switching profile or remote host from the user picker;
+- `closeModals()` in core event handlers: `start` on `RemoteHostConnected`, `fullscreen` on `RemoteCtrlStopped`, and `end` after a delay on `Dispatchers.Default`;
+- `closeModal` when a modal's `close` is called from `withBGApi`, for example after creating or deleting a profile (`WelcomeView.kt`, `UserProfilesView.kt`).
+
+On Android `start`, `center`, `end` and `fullscreen` are one shared stack, so all of these calls change the same collections.
+
+`closeModal`, `isLastModal` and the cleanup at the end of the close animation can therefore interleave with `closeModals()`. If the clear lands while `closeModal` is computing the index to add to `toRemove`, then `toRemove` holds a stale index on an empty list and the modal count becomes -1. The next cleanup or push then throws `IndexOutOfBoundsException`.
 
 ### Affected Locations
 
