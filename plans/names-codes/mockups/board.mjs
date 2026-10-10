@@ -34,7 +34,8 @@ const MARGIN = 60;
 const DESKTOP_BAR = 26;
 const PHONE_PAD = 8;
 const PHONE_BAR = 16;
-const ROW_HEAD = 84;
+// room for LANES arrow lanes above the arrow labels, which sit 12 px over the frames
+const ROW_HEAD = 104;
 const LANE_STEP = 7;
 const LANES = 7;
 

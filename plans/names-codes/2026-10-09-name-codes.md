@@ -1,228 +1,292 @@
-# Name codes: web checkout
+# SimpleX names store: simplex.domains
 
-The badge checkout also sells **name codes**: a code, bought by card, Bitcoin or Monero, that registers a SimpleX name (`<label>.simplex`) in the app. This document specifies the page, the service API, the code, the storage and the operator commands. The implementation plan is [`2026-10-09-names-web-store-plan.md`](2026-10-09-names-web-store-plan.md). Redemption on chain (commit and reveal from the app's wallet key) is #7530's: `origin/ab/names-actions-api:plans/2026-09-28-name-registration-core-cli.md`.
+The names store sells SimpleX names (`<label>.simplex`) at **simplex.domains**:
+1. The buyer searches a name and sees whether it is free, and at what price.
+2. The buyer pays by card, Bitcoin or Monero.
+3. The service registers the name on chain, holds it, and hands the buyer a claim code that moves it into the app.
 
-**The board**, every screen and how each leads to the next: [`names-flow.svg`](names-flow.svg). It is generated, see [§10](#10-regenerating-the-board).
+Badges keep their own store at **badges.simplex.chat**. The implementation plan is [`2026-10-09-names-web-store-plan.md`](2026-10-09-names-web-store-plan.md). The app side of claiming and redemption is #7530's: `origin/ab/names-actions-api:plans/2026-09-28-name-registration-core-cli.md`.
+
+**The board**, every screen and how each leads to the next: [`names-flow.svg`](names-flow.svg). It is generated, see [§14](#14-regenerating-the-board). View it on GitHub from the file view, not "raw": the raw host's Content-Security-Policy blocks the embedded screens.
 
 [![names-flow.svg](names-flow.svg)](names-flow.svg)
 
 ## Contents
 
 1. Scope
-2. The name code
-3. Names, tiers and prices
-4. Purchase sequence
-5. Service API
-6. Storage
-7. Configuration
-8. Operator commands
-9. The page
-10. Regenerating the board
-11. Open questions
+2. Two stores
+3. Search
+4. Price and term
+5. Registration
+6. Claiming
+7. A code for any name
+8. Service API
+9. Storage
+10. Configuration
+11. Operator commands
+12. The page
+13. Deployment
+14. Regenerating the board
+15. Open questions
 
 ## 1. Scope
 
 **In:**
-- The webapp's name flow: name, term, checkout, payment, code.
-- `GET /api/name/:label` through the resolver.
-- Name invoices and the name kind in the code table.
-- `//issue name` in `--run-cli` and `/issue name` / `/bulk name` in the managed group.
-- The ShopService rename (plan stage 1).
-- The Python mock's name endpoints.
+- The names store: search, checkout, payment, registration with its steps, and the claim code.
+- The secondary "code for any name" flow.
+- The StoreService service side: search with prices and what uses a taken name, name invoices, the registration worker, `claimName`, and operator issuing.
+- One webapp codebase building both stores.
+- Deployment.
+- The mock.
 
 **Out:**
-- Redemption, the chain client and the app screens (#7530). The board draws two of them in grey as A1 and A1a, after canvas 5g.
-- In-app purchase.
-- Renewals.
-- The app's handling of the open-in-app link.
+- The app and core side of claiming and redemption (#7530). The board draws its two screens in grey (A1, A2).
+- Renewals, transfers between users, in-app purchase.
+- Funding the registrar wallet.
 
-## 2. The name code
+## 2. Two stores
 
-A code is an entitlement: **names of N or more letters, for Y years**. It is not bound to the name the buyer checked, because registering needs the owner's wallet key, which only the app has. The page says so on checkout (N3) and on the code (N4).
+| | Names | Badges |
+|---|---|---|
+| Host | simplex.domains | badges.simplex.chat (and embedded on simplex.chat, as today) |
+| First screen | Search (N1) | The badge landing (B0, unchanged) |
+| Cross-link | "SimpleX badges", under the main button and in the menu | "SimpleX names are at simplex.domains", under the landing |
+| History | "Your names" (N12) | "Your codes", as today |
+
+To the user these are two stores. One service (StoreService, the renamed badge service) and one webapp codebase run both. The payment, card and history screens are shared. Each store keeps its own `localStorage`, since the two hosts are different origins.
+
+## 3. Search
+
+**Typing (N1, N1a):** the page judges the label without asking anything (N1b, N1c). The rule is shared by `Simplex.Chat.Names.validNameLabel` and `web/src/names.ts`:
+- case folded to lower;
+- `a-z`, `0-9` and `-` only;
+- no leading or trailing hyphen, and no `--` at positions 3–4;
+- 6 to 63 characters.
+
+**Searching:** `GET /api/name/<label>`. The service validates the label and hashes it, keccak256 over the ASCII bytes. It then asks `GET {resolver_url}/v2/resolve/[<hash hex>].<tld>`, so the resolver sees only the hash. The service never logs or stores the label.
+
+| Resolver says | The page shows |
+|---|---|
+| `available` | N2: "dynamis.simplex is available", the price for 2 years, and Register |
+| `registered`, with links | N2a: "Used by", one card per `simplexContact`/`simplexChannel` link, each with picture, display name, the link and Open in SimpleX (deep link) |
+| `registered`, no links | N2b: taken, and pointing nowhere (a name held for an unclaimed buyer reads like this) |
+| `reserved` | N2c: reserved, with "Contact the SimpleX team" |
+| no answer, or an error | N2d (503) |
+| the read rate limit | N2e (429) |
+
+**What uses a taken name:** the service opens each link with its own chat core, as `APIConnectPlan` does, for the display name and picture, and builds the deep link. A short cache keeps one search to at most one fetch per link. This mirrors the app's own search result (canvas 3b).
+
+## 4. Price and term
+
+- **Term:** 2 years, fixed: the contract minimum (730 days), and nothing is charged for years whose price cannot be known yet. The term runs from registration, not from the claim.
+- **Price:** the service's answer for the searched name. The page never shows a price list.
+  - The price rule is internal: a seeded per-length table, with per-name entries able to override it, both insert-only. A change is a new price id.
+  - The starting values are $100 for 8+ letters, $200 for 7 and $400 for 6, for the 2 years. They live in `Catalog.defaultNamePrices` and can change before launch.
+- **Checkout** carries the price the page showed. The service prices again and answers `catalog_changed`, with the new price, if it moved (N3b).
+
+## 5. Registration
+
+1. Checkout (N3) → `POST /api/invoice` with `kind: "name"`.
+   - The page makes a claim code and sends only its hash.
+   - The service writes the invoice, an unpaid claim code row bound to the label, and a `name_registrations` row in phase `awaiting_payment`.
+2. Payment uses the badge lane, unchanged (N4, N5, N10…). Settlement moves the registration to `paid`.
+3. The registration worker (one per paid registration, resumed after a restart) moves it through these phases:
+
+| Phase | What happens | Page |
+|---|---|---|
+| `paid` → `committing` | Dry-run, then send `commit(makeCommitment(Registration{label, owner = registrar address, duration = 2 years, secret, …}))` | N6 |
+| `committed` | The commit is mined; wait `minCommitmentAge` (60 s) | N6a |
+| `registering` | Dry-run, then send the register call | N6b |
+| `registered` | Receipt + 3 blocks; `expires_at` recorded; the claim code becomes claimable | N7 |
+| `taken` | The register dry run reverted `NameNotAvailable`; nothing was sent | N8 |
+| `failed` | Any other failure after retries; the payment is kept and retrying charges nothing | N9 |
+
+- **Progress:** each phase is published to the order's long poll. The page shows the steps as the app does (canvas 9), with transaction links, and a reload or another device shows the same state.
+- **Taken (N8):** the order keeps its value. The buyer can register another name priced at or under what was paid (N8a, `POST /api/invoice/:id/name`). Or they can turn the claim code into a code for any name of the original name's length (`POST /api/invoice/:id/unbind`).
+- **The chain client** is #7530's (§10 there): JSON-RPC to the resolver host's reth node, a dry run of every transaction, serial nonces from the registrar key, EIP-1559 fees, receipts with replacement, and 3 confirmations. Signing comes from simplexmq (#7530 D20).
+
+## 6. Claiming
+
+N7 shows the claim code with Copy, a QR and **Open in SimpleX** (`simplex:/name#code=<code>&label=<label>`). The link format is a proposal for the app team. The app (A1, #7530) sends a new service command:
+
+```
+claimName {code, owner, nameLinks}  →  name {registration}
+```
+
+The service handles it in four steps:
+1. It checks that the code is paid, bound to a held name and unspent.
+2. While it still owns the name, it sets the resolver records `nameLinks` asks for: the address and/or channel.
+3. It transfers the registrar token and the registry node to `owner`.
+4. It marks the code spent.
+
+It refuses an unknown or spent code with `code_invalid`, and a name it no longer holds with `name_not_held`. Until the claim, the name points nowhere (N7's warning) and its 2 years run.
+
+## 7. A code for any name
+
+The secondary link, "Buy a code for any name of 6+ letters":
+- C1: choose the shortest length (6+, 7+, 8+), each with its price.
+- C2: checkout, with `kind: "nameCode"`.
+- C3: the code.
+
+The app registers a name with it later, with the same steps (#7530's `redeemNameCode`).
 
 | | |
 |---|---|
 | Shown | `SN7-2Y-9EEHX-PTHPY-NCH03-R54E6` |
-| Grammar | `SN`, one digit for the minimum length (6, 7 or 8), one or two digits for the years (2–10), `Y`, then 20 body characters |
-| Body | 19 payload characters from the CSPRNG and a check character, all Crockford base32 (`0-9A-Z` without `I L O U`) |
-| Check | Luhn mod 32 over the values of the parameter characters (`7`, `2`, `Y`) and the 19 payload characters. Changing `SN7` to `SN6` fails it |
-| Reading | Case-insensitive, separators optional, `I`/`L` read as `1` and `O` as `0`, as `Badges/Code.hs` reads badge codes |
-| Canonical | `SN72Y` followed by the 20 body characters, with no separators |
-| Stored | SHA-256 of the canonical form's ASCII bytes, nothing else of the code |
-| Authority | The service row's `min_length` and `years`, not the text. A code bought at the 8+ price whose text says `SN6` covers 8+ letters |
+| Grammar | `SN`, one digit for the minimum length (6–8), the years (`2`), `Y`, then 20 Crockford base32 characters |
+| Check | Luhn mod 32 over the parameter characters and the 19 payload characters, so `SN7` → `SN6` fails |
+| Reading | Case-insensitive, separators optional, `I`/`L` → `1`, `O` → `0` |
+| Stored | SHA-256 of the canonical form (`SN72Y` + 20 characters), nothing else |
+| Authority | The service row's `min_length` and `years`, not the text |
 
-`SN` is the kind, as `SB` is for badge codes; the different prefix keeps the two kinds' hashes apart. `Simplex.Chat.Badges.Code` gains `NameCode` (`parseNameCode`, `randomNameCode`, `nameCodeParams`, `nameCodeHash`, `formatNameCode`, `nameCodeText`). `web/src/codes.ts` mirrors it, and both test suites share fixed vectors.
+A claim code has the same format, with the service row bound to its label. `Simplex.Chat.Badges.Code` gains `NameCode`, and `web/src/codes.ts` mirrors it.
 
-## 3. Names, tiers and prices
-
-- **Label rule**, shared by `Simplex.Chat.Names.validNameLabel` and `web/src/names.ts`:
-  - case folded to lower;
-  - `a-z`, `0-9` and `-` only;
-  - no leading or trailing hyphen, and no `--` at positions 3–4;
-  - 6 to 63 characters.
-- **Tier:** the minimum length a code covers. Labels of 6 and 7 letters are their own tiers; 8 or more letters are tier 8.
-- **Prices:** per year, in US cents, linear in years, no discount.
-
-| Tier | Price id | Per year | 2 years | 10 years |
-|---|---|---|---|---|
-| 8+ letters | `name_8` | $50 | $100 | $500 |
-| 7 letters | `name_7` | $100 | $200 | $1,000 |
-| 6 letters | `name_6` | $200 | $400 | $2,000 |
-
-- **Term:** 2 to 10 whole years. Two is the floor because the contract registers for no less than 730 days. The term starts at registration in the app, not at purchase.
-- **Price ids are insert-only**, as badge prices are. Repricing is a new id; the old one is disabled, and a buyer holding it gets `catalog_changed` (N3b).
-
-## 4. Purchase sequence
-
-1. N1: the buyer types a label. The page judges the length and the characters locally (N1c, N1d) and marks the tier.
-2. Check availability: `GET /api/name/<label>`. The service validates the label and hashes it, keccak256 over the ASCII bytes. It then asks `GET {resolver_url}/v2/resolve/[<hash hex>].<tld>` and maps the answer:
-
-   | Resolver `registration.type` | Page |
-   |---|---|
-   | `available` | N1b |
-   | `registered` | N1e |
-   | `reserved` | N1f |
-   | resolver failure | N1g (503) |
-   | rate limit | N1h (429) |
-
-   The service never logs or stores the label. The resolver sees only the hash.
-3. N2: the buyer chooses the years. N3: the buyer chooses the method.
-4. The page makes a name code for the tier and years, hashes it, and sends `POST /api/invoice` with `kind: "name"`, the price id, the years, the method and the code hash. The label is not sent.
-5. The service prices the order from `name_prices`, creates the invoice at BTCPay or Stripe, and writes the invoice and an unpaid name code row in one transaction.
-6. From here everything is the badge lane, unchanged:
-   - the payment screens (N5–N8c), the poller, the webhooks and cancel;
-   - settlement marks the code row paid and sets its expiry.
-7. N4 shows the code from this browser's store, with Copy, a QR and Open in SimpleX. The link hands the code and the label to the app (A1), where #7530 registers the name. If someone took the name in between, the code is not spent and the app asks for another name it covers (A1a).
-
-## 5. Service API
-
-`GET /api/name/:label`, read rate limit (60 a minute per client):
+## 8. Service API
 
 ```json
-200 {"status": "available", "label": "dynamis", "minLength": 7, "yearPrice": 10000, "currency": "usd"}
-200 {"status": "registered", "label": "privacy", "minLength": 7, "yearPrice": 10000, "currency": "usd"}
-200 {"status": "reserved", "label": "support", "minLength": 7, "yearPrice": 10000, "currency": "usd"}
-400 {"error": "invalid_name"}
-503 {"error": "provider_unavailable"}
-429 {"error": "rate_limited"}
+GET /api/name/dynamis
+200 {"status": "available", "label": "dynamis", "price": 20000, "currency": "usd", "years": 2}
+
+GET /api/name/bakery
+200 {"status": "registered", "label": "bakery", "entities": [
+      {"type": "address", "displayName": "Alice's Bakery", "image": "data:image/jpg;base64,…",
+       "link": "https://smp8.simplex.im/a#…", "deepLink": "simplex:/a#…"},
+      {"type": "channel", "displayName": "Bakery news", "image": "data:image/jpg;base64,…",
+       "link": "https://smp9.simplex.im/c#…", "deepLink": "simplex:/c#…"}]}
+
+GET /api/name/support
+200 {"status": "reserved", "label": "support"}
+
+400 {"error": "invalid_name"}   503 {"error": "provider_unavailable"}   429 {"error": "rate_limited"}
 ```
-
-The service answers `provider_unavailable` without a `[names]` section, on a resolver timeout (3 s), and on any resolver error. `label` is the folded form the page shows back.
-
-`POST /api/invoice`, create rate limit. A body without `kind` is a badge, as today.
 
 ```json
-{"kind": "name", "priceId": "name_7", "years": 2, "method": "btc", "codeHash": "<43 base64url chars>"}
+POST /api/invoice  {"kind": "name", "label": "dynamis", "price": 20000, "method": "btc", "codeHash": "<43 base64url>"}
+POST /api/invoice  {"kind": "nameCode", "minLength": 7, "price": 20000, "method": "xmr", "codeHash": "<43 base64url>"}
 ```
 
-The answer has the badge answer's shape, with `kind`, `minLength` and `years` in place of `badgeType` and `months`:
+- **The answer** has the badge answer's shape, with `kind`, `label` or `minLength`, and `years`.
+- **Refusals:**
+  - `catalog_changed`, with the new `price`;
+  - `invalid_name`;
+  - `name_taken`, when the name was taken since the search;
+  - `bad_request`, `code_conflict`, `provider_unavailable` and `rate_limited`, as today.
+- **`GET /api/invoice/:id`** adds `registration {phase, label, commitTx, registerTx, revealAfter, expiresAt, error}`. The long poll also wakes on a phase change.
+- **`POST /api/invoice/:id/name {label}`** retargets a `taken` registration. It is refused if the new price exceeds what was paid.
+- **`POST /api/invoice/:id/unbind`** turns a `taken` order's claim code into a length code.
+- **`claimName`** is a service request over SMP, beside the badge commands, at the next version (§6).
+- **`invalid_name` and `name_taken`** join `WIRE_ERROR_CODES`.
 
-```json
-{"invoiceId": "...", "kind": "name", "minLength": 7, "years": 2, "amount": 20000, "currency": "usd",
- "expiresAt": "...", "address": "...", "cryptoAmount": "...", "cryptoCurrency": "btc"}
-```
+## 9. Storage
 
-| Refusal | When |
-|---|---|
-| `bad_request` | years outside 2–10, or a malformed body |
-| `catalog_changed` | unknown or disabled price id |
-| `code_conflict` | the hash is already sold; the page makes another code |
-| `provider_unavailable` | no provider for the method, or the provider refused |
-| `rate_limited` | the create limit |
-
-`GET /api/invoice/:id` and `POST /api/invoice/:id/cancel` are unchanged, except that a name invoice's view carries `kind`, `minLength` and `years`. `invalid_name` joins `WIRE_ERROR_CODES` and the README's route table.
-
-## 6. Storage
-
-Migration `20261009_name_codes`, in SQLite and Postgres, with a down migration.
+Migration `20261010_names`, in SQLite and Postgres:
 
 - **`sx_badge_service_badge_codes`:**
-  - adds `code_kind TEXT NOT NULL DEFAULT 'badge'`, `min_length INTEGER` and `years INTEGER`;
-  - `badge_type` and `months` become nullable;
-  - a CHECK requires exactly the badge pair for `badge` and exactly the name pair for `name`.
-- **`sx_badge_service_badge_code_invoices`:**
-  - `price_id` becomes nullable;
-  - adds `name_price_id TEXT REFERENCES sx_badge_service_name_prices`;
-  - a CHECK requires exactly one of the two price ids.
-- **New `sx_badge_service_name_prices`:** `price_id` (primary key), `min_length`, `year_price`, `currency`, `status`, `created_at`. It is seeded on every start, insert-only, from `Catalog.defaultNameCatalog`.
-- **Postgres** relaxes the columns with `ALTER COLUMN … DROP NOT NULL` and adds the constraints.
-- **SQLite** rebuilds both tables with `PRAGMA defer_foreign_keys = ON`, following `M20230118_recreate_smp_servers`, because purchases and invoices reference the code table. A migration test runs up and down with referencing rows present.
-- **Code changes:**
-  - `getBadgeCode` reads `code_kind = 'badge'` only.
-  - `InvoiceRow`'s badge type and months become `CodeItem = CIBadge BadgeType months | CIName minLength years`.
-  - `revokeCode` takes either kind.
+  - adds `code_kind` (`badge`, `name`), `min_length`, `years` and `label`; the label is set for a claim code only;
+  - `badge_type` and `months` become nullable, with a CHECK per kind;
+  - SQLite rebuilds the table with `PRAGMA defer_foreign_keys = ON`, and an up/down test runs with referencing rows present.
+- **`sx_badge_service_badge_code_invoices`:** adds `name_price_id`, with a CHECK that exactly one of the two price ids is set.
+- **`sx_badge_service_name_prices`:** `price_id`, `min_length`, `label` (null for a length rule), `price`, `currency`, `status`, `created_at`.
+- **`sx_badge_service_name_registrations`:** `invoice_id`, `label`, `badge_code_id`, `secret`, `commitment`, `phase`, `commit_tx`, `commit_block`, `register_tx`, `register_block`, `expires_at`, `claimed_owner`, `claimed_at`, `error`, `created_at`, `updated_at`.
 
-## 7. Configuration
+## 10. Configuration
 
 ```ini
-; optional: sells name codes. Without it the name check answers provider_unavailable
+[listener]
+; hosts that get the names store when this service serves the webapp itself
+names_hosts = simplex.domains
+
 [names]
-; the resolver of simplexmq scripts/resolver, on loopback
 resolver_url = http://127.0.0.1:8000
-; simplex once that namespace is deployed; testing until then
+; simplex once that namespace is deployed
 tld = testing
+
+[chain]
+rpc_url = http://127.0.0.1:8545
+chain_id = 1
+controller = 0x…
+registrar = 0x…
+resolver = 0x…
+; the registrar's key: it pays gas and the registration fee, and holds names until they are claimed
+registrar_key = replace-me
+confirmations = 3
 ```
 
-## 8. Operator commands
+Without `[names]`, search answers `provider_unavailable`. Without `[chain]`, a paid registration waits in `paid`, and the service logs an error at startup.
 
-| Where | Command | Answers |
-|---|---|---|
-| `--run-cli` | `//issue name <6\|7\|8> [<years 2-10>] [paid\|unpaid\|free]` | `Code: SN7-3Y-…`, printed once |
-| `--run-cli` | `//revoke <code>` | Either kind, as today |
-| Managed group, moderator and above | `/issue name <6\|7\|8> [years <Y>]` | One single-use code |
-| Managed group, moderator and above | `/bulk name <6\|7\|8> [years <Y>] count <B>` | B codes, one per line |
+## 11. Operator commands
 
-Years default to 2 and the status to `free`. The group's command menu and usage replies come from the same parameter text, as for badges (OP1, OP2).
+| Where | Command |
+|---|---|
+| `--run-cli` | `//issue name <6\|7\|8> [paid\|unpaid\|free]` prints a length code once |
+| `--run-cli` | `//revoke <code>`, for either kind |
+| Managed group, moderators and above | `/issue name <6\|7\|8>`, `/bulk name <6\|7\|8> count <B>` |
 
-## 9. The page
+## 12. The page
 
-**Routes:** `#/name`, `#/name/years` and `#/name/checkout` on the existing track, beside the badge steps. The payment screens stay on `?order=`.
+**Routes on simplex.domains:**
+- `/`: search;
+- `#/checkout`;
+- `#/code` and `#/code/checkout`: the secondary flow;
+- `#/names`: history;
+- `?order=<id>`: payment, registration and the claim code.
 
-**Store:** an order record gains optional `kind: "name"`, `minLength`, `years` and `label`. The label is kept only in this browser, for N4 and the history. A record without `kind` is a badge.
+**Store record:** gains `kind` (`name`, `nameCode`), `label`, `minLength` and `years`.
 
-**The button's place:** each badge step keeps the Wefunder block under its main button. That block's fixed minimum height is what keeps the button at one height on every screen. The name steps (N1, N2, N3) and the name failure screen keep an empty block of that height (`.invest`, `aria-hidden`) without the badge offer. On N3 the slot holds "You get a code for any name of 7+ letters", where the badge checkout says "Or invest $10,000+". The history list (N10) keeps the real block.
+**New rules in `styles.css`:** `.name-box`, `.name-status`, `.result`, `.entity`/`.avatar`, `.steps`/`.step-row`, `.store-links` and `.name-mark`. All of them use the existing tokens, so the dark theme needs nothing of its own (D2, D6a, D7). They are prototyped in `mockups/mockups.css`.
 
-**New rules in `styles.css`:** `.name-box` (with `.tld`), `.name-status`, `.tiers`/`.tier`, `.stepper`/`.step`/`.term`, `.term-total`, `.primary.next` and `.name-mark`. All of them use the existing tokens, so the dark theme needs nothing of its own (D0–D4). They are prototyped in `mockups/mockups.css`.
+**The button's place:** the secondary links sit where the badge pages keep their invest block, so the main button stands at the same height on every screen.
 
-### Buying, start to finish
-
-| | | |
-|---|---|---|
-| <img src="screens/N0.jpg" width="260"> | <img src="screens/N1.jpg" width="260"> | <img src="screens/N1b.jpg" width="260"> |
-| **N0** landing: a second way in | **N1** the name, tiers shown from the start | **N1b** available: Continue opens |
-| <img src="screens/N2.jpg" width="260"> | <img src="screens/N3.jpg" width="260"> | <img src="screens/N4.jpg" width="260"> |
-| **N2** the term, 2 to 10 years | **N3** checkout: what the code covers | **N4** the code, the link and two warnings |
-
-### What the name check can answer
+### Registering a name
 
 | | | |
 |---|---|---|
-| <img src="screens/N1c.jpg" width="260"> | <img src="screens/N1d.jpg" width="260"> | <img src="screens/N1e.jpg" width="260"> |
-| **N1c** too short, judged locally | **N1d** not a name, judged locally | **N1e** registered |
-| <img src="screens/N1f.jpg" width="260"> | <img src="screens/N1g.jpg" width="260"> | <img src="screens/N1h.jpg" width="260"> |
-| **N1f** reserved | **N1g** not checked (503) | **N1h** too many checks (429) |
+| <img src="screens/N1.jpg" width="260"> | <img src="screens/N2.jpg" width="260"> | <img src="screens/N3.jpg" width="260"> |
+| **N1** search | **N2** available, with its price | **N3** checkout |
+| <img src="screens/N6.jpg" width="260"> | <img src="screens/N6a.jpg" width="260"> | <img src="screens/N7.jpg" width="260"> |
+| **N6** committing | **N6a** waiting a minute | **N7** yours, with a claim code |
 
-### The term, the code's other states, and history
+### What a search can find
 
 | | | |
 |---|---|---|
-| <img src="screens/N2a.jpg" width="260"> | <img src="screens/N2b.jpg" width="260"> | <img src="screens/N4a.jpg" width="260"> |
-| **N2a** ten years, the ceiling | **N2b** a 6-letter name at four times the base | **N4a** the browser refused to save it |
-| <img src="screens/N4b.jpg" width="260"> | <img src="screens/N8.jpg" width="260"> | <img src="screens/N10.jpg" width="260"> |
-| **N4b** paid elsewhere, no code here | **N8** card, with the name's rows | **N10** history, names beside badges |
+| <img src="screens/N2a.jpg" width="260"> | <img src="screens/N2b.jpg" width="260"> | <img src="screens/N2c.jpg" width="260"> |
+| **N2a** taken: what uses it | **N2b** taken, pointing nowhere | **N2c** reserved |
+| <img src="screens/N1b.jpg" width="260"> | <img src="screens/N2d.jpg" width="260"> | <img src="screens/N2e.jpg" width="260"> |
+| **N1b** too short, judged locally | **N2d** not checked | **N2e** too many searches |
 
-The refusals at checkout (N3a–N3e) and the payment endings (N5–N9) are the badge screens; the board shows each one with the name's content. Four of them change for names:
+### When registering does not go through, and the secondary code
 
-- **N3b `catalogChanged`:** says "the price changed" instead of "the badge you chose".
-- **N3d invoice failure:** drops the badge's invest block.
-- **N8 `cardForm`:** shows the name's summary rows.
-- **N4b `paidNoCode`:** titles the order by its name.
+| | | |
+|---|---|---|
+| <img src="screens/N8.jpg" width="260"> | <img src="screens/N8a.jpg" width="260"> | <img src="screens/N9.jpg" width="260"> |
+| **N8** someone was faster | **N8a** another name, same payment | **N9** paid, not registered |
+| <img src="screens/C1.jpg" width="260"> | <img src="screens/C3.jpg" width="260"> | <img src="screens/N12.jpg" width="260"> |
+| **C1** a code for a length | **C3** the code | **N12** your names |
 
-**The open-in-app link:** `simplex:/name#code=<shown code>&label=<label>`, built by one function. This format is a proposal: the app does not handle it yet, and the app team has to confirm it before release.
+The refusals at checkout (N3a–N3e) and the payment endings (N4a–N4d, N10–N10c, N11) are the badge screens. The board shows each one with the name's content.
 
-## 10. Regenerating the board
+## 13. Deployment
 
-`mockups/screens.js` builds every screen in the browser on the webapp's compiled modules. Shared screens call the real `screens.js`, and name screens are prototypes for stage 4's `nameScreens.ts`. `mockups/layout.mjs` holds each frame's caption, position and incoming arrow. `mockups/board.mjs` renders each frame with Playwright into `screens/<tag>.jpg` and writes `names-flow.svg` around them. The screens are JPEG at quality 85, about a quarter of the PNG size.
+Production is the split deployment in `scripts/badge-service/` (`scripts/store-service/` after the rename):
+- Caddy serves the webapp folder the service exports at boot and proxies `/api` and `/webhooks`.
+- The service runs with `+client_postgres` and host networking, with its ini mounted read-only.
+
+What changes:
+- **Build:** `build.js` emits two site roots, `dist/badges/` and `dist/names/`, each with its own `index.html`, `sw.js` and `assets/<hash>/`. The Dockerfile's web stage builds both.
+- **Export:** `exportWebapp` writes both, with the Stripe publishable key in each shell.
+- **Caddy:**
+  - `badges.simplex.chat` → `web/badges`;
+  - `simplex.domains` → `web/names`;
+  - both proxy `/api/*`; `/webhooks/*` stays on one host.
+  
+  The Caddyfile is not in this repository, so the deployment README gives both host blocks and their CSP: Stripe, and `frame-ancestors` for the badges embed.
+- **Chain:** the resolver (`:8000`) and reth (`:8545`) on loopback when they share the host, a private network otherwise. The registrar key is in the mounted ini, which `Dockerfile.dockerignore` already keeps out of the image.
+- **Unchanged:** the database `badge_service`, the `sx_badge_service_` prefix and the migrations table.
+
+## 14. Regenerating the board
+
+`mockups/screens.js` builds every screen in the browser on the webapp's compiled modules. Shared screens call the real `screens.js`, and name screens are prototypes for stage 5's `nameScreens.ts`. `mockups/layout.mjs` holds each frame's caption, position and incoming arrow. `mockups/board.mjs` renders each frame with Playwright into `screens/<tag>.jpg` (JPEG at quality 85, animations frozen, so runs are byte-identical) and writes `names-flow.svg` around them.
 
 ```
 cd apps/simplex-badge-service/web && npm install && npm run build && cd ../../..
@@ -230,10 +294,11 @@ npm install --prefix /tmp/pw playwright && npx --prefix /tmp/pw playwright insta
 PLAYWRIGHT=/tmp/pw/node_modules/playwright/index.mjs node plans/names-codes/mockups/board.mjs
 ```
 
-## 11. Open questions
+## 15. Open questions
 
-1. **The host:** the board writes `store.simplex.chat`, after canvas 5f; the badge site is `badges.simplex.chat` today.
-2. **The open-in-app link format** (§9), for the app team.
-3. **`.simplex` is not deployed:** `tld = testing` until it is, so checks answer for `.testing` names meanwhile.
-4. **Coordination with #7530:** it plans the same ShopService rename and code kind. Only one of the two should land each.
-5. **The code's expiry:** settlement sets one year, as for badge codes. The page does not show it, since only the service knows it (#7530 D18).
+1. **Funding:** the deployed `.testing` controller's `register` is payable in ETH, so the registrar key holds ETH. #7530's `registerWithCredit` (allowance-funded) replaces it once the `.simplex` contracts deploy.
+2. **Claim mechanics:** the token transfer, the registry node's owner and which records can be set before the transfer depend on the SNS contracts, whose source is not in these repositories.
+3. **The open-in-app link format** (§6), for the app team.
+4. **Coordination with #7530:** the StoreService rename, the code kind, the `Registration` encoder, the chain client, and the app side of `claimName`.
+5. **Fetching link profiles** puts a load on the service that grows with searches. The cache bounds it per link, and the read rate limit per client.
+6. **simplex.domains today** is a countdown page; the store replaces it at launch. Its heading and line ("Your SimpleX domain", "One name for your public channel and contact address") are kept.

@@ -1,4 +1,4 @@
-/* The rules the name screens add to web/public/styles.css; they move there in stage 4. Below the
+/* The rules the names store adds to web/public/styles.css; they move there in stage 5. Below the
    marked line are the board's own frames (the app, the operator), which never ship. */
 
 /* the name field: the input and its fixed ".simplex" on one line, in the field card */
@@ -27,51 +27,87 @@
 .name-box.ok { border-color: var(--ok-line); }
 .name-box.bad { border-color: var(--danger-line); }
 
-/* the line under the field: the length as typed, then the service's answer */
+/* the line under the field while typing: what the page can judge without asking */
 .name-status { margin: 12px 0 0; font-size: .875rem; font-weight: 600; color: var(--ink-soft); text-align: left; }
-.name-status.ok { color: var(--ok-fg); }
 .name-status.bad { color: var(--danger-fg); }
 
-/* the three price tiers, the one the typed name falls in marked */
-.tiers { display: flex; gap: 10px; margin: 18px 0 0; }
-.tier {
-  flex: 1 1 0;
-  padding: 10px 6px;
+/* the search's answer, a card under the field */
+.result {
+  margin: 16px 0 0;
+  padding: 14px 20px 16px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: var(--surface);
-  font-variant-numeric: tabular-nums;
+  text-align: left;
 }
-.tier[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.tier-len { display: block; font-weight: 600; font-size: .875rem; }
-.tier-price { display: block; color: var(--ink-soft); font-size: .875rem; font-weight: 500; }
+.result.ok { border-color: var(--ok-line); }
+.result-title { font-weight: 600; font-size: 1.0625rem; color: var(--ok-fg); }
+.result-title.bad { color: var(--danger-fg); }
+.result-price { margin-top: 4px; font-size: 1.5rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.result-price span { font-size: 1rem; font-weight: 500; color: var(--ink-soft); }
+.result-note { margin-top: 4px; font-size: .875rem; font-weight: 500; color: var(--ink-soft); }
+.result .label { margin: 12px 0 0; }
+.result > .secondary.inline { display: inline-block; margin-top: 8px; }
 
-/* the years: one figure between a minus and a plus, the total under it */
-.panel > .stepper { margin-top: auto; }
-.stepper { display: flex; align-items: center; justify-content: center; gap: 32px; }
-.step {
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border: 1px solid var(--line);
+/* what uses a taken name: one row per address or channel, with its picture */
+.entity { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.result .label + .entity { border-top: 0; }
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: var(--surface);
-  color: var(--accent);
-  font: inherit;
-  font-size: 1.75rem;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
+  background: hsl(var(--hue) 70% 55%);
+  color: #ffffff;
+  font-weight: 700;
 }
-.step:not([disabled]):hover { border-color: var(--accent); }
-.step[disabled] { background: var(--tint); color: var(--on-disabled); cursor: default; }
-.term { min-width: 96px; font-variant-numeric: tabular-nums; }
-.term .years { display: block; font-family: var(--display); font-size: 3.25rem; line-height: 1; font-weight: 700; color: var(--ink); }
-.term .unit { display: block; margin-top: 4px; color: var(--ink-soft); font-weight: 500; }
-.term-total { margin-top: 18px; font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.entity-main { flex: 1 1 auto; min-width: 0; }
+.entity-name { font-weight: 600; color: var(--ink); }
+.entity-kind { font-size: .875rem; font-weight: 500; color: var(--ink-soft); }
+.entity-link { font-size: .75rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entity > .secondary.inline { flex: none; }
 
-/* the landing's second way in, under the first */
-.panel > .primary.next { margin-top: 12px; }
+/* the registration's three steps, ticked as they complete, as the app draws them */
+.steps {
+  margin: 24px 0 0;
+  padding: 12px 20px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  text-align: left;
+}
+.step-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.steps .label + .step-row { border-top: 0; }
+.step-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  font-size: .75rem;
+  font-weight: 700;
+}
+.step-row.active .step-mark { border-color: var(--warn-fg); color: var(--warn-fg); }
+.step-row.done .step-mark { border-color: var(--ok-fg); background: var(--ok-bg); color: var(--ok-fg); }
+.step-row.failed .step-mark { border-color: var(--danger-fg); background: var(--danger-bg); color: var(--danger-fg); }
+.step-name { flex: 1 1 auto; color: var(--ink-soft); font-weight: 500; }
+.step-row.active .step-name, .step-row.done .step-name { color: var(--ink); }
+.step-row.active .step-name { font-weight: 600; }
+.step-tx { font-size: .75rem; color: var(--accent); text-decoration: none; }
+.step-note { margin: 4px 0 6px; font-size: .875rem; color: var(--danger-fg); }
+
+/* the secondary links under a store's main button, as simplex.domains draws its own */
+.store-links { margin: 0; font-size: .9375rem; font-weight: 500; }
+.store-links a { color: var(--accent); text-decoration: none; white-space: nowrap; }
+.store-links a:hover { text-decoration: underline; }
+.store-links .dot { margin: 0 10px; color: var(--ink-soft); }
+.panel > .store-links { margin-top: 18px; }
 
 /* a name's mark in the history list, where a badge row has its badge art */
 .name-mark {
@@ -92,8 +128,8 @@
 
 @media (max-width: 560px) {
   .name-box input, .name-box .tld { font-size: 1.125rem; }
-  .tier-len, .tier-price { font-size: .75rem; }
-  .step { width: 48px; height: 48px; }
+  .entity-link { display: none; }
+  .store-links .dot { margin: 0 6px; }
 }
 
 /* ---------------------------------------------- the board only, never shipped */
