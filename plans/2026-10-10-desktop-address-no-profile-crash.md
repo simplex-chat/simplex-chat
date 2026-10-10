@@ -1,4 +1,4 @@
-# Desktop: crash in the SimpleX address screen when there is no profile
+# Crash in the SimpleX address screen when there is no profile
 
 ## Problem
 
