@@ -2856,7 +2856,7 @@ processChatCommand cxt nm = \case
     mConn <- case memberConn m of
       Just conn | memberCurrent m -> pure conn
       _ -> throwChatError CEGroupMemberNotActive
-    unless (m `supportsVersion` memberGroupInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
+    unless (m `supportsVersion` groupInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
     let sendInvitation = sendGrpInvitationViaGroup user viaGInfo m mConn g
     withFastStore' (\db -> getMemberInvitedVia db cxt user gInfo m) >>= \case
       Nothing -> do

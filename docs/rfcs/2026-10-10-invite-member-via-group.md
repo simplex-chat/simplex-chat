@@ -187,7 +187,7 @@ CEvtReceivedGroupInvitationViaGroup   new event
 chat version    22
 ```
 
-Version 22 is shared with owner-signed relay invitations (`signedRelayInvVersion`).
+Version 22 is shared with owner-signed relay invitations, in one constant `groupInvVersion`.
 Version 22 is not in any release: v7.1.0-beta.6 uses version 21.
 
 ## Out of scope

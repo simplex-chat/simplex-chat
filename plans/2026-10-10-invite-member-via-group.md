@@ -10,7 +10,7 @@ Line numbers: `d93fb626b` (`ep/group-inv` after merging `master`), before any ch
 
 `src/Simplex/Chat/Protocol.hs`.
 
-Version 22 is shared with `signedRelayInvVersion` (line 147).
+Version 22 is shared with owner-signed relay invitations.
 
 Version history comment, after line 89:
 
@@ -21,12 +21,19 @@ Version history comment, after line 89:
 
 `currentChatVersion` (line 95): unchanged, `VersionChat 22`.
 
-After `signedRelayInvVersion` (line 147):
+`signedRelayInvVersion` (lines 146-147) renamed:
 
 ```haskell
-memberGroupInvVersion :: VersionChat
-memberGroupInvVersion = VersionChat 22
+groupInvVersion :: VersionChat
+groupInvVersion = VersionChat 22
 ```
+
+Uses:
+
+| File | Location | Use |
+|---|---|---|
+| `src/Simplex/Chat/Library/Subscriber.hs` | line 1657 | `xGrpRelayInv`, renamed reference |
+| `src/Simplex/Chat/Library/Commands.hs` | section 5.1 | `APIAddMemberViaGroup` |
 
 Event types, tags, parsing and encoding: unchanged.
 
@@ -222,7 +229,7 @@ After `APIAddMember` (line 2814), before `APIJoinGroup` (line 2844).
     mConn <- case memberConn m of
       Just conn | memberCurrent m -> pure conn
       _ -> throwChatError CEGroupMemberNotActive
-    unless (m `supportsVersion` memberGroupInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
+    unless (m `supportsVersion` groupInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
     let sendInvitation = sendGrpInvitationViaGroup user viaGInfo m mConn g
     withFastStore' (\db -> getMemberInvitedVia db cxt user gInfo m) >>= \case
       Nothing -> do
@@ -582,4 +589,4 @@ Existing tests with `/_add #<groupId> <contactId>` and `/a`: unchanged; they cov
 ## 14. Version
 
 Version 22 is not in any release: v7.1.0-beta.6 uses version 21.
-If a release with version 22 ships before this feature, `memberGroupInvVersion` and `currentChatVersion` are raised to 23.
+If a release with version 22 ships before this feature, a separate constant with version 23 is added for this feature, and `currentChatVersion` is raised to 23.

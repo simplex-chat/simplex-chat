@@ -1655,7 +1655,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                           toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> Maybe SignedMsg -> GroupRelayInvitation -> CM ()
         xGrpRelayInv invId chatVRange signedMsg_ groupRelayInv@GroupRelayInvitation {groupLink}
-          | maxVersion chatVRange >= signedRelayInvVersion && isNothing presHeader_ =
+          | maxVersion chatVRange >= groupInvVersion && isNothing presHeader_ =
               messageError "x.grp.relay.inv: invitation is not signed by the owner"
           | otherwise = do
               rejected <- withStore' $ \db -> isRelayGroupRejected db user groupLink

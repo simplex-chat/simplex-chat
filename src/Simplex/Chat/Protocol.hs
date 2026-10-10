@@ -145,11 +145,8 @@ groupMemberKeyVersion = VersionChat 20
 anyTextCommandsVersion :: VersionChat
 anyTextCommandsVersion = VersionChat 21
 
-signedRelayInvVersion :: VersionChat
-signedRelayInvVersion = VersionChat 22
-
-memberGroupInvVersion :: VersionChat
-memberGroupInvVersion = VersionChat 22
+groupInvVersion :: VersionChat
+groupInvVersion = VersionChat 22
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
