@@ -66,8 +66,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=libsimplex /libs /opt/simplex/libs
-# Without it, npm re-running the library's preinstall downloads the released libs.
-ENV SIMPLEX_LIBS_DIR=/opt/simplex/libs
+# The library loads libsimplex and the add-on built below instead of downloading the released ones.
+ENV SIMPLEX_LIBS_DIR=/opt/simplex/libs \
+    SIMPLEX_ADDON_PATH=/src/packages/simplex-chat-nodejs/build/Release/simplex.node
 
 WORKDIR /src
 COPY packages/simplex-chat-client/types/typescript packages/simplex-chat-client/types/typescript
@@ -76,6 +77,7 @@ RUN cd packages/simplex-chat-client/types/typescript && \
     npx tsc
 
 COPY packages/simplex-chat-nodejs packages/simplex-chat-nodejs
+# npm install builds the add-on from binding.gyp.
 RUN cd packages/simplex-chat-nodejs && \
     npm install --no-audit --no-fund && \
     npm install --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && \
@@ -105,7 +107,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates dumb-init libffi8 libgmp10 libssl3 zlib1g && \
     rm -rf /var/lib/apt/lists/*
 
+COPY --from=build /opt/simplex/libs /opt/simplex/libs
 COPY --from=build --chown=node:node /src /src
+ENV SIMPLEX_LIBS_DIR=/opt/simplex/libs \
+    SIMPLEX_ADDON_PATH=/src/packages/simplex-chat-nodejs/build/Release/simplex.node
 
 # A named volume takes this ownership; a bind mount must be owned by uid 1000.
 RUN mkdir -p /src/apps/simplex-calculator-bot/data && \
