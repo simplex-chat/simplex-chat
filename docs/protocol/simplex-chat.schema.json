@@ -568,6 +568,9 @@
         "params": {
           "properties": {
             "memberId": {"ref": "base64url"}
+          },
+          "optionalProperties": {
+            "profile": {"ref": "profile"}
           }
         }
       }
