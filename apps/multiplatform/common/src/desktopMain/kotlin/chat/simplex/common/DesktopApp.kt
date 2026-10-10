@@ -19,7 +19,7 @@ import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
@@ -182,9 +182,10 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         }
       }
       var windowFocused by remember { simplexWindowState.windowFocused }
-      LaunchedEffect(windowFocused) {
+      val showCallView = ChatModel.showCallView.value
+      LaunchedEffect(windowFocused, showCallView) {
         val delay = ChatController.appPrefs.laLockDelay.get()
-        if (!windowFocused && ChatModel.showAuthScreen.value && delay > 0) {
+        if (!windowFocused && !showCallView && ChatModel.showAuthScreen.value && delay > 0) {
           delay(delay * 1000L)
           // Trigger auth state check when delay ends (and if it ends)
           AppLock.recheckAuthState()

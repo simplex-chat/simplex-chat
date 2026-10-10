@@ -316,6 +316,13 @@ contactActive Contact {contactStatus} = contactStatus == CSActive
 contactDeleted :: Contact -> Bool
 contactDeleted Contact {contactStatus} = contactStatus == CSDeleted || contactStatus == CSDeletedByUser
 
+contactUpdatableFromMember :: Contact -> Bool
+contactUpdatableFromMember ct
+  | not (contactActive ct) = True
+  | otherwise = case contactConn ct of
+      Nothing -> True
+      Just conn -> not (connReady conn) || (authErrCounter conn >= 1)
+
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
@@ -1078,8 +1085,7 @@ data MemberIdRole = MemberIdRole
   deriving (Eq, Show)
 
 data IntroInvitation = IntroInvitation
-  { groupConnReq :: ConnReqInvitation,
-    directConnReq :: Maybe ConnReqInvitation
+  { groupConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show)
 

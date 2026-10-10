@@ -160,6 +160,10 @@ withFileLock :: Text -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
+withUserProfileLock :: Text -> CM a -> CM a
+withUserProfileLock name = withEntityLock name CLUserProfile
+{-# INLINE withUserProfileLock #-}
+
 useServerCfgs :: forall p. UserProtocol p => SProtocolType p -> RandomAgentServers -> [(Text, ServerOperator)] -> [UserServer p] -> NonEmpty (ServerCfg p)
 useServerCfgs p RandomAgentServers {smpServers, xftpServers} opDomains =
   fromMaybe (rndAgentServers p) . L.nonEmpty . agentServerCfgs p opDomains
@@ -443,10 +447,11 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
       fInv = (xftpFileInvitation fileName fileSize dummyFileDescr :: FileInvitation) {fileBadge}
   fsFilePath <- lift $ toFSFilePath filePath
   let srcFile = CryptoFile fsFilePath cfArgs
-  aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n) Nothing
+  aFileId <- withAgent $ \a -> xftpPrepareSendFile a (aUserId user) srcFile (roundedFDCount n) Nothing
   -- TODO CRSndFileStart event for XFTP
   chSize <- asks $ fileChunkSize . config
   ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup_ file fInv (AgentSndFileId aFileId) Nothing chSize
+  withAgent (`xftpStartSendFile` aFileId)
   let fileSource = Just $ CryptoFile filePath cfArgs
       ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP, fileExpires = Nothing, fileProhibited = Nothing}
   pure (fInv, ciFile, ft)
@@ -485,9 +490,10 @@ xftpSndFileRedirect user ftId vfd = do
   let fileName = "redirect.yaml"
       file = CryptoFile fileName Nothing
       fInv = xftpFileInvitation fileName (fromIntegral $ B.length $ strEncode vfd) dummyFileDescr
-  aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd (roundedFDCount 1)
+  aFileId <- withAgent $ \a -> xftpPrepareSendDescription a (aUserId user) vfd (roundedFDCount 1)
   chSize <- asks $ fileChunkSize . config
-  withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) (Just ftId) chSize
+  ft <- withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) (Just ftId) chSize
+  ft <$ withAgent (`xftpStartSendFile` aFileId)
 
 dummyFileDescr :: FileDescr
 dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
@@ -838,6 +844,16 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
         rcvSize = max (toInteger encSize) redirectSize
         -- 10 MB margin: encryption and chunk-size rounding make the transfer larger than the advertised size
         maxRcvSize = min expectedFileSize (toInteger FD.maxFileSizeHard) + toInteger (FD.mb 10 :: Int64)
+    -- TODO re-enable redirects with relay checks
+    when (isJust redirect) $ do
+      cxt <- chatStoreCxt
+      aci_ <- withStore $ \db -> do
+        liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
+        lookupChatItemByFileId db cxt user fileId
+      forM_ aci_ $ \aci -> do
+        cleanupACIFile aci
+        toView $ CEvtChatItemUpdated user aci
+      throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
       then receive' rd True
@@ -852,9 +868,10 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
   where
     receive' :: ValidFileDescription 'FRecipient -> Bool -> CM ()
     receive' rd approved = do
-      aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs approved
+      aFileId <- withAgent $ \a -> xftpPrepareReceiveFile a (aUserId user) rd cfArgs approved
       startReceivingFile user fileId
       withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
+      withAgent (`xftpStartReceiveFile` aFileId)
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
       knownSrvs <- L.map protoServer' <$> getKnownAgentServers SPXFTP user
@@ -905,13 +922,14 @@ receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
   fileId <- withStore $ \db -> createRcvStandaloneFileTransfer db userId cf fileSize chunkSize
   -- currently the only use case is user migrating via their configured servers, so we pass approvedRelays = True
-  aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) description cryptoArgs True
-  withStore $ \db -> do
+  aFileId <- withAgent $ \a -> xftpPrepareReceiveFile a (aUserId user) description cryptoArgs True
+  ft <- withStore $ \db -> do
     liftIO $ do
       updateRcvFileStatus db fileId FSConnected
       updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
       updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
     getRcvFileTransfer db user fileId
+  ft <$ withAgent (`xftpStartReceiveFile` aFileId)
   where
     FD.ValidFileDescription FD.FileDescription {size = FD.FileSize fileSize, chunkSize = FD.FileSize chunkSize} = description
 
@@ -1400,7 +1418,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   -- (regular groups only; never channels) is an authored element -- all batch together in order.
   let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
   welcomeEl <- welcomeElement
-  let (batches, dropped) = batchElements maxEncodedMsgLength (fwdEls <> maybe [] (: []) welcomeEl)
+  let (batches, dropped) = batchElements maxForwardBatchLength (fwdEls <> maybe [] (: []) welcomeEl)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
   forM_ batches $ \body ->
     void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
@@ -1538,9 +1556,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
 
 memberShortenedName :: GroupMember -> ContactName
-memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
-  | T.length displayName <= 16 = displayName
-  | otherwise = T.take 16 displayName `T.snoc` '…'
+memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}} = fwdMemberName displayName
 
 -- the description proof travels on the last part, so that part leaves room for it
 badgeDescrPartSize :: Int
@@ -2434,6 +2450,20 @@ batchSendConnMessagesB mode _user conn msgFlags msgs_ = do
 batchSndMessagesJSON :: BatchMode -> NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
 batchSndMessagesJSON mode = batchMessages mode maxEncodedMsgLength . L.toList
 
+compressToLimit :: MonadError ChatError m => Int -> MsgBody -> m MsgBody
+compressToLimit maxLen s
+  | B.length s <= maxLen = pure s
+  | B.length s' <= maxLen = pure s'
+  | otherwise = throwError $ ChatError $ CEException "large compressed body"
+  where
+    s' = compressedBatchMsgBody_ s
+
+compressConnInfo :: PQSupport -> MsgBody -> CM MsgBody
+compressConnInfo pqSup = compressToLimit $ e2eEncConnInfoLength pqSup - 2 - maxReplyQueueFraming
+
+maxReplyQueueFraming :: Int
+maxReplyQueueFraming = 256
+
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo = encodeConnInfoPQ PQSupportOff
 
@@ -2441,33 +2471,28 @@ encodeConnInfoPQ :: MsgEncodingI e => PQSupport -> ChatMsgEvent e -> CM ByteStri
 encodeConnInfoPQ pqSup chatMsgEvent = do
   cxt <- chatStoreCxt
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxEncodedInfoLength info of
-    ECMEncoded connInfo -> case pqSup of
-      PQSupportOn | B.length connInfo > maxCompressedInfoLength -> do
-        let connInfo' = compressedBatchMsgBody_ connInfo
-        when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
-        pure connInfo'
-      _ -> pure connInfo
+  case encodeChatMessage maxEncodedProfileMsgLength info of
+    ECMEncoded connInfo -> compressConnInfo pqSup connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
 -- conn-info wrapped as a signed element, so the receiver can verify the signature over the body
-encodeSignedConnInfo :: MsgEncodingI e => MsgSigning -> ChatMsgEvent e -> CM ByteString
-encodeSignedConnInfo signing chatMsgEvent = do
+encodeSignedConnInfo :: MsgEncodingI e => PQSupport -> MsgSigning -> ChatMsgEvent e -> CM ByteString
+encodeSignedConnInfo pqSup signing chatMsgEvent = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxEncodedInfoLength info of
-    ECMEncoded body -> pure $ encodeBatchElement (Just $ signChatMsgBody signing body) body
+  case encodeChatMessage maxEncodedProfileMsgLength info of
+    ECMEncoded body -> compressConnInfo pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 
 -- signed XMember for a relay-group join: proves the joiner holds the member key it asserts, and carries
 -- viaRelay = the target relay's memberId inside the signed body so a sibling relay can't accept a replay
-encodeXMemberConnInfo :: GroupInfoKeys -> MemberId -> Profile -> CM ByteString
-encodeXMemberConnInfo (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} gks) relayMemberId profileToSend =
+encodeXMemberConnInfo :: PQSupport -> GroupInfoKeys -> MemberId -> Profile -> CM ByteString
+encodeXMemberConnInfo pqSup (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} gks) relayMemberId profileToSend =
   let memberPrivKey' = memberPrivKey gks
       xMemberEvt = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey') (Just relayMemberId)
       bindingData = groupBindingData gInfo memberId (C.publicKey memberPrivKey')
       signing = MsgSigning CBGroup bindingData KRMember memberPrivKey'
-   in encodeSignedConnInfo signing xMemberEvt
+   in encodeSignedConnInfo pqSup signing xMemberEvt
 
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -2491,21 +2516,20 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
-  msgReqs' <- if any connSupportsPQ msgReqs then liftIO compressBodies else pure msgReqs
+  msgReqs' <- liftIO compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing msgReqs'))
   lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
+    -- group sends share bodies between connections via VRRef, so the smallest limit applies to the batch
+    maxLen = if any connSupportsPQ msgReqs then maxEncodedMsgLengthPQ else maxEncodedMsgLength
     connSupportsPQ = \case
       Right (Connection {pqSupport = PQSupportOn}, _, _) -> True
       _ -> False
     compressBodies =
       forME msgReqs $ \(conn, msgFlags, (mbr, msgIds)) -> runExceptT $ do
         mbr' <- case mbr of
-          VRValue i msgBody | B.length msgBody > maxCompressedMsgLength -> do
-            let msgBody' = compressedBatchMsgBody_ msgBody
-            when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
-            pure $ VRValue i msgBody'
+          VRValue i msgBody -> VRValue i <$> compressToLimit maxLen msgBody
           v -> pure v
         pure (conn, msgFlags, (mbr', msgIds))
     toAgent prev = \case
@@ -3041,7 +3065,7 @@ allowAgentConnectionAsync user conn@Connection {pqSupport} confId gInfo_ msg = d
         Just gInfo@(GIK g _) | useRelays' g || maxVersion (peerChatVRange conn) >= relayWebCapVersion -> groupMsgSigning False gInfo msg
         _ -> Nothing
   dm <- case signing_ of
-    Just signing -> encodeSignedConnInfo signing msg
+    Just signing -> encodeSignedConnInfo pqSupport signing msg
     Nothing -> encodeConnInfoPQ pqSupport msg
   allowAgentConnectionInfo user conn confId dm
 

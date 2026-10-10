@@ -2,93 +2,62 @@ const fs = require('fs');
 const path = require('path');
 const matter = require('gray-matter');
 
-const directoryPath = path.resolve(__dirname, 'src/docs');
-const langFolder = 'lang';
-const enFiles = {};
-
-function traverseDirectory(directory, currentLanguage = 'en', result = {}, callback) {
-    const filesAndDirectories = fs.readdirSync(directory);
-
-    filesAndDirectories.forEach((fileOrDirectoryName) => {
-        const fullPath = path.join(directory, fileOrDirectoryName);
-
-        if (fs.statSync(fullPath).isDirectory()) {
-            // If the subdirectory is inside the 'lang' folder, update the current language
-            if (directory.endsWith('/lang')) {
-                currentLanguage = fileOrDirectoryName;
-            }
-
-            // Recursively traverse the subdirectories
-            traverseDirectory(fullPath, currentLanguage, result, callback);
-        } else {
-            // Process the file only if it has the '.md' extension
-            if (path.extname(fullPath) === '.md') {
-                // Add the language to the file's language array or create a new array if it doesn't exist
-                const fileName = path.basename(fullPath, '.md');
-                if (!result[fileName]) {
-                    result[fileName] = [];
-                }
-                result[fileName].push(currentLanguage);
-            }
-            if (callback) {
-                callback(fullPath, currentLanguage);
-            }
-        }
-    });
-
-    return result;
+function docLanguage(relativePath) {
+    const [folder, language] = relativePath.split(path.sep);
+    return folder === 'lang' ? language : 'en';
 }
 
-const fileLanguageMapping = traverseDirectory(directoryPath);
+function customizeDocs(sourceDir, destDir, relativePaths) {
+    const docs = relativePaths.map((relativePath) => {
+        const parsedMatter = matter(fs.readFileSync(path.join(sourceDir, relativePath), 'utf-8'));
+        return {
+            relativePath,
+            fileName: path.basename(relativePath, '.md'),
+            language: docLanguage(relativePath),
+            content: parsedMatter.content,
+            data: { ...parsedMatter.data },
+        };
+    });
 
-// Update the frontmatter of each Markdown file
-Object.entries(fileLanguageMapping).forEach(([fileName, languages]) => {
-    // Find and update the frontmatter of each Markdown file
-    traverseDirectory(directoryPath, null, {}, (fullPath, currentLanguage) => {
-        if (path.basename(fullPath) === `${fileName}.md`) {
-            // Read the existing frontmatter
-            const fileContent = fs.readFileSync(fullPath, 'utf-8');
-            const parsedMatter = matter(fileContent);
-            const relativePath = path.relative(directoryPath, fullPath);
+    const languagesByFileName = new Map();
+    docs.forEach(({ fileName, language }) => {
+        if (!languagesByFileName.has(fileName)) languagesByFileName.set(fileName, []);
+        languagesByFileName.get(fileName).push(language);
+    });
 
-            // Calculate the permalink based on the file's location
-            const linkPath = path.relative(directoryPath, fullPath).replace(/\.md$/, '.html');
-            const permalink = `/docs/${linkPath}`.toLowerCase();
+    const enRevisions = new Map(docs
+        .filter((doc) => doc.language === 'en')
+        .map((doc) => [doc.relativePath, doc.data.revision]));
 
-            if (fileName === 'JOIN_TEAM') {
-                parsedMatter.data.active_jobs = true;
+    docs.forEach(({ relativePath, fileName, language, content, data }) => {
+        const permalink = `/docs/${relativePath.replace(/\.md$/, '.html')}`.toLowerCase();
+
+        if (fileName === 'JOIN_TEAM') {
+            data.active_jobs = true;
+        }
+        if (!data.permalink) data.permalink = permalink;
+
+        data.supportedLangsForDoc = languagesByFileName.get(fileName);
+
+        if (!data.layout) data.layout = 'layouts/doc.html';
+
+        if (language === 'en') {
+            data.version = 'new';
+        } else {
+            const enRelativePath = path.join(...relativePath.split(path.sep).slice(2));
+            if (enRevisions.has(enRelativePath)) {
+                const isOld = new Date(data.revision) < new Date(enRevisions.get(enRelativePath));
+                data.version = isOld ? 'old' : 'new';
             }
-            if (!parsedMatter.data.permalink) parsedMatter.data.permalink = permalink;
+        }
 
-            // Update the frontmatter with the new languages list
-            parsedMatter.data.supportedLangsForDoc = languages;
-
-            // Add the layout value
-            if (!parsedMatter.data.layout) parsedMatter.data.layout = 'layouts/doc.html';
-
-            if (fullPath.startsWith(path.join(directoryPath, langFolder))) {
-                // Non-English files
-                const [language, ...rest] = relativePath.split(path.sep).slice(1);
-                const enFilePath = path.join(directoryPath, ...rest);
-
-                if (enFiles[enFilePath]) {
-                    const enRevision = new Date(enFiles[enFilePath].revision);
-                    const currentRevision = new Date(parsedMatter.data.revision);
-
-                    const isOld = currentRevision < enRevision;
-                    // Add the version value
-                    parsedMatter.data.version = isOld ? 'old' : 'new';
-                }
-            } else {
-                // English files
-                enFiles[fullPath] = { revision: parsedMatter.data.revision };
-                // Add the version value
-                parsedMatter.data.version = 'new';
-            }
-
-            // Save the updated frontmatter and content back to the file
-            const updatedFileContent = matter.stringify(parsedMatter.content, parsedMatter.data);
-            fs.writeFileSync(fullPath, updatedFileContent, 'utf-8');
+        const destPath = path.join(destDir, relativePath);
+        const updatedFileContent = matter.stringify(content, data);
+        if (!fs.existsSync(destPath) || fs.readFileSync(destPath, 'utf-8') !== updatedFileContent) {
+            fs.mkdirSync(path.dirname(destPath), { recursive: true });
+            fs.writeFileSync(destPath, updatedFileContent, 'utf-8');
         }
     });
-});
+}
+
+module.exports = customizeDocs;

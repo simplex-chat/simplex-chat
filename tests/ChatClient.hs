@@ -40,7 +40,7 @@ import Simplex.Chat.Options.DB
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
-import Simplex.Chat.Terminal.Output (newChatTerminal)
+import Simplex.Chat.Terminal.Output (WithTerminal (..), newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Description (kb, mb)
@@ -58,7 +58,7 @@ import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConf
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
-import Simplex.Messaging.Protocol (ProtocolType (..))
+import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
@@ -67,16 +67,19 @@ import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
-import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
+import System.Directory (createDirectoryIfMissing, listDirectory, removePathForcibly)
 import System.FilePath ((</>))
 import qualified System.Terminal as C
-import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
+import System.Terminal.Internal (Command (..), Terminal (..), VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
 import Test.Hspec (Expectation, HasCallStack, shouldReturn)
 #if defined(dbPostgres)
 import qualified Data.ByteString.Char8 as B
+import Data.String (fromString)
 import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
+import qualified Database.PostgreSQL.Simple as PSQL
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
+import System.FilePath (takeFileName)
 #else
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
@@ -105,8 +108,68 @@ testDBConnectInfo =
   }
 #endif
 
-serverPort :: ServiceName
-serverPort = "7001"
+class HasTestParams a where
+  testParams :: a -> TestParams
+
+instance HasTestParams TestParams where
+  testParams = id
+
+instance HasTestParams TestCC where
+  testParams TestCC {ccParams} = ccParams
+
+tmpDir :: HasTestParams a => a -> FilePath
+tmpDir = tmpPath . testParams
+
+tmpFile :: HasTestParams a => a -> FilePath -> FilePath
+tmpFile p f = tmpDir p </> f
+
+testPort :: HasTestParams a => Int -> a -> ServiceName
+testPort offset p = show $ portBase (testParams p) + offset
+
+smpTestPort :: HasTestParams a => a -> ServiceName
+smpTestPort = testPort 1
+
+xftpTestPort :: HasTestParams a => a -> ServiceName
+xftpTestPort = testPort 2
+
+smpTestPort2 :: HasTestParams a => a -> ServiceName
+smpTestPort2 = testPort 3
+
+remoteTestPort :: HasTestParams a => a -> ServiceName
+remoteTestPort = testPort 4
+
+testServerKeyHash :: String
+testServerKeyHash = "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI="
+
+smpServerStr :: HasTestParams a => a -> String
+smpServerStr p = "smp://" <> testServerKeyHash <> ":server_password@localhost:" <> smpTestPort p
+
+smpServer2Str :: HasTestParams a => a -> String
+smpServer2Str p = "smp://" <> testServerKeyHash <> ":server_password@localhost:" <> smpTestPort2 p
+
+xftpServerStr :: HasTestParams a => a -> String
+xftpServerStr p = "xftp://" <> testServerKeyHash <> ":server_password@localhost:" <> xftpTestPort p
+
+mapTestPort :: TestParams -> ServiceName -> ServiceName
+mapTestPort ps = \case
+  "7001" -> smpTestPort ps
+  "7002" -> xftpTestPort ps
+  "7003" -> smpTestPort2 ps
+  port -> port
+
+mapServerPort :: (ServiceName -> ServiceName) -> ProtocolServer p -> ProtocolServer p
+mapServerPort f srv@ProtocolServer {port} = srv {port = f port}
+
+mapServerAuthPort :: (ServiceName -> ServiceName) -> ProtoServerWithAuth p -> ProtoServerWithAuth p
+mapServerAuthPort f (ProtoServerWithAuth srv auth) = ProtoServerWithAuth (mapServerPort f srv) auth
+
+testPortsCfg :: TestParams -> ChatConfig -> ChatOpts -> (ChatConfig, ChatOpts)
+testPortsCfg ps cfg@ChatConfig {shortLinkPresetServers} opts@ChatOpts {coreOptions = co@CoreChatOpts {smpServers, xftpServers}} =
+  ( cfg {shortLinkPresetServers = L.map (mapServerPort f) shortLinkPresetServers},
+    opts {coreOptions = co {smpServers = map (mapServerAuthPort f) smpServers, xftpServers = map (mapServerAuthPort f) xftpServers}}
+  )
+  where
+    f = mapTestPort ps
 
 testOpts :: ChatOpts
 testOpts =
@@ -197,12 +260,32 @@ termSettings =
 
 data TestCC = TestCC
   { chatController :: ChatController,
-    virtualTerminal :: VirtualTerminal,
     chatAsync :: Async (),
-    termAsync :: Async (),
     termQ :: TQueue String,
-    printOutput :: Bool
+    printOutput :: Bool,
+    ccParams :: TestParams
   }
+
+data TestTerminal = TestTerminal VirtualTerminal (TQueue String)
+
+instance Terminal TestTerminal where
+  termType (TestTerminal t _) = termType t
+  termEvent (TestTerminal t _) = termEvent t
+  termInterrupt (TestTerminal t _) = termInterrupt t
+  termCommand (TestTerminal t q) c = do
+    case c of
+      PutLn -> atomically $ do
+        C.Position {row} <- readTVar $ virtualCursor t
+        rows <- readTVar $ virtualWindow t
+        writeTQueue q $ dropWhileEnd (== ' ') $ rows !! row
+      _ -> pure ()
+    termCommand t c
+  termFlush (TestTerminal t _) = termFlush t
+  termGetWindowSize (TestTerminal t _) = termGetWindowSize t
+  termGetCursorPosition (TestTerminal t _) = termGetCursorPosition t
+
+instance WithTerminal TestTerminal where
+  withTerm t = ($ t)
 
 aCfg :: AgentConfig
 aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
@@ -291,8 +374,17 @@ startTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix = do
 
 createDatabase :: TestParams -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
 #if defined(dbPostgres)
-createDatabase _params CoreChatOpts {dbOptions} dbPrefix = do
-  createChatDatabase dbOptions {dbSchemaPrefix = "client_" <> dbPrefix} (MigrationConfig MCError Nothing)
+createDatabase ps CoreChatOpts {dbOptions} dbPrefix = do
+  createChatDatabase dbOptions {dbSchemaPrefix = testSchemaPrefix ps dbPrefix} (MigrationConfig MCError Nothing)
+
+testSchemaPrefix :: HasTestParams a => a -> String -> String
+testSchemaPrefix p dbPrefix = "client_" <> takeFileName (tmpDir p) <> "_" <> dbPrefix
+
+dropTestSchemas :: HasTestParams a => a -> IO ()
+dropTestSchemas p =
+  bracket (PSQL.connect testDBConnectInfo) PSQL.close $ \db -> do
+    schemas <- PSQL.query db "SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE ?" (PSQL.Only $ testSchemaPrefix p "%")
+    forM_ schemas $ \(PSQL.Only schema) -> PSQL.execute_ db $ fromString $ "DROP SCHEMA " <> (schema :: String) <> " CASCADE"
 
 insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users DEFAULT VALUES")
@@ -305,30 +397,33 @@ insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) V
 #endif
 
 startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> String -> User -> IO TestCC
-startTestChat_ TestParams {tmpPath, printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} dbPrefix user = do
-  t <- withVirtualTerminal termSettings pure
+startTestChat_ ps@TestParams {tmpPath, printOutput} db cfg_ opts_ dbPrefix user = do
+  let (cfg, opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}}) = testPortsCfg ps cfg_ opts_
+  termQ <- newTQueueIO
+  t <- withVirtualTerminal termSettings $ pure . (`TestTerminal` termQ)
   ct <- newChatTerminal t opts
   Right cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder (tmpPath </> dbPrefix)) 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
-  termQ <- newTQueueIO
-  termAsync <- async $ readTerminalOutput t termQ
-  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput}
+  pure TestCC {chatController = cc, chatAsync, termQ, printOutput, ccParams = ps}
 
 stopTestChat :: TestParams -> TestCC -> IO ()
-stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync, termAsync} = do
-  stopChatController cc
-  uninterruptibleCancel termAsync
-  uninterruptibleCancel chatAsync
-  liftIO $ disposeAgentClient smpAgent
+stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync} = do
+  stopped <- async $ do
+    stopChatController cc
+    cancel chatAsync
+    disposeAgentClient smpAgent
+  r <- timeout 60000000 $ wait stopped
 #if !defined(dbPostgres)
   chatStats <- withConnection chatStore $ readTVarIO . DB.slow
   atomically $ modifyTVar' (chatQueryStats ps) $ M.unionWith combineStats chatStats
   agentStats <- withConnection (agentClientStore smpAgent) $ readTVarIO . DB.slow
   atomically $ modifyTVar' (agentQueryStats ps) $ M.unionWith combineStats agentStats
 #endif
-  closeDBStore chatStore
+  case r of
+    Just () -> closeDBStore chatStore
+    Nothing -> putStrLn "stopTestChat: chat did not stop in 60 seconds"
   threadDelay 200000
 #if !defined(dbPostgres)
   where
@@ -381,7 +476,8 @@ withTestChatOpts :: HasCallStack => TestParams -> ChatOpts -> String -> (HasCall
 withTestChatOpts ps = withTestChatCfgOpts ps testCfg
 
 withTestChatCfgOpts :: HasCallStack => TestParams -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatCfgOpts ps cfg opts dbPrefix = bracket (startTestChat ps cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat ps cc)
+withTestChatCfgOpts ps cfg opts dbPrefix runTest =
+  bracket (startTestChat ps cfg opts dbPrefix) (stopTestChat ps) (\cc -> runTest cc >>= ((cc <// 100000) $>))
 
 -- enable output for specific test.
 -- usage: withTestOutput $ testChat2 aliceProfile bobProfile $ \alice bob -> do ...
@@ -408,47 +504,35 @@ enableNamesRole TestCC {chatController = cc} = do
         }
     enableNames srv@UserServer {roles} = (srv :: UserServer 'PSMP) {roles = (roles :: ServerRolesOverride) {names = Just True}}
 
-readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
-readTerminalOutput t termQ = do
-  let w = virtualWindow t
-  winVar <- atomically $ newTVar . init =<< readTVar w
-  forever . atomically $ do
-    win <- readTVar winVar
-    win' <- init <$> readTVar w
-    if win' == win
-      then retry
-      else do
-        let diff = getDiff win' win
-        forM_ diff $ writeTQueue termQ
-        writeTVar winVar win'
-  where
-    getDiff :: [String] -> [String] -> [String]
-    getDiff win win' = getDiff_ 1 (length win) win win'
-    getDiff_ :: Int -> Int -> [String] -> [String] -> [String]
-    getDiff_ n len win' win =
-      let diff = drop (len - n) win'
-       in if drop n win <> diff == win'
-            then map (dropWhileEnd (== ' ')) diff
-            else getDiff_ (n + 1) len win' win
-
 withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
-    (createDirectoryIfMissing False "tests/tmp")
-    (removeDirectoryRecursive "tests/tmp")
+    (createDirectoryIfMissing False "tests/tmp" >> clearTmp)
+    clearTmp
+  where
+    clearTmp = listDirectory "tests/tmp" >>= mapM_ (removePathForcibly . ("tests/tmp" </>))
+
+newPortBases :: IO (TVar [Int])
+newPortBases = newTVarIO [7000, 7010 .. 8990]
+
+withPortBase :: TVar [Int] -> (Int -> IO a) -> IO a
+withPortBase bases = bracket takeBase (\b -> atomically $ modifyTVar' bases (b :))
+  where
+    takeBase = atomically $ readTVar bases >>= \case
+      b : bs -> writeTVar bases bs $> b
+      [] -> retry
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> TestParams -> IO ()
 testChatN cfg opts ps test params =
-  bracket (getTestCCs $ zip ps [1 ..]) endTests test
+  bracket (getTestCCs $ zip ps [1 ..]) (mapConcurrently_ $ stopTestChat params) $ \tcs -> do
+    test tcs
+    mapConcurrently_ (<// 100000) tcs
   where
     useClientServices = False
     -- useClientServices = True
     getTestCCs :: [(Profile, Int)] -> IO [TestCC]
     getTestCCs [] = pure []
     getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) useClientServices p <*> getTestCCs envs'
-    endTests tcs = do
-      mapConcurrently_ (<// 100000) tcs
-      mapConcurrently_ (stopTestChat params) tcs
 
 (<//) :: HasCallStack => TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
@@ -458,7 +542,7 @@ getTermLine = getTermLine' Nothing
 
 getTermLine' :: HasCallStack => Maybe String -> TestCC -> IO String
 getTermLine' expected cc@TestCC {printOutput} =
-  5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
+  20000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
       -- when True $ do
@@ -471,10 +555,10 @@ getTermLine' expected cc@TestCC {printOutput} =
       let expectedMsg = case expected of
             Just e -> ", expected: " <> show e
             Nothing -> ""
-      error $ name <> ": no output for 5 seconds" <> expectedMsg
+      error $ name <> ": no output for 20 seconds" <> expectedMsg
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _ _) =
+userName TestCC {chatController = ChatController {currentUser}} =
   maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
 
 testChat :: HasCallStack => Profile -> (HasCallStack => TestCC -> IO ()) -> TestParams -> IO ()
@@ -548,16 +632,16 @@ testChatCfg5 cfg p1 p2 p3 p4 p5 test = testChatN cfg testOpts [p1, p2, p3, p4, p
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
 
-smpServerCfg :: ServerConfig STMMsgStore
-smpServerCfg =
+smpServerCfg :: HasTestParams a => a -> ServerConfig STMMsgStore
+smpServerCfg p =
   ServerConfig
-    { transports = [(serverPort, transport @TLS, False)],
+    { transports = [(smpTestPort p, transport @TLS, False)],
       tbqSize = 4,
       msgQueueQuota = 16,
       maxJournalMsgCount = 24,
       maxJournalStateLines = 4,
       queueIdBytes = 24,
-      msgIdBytes = 6,
+      msgIdBytes = 24,
       serverStoreCfg = SSCMemory Nothing, -- $ Just StorePaths {storeLogFile = "tmp/smp-server-store.log", storeMsgsFile = Just "tmp/smp-server-messages.log"},
       storeNtfsFile = Nothing,
       allowNewQueues = True,
@@ -603,33 +687,30 @@ smpServerCfg =
 persistentServerStoreCfg :: FilePath -> ServerStoreCfg STMMsgStore
 persistentServerStoreCfg tmp = SSCMemory $ Just StorePaths {storeLogFile = tmp <> "/smp-server-store.log", storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"}
 
-withSmpServer :: IO () -> IO ()
-withSmpServer = withSmpServer' smpServerCfg
+withSmpServer :: HasTestParams a => a -> IO b -> IO b
+withSmpServer p = withSmpServer' (smpServerCfg p)
 
 withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
 
 -- | SMP server with a local names resolver attached; the action gets the resolver
 -- registry to map names to the addresses it creates.
-withSmpServerAndNames :: (NameRegistry -> IO a) -> IO a
-withSmpServerAndNames action =
+withSmpServerAndNames :: HasTestParams a => a -> (NameRegistry -> IO b) -> IO b
+withSmpServerAndNames p action =
   withNameResolver $ \port reg ->
-    withSmpServer' smpServerCfg {namesConfig = Just (resolverNamesConfig port)} (action reg)
+    withSmpServer' (smpServerCfg p) {namesConfig = Just (resolverNamesConfig port)} (action reg)
 
-xftpTestPort :: ServiceName
-xftpTestPort = "7002"
+xftpServerFiles :: HasTestParams a => a -> FilePath
+xftpServerFiles p = tmpFile p "xftp-server-files"
 
-xftpServerFiles :: FilePath
-xftpServerFiles = "tests/tmp/xftp-server-files"
-
-xftpServerConfig :: XFTPServerConfig STMFileStore
-xftpServerConfig =
+xftpServerConfig :: HasTestParams a => a -> XFTPServerConfig STMFileStore
+xftpServerConfig p =
   XFTPServerConfig
-    { xftpPort = xftpTestPort,
+    { xftpPort = xftpTestPort p,
       fileIdSize = 16,
-      serverStoreCfg = XSCMemory $ Just "tests/tmp/xftp-server-store.log",
-      storeLogFile = Just "tests/tmp/xftp-server-store.log",
-      filesPath = xftpServerFiles,
+      serverStoreCfg = XSCMemory $ Just storeLog,
+      storeLogFile = Just storeLog,
+      filesPath = xftpServerFiles p,
       fileSizeQuota = Nothing,
       allowedChunkSizes = [kb 64, kb 128, kb 256, mb 1, mb 4],
       allowNewFiles = True,
@@ -653,23 +734,25 @@ xftpServerConfig =
       information = Nothing,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
-      serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
+      serverStatsLogFile = tmpFile p "xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       prometheusInterval = Nothing,
-      prometheusMetricsFile = "tests/xftp-server-metrics.txt",
+      prometheusMetricsFile = tmpFile p "xftp-server-metrics.txt",
       controlPort = Nothing,
       transportConfig = mkTransportServerConfig True (Just alpnSupportedXFTPhandshakes) False,
       responseDelay = 0
     }
+  where
+    storeLog = tmpFile p "xftp-server-store.log"
 
-withXFTPServer :: IO () -> IO ()
-withXFTPServer = withXFTPServer' xftpServerConfig
+withXFTPServer :: HasTestParams a => a -> IO b -> IO b
+withXFTPServer p = withXFTPServer' (xftpServerConfig p)
 
-withXFTPServer' :: XFTPServerConfig STMFileStore -> IO () -> IO ()
-withXFTPServer' cfg =
+withXFTPServer' :: XFTPServerConfig STMFileStore -> IO a -> IO a
+withXFTPServer' cfg@XFTPServerConfig {filesPath} =
   serverBracket
     ( \started -> do
-        createDirectoryIfMissing False xftpServerFiles
+        createDirectoryIfMissing False filesPath
         runXFTPServerBlocking started cfg
     )
 

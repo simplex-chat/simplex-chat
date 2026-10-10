@@ -133,6 +133,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
+        self.peerType = peerType
         self.contactDomain = contactDomain
     }
 
@@ -583,7 +584,8 @@ public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias
         contactLink: profile.contactLink,
         preferences: profile.preferences,
         peerType: profile.peerType,
-        localAlias: localAlias
+        localAlias: localAlias,
+        contactDomain: profile.contactDomain
     )
 }
 
@@ -3894,6 +3896,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             case .memberCreatedContact: return false
             case .memberProfileUpdated: return false
             case .newMemberPendingReview: return true
+            case .msgBadSignature: return false
             }
         case .sndGroupEvent: return false
         case .rcvConnEvent: return false
@@ -6065,6 +6068,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
     case memberCreatedContact
     case memberProfileUpdated(fromProfile: Profile, toProfile: Profile)
     case newMemberPendingReview
+    case msgBadSignature
 
     var text: String { text(isChannel: false) }
 
@@ -6100,6 +6104,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .memberCreatedContact: return NSLocalizedString("requested connection", comment: "rcv group event chat item")
         case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
         case .newMemberPendingReview: return NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
+        case .msgBadSignature: return NSLocalizedString("message rejected: bad signature", comment: "rcv group event chat item")
         }
     }
 

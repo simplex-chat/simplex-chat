@@ -146,6 +146,7 @@ coreVersionInfo simplexmqCommit =
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     chatVRange :: VersionRangeChat,
+    callVRange :: VersionRangeCall,
     -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
     badgePublicKeys :: Map Int BBSPublicKey,
     -- Nothing until the badge service is deployed
@@ -176,6 +177,7 @@ data ChatConfig = ChatConfig
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
+    callInvitationTTL :: NominalDiffTime,
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     webPreviewConfig :: Maybe WebPreviewConfig,
@@ -455,7 +457,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile {userId :: UserId, profile :: Profile}
-  | APISetUserDomain {userId :: UserId, simplexDomain :: Maybe SimplexDomain}
+  | APISetUserDomain {userId :: UserId, simplexDomain :: Maybe (StrJSON "SimplexDomain" SimplexDomain)}
   | APISetContactPrefs {contactId :: ContactId, preferences :: Preferences}
   | APISetContactAlias {contactId :: ContactId, localAlias :: LocalAlias}
   | APISetGroupAlias {groupId :: GroupId, localAlias :: LocalAlias}

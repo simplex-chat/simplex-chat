@@ -6,7 +6,7 @@ import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
 import java.util.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.io.File
 
 actual val appPlatform = AppPlatform.DESKTOP

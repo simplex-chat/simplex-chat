@@ -13,7 +13,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeModeOverrides
 import chat.simplex.common.ui.theme.ThemeOverrides
 import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*

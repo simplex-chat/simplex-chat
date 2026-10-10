@@ -18,7 +18,7 @@ import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
 import chat.simplex.common.views.migration.MigrationToState
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -1115,7 +1115,7 @@ object ChatModel {
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
     val current = currentUser.value ?: return
     val updated = current.copy(
-      profile = newProfile.toLocalProfile(current.profile.profileId),
+      profile = newProfile.toLocalProfile(current.profile.profileId).copy(localBadge = current.profile.localBadge, contactDomainVerified = current.profile.contactDomainVerified),
       fullPreferences = preferences ?: current.fullPreferences
     )
     val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
@@ -3555,6 +3555,7 @@ data class ChatItem (
         is RcvGroupEvent.MemberCreatedContact -> false
         is RcvGroupEvent.MemberProfileUpdated -> false
         is RcvGroupEvent.NewMemberPendingReview -> true
+        is RcvGroupEvent.MsgBadSignature -> false
       }
       is CIContent.SndGroupEventContent -> false
       is CIContent.RcvConnEventContent -> false
@@ -5461,6 +5462,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberCreatedContact") class MemberCreatedContact(): RcvGroupEvent()
   @Serializable @SerialName("memberProfileUpdated") class MemberProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvGroupEvent()
   @Serializable @SerialName("newMemberPendingReview") class NewMemberPendingReview(): RcvGroupEvent()
+  @Serializable @SerialName("msgBadSignature") class MsgBadSignature(): RcvGroupEvent()
 
   val text: String get() = text(isChannel = false)
 
@@ -5485,6 +5487,7 @@ sealed class RcvGroupEvent() {
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
     is NewMemberPendingReview -> generalGetString(MR.strings.rcv_group_event_new_member_pending_review)
+    is MsgBadSignature -> generalGetString(MR.strings.rcv_group_event_msg_bad_signature)
   }
 
   private fun profileUpdatedText(from: Profile, to: Profile): String =
