@@ -151,20 +151,22 @@ setPreference_ f pref_ prefs =
     SCFCalls -> prefs {calls = pref_}
     SCFSessions -> prefs {sessions = pref_}
 
-newtype PrefsJSON = PrefsJSON {unPrefsJSON :: Maybe Object}
+newtype NoJSON a = NoJSON {unNoJSON :: Maybe a}
   deriving (Eq, Show)
 
-instance ToJSON PrefsJSON where
+instance ToJSON (NoJSON a) where
   toJSON _ = Null
   toEncoding _ = JE.null_
   omitField _ = True
 
-instance FromJSON PrefsJSON where
-  parseJSON _ = pure $ PrefsJSON Nothing
-  omittedField = Just $ PrefsJSON Nothing
+instance FromJSON (NoJSON a) where
+  parseJSON _ = pure $ NoJSON Nothing
+  omittedField = Just $ NoJSON Nothing
+
+type PrefsJSON = NoJSON Object
 
 keepPrefsJSON :: (ToJSON p, HasField "_json" p PrefsJSON) => Value -> p -> p
-keepPrefsJSON v ps = setField @"_json" ps . PrefsJSON $ case v of
+keepPrefsJSON v ps = setField @"_json" ps . NoJSON $ case v of
   Object o | v /= toJSON ps -> Just o
   _ -> Nothing
 
@@ -177,7 +179,7 @@ prefsFromRow_ prefsP encodedPrefs receivedPrefs = (decode =<< receivedPrefs) <|>
     decode = decodePrefs prefsP
 
 prefsToRow :: HasField "_json" p PrefsJSON => Maybe p -> (Maybe p, Maybe Text)
-prefsToRow ps = (ps, encodeJSON . Object <$> (unPrefsJSON . getField @"_json" =<< ps))
+prefsToRow ps = (ps, encodeJSON . Object <$> (unNoJSON . getField @"_json" =<< ps))
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
@@ -545,7 +547,7 @@ toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, files,
       calls = Just calls,
       sessions = Just sessions,
       commands = Just cmds,
-      _json = PrefsJSON Nothing
+      _json = NoJSON Nothing
     }
 
 defaultChatPrefs :: FullPreferences
@@ -562,7 +564,7 @@ defaultChatPrefs =
     }
 
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing (PrefsJSON Nothing)
+emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing (NoJSON Nothing)
 
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
@@ -584,7 +586,7 @@ defaultGroupPrefs =
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing (PrefsJSON Nothing)
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing (NoJSON Nothing)
 
 businessGroupPrefs :: Preferences -> GroupPreferences
 businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions, commands} =
@@ -620,7 +622,7 @@ defaultBusinessGroupPrefs =
       comments = Just $ CommentsGroupPreference FEOff Nothing,
       signMessages = Just $ SignMessagesGroupPreference FEOff,
       commands = Nothing,
-      _json = PrefsJSON Nothing
+      _json = NoJSON Nothing
     }
 
 data TimedMessagesPreference = TimedMessagesPreference
@@ -1133,7 +1135,7 @@ toGroupPreferences groupPreferences@FullGroupPreferences {commands = ListDef cmd
       comments = pref SGFComments,
       signMessages = pref SGFSignMessages,
       commands = Just cmds,
-      _json = PrefsJSON Nothing
+      _json = NoJSON Nothing
     }
   where
     pref :: SGroupFeature f -> Maybe (GroupFeaturePreference f)

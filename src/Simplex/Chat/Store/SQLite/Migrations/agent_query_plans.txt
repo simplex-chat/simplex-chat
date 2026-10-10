@@ -1393,7 +1393,7 @@ SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 
 Query: SELECT conn_id FROM rcv_queues WHERE switch_status = ? AND deleted = 0
 Plan:
-SCAN rcv_queues
+SEARCH rcv_queues USING INDEX idx_rcv_queues_switch_status (switch_status=?)
 
 Query: SELECT conn_id, rc_verify_code_ad, rc_verify_code_pq, CASE WHEN rc_verify_code_ad IS NULL THEN ratchet_state END FROM ratchets WHERE conn_id = ?
 Plan:
