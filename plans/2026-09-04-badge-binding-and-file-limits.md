@@ -343,45 +343,65 @@ Files: `Agent.hs`, `Agent/Client.hs`, `Agent/Protocol.hs`, `Crypto/ShortLink.hs`
 
 The chat pins the simplexmq commit in `cabal.project` and `scripts/nix/sha256map.nix`.
 
-A link prepared by `prepareConnectionLink` is available to the chat before its link data is signed: a contact link with its short link, an invitation as its full link and its link key; one network request is made per creation.
+A link is available to the chat before its link data is signed: a contact link with its short link from `prepareConnectionLink`, an invitation as its full link with its link key from `prepareInvitationLink`. One network request is made per creation.
 
-**New links.** The contact link with its short link, or the invitation with its link key `plpLinkKey`, is returned by `prepareConnectionLink` before the user data is signed; the short link of an invitation, with the link id assigned by the server, is returned by `createConnectionForLink`:
+**New links.** The short link of an invitation, with the link id assigned by the server, is returned by `createInvitationForLink`:
 
 ```haskell
-prepareConnectionLink :: AgentClient -> UserId -> SConnectionMode c -> C.KeyPairEd25519 -> Maybe ByteString -> Bool -> Maybe CRClientData -> CR.InitialKeys -> UseRatchetKeys -> Maybe SMPServerWithAuth -> AE (CreatedConnLink c, PreparedLinkParams c)
+prepareConnectionLink :: AgentClient -> UserId -> C.KeyPairEd25519 -> ByteString -> Bool -> Maybe CRClientData -> CR.InitialKeys -> UseRatchetKeys -> Maybe SMPServerWithAuth -> AE (CreatedConnLink 'CMContact, PreparedLinkParams (Maybe (RatchetKeyId, CR.RcvE2EPrivRatchetParams 'C.X448)))
 
-createConnectionForLink :: AgentClient -> NetworkRequestMode -> UserId -> Bool -> CreatedConnLink c -> PreparedLinkParams c -> UserConnLinkData c -> SubscriptionMode -> AE (ConnId, CreatedConnLink c)
+createConnectionForLink :: AgentClient -> NetworkRequestMode -> UserId -> Bool -> CreatedConnLink 'CMContact -> PreparedLinkParams (Maybe (RatchetKeyId, CR.RcvE2EPrivRatchetParams 'C.X448)) -> UserConnLinkData 'CMContact -> SubscriptionMode -> AE ConnId
+
+prepareInvitationLink :: AgentClient -> UserId -> CR.InitialKeys -> Maybe SMPServerWithAuth -> AE (ConnectionRequestUri 'CMInvitation, PreparedLinkParams (CR.RcvE2EPrivRatchetParams 'C.X448))
+
+createInvitationForLink :: AgentClient -> NetworkRequestMode -> UserId -> Bool -> ConnectionRequestUri 'CMInvitation -> PreparedLinkParams (CR.RcvE2EPrivRatchetParams 'C.X448) -> UserConnLinkData 'CMInvitation -> SubscriptionMode -> AE (ConnId, CreatedConnLink 'CMInvitation)
 ```
 
-- The link entity id is optional; `Nothing` for an invitation.
-- `PreparedLinkParams` is indexed by the connection mode. The ratchet keys are one field, `plpRatchetKeys :: PreparedRatchetKeys m`, in place of `plpAddressKeys`:
+- The contact functions keep the signatures of master, with the type parameter of `PreparedLinkParams`.
+- `PreparedLinkParams` is parameterised by the keys stored at creation; `plpAddressKeys` is renamed `plpRatchetKeys`:
 
   ```haskell
-  data PreparedRatchetKeys (m :: ConnectionMode) where
-    PRKInvitation :: RcvE2EPrivRatchetParams 'C.X448 -> PreparedRatchetKeys 'CMInvitation
-    PRKContact :: Maybe (RatchetKeyId, RcvE2EPrivRatchetParams 'C.X448) -> PreparedRatchetKeys 'CMContact
+  data PreparedLinkParams k = PreparedLinkParams
+    { plpNonce :: C.CbNonce,
+      plpQueueE2EKeys :: C.KeyPairX25519,
+      plpLinkKey :: LinkKey,
+      plpRootPrivKey :: C.PrivateKeyEd25519,
+      plpSignedFixedData :: ByteString,
+      plpSrvWithAuth :: SMPServerWithAuth,
+      plpInitKeys :: InitialKeys,
+      plpRatchetKeys :: k
+    }
   ```
 
-- Client notices are checked for contact mode only.
-- Contact mode: the link given to `createConnectionForLink` is returned.
-- Invitation mode, prepare:
-  - x3dh keys from `CR.generateRcvE2EParams`, PQ support from `CR.initialPQEncryption True pqInitKeys`
-  - `connReq = CRInvitationUri crData e2eRcvParams`, queue mode `QMMessaging`
-  - the returned link is `CCLink connReq Nothing`; the key is `plpLinkKey`
-  - `useDR` is ignored
-- Invitation mode, create:
-  - link data: `SL.encodeSignUserData SCMInvitation`, encrypted by `encryptInvLinkData` with `SL.invShortLinkKdf plpLinkKey`; `newRcvConnSrv` uses the same function
-  - queue request: `CQRMessaging (Just CQRData {linkKey, privSigKey, srvReq = (sndId, srvData)})`
-- In both modes the link data is encrypted before the connection is created, and the queue is created by the local `createLinkQueue`:
-  - the ratchet keys are stored: `PRKContact` keys by `storeAddressRatchetKeys`, `PRKInvitation` keys by `createRatchetX3dhKeys`
-  - `createRcvQueue`
-  - the connection is deleted when either step fails
-  - the returned link from `connReqWithShortLink`, moved from `newRcvConnSrv` to top level, with the created `RcvQueue` as a parameter — `CSLInvitation` with the link id from the server, PQ keys removed from the full link for `IKPQOn`
+  - contact link: `k = Maybe (RatchetKeyId, RcvE2EPrivRatchetParams 'C.X448)`, the address ratchet keys
+  - invitation: `k = RcvE2EPrivRatchetParams 'C.X448`, the X3DH keys
+- Prepare, `prepareLinkParams :: ConnectionModeI c => C.KeyPairEd25519 -> Maybe ByteString -> Maybe CRClientData -> CR.InitialKeys -> SMPServerWithAuth -> QueueMode -> (ConnReqUriData -> ConnectionRequestUri c) -> k -> AM (ConnectionRequestUri c, PreparedLinkParams k)`:
+  - the nonce and the queue keys are generated;
+  - the connection request is built by the given function from the queue of the given mode;
+  - its fixed data is signed with the root key and the entity id.
+- `prepareConnectionLink'`: the server is chosen; client notices are checked when `checkNotices` is set; the address ratchet keys are generated when `useDR` is set; `QMContact`.
+- `prepareInvitationLink'`:
+  - the server is chosen and the root key pair is generated;
+  - X3DH keys from `CR.generateRcvE2EParams`, PQ support from `CR.initialPQEncryption True pqInitKeys`;
+  - `CRInvitationUri` with the X3DH parameters, `QMMessaging`;
+  - the entity id and the client data are `Nothing`.
+- Create, `createLinkQueue :: AgentClient -> NetworkRequestMode -> UserId -> Bool -> SConnectionMode c -> PreparedLinkParams k -> SubscriptionMode -> ClntQueueReqData -> (ConnId -> AM ()) -> AM (ConnId, RcvQueue, SMPQueueUri)`:
+  - the connection is created;
+  - the keys are stored by the given action;
+  - the queue is created by `createRcvQueue`;
+  - the connection is deleted when either step fails.
+- `createConnectionForLink'`:
+  - the link data is encrypted by `encryptContactLinkData` before the connection is created;
+  - the address ratchet keys are stored by `storeAddressRatchetKeys`;
+  - the sender id is compared after `NEW`, as on master.
+- `createInvitationForLink'`:
+  - link data: `SL.encodeSignUserData SCMInvitation`, encrypted with `SL.invShortLinkKdf plpLinkKey`;
+  - queue request: `CQRMessaging (Just CQRData {linkKey, privSigKey, srvReq = (sndId, srvData)})`;
+  - the X3DH keys are stored by `createRatchetX3dhKeys`;
+  - the returned link from `connReqWithShortLink`: `CSLInvitation` with the link id from the server, PQ keys removed from the full link for `IKPQOn`.
 - Tests:
-  - a connection via an invitation made by prepare and create; its link data is read by the joining party; `plpLinkKey` equals the key in the returned `CSLInvitation`
-  - a contact link returned by `createConnectionForLink` equals the prepared link
-  - for link data above the size limit, `CMD LARGE` is returned in both modes and no connection is stored
-  - the six existing test calls are updated for the mode and the pair
+  - a connection via an invitation made by prepare and create: its link data is read by the joining party and holds the prepared invitation; `plpLinkKey` equals the key in the returned `CSLInvitation`; for `IKPQOn` the returned full link differs from the prepared invitation
+  - for link data above the size limit, `CMD LARGE` is returned for a contact link and for an invitation, and no connection is stored
 
 **Existing connections.** The link of a connection is returned without a network call:
 
@@ -399,7 +419,6 @@ prepareConnShortLink :: AgentClient -> ConnId -> Maybe CRClientData -> AE (ConnS
 - `NEW` and `IDS` (`Protocol.hs`): the encodings and parsers for versions below 15, with `qReq` and `qm`.
 - `mkShortLinkCreds` (`Agent/Client.hs`): link data without a link id in the response is an error; the `THandleParams` parameter is removed.
 - `connReqWithShortLink`: absent short link credentials are an `INTERNAL` error.
-- `createConnectionForLink'`: the sender id check of master, error `sender ID mismatch`, is removed; the sender id is compared by `mkShortLinkCreds` and by `connReqWithShortLink`.
 - `Transport.hs`: `shortLinksSMPVersion` is renamed `_shortLinksSMPVersion` and is not exported; `_proxyServerHandshakeSMPVersion` is removed.
 - Tests: `testInvitationShortLinkPrev` and `testProxyMatrixWithPrev` are removed.
 
@@ -524,7 +543,7 @@ ALTER TABLE connections ADD COLUMN pres_header BLOB;
 
 **10. Link data**
 
-- Invitation links (`APIAddContact`, `recreateConn`): the chat generates the root key pair and calls `prepareConnectionLink SCMInvitation`; the badge is presented with `PHLink` of `plpLinkKey`; then `createConnectionForLink` is called.
+- Invitation links (`APIAddContact`, `recreateConn`): the chat calls `prepareInvitationLink`; the badge is presented with `PHLink` of `plpLinkKey`; then `createInvitationForLink` is called with the invitation and the params.
 - Invitation updates (`updatePCCShortLinkData`, `APISetConnectionIncognito`): `linkPresHeader` of the stored invitation short link.
 - Address (`APICreateMyAddress`): `linkPresHeader` of the key in the prepared `CSLContact`.
 - Address updates (`setMyAddressData`): the key of the stored short link. For an address without a short link, the key is taken from `prepareConnShortLink` when a badge is presented, then `setConnShortLink` is called once.
