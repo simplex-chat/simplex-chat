@@ -300,20 +300,31 @@ After line 1123:
 
 ### 6.2. `processGroupInvitation` (line 2700)
 
-Line 2711:
+| Line | After |
+|---|---|
+| 2706 | `forM_ activeConn $ \conn@Connection {peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'} -> do` |
+| 2711 | `(g@(GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} _), hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Left ct) peerChatVRange inv customUserProfileId memberKeys` |
+| 2714-2726 | local `joinGroupAsync` and its comment: moved to 6.3 |
+| 2734 | `joinGroupAsync g hostId conn connRequest (Just ct) True` |
+| 2738 | `joinGroupAsync g hostId conn connRequest Nothing False` |
+
+### 6.3. `joinGroupAsync`
+
+Moved from `processGroupInvitation` to the `where` block of `processAgentMessageConn`, after `processGroupInvitation`.
+Comment and body: unchanged.
 
 ```haskell
-            (GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} gks, hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Left ct) peerChatVRange inv customUserProfileId memberKeys
+    joinGroupAsync :: GroupInfoKeys -> GroupMemberId -> Connection -> ConnReqInvitation -> Maybe Contact -> Bool -> CM ()
+    joinGroupAsync (GIK gInfo@GroupInfo {groupId, membership} gks) hostId Connection {connId, connChatVersion, peerChatVRange} connRequest hostContact_ sameLink = do
 ```
 
-### 6.3. `xGrpInv`
+### 6.4. `xGrpInv`
 
 New function, before `xGrpDirectInv` (line 3885).
-Join steps: as `joinGroupAsync` in `processGroupInvitation` (lines 2716-2726), without the group link branch.
 
 ```haskell
     xGrpInv :: GroupInfo -> GroupMember -> Connection -> GroupInvitation -> RcvMessage -> UTCTime -> CM ()
-    xGrpInv viaGInfo m Connection {connChatVersion, peerChatVRange} inv msg brokerTs
+    xGrpInv viaGInfo m mConn@Connection {peerChatVRange} inv msg brokerTs
       | useRelays' viaGInfo = messageError "x.grp.inv: not allowed in channels"
       | isJust publicGroup = messageError "x.grp.inv: can't invite to channel"
       | not (groupFeatureMemberAllowed SGFDirectMessages m viaGInfo) = messageError "x.grp.inv: direct messages not allowed"
@@ -323,25 +334,17 @@ Join steps: as `joinGroupAsync` in `processGroupInvitation` (lines 2716-2726), w
       | otherwise = do
           memberKeys <- atomically . C.generateKeyPair =<< asks random
           let incognitoProfileId = localProfileId <$> incognitoMembershipProfile viaGInfo
-          (GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} gks, hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Right m) peerChatVRange inv incognitoProfileId memberKeys
+          (g@(GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} _), hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Right m) peerChatVRange inv incognitoProfileId memberKeys
           void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
           let GroupMember {groupMemberId} = membership
               createInvitationItem invStatus = do
                 let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = invStatus}) memRole
                 (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv viaGInfo Nothing m) msg brokerTs content
                 withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
-                toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDRcv cInfo ci]
+                groupMsgToView cInfo ci
           if isTrue (autoAcceptGroupInvitations user)
             then when (memberStatus membership == GSMemInvited) $ do
-              subMode <- chatReadVar subscriptionMode
-              dm <- encodeXGrpAcpt user (GIK gInfo gks) peerChatVRange
-              (connIds@(cmdId, acId), _) <- prepareAgentJoin user True connRequest
-              withStore' $ \db -> do
-                createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
-                updateGroupMemberStatusById db userId hostId GSMemAccepted
-                updateGroupMemberStatus db userId membership GSMemAccepted
-              joinAgentConnectionAsync cmdId False acId True connRequest dm subMode
-              toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} Nothing
+              joinGroupAsync g hostId mConn connRequest Nothing False
               createInvitationItem CIGISAccepted
             else do
               createInvitationItem CIGISPending
@@ -350,7 +353,7 @@ Join steps: as `joinGroupAsync` in `processGroupInvitation` (lines 2716-2726), w
         GroupInvitation {fromMember = MemberIdRole fromMemId fromRole, invitedMember = MemberIdRole memId memRole, connRequest, groupProfile = GroupProfile {publicGroup}} = inv
 ```
 
-### 6.4. Profiles after joining
+### 6.5. Profiles after joining
 
 The profile copies from 4.1 and 4.2 are replaced during the connection handshake, by existing code:
 
@@ -389,18 +392,24 @@ Line 2850, `Contact {activeConn} = ct` replaced:
 
 Lines 2853-2874: unchanged.
 
+Invitation from a contact deleted before joining (`contact_id` set to NULL, `Store/Direct.hs` line 492): the member path is taken; master returned `SEContactNotFoundByMemberId`.
+
 ### 7.2. `updateCIGroupInvitationStatus` (line 4776)
 
-Line 4778, item binding: `AChatItem _ _ cInfo ci@ChatItem {content, meta = CIMeta {itemId}}`.
+Line 4778, item binding: `AChatItem _ _ cInfo ci@ChatItem {content, meta = meta@CIMeta {itemId}}`.
 
-New alternative, after line 4786:
+New alternative, after line 4786.
+Timer: as the direct alternative (lines 4783-4786), from the preferences of group A.
 
 ```haskell
         (GroupChat g _, CIRcvGroupInvitation ciGroupInv@CIGroupInvitation {status} memRole)
           | status == CIGISPending -> do
               let content' = CIRcvGroupInvitation (ciGroupInv {status = newStatus} :: CIGroupInvitation) memRole
-              ci' <- withFastStore' $ \db -> updateGroupChatItem db user (groupId' g) ci content' False False Nothing
+              timed_ <- sndGroupCITimed False g Nothing
+              ci' <- withFastStore' $ \db -> updateGroupChatItem db user (groupId' g) ci {meta = meta {itemTimed = timed_}} content' False False Nothing
               toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci')
+              forM_ (timed_ >>= timedDeleteAt') $
+                startProximateTimedItemThread user (ChatRef CTGroup (groupId' g) Nothing, itemId)
 ```
 
 ## 8. Terminal
@@ -428,8 +437,8 @@ use /j club to accept
 After line 200:
 
 ```haskell
-  CEvtReceivedGroupInvitationViaGroup u g _ m _ _ ->
-    when (groupNtf u g False) $
+  CEvtReceivedGroupInvitationViaGroup u g viaG m _ _ ->
+    when (groupNtf u viaG False) $
       sendNtf ("#" <> viewGroupName g <> " " <> viewMemberName m <> "> ", "invited you to join the group")
 ```
 
@@ -452,7 +461,7 @@ Unchanged: `APIAddMember` and `CEvtReceivedGroupInvitation` are unchanged.
 `bots/src/API/Docs/Commands.hs`, after line 121:
 
 ```haskell
-        ("APIAddMemberViaGroup", [], "Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed in another group.", ["CRSentGroupInvitationViaGroup", "CRChatCmdError"], [TD "CEPeerChatVRangeIncompatible" "Member's client version is older than required"], Just UNInteractive, "/_add #" <> Param "groupId" <> " #" <> Param "viaGroupId" <> " " <> Param "groupMemberId" <> " " <> Param "memberRole"),
+        ("APIAddMemberViaGroup", [], "Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.", ["CRSentGroupInvitationViaGroup", "CRChatCmdError"], [TD "CEPeerChatVRangeIncompatible" "Member's client version is older than required"], Just UNInteractive, "/_add #" <> Param "groupId" <> " #" <> Param "viaGroupId" <> " " <> Param "groupMemberId" <> " " <> Param "memberRole"),
 ```
 
 `bots/src/API/Docs/Responses.hs`, after line 94:
@@ -490,6 +499,7 @@ New wrapper `apiAddMemberViaGroup`, after `apiAddMember`:
 
 Command: `CC.APIAddMemberViaGroup.cmdString({groupId, viaGroupId, groupMemberId, memberRole})`.
 Response check: type `sentGroupInvitationViaGroup`, result `member`.
+JSDoc in `api.ts`: the command description from 10.1, then "Network usage: interactive."
 
 ## 11. Apps
 
@@ -575,14 +585,15 @@ Card label, `apps/ios/Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift`, a
 | `testInviteMemberViaGroupRepeat` | alice invites bob twice before joining, once after joining, once after bob leaves #club | one #club; after joining: `CEGroupDuplicateMember`; after leaving: new #club_1 |
 | `testInviteMemberViaGroupIncognito` | bob in #team incognito | bob joins #club with the #team incognito profile |
 | `testInviteMemberViaGroupReject` | bob deletes #club while invited | #team item rejected |
+| `testInviteMemberViaGroupDisappearing` | disappearing messages on in #team, 1 second | bob joins #club; #team item deleted |
 | `testInviteMemberViaGroupProhibited` | direct messages off in #team; `groupMemberId` with #club as group A | "direct messages not allowed"; `SEGroupMemberNotFound` |
 | `testInviteMemberViaGroupPrevVersion` | bob with chat version 21 | `CEPeerChatVRangeIncompatible` |
 
 Item status: `item_content` of the last #team item in bob's database.
 
-Existing tests with `/_add #<groupId> <contactId>` and `/a`: unchanged; they cover the `APIAddMember` parser next to the new `/_add` alternative.
+`testGroupJoinWhenInviterDeleted`, under "chat groups": alice invites contact bob to #team; bob deletes contact alice; bob joins #team; messages in #team.
 
-`packages/simplex-chat-nodejs/tests/api.test.ts`: `apiAddMemberViaGroup`, then `receivedGroupInvitationViaGroup`.
+Existing tests with `/_add #<groupId> <contactId>` and `/a`: unchanged; they cover the `APIAddMember` parser next to the new `/_add` alternative.
 
 `tests/APIDocs.hs`: run to regenerate the files in 10.1.
 

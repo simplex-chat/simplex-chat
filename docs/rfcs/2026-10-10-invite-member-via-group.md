@@ -156,6 +156,12 @@ accepted   joined
 rejected   group B deleted before joining
 ```
 
+With disappearing messages on in group A, the item disappears after the status changes, as in direct chats.
+
+The connection with the host is created from the invitation link, independently of the inviter's connection.
+So an invitation from a contact deleted before joining is accepted in the same way.
+Before this change, joining failed with `SEContactNotFoundByMemberId`.
+
 ### Clients
 
 ```

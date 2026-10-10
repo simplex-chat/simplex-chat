@@ -2704,27 +2704,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       | otherwise = do
           let Contact {localDisplayName = c, activeConn} = ct
               GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
-          forM_ activeConn $ \Connection {connId, connChatVersion, peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'} -> do
+          forM_ activeConn $ \conn@Connection {peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'} -> do
             when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
             when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
             -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
             memberKeys <- atomically . C.generateKeyPair =<< asks random
-            (GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} gks, hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Left ct) peerChatVRange inv customUserProfileId memberKeys
+            (g@(GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} _), hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Left ct) peerChatVRange inv customUserProfileId memberKeys
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let GroupMember {groupMemberId} = membership
-                -- hostContact is only reported for group links, where the client replaces
-                -- the transient host connection view with the group and removes its chat
-                joinGroupAsync hostContact_ sameLink = do
-                  subMode <- chatReadVar subscriptionMode
-                  dm <- encodeXGrpAcpt user (GIK gInfo gks) peerChatVRange
-                  (connIds@(cmdId, acId), _) <- prepareAgentJoin user True connRequest
-                  withStore' $ \db -> do
-                    when sameLink $ setViaGroupLinkUri db groupId connId
-                    createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
-                    updateGroupMemberStatusById db userId hostId GSMemAccepted
-                    updateGroupMemberStatus db userId membership GSMemAccepted
-                  joinAgentConnectionAsync cmdId False acId True connRequest dm subMode
-                  toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} hostContact_
                 createInvitationItem invStatus = do
                   let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = invStatus}) memRole
                   (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
@@ -2732,11 +2719,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
             if
               | sameGroupLinkId groupLinkId groupLinkId' ->
-                  joinGroupAsync (Just ct) True
+                  joinGroupAsync g hostId conn connRequest (Just ct) True
               | isTrue (autoAcceptGroupInvitations user) ->
                   -- a resent invitation returns the existing group, so only join while still invited
                   when (memberStatus membership == GSMemInvited) $ do
-                    joinGroupAsync Nothing False
+                    joinGroupAsync g hostId conn connRequest Nothing False
                     createInvitationItem CIGISAccepted
               | otherwise -> do
                   createInvitationItem CIGISPending
@@ -2747,6 +2734,21 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         sameGroupLinkId :: Maybe GroupLinkId -> Maybe GroupLinkId -> Bool
         sameGroupLinkId (Just gli) (Just gli') = gli == gli'
         sameGroupLinkId _ _ = False
+
+    -- hostContact is only reported for group links, where the client replaces
+    -- the transient host connection view with the group and removes its chat
+    joinGroupAsync :: GroupInfoKeys -> GroupMemberId -> Connection -> ConnReqInvitation -> Maybe Contact -> Bool -> CM ()
+    joinGroupAsync (GIK gInfo@GroupInfo {groupId, membership} gks) hostId Connection {connId, connChatVersion, peerChatVRange} connRequest hostContact_ sameLink = do
+      subMode <- chatReadVar subscriptionMode
+      dm <- encodeXGrpAcpt user (GIK gInfo gks) peerChatVRange
+      (connIds@(cmdId, acId), _) <- prepareAgentJoin user True connRequest
+      withStore' $ \db -> do
+        when sameLink $ setViaGroupLinkUri db groupId connId
+        createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
+        updateGroupMemberStatusById db userId hostId GSMemAccepted
+        updateGroupMemberStatus db userId membership GSMemAccepted
+      joinAgentConnectionAsync cmdId False acId True connRequest dm subMode
+      toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} hostContact_
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> CM ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
@@ -3884,7 +3886,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
 
     xGrpInv :: GroupInfo -> GroupMember -> Connection -> GroupInvitation -> RcvMessage -> UTCTime -> CM ()
-    xGrpInv viaGInfo m Connection {connChatVersion, peerChatVRange} inv msg brokerTs
+    xGrpInv viaGInfo m mConn@Connection {peerChatVRange} inv msg brokerTs
       | useRelays' viaGInfo = messageError "x.grp.inv: not allowed in channels"
       | isJust publicGroup = messageError "x.grp.inv: can't invite to channel"
       | not (groupFeatureMemberAllowed SGFDirectMessages m viaGInfo) = messageError "x.grp.inv: direct messages not allowed"
@@ -3894,25 +3896,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       | otherwise = do
           memberKeys <- atomically . C.generateKeyPair =<< asks random
           let incognitoProfileId = localProfileId <$> incognitoMembershipProfile viaGInfo
-          (GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} gks, hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Right m) peerChatVRange inv incognitoProfileId memberKeys
+          (g@(GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} _), hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Right m) peerChatVRange inv incognitoProfileId memberKeys
           void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
           let GroupMember {groupMemberId} = membership
               createInvitationItem invStatus = do
                 let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = invStatus}) memRole
                 (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv viaGInfo Nothing m) msg brokerTs content
                 withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
-                toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDRcv cInfo ci]
+                groupMsgToView cInfo ci
           if isTrue (autoAcceptGroupInvitations user)
             then when (memberStatus membership == GSMemInvited) $ do
-              subMode <- chatReadVar subscriptionMode
-              dm <- encodeXGrpAcpt user (GIK gInfo gks) peerChatVRange
-              (connIds@(cmdId, acId), _) <- prepareAgentJoin user True connRequest
-              withStore' $ \db -> do
-                createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
-                updateGroupMemberStatusById db userId hostId GSMemAccepted
-                updateGroupMemberStatus db userId membership GSMemAccepted
-              joinAgentConnectionAsync cmdId False acId True connRequest dm subMode
-              toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} Nothing
+              joinGroupAsync g hostId mConn connRequest Nothing False
               createInvitationItem CIGISAccepted
             else do
               createInvitationItem CIGISPending

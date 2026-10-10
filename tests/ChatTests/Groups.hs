@@ -82,6 +82,7 @@ chatGroupTests = do
     it "create and delete group" testGroupDelete
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
+    it "invitee join group after deleting inviting contact" testGroupJoinWhenInviterDeleted
     it "re-add member in status invited" testGroupReAddInvited
     it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
@@ -184,6 +185,7 @@ chatGroupTests = do
     it "repeat invitation before joining, after joining and after leaving" testInviteMemberViaGroupRepeat
     it "join with incognito profile of another group" testInviteMemberViaGroupIncognito
     it "reject invitation from member of another group" testInviteMemberViaGroupReject
+    it "invitation disappears after joining" testInviteMemberViaGroupDisappearing
     it "prohibited without direct messages or with wrong group" testInviteMemberViaGroupProhibited
     it "prohibited for member with previous version" testInviteMemberViaGroupPrevVersion
   describe "group message forwarding" $ do
@@ -913,6 +915,33 @@ testGroupDeleteWhenInvited =
             bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
+
+testGroupJoinWhenInviterDeleted :: HasCallStack => TestParams -> IO ()
+testGroupJoinWhenInviterDeleted =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as member"
+            bob <## "use /j team to accept"
+        ]
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      alice <## "bob (Bob) deleted contact with you"
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
 
 testGroupReAddInvited :: HasCallStack => TestParams -> IO ()
 testGroupReAddInvited =
@@ -5531,6 +5560,29 @@ testInviteMemberViaGroupReject =
       bob ##> "/d #club"
       bob <## "#club: you deleted your local copy of the group"
       checkInvitationStatus bob "rejected"
+
+testInviteMemberViaGroupDisappearing :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupDisappearing =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/set disappear #team on 1"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (1 sec)"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (1 sec)"
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        ( bob
+            <### [ "#club: you joined the group",
+                   "timed message deleted: received invitation to join group club as member"
+                 ]
+        )
 
 testInviteMemberViaGroupProhibited :: HasCallStack => TestParams -> IO ()
 testInviteMemberViaGroupProhibited =
