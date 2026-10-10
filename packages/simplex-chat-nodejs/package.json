@@ -5,16 +5,12 @@
   "types": "dist/index.d.ts",
   "files": [
     "src",
-    "cpp",
     "dist",
-    "binding.gyp",
     "tsconfig.json",
     "docs",
     "examples"
   ],
   "scripts": {
-    "preinstall": "node src/download-libs.js",
-    "install": "node-gyp configure; node-gyp rebuild --release",
     "install-tools": "npm install -g node-gyp",
     "configure": "node-gyp configure; mkdir libs 2> /dev/null | true",
     "build": "node-gyp rebuild && tsc && cp ./src/simplex.* ./dist",

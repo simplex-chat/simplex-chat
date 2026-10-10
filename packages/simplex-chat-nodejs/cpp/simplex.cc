@@ -11,6 +11,13 @@
 #include <condition_variable>
 #include <deque>
 #include <unordered_map>
+#include <stdexcept>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 #include "simplex.h"
 
 namespace simplex {
@@ -41,6 +48,71 @@ void haskell_init() {
 #endif
   char **pargv = const_cast<char **>(argv);
   hs_init_with_rtsopts(&argc, &pargv);
+}
+
+#ifdef _WIN32
+void* OpenLibrary(const std::string& path) {
+  int size = MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, nullptr, 0);
+  std::wstring wide_path(size, L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, wide_path.data(), size);
+  HMODULE lib = LoadLibraryExW(wide_path.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+  if (lib == nullptr) {
+    DWORD error = GetLastError();
+    throw std::runtime_error(path + ": LoadLibraryExW error " + std::to_string(error));
+  }
+  return lib;
+}
+
+void* FindSymbol(void* lib, const char* name) {
+  return reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>(lib), name));
+}
+#else
+void* OpenLibrary(const std::string& path) {
+  void* lib = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+  if (lib == nullptr) {
+    throw std::runtime_error(dlerror());
+  }
+  return lib;
+}
+
+void* FindSymbol(void* lib, const char* name) {
+  return dlsym(lib, name);
+}
+#endif
+
+template <typename F>
+void LoadSymbol(void* lib, const std::string& path, const char* name, F*& fn) {
+  fn = reinterpret_cast<F*>(FindSymbol(lib, name));
+  if (fn == nullptr) {
+    throw std::runtime_error(path + ": undefined symbol " + name);
+  }
+}
+
+std::mutex library_mutex;
+std::string library_path;
+
+void LoadLibsimplex(const std::string& path) {
+  std::lock_guard<std::mutex> lock(library_mutex);
+  if (library_path == path) {
+    return;
+  }
+  if (!library_path.empty()) {
+    throw std::runtime_error("libsimplex is already loaded from " + library_path);
+  }
+  void* lib = OpenLibrary(path);
+  LoadSymbol(lib, path, "hs_init_with_rtsopts", hs_init_with_rtsopts);
+  LoadSymbol(lib, path, "hs_thread_done", hs_thread_done);
+  LoadSymbol(lib, path, "chat_migrate_init", chat_migrate_init);
+  LoadSymbol(lib, path, "chat_migrate_init_queue", chat_migrate_init_queue);
+  LoadSymbol(lib, path, "chat_close_store", chat_close_store);
+  LoadSymbol(lib, path, "chat_send_cmd", chat_send_cmd);
+  LoadSymbol(lib, path, "chat_recv_msg_wait", chat_recv_msg_wait);
+  LoadSymbol(lib, path, "chat_write_file", chat_write_file);
+  LoadSymbol(lib, path, "chat_read_file", chat_read_file);
+  LoadSymbol(lib, path, "chat_encrypt_file", chat_encrypt_file);
+  LoadSymbol(lib, path, "chat_decrypt_file", chat_decrypt_file);
+  haskell_init();
+  library_path = path;
 }
 
 class ResultAsyncWorker : public AsyncWorker {
@@ -635,8 +707,21 @@ Value ChatDecryptFile(const CallbackInfo& args) {
   return promise;
 }
 
+Value Load(const CallbackInfo& args) {
+  Env env = args.Env();
+  if (args.Length() < 1 || !args[0].IsString()) {
+    TypeError::New(env, "Expected string (libsimplex path)").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  try {
+    LoadLibsimplex(args[0].As<String>().Utf8Value());
+  } catch (const std::runtime_error& e) {
+    Error::New(env, e.what()).ThrowAsJavaScriptException();
+  }
+  return env.Undefined();
+}
+
 Object Init(Env env, Object exports) {
-  haskell_init();
   auto* receivers = new Receivers();
   // Stopping all receivers before joining any bounds teardown by the longest in-flight receive.
   env.AddCleanupHook([receivers]() {
@@ -645,6 +730,7 @@ Object Init(Env env, Object exports) {
     }
     delete receivers;
   });
+  exports.Set("load", Function::New(env, Load));
   exports.Set("chat_migrate_init", Function::New(env, ChatMigrateInit));
   exports.Set("chat_migrate_init_queue", Function::New(env, ChatMigrateInitQueue));
   exports.Set("chat_close_store", Function::New(env, ChatCloseStore, "chat_close_store", receivers));

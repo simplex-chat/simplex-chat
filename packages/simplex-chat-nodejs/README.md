@@ -55,8 +55,10 @@ If you cloned this repository, you can:
 cd ./packages/simplex-chat-nodejs
 npm install
 npm run build
-node ./examples/squaring-bot-readme.js
+SIMPLEX_ADDON_PATH=build/Release/simplex.node node ./examples/squaring-bot-readme.js
 ```
+
+`npm test` uses the add-on from `build/Release`.
 
 There is an example with more options in [./examples/squaring-bot.ts](./examples/squaring-bot.ts).
 
@@ -64,15 +66,25 @@ You can run it with: `npx ts-node ./examples/squaring-bot.ts`
 
 A larger example, with a business address and commands as keys: [SimpleX Calculator](../../apps/simplex-calculator-bot/).
 
+## Native libraries
+
+On first use, the package downloads the chat core library (a 30-50 MB download) and the Node.js add-on from the [simplex-chat-libs release](https://github.com/simplex-chat/simplex-chat-libs/releases) of its version, verifies their SHA-256 hashes, and caches them in `~/.cache/simplex-chat/nodejs` (`~/Library/Caches/simplex-chat/nodejs` on Mac, `%LOCALAPPDATA%\simplex-chat\nodejs` on Windows).
+
+Environment variables:
+
+- `SIMPLEX_CACHE_DIR`: the cache directory.
+- `SIMPLEX_LIBS_DIR`: the directory with libsimplex and its dependencies, used instead of the download.
+- `SIMPLEX_ADDON_PATH`: the add-on file, used instead of the download.
+
 ## PostgreSQL backend
 
 By default, the package uses SQLite. To use PostgreSQL instead:
 
 ```bash
-npm install simplex-chat --simplex_backend=postgres
+SIMPLEX_BACKEND=postgres node bot.js
 ```
 
-Or persist the setting in `.npmrc`:
+Or persist the setting in `.npmrc` and start the bot with `npm start`:
 
 ```ini
 simplex_backend=postgres
@@ -87,7 +99,7 @@ simplex_backend=postgres
 ### Passing PostgreSQL connection
 
 The `DbConfig` type is a discriminated union — pick the variant that matches
-the backend you installed:
+the backend you selected:
 
 ```ts
 // SQLite (default)
