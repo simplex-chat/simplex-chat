@@ -7,7 +7,7 @@ import {pipeline} from "stream/promises"
 import extract = require("extract-zip")
 import type {Backend} from "./core"
 
-export const LIBS_VERSION = "7.1.0-beta.4"
+export const LIBS_VERSION = "7.1.0-beta.6"
 
 const GITHUB_REPO = "simplex-chat/simplex-chat-libs"
 const REQUEST_TIMEOUT_MS = 60_000

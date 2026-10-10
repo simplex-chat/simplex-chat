@@ -1,0 +1,12 @@
+---
+permalink: /sitemap.xml
+eleventyExcludeFromCollections: true
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{%- for item in collections.all | sort(false, true, "url") %}
+{%- if item.url and item.data.layout != "layouts/redirect.html" and not item.url.startsWith("/subscribe/") and not item.url.startsWith("/.well-known/") and not item.url.endsWith("/old/") %}
+  <url><loc>https://simplex.chat{{ item.url }}</loc></url>
+{%- endif %}
+{%- endfor %}
+</urlset>

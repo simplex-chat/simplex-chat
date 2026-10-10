@@ -238,13 +238,13 @@ active_links: true
         <div id="links-filters">
             <select id="filter-language">
                 <option value="">{{ "links-all-languages" | i18n({}, lang) | safe }}</option>
-                {% for l in linkLanguages %}
+                {% for l in linksPage.languages %}
                     <option value="{{ l }}">{{ l }}</option>
                 {% endfor %}
             </select>
 
             <button class="filter-chip active" data-filter="" data-value="" data-label="All">All</button>
-            {% for p in linkPills %}
+            {% for p in linksPage.pills %}
                 {% if p == "Video" or p == "Audio" %}
             <button class="filter-chip" data-filter="media" data-value="{{ p | lower }}" data-label="{{ p }}">{{ p }}</button>
                 {% else %}
@@ -254,7 +254,7 @@ active_links: true
         </div>
 
         <div id="links-list">
-            {% for item in links %}
+            {% for item in linksPage.entries %}
             <article
                 class="link-item w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#0B2A59] mb-8"
                 {% if loop.index0 >= 10 %}style="display:none"{% endif %}

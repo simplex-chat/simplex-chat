@@ -8,7 +8,7 @@
 
 > **run**(`__namedParameters`): `Promise`\<\[[`ChatApi`](api.Class.ChatApi.md), `User`, `UserContactLink` \| `undefined`\]\>
 
-Defined in: [src/bot.ts:48](../src/bot.ts#L48)
+Defined in: [src/bot.ts:49](../src/bot.ts#L49)
 
 ## Parameters
 

@@ -72,7 +72,7 @@ Chat controller is started
 
 > **apiAcceptContactRequest**(`contactReqId`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:749](../src/api.ts#L749)
+Defined in: [src/api.ts:760](../src/api.ts#L760)
 
 Accept contact request.
 Network usage: interactive.
@@ -93,7 +93,7 @@ Network usage: interactive.
 
 > **apiAcceptMember**(`groupId`, `groupMemberId`, `memberRole`): `Promise`\<`GroupMember`\>
 
-Defined in: [src/api.ts:569](../src/api.ts#L569)
+Defined in: [src/api.ts:580](../src/api.ts#L580)
 
 Accept group member. Requires Admin role.
 Network usage: background.
@@ -122,7 +122,7 @@ Network usage: background.
 
 > **apiAddMember**(`groupId`, `contactId`, `memberRole`): `Promise`\<`GroupMember`\>
 
-Defined in: [src/api.ts:549](../src/api.ts#L549)
+Defined in: [src/api.ts:560](../src/api.ts#L560)
 
 Add contact to group. Requires bot to have Admin role.
 Network usage: interactive.
@@ -151,7 +151,7 @@ Network usage: interactive.
 
 > **apiBlockMembersForAll**(`groupId`, `groupMemberIds`, `blocked`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:589](../src/api.ts#L589)
+Defined in: [src/api.ts:600](../src/api.ts#L600)
 
 Block members. Requires Moderator role.
 Network usage: background.
@@ -180,7 +180,7 @@ Network usage: background.
 
 > **apiCancelFile**(`fileId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:539](../src/api.ts#L539)
+Defined in: [src/api.ts:550](../src/api.ts#L550)
 
 Cancel file.
 Network usage: background.
@@ -201,7 +201,7 @@ Network usage: background.
 
 > **apiChatItemReaction**(`chatType`, `chatId`, `chatItemId`, `add`, `reaction`): `Promise`\<`ACIReaction`\>
 
-Defined in: [src/api.ts:512](../src/api.ts#L512)
+Defined in: [src/api.ts:523](../src/api.ts#L523)
 
 Add/remove message reaction.
 Network usage: background.
@@ -238,7 +238,7 @@ Network usage: background.
 
 > **apiConnect**(`userId`, `incognito`, `preparedLink`): `Promise`\<[`ConnReqType`](api.Enumeration.ConnReqType.md)\>
 
-Defined in: [src/api.ts:718](../src/api.ts#L718)
+Defined in: [src/api.ts:729](../src/api.ts#L729)
 
 Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
 Network usage: interactive.
@@ -267,7 +267,7 @@ Network usage: interactive.
 
 > **apiConnectActiveUser**(`connLink`): `Promise`\<[`ConnReqType`](api.Enumeration.ConnReqType.md)\>
 
-Defined in: [src/api.ts:727](../src/api.ts#L727)
+Defined in: [src/api.ts:738](../src/api.ts#L738)
 
 Connect via SimpleX link as string in the active user profile.
 Network usage: interactive.
@@ -288,7 +288,7 @@ Network usage: interactive.
 
 > **apiConnectPlan**(`userId`, `connectionLink`): `Promise`\<\[`ConnectionPlan`, `CreatedConnLink`\]\>
 
-Defined in: [src/api.ts:708](../src/api.ts#L708)
+Defined in: [src/api.ts:719](../src/api.ts#L719)
 
 Determine SimpleX link type and if the bot is already connected via this link.
 Network usage: interactive.
@@ -313,7 +313,7 @@ Network usage: interactive.
 
 > **apiCreateActiveUser**(`profile?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:886](../src/api.ts#L886)
+Defined in: [src/api.ts:897](../src/api.ts#L897)
 
 Create new user profile
 Network usage: no.
@@ -334,7 +334,7 @@ Network usage: no.
 
 > **apiCreateGroupLink**(`groupId`, `memberRole`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:649](../src/api.ts#L649)
+Defined in: [src/api.ts:660](../src/api.ts#L660)
 
 Create group link.
 Network usage: interactive.
@@ -359,7 +359,7 @@ Network usage: interactive.
 
 > **apiCreateLink**(`userId`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:695](../src/api.ts#L695)
+Defined in: [src/api.ts:706](../src/api.ts#L706)
 
 Create 1-time invitation link.
 Network usage: interactive.
@@ -380,7 +380,7 @@ Network usage: interactive.
 
 > **apiCreateMemberContact**(`groupId`, `groupMemberId`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:952](../src/api.ts#L952)
+Defined in: [src/api.ts:963](../src/api.ts#L963)
 
 Create a direct message contact with a group member.
 Returns the created contact.
@@ -427,7 +427,7 @@ Network usage: interactive.
 
 > **apiDeleteChat**(`chatType`, `chatId`, `deleteMode?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:808](../src/api.ts#L808)
+Defined in: [src/api.ts:819](../src/api.ts#L819)
 
 Delete chat.
 Network usage: background.
@@ -456,7 +456,7 @@ Network usage: background.
 
 > **apiDeleteChatItems**(`chatType`, `chatId`, `chatItemIds`, `deleteMode`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:487](../src/api.ts#L487)
+Defined in: [src/api.ts:498](../src/api.ts#L498)
 
 Delete message.
 Network usage: background.
@@ -489,7 +489,7 @@ Network usage: background.
 
 > **apiDeleteGroupLink**(`groupId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:671](../src/api.ts#L671)
+Defined in: [src/api.ts:682](../src/api.ts#L682)
 
 Delete group link.
 Network usage: background.
@@ -510,7 +510,7 @@ Network usage: background.
 
 > **apiDeleteMemberChatItem**(`groupId`, `chatItemIds`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:502](../src/api.ts#L502)
+Defined in: [src/api.ts:513](../src/api.ts#L513)
 
 Moderate message. Requires Moderator role (and higher than message author's).
 Network usage: background.
@@ -535,7 +535,7 @@ Network usage: background.
 
 > **apiDeleteUser**(`userId`, `delSMPQueues`, `viewPwd?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:916](../src/api.ts#L916)
+Defined in: [src/api.ts:927](../src/api.ts#L927)
 
 Delete user profile.
 Network usage: background.
@@ -585,7 +585,7 @@ Network usage: background.
 
 > **apiGetActiveUser**(): `Promise`\<`User` \| `undefined`\>
 
-Defined in: [src/api.ts:866](../src/api.ts#L866)
+Defined in: [src/api.ts:877](../src/api.ts#L877)
 
 Get active user profile
 Network usage: no.
@@ -600,7 +600,7 @@ Network usage: no.
 
 > **apiGetChat**(`chatType`, `chatId`, `count`): `Promise`\<`any`\>
 
-Defined in: [src/api.ts:856](../src/api.ts#L856)
+Defined in: [src/api.ts:867](../src/api.ts#L867)
 
 Get chat items.
 Network usage: no.
@@ -629,7 +629,7 @@ Network usage: no.
 
 > **apiGetChats**(`userId`, `pagination`, `query?`, `pendingConnections?`): `Promise`\<`AChat`[]\>
 
-Defined in: [src/api.ts:793](../src/api.ts#L793)
+Defined in: [src/api.ts:804](../src/api.ts#L804)
 
 Get chat previews (paginated).
 Network usage: no.
@@ -666,7 +666,7 @@ on large databases.
 
 > **apiGetGroupLink**(`groupId`): `Promise`\<`GroupLink`\>
 
-Defined in: [src/api.ts:680](../src/api.ts#L680)
+Defined in: [src/api.ts:691](../src/api.ts#L691)
 
 Get group link.
 Network usage: no.
@@ -687,7 +687,7 @@ Network usage: no.
 
 > **apiGetGroupLinkStr**(`groupId`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:686](../src/api.ts#L686)
+Defined in: [src/api.ts:697](../src/api.ts#L697)
 
 #### Parameters
 
@@ -726,7 +726,7 @@ Network usage: no.
 
 > **apiJoinGroup**(`groupId`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:559](../src/api.ts#L559)
+Defined in: [src/api.ts:570](../src/api.ts#L570)
 
 Join group.
 Network usage: interactive.
@@ -747,7 +747,7 @@ Network usage: interactive.
 
 > **apiLeaveGroup**(`groupId`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:609](../src/api.ts#L609)
+Defined in: [src/api.ts:620](../src/api.ts#L620)
 
 Leave group.
 Network usage: background.
@@ -768,7 +768,7 @@ Network usage: background.
 
 > **apiListContacts**(`userId`): `Promise`\<`Contact`[]\>
 
-Defined in: [src/api.ts:769](../src/api.ts#L769)
+Defined in: [src/api.ts:780](../src/api.ts#L780)
 
 Get contacts.
 Network usage: no.
@@ -789,7 +789,7 @@ Network usage: no.
 
 > **apiListGroups**(`userId`, `contactId?`, `search?`): `Promise`\<`GroupInfo`[]\>
 
-Defined in: [src/api.ts:779](../src/api.ts#L779)
+Defined in: [src/api.ts:790](../src/api.ts#L790)
 
 Get groups.
 Network usage: no.
@@ -818,7 +818,7 @@ Network usage: no.
 
 > **apiListMembers**(`groupId`): `Promise`\<`GroupMember`[]\>
 
-Defined in: [src/api.ts:619](../src/api.ts#L619)
+Defined in: [src/api.ts:630](../src/api.ts#L630)
 
 Get group members.
 Network usage: no.
@@ -839,7 +839,7 @@ Network usage: no.
 
 > **apiListUsers**(): `Promise`\<`UserInfo`[]\>
 
-Defined in: [src/api.ts:896](../src/api.ts#L896)
+Defined in: [src/api.ts:907](../src/api.ts#L907)
 
 Get all user profiles
 Network usage: no.
@@ -854,7 +854,7 @@ Network usage: no.
 
 > **apiNewGroup**(`userId`, `groupProfile`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:629](../src/api.ts#L629)
+Defined in: [src/api.ts:640](../src/api.ts#L640)
 
 Create group.
 Network usage: no.
@@ -879,7 +879,7 @@ Network usage: no.
 
 > **apiReceiveFile**(`fileId`): `Promise`\<`AChatItem`\>
 
-Defined in: [src/api.ts:528](../src/api.ts#L528)
+Defined in: [src/api.ts:539](../src/api.ts#L539)
 
 Receive file.
 Network usage: no.
@@ -900,7 +900,7 @@ Network usage: no.
 
 > **apiRejectContactRequest**(`contactReqId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:759](../src/api.ts#L759)
+Defined in: [src/api.ts:770](../src/api.ts#L770)
 
 Reject contact request. The user who sent the request is **not notified**.
 Network usage: no.
@@ -921,7 +921,7 @@ Network usage: no.
 
 > **apiRemoveMembers**(`groupId`, `memberIds`, `withMessages?`): `Promise`\<`GroupMember`[]\>
 
-Defined in: [src/api.ts:599](../src/api.ts#L599)
+Defined in: [src/api.ts:610](../src/api.ts#L610)
 
 Remove members. Requires Admin role.
 Network usage: background.
@@ -950,7 +950,7 @@ Network usage: background.
 
 > **apiSendMemberContactInvitation**(`contactId`, `message?`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:963](../src/api.ts#L963)
+Defined in: [src/api.ts:974](../src/api.ts#L974)
 
 Send a direct message invitation to a group member contact.
 The contact must have been created with [apiCreateMemberContact](#apicreatemembercontact).
@@ -976,7 +976,7 @@ Network usage: interactive.
 
 > **apiSendMessages**(`chat`, `messages`, `liveMessage?`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:431](../src/api.ts#L431)
+Defined in: [src/api.ts:442](../src/api.ts#L442)
 
 Send messages.
 Network usage: background.
@@ -1005,7 +1005,7 @@ Network usage: background.
 
 > **apiSendTextMessage**(`chat`, `text`, `inReplyTo?`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:454](../src/api.ts#L454)
+Defined in: [src/api.ts:465](../src/api.ts#L465)
 
 Send text message.
 Network usage: background.
@@ -1034,7 +1034,7 @@ Network usage: background.
 
 > **apiSendTextReply**(`chatItem`, `text`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:462](../src/api.ts#L462)
+Defined in: [src/api.ts:473](../src/api.ts#L473)
 
 Send text message in reply to received message.
 Network usage: background.
@@ -1059,7 +1059,7 @@ Network usage: background.
 
 > **apiSetActiveUser**(`userId`, `viewPwd?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:906](../src/api.ts#L906)
+Defined in: [src/api.ts:917](../src/api.ts#L917)
 
 Set active user profile
 Network usage: no.
@@ -1109,7 +1109,7 @@ Network usage: interactive.
 
 > **apiSetAutoAcceptMemberContacts**(`userId`, `onOff`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:845](../src/api.ts#L845)
+Defined in: [src/api.ts:856](../src/api.ts#L856)
 
 Set auto-accept member contacts.
 Network usage: no.
@@ -1134,7 +1134,7 @@ Network usage: no.
 
 > **apiSetContactCustomData**(`contactId`, `customData?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:835](../src/api.ts#L835)
+Defined in: [src/api.ts:846](../src/api.ts#L846)
 
 Set contact custom data.
 Network usage: no.
@@ -1159,7 +1159,7 @@ Network usage: no.
 
 > **apiSetContactPrefs**(`contactId`, `preferences`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:942](../src/api.ts#L942)
+Defined in: [src/api.ts:953](../src/api.ts#L953)
 
 Configure chat preference overrides for the contact.
 Network usage: background.
@@ -1184,7 +1184,7 @@ Network usage: background.
 
 > **apiSetGroupCustomData**(`groupId`, `customData?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:825](../src/api.ts#L825)
+Defined in: [src/api.ts:836](../src/api.ts#L836)
 
 Set group custom data.
 Network usage: no.
@@ -1209,7 +1209,7 @@ Network usage: no.
 
 > **apiSetGroupLinkMemberRole**(`groupId`, `memberRole`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:662](../src/api.ts#L662)
+Defined in: [src/api.ts:673](../src/api.ts#L673)
 
 Set member role for group link.
 Network usage: no.
@@ -1234,7 +1234,7 @@ Network usage: no.
 
 > **apiSetMembersRole**(`groupId`, `groupMemberIds`, `memberRole`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:579](../src/api.ts#L579)
+Defined in: [src/api.ts:590](../src/api.ts#L590)
 
 Set members role. Requires Admin role.
 Network usage: background.
@@ -1284,11 +1284,33 @@ Network usage: interactive.
 
 ***
 
+### apiSetUserDomain()
+
+> **apiSetUserDomain**(`userId`, `simplexDomain?`): `Promise`\<`User`\>
+
+Defined in: [src/api.ts:427](../src/api.ts#L427)
+
+#### Parameters
+
+##### userId
+
+`number`
+
+##### simplexDomain?
+
+`string`
+
+#### Returns
+
+`Promise`\<`User`\>
+
+***
+
 ### apiUpdateChatItem()
 
 > **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`, `liveMessage`): `Promise`\<`ChatItem`\>
 
-Defined in: [src/api.ts:470](../src/api.ts#L470)
+Defined in: [src/api.ts:481](../src/api.ts#L481)
 
 Update message.
 Network usage: background.
@@ -1325,7 +1347,7 @@ Network usage: background.
 
 > **apiUpdateGroupProfile**(`groupId`, `groupProfile`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:639](../src/api.ts#L639)
+Defined in: [src/api.ts:650](../src/api.ts#L650)
 
 Update group profile.
 Network usage: background.
@@ -1350,7 +1372,7 @@ Network usage: background.
 
 > **apiUpdateProfile**(`userId`, `profile`): `Promise`\<`UserProfileUpdateSummary` \| `undefined`\>
 
-Defined in: [src/api.ts:926](../src/api.ts#L926)
+Defined in: [src/api.ts:937](../src/api.ts#L937)
 
 Update user profile.
 Network usage: background.

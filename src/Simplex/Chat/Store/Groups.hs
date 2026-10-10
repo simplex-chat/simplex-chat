@@ -2645,42 +2645,12 @@ createIntroReMemberConn
     liftIO $ setCommandConnId db user groupCmdId groupConnId
     pure (reMember :: GroupMember) {activeConn = Just conn}
 
-createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> VersionRangeChat -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> IO ()
-createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} chatV mcvr (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
+createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> VersionRangeChat -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
+createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId} chatV mcvr (groupCmdId, groupAgentConnId) subMode = do
   let cLevel = 1 + maybe 0 (\Connection {connLevel} -> connLevel) activeConn
   currentTs <- getCurrentTime
   Connection {connId = groupConnId} <- createMemberConnection_ db userId groupMemberId groupAgentConnId chatV mcvr viaContactId cLevel currentTs subMode
   setCommandConnId db user groupCmdId groupConnId
-  forM_ directConnIds $ \(directCmdId, directAgentConnId) -> do
-    Connection {connId = directConnId} <- createConnection_ db userId ConnContact Nothing directAgentConnId ConnNew chatV mcvr viaContactId Nothing customUserProfileId cLevel currentTs subMode PQSupportOff
-    setCommandConnId db user directCmdId directConnId
-    contactId <- createMemberContact_ directConnId currentTs
-    updateMember_ contactId currentTs
-  where
-    createMemberContact_ :: Int64 -> UTCTime -> IO Int64
-    createMemberContact_ connId ts = do
-      DB.execute
-        db
-        [sql|
-          INSERT INTO contacts (contact_profile_id local_display_name, user_id, created_at, updated_at, chat_ts)
-          SELECT contact_profile_id, ?, ?, ?, ?, ?
-          FROM group_members
-          WHERE group_member_id = ?
-        |]
-        (localDisplayName, userId, ts, ts, ts, groupMemberId)
-      contactId <- insertedRowId db
-      DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, ts, connId)
-      pure contactId
-    updateMember_ :: Int64 -> UTCTime -> IO ()
-    updateMember_ contactId ts =
-      DB.execute
-        db
-        [sql|
-          UPDATE group_members
-          SET contact_id = ?, updated_at = ?
-          WHERE group_member_id = ?
-        |]
-        (contactId, ts, groupMemberId)
 
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> VersionChat -> VersionRangeChat -> Maybe Int64 -> Int -> UTCTime -> SubscriptionMode -> IO Connection
 createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange viaContact connLevel currentTs subMode =
@@ -3105,10 +3075,10 @@ associateContactWithMemberRecord
         db
         [sql|
           UPDATE group_members
-          SET contact_id = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+          SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
+          WHERE (user_id = ? AND group_id = ? AND group_member_id = ?) OR contact_id = ?
         |]
-        (contactId, currentTs, userId, groupId, groupMemberId)
+        (contactId, memLDN, memProfileId, currentTs, userId, groupId, groupMemberId, contactId)
       DB.execute
         db
         [sql|
@@ -3412,7 +3382,16 @@ setMemberContactStartedConnection db Contact {contactId} = do
     (BI True, currentTs, contactId)
 
 updateMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
-updateMemberProfile db cxt user@User {userId} m p' = do
+updateMemberProfile db cxt user m@GroupMember {memberContactId} p' = case memberContactId of
+  Nothing -> updateUnlinkedMemberProfile db cxt user m p'
+  Just ctId -> do
+    ct <- getContact db cxt user ctId
+    if contactUpdatableFromMember ct
+      then fst <$> updateContactMemberProfile db cxt user m ct p'
+      else pure m
+
+updateUnlinkedMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
+updateUnlinkedMemberProfile db cxt user@User {userId} m p' = do
   currentTs <- liftIO getCurrentTime
   badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) (memberProfile m) p'
   let memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified Nothing
@@ -3494,8 +3473,7 @@ createNewUnknownGroupMember db cxt user@User {userId, userContactId} GroupInfo {
 createLinkOwnerMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe ContactId -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
 createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupId} contactId_ memberId ownerKey = do
   currentTs <- liftIO getCurrentTime
-  let memberProfile = profileFromName $ nameFromMemberId memberId
-  (localDisplayName, profileId, _) <- createNewMemberProfile_ db cxt user memberProfile currentTs
+  (localDisplayName, profileId) <- maybe (newOwnerProfile currentTs) contactNameAndProfile contactId_
   indexInGroup <- getUpdateNextIndexInGroup_ db groupId
   liftIO $
     DB.execute
@@ -3515,6 +3493,12 @@ createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupI
   getGroupMemberById db cxt user groupMemberId
   where
     VersionRange minV maxV = vr cxt
+    newOwnerProfile currentTs = do
+      (ldn, pId, _) <- createNewMemberProfile_ db cxt user (profileFromName $ nameFromMemberId memberId) currentTs
+      pure (ldn, pId)
+    contactNameAndProfile ctId = do
+      Contact {localDisplayName = ldn, profile = LocalProfile {profileId = pId}} <- getContact db cxt user ctId
+      pure (ldn, pId)
 
 -- Intro refreshes only profile / status / peer version. Role and key stay owner-authoritative
 -- (the owner-signed roster for members/moderators/admins, link data for owners), so taking either from
@@ -3650,7 +3634,7 @@ getGroupChatTTL db gId =
 
 getUserGroupsToExpire :: DB.Connection -> User -> Int64 -> IO [GroupId]
 getUserGroupsToExpire db User {userId} globalTTL =
-  map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
+  map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND (chat_item_ttl > 0" <> cond <> ")") (Only userId)
   where
     cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"
 

@@ -8,7 +8,7 @@
 
 > **subscribeChatItems**(`bot`, `onMessage`, `commands`): `void`
 
-Defined in: [src/bot.ts:108](../src/bot.ts#L108)
+Defined in: [src/bot.ts:110](../src/bot.ts#L110)
 
 ## Parameters
 
@@ -18,7 +18,7 @@ Defined in: [src/bot.ts:108](../src/bot.ts#L108)
 
 ### onMessage
 
-((`chatItem`, `content`) => `void` \| `Promise`\<`void`\>) \| `undefined`
+((`chatItem`, `content`, `chat`) => `void` \| `Promise`\<`void`\>) \| `undefined`
 
 ### commands
 

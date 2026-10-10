@@ -1124,6 +1124,15 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH h USING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
 
 Query: 
+            SELECT s.member_relations_vector, r.index_in_group
+            FROM group_members s, group_members r
+            WHERE s.local_display_name = ? AND r.local_display_name = ?
+          
+Plan:
+SCAN s
+SEARCH r USING AUTOMATIC PARTIAL COVERING INDEX (local_display_name=?)
+
+Query: 
             SELECT t.roster_transfer_id, t.roster_version, t.roster_digest, t.sending_owner_gm_id, t.broker_ts,
                    t.roster_msg_chat_binding, t.roster_msg_signatures, t.roster_msg_body
             FROM rcv_roster_transfers t
@@ -1835,11 +1844,15 @@ SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE group_members
-          SET contact_id = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+          SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
+          WHERE (user_id = ? AND group_id = ? AND group_member_id = ?) OR contact_id = ?
         
 Plan:
+MULTI-INDEX OR
+INDEX 1
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+INDEX 2
+SEARCH group_members USING INDEX idx_group_members_contact_id (contact_id=?)
 
 Query: 
           UPDATE group_members
@@ -4198,15 +4211,6 @@ SEARCH cs USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
-        SELECT s.member_relations_vector, r.index_in_group
-        FROM group_members s, group_members r
-        WHERE s.local_display_name = ? AND r.local_display_name = ?
-      
-Plan:
-SCAN s
-SEARCH r USING AUTOMATIC PARTIAL COVERING INDEX (local_display_name=?)
-
-Query: 
         SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled,
                role_storage, role_proxy, role_names
         FROM protocol_servers
@@ -5340,7 +5344,7 @@ SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE contact_profiles
-      SET contact_link = ?, updated_at = ?
+      SET contact_link = ?, contact_domain = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     
 Plan:
@@ -6361,7 +6365,7 @@ Plan:
 SEARCH server_operators USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6374,7 +6378,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6388,7 +6392,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6402,7 +6406,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6417,7 +6421,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6431,7 +6435,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6445,7 +6449,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6459,7 +6463,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6473,7 +6477,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6486,7 +6490,7 @@ SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
@@ -6646,6 +6650,10 @@ Error: SQLite3 returned ErrorError while attempting to perform prepare "explain 
 
 Query: DELETE FROM app_settings
 Plan:
+
+Query: DELETE FROM calls WHERE call_ts < ? RETURNING chat_item_id
+Plan:
+SCAN calls
 
 Query: DELETE FROM calls WHERE user_id = ? AND contact_id = ?
 Plan:
@@ -7278,6 +7286,10 @@ Query: SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND ms
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=? AND item_sent=?)
 
+Query: SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'
+Plan:
+SCAN commands
+
 Query: SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -7378,6 +7390,10 @@ Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_suppo
 Plan:
 SCAN chat_items
 
+Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE ? || '%'
+Plan:
+SCAN chat_items
+
 Query: SELECT chat_item_id FROM chat_items WHERE item_text LIKE '%' || ? || '%' ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SCAN chat_items
@@ -7454,9 +7470,9 @@ Query: SELECT connection_id FROM connections WHERE user_id = ? AND group_member_
 Plan:
 SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 
-Query: SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
+Query: SELECT contact_id FROM contacts WHERE user_id = ? AND (chat_item_ttl > 0 OR chat_item_ttl IS NULL)
 Plan:
-SCAN contacts
+SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 
 Query: SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0
 Plan:
@@ -7485,6 +7501,10 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT contact_request_id FROM contact_requests WHERE user_id = ? AND local_display_name = ?
 Plan:
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1 (user_id=? AND local_display_name=?)
+
+Query: SELECT count(1) FROM calls
+Plan:
+SCAN calls USING COVERING INDEX idx_calls_contact_id
 
 Query: SELECT count(1) FROM chat_items WHERE chat_item_id > ?
 Plan:
@@ -7548,9 +7568,9 @@ Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMI
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
-Query: SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
+Query: SELECT group_id FROM groups WHERE user_id = ? AND (chat_item_ttl > 0 OR chat_item_ttl IS NULL)
 Plan:
-SCAN groups
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
 Query: SELECT group_id FROM groups WHERE user_id = ? AND creating_in_progress = 1 AND created_at <= ?
 Plan:
@@ -7588,6 +7608,10 @@ Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
 
+Query: SELECT index_in_group, member_relations_vector FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
 Query: SELECT issue_failed_since, issue_error FROM badge_purchases
 Plan:
 SCAN badge_purchases
@@ -7605,6 +7629,10 @@ Plan:
 SEARCH users
 
 Query: SELECT member_id FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
+Query: SELECT member_id FROM group_members WHERE member_category = ?
 Plan:
 SCAN group_members
 
@@ -7668,6 +7696,10 @@ Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_member
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT next_wake_at, badge_purchase_id FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ?
 Plan:
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
@@ -7675,6 +7707,10 @@ SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
+
+Query: SELECT purchase_key FROM badge_code_redemptions
+Plan:
+SCAN badge_code_redemptions
 
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
@@ -7736,6 +7772,10 @@ Query: SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDE
 Plan:
 SCAN chat_items
 
+Query: SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1
+Plan:
+SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
+
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
@@ -7791,6 +7831,10 @@ SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
 Plan:
@@ -7865,6 +7909,10 @@ Plan:
 SCAN contact_profiles
 
 Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contact_profiles SET contact_domain_verified = NULL WHERE user_id = ? AND contact_profile_id = ?
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -8059,6 +8107,10 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_profiles SET description = ? WHERE display_name = ?
+Plan:
+SCAN group_profiles
 
 Query: UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?
 Plan:

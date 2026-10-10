@@ -26,7 +26,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.datetime.*
 import java.io.*
 import java.net.URI
@@ -556,12 +556,16 @@ suspend fun deleteChatAsync(m: ChatModel) {
 fun deleteChatDatabaseFilesAndState() {
   val chat = File(dataDir, chatDatabaseFileName)
   val chatBak = File(dataDir, "$chatDatabaseFileName.bak")
+  val chatExported = File(dataDir, "$chatDatabaseFileName.exported")
   val agent = File(dataDir, agentDatabaseFileName)
   val agentBak = File(dataDir, "$agentDatabaseFileName.bak")
+  val agentExported = File(dataDir, "$agentDatabaseFileName.exported")
   chat.delete()
   chatBak.delete()
+  chatExported.delete()
   agent.delete()
   agentBak.delete()
+  agentExported.delete()
   filesDir.deleteRecursively()
   filesDir.mkdir()
   remoteHostsDir.deleteRecursively()
@@ -592,6 +596,11 @@ fun deleteChatDatabaseFilesAndState() {
   }
   chatModel.users.clear()
   ntfManager.cancelAllNotifications()
+}
+
+fun deleteDatabaseBackups() {
+  File(dataDir, "$chatDatabaseFileName.bak").delete()
+  File(dataDir, "$agentDatabaseFileName.bak").delete()
 }
 
 private suspend fun exportArchive(

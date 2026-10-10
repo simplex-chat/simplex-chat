@@ -32,7 +32,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 private const val badgeCodePrefix = "SB"
 private const val badgeCodeBodyLength = 20

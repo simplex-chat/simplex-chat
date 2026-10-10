@@ -44,7 +44,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.platform.AudioPlayer
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
 import chat.simplex.common.views.newchat.alertProfileImageSize
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -119,6 +119,20 @@ fun ChatView(
     }
     chat
   } }
+  if (chatsCtx.secondaryContextFilter == null) {
+    // cleared when the view is gone rather than on back: Android keeps it on screen while it slides out,
+    // and by then a channel being created may already be using this state
+    DisposableEffect(Unit) {
+      onDispose {
+        if (chatModel.chatId.value == null && chatModel.creatingChannelId.value == null) {
+          chatModel.groupMembers.value = emptyList()
+          chatModel.groupMembersIndexes.value = emptyMap()
+          chatModel.membersLoaded.value = false
+          ChannelRelaysModel.reset()
+        }
+      }
+    }
+  }
   val user = chatModel.currentUser.value
   val chatInfo = activeChat.value?.chatInfo
   if (chat == null || chatInfo == null || user == null) {
@@ -382,10 +396,6 @@ fun ChatView(
               hideKeyboard(view)
               AudioPlayer.stop()
               chatModel.chatId.value = null
-              chatModel.groupMembers.value = emptyList()
-              chatModel.groupMembersIndexes.value = emptyMap()
-              chatModel.membersLoaded.value = false
-              ChannelRelaysModel.reset()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
@@ -499,6 +509,15 @@ fun ChatView(
             showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
               hideKeyboard(view)
               groupMembersJob.cancel()
+              val connStats = mutableStateOf<ConnectionStats?>(null)
+              val connectionCode = mutableStateOf<String?>(null)
+              val connectionLoaded = mutableStateOf(false)
+              if (chatsCtx.secondaryContextFilter == null) {
+                ModalManager.end.closeModals()
+              }
+              ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
+                GroupMemberInfoView(chatRh, groupInfo, member, scrollToItemId, connStats, connectionCode, connectionLoaded, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
+              }
               groupMembersJob = scope.launch(Dispatchers.Default) {
                 val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
                 val stats = r?.second
@@ -513,15 +532,9 @@ fun ChatView(
                 withContext(Dispatchers.Main) {
                   chatModel.chatsContext.upsertGroupMember(chatRh, groupInfo, updatedMember)
                 }
-
-                if (chatsCtx.secondaryContextFilter == null) {
-                  ModalManager.end.closeModals()
-                }
-                ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
-                  remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-                    GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
-                  }
-                }
+                connStats.value = stats
+                connectionCode.value = code
+                connectionLoaded.value = true
               }
             },
             loadMessages = { chatId, pagination, visibleItemIndexes ->
@@ -2467,6 +2480,7 @@ fun BoxScope.ChatItemsList(
 
   LaunchedEffect(Unit) {
     snapshotFlow { listState.value.isScrollInProgress }
+      .onCompletion { chatViewScrollState.value = false }
       .collect {
         chatViewScrollState.value = it
       }

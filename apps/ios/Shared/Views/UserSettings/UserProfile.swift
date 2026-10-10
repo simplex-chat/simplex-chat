@@ -36,7 +36,7 @@ struct UserProfile: View {
                 HStack {
                     TextField("Enter your name…", text: $profile.displayName)
                         .focused($focusDisplayName)
-                    if !validDisplayName(profile.displayName) {
+                    if !validNewProfileName {
                         Button {
                             alert = .invalidNameError(validName: mkValidName(profile.displayName))
                         } label: {
@@ -147,8 +147,13 @@ struct UserProfile: View {
             (chatModel.currentUser?.profile.description ?? "") != description.trimmingCharacters(in: .whitespacesAndNewlines)
         ) &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
-        validDisplayName(profile.displayName) &&
+        validNewProfileName &&
         bioFitsLimit()
+    }
+
+    private var validNewProfileName: Bool {
+        profile.displayName == chatModel.currentUser?.profile.displayName
+            || validDisplayName(profile.displayName)
     }
 
     private func saveProfile() {
