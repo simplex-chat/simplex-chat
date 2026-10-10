@@ -24,7 +24,7 @@ The screen can be shown in that state in two ways:
    `UserAddressView` closes itself when the user changes (`KeyChangeEffect` on the user), but with a null user it is never reached.
 2. **The row is clicked with no active user.** With no profile and no mobile, the user picker opens by itself (`App.kt`, `desktopNoUserNoRemote`) and still shows the "Create SimpleX address" row. Clicking it crashes immediately.
 
-   The row is also offered after deleting the active profile when no other visible profile remains, including the only profile. Desktop then sets `currentUser` from `apiGetActiveUser` (`UserProfilesView.kt`, `doRemoveUser`), which is null.
+   The row is also offered after deleting the active profile when no other visible profile remains, including the only profile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
 
 ## Fix
 
@@ -44,7 +44,7 @@ Two visible effects when there is no active user:
 
 The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding. So Android behaviour does not change.
 
-An early `return@showCustomModal`, as the "Chat preferences" row does, would avoid the crash. But it would leave an invisible modal on the left-panel stack, with no back button. Only a click on the centre panel dismisses it, and it comes back as the address screen once a profile exists. The "Chat preferences" row has this behaviour on master, and this change leaves it as is.
+An early `return@showCustomModal`, as the "Chat preferences" row does, would avoid the crash. But it would leave an invisible modal on the left-panel stack, with no back button. It stays until something closes the left-panel modals, such as a click on the centre panel. If a profile is created first, it comes back as the address screen. The "Chat preferences" row has this behaviour on master, and this change leaves it as is.
 
 ## Verification
 
