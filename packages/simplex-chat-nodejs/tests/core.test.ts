@@ -2,7 +2,7 @@ import {execFile, spawnSync} from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import {core} from "../src/index";
-import {nativePaths} from "../src/native";
+const {install} = require("../src/download-libs");
 
 describe("Core tests", () => {
   const tmpDir = "./tests/tmp";
@@ -14,11 +14,6 @@ describe("Core tests", () => {
   async function stopAndClose(ctrl: bigint): Promise<void> {
     await expect(core.chatSendCmd(ctrl, "/_stop")).resolves.toMatchObject({type: "chatStopped"});
     await core.chatCloseStore(ctrl);
-  }
-
-  async function requireLibsimplex(): Promise<string> {
-    const {addon, libsimplex} = await nativePaths("sqlite");
-    return `require(${JSON.stringify(addon)}).load(${JSON.stringify(libsimplex)})`;
   }
 
   it("should initialize chat controller", async () => {
@@ -199,8 +194,10 @@ describe("Core tests", () => {
 
   it("should let the process exit while a receiver is idle", async () => {
     const childDbPath = path.resolve(tmpDir, "simplex_child");
+    const libPath = await install();
     const script = `
-      const simplex = ${await requireLibsimplex()};
+      const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
         .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
         .then((res) => console.log("received " + JSON.stringify(res)));
@@ -212,9 +209,11 @@ describe("Core tests", () => {
   }, 15000);
 
   it("should not crash when closing stopped controllers repeatedly", async () => {
+    const libPath = await install();
     const script = `
       const fs = require("fs"), path = require("path");
-      const simplex = ${await requireLibsimplex()};
+      const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       (async () => {
         for (let i = 0; i < 40; i++) {
           const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));

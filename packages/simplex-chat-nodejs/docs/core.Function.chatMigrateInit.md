@@ -6,7 +6,7 @@
 
 # Function: chatMigrateInit()
 
-> **chatMigrateInit**(`dbPath`, `dbKey`, `confirm`, `queueSize?`, `backend?`): `Promise`\<`bigint`\>
+> **chatMigrateInit**(`dbPath`, `dbKey`, `confirm`, `queueSize?`): `Promise`\<`bigint`\>
 
 Defined in: [src/core.ts:8](../src/core.ts#L8)
 
@@ -31,10 +31,6 @@ Initialize chat controller
 `number`
 
 Size of internal queues, the core default is used when omitted.
-
-### backend?
-
-`Backend`
 
 ## Returns
 

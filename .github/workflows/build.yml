@@ -857,7 +857,7 @@ jobs:
       - name: Build addon
         run: |
           npm install --no-audit --no-fund
-          npm run build-addon
+          npx --yes node-gyp rebuild
           cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
 
       - name: Upload addon artifact

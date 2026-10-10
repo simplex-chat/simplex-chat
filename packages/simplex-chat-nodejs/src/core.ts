@@ -1,12 +1,11 @@
 import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
-import {Backend, loadLibsimplex} from "./native"
+import * as simplex from "./simplex"
 
 /**
  * Initialize chat controller
  * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
  */
-export async function chatMigrateInit(dbPath: string, dbKey: string, confirm: MigrationConfirmation, queueSize?: number, backend?: Backend): Promise<bigint> {
-  const simplex = await loadLibsimplex(backend)
+export async function chatMigrateInit(dbPath: string, dbKey: string, confirm: MigrationConfirmation, queueSize?: number): Promise<bigint> {
   const [ctrl, res] = queueSize === undefined
     ? await simplex.chat_migrate_init(dbPath, dbKey, confirm)
     : await simplex.chat_migrate_init_queue(dbPath, dbKey, confirm, queueSize)
@@ -19,7 +18,6 @@ export async function chatMigrateInit(dbPath: string, dbKey: string, confirm: Mi
  * Close chat store
  */
 export async function chatCloseStore(ctrl: bigint): Promise<void> {
-  const simplex = await loadLibsimplex()
   const res = await simplex.chat_close_store(ctrl)
   if (res !== "") throw new Error(res)
 }
@@ -28,7 +26,6 @@ export async function chatCloseStore(ctrl: bigint): Promise<void> {
  * Send chat command as string
  */
 export async function chatSendCmd(ctrl: bigint, cmd: string): Promise<ChatResponse> {
-  const simplex = await loadLibsimplex()
   const res = await simplex.chat_send_cmd(ctrl, cmd)
   const json = JSON.parse(res) as APIResult<ChatResponse>
   // console.log(cmd.slice(0, 16), json.result?.type || json.error)
@@ -41,7 +38,6 @@ export async function chatSendCmd(ctrl: bigint, cmd: string): Promise<ChatRespon
  * Receive chat event
  */
 export async function chatRecvMsgWait(ctrl: bigint, wait: number): Promise<ChatEvent | undefined> {
-  const simplex = await loadLibsimplex()
   const res = await simplex.chat_recv_msg_wait(ctrl, wait)
   if (res === "") return undefined
   const json = JSON.parse(res) as APIResult<ChatEvent>
@@ -55,7 +51,6 @@ export async function chatRecvMsgWait(ctrl: bigint, wait: number): Promise<ChatE
  * Write buffer to encrypted file
  */
 export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuffer | Uint8Array): Promise<CryptoArgs> {
-  const simplex = await loadLibsimplex()
   const res = await simplex.chat_write_file(ctrl, path, buffer)
   return cryptoArgsResult(res)
 }
@@ -64,7 +59,6 @@ export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuf
  * Read buffer from encrypted file
  */
 export async function chatReadFile(path: string, {fileKey, fileNonce}: CryptoArgs): Promise<Buffer> {
-  const simplex = await loadLibsimplex()
   return await simplex.chat_read_file(path, fileKey, fileNonce)
 }
 
@@ -72,7 +66,6 @@ export async function chatReadFile(path: string, {fileKey, fileNonce}: CryptoArg
  * Encrypt file
  */
 export async function chatEncryptFile(ctrl: bigint, fromPath: string, toPath: string): Promise<CryptoArgs> {
-  const simplex = await loadLibsimplex()
   const res = await simplex.chat_encrypt_file(ctrl, fromPath, toPath)
   return cryptoArgsResult(res)
 }
@@ -81,7 +74,6 @@ export async function chatEncryptFile(ctrl: bigint, fromPath: string, toPath: st
  * Decrypt file
  */
 export async function chatDecryptFile(fromPath: string, {fileKey, fileNonce}: CryptoArgs, toPath: string): Promise<void> {
-  const simplex = await loadLibsimplex()
   const res = await simplex.chat_decrypt_file(fromPath, fileKey, fileNonce, toPath)
   if (res !== "") throw new Error(res)
 }

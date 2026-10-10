@@ -717,8 +717,11 @@ Value Load(const CallbackInfo& args) {
     LoadLibsimplex(args[0].As<String>().Utf8Value());
   } catch (const std::runtime_error& e) {
     Error::New(env, e.what()).ThrowAsJavaScriptException();
-    return env.Undefined();
   }
+  return env.Undefined();
+}
+
+Object Init(Env env, Object exports) {
   auto* receivers = new Receivers();
   // Stopping all receivers before joining any bounds teardown by the longest in-flight receive.
   env.AddCleanupHook([receivers]() {
@@ -727,21 +730,16 @@ Value Load(const CallbackInfo& args) {
     }
     delete receivers;
   });
-  Object libsimplex = Object::New(env);
-  libsimplex.Set("chat_migrate_init", Function::New(env, ChatMigrateInit));
-  libsimplex.Set("chat_migrate_init_queue", Function::New(env, ChatMigrateInitQueue));
-  libsimplex.Set("chat_close_store", Function::New(env, ChatCloseStore, "chat_close_store", receivers));
-  libsimplex.Set("chat_send_cmd", Function::New(env, ChatSendCmd));
-  libsimplex.Set("chat_recv_msg_wait", Function::New(env, ChatRecvMsgWait, "chat_recv_msg_wait", receivers));
-  libsimplex.Set("chat_write_file", Function::New(env, ChatWriteFile));
-  libsimplex.Set("chat_read_file", Function::New(env, ChatReadFile));
-  libsimplex.Set("chat_encrypt_file", Function::New(env, ChatEncryptFile));
-  libsimplex.Set("chat_decrypt_file", Function::New(env, ChatDecryptFile));
-  return libsimplex;
-}
-
-Object Init(Env env, Object exports) {
   exports.Set("load", Function::New(env, Load));
+  exports.Set("chat_migrate_init", Function::New(env, ChatMigrateInit));
+  exports.Set("chat_migrate_init_queue", Function::New(env, ChatMigrateInitQueue));
+  exports.Set("chat_close_store", Function::New(env, ChatCloseStore, "chat_close_store", receivers));
+  exports.Set("chat_send_cmd", Function::New(env, ChatSendCmd));
+  exports.Set("chat_recv_msg_wait", Function::New(env, ChatRecvMsgWait, "chat_recv_msg_wait", receivers));
+  exports.Set("chat_write_file", Function::New(env, ChatWriteFile));
+  exports.Set("chat_read_file", Function::New(env, ChatReadFile));
+  exports.Set("chat_encrypt_file", Function::New(env, ChatEncryptFile));
+  exports.Set("chat_decrypt_file", Function::New(env, ChatDecryptFile));
   return exports;
 }
 

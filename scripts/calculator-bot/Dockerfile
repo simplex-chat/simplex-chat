@@ -79,7 +79,9 @@ COPY packages/simplex-chat-nodejs packages/simplex-chat-nodejs
 RUN cd packages/simplex-chat-nodejs && \
     npm install --no-audit --no-fund && \
     npm install --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && \
-    npm run build
+    npx node-gyp rebuild && \
+    npx tsc && \
+    cp src/simplex.* dist/
 
 WORKDIR /src/apps/simplex-calculator-bot
 # No package-lock.json, so no npm ci.

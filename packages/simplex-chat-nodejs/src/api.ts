@@ -114,7 +114,7 @@ export class ChatApi {
     queueSize?: number
   ): Promise<ChatApi> {
     const [path, key] = dbConfigToMigrateArgs(db)
-    const ctrl = await core.chatMigrateInit(path, key, confirm, queueSize, db.type)
+    const ctrl = await core.chatMigrateInit(path, key, confirm, queueSize)
     return new ChatApi(ctrl)
   }
 

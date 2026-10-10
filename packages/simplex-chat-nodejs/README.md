@@ -68,14 +68,7 @@ A larger example, with a business address and commands as keys: [SimpleX Calcula
 
 ## Native libraries
 
-On first use, the package downloads two native components from the [simplex-chat-libs release](https://github.com/simplex-chat/simplex-chat-libs/releases) of its version:
-
-- the chat core library: libsimplex and its dependencies, a 30-50 MB download;
-- the Node.js add-on: simplex.node.
-
-Both downloads are verified with the SHA-256 hashes in the package, and cached in `~/.cache/simplex-chat` (`~/Library/Caches/simplex-chat` on Mac, `%LOCALAPPDATA%\simplex-chat` on Windows). The Python package uses the same cache.
-
-Supported platforms: Linux x86_64, Mac (Apple silicon and Intel), Windows x86_64.
+On first use, the package downloads the chat core library (a 30-50 MB download) and the Node.js add-on from the [simplex-chat-libs release](https://github.com/simplex-chat/simplex-chat-libs/releases) of its version, verifies their SHA-256 hashes, and caches them in `~/.cache/simplex-chat/nodejs` (`~/Library/Caches/simplex-chat/nodejs` on Mac, `%LOCALAPPDATA%\simplex-chat\nodejs` on Windows).
 
 Environment variables:
 
@@ -85,7 +78,17 @@ Environment variables:
 
 ## PostgreSQL backend
 
-By default, the package uses SQLite. To use PostgreSQL, pass a `postgres` database configuration (see below). The PostgreSQL build of the chat core library is downloaded on first use.
+By default, the package uses SQLite. To use PostgreSQL instead:
+
+```bash
+SIMPLEX_BACKEND=postgres node bot.js
+```
+
+Or persist the setting in `.npmrc` and start the bot with `npm start`:
+
+```ini
+simplex_backend=postgres
+```
 
 ### Prerequisites (PostgreSQL)
 
@@ -95,7 +98,8 @@ By default, the package uses SQLite. To use PostgreSQL, pass a `postgres` databa
 
 ### Passing PostgreSQL connection
 
-The `DbConfig` type is a discriminated union — pick the variant of the backend you use:
+The `DbConfig` type is a discriminated union — pick the variant that matches
+the backend you selected:
 
 ```ts
 // SQLite (default)
