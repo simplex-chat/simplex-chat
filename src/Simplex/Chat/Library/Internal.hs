@@ -269,7 +269,7 @@ rcvForwardedFrom db user chatDirection RcvMessage {chatMsgEvent} = case chatMsgE
 forwardLinkCIFF :: DB.Connection -> User -> ForwardLink -> IO CIForwardedFrom
 forwardLinkCIFF db user ForwardLink {displayName, groupLink, publicGroupId, memberId, msgId} =
   getGroupViaPublicGroupId db user publicGroupId >>= \case
-    Just (gId, storedLink)
+    Just (gId, Just storedLink)
       | sameShortLinkContact groupLink storedLink -> do
           ciId_ <- itemId_ gId
           pure $ CIFFGroup displayName MDRcv (Just gId) ciId_ memberId (Just msgId) linkGroupType
@@ -1194,14 +1194,15 @@ rejectRelayInvitationAsync
   -> Int64
   -> StoreCxt
   -> GroupRelayInvitation
+  -> Maybe ProofPresHeader
   -> InvitationId
   -> VersionRangeChat
   -> Int64
   -> RelayRejectionReason
   -> CM ()
-rejectRelayInvitationAsync user uclId cxt groupRelayInv invId reqChatVRange initialDelay reason = do
+rejectRelayInvitationAsync user uclId cxt groupRelayInv presHeader_ invId reqChatVRange initialDelay reason = do
   (_gInfo, ownerMember) <- withStore $ \db ->
-    createRelayRequestGroup db cxt user groupRelayInv (relayInvPresHeader groupRelayInv) invId reqChatVRange initialDelay GSMemInvited RSRejected
+    createRelayRequestGroup db cxt user groupRelayInv presHeader_ invId reqChatVRange initialDelay GSMemInvited RSRejected
   let GroupMember {groupMemberId} = ownerMember
       msg = XGrpRelayReject reason
   subMode <- chatReadVar subscriptionMode
@@ -1351,7 +1352,7 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = (p :: Profile) {badge = mfilter (acceptedProof $ channelMemberPresHeader g memberId memberPubKey) (unNoJSON memberBadgeProof <|> badge)},
+      profile = (p :: Profile) {badge = mfilter (acceptedProof $ memberPresHeader g memberId memberPubKey) (unNoJSON memberBadgeProof <|> badge)},
       memberKey = MemberKey <$> memberPubKey
     }
   where
@@ -2271,19 +2272,22 @@ presentsUserBadge User {profile = LocalProfile {localBadge}} = case localBadge o
 groupPresHeader :: GroupInfo -> Maybe ProofPresHeader
 groupPresHeader gInfo@GroupInfo {membership = GroupMember {memberId, memberPubKey}} = memberPresHeader gInfo memberId memberPubKey
 
+membershipHandshakeProfile :: User -> GroupInfo -> CM Profile
+membershipHandshakeProfile user gInfo@GroupInfo {membership} =
+  presentUserBadge user (incognitoMembershipProfile gInfo) (groupPresHeader gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
+
 directPresHeader :: ContactRequestBinding -> ProofPresHeader
 directPresHeader = \case
-  CRBRatchet ConnVerifyCodes {codeAD} -> PHChat $ encodeChatBinding CBDirect codeAD
+  CRBRatchet ConnVerifyCodes {codeAD} -> PHChat $ encodeChatBinding CBDirect $ C.sha256Hash $ "SimpleX badge" <> codeAD
   CRBRequest code -> PHRequest code
 
 linkPresHeader :: ConnShortLink c -> ProofPresHeader
 linkPresHeader = \case
-  CSLInvitation _ _ _ (LinkKey key) -> PHLink key
-  CSLContact _ _ _ (LinkKey key) -> PHLink key
+  CSLInvitation _ _ _ linkKey -> linkKeyPresHeader linkKey
+  CSLContact _ _ _ linkKey -> linkKeyPresHeader linkKey
 
-relayInvPresHeader :: GroupRelayInvitation -> Maybe ProofPresHeader
-relayInvPresHeader GroupRelayInvitation {fromMember = MemberIdRole {memberId}, publicGroupId, fromMemberKey} =
-  (\gId (MemberKey k) -> memberKeyPresHeader (Just gId) memberId k) <$> publicGroupId <*> fromMemberKey
+linkKeyPresHeader :: LinkKey -> ProofPresHeader
+linkKeyPresHeader (LinkKey key) = PHLink key
 
 connPresHeader :: Connection -> CM (Maybe ProofPresHeader)
 connPresHeader conn = M.lookup (aConnId conn) <$> connsPresHeaders [conn]
@@ -2395,11 +2399,8 @@ memberKeyPresHeader :: Maybe B64UrlByteString -> MemberId -> C.PublicKeyEd25519 
 memberKeyPresHeader publicGroupId_ memberId k =
   PHChat $ encodeChatBinding CBGroup $ maybe (smpEncode (memberId, k)) (\publicGroupId -> smpEncode (publicGroupId, memberId, k)) publicGroupId_
 
-channelMemberPresHeader :: GroupInfo -> MemberId -> Maybe C.PublicKeyEd25519 -> Maybe ProofPresHeader
-channelMemberPresHeader gInfo memberId memberKey_ = publicGroup' gInfo *> memberPresHeader gInfo memberId memberKey_
-
 memberInfoPresHeader :: GroupInfo -> MemberInfo -> Maybe ProofPresHeader
-memberInfoPresHeader gInfo MemberInfo {memberId, memberKey} = channelMemberPresHeader gInfo memberId ((\(MemberKey k) -> k) <$> memberKey)
+memberInfoPresHeader gInfo MemberInfo {memberId, memberKey} = memberPresHeader gInfo memberId ((\(MemberKey k) -> k) <$> memberKey)
 
 proofMemberKey :: MemberId -> Maybe BadgeProof -> Maybe C.PublicKeyEd25519
 proofMemberKey memberId badge_ = do

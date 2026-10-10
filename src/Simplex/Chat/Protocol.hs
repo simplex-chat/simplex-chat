@@ -92,7 +92,7 @@ import Simplex.Messaging.Version hiding (version)
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 21
+currentChatVersion = VersionChat 22
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -142,6 +142,9 @@ groupMemberKeyVersion = VersionChat 20
 
 anyTextCommandsVersion :: VersionChat
 anyTextCommandsVersion = VersionChat 21
+
+signedRelayInvVersion :: VersionChat
+signedRelayInvVersion = VersionChat 22
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -1362,6 +1365,7 @@ requiresSignature = \case
   XGrpRoster_ -> True
   XInfo_ -> True
   XGrpLinkMem_ -> True
+  XGrpRelayInv_ -> True
   _ -> False
 
 -- | Content events a member may sign (XMsgNew opt-in; XMsgUpdate/XMsgDel when the target was signed).

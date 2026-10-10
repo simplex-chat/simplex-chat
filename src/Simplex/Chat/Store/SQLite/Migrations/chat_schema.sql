@@ -211,7 +211,8 @@ CREATE TABLE groups(
   roster_blob BLOB,
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
-  applied_complete_roster_version INTEGER, -- received
+  applied_complete_roster_version INTEGER,
+  relay_request_public_group_id BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

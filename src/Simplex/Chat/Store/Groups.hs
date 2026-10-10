@@ -231,7 +231,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Badges (BadgeProof, BadgeRow, ProofPresHeader, acceptedProof, badgeProofToRow, badgeToRow)
+import Simplex.Chat.Badges (BadgeProof, BadgeRow, ProofPresHeader, acceptedBadge, badgeProofToRow, badgeToRow, sameBadgeProof, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
@@ -1923,29 +1923,25 @@ createRelayRequestGroup db cxt user@User {userId} GroupRelayInvitation {fromMemb
   g <- getGroupInfo db cxt user groupId
   pure (g, ownerMember)
   where
-    setRelayRequestData_ groupId currentTs = do
+    setRelayRequestData_ groupId currentTs =
       DB.execute
         db
         [sql|
           UPDATE groups
           SET relay_request_inv_id = ?,
               relay_request_group_link = ?,
+              relay_request_public_group_id = ?,
               relay_request_peer_chat_min_version = ?,
               relay_request_peer_chat_max_version = ?,
               relay_request_delay = ?,
               relay_request_execute_at = ?
           WHERE group_id = ?
         |]
-        (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, initialDelay, currentTs, groupId)
-      forM_ publicGroupId $ \gId ->
-        DB.execute
-          db
-          "UPDATE group_profiles SET public_group_id = ? WHERE group_profile_id = (SELECT group_profile_id FROM groups WHERE group_id = ?)"
-          (gId, groupId)
+        (Binary invId, groupLink, publicGroupId, minVersion reqChatVRange, maxVersion reqChatVRange, initialDelay, currentTs, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
           VersionRange minV maxV = reqChatVRange
-      (localDisplayName, profileId, Profile {badge}, _) <- createNewMemberProfile_ db cxt user fromMemberProfile presHeader_ currentTs
+      (localDisplayName, profileId, Profile {badge}, badgeVerified) <- createNewMemberProfile_ db cxt user fromMemberProfile presHeader_ currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       liftIO $ do
         DB.execute
@@ -1962,7 +1958,7 @@ createRelayRequestGroup db cxt user@User {userId} GroupRelayInvitation {fromMemb
               :. (minV, maxV, (\(MemberKey k) -> k) <$> fromMemberKey)
           )
         ownerMemberId <- insertedRowId db
-        forM_ badge $ createMemberBadgeProof db ownerMemberId
+        forM_ (verifiedProof badgeVerified badge) $ createMemberBadgeProof db ownerMemberId
         pure ownerMemberId
 
 updateRelayOwnStatusFromTo :: DB.Connection -> GroupInfo -> RelayStatus -> RelayStatus -> IO GroupInfo
@@ -2050,7 +2046,7 @@ getRelayPublishableGroups db User {userId, userContactId} =
   where
     toRow ((gId, pgId) :. accessRow) = (gId, pgId, toPublicGroupAccess accessRow)
 
-getGroupViaPublicGroupId :: DB.Connection -> User -> B64UrlByteString -> IO (Maybe (GroupId, ShortLinkContact))
+getGroupViaPublicGroupId :: DB.Connection -> User -> B64UrlByteString -> IO (Maybe (GroupId, Maybe ShortLinkContact))
 getGroupViaPublicGroupId db User {userId} publicGroupId =
   maybeFirstRow id $
     DB.query
@@ -2059,7 +2055,7 @@ getGroupViaPublicGroupId db User {userId} publicGroupId =
         SELECT g.group_id, gp.group_link
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-        WHERE g.user_id = ? AND gp.public_group_id = ? AND gp.group_link IS NOT NULL
+        WHERE g.user_id = ? AND gp.public_group_id = ?
         LIMIT 1
       |]
       (userId, publicGroupId)
@@ -2112,7 +2108,7 @@ createJoiningMember
             insertMember_ ldn profileId (MemberId memId) currentTs
             groupMemberId <- liftIO $ insertedRowId db
             pure (groupMemberId, MemberId memId)
-      liftIO $ forM_ badge $ createMemberBadgeProof db groupMemberId
+      liftIO $ forM_ (verifiedProof badgeVerified badge) $ createMemberBadgeProof db groupMemberId
       pure r
     where
       VersionRange minV maxV = cReqChatVRange
@@ -2480,6 +2476,7 @@ createNewMember_
         activeConn = Nothing
         memberChatVRange@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
         memberPubKey = (\(MemberKey k) -> k) <$> memKey
+        memberProof = verifiedProof badgeVerified badge
     indexInGroup <- getUpdateNextIndexInGroup_ db groupId
     liftIO $
       DB.execute
@@ -2498,7 +2495,7 @@ createNewMember_
             :. (minV, maxV)
         )
     groupMemberId <- liftIO $ insertedRowId db
-    liftIO $ forM_ badge $ createMemberBadgeProof db groupMemberId
+    liftIO $ forM_ memberProof $ createMemberBadgeProof db groupMemberId
     pure
       GroupMember
         { groupMemberId,
@@ -2524,7 +2521,7 @@ createNewMember_
           memberPubKey,
           relayLink = Nothing,
           memberVerifiedCode = Nothing,
-          memberBadgeProof = NoJSON badge
+          memberBadgeProof = NoJSON memberProof
         }
 
 checkGroupMemberHasItems :: DB.Connection -> User -> GroupMember -> IO (Maybe ChatItemId)
@@ -3404,7 +3401,7 @@ updateMemberProfile db cxt user m@GroupMember {memberContactId} presHeader_ p = 
     ct <- getContact db cxt user ctId
     if contactUpdatableFromMember ct
       then fst <$> updateContactMemberProfile db cxt user m ct presHeader_ p
-      else liftIO $ setMemberBadgeProof db m presHeader_ p
+      else liftIO $ setMemberBadgeProof db cxt m presHeader_ p
 
 updateUnlinkedMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO GroupMember
 updateUnlinkedMemberProfile db cxt user@User {userId} m presHeader_ p = do
@@ -3412,7 +3409,7 @@ updateUnlinkedMemberProfile db cxt user@User {userId} m presHeader_ p = do
   (p', badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) (Just $ memberProfile m) p
   let memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified Nothing
   m' <- updateMemberProfile' currentTs p' badgeVerified memberProfile
-  liftIO $ setMemberBadgeProof db m' presHeader_ p
+  liftIO $ setMemberBadgeProof db cxt m' presHeader_ p
   where
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
     Profile {displayName = newName} = p
@@ -3436,7 +3433,7 @@ updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} pr
   (p', badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) (Just $ memberProfile m) p
   let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified Nothing
   (m', ct') <- updateContactMemberProfile' currentTs p' badgeVerified profile
-  (,ct') <$> liftIO (setMemberBadgeProof db m' presHeader_ p)
+  (,ct') <$> liftIO (setMemberBadgeProof db cxt m' presHeader_ p)
   where
     GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
     Profile {displayName = newName} = p
@@ -3450,12 +3447,17 @@ updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} pr
             updateContactLDN_ db user contactId localDisplayName ldn currentTs
             pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)
 
-setMemberBadgeProof :: DB.Connection -> GroupMember -> Maybe ProofPresHeader -> Profile -> IO GroupMember
-setMemberBadgeProof db m@GroupMember {groupMemberId, memberBadgeProof = NoJSON storedProof} presHeader_ Profile {badge} = case badge of
-  Just b | not (acceptedProof presHeader_ b) -> pure m
-  _ | badge == storedProof -> pure m
+setMemberBadgeProof :: DB.Connection -> StoreCxt -> GroupMember -> Maybe ProofPresHeader -> Profile -> IO GroupMember
+setMemberBadgeProof db cxt m@GroupMember {groupMemberId, memberBadgeProof = NoJSON storedProof} presHeader_ Profile {badge} = case acceptedBadge presHeader_ storedProof badge of
+  badge' | sameBadgeProof badge' storedProof -> pure m
   Nothing -> m {memberBadgeProof = NoJSON Nothing} <$ DB.execute db "DELETE FROM group_member_badge_proofs WHERE group_member_id = ?" (Only groupMemberId)
-  Just b -> m {memberBadgeProof = NoJSON badge} <$ createMemberBadgeProof db groupMemberId b
+  Just b ->
+    verifyBadge (badgeKeys cxt) b >>= \case
+      Just True -> m {memberBadgeProof = NoJSON (Just b)} <$ createMemberBadgeProof db groupMemberId b
+      _ -> pure m
+
+verifiedProof :: Maybe Bool -> Maybe BadgeProof -> Maybe BadgeProof
+verifiedProof badgeVerified = mfilter (const $ badgeVerified == Just True)
 
 createMemberBadgeProof :: DB.Connection -> GroupMemberId -> BadgeProof -> IO ()
 createMemberBadgeProof db groupMemberId badge = do

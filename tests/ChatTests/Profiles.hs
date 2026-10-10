@@ -25,20 +25,24 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
-import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
-import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks, storeCxt)
-import Simplex.Chat.Library.Internal (sendDirectContactMessage)
+import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt)
+import Simplex.Chat.Library.Internal (encodeShortLinkData, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
-import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..), profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
+import Simplex.Chat.Store.Groups (getGroupMembers)
+import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
+import Simplex.Chat.Types (AgentConnId (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), Profile (..), GroupRejectionReason (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
+import Simplex.Messaging.Agent (setConnShortLink)
 import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), UserConnLinkData (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Client (pattern NRMInteractive)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -46,6 +50,11 @@ import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 import Simplex.Messaging.Version (mkVersionRange)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+#endif
 
 chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
@@ -80,14 +89,17 @@ chatProfileTests = do
     it "supporter badge sent in a retried request to an address" testUserBadgeAddressConnectRetry
     it "supporter badge sent in a retried join of a one-time link" testUserBadgeInvitationConnectRetry
     it "supporter badge bound to another chat is ignored, stored badge is kept" testUserBadgeOtherBinding
+    it "supporter badge of member bound to another member is ignored, stored badge is kept" testUserBadgeMemberOtherBinding
     it "supporter badge of member joining via group link, at request and after handshake" testUserBadgeGroupLinkJoiner
-    it "supporter badge of introduced member is not taken from the introduction" testUserBadgeIntroduced
-    it "supporter badge of member invited via contact is not forwarded in the introduction" testUserBadgeInvitedIntroduced
+    it "supporter badge of introduced member is taken from the introduction" testUserBadgeIntroduced
+    it "supporter badge of member invited via contact is forwarded in the introduction" testUserBadgeInvitedIntroduced
     it "supporter badge of inviting host in the reply to the invited contact" testUserBadgeInvitingHost
     it "supporter badge proof of member is deleted with a profile without badge" testUserBadgeMemberRemoved
     it "supporter badge proof of member with contact is deleted with a profile without badge" testUserBadgeContactMemberRemoved
     it "supporter badge in one-time link data" testUserBadgeInvitationLinkData
     it "supporter badge in data of address getting its first short link" testUserBadgeAddressFirstShortLink
+    it "supporter badge in link data bound to another link is not shown" testUserBadgeLinkDataOtherLink
+    it "supporter badge in link data without a proof is not shown" testUserBadgeLinkDataNoProof
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "rotate address ratchet keys" testRotateAddressRatchetKeys
@@ -946,7 +958,7 @@ testUserBadgeIntroduced ps = do
         ]
       alice #> "#team hello"
       cath <# "#team alice> hello"
-      memberBadgeHeader cath "team" "bob" `shouldReturn` Nothing
+      memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
 
 testUserBadgeInvitedIntroduced :: HasCallStack => TestParams -> IO ()
 testUserBadgeInvitedIntroduced ps = do
@@ -974,7 +986,7 @@ testUserBadgeInvitedIntroduced ps = do
       cath <## "chat started"
       cath <## "subscribed 2 connections on server localhost"
       cath <## "#team: alice added bob (Bob) to the group (connecting...)"
-      memberBadgeHeader cath "team" "bob" `shouldReturn` Nothing
+      memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
 
 testUserBadgeInvitingHost :: HasCallStack => TestParams -> IO ()
 testUserBadgeInvitingHost ps = do
@@ -1070,6 +1082,85 @@ testUserBadgeAddressFirstShortLink ps = do
       sLinkData <- getTermLine bob
       sLinkData `shouldContain` "\"localBadge\":{\"badge\":{\"badgeType\":\"supporter\""
       sLinkData `shouldContain` "\"status\":\"active\""
+
+testUserBadgeMemberOtherBinding :: HasCallStack => TestParams -> IO ()
+testUserBadgeMemberOtherBinding ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg3 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile cathProfile (test pk sk) ps
+  where
+    test pk sk alice bob cath = do
+      createGroup3 "team" alice bob cath
+      addTestBadge bob =<< issueTestBadge sk futureDate
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      cath <# "#team bob> hello"
+      memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
+      legend <- issueTestBadgeType sk BTLegend futureDate
+      Right otherProof <- badgeProof pk legend (PHChat $ encodeChatBinding CBGroup "other member")
+      sendTestMemberProof bob 1 otherProof
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+      cath <# "#team bob> hi"
+      memberProofHeader cath "team" "bob" `shouldReturn` Just "CG"
+      cath ##> "/i #team bob"
+      cath <## "group ID: 1"
+      cath <##. "member ID: "
+      cath <## "supporter badge - active"
+      cath <## "expires 2100-01-01"
+      cath <## "receiving messages via: localhost"
+      cath <## "sending messages via: localhost"
+      cath <## "connection not verified, use /code command to see security code"
+      cath <## currentChatVRangeInfo
+
+testUserBadgeLinkDataOtherLink :: HasCallStack => TestParams -> IO ()
+testUserBadgeLinkDataOtherLink ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test pk sk) ps
+  where
+    test pk sk alice bob = do
+      cred <- issueTestBadge sk futureDate
+      addTestBadge alice cred
+      alice ##> "/_connect 1"
+      (shortLink, _) <- getInvitations alice
+      Right otherProof <- badgeProof pk cred (PHLink "other link key")
+      setTestInvLinkData alice $ ContactShortLinkData aliceProfile {badge = Just otherProof} Nothing False Nothing
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      sLinkData <- getTermLine bob
+      sLinkData `shouldContain` "\"proof\":"
+      sLinkData `shouldNotContain` "localBadge"
+
+testUserBadgeLinkDataNoProof :: HasCallStack => TestParams -> IO ()
+testUserBadgeLinkDataNoProof =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/_connect 1"
+      (shortLink, _) <- getInvitations alice
+      let shownBadge = ShownBadge BadgeInfo {badgeType = BTSupporter, badgeExpiry = futureDate, badgeExtra = ""} BSActive
+      setTestInvLinkData alice $ ContactShortLinkData aliceProfile Nothing False (Just shownBadge)
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      sLinkData <- getTermLine bob
+      sLinkData `shouldNotContain` "localBadge"
+
+sendTestMemberProof :: TestCC -> GroupId -> BadgeProof -> IO ()
+sendTestMemberProof cc groupId proof =
+  withCCUser cc $ \user -> do
+    let cxt = storeCxt $ chatController cc
+    (g@(GIK gInfo@GroupInfo {membership = m@GroupMember {memberProfile}} gks), members) <- withCCTransaction cc $ \db -> do
+      g@(GIK gInfo _) <- runExceptT (getGroupInfoKeys db cxt user groupId) >>= either (fail . show) pure
+      members <- getGroupMembers db cxt user gInfo
+      pure (g, members)
+    let p = (redactedMemberProfile gInfo m $ fromLocalProfile memberProfile) {badge = Just proof}
+    runExceptT (sendGroupMessage' user g members (XInfo p (Just $ groupMemberKey gks))) `runReaderT` chatController cc
+      >>= either (fail . show) (\_ -> pure ())
+
+setTestInvLinkData :: TestCC -> ContactShortLinkData -> IO ()
+setTestInvLinkData cc linkData = do
+  [Only (AgentConnId connId)] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections"
+  let ChatController {smpAgent} = chatController cc
+  runExceptT (setConnShortLink smpAgent NRMInteractive connId SCMInvitation (UserInvLinkData $ encodeShortLinkData linkData) Nothing False Nothing)
+    >>= either (fail . show) (\_ -> pure ())
 
 testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
 testUpdateProfileImage =
@@ -4214,8 +4305,8 @@ testShortLinkDeletedAddress = testChat2 aliceProfile bobProfile test
 
 testShortLinkAddressConnectRetry :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressConnectRetry ps =
-  withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice ->
-    withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
       shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         (shortLink, fullLink) <- getContactLinks alice True
@@ -4259,7 +4350,6 @@ testShortLinkAddressConnectRetry ps =
         { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
-    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
     opts' =
       testOpts
         { coreOptions =
@@ -4270,8 +4360,8 @@ testShortLinkAddressConnectRetry ps =
 
 testShortLinkAddressConnectRetryIncognito :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressConnectRetryIncognito ps =
-  withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice ->
-    withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
       shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         (shortLink, fullLink) <- getContactLinks alice True
@@ -4323,7 +4413,6 @@ testShortLinkAddressConnectRetryIncognito ps =
         { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
-    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
     opts' =
       testOpts
         { coreOptions =

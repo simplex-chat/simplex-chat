@@ -21,6 +21,7 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM (atomically)
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -31,26 +32,28 @@ import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
-import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XInfo, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
-import Simplex.Messaging.Agent (sendMessages, vrValue)
+import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
-import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
-import Simplex.Messaging.Protocol (MsgFlags (..))
+import Simplex.Messaging.Client (pattern NRMInteractive)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
+import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Protocol (MsgFlags (..), SubscriptionMode (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
@@ -307,6 +310,8 @@ chatGroupTests = do
       it "should deliver support scope messages via relay" testChannelSupportScope
       it "should add relay to existing channel" testChannelAddRelay
       it "should not add relay when the invitation owner key differs from link data" testChannelAddRelayOwnerKeyMismatch
+      it "should not add relay when the invitation group id differs from link data" testChannelAddRelayGroupIdMismatch
+      it "should ignore relay invitation without the owner's signature" testChannelRelayInvUnsigned
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
@@ -11310,8 +11315,9 @@ testChannelAddRelayOwnerKeyMismatch ps =
         (cathSLink, _cLink) <- getContactLinks cath True
         alice ##> ("/relays name=cath " <> cathSLink)
         alice <## "ok"
-        (otherKey :: C.PublicKeyEd25519, _) <- atomically . C.generateKeyPair =<< C.newRandom
-        withCCTransaction alice $ \db ->
+        (otherKey :: C.PublicKeyEd25519, otherPrivKey :: C.PrivateKeyEd25519) <- atomically . C.generateKeyPair =<< C.newRandom
+        withCCTransaction alice $ \db -> do
+          DB.execute db "UPDATE groups SET member_priv_key = ?" (Only otherPrivKey)
           DB.execute db "UPDATE group_members SET member_pub_key = ? WHERE member_category = 'user'" (Only otherKey)
         alice ##> "/_add relays #1 2"
         alice <## "#team: group relays:"
@@ -11319,6 +11325,55 @@ testChannelAddRelayOwnerKeyMismatch ps =
         alice <## "  - relay id 2: invited"
         cath <## "exception: getLinkDataCreateRelayLink: owner key of invitation does not match link data"
         queryRelayOwnStatus cath 1 `shouldReturn` Just "invited"
+
+testChannelAddRelayGroupIdMismatch :: HasCallStack => TestParams -> IO ()
+testChannelAddRelayGroupIdMismatch ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        _ <- prepareChannel1Relay "team" alice bob
+        cath ##> "/ad"
+        (cathSLink, _cLink) <- getContactLinks cath True
+        alice ##> ("/relays name=cath " <> cathSLink)
+        alice <## "ok"
+        withCCTransaction alice $ \db ->
+          DB.execute db "UPDATE group_profiles SET public_group_id = ?" (Only (B64UrlByteString "other group id"))
+        alice ##> "/_add relays #1 2"
+        alice <## "#team: group relays:"
+        alice <## "  - relay id 1: active"
+        alice <## "  - relay id 2: invited"
+        cath <## "exception: getLinkDataCreateRelayLink: linkEntityId does not match publicGroupId of profile or invitation"
+        queryRelayOwnStatus cath 1 `shouldReturn` Just "invited"
+
+testChannelRelayInvUnsigned :: HasCallStack => TestParams -> IO ()
+testChannelRelayInvUnsigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+      cath ##> "/ad"
+      (cathSLink, _cLink) <- getContactLinks cath True
+      sendUnsignedRelayInv alice cathSLink
+      cath <##. "error: x.grp.relay.inv: invitation is not signed by the owner"
+
+sendUnsignedRelayInv :: TestCC -> String -> IO ()
+sendUnsignedRelayInv cc relayAddress =
+  withCCUser cc $ \user -> do
+    relayLink :: ShortLinkContact <- either fail pure $ strDecode (B.pack relayAddress)
+    (memberKey, _) <- atomically . C.generateKeyPair =<< C.newRandom
+    let inv =
+          GroupRelayInvitation
+            { fromMember = MemberIdRole (MemberId "owner") GROwner,
+              fromMemberProfile = aliceProfile,
+              relayMemberId = MemberId "relay",
+              groupLink = relayLink,
+              publicGroupId = Just $ B64UrlByteString "group id",
+              fromMemberKey = Just $ MemberKey memberKey
+            }
+        joinRelay = do
+          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user relayLink
+          (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+          dm <- encodeConnInfo $ XGrpRelayInv inv
+          withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
+    runExceptT joinRelay `runReaderT` chatController cc >>= either (fail . show) (\_ -> pure ())
 
 testChannelAddRelayWithRoster :: HasCallStack => TestParams -> IO ()
 testChannelAddRelayWithRoster ps =

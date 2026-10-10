@@ -59,7 +59,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), ProofPresHeader (..), badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), ProofPresHeader, badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -2125,8 +2125,8 @@ processChatCommand cxt nm = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
     rootKey <- atomically . C.generateKeyPair =<< asks random
-    (preparedLink, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMInvitation rootKey Nothing False Nothing IKUsePQ False Nothing
-    linkProfile <- presentUserBadge user incognitoProfile (Just $ PHLink linkKey) $ userProfileDirect user incognitoProfile Nothing True
+    (preparedLink, preparedParams@PreparedLinkParams {plpLinkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMInvitation rootKey Nothing False Nothing IKUsePQ False Nothing
+    linkProfile <- presentUserBadge user incognitoProfile (Just $ linkKeyPresHeader plpLinkKey) $ userProfileDirect user incognitoProfile Nothing True
     let userData = contactShortLinkData linkProfile {contactDomain = Nothing} Nothing
         userLinkData = UserInvLinkData userData
     (connId, ccLink) <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True preparedLink preparedParams userLinkData subMode
@@ -2166,12 +2166,13 @@ processChatCommand cxt nm = \case
     where
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
+        let short = isJust $ connShortLink' =<< connLinkInv
         (agConnId, ccLink) <-
-          if isJust $ connShortLink' =<< connLinkInv
+          if short
             then do
               rootKey <- atomically . C.generateKeyPair =<< asks random
-              (preparedLink, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId newUser) SCMInvitation rootKey Nothing False Nothing IKPQOn False Nothing
-              userLinkData <- UserInvLinkData . (`contactShortLinkData` Nothing) <$> presentUserBadge newUser Nothing (Just $ PHLink linkKey) (userProfileDirect newUser Nothing Nothing True)
+              (preparedLink, preparedParams@PreparedLinkParams {plpLinkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId newUser) SCMInvitation rootKey Nothing False Nothing IKPQOn False Nothing
+              userLinkData <- UserInvLinkData . (`contactShortLinkData` Nothing) <$> presentUserBadge newUser Nothing (Just $ linkKeyPresHeader plpLinkKey) (userProfileDirect newUser Nothing Nothing True)
               withAgent $ \a -> createConnectionForLink a nm (aUserId newUser) True preparedLink preparedParams userLinkData subMode
             else withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation Nothing Nothing IKPQOn True subMode
         ccLink' <- shortenCreatedLink ccLink
@@ -2768,7 +2769,7 @@ processChatCommand cxt nm = \case
               subRole <- asks $ channelSubscriberRole . config
               gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId subRole subMode
               relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
-              results <- addRelays user gInfo sLnk relays
+              results <- addRelays user (GIK gInfo groupKeys) sLnk relays
               pure (gLink, results)
         pure (groupProfile', memberId, groupKeys, setupLink)
   NewPublicGroup incognito relayIds gProfile -> withUser $ \User {userId} ->
@@ -2780,10 +2781,10 @@ processChatCommand cxt nm = \case
       pure (gInfo, relays)
     pure $ CRGroupRelays user gInfo relays
   APIAddGroupRelays groupId relayIds -> withUser $ \user -> withGroupLock "addGroupRelays" groupId $ do
-    (gInfo, existingRelays) <- withFastStore $ \db -> do
-      gi <- getGroupInfo db cxt user groupId
+    (g@(GIK gInfo _), existingRelays) <- withFastStore $ \db -> do
+      g@(GIK gi _) <- getGroupInfoKeys db cxt user groupId
       rs <- liftIO $ getGroupRelays db gi
-      pure (gi, rs)
+      pure (g, rs)
     assertUserGroupRole gInfo GROwner
     unless (useRelays' gInfo) $ throwCmdError "group does not use relays"
     let existingRelayIds = map (\GroupRelay {userChatRelay = UserChatRelay {chatRelayId = DBEntityId rId}} -> rId) existingRelays
@@ -2793,7 +2794,7 @@ processChatCommand cxt nm = \case
       Just sl -> pure sl
       Nothing -> throwChatError $ CEException "group link has no short link"
     relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
-    results <- addRelays user gInfo sLnk relays
+    results <- addRelays user g sLnk relays
     case partitionEithers (map snd results) of
       ([], _) -> do
         relays' <- withFastStore $ \db -> liftIO $ getGroupRelays db gInfo
@@ -4319,8 +4320,8 @@ processChatCommand cxt nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
-    addRelays :: User -> GroupInfo -> ShortLinkContact -> [UserChatRelay] -> CM [(UserChatRelay, Either ChatError GroupRelay)]
-    addRelays user gInfo@GroupInfo {membership} groupSLink relays =
+    addRelays :: User -> GroupInfoKeys -> ShortLinkContact -> [UserChatRelay] -> CM [(UserChatRelay, Either ChatError GroupRelay)]
+    addRelays user g@(GIK gInfo@GroupInfo {membership} gks) groupSLink relays =
       mapConcurrently addRelay relays
       where
         addRelay :: UserChatRelay -> CM (UserChatRelay, Either ChatError GroupRelay)
@@ -4338,18 +4339,19 @@ processChatCommand cxt nm = \case
                 groupRelay <- createGroupRelayRecord db gInfo relayMember relay
                 conn <- createRelayConnection db cxt user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
                 pure (relayMember, conn, groupRelay)
-              let GroupMember {memberRole = userRole, memberId = userMemberId, memberPubKey = userMemberKey} = membership
+              let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
                   GroupMember {memberId = relayMemberId} = relayMember
-              membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) (groupPresHeader gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
+              membershipProfile <- membershipHandshakeProfile user gInfo
               let relayInv = GroupRelayInvitation {
                     fromMember = MemberIdRole userMemberId userRole,
                     fromMemberProfile = membershipProfile,
                     relayMemberId,
                     groupLink = groupSLink,
                     publicGroupId = (\PublicGroupProfile {publicGroupId = gId} -> gId) <$> publicGroup' gInfo,
-                    fromMemberKey = MemberKey <$> userMemberKey
+                    fromMemberKey = Just $ groupMemberKey gks
                   }
-              dm <- encodeConnInfo $ XGrpRelayInv relayInv
+                  msg = XGrpRelayInv relayInv
+              dm <- encodeConnInfoSigning PQSupportOff (groupMsgSigning False g msg) msg
               sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
               let newConnStatus = if sqSecured then ConnSndReady else ConnJoined
               withFastStore' $ \db -> do

@@ -1185,7 +1185,8 @@ CREATE TABLE test_chat_schema.groups (
     roster_blob bytea,
     group_domain_verified smallint,
     stored_roster_version bigint,
-    applied_complete_roster_version bigint
+    applied_complete_roster_version bigint,
+    relay_request_public_group_id bytea
 );
 
 

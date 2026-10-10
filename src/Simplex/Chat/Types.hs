@@ -54,7 +54,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), ProofPresHeader, acceptedProof, localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), ProofPresHeader, acceptedBadge, localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
@@ -497,8 +497,7 @@ data GroupKeys
         memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKRelayRequest
-      { memberPrivKey :: C.PrivateKeyEd25519,
-        publicGroupId :: Maybe B64UrlByteString
+      { memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKPreparedPublicGroup
       { memberPrivKey :: C.PrivateKeyEd25519
@@ -867,9 +866,7 @@ profileBadgeVerified expected keys lp_ p@Profile {badge = rcvBadge} =
     (_, Just newB) -> verifyBadge keys newB
   where
     storedBadge = (\LocalProfile {localBadge} -> localBadge) =<< lp_
-    newBadge
-      | all (acceptedProof expected) rcvBadge = rcvBadge
-      | otherwise = (\Profile {badge} -> badge) . fromLocalProfile =<< lp_
+    newBadge = acceptedBadge expected ((\Profile {badge} -> badge) . fromLocalProfile =<< lp_) rcvBadge
 
 -- a failed or unknown-key badge is re-verified on the next profile update even when its disclosed content
 -- is unchanged, so it heals once an app update adds the issuer key
@@ -1226,6 +1223,7 @@ data GroupMember = GroupMember
 data RelayRequestData = RelayRequestData
   { relayInvId :: InvitationId,
     reqGroupLink :: ShortLinkContact,
+    reqPublicGroupId :: Maybe B64UrlByteString,
     reqChatVRange :: VersionRangeChat,
     reqDelay :: Int64,
     reqRetries :: Int,

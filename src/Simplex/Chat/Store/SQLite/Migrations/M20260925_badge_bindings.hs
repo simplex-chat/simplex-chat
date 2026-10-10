@@ -10,6 +10,8 @@ m20260925_badge_bindings =
   [sql|
 ALTER TABLE connections ADD COLUMN pres_header BLOB;
 
+ALTER TABLE groups ADD COLUMN relay_request_public_group_id BLOB;
+
 CREATE TABLE group_member_badge_proofs(
   group_member_id INTEGER PRIMARY KEY REFERENCES group_members ON DELETE CASCADE,
   badge_proof BLOB NOT NULL,
@@ -27,6 +29,8 @@ down_m20260925_badge_bindings :: Query
 down_m20260925_badge_bindings =
   [sql|
 DROP TABLE group_member_badge_proofs;
+
+ALTER TABLE groups DROP COLUMN relay_request_public_group_id;
 
 ALTER TABLE connections DROP COLUMN pres_header;
 |]

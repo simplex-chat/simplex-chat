@@ -11,6 +11,8 @@ m20260925_badge_bindings =
   [r|
 ALTER TABLE connections ADD COLUMN pres_header BYTEA;
 
+ALTER TABLE groups ADD COLUMN relay_request_public_group_id BYTEA;
+
 CREATE TABLE group_member_badge_proofs(
   group_member_id BIGINT PRIMARY KEY REFERENCES group_members ON DELETE CASCADE,
   badge_proof BYTEA NOT NULL,
@@ -28,6 +30,8 @@ down_m20260925_badge_bindings :: Text
 down_m20260925_badge_bindings =
   [r|
 DROP TABLE group_member_badge_proofs;
+
+ALTER TABLE groups DROP COLUMN relay_request_public_group_id;
 
 ALTER TABLE connections DROP COLUMN pres_header;
 |]

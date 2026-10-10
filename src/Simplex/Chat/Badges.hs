@@ -48,6 +48,8 @@ module Simplex.Chat.Badges
     badgeProof,
     verifyBadge,
     acceptedProof,
+    acceptedBadge,
+    sameBadgeProof,
     unboundProof,
     mkBadgeStatus,
     BadgeRow,
@@ -345,7 +347,15 @@ instance StrEncoding ProofPresHeader where
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
 acceptedProof :: Maybe ProofPresHeader -> BadgeProof -> Bool
-acceptedProof expected_ b@BadgeProof {presHeader = BBSPresHeader ph} = unboundProof b || maybe False ((ph ==) . strEncode) expected_
+acceptedProof expected_ b@BadgeProof {presHeader = BBSPresHeader ph} = unboundProof b || any ((ph ==) . strEncode) expected_
+
+acceptedBadge :: Maybe ProofPresHeader -> Maybe BadgeProof -> Maybe BadgeProof -> Maybe BadgeProof
+acceptedBadge expected_ stored_ received_ = if all (acceptedProof expected_) received_ then received_ else stored_
+
+sameBadgeProof :: Maybe BadgeProof -> Maybe BadgeProof -> Bool
+sameBadgeProof b_ b_' = (proofContent <$> b_) == (proofContent <$> b_')
+  where
+    proofContent b@BadgeProof {presHeader, badgeInfo} = (if unboundProof b then Nothing else Just presHeader, badgeInfo)
 
 unboundProof :: BadgeProof -> Bool
 unboundProof BadgeProof {presHeader = BBSPresHeader ph} = case strDecode ph of
