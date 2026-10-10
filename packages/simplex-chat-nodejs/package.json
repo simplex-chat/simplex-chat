@@ -5,34 +5,32 @@
   "types": "dist/index.d.ts",
   "files": [
     "src",
-    "cpp",
     "dist",
-    "binding.gyp",
     "tsconfig.json",
     "docs",
     "examples"
   ],
   "scripts": {
-    "preinstall": "node src/download-libs.js",
-    "install": "node-gyp configure; node-gyp rebuild --release",
     "install-tools": "npm install -g node-gyp",
-    "configure": "node-gyp configure; mkdir libs 2> /dev/null | true",
-    "build": "node-gyp rebuild && tsc && cp ./src/simplex.* ./dist",
+    "configure": "node-gyp configure",
+    "build-addon": "node-gyp rebuild",
+    "build": "npm run build-addon && tsc",
     "run": "node src/index.js",
     "build-run": "node-gyp build && node src/index.js",
     "test": "jest",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "update-release": "node scripts/update-release.js"
   },
   "dependencies": {
     "@simplex-chat/types": "^0.11.4",
     "extract-zip": "^2.0.1",
-    "fast-deep-equal": "^3.1.3",
-    "node-addon-api": "^8.5.0"
+    "fast-deep-equal": "^3.1.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.5",
     "jest": "^30.2.0",
+    "node-addon-api": "^8.5.0",
     "ts-jest": "^29.4.6",
     "typedoc": "^0.28.15",
     "typedoc-plugin-markdown": "^4.9.0",

@@ -2,6 +2,7 @@ import {execFile, spawnSync} from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import {core} from "../src/index";
+import {nativePaths} from "../src/native";
 
 describe("Core tests", () => {
   const tmpDir = "./tests/tmp";
@@ -13,6 +14,11 @@ describe("Core tests", () => {
   async function stopAndClose(ctrl: bigint): Promise<void> {
     await expect(core.chatSendCmd(ctrl, "/_stop")).resolves.toMatchObject({type: "chatStopped"});
     await core.chatCloseStore(ctrl);
+  }
+
+  async function requireLibsimplex(): Promise<string> {
+    const {addon, libsimplex} = await nativePaths("sqlite");
+    return `require(${JSON.stringify(addon)}).load(${JSON.stringify(libsimplex)})`;
   }
 
   it("should initialize chat controller", async () => {
@@ -191,10 +197,10 @@ describe("Core tests", () => {
     expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
   }, 10000);
 
-  it("should let the process exit while a receiver is idle", () => {
+  it("should let the process exit while a receiver is idle", async () => {
     const childDbPath = path.resolve(tmpDir, "simplex_child");
     const script = `
-      const simplex = require("./build/Release/simplex.node");
+      const simplex = ${await requireLibsimplex()};
       simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
         .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
         .then((res) => console.log("received " + JSON.stringify(res)));
@@ -208,7 +214,7 @@ describe("Core tests", () => {
   it("should not crash when closing stopped controllers repeatedly", async () => {
     const script = `
       const fs = require("fs"), path = require("path");
-      const simplex = require("./build/Release/simplex.node");
+      const simplex = ${await requireLibsimplex()};
       (async () => {
         for (let i = 0; i < 40; i++) {
           const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));

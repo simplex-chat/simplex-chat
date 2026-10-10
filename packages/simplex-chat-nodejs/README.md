@@ -55,8 +55,10 @@ If you cloned this repository, you can:
 cd ./packages/simplex-chat-nodejs
 npm install
 npm run build
-node ./examples/squaring-bot-readme.js
+SIMPLEX_ADDON_PATH=build/Release/simplex.node node ./examples/squaring-bot-readme.js
 ```
+
+`npm test` uses the add-on from `build/Release`.
 
 There is an example with more options in [./examples/squaring-bot.ts](./examples/squaring-bot.ts).
 
@@ -64,19 +66,26 @@ You can run it with: `npx ts-node ./examples/squaring-bot.ts`
 
 A larger example, with a business address and commands as keys: [SimpleX Calculator](../../apps/simplex-calculator-bot/).
 
+## Native libraries
+
+On first use, the package downloads two native components from the [simplex-chat-libs release](https://github.com/simplex-chat/simplex-chat-libs/releases) of its version:
+
+- the chat core library: libsimplex and its dependencies, a 30-50 MB download;
+- the Node.js add-on: simplex.node.
+
+Both downloads are verified with the SHA-256 hashes in the package, and cached in `~/.cache/simplex-chat` (`~/Library/Caches/simplex-chat` on Mac, `%LOCALAPPDATA%\simplex-chat` on Windows). The Python package uses the same cache.
+
+Supported platforms: Linux x86_64, Mac (Apple silicon and Intel), Windows x86_64.
+
+Environment variables:
+
+- `SIMPLEX_CACHE_DIR`: the cache directory.
+- `SIMPLEX_LIBS_DIR`: the directory with libsimplex and its dependencies, used instead of the download.
+- `SIMPLEX_ADDON_PATH`: the add-on file, used instead of the download.
+
 ## PostgreSQL backend
 
-By default, the package uses SQLite. To use PostgreSQL instead:
-
-```bash
-npm install simplex-chat --simplex_backend=postgres
-```
-
-Or persist the setting in `.npmrc`:
-
-```ini
-simplex_backend=postgres
-```
+By default, the package uses SQLite. To use PostgreSQL, pass a `postgres` database configuration (see below). The PostgreSQL build of the chat core library is downloaded on first use.
 
 ### Prerequisites (PostgreSQL)
 
@@ -86,8 +95,7 @@ simplex_backend=postgres
 
 ### Passing PostgreSQL connection
 
-The `DbConfig` type is a discriminated union — pick the variant that matches
-the backend you installed:
+The `DbConfig` type is a discriminated union — pick the variant of the backend you use:
 
 ```ts
 // SQLite (default)
