@@ -1022,7 +1022,8 @@ CREATE TABLE test_chat_schema.group_members (
     removed_at timestamp with time zone,
     roster_served_version bigint,
     member_security_code text,
-    member_security_code_verified_at timestamp with time zone
+    member_security_code_verified_at timestamp with time zone,
+    invited_via_group_member_id bigint
 );
 
 
@@ -2709,6 +2710,10 @@ CREATE INDEX idx_group_members_invited_by_group_member_id ON test_chat_schema.gr
 
 
 
+CREATE INDEX idx_group_members_invited_via_group_member_id ON test_chat_schema.group_members USING btree (invited_via_group_member_id);
+
+
+
 CREATE INDEX idx_group_members_member_profile_id ON test_chat_schema.group_members USING btree (member_profile_id);
 
 
@@ -3462,6 +3467,11 @@ ALTER TABLE ONLY test_chat_schema.group_members
 
 ALTER TABLE ONLY test_chat_schema.group_members
     ADD CONSTRAINT group_members_invited_by_group_member_id_fkey FOREIGN KEY (invited_by_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_members
+    ADD CONSTRAINT group_members_invited_via_group_member_id_fkey FOREIGN KEY (invited_via_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
 
 
 

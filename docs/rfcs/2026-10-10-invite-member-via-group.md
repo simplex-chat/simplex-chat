@@ -35,7 +35,8 @@ group history   excluded
 Sender requirements:
 
 ```
-role in group A         admin or owner
+group A preferences     direct messages allowed for the user's role
+role in group A         author or above
 role in group B         admin or owner, and not lower than the invited role
 group A                 group, not channel, different from group B
 group B                 group, not channel
@@ -50,7 +51,7 @@ The receiving client ignores the invitation when:
 ```
 group A                 channel
 group B                 channel
-sender role in group A  below admin
+group A preferences     direct messages not allowed for the sender's role
 sender                  blocked
 fromMember role         below admin, or below the invited role
 fromMember id           equal to the invited member id
@@ -102,6 +103,7 @@ viaMember       member of group A
 In group B, the record of the invited member is linked to the member of group A.
 Until the member joins, the same invitation is re-sent on a repeated command.
 After the member joins, `CEGroupDuplicateMember` is returned.
+After the member leaves, is removed or is rejected, a new invitation is sent.
 
 The sent invitation is saved in group A as `CISndGroupInvitation`, visible to the sender only.
 The name of the member in group A is stored in the item (`CIGroupInvitation.localDisplayName`), as the contact name in direct chats.
@@ -138,7 +140,8 @@ With automatic acceptance of group invitations enabled, the client joins group B
 
 With an incognito membership in group A, the same incognito profile is used in group B.
 
-In group B, copies of the group A profiles are stored for the sender and for the invited member, without badges.
+In group B, copies of the group A profiles are stored for the sender and for the invited member.
+Badge proofs bound to group A are dropped from the copies.
 The copies are replaced by the profiles sent in the connection handshake (`x.grp.acpt`, `x.grp.mem.info`).
 
 ### Joining

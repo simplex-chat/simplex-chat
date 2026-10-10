@@ -178,6 +178,14 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
+  describe "invite member via group" $ do
+    it "invite member of another group" testInviteMemberViaGroup
+    it "auto-accept invitation from member of another group" testInviteMemberViaGroupAutoAccept
+    it "repeat invitation before joining, after joining and after leaving" testInviteMemberViaGroupRepeat
+    it "join with incognito profile of another group" testInviteMemberViaGroupIncognito
+    it "reject invitation from member of another group" testInviteMemberViaGroupReject
+    it "prohibited without direct messages or with wrong group" testInviteMemberViaGroupProhibited
+    it "prohibited for member with previous version" testInviteMemberViaGroupPrevVersion
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
@@ -5410,6 +5418,169 @@ testMemberContactAcceptIncognito =
       cath ?<# (bobIncognito <> "> hi")
       cath ?#> ("@" <> bobIncognito <> " hey")
       bob ?<# (cathIncognito <> "> hey")
+
+testInviteMemberViaGroup :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroup =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      createClub alice
+      threadDelay 1000000
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      cath <// 50000
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "sent invitation to join group club as member")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "received invitation to join group club as member")])
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        (bob <## "#club: you joined the group")
+      checkInvitationStatus bob "accepted"
+      alice #> "#club hello"
+      bob <# "#club alice_1> hello"
+      bob #> "#club hi"
+      alice <# "#club bob_1> hi"
+
+testInviteMemberViaGroupAutoAccept :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupAutoAccept =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      bob ##> "/set accept group invitations on"
+      bob <## "ok"
+      createClub alice
+      threadDelay 1000000
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      alice <## "invitation to join the group #club sent to bob in #team"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        (bob <## "#club: you joined the group")
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "received invitation to join group club as member")])
+
+testInviteMemberViaGroupRepeat :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupRepeat =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      addBob alice bob bobId "club"
+      bob ##> "/gs"
+      bob
+        <### [ "#team (2 members)",
+               "#club - you are invited (/j club to join, /d #club to delete invitation)"
+             ]
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        (bob <## "#club: you joined the group")
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      alice <## "contact bob is already in the group"
+      bob ##> "/l club"
+      concurrentlyN_
+        [ do
+            bob <## "#club: you left the group"
+            bob <## "use /d #club to delete the group",
+          alice <## "#club: bob_1 left the group (signed)"
+        ]
+      addBob alice bob bobId "club_1"
+
+testInviteMemberViaGroupIncognito :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupIncognito =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c i " <> gLink)
+      bobIncognito <- getTermLine bob
+      bob <## "connection request sent incognito!"
+      alice <## (bobIncognito <> ": accepting request to join group #team...")
+      concurrentlyN_
+        [ alice <## ("#team: " <> bobIncognito <> " joined the group"),
+          do
+            bob <## "#team: joining the group..."
+            bob <## ("#team: you joined the group incognito as " <> bobIncognito)
+        ]
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" (T.pack bobIncognito)
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      concurrentlyN_
+        [ alice <## ("invitation to join the group #club sent to " <> bobIncognito <> " in #team"),
+          do
+            bob <## "#club: alice in #team invites you to join the group as member"
+            bob <## ("use /j club to join incognito as " <> bobIncognito)
+        ]
+      bob ##> "/j club"
+      concurrently_
+        (alice <## ("#club: " <> bobIncognito <> "_1 joined the group"))
+        (bob <## ("#club: you joined the group incognito as " <> bobIncognito))
+
+testInviteMemberViaGroupReject :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupReject =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      bob ##> "/d #club"
+      bob <## "#club: you deleted your local copy of the group"
+      checkInvitationStatus bob "rejected"
+
+testInviteMemberViaGroupProhibited :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupProhibited =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/set direct #team off"
+      alice <## "updated group preferences:"
+      alice <## "Direct messages: off"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "Direct messages: off"
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      alice <## "bad chat command: direct messages not allowed"
+      alice ##> ("/_add #2 #2 " <> show bobId <> " member")
+      alice <## ("chat db error: SEGroupMemberNotFound {groupMemberId = " <> show bobId <> "}")
+
+testInviteMemberViaGroupPrevVersion :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupPrevVersion ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      alice <## "peer chat protocol version range incompatible"
+
+createClub :: HasCallStack => TestCC -> IO ()
+createClub cc = do
+  cc ##> "/g club"
+  cc <## "group #club is created"
+  cc <## "to add members use /a club <name> or /create link #club"
+
+addBob :: HasCallStack => TestCC -> TestCC -> GroupMemberId -> String -> IO ()
+addBob alice bob bobId club = do
+  alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+  concurrentlyN_
+    [ alice <## "invitation to join the group #club sent to bob in #team",
+      do
+        bob <## ("#" <> club <> ": alice in #team invites you to join the group as member")
+        bob <## ("use /j " <> club <> " to accept")
+    ]
+
+checkInvitationStatus :: HasCallStack => TestCC -> String -> IO ()
+checkInvitationStatus cc status = do
+  [Only content] <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only String]
+  content `shouldContain` ("\"status\":\"" <> status <> "\"")
 
 testGroupMsgForwardMessage :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardMessage =

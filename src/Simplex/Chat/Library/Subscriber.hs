@@ -1121,6 +1121,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' m'' gr verifiedMsg sharedMsgId_ brokerTs
               XGrpRosterAck ackVer ackErr -> Nothing <$ xGrpRosterAck (GIK gInfo' gks) m'' ackVer ackErr
               XGrpRosterRequest reqVer -> Nothing <$ xGrpRosterRequest (GIK gInfo' gks) m'' reqVer
+              XGrpInv gInv -> Nothing <$ xGrpInv gInfo' m'' conn' gInv msg brokerTs
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward fwd msg' -> Nothing <$ xGrpMsgForward (GIK gInfo' gks) Nothing m'' fwd (ParsedMsg Nothing Nothing msg') brokerTs
@@ -2708,7 +2709,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
             -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
             memberKeys <- atomically . C.generateKeyPair =<< asks random
-            (GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} gks, hostId) <- withStore $ \db -> createGroupInvitation db cxt user ct inv customUserProfileId memberKeys
+            (GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} gks, hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Left ct) peerChatVRange inv customUserProfileId memberKeys
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let GroupMember {groupMemberId} = membership
                 -- hostContact is only reported for group links, where the client replaces
@@ -3881,6 +3882,43 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       | otherwise = do
           unless (isUserGrpFwdRelay gInfo) $ connectToRelayAsync user gInfo rl
           pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+
+    xGrpInv :: GroupInfo -> GroupMember -> Connection -> GroupInvitation -> RcvMessage -> UTCTime -> CM ()
+    xGrpInv viaGInfo m Connection {connChatVersion, peerChatVRange} inv msg brokerTs
+      | useRelays' viaGInfo = messageError "x.grp.inv: not allowed in channels"
+      | isJust publicGroup = messageError "x.grp.inv: can't invite to channel"
+      | not (groupFeatureMemberAllowed SGFDirectMessages m viaGInfo) = messageError "x.grp.inv: direct messages not allowed"
+      | memberBlocked m = messageWarning "x.grp.inv: member is blocked (ignoring)"
+      | fromRole < GRAdmin || fromRole < memRole = messageError "x.grp.inv: inviting member role"
+      | fromMemId == memId = messageError "x.grp.inv: duplicate member ID"
+      | otherwise = do
+          memberKeys <- atomically . C.generateKeyPair =<< asks random
+          let incognitoProfileId = localProfileId <$> incognitoMembershipProfile viaGInfo
+          (GIK gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership} gks, hostId) <- withStore $ \db -> createGroupInvitation db cxt user (Right m) peerChatVRange inv incognitoProfileId memberKeys
+          void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
+          let GroupMember {groupMemberId} = membership
+              createInvitationItem invStatus = do
+                let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = invStatus}) memRole
+                (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv viaGInfo Nothing m) msg brokerTs content
+                withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
+                toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDRcv cInfo ci]
+          if isTrue (autoAcceptGroupInvitations user)
+            then when (memberStatus membership == GSMemInvited) $ do
+              subMode <- chatReadVar subscriptionMode
+              dm <- encodeXGrpAcpt user (GIK gInfo gks) peerChatVRange
+              (connIds@(cmdId, acId), _) <- prepareAgentJoin user True connRequest
+              withStore' $ \db -> do
+                createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
+                updateGroupMemberStatusById db userId hostId GSMemAccepted
+                updateGroupMemberStatus db userId membership GSMemAccepted
+              joinAgentConnectionAsync cmdId False acId True connRequest dm subMode
+              toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} Nothing
+              createInvitationItem CIGISAccepted
+            else do
+              createInvitationItem CIGISPending
+              toView CEvtReceivedGroupInvitationViaGroup {user, groupInfo = gInfo, viaGroupInfo = viaGInfo, viaMember = m, fromMemberRole = fromRole, memberRole = memRole}
+      where
+        GroupInvitation {fromMember = MemberIdRole fromMemId fromRole, invitedMember = MemberIdRole memId memRole, connRequest, groupProfile = GroupProfile {publicGroup}} = inv
 
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
     xGrpDirectInv g@GroupInfo {groupId, groupProfile = gp} m mConn@Connection {connId = mConnId} connReq mContent_ msg brokerTs

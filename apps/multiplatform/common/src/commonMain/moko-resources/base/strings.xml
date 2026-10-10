@@ -1767,6 +1767,8 @@
   <string name="you_joined_this_group">You joined this group</string>
   <string name="you_rejected_group_invitation">You rejected group invitation</string>
   <string name="group_invitation_expired">Group invitation expired</string>
+  <string name="group_invitation_for_you_only">For you only</string>
+  <string name="group_invitation_for_member_only">For %1$s only</string>
 
   <!-- Direct event chat items -->
   <string name="rcv_direct_event_contact_deleted">deleted contact</string>
