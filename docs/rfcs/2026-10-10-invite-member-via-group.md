@@ -58,12 +58,12 @@ fromMember id           equal to the invited member id
 
 ### Sending
 
-New command:
+New command, next to `APIAddMember`:
 
 ```haskell
-APIInviteMember
+APIAddMemberViaGroup
   { groupId :: GroupId,
-    fromGroupId :: GroupId,
+    viaGroupId :: GroupId,
     groupMemberId :: GroupMemberId,
     memberRole :: GroupMemberRole
   }
@@ -71,29 +71,67 @@ APIInviteMember
 
 ```
 groupId         group B
-fromGroupId     group A
+viaGroupId      group A
 groupMemberId   member of group A
 memberRole      role in group B
 ```
 
-Syntax: `/_invite #<groupId> #<fromGroupId> <groupMemberId> <memberRole>`
+Syntax: `/_add #<groupId> #<viaGroupId> <groupMemberId> <memberRole>`
 
 For a member outside group A, `SEGroupMemberNotFound` is returned.
 
-Response: `CRSentGroupInvitation`, with `contact` omitted.
+New response, next to `CRSentGroupInvitation`:
+
+```haskell
+CRSentGroupInvitationViaGroup
+  { user :: User,
+    groupInfo :: GroupInfo,
+    member :: GroupMember,
+    viaGroupInfo :: GroupInfo,
+    viaMember :: GroupMember
+  }
+```
+
+```
+groupInfo       group B
+member          record of the invited member in group B
+viaGroupInfo    group A
+viaMember       member of group A
+```
 
 In group B, the record of the invited member is linked to the member of group A.
 Until the member joins, the same invitation is re-sent on a repeated command.
 After the member joins, `CEGroupDuplicateMember` is returned.
 
 The sent invitation is saved in group A as `CISndGroupInvitation`, visible to the sender only.
+The name of the member in group A is stored in the item (`CIGroupInvitation.localDisplayName`), as the contact name in direct chats.
 
 ### Receiving
 
+New event, next to `CEvtReceivedGroupInvitation`:
+
+```haskell
+CEvtReceivedGroupInvitationViaGroup
+  { user :: User,
+    groupInfo :: GroupInfo,
+    viaGroupInfo :: GroupInfo,
+    viaMember :: GroupMember,
+    fromMemberRole :: GroupMemberRole,
+    memberRole :: GroupMemberRole
+  }
+```
+
+```
+groupInfo        group B
+viaGroupInfo     group A
+viaMember        sender, member of group A
+fromMemberRole   sender role in group B
+memberRole       invited role in group B
+```
+
 ```
 group B      created with status "invited", or found by the invitation link
-chat item    CIRcvGroupInvitation in group A, from the sender
-event        CEvtReceivedGroupInvitation, contact omitted, member_ = sender
+chat item    CIRcvGroupInvitation in group A, main scope, from the sender
 ```
 
 With automatic acceptance of group invitations enabled, the client joins group B and saves the item with status "accepted".
@@ -101,6 +139,7 @@ With automatic acceptance of group invitations enabled, the client joins group B
 With an incognito membership in group A, the same incognito profile is used in group B.
 
 In group B, copies of the group A profiles are stored for the sender and for the invited member, without badges.
+The copies are replaced by the profiles sent in the connection handshake (`x.grp.acpt`, `x.grp.mem.info`).
 
 ### Joining
 
@@ -117,23 +156,27 @@ rejected   group B deleted before joining
 ### Clients
 
 ```
-group A          existing group invitation card ("Tap to join")
-chat list        group B, as for invitations from contacts
-event types      CEvtReceivedGroupInvitation.contact optional (Kotlin, Swift)
-sending          API only
+group A      existing group invitation card ("Tap to join"), with a label
+chat list    group B, added on CEvtReceivedGroupInvitationViaGroup
+sending      API only
+```
+
+Labels, on group invitation cards in group chats only:
+
+```
+received card   For you only
+sent card       For <name> only     name of the member in group A
 ```
 
 ### Bots API
 
 ```
-APIInviteMember               new command
-CRSentGroupInvitation         contact: optional
-CEvtReceivedGroupInvitation   contact: optional
-                              member_: new, optional
+APIAddMemberViaGroup                  new command
+CRSentGroupInvitationViaGroup         new response
+CEvtReceivedGroupInvitationViaGroup   new event
 ```
 
-Bots that join groups on `receivedGroupInvitation` accept these invitations without changes.
-The directory service ignores invitations without `contact`.
+`APIAddMember`, `CRSentGroupInvitation` and `CEvtReceivedGroupInvitation`: unchanged.
 
 ### Version
 
@@ -141,13 +184,12 @@ The directory service ignores invitations without `contact`.
 chat version    22
 ```
 
-Version 22 is also used in branch `ep/profile-badges` (`signedRelayInvVersion`).
-Version 23 is assigned to the branch merged second.
+Version 22 is shared with owner-signed relay invitations (`signedRelayInvVersion`).
+Version 22 is not in any release: v7.1.0-beta.6 uses version 21.
 
 ## Out of scope
 
 - Role changes of members invited via a group before they join.
-- "Only you can see it" label on the invitation card.
 - "Open" action on accepted invitations.
 - Invitations to members pending approval in group A.
 - User interface for sending invitations.
