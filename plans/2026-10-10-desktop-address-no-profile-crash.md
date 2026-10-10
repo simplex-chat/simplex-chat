@@ -47,6 +47,8 @@ The change is in common code. On Android the user picker is not reachable withou
 
 An early `return@showCustomModal`, as the "Chat preferences" row does, would avoid the crash. But it would leave an invisible modal on the left-panel stack, with no back button. It stays until something closes the left-panel modals, such as a click on the centre panel. If a profile is created first, it comes back as the address screen. The "Chat preferences" row has this behaviour on master, and this change leaves it as is.
 
+Documentation: `apps/multiplatform/spec/client/navigation.md` lists `isLastModal` among the `ModalManager` methods, and `apps/multiplatform/product/views/user-profiles.md` describes the address row closing itself with no active profile.
+
 ## Verification
 
 Desktop AppImages from master and from this branch, each with a fresh database. The v7.1.0-beta.6 CLI acts as the linked mobile (`/connect remote ctrl`). "Leftover" is checked by creating a profile afterwards: a leftover modal reappears as the address screen when onboarding finishes.
