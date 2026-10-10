@@ -15,7 +15,7 @@ import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.NameWithBadge
 import chat.simplex.common.views.helpers.ProfileImage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.datetime.Instant
 
 @Composable

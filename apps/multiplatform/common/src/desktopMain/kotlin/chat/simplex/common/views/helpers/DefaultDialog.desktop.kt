@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.DialogParams
 import chat.simplex.common.platform.desktopPlatform
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.awt.FileDialog

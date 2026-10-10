@@ -10,7 +10,7 @@ import androidx.compose.runtime.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.AudioPlayer.duration
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import java.io.*
 

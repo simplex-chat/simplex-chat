@@ -144,6 +144,7 @@ coreVersionInfo simplexmqCommit =
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     chatVRange :: VersionRangeChat,
+    callVRange :: VersionRangeCall,
     -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
     badgePublicKeys :: Map Int BBSPublicKey,
     -- Nothing until the badge service is deployed
@@ -174,6 +175,7 @@ data ChatConfig = ChatConfig
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
+    callInvitationTTL :: NominalDiffTime,
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     webPreviewConfig :: Maybe WebPreviewConfig,

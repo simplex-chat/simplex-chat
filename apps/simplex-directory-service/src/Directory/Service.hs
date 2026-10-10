@@ -12,7 +12,9 @@
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Directory.Service
-  ( welcomeGetOpts,
+  ( ServiceState (..),
+    welcomeGetOpts,
+    newServiceState,
     directoryService,
     directoryServiceCLI,
   )
@@ -245,9 +247,8 @@ directoryCommands =
   where
     idParam = Just "<ID>"
 
-directoryService :: DirectoryOpts -> ChatConfig -> IO ()
-directoryService opts cfg = do
-  env@ServiceState {eventQ} <- newServiceState opts
+directoryService :: DirectoryOpts -> ChatConfig -> ServiceState -> IO ()
+directoryService opts cfg env@ServiceState {eventQ} = do
   let chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
@@ -340,6 +341,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         SDRUser -> deUserCommand ct ciId cmd
         SDRAdmin -> deAdminCommand ct ciId cmd
         SDRSuperUser -> deSuperUserCommand ct ciId cmd
+    DEVoiceUploadEnded filePath -> void (try $ removeFile filePath :: IO (Either SomeException ()))
     DELogChatResponse r -> logInfo r
   where
     groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt $ simplexChatContact cReq) strEncodeTxt sLnk_
@@ -651,9 +653,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           case voiceResult of
             Right r -> case lines r of
               (filePath : durationStr : _)
-                | not (null filePath), Just duration <- readMaybe durationStr -> do
+                | not (null filePath), Just duration <- readMaybe durationStr ->
                     sendComposedMessageFile cc sendRef Nothing (MCVoice "" duration) (CF.plain filePath)
-                    void (try $ removeFile filePath :: IO (Either SomeException ()))
               _ -> logError "voice captcha generator: unexpected output"
             Left e -> logError $ "voice captcha generator error: " <> tshow e
 

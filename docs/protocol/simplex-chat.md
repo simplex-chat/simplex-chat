@@ -90,7 +90,7 @@ The syntax of compressed message is defined by the following ABNF notation:
 compressedMessage = %s"X" 1*15780 OCTET; compressed message data
 ```
 
-Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).
+Compressed message is required to fit into 15602 bytes, or into 13380 bytes for a connection with PQ encryption, accounting for agent overhead (see Protocol's maxEncodedMsgLength and maxEncodedMsgLengthPQ).
 
 The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).
 
@@ -232,7 +232,7 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.inv` message is sent to invite contact to the group via contact's direct connection and includes group member connection address. This message MUST only be sent by members with `admin` or `owner` role. Optional `groupLinkId` is included when this message is sent to contacts connected via the user's group link. This identifier is a random byte sequence, with no global or even local uniqueness - it is only used for the user's invitations to a given group to provide confirmation to the contact that the group invitation is for the same group the contact was connecting to via the group link, so that the invitation can be automatically accepted by the contact - the contact compares it with the group link id contained in the group link uri's data field.
 
-`x.grp.acpt` message is sent as part of group member connection handshake, only to the inviting user.
+`x.grp.acpt` message is sent as part of group member connection handshake, only to the inviting user. It optionally includes the invited member's group profile. The inviting user replies with `x.grp.mem.info` that includes the inviting member's group profile.
 
 `x.grp.link.inv` message is sent as part of connection handshake to member joining via group link, and contains group profile and initial information about inviting and joining member.
 
@@ -285,6 +285,12 @@ These message are used for WebRTC calls:
 3. `x.call.answer`: to continue with call connection the initiating clients must reply with `x.call.answer` message. This message contains WebRTC answer and collected ICE candidates. Additional ICE candidates can be sent in `x.call.extra` message.
 
 4. `x.call.end` message is sent to notify the other party that the call is terminated.
+
+Call messages have their own version, independent of the chat protocol version. The initiating client sends the range of call versions it supports in `callVRange` property of `x.call.inv`. The receiving client chooses the highest version supported by both clients and sends it in `callVersion` property of `x.call.offer`. The initiating client rejects the offer if this version is not in the range it sent. A missing range or version means version 1.
+
+Media frames are encrypted with AES-256-GCM using the key agreed via X25519 DH keys in `x.call.inv` and `x.call.offer`:
+- version 1: the key is the DH shared secret.
+- version 2: the key is 32 bytes of HKDF-SHA512 output, using the DH shared secret as input key material, call ID as salt and `SimpleXCallMediaKey` as info.
 
 ## Threat model
 

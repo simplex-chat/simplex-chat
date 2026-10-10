@@ -35,7 +35,7 @@ import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: () -> Unit) {

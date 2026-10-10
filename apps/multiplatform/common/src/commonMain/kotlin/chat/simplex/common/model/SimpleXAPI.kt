@@ -32,6 +32,7 @@ import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
+import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -39,7 +40,7 @@ import chat.simplex.common.views.usersettings.networkAndServers.defaultCondition
 import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.russhwolf.settings.Settings
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -215,6 +216,7 @@ class AppPreferences {
   val encryptedSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE, null)
   val initializationVectorSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE, null)
   val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null)
+  val shouldDeleteDatabaseBackups = mkBoolPreference(SHARED_PREFS_SHOULD_DELETE_DATABASE_BACKUPS, false)
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
@@ -487,6 +489,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE = "EncryptedSelfDestructPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE = "InitializationVectorSelfDestructPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
+    private const val SHARED_PREFS_SHOULD_DELETE_DATABASE_BACKUPS = "ShouldDeleteDatabaseBackups"
     private const val SHARED_PREFS_NEW_DATABASE_INITIALIZED = "NewDatabaseInitialized"
     private const val SHARED_PREFS_SHOULD_IMPORT_APP_SETTINGS = "ShouldImportAppSettings"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
@@ -686,6 +689,10 @@ object ChatController {
       }
       apiStartChat()
       appPrefs.chatStopped.set(false)
+      if (appPrefs.shouldDeleteDatabaseBackups.get()) {
+        deleteDatabaseBackups()
+        appPrefs.shouldDeleteDatabaseBackups.set(false)
+      }
     } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
@@ -1920,8 +1927,10 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiUpdateProfile(userId, profile))
     if (r is API.Result && r.res is CR.UserProfileNoChange) return profile to emptyList()
     if (r is API.Result && r.res is CR.UserProfileUpdated) return r.res.toProfile to r.res.updateSummary.changedContacts
-    if (r is API.Error && r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName) {
+    if (r is API.Error && (r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName || r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.UserExists)) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
+    } else if (!(networkErrorAlert(r))) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_profile), "${r.responseType}: ${r.details}")
     }
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
     return null
@@ -1933,7 +1942,12 @@ object ChatController {
     return when {
       r is API.Result && r.res is CR.UserProfileNoChange -> null
       r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
-      else -> throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiSetProfileAddress", generalGetString(MR.strings.error_saving_profile), r)
+        }
+        throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+      }
     }
   }
 
@@ -3364,20 +3378,13 @@ object ChatController {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation.copy(remoteHostId = rhId))
       }
       is CR.CallOffer -> {
-        // TODO askConfirmation?
-        // TODO check encryption is compatible
         withCall(r, r.contact) { call ->
           chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, hasSharedKey = r.sharedKey != null)
-          val useRelay = appPrefs.webrtcPolicyRelay.get()
-          val iceServers = getIceServers()
-          chatModel.callCommand.add(WCallCommand.Offer(
-            offer = r.offer.rtcSession,
-            iceCandidates = r.offer.rtcIceCandidates,
-            media = r.callType.media,
-            aesKey = r.sharedKey,
-            iceServers = iceServers,
-            relay = useRelay
-          ))
+          if (r.askConfirmation) {
+            showUnencryptedCallAlert(call) { processCallOffer(r) }
+          } else {
+            processCallOffer(r)
+          }
         }
       }
       is CR.CallAnswer -> {
@@ -3631,6 +3638,39 @@ object ChatController {
     } else {
       Log.d(TAG, "processReceivedMsg: ignoring ${r.responseType}, not in call with the contact ${contact.id}")
     }
+  }
+
+  private fun processCallOffer(r: CR.CallOffer) {
+    val useRelay = appPrefs.webrtcPolicyRelay.get()
+    val iceServers = getIceServers()
+    chatModel.callCommand.add(WCallCommand.Offer(
+      offer = r.offer.rtcSession,
+      iceCandidates = r.offer.rtcIceCandidates,
+      media = r.callType.media,
+      aesKey = r.sharedKey,
+      iceServers = iceServers,
+      relay = useRelay
+    ))
+  }
+
+  private fun showUnencryptedCallAlert(call: Call, onContinue: () -> Unit) {
+    // the call may have ended, or a new one started with the same contact, while the alert was shown
+    fun offerPending(): Boolean {
+      val c = chatModel.activeCall.value
+      return c != null && c.remoteHostId == call.remoteHostId && c.contact.id == call.contact.id && c.callState == CallState.OfferReceived
+    }
+    val endCall = { if (offerPending()) withBGApi { chatModel.callManager.endCall(call) } }
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.call_not_encrypted_title),
+      text = generalGetString(MR.strings.call_not_encrypted_desc).format(call.contact.displayName),
+      confirmText = generalGetString(MR.strings.call_service_notification_end_call),
+      onConfirm = { endCall() },
+      dismissText = generalGetString(MR.strings.continue_to_next_step),
+      onDismiss = { if (offerPending()) onContinue() },
+      onDismissRequest = { endCall() },
+      destructive = true,
+      parseHtml = false
+    )
   }
 
   suspend fun leaveGroup(rh: Long?, groupId: Long) {
@@ -4853,6 +4893,7 @@ sealed class UserServersError {
   @Serializable @SerialName("storageMissing") data class StorageMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("proxyMissing") data class ProxyMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("duplicateServer") data class DuplicateServer(val protocol: ServerProtocol, val duplicateServer: String, val duplicateHost: String): UserServersError()
+  @Serializable @SerialName("tooManyHosts") data class TooManyHosts(val protocol: ServerProtocol, val tooManyHostsServer: String): UserServersError()
   @Serializable @SerialName("duplicateChatRelayAddress") data class DuplicateChatRelayAddress(val duplicateChatRelay: String, val duplicateAddress: String): UserServersError()
 
   val globalError: String?
@@ -4868,6 +4909,7 @@ sealed class UserServersError {
       is StorageMissing -> this.protocol
       is ProxyMissing -> this.protocol
       is DuplicateServer -> this.protocol
+      is TooManyHosts -> this.protocol
       is DuplicateChatRelayAddress -> null
     }
 
@@ -4882,6 +4924,8 @@ sealed class UserServersError {
 
         is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_private_routing)}" }
           ?: generalGetString(MR.strings.no_message_servers_configured_for_private_routing)
+
+        is TooManyHosts -> String.format(generalGetString(MR.strings.server_has_too_many_hosts), ServerAddress.parseServerAddress(this.tooManyHostsServer)?.hostnames?.firstOrNull() ?: this.tooManyHostsServer)
 
         else -> null
       }
@@ -7536,7 +7580,8 @@ enum class RcvSwitchStatus {
   @SerialName("switch_started") SwitchStarted,
   @SerialName("sending_qadd") SendingQADD,
   @SerialName("sending_quse") SendingQUSE,
-  @SerialName("received_message") ReceivedMessage
+  @SerialName("received_message") ReceivedMessage,
+  @SerialName("received_qend") ReceivedQEND
 }
 
 @Serializable

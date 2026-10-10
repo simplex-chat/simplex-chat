@@ -35,7 +35,7 @@ import chat.simplex.common.views.newchat.gradientPoints
 import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.common.views.migration.MigrateToDeviceView
 import chat.simplex.common.views.migration.MigrationToState
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlin.math.ceil
 import kotlin.math.floor

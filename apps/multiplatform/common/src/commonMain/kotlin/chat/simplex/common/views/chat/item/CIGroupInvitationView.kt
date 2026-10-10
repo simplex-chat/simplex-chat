@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 
 @Composable

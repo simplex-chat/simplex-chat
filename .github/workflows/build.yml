@@ -360,6 +360,14 @@ jobs:
           sudo chmod -R 777 dist-newstyle ~/.cabal
           sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
 
+      - name: Mount RAM disk for tests
+        if: matrix.should_run == true && matrix.arch == 'x86_64'
+        shell: bash
+        run: |
+          mkdir -p tests/tmp
+          sudo mount -t tmpfs -o size=512M tmpfs tests/tmp
+          sudo chown $(id -u):$(id -g) tests/tmp
+
       - name: Run tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         timeout-minutes: 120

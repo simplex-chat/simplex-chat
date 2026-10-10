@@ -33,7 +33,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.common.views.chat.item.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 
 // Spec: spec/client/chat-list.md#ChatPreviewView
@@ -311,26 +311,31 @@ fun ChatPreviewView(
       mutableStateOf({ providerForGallery(chat.chatItems, ci?.id ?: 0) {} })
     }
     val uriHandler = LocalUriHandler.current
+    // Media in the chat list has no menu, so a menu opened from it must close at once, or the media stays revealed.
+    val noMenu = remember { mutableStateOf(false) }
+    LaunchedEffect(noMenu.value) { noMenu.value = false }
     when (mc) {
       is MsgContent.MCLink -> SmallContentPreview {
+        val image = remember(mc.preview.image) { base64ToBitmap(mc.preview.image) }
+        val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
         IconButton(
           { openBrowserAlert(mc.preview.uri, uriHandler) },
           Modifier.desktopPointerHoverIconHand(),
         ) {
-          Image(base64ToBitmap(mc.preview.image), null, contentScale = ContentScale.Crop)
+          Image(image, null, Modifier.desktopModifyBlurredState(blurred, noMenu).privacyBlur(fullSize = false, image, blurred, chatViewScrollState.collectAsState()), contentScale = ContentScale.Crop)
         }
         Box(Modifier.align(Alignment.TopEnd).size(15.sp.toDp()).background(Color.Black.copy(0.25f), CircleShape), contentAlignment = Alignment.Center) {
           Icon(painterResource(MR.images.ic_arrow_outward), null, Modifier.size(13.sp.toDp()), tint = Color.White)
         }
       }
       is MsgContent.MCImage -> SmallContentPreview {
-        CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
+        CIImageView(image = mc.image, file = ci.file, provider, noMenu, smallView = true) {
           val user = chatModel.currentUser.value ?: return@CIImageView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
       }
       is MsgContent.MCVideo -> SmallContentPreview {
-        CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
+        CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, noMenu, smallView = true) {
           val user = chatModel.currentUser.value ?: return@CIVideoView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
@@ -421,7 +426,7 @@ fun ChatPreviewView(
             val deleted = ci?.isDeletedContent == true || ci?.meta?.itemDeleted != null
             val showContentPreview = (showChatPreviews && chatModelDraftChatId != chat.id && !deleted) || activeVoicePreview.value != null
             if (ci != null && showContentPreview) {
-              chatItemContentPreview(chat, ci)
+              key(ci.id) { chatItemContentPreview(chat, ci) }
             }
             if (mc !is MsgContent.MCVoice || !showContentPreview || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
               Box(Modifier.offset(x = if (mc is MsgContent.MCFile && ci.meta.itemDeleted == null) -15.sp.toDp() else 0.dp)) {

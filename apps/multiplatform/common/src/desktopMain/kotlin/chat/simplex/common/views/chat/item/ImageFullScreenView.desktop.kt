@@ -11,7 +11,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.getBitmapFromByteArray
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface

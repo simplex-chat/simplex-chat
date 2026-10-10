@@ -33,7 +33,7 @@ import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.serialization.encodeToString
 

@@ -34,7 +34,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock

@@ -8,7 +8,7 @@ import chat.simplex.common.views.helpers.*
 import java.io.File
 import java.net.URI
 import java.net.URLEncoder
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.awt.Desktop
 
 actual fun UriHandler.sendEmail(subject: String, body: CharSequence) {

@@ -1931,10 +1931,13 @@ enum UserServersError: Decodable {
     case storageMissing(protocol: ServerProtocol, user: UserRef?)
     case proxyMissing(protocol: ServerProtocol, user: UserRef?)
     case duplicateServer(protocol: ServerProtocol, duplicateServer: String, duplicateHost: String)
+    case tooManyHosts(protocol: ServerProtocol, tooManyHostsServer: String)
     case duplicateChatRelayAddress(duplicateChatRelay: String, duplicateAddress: String)
 
     var globalError: String? {
         switch self {
+        case .tooManyHosts:
+            return globalSMPError
         case let .noServers(`protocol`, _):
             switch `protocol` {
             case .smp: return globalSMPError
@@ -1977,6 +1980,8 @@ enum UserServersError: Decodable {
             } else {
                 return text
             }
+        case let .tooManyHosts(.smp, server):
+            return String.localizedStringWithFormat(NSLocalizedString("Server %@ has more than two host names.", comment: "servers error"), serverHostname(server))
         default:
             return nil
         }

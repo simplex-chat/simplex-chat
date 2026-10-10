@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.ui.theme.isInDarkTheme
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.datetime.Clock
 
 @Composable

@@ -31,7 +31,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.mikepenz.markdown.compose.Markdown
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownHeader

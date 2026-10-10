@@ -598,6 +598,7 @@ public enum RcvSwitchStatus: String, Decodable, Hashable {
     case sendingQADD = "sending_qadd"
     case sendingQUSE = "sending_quse"
     case receivedMessage = "received_message"
+    case receivedQEND = "received_qend"
 }
 
 public struct SndQueueInfo: Decodable, Hashable {

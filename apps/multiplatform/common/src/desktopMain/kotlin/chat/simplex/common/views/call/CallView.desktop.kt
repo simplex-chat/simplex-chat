@@ -6,7 +6,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
@@ -20,6 +20,7 @@ import java.io.IOException
 import java.net.BindException
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.concurrent.atomic.AtomicBoolean
 
 private const val SERVER_HOST = "localhost"
 private const val SERVER_PORT = 50395
@@ -232,10 +233,16 @@ fun startServer(
 
     val resourceNotFound = newFixedLengthResponse(Status.NOT_FOUND, "text/plain", "This page couldn't be found")
 
+    val webSocketAccepted = AtomicBoolean(false)
+
     override fun handle(session: IHTTPSession): Response {
       return when {
         session.headers["upgrade"] == "websocket" ->
-          if (hasValidCallServerToken(session.parameters, token)) {
+          if (
+            session.headers["origin"] == "http://${SERVER_HOST}:${listeningPort}"
+            && hasValidCallServerToken(session.parameters, token)
+            && webSocketAccepted.compareAndSet(false, true)
+          ) {
             super.handle(session)
           } else {
             unauthorizedResponse()

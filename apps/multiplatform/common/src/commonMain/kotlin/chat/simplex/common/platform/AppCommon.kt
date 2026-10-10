@@ -6,7 +6,7 @@ import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DefaultTheme
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.util.*
 
 enum class AppPlatform {

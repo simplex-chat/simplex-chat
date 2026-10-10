@@ -24,7 +24,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*

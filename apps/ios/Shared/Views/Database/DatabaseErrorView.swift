@@ -118,6 +118,9 @@ struct DatabaseErrorView: View {
             case .errorKeychain:
                 titleText("Keychain error")
                 errorView(Text("Cannot access keychain to save database password"))
+            case .errorKeyGeneration:
+                titleText("Database error")
+                errorView(Text("Cannot generate random database passphrase"))
             case .invalidConfirmation:
                 // this can only happen if incorrect parameter is passed
                 titleText("Invalid migration confirmation")
@@ -217,6 +220,8 @@ struct DatabaseErrorView: View {
                     )
                 case .errorKeychain:
                     am.showAlertMsg(title: "Keychain error")
+                case .errorKeyGeneration:
+                    am.showAlertMsg(title: "Database error", message: "Cannot generate random database passphrase")
                 case let .errorSQL(_, error):
                     am.showAlert(Alert(
                         title: Text("Database error"),

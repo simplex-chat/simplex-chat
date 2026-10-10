@@ -134,6 +134,7 @@ Migration results are decoded in Swift as `DBMigrationResult`:
 - `.errorMigration(dbFile:, migrationError:)` -- migration failed
 - `.errorSQL(dbFile:, migrationSQLError:)` -- SQL error during migration
 - `.errorKeychain` -- keychain access failed
+- `.errorKeyGeneration` -- random database key generation failed
 - `.unknown(json:)` -- unrecognized response
 
 ---

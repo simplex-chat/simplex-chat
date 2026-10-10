@@ -15,7 +15,7 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_, poll)
+import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
@@ -33,7 +33,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServ
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -105,6 +105,8 @@ chatDirectTests = do
     it "connect, fully asynchronous (when clients are never simultaneously online)" $ testFullAsyncFast
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
+    it "negotiate call between current and v1 clients" testNegotiateCallV1
+    it "mark expired call invitation missed on restore" testExpireCallInvitation
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
 #if !defined(dbPostgres)
@@ -272,8 +274,8 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
       bob <## "disconnected 1 connections on server localhost"
       alice <## "disconnected 1 connections on server localhost"
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           msgQueueQuota = 2,
           serverStoreCfg = persistentServerStoreCfg tmp
         }
@@ -307,12 +309,13 @@ testRetryConnectingClientTimeout ps = do
         bob <## "invitation link: ok to connect"
         _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
-        bob <## "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7003\", brokerErr = TIMEOUT}"
+        bob <## ("smp agent error: BROKER {brokerAddress = \"smp://" <> testServerKeyHash <> "@localhost:" <> smpTestPort2 ps <> "\", brokerErr = TIMEOUT}")
 
       pure inv
 
-  logFile <- readFile $ tmp <> "/smp-server-store.log"
-  logFile `shouldContain` "SECURE"
+  -- TODO enable with slow_servers SMP response delay, the client may drop SKEY before sending
+  -- logFile <- readFile $ tmp <> "/smp-server-store.log"
+  -- logFile `shouldContain` "SECURE"
 
   withSmpServer' serverCfg' $ do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
@@ -336,8 +339,8 @@ testRetryConnectingClientTimeout ps = do
   where
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           msgQueueQuota = 2,
           serverStoreCfg = persistentServerStoreCfg tmp
         }
@@ -1135,9 +1138,9 @@ testGetSetSMPServers =
       alice ##> "/_servers 1"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice <## ("    " <> smpServerStr alice)
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
+      alice <## ("    " <> xftpServerStr alice)
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
       alice ##> "/smp"
       alice <## "Your servers"
@@ -1155,32 +1158,39 @@ testGetSetSMPServers =
       alice <## "  SMP servers"
       alice <## "    smp://2345-w==@smp2.example.im"
       alice <## "    smp://3456-w==@smp3.example.im:5224"
+      alice #$> ("/smp smp://2345-w==@smp2.example.im,smp4.example.im", id, "ok")
+      alice ##> "/smp smp://2345-w==@smp2.example.im,smp4.example.im,smp5.example.im"
+      alice <##. "bad chat command: user servers validation error(s): [USETooManyHosts"
+      alice ##> "/smp"
+      alice <## "Your servers"
+      alice <## "  SMP servers"
+      alice <## "    smp://2345-w==@smp2.example.im,smp4.example.im"
 
 testTestSMPServerConnection :: HasCallStack => TestParams -> IO ()
 testTestSMPServerConnection =
   testChat aliceProfile $
     \alice -> do
-      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"
+      alice ##> ("/smp test smp://" <> testServerKeyHash <> "@localhost:" <> smpTestPort alice)
       alice <## "SMP server test passed"
       -- to test with password:
       -- alice <## "SMP server test failed at CreateQueue, error: SMP AUTH"
       -- alice <## "Server requires authorization to create queues, check password"
-      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice ##> ("/smp test " <> smpServerStr alice)
       alice <## "SMP server test passed"
-      alice ##> "/smp test smp://LcJU@localhost:7001"
-      alice <## "SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice ##> ("/smp test smp://LcJU@localhost:" <> smpTestPort alice)
+      alice <## ("SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:" <> smpTestPort alice <> "\", brokerErr = NETWORK {networkError = NEUnknownCAError}}")
       alice <## "Certificate fingerprint in SMP server address does not match server certificate"
 
 testGetSetXFTPServers :: HasCallStack => TestParams -> IO ()
 testGetSetXFTPServers =
   testChat aliceProfile $
-    \alice -> withXFTPServer $ do
+    \alice -> withXFTPServer alice $ do
       alice ##> "/_servers 1"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice <## ("    " <> smpServerStr alice)
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
+      alice <## ("    " <> xftpServerStr alice)
       alice #$> ("/xftp xftp://1234-w==@xftp1.example.im", id, "ok")
       alice ##> "/xftp"
       alice <## "Your servers"
@@ -1201,16 +1211,16 @@ testGetSetXFTPServers =
 testTestXFTPServer :: HasCallStack => TestParams -> IO ()
 testTestXFTPServer =
   testChat aliceProfile $
-    \alice -> withXFTPServer $ do
-      alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7002"
+    \alice -> withXFTPServer alice $ do
+      alice ##> ("/xftp test xftp://" <> testServerKeyHash <> "@localhost:" <> xftpTestPort alice)
       alice <## "XFTP server test passed"
       -- to test with password:
       -- alice <## "XFTP server test failed at CreateFile, error: XFTP AUTH"
       -- alice <## "Server requires authorization to upload files, check password"
-      alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
+      alice ##> ("/xftp test " <> xftpServerStr alice)
       alice <## "XFTP server test passed"
-      alice ##> "/xftp test xftp://LcJU@localhost:7002"
-      alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice ##> ("/xftp test xftp://LcJU@localhost:" <> xftpTestPort alice)
+      alice <## ("XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:" <> xftpTestPort alice <> "\", brokerErr = NETWORK {networkError = NEUnknownCAError}}")
       alice <## "Certificate fingerprint in XFTP server address does not match server certificate"
 
 testOperators  :: HasCallStack => TestParams -> IO ()
@@ -1270,11 +1280,9 @@ testAsyncAcceptingOffline withShortLink ps = do
     bob <## "confirmation sent!"
   withTestChat ps "alice" $ \alice -> do
     withTestChat ps "bob" $ \bob -> do
-      alice <## "subscribed 1 connections on server localhost"
-      bob <## "subscribed 1 connections on server localhost"
       concurrently_
-        (bob <## "alice (Alice): contact is connected")
-        (alice <## "bob (Bob): contact is connected")
+        (bob <### ["subscribed 1 connections on server localhost", "alice (Alice): contact is connected"])
+        (alice <### ["subscribed 1 connections on server localhost", "bob (Bob): contact is connected"])
 
 testFullAsyncFast :: HasCallStack => TestParams -> IO ()
 testFullAsyncFast ps = do
@@ -1288,11 +1296,9 @@ testFullAsyncFast ps = do
     bob <## "confirmation sent!"
     threadDelay 250000
   withTestChat ps "alice" $ \alice -> do
-    alice <## "subscribed 1 connections on server localhost"
-    alice <## "bob (Bob): contact is connected"
+    alice <### ["subscribed 1 connections on server localhost", "bob (Bob): contact is connected"]
   withTestChat ps "bob" $ \bob -> do
-    bob <## "subscribed 1 connections on server localhost"
-    bob <## "alice (Alice): contact is connected"
+    bob <### ["subscribed 1 connections on server localhost", "alice (Alice): contact is connected"]
 
 testCallType :: CallType
 testCallType = CallType {media = CMVideo, capabilities = CallCapabilities {encryption = True}}
@@ -1337,7 +1343,7 @@ testNegotiateCall =
     alice <## "bob accepted your WebRTC video call (e2e encrypted)"
     repeatM_ 3 $ getTermLine alice
     threadDelay 100000
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: accepted")])
+    (alice ##> "/_get chat @2 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` (chatFeatures <> [(1, "outgoing call: accepted")])
     -- alice confirms call by sending WebRTC answer
     alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
     alice <## "ok"
@@ -1346,7 +1352,7 @@ testNegotiateCall =
     bob <## "alice continued the WebRTC call"
     repeatM_ 3 $ getTermLine bob
     threadDelay 100000
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: connecting...")])
+    (bob ##> "/_get chat @2 count=100" >> chat <$> getTermLine bob) `shouldEventuallyReturn` (chatFeatures <> [(0, "incoming call: connecting...")])
     -- participants can update calls as connected
     alice ##> "/_call status @2 connected"
     alice <## "ok"
@@ -1362,12 +1368,72 @@ testNegotiateCall =
     threadDelay 100000
     bob #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(0, "incoming call: ended")])
     alice <## "call with bob ended"
-    alice #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(1, "outgoing call: ended")])
+    (alice ##> "/_get chat @2 count=100" >> callChat <$> getTermLine alice) `shouldEventuallyReturn` (chatFeatures <> [(1, "outgoing call: ended")])
   where
     callChat = map (fmap noDuration) . chat
     noDuration s = case words s of
       ws@(_ : _) | "(0" `isPrefixOf` last ws -> unwords $ init ws
       _ -> s
+
+testCfgCallV1 :: ChatConfig
+testCfgCallV1 = testCfg {callVRange = callInitialVRange}
+
+currentCall :: TestCC -> ContactId -> IO Call
+currentCall cc ctId = M.lookup ctId <$> readTVarIO (currentCalls $ chatController cc) >>= maybe (fail "no current call") pure
+
+callRowCount :: TestCC -> IO Int
+callRowCount cc = do
+  [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM calls"
+  pure n
+
+inviteToCall :: HasCallStack => TestCC -> TestCC -> IO ()
+inviteToCall alice bob = do
+  alice ##> ("/_call invite @2 " <> serialize testCallType)
+  alice <## "ok"
+  bob <## "alice wants to connect with you via WebRTC video call (e2e encrypted)"
+  repeatM_ 3 $ getTermLine bob
+
+testNegotiateCallV1 :: TestParams -> IO ()
+testNegotiateCallV1 =
+  runTestCfg2 testCfg testCfgCallV1 $ \alice bob -> do
+    connectUsers alice bob
+    inviteToCall alice bob
+    Call {callState = CallInvitationSent {localDhPrivKey = Just alicePrivKey}} <- currentCall alice 2
+    Call {callState = CallInvitationReceived {localDhPubKey = Just bobPubKey, sharedKey = Just bobKey, callVersion}} <- currentCall bob 2
+    callVersion `shouldBe` Just initialCallVersion
+    bobKey `shouldBe` C.Key (C.dhBytes' $ C.dh' bobPubKey alicePrivKey)
+    bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
+    bob <## "ok"
+    alice <## "bob accepted your WebRTC video call (e2e encrypted)"
+    repeatM_ 3 $ getTermLine alice
+    (show . callStateTag . callState <$> currentCall alice 2) `shouldEventuallyReturn` "CSTCallOfferReceived"
+    Call {callState = CallOfferReceived {sharedKey = aliceKey}} <- currentCall alice 2
+    aliceKey `shouldBe` Just bobKey
+    alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
+    alice <## "ok"
+    bob <## "alice continued the WebRTC call"
+    repeatM_ 3 $ getTermLine bob
+    bob ##> "/_call end @2"
+    bob <## "ok"
+    alice <## "call with bob ended"
+
+testExpireCallInvitation :: HasCallStack => TestParams -> IO ()
+testExpireCallInvitation ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      inviteToCall alice bob
+      callRowCount bob `shouldReturn` 1
+    withTestChat ps "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      Call {callState = CallInvitationReceived {}} <- currentCall bob 2
+      callRowCount bob `shouldReturn` 1
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: calling...")])
+    withTestChatCfg ps testCfg {callInvitationTTL = 0} "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      M.member 2 <$> readTVarIO (currentCalls $ chatController bob) `shouldReturn` False
+      callRowCount bob `shouldReturn` 0
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =
@@ -1376,12 +1442,12 @@ testStopStartChat ps =
       connectUsers alice bob
       alice #> "@bob hi"
       bob <# "alice> hi"
-      alice #$> ("/_ttl 1 4", id, "ok")
-      alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 2}}"
+      alice #$> ("/_ttl 1 12", id, "ok")
+      alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 6}}"
       alice <## "you updated preferences for bob:"
-      alice <## "Disappearing messages: enabled (you allow: yes (2 sec), contact allows: yes)"
+      alice <## "Disappearing messages: enabled (you allow: yes (6 sec), contact allows: yes)"
       bob <## "alice updated preferences for you:"
-      bob <## "Disappearing messages: enabled (you allow: yes (2 sec), contact allows: yes (2 sec))"
+      bob <## "Disappearing messages: enabled (you allow: yes (6 sec), contact allows: yes (6 sec))"
       alice #> "@bob hi timed"
       bob <# "alice> hi timed"
       let ChatController {agentAsync, cleanupManagerAsync, expireCIThreads, timedItemThreads} = chatController alice
@@ -1399,13 +1465,13 @@ testStopStartChat ps =
       M.null <$> readTVarIO expireCIThreads `shouldReturn` True
       M.null <$> readTVarIO timedItemThreads `shouldReturn` True
       alice ##> "/_start"
-      alice <## "chat started"
-      alice <## "subscribed 1 connections on server localhost"
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
       bob #> "@alice hello"
       alice <# "bob> hello"
+      threadDelay 3000000
       alice <### ["timed message deleted: hi timed", "timed message deleted: hello"]
       bob <### ["timed message deleted: hi timed", "timed message deleted: hello"]
-      threadDelay 3000000
+      threadDelay 8000000
       alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner")])
       Just (a1', _) <- readTVarIO agentAsync
       (a1' == a1) `shouldBe` False
@@ -1426,14 +1492,13 @@ testMaintenanceMode ps = do
       connectUsers alice bob
       alice #> "@bob hi"
       bob <# "alice> hi"
-      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "error: chat not stopped"
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/_start"
-      alice <## "chat started"
       -- chat works after start
-      alice <## "subscribed 1 connections on server localhost"
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
       alice #> "@bob hi again"
       bob <# "alice> hi again"
       bob #> "@alice hello"
@@ -1441,32 +1506,38 @@ testMaintenanceMode ps = do
       -- export / delete / import
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
-      doesFileExist "./tests/tmp/alice-chat.zip" `shouldReturn` True
-      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      doesFileExist archive `shouldReturn` True
+      alice ##> ("/_db import {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
       -- cannot start chat after import
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
     -- works after full restart
     withTestChat ps "alice" $ \alice -> testChatWorking alice bob
+  where
+    archive = tmpFile ps "alice-chat.zip"
 
 testChatWorking :: HasCallStack => TestCC -> TestCC -> IO ()
 testChatWorking alice bob = do
   alice <## "subscribed 1 connections on server localhost"
+  testChatMessages alice bob
+
+testChatMessages :: HasCallStack => TestCC -> TestCC -> IO ()
+testChatMessages alice bob = do
   alice #> "@bob hello again"
   bob <# "alice> hello again"
   bob #> "@alice hello too"
   alice <# "bob> hello too"
 
 testMaintenanceModeWithFiles :: HasCallStack => TestParams -> IO ()
-testMaintenanceModeWithFiles ps = withXFTPServer $ do
+testMaintenanceModeWithFiles ps = withXFTPServer ps $ do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
-      alice ##> "/_files_folder ./tests/tmp/alice_files"
+      alice ##> ("/_files_folder " <> aliceFiles)
       alice <## "ok"
       connectUsers alice bob
 
@@ -1484,26 +1555,35 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
       alice <## "completed receiving file 1 (test.jpg) from bob"
 
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/alice_files/test.jpg"
+      dest <- B.readFile (aliceFiles </> "test.jpg")
       dest `shouldBe` src
 
       threadDelay 500000
 
+      let backupDBs = [tmpPath ps <> "/alice_chat.db.bak", tmpPath ps <> "/alice_agent.db.bak"]
+      forM_ backupDBs $ \f -> B.writeFile f ""
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
+      let exportedDBs = [tmpPath ps <> "/alice_chat.db.exported", tmpPath ps <> "/alice_agent.db.exported"]
+      forM_ exportedDBs $ \f -> B.writeFile f ""
       alice ##> "/_db delete"
       alice <## "ok"
       -- cannot start chat after delete
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
-      doesDirectoryExist "./tests/tmp/alice_files" `shouldReturn` False
-      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      doesDirectoryExist aliceFiles `shouldReturn` False
+      forM_ exportedDBs $ \f -> doesFileExist f `shouldReturn` False
+      alice ##> ("/_db import {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
-      B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+      B.readFile (aliceFiles </> "test.jpg") `shouldReturn` src
+      forM_ backupDBs $ \f -> doesFileExist f `shouldReturn` False
     -- works after full restart
     withTestChat ps "alice" $ \alice -> testChatWorking alice bob
+  where
+    aliceFiles = tmpFile ps "alice_files"
+    archive = tmpFile ps "alice-chat.zip"
 
 #if !defined(dbPostgres)
 testDatabaseEncryption :: HasCallStack => TestParams -> IO ()
@@ -1529,8 +1609,8 @@ testDatabaseEncryption ps = do
       alice <## "error: chat store changed, please restart chat"
     withTestChatOpts ps (getTestOpts True "mykey") "alice" $ \alice -> do
       alice ##> "/_start"
-      alice <## "chat started"
-      testChatWorking alice bob
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
+      testChatMessages alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/db test key wrongkey"
@@ -1545,8 +1625,8 @@ testDatabaseEncryption ps = do
       alice <## "ok"
     withTestChatOpts ps (getTestOpts True "anotherkey") "alice" $ \alice -> do
       alice ##> "/_start"
-      alice <## "chat started"
-      testChatWorking alice bob
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
+      testChatMessages alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/db decrypt anotherkey"
@@ -1686,6 +1766,7 @@ testConnSyncExtraAgentConns ps = do
         alice ##> "/_connections diff"
         alice <## "no difference between agent and chat connections"
 
+        threadDelay 1000000
         -- deleting connection record in chat db
         void $ withCCTransaction alice $ \db ->
           DB.execute_ db "DELETE FROM connections WHERE contact_id = (SELECT contact_id FROM contacts WHERE local_display_name = 'cath')"
@@ -1712,9 +1793,7 @@ testConnSyncExtraAgentConns ps = do
         alice <## "subscribed 1 connections on server localhost"
 
         threadDelay 100000
-        agentConnCount <- withCCAgentTransaction alice $ \db ->
-          DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]
-        agentConnCount `shouldBe` [[1]]
+        (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[1]]
 
         alice <##> bob
 
@@ -1722,10 +1801,12 @@ testSubscribeAppNSE :: HasCallStack => TestParams -> IO ()
 testSubscribeAppNSE ps =
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
+      let ChatController {agentAsync} = chatController alice
+      Just (_, Just subscribed) <- readTVarIO agentAsync
+      wait subscribed
       withTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" $ \nseAlice -> do
         alice ##> "/_app suspend 1"
-        alice <## "ok"
-        alice <## "chat suspended"
+        alice <### ["ok", "chat suspended"]
         nseAlice ##> "/_start main=off"
         nseAlice <## "chat started"
         threadDelay 100000
@@ -1735,11 +1816,13 @@ testSubscribeAppNSE ps =
         bob <## "connection request sent!"
         (nseAlice </)
         alice ##> "/_app activate"
-        alice <## "ok"
-        alice <## "subscribed 1 connections on server localhost"
-        alice <## "bob (Bob) wants to connect to you!"
-        alice <## "to accept: /ac bob"
-        alice <## "to reject: /rc bob (the sender will NOT be notified)"
+        alice
+          <### [ "ok",
+                 "subscribed 1 connections on server localhost",
+                 "bob (Bob) wants to connect to you!",
+                 "to accept: /ac bob",
+                 "to reject: /rc bob (the sender will NOT be notified)"
+               ]
         alice ##> "/ac bob"
         alice <## "bob (Bob): accepting contact request, you can send messages to contact"
         concurrently_
@@ -1965,7 +2048,7 @@ testServiceRequestResponse =
     alice ##> "/_stop"
     alice <## "chat stopped"
     alice ##> "/_start main=on snd_files=on service_requests=on"
-    alice <## "chat started"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
     concurrently_
       ( do
           bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
@@ -1990,7 +2073,7 @@ testSignedServiceRequest =
     alice ##> "/_stop"
     alice <## "chat stopped"
     alice ##> "/_start main=on snd_files=on service_requests=on"
-    alice <## "chat started"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
     g <- C.newRandom
     (pub, priv :: C.PrivateKeyEd25519) <- atomically $ C.generateKeyPair g
     let signKey = B.unpack $ strEncode $ C.StoredPrivateKey priv
@@ -2276,17 +2359,17 @@ testUsersDifferentCIExpirationTTL ps = do
       -- set ttl for first user
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_ttl 1 2", id, "ok")
+      alice #$> ("/_ttl 1 10", id, "ok")
 
       -- set ttl for second user
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 4", id, "ok")
+      alice #$> ("/_ttl 2 25", id, "ok")
 
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 10 second(s)")
 
       alice #> "@bob alice 3"
       bob <# "alice> alice 3"
@@ -2298,7 +2381,7 @@ testUsersDifferentCIExpirationTTL ps = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 4 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 25 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -2307,22 +2390,22 @@ testUsersDifferentCIExpirationTTL ps = do
 
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 3000000
+      threadDelay 12000000
 
       -- messages both before and after setting chat item ttl are deleted
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
+      (alice ##> "/_get chat @2 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(1,"chat banner")]
 
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2100000
+      threadDelay 15000000
 
-      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
+      (alice ##> "/_get chat @5 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(1,"chat banner")]
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2331,13 +2414,13 @@ testUsersRestartCIExpiration ps = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
       -- set ttl for first user
-      alice #$> ("/_ttl 1 2", id, "ok")
+      alice #$> ("/_ttl 1 10", id, "ok")
       connectUsers alice bob
 
       -- create second user and set ttl
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 5", id, "ok")
+      alice #$> ("/_ttl 2 25", id, "ok")
       connectUsers alice bob
 
       -- first user messages
@@ -2369,7 +2452,7 @@ testUsersRestartCIExpiration ps = do
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 10 second(s)")
 
       alice #> "@bob alice 3"
       bob <# "alice> alice 3"
@@ -2381,7 +2464,7 @@ testUsersRestartCIExpiration ps = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 5 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 25 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -2390,22 +2473,22 @@ testUsersRestartCIExpiration ps = do
 
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 3000000
+      threadDelay 12000000
 
       -- messages both before and after restart are deleted
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
+      (alice ##> "/_get chat @2 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(1,"chat banner")]
 
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 4000000
+      threadDelay 15000000
 
-      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
+      (alice ##> "/_get chat @5 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(1,"chat banner")]
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2491,7 +2574,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
       -- create second user and set ttl
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 1", id, "ok")
+      alice #$> ("/_ttl 2 5", id, "ok")
       connectUsers alice bob
 
       -- first user disables expiration
@@ -2503,7 +2586,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
       -- second user still has ttl configured
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 5 second(s)")
 
       alice #> "@bob alisa 1"
       bob <# "alisa> alisa 1"
@@ -2512,17 +2595,17 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 2000000
+      threadDelay 6000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
+      (alice ##> "/_get chat @5 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(1,"chat banner")]
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <## "subscribed 1 connections on server localhost"
       alice <## "subscribed 1 connections on server localhost"
 
       -- second user still has ttl configured after restart
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 5 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -2531,10 +2614,10 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 3000000
+      threadDelay 6000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
+      (alice ##> "/_get chat @5 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(1,"chat banner")]
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2543,13 +2626,13 @@ testUsersTimedMessages ps' = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
-      configureTimedMessages alice bob "2" "2"
+      configureTimedMessages alice bob "2" "10"
 
       -- create second user and configure timed messages for contact
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       connectUsers alice bob
-      configureTimedMessages alice bob "5" "3"
+      configureTimedMessages alice bob "5" "16"
 
       -- first user messages
       alice ##> "/user alice"
@@ -2570,7 +2653,7 @@ testUsersTimedMessages ps' = do
       alice <# "bob> alisa 2"
 
       -- messages are deleted after ttl
-      threadDelay 1500000
+      threadDelay 6000000
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
@@ -2580,7 +2663,7 @@ testUsersTimedMessages ps' = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 1000000
+      threadDelay 4000000
 
       alice <### ["[user: alice] timed message deleted: alice 1", "[user: alice] timed message deleted: alice 2"]
       bob <### ["timed message deleted: alice 1", "timed message deleted: alice 2"]
@@ -2593,7 +2676,7 @@ testUsersTimedMessages ps' = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 1000000
+      threadDelay 7000000
 
       alice <### ["timed message deleted: alisa 1", "timed message deleted: alisa 2"]
       bob <### ["timed message deleted: alisa 1", "timed message deleted: alisa 2"]
@@ -2633,7 +2716,7 @@ testUsersTimedMessages ps' = do
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       -- messages are deleted after restart
-      threadDelay 1000000
+      threadDelay 8000000
 
       alice <### ["[user: alice] timed message deleted: alice 3", "[user: alice] timed message deleted: alice 4"]
       bob <### ["timed message deleted: alice 3", "timed message deleted: alice 4"]
@@ -2646,7 +2729,7 @@ testUsersTimedMessages ps' = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 1000000
+      threadDelay 8000000
 
       alice <### ["timed message deleted: alisa 3", "timed message deleted: alisa 4"]
       bob <### ["timed message deleted: alisa 3", "timed message deleted: alisa 4"]
@@ -2812,15 +2895,15 @@ testUserPrivacy =
 testSetChatItemTTL :: HasCallStack => TestParams -> IO ()
 testSetChatItemTTL =
   testChat2 aliceProfile bobProfile $
-    \alice bob -> withXFTPServer $ do
+    \alice bob -> withXFTPServer alice $ do
       connectUsers alice bob
       alice #> "@bob 1"
       bob <# "alice> 1"
       bob #> "@alice 2"
       alice <# "bob> 2"
       -- chat item with file
-      alice #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
-      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/app_files/test.jpg"
+      alice #$> ("/_files_folder " <> tmpFile alice "app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" $ tmpFile alice "app_files/test.jpg"
       alice ##> "/_send @2 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
@@ -2828,17 +2911,17 @@ testSetChatItemTTL =
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       alice <## "completed uploading file 1 (test.jpg) for bob"
       -- above items should be deleted after we set ttl
-      threadDelay 3000000
+      threadDelay 6000000
       alice #> "@bob 3"
       bob <# "alice> 3"
       bob #> "@alice 4"
       alice <# "bob> 4"
       alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
-      checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $
-        alice #$> ("/_ttl 1 2", id, "ok")
+      checkActionDeletesFile (tmpFile alice "app_files/test.jpg") $
+        alice #$> ("/_ttl 1 5", id, "ok")
       alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])
-      alice #$> ("/_ttl 1", id, "old messages are set to be deleted after: 2 second(s)")
+      alice #$> ("/_ttl 1", id, "old messages are set to be deleted after: 5 second(s)")
       alice #$> ("/ttl week", id, "ok")
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
@@ -2862,13 +2945,13 @@ testSetDirectChatTTL =
         alice #$> ("/ttl @cath none", id, "ok")
         alice #$> ("/ttl @cath", id, "old messages are not being deleted")
 
-        threadDelay 3000000
+        threadDelay 6000000
         alice #> "@bob 3"
         bob <# "alice> 3"
         bob #> "@alice 4"
         alice <# "bob> 4"
         alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, "3"), Nothing), ((0, "4"), Nothing)])
-        alice #$> ("/_ttl 1 2", id, "ok")
+        alice #$> ("/_ttl 1 5", id, "ok")
          -- when expiration is turned on, first cycle is synchronous
         alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")])
 
@@ -2949,8 +3032,8 @@ testSwitchContact =
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
       threadDelay 100000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "you changed address")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
+      (alice ##> "/_get chat @2 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` (chatFeatures <> [(1, "started changing address..."), (1, "you changed address")])
+      (bob ##> "/_get chat @2 count=100" >> chat <$> getTermLine bob) `shouldEventuallyReturn` (chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
 
 testAbortSwitchContact :: HasCallStack => TestParams -> IO ()
@@ -2969,8 +3052,7 @@ testAbortSwitchContact ps = do
     alice ##> "/abort switch bob"
     alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
-      bob <## "alice started changing address for you"
+      bob <### ["subscribed 1 connections on server localhost", "alice started changing address for you"]
       -- alice changes address again
       alice #$> ("/switch bob", id, "switch started")
       alice <## "bob: you started changing address"
@@ -2978,8 +3060,8 @@ testAbortSwitchContact ps = do
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
       threadDelay 100000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "started changing address..."), (1, "you changed address")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
+      (alice ##> "/_get chat @2 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` (chatFeatures <> [(1, "started changing address..."), (1, "started changing address..."), (1, "you changed address")])
+      (bob ##> "/_get chat @2 count=100" >> chat <$> getTermLine bob) `shouldEventuallyReturn` (chatFeatures <> [(0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
 
 testSwitchGroupMember :: HasCallStack => TestParams -> IO ()
@@ -2993,8 +3075,8 @@ testSwitchGroupMember =
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
-      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
+      (alice ##> "/_get chat #1 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` (sndGroupFeatures <> [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      (bob ##> "/_get chat #1 count=100" >> chat <$> getTermLine bob) `shouldEventuallyReturn` (groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       bob #> "#team hi"
@@ -3016,8 +3098,7 @@ testAbortSwitchGroupMember ps = do
     alice ##> "/abort switch #team bob"
     alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 2 connections on server localhost"
-      bob <## "#team: alice started changing address for you"
+      bob <### ["subscribed 2 connections on server localhost", "#team: alice started changing address for you"]
       -- alice changes address again
       alice #$> ("/switch #team bob", id, "switch started")
       alice <## "#team: you started changing address for bob"
@@ -3025,8 +3106,8 @@ testAbortSwitchGroupMember ps = do
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
-      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
+      (alice ##> "/_get chat #1 count=100" >> chat <$> getTermLine alice) `shouldEventuallyReturn` (sndGroupFeatures <> [(0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      (bob ##> "/_get chat #1 count=100" >> chat <$> getTermLine bob) `shouldEventuallyReturn` (groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       bob #> "#team hi"
@@ -3148,8 +3229,7 @@ setupDesynchronizedRatchet ps alice = do
     alice #> "@bob 2"
     alice #> "@bob 3"
     (bob </)
-    bob ##> "/tail @alice 1"
-    bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
+    (bob ##> "/tail @alice 1" >> dropTime <$> getTermLine bob) `shouldEventuallyReturn` "alice> decryption error, possibly due to the device change (header, 3 messages)"
     bob ##> "@alice 1"
     bob <## "error: command is prohibited, sendMessagesB: send prohibited"
     (alice </)
@@ -3179,8 +3259,8 @@ testSyncRatchet ps =
       bob <## "alice: connection synchronized"
 
       threadDelay 100000
-      bob #$> ("/_get chat @2 count=3", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
-      alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+      (bob ##> "/_get chat @2 count=3" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "connection synchronized")]
+      (alice ##> "/_get chat @2 count=2" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(0, "connection synchronization agreed"), (0, "connection synchronized")]
 
       alice #> "@bob hello again"
       bob <# "alice> hello again"
@@ -3219,8 +3299,8 @@ testSyncRatchetCodeReset ps =
       bob <## "alice: connection synchronized"
 
       threadDelay 100000
-      bob #$> ("/_get chat @2 count=4", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
-      alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+      (bob ##> "/_get chat @2 count=4" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")]
+      (alice ##> "/_get chat @2 count=2" >> chat <$> getTermLine alice) `shouldEventuallyReturn` [(0, "connection synchronization agreed"), (0, "connection synchronized")]
 
       -- connection not verified
       bob ##> "/i alice"
