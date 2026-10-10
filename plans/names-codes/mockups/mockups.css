@@ -1,0 +1,268 @@
+/* The rules the names store adds to web/public/styles.css; they move there in stage 5. Below the
+   marked line are board-only rules (frames, stand-ins, the screenshot wrapper), which never ship. */
+
+/* the name field: the input and its fixed ".simplex" on one line, in the field card */
+.name-box {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.name-box input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 1.375rem;
+  outline: none;
+}
+.name-box input::placeholder { color: var(--ink-soft); opacity: .6; }
+.name-box .tld { flex: none; white-space: nowrap; color: var(--ink-soft); font-size: 1.375rem; }
+.name-box.ok { border-color: var(--ok-line); }
+.name-box.bad { border-color: var(--danger-line); }
+
+/* the answer line under a field: the search rules, or what a code entered at checkout covers */
+.name-status { margin: 12px 0 0; font-size: .875rem; font-weight: 600; text-align: left; }
+.name-status.bad { color: var(--danger-fg); }
+
+/* the search's answer, a card under the field */
+.result {
+  margin: 16px 0 0;
+  padding: 14px 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  text-align: left;
+}
+.result.ok { border-color: var(--ok-line); }
+.result-title { font-weight: 600; font-size: 1.0625rem; color: var(--ok-fg); }
+.result-title.bad { color: var(--danger-fg); }
+.result-price { margin-top: 4px; font-size: 1.5rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.result-price span { font-size: 1rem; font-weight: 500; color: var(--ink-soft); }
+.result-note { margin-top: 4px; font-size: .875rem; font-weight: 500; color: var(--ink-soft); }
+.result .label { margin: 12px 0 0; }
+.result > .secondary.inline { display: inline-block; margin-top: 8px; }
+
+/* what uses a taken name: one row per address or channel, with its picture */
+.entity { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.result .label + .entity { border-top: 0; }
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: hsl(var(--hue) 70% 55%);
+  color: #ffffff;
+  font-weight: 700;
+}
+.entity-main { flex: 1 1 auto; min-width: 0; }
+.entity-name { font-weight: 600; color: var(--ink); }
+.entity-kind { font-size: .875rem; font-weight: 500; color: var(--ink-soft); }
+.entity-link { font-size: .75rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entity > .secondary.inline { flex: none; }
+
+/* the registration's three steps, ticked as they complete, as the app draws them */
+.steps {
+  margin: 24px 0 0;
+  padding: 12px 20px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  text-align: left;
+}
+.step-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.steps .label + .step-row { border-top: 0; }
+.step-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  font-size: .75rem;
+  font-weight: 700;
+}
+.step-row.active .step-mark { border-color: var(--warn-fg); color: var(--warn-fg); }
+.step-row.done .step-mark { border-color: var(--ok-fg); background: var(--ok-bg); color: var(--ok-fg); }
+.step-row.failed .step-mark { border-color: var(--danger-fg); background: var(--danger-bg); color: var(--danger-fg); }
+.step-name { flex: 1 1 auto; color: var(--ink-soft); font-weight: 500; }
+.step-row.active .step-name, .step-row.done .step-name { color: var(--ink); }
+.step-row.active .step-name { font-weight: 600; }
+.step-tx { font-size: .75rem; color: var(--accent); text-decoration: none; }
+.step-note { margin: 4px 0 6px; font-size: .875rem; color: var(--danger-fg); }
+
+/* the magnifying glass at the end of the search field, which searches as Enter does */
+.name-box .glass {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  align-self: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px -6px -6px 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+.name-box .glass svg { width: 18px; height: 18px; }
+.name-box input[type="search"]::-webkit-search-cancel-button { display: none; }
+.name-status.ok { color: var(--ok-fg); }
+.result-price .was { margin-right: 6px; font-size: 1rem; font-weight: 500; color: var(--ink-soft); }
+
+/* a link line of its own, as the badges landing's link to simplex.domains; inside the invest block its rules win */
+.check-code { margin: 10px 0 0; font-size: .9375rem; }
+.check-code .link { font-size: inherit; font-weight: 600; }
+
+/* entering a code at checkout */
+.code-entry { margin: 20px 0 0; text-align: left; }
+.code-entry .name-status { margin-top: 8px; }
+
+/* the popup a code is checked in, over the screen it was opened from */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(13, 27, 58, .35);
+}
+.popup {
+  width: 100%;
+  max-width: 460px;
+  padding: 18px 22px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--menu);
+  box-shadow: var(--shadow-pop);
+  text-align: left;
+}
+.popup-head { display: flex; align-items: center; justify-content: space-between; }
+.popup-title { font-family: var(--display); font-size: 1.375rem; font-weight: 700; color: var(--ink); }
+.popup-close { padding: 4px; border: 0; background: none; color: var(--ink-soft); font-size: 1.125rem; cursor: pointer; }
+.popup-lede { margin: 6px 0 14px; }
+.popup .name-box input { font-size: 1.0625rem; }
+.popup .primary { margin-top: 16px; }
+
+/* the recovery phrase: twelve numbered words in three columns, to be written down in order */
+.phrase {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 12px;
+  margin: 10px 0 0;
+  padding: 16px 20px;
+  border: 2px solid var(--code-line);
+  border-radius: var(--r-card);
+  background: var(--code-bg);
+  list-style: none;
+  counter-reset: word;
+  text-align: left;
+}
+.phrase li { counter-increment: word; font-size: 1.0625rem; font-weight: 600; color: var(--ink); }
+.phrase li::before { content: counter(word) "."; display: inline-block; width: 30px; margin-right: 4px; text-align: right; color: var(--ink-soft); font-weight: 500; font-variant-numeric: tabular-nums; }
+.phrase + .primary { margin-top: 14px; }
+
+/* the owner under the steps: the address the name is registered to */
+.step-owner { display: flex; justify-content: space-between; padding: 10px 0 4px; border-top: 1px solid var(--line); font-size: .875rem; color: var(--ink-soft); }
+
+/* a name's mark in the history list, where a badge row has its badge art */
+.name-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background-image: var(--title);
+  color: var(--on-accent);
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.entry-sub { margin-top: 2px; color: var(--ink-soft); font-size: .875rem; font-weight: 500; }
+
+@media (max-width: 560px) {
+  .name-box input, .name-box .tld { font-size: 1.125rem; }
+  .entity-link { display: none; }
+  .phrase { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---------------------------------------------- the board only, never shipped */
+
+/* a full-page capture is taller than the viewport, so the overlay covers the document here; the page keeps it fixed */
+body { position: relative; }
+.popup-overlay { position: absolute; }
+
+/* Stripe's Payment Element, drawn as a stand-in: on the real page it is Stripe's iframe */
+.stripe-standin { display: block; padding: 4px 0 0; }
+.stripe-standin .sl { display: block; margin: 10px 0 4px; font-size: .875rem; color: var(--ink); }
+.stripe-standin .sf { padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink-soft); }
+.stripe-standin .sr { display: flex; gap: 12px; }
+.stripe-standin .sr > div { flex: 1 1 0; }
+
+body.plain { display: block; padding: 0; min-height: 0; background: #ffffff; background-image: none; }
+#shot { display: inline-block; }
+
+/* the app, drawn in its iOS idiom as the canvases draw it */
+.app-screen {
+  width: 390px;
+  min-height: 720px;
+  padding: 14px 16px 24px;
+  background: #f2f2f7;
+  color: #000000;
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+}
+.app-nav { color: #007aff; font-size: 16px; }
+.app-title { margin: 10px 0 18px; font-size: 30px; font-weight: 700; }
+.app-label { margin: 18px 0 6px 14px; color: #6d6d72; font-size: 12px; letter-spacing: .03em; }
+.app-card { border-radius: 10px; background: #ffffff; }
+.app-row { display: flex; justify-content: space-between; padding: 12px 14px; }
+.app-ok { color: #34c759; font-weight: 600; }
+.app-note { margin: 8px 14px 0; color: #6d6d72; font-size: 12px; }
+.app-button { margin-top: 28px; padding: 13px; border-radius: 12px; background: #007aff; color: #ffffff; font-weight: 600; text-align: center; }
+.app-alert { margin: 120px 24px 0; padding: 18px 16px 0; border-radius: 14px; background: #ffffff; text-align: center; }
+.app-alert p { color: #3c3c43; font-size: 13px; }
+.app-alert-button { margin: 14px -16px 0; padding: 12px; border-top: 1px solid #d1d1d6; color: #007aff; font-weight: 600; }
+
+/* the operator's terminal and the managed group */
+.term-screen {
+  width: 720px;
+  margin: 0;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: #15171c;
+  color: #e7eaf0;
+  font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+.term-screen .out { color: #8fd18b; }
+.chat-screen {
+  width: 480px;
+  padding: 14px 16px 18px;
+  border-radius: 10px;
+  background: #ffffff;
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+}
+.chat-title { padding-bottom: 10px; border-bottom: 1px solid #e5e5ea; font-weight: 700; }
+.bubble { max-width: 86%; margin-top: 10px; padding: 8px 12px; border-radius: 14px; background: #e9e9eb; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+.bubble b { display: block; margin-bottom: 2px; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 12px; color: #6d6d72; }
+.bubble.out { margin-left: auto; background: #dbeafe; }
+.chat-note { margin-top: 10px; color: #8e8e93; font-size: 12px; text-align: center; }
