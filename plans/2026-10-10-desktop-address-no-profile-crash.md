@@ -24,7 +24,7 @@ The screen can be shown in that state in two ways:
    `UserAddressView` closes itself when the user changes (`KeyChangeEffect` on the user), but with a null user it is never reached.
 2. **The row is clicked with no active user.** With no profile and no mobile, the user picker opens by itself (`App.kt`, `desktopNoUserNoRemote`) and still shows the "Create SimpleX address" row. Clicking it crashes immediately.
 
-   The row is also offered after deleting the last visible profile while hidden ones remain. Desktop then sets `currentUser` from `apiGetActiveUser` (`UserProfilesView.kt`, `doRemoveUser`), which is null.
+   The row is also offered after deleting the active profile when no other visible profile remains, including the only profile. Desktop then sets `currentUser` from `apiGetActiveUser` (`UserProfilesView.kt`, `doRemoveUser`), which is null.
 
 ## Fix
 
@@ -32,11 +32,15 @@ When there is no current user, the modal closes itself instead of composing `Use
 
 `ModalManager.closeModal` closes the top modal. So the effect closes only when this modal is the top one that is not being removed, using a new `ModalManager.isLastModal(data)`.
 
-The effect is keyed on the modal and on the left-panel modal count. That makes it run again in two cases:
-- `AnimatedContent` reuses the same composition for another modal, as happens with a quick second click on the row while the first modal is still animating out.
-- This modal becomes the top again, for example after a screen opened from it is closed.
+The effect is keyed on the modal and on the left-panel modal count, so it checks again whenever the stack changes while this content is composed. That only matters within a modal animation (250 ms), while `AnimatedContent` keeps the composition alive. Two examples:
+- A quick second click on the row reuses the composition of the first modal, which is still animating out.
+- A screen opened from the address screen is still animating in when the mobile disconnects.
 
-It never closes a different screen, such as one opened just before or just after the address screen during an animation.
+A modal that is covered after the animation ends is disposed. When it becomes the top again, it is composed afresh.
+
+With the `isLastModal` check, the effect does not close a different screen, such as one opened just before or just after the address screen during an animation. This holds for stack changes on the main thread; as before, `ModalManager` is not synchronized with background calls such as `closeAllModalsEverywhere`.
+
+With no active user, clicking the row now does nothing visible: the modal closes itself, and the picker hides as it does for any opened modal. After the mobile disconnects with the address screen open, the picker does not reopen by itself, because a left-panel modal was open when the user became null. Master does the same when any other left-panel screen is open.
 
 An early `return@showCustomModal`, as the "Chat preferences" row does, would avoid the crash. But it would leave an invisible modal on the left-panel stack, with no back button. That modal would come back as the address screen once a profile exists.
 
