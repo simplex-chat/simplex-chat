@@ -618,7 +618,8 @@ CREATE TABLE test_chat_schema.connections (
     short_link_inv bytea,
     via_short_link_contact bytea,
     via_contact_uri bytea,
-    relay_test smallint DEFAULT 0 NOT NULL
+    relay_test smallint DEFAULT 0 NOT NULL,
+    pres_header bytea
 );
 
 
@@ -944,6 +945,20 @@ ALTER TABLE test_chat_schema.files ALTER COLUMN file_id ADD GENERATED ALWAYS AS 
 
 
 
+CREATE TABLE test_chat_schema.group_member_badge_proofs (
+    group_member_id bigint NOT NULL,
+    badge_proof bytea NOT NULL,
+    badge_pres_header bytea NOT NULL,
+    badge_key_idx bigint NOT NULL,
+    badge_type text NOT NULL,
+    badge_expiry timestamp with time zone NOT NULL,
+    badge_extra text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
+);
+
+
+
 CREATE TABLE test_chat_schema.group_member_intros (
     group_member_intro_id bigint NOT NULL,
     re_group_member_id bigint NOT NULL,
@@ -1170,7 +1185,8 @@ CREATE TABLE test_chat_schema.groups (
     roster_blob bytea,
     group_domain_verified smallint,
     stored_roster_version bigint,
-    applied_complete_roster_version bigint
+    applied_complete_roster_version bigint,
+    relay_request_public_group_id bytea
 );
 
 
@@ -1935,6 +1951,11 @@ ALTER TABLE ONLY test_chat_schema.file_badge_proofs
 
 ALTER TABLE ONLY test_chat_schema.files
     ADD CONSTRAINT files_pkey PRIMARY KEY (file_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_member_badge_proofs
+    ADD CONSTRAINT group_member_badge_proofs_pkey PRIMARY KEY (group_member_id);
 
 
 
@@ -3401,6 +3422,11 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.users
     ADD CONSTRAINT fk_users_display_names FOREIGN KEY (user_id, local_display_name) REFERENCES test_chat_schema.display_names(user_id, local_display_name) ON UPDATE CASCADE ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_member_badge_proofs
+    ADD CONSTRAINT group_member_badge_proofs_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 
