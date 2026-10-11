@@ -299,7 +299,7 @@ chatTypesDocsData =
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkOwner, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
-    (sti @GroupMember, STRecord, "", [], "", ""),
+    (removeField "memberBadgeProof" $ sti @GroupMember, STRecord, "", [], "", ""),
     (sti @GroupMemberAdmission, STRecord, "", [], "", ""),
     (sti @GroupMemberCategory, STEnum' (dropPfxSfx "GC" "Member"), "", [], "", ""),
     (sti @GroupMemberRef, STRecord, "", [], "", ""),

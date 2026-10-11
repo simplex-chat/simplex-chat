@@ -3,6 +3,7 @@ package chat.simplex.common.platform
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.ImageBitmap
@@ -127,3 +128,5 @@ private fun ImageBitmap.blurredBy(radius: Int, drawnWidthDp: Float = CHAT_MEDIA_
   while (maxOf(image.width, image.height) < BLURRED_MEDIA_WIDTH_DP / 2) image = image.scale(image.width * 2, image.height * 2)
   return image
 }
+
+expect fun newPasswordContentType(): ContentType

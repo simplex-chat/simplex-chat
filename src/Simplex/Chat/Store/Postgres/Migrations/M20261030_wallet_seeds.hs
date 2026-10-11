@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20260924_wallet_seeds where
+module Simplex.Chat.Store.Postgres.Migrations.M20261030_wallet_seeds where
 
 import Data.Text (Text)
 import Text.RawString.QQ (r)
 
-m20260924_wallet_seeds :: Text
-m20260924_wallet_seeds =
+m20261030_wallet_seeds :: Text
+m20261030_wallet_seeds =
   [r|
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -28,8 +28,8 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
-down_m20260924_wallet_seeds :: Text
-down_m20260924_wallet_seeds =
+down_m20261030_wallet_seeds :: Text
+down_m20261030_wallet_seeds =
   [r|
 DROP INDEX idx_wallet_accounts_user_id;
 DROP INDEX idx_wallet_accounts_wallet_seed_id_account_index;
