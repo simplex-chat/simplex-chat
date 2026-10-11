@@ -390,9 +390,18 @@ Line 2850, `Contact {activeConn} = ct` replaced:
 | 2852 | `Just Connection {peerChatVRange} -> do` | `Right peerChatVRange -> do` |
 | 2875 | `Nothing -> throwChatError $ CEContactNotActive ct` | `Left ct -> throwChatError $ CEContactNotActive ct` |
 
-Lines 2853-2874: unchanged.
+Lines 2853-2872: unchanged.
+
+Line 2873, missing invitation item ignored:
+
+```haskell
+          updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` \case
+            ChatErrorStore SEChatItemNotFoundByGroupId {} -> pure ()
+            e -> eToView e
+```
 
 Invitation from a contact deleted before joining (`contact_id` set to NULL, `Store/Direct.hs` line 492): the member path is taken; master returned `SEContactNotFoundByMemberId`.
+The invitation item is deleted with the contact (`Store/Direct.hs` line 483).
 
 ### 7.2. `updateCIGroupInvitationStatus` (line 4776)
 

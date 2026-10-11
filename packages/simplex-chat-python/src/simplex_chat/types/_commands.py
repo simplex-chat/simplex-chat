@@ -235,7 +235,7 @@ def APIAddMember_cmd_string(self: APIAddMember) -> str:
 APIAddMember_Response = CR.SentGroupInvitation | CR.ChatCmdError
 
 
-# Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed in another group.
+# Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
 # Network usage: interactive.
 class APIAddMemberViaGroup(TypedDict):
     groupId: int  # int64

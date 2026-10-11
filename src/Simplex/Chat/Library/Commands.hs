@@ -2906,7 +2906,9 @@ processChatCommand cxt nm = \case
                 updateGroupMemberStatus db userId fromMember GSMemInvited
                 updateGroupMemberStatus db userId membership GSMemInvited
               throwError e
-          updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` eToView
+          updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` \case
+            ChatErrorStore SEChatItemNotFoundByGroupId {} -> pure ()
+            e -> eToView e
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Left ct -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do

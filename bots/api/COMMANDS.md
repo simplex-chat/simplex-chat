@@ -764,7 +764,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIAddMemberViaGroup
 
-Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed in another group.
+Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
 
 *Network usage*: interactive.
 
