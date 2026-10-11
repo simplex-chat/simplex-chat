@@ -1,28 +1,34 @@
 const https = require('https');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const extract = require('extract-zip');
 
 const GITHUB_REPO = 'simplex-chat/simplex-chat-libs';
 const RELEASE_TAG = 'v7.1.0-beta.6';
+const SHA256 = {
+  'simplex-chat-libs-linux-x86_64-postgres.zip': '7e5040f6d314a4a8ad3b58d2f5668b00de3fdfdfedf7e669720f63cbfeb6b52d',
+  'simplex-chat-libs-linux-x86_64.zip': '792f94b7df09c69f2e732fabbfb5b3c1badf766cdacfba1af8b663296c9d0bcf',
+  'simplex-chat-libs-macos-aarch64.zip': '9c8849016a5d6faedc288d2222a89bca17ce891bb3bd719f02f6a4c81dfe5ce1',
+  'simplex-chat-libs-macos-x86_64.zip': '4c612035790b3941633c74710010da7fd717d06b6bff00409322d7856be83216',
+  'simplex-chat-libs-windows-x86_64.zip': '0de1e3e529b88d693e8aad9cc28b02e366916c48bd101deeed5d6e93d3a73942',
+};
 const BACKEND = (process.env.SIMPLEX_BACKEND || process.env.npm_config_simplex_backend || 'sqlite').toLowerCase();
-// A locally built libsimplex, copied into libs/ rather than loaded in place:
-// the addon's RUNPATH is $ORIGIN/../../libs.
 const LIBS_DIR_OVERRIDE = process.env.SIMPLEX_LIBS_DIR || process.env.npm_config_simplex_libs_dir;
+const ADDON_PATH_OVERRIDE = process.env.SIMPLEX_ADDON_PATH;
 const LIB_NAMES = ['libsimplex.so', 'libsimplex.dylib', 'libsimplex.dll'];
 
 if (BACKEND !== 'sqlite' && BACKEND !== 'postgres') {
-  console.error(`✗ Invalid SIMPLEX_BACKEND: "${BACKEND}". Must be "sqlite" or "postgres".`);
-  process.exit(1);
+  throw new Error(`Invalid SIMPLEX_BACKEND: "${BACKEND}". Must be "sqlite" or "postgres".`);
 }
 
 if (BACKEND === 'postgres' && (process.platform !== 'linux' || process.arch !== 'x64')) {
-  console.error(`✗ SIMPLEX_BACKEND=postgres is only supported on Linux x86_64.`);
-  process.exit(1);
+  throw new Error(`SIMPLEX_BACKEND=postgres is only supported on Linux x86_64.`);
 }
 
-const ROOT_DIR = process.cwd(); // Root of the package being installed
-const LIBS_DIR = path.join(ROOT_DIR, 'libs')
+const ROOT_DIR = path.resolve(process.env.SIMPLEX_CACHE_DIR || path.join(cacheDir(), 'simplex-chat', 'nodejs'), RELEASE_TAG);
+const LIBS_DIR = path.join(ROOT_DIR, BACKEND)
 const INSTALLED_FILE = path.join(LIBS_DIR, 'installed.txt');
 
 // Detect platform and architecture
@@ -97,24 +103,18 @@ function installFromOverride() {
     throw new Error(`No ${LIB_NAMES.join(' / ')} in SIMPLEX_LIBS_DIR: ${LIBS_DIR_OVERRIDE}`);
   }
   console.log(`Using libraries from SIMPLEX_LIBS_DIR: ${LIBS_DIR_OVERRIDE}`);
-  cleanLibsDirectory();
-  copyDirSync(LIBS_DIR_OVERRIDE, LIBS_DIR);
-  // Not a release tag: a later install without the variable sees a mismatch
-  // and replaces these files with the released ones.
-  fs.writeFileSync(INSTALLED_FILE, `${LIBS_DIR_OVERRIDE}:${BACKEND}`, 'utf-8');
-  console.log(`✓ Installed ${lib} and its runtime libraries from ${LIBS_DIR_OVERRIDE}`);
+  return path.resolve(LIBS_DIR_OVERRIDE, lib);
 }
 
 async function install() {
   try {
     if (LIBS_DIR_OVERRIDE) {
-      installFromOverride();
-      return;
+      return installFromOverride();
     }
 
     // Check if already installed
     if (isAlreadyInstalled()) {
-      return;
+      return libPath(LIBS_DIR);
     }
 
     const { platformName, archName } = getPlatformInfo();
@@ -136,6 +136,7 @@ async function install() {
 
     // Download zip with error handling
     await downloadFile(ZIP_URL, ZIP_PATH);
+    verifyFile(zipFilename, ZIP_PATH);
 
     // Extract to temporary directory
     console.log('Extracting to temporary directory...');
@@ -173,9 +174,48 @@ async function install() {
     fs.rmSync(TEMP_EXTRACT_DIR, { recursive: true, force: true });
     fs.unlinkSync(ZIP_PATH);
     console.log('✓ Installation complete');
+    return libPath(LIBS_DIR);
   } catch (err) {
     console.error('✗ Failed:', err.message);
-    process.exit(1);
+    throw err;
+  }
+}
+
+async function installAddon() {
+  if (ADDON_PATH_OVERRIDE) {
+    return path.resolve(ADDON_PATH_OVERRIDE);
+  }
+  const { platformName, archName } = getPlatformInfo();
+  const addonFilename = `simplex-chat-nodejs-${platformName}-${archName}.node`;
+  const addonPath = path.join(ROOT_DIR, addonFilename);
+  if (!fs.existsSync(addonPath)) {
+    fs.mkdirSync(ROOT_DIR, { recursive: true });
+    const downloadPath = `${addonPath}.download`;
+    await downloadFile(`https://github.com/${GITHUB_REPO}/releases/download/${RELEASE_TAG}/${addonFilename}`, downloadPath);
+    verifyFile(addonFilename, downloadPath);
+    fs.renameSync(downloadPath, addonPath);
+  }
+  return addonPath;
+}
+
+function libPath(dir) {
+  return path.join(dir, LIB_NAMES.find((name) => fs.existsSync(path.join(dir, name))));
+}
+
+function cacheDir() {
+  if (process.platform === 'darwin') {
+    return path.join(os.homedir(), 'Library', 'Caches');
+  }
+  if (process.platform === 'win32') {
+    return process.env.LOCALAPPDATA;
+  }
+  return process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+}
+
+function verifyFile(filename, file) {
+  const hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+  if (hash !== SHA256[filename]) {
+    throw new Error(`SHA-256 of ${filename} is ${hash}, expected ${SHA256[filename]}`);
   }
 }
 
@@ -263,4 +303,4 @@ function downloadFile(url, dest) {
   });
 }
 
-install();
+module.exports = { install, installAddon };

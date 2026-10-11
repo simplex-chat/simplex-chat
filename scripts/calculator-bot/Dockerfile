@@ -79,6 +79,7 @@ COPY packages/simplex-chat-nodejs packages/simplex-chat-nodejs
 RUN cd packages/simplex-chat-nodejs && \
     npm install --no-audit --no-fund && \
     npm install --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && \
+    npx node-gyp rebuild && \
     npx tsc && \
     cp src/simplex.* dist/
 
@@ -105,7 +106,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates dumb-init libffi8 libgmp10 libssl3 zlib1g && \
     rm -rf /var/lib/apt/lists/*
 
+COPY --from=libsimplex /libs /opt/simplex/libs
 COPY --from=build --chown=node:node /src /src
+
+ENV SIMPLEX_LIBS_DIR=/opt/simplex/libs \
+    SIMPLEX_ADDON_PATH=/src/packages/simplex-chat-nodejs/build/Release/simplex.node
 
 # A named volume takes this ownership; a bind mount must be owned by uid 1000.
 RUN mkdir -p /src/apps/simplex-calculator-bot/data && \

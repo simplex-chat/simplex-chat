@@ -726,7 +726,7 @@ jobs:
 
   release-nodejs-libs:
     runs-on: ubuntu-latest
-    needs: [build-linux, build-linux-postgres, build-macos]
+    needs: [build-linux, build-linux-postgres, build-macos, build-nodejs-addon]
     if: startsWith(github.ref, 'refs/tags/v') && (!cancelled())
     steps:
       - name: Checkout current repository
@@ -809,6 +809,14 @@ jobs:
             mv "${PREFIX}-linux-x86_64-postgres.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
           fi
 
+      - name: Download Node.js addon artifacts
+        if: needs.build-nodejs-addon.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: simplex-nodejs-addon-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/release-assets
+
       - name: Create release in libs repo and upload artifacts
         uses: softprops/action-gh-release@v2
         with:
@@ -816,3 +824,44 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: ${{ runner.temp }}/release-assets/*
           token: ${{ secrets.NODEJS_REPO_TOKEN }}
+
+  build-nodejs-addon:
+    name: "Node.js addon ${{ matrix.platform }}"
+    needs: [maybe-release]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux-x86_64
+          - os: macos-latest
+            platform: macos-aarch64
+          - os: macos-15-intel
+            platform: macos-x86_64
+          - os: windows-latest
+            platform: windows-x86_64
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/simplex-chat-nodejs
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build addon
+        run: |
+          npm install --no-audit --no-fund
+          npx --yes node-gyp rebuild
+          cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
+
+      - name: Upload addon artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplex-nodejs-addon-${{ matrix.platform }}
+          path: packages/simplex-chat-nodejs/build/simplex-chat-nodejs-${{ matrix.platform }}.node

@@ -2,6 +2,7 @@ import {execFile, spawnSync} from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import {core} from "../src/index";
+const {install} = require("../src/download-libs");
 
 describe("Core tests", () => {
   const tmpDir = "./tests/tmp";
@@ -191,10 +192,12 @@ describe("Core tests", () => {
     expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
   }, 10000);
 
-  it("should let the process exit while a receiver is idle", () => {
+  it("should let the process exit while a receiver is idle", async () => {
     const childDbPath = path.resolve(tmpDir, "simplex_child");
+    const libPath = await install();
     const script = `
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
         .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
         .then((res) => console.log("received " + JSON.stringify(res)));
@@ -206,9 +209,11 @@ describe("Core tests", () => {
   }, 15000);
 
   it("should not crash when closing stopped controllers repeatedly", async () => {
+    const libPath = await install();
     const script = `
       const fs = require("fs"), path = require("path");
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       (async () => {
         for (let i = 0; i < 40; i++) {
           const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
