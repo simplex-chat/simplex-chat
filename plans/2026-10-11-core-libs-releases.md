@@ -85,12 +85,27 @@ condition    !cancelled() and bump
 steps        download artifacts libs-*, merged
              zip of each of the six asset names; missing asset fails the job
              sha256sum simplex-chat-libs-*.zip > SHA256SUMS
+             checkout of simplex-chat-libs
+             commit and tag in simplex-chat-libs, pushed to master
              softprops/action-gh-release@v2
 repository   simplex-chat/simplex-chat-libs
 tag_name     core-<version>
 files        simplex-chat-libs-*.zip, SHA256SUMS
 token        secrets.NODEJS_REPO_TOKEN
 ```
+
+Commit in simplex-chat-libs:
+
+```
+file         core-release
+content      version: <version>
+             commit: <simplex-chat commit sha>
+author       SimpleX Chat <build@simplex.chat>
+message      core-<version>
+tag          core-<version>, on this commit
+```
+
+`NODEJS_REPO_TOKEN`: a token of the build account; releases are attributed to the token owner.
 
 The release follows the build jobs, after their tests; test results do not affect it.
 

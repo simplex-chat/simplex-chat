@@ -746,10 +746,31 @@ jobs:
           cd release
           sha256sum simplex-chat-libs-*.zip > SHA256SUMS
 
+      - name: Checkout libs repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}-libs
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+          path: libs-repo
+
+      - name: Commit and tag release in libs repo
+        id: libs_commit
+        working-directory: libs-repo
+        run: |
+          tag=core-test-${{ needs.check-version.outputs.version }}
+          printf 'version: %s\ncommit: %s\n' "${{ needs.check-version.outputs.version }}" "${{ github.sha }}" > core-release
+          git config user.name "SimpleX Chat"
+          git config user.email "build@simplex.chat"
+          git add core-release
+          git commit -m "$tag"
+          git tag "$tag"
+          git push origin HEAD "$tag"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
       - name: Create release in libs repo and upload artifacts
         uses: softprops/action-gh-release@v2
         with:
           repository: ${{ github.repository }}-libs
-          tag_name: core-test-${{ needs.check-version.outputs.version }}
+          tag_name: ${{ steps.libs_commit.outputs.tag }}
           files: release/*
           token: ${{ secrets.NODEJS_REPO_TOKEN }}
