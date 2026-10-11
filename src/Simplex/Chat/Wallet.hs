@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -14,6 +15,7 @@ module Simplex.Chat.Wallet
 where
 
 import Control.Concurrent.STM
+import Control.Monad.Except
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
@@ -53,12 +55,12 @@ masterMnemonic :: B39.WalletEntropy -> Text
 masterMnemonic = decodeLatin1 . B39.entropyPhrase
 
 deriveAccount :: TVar ChaChaDRG -> B39.WalletEntropy -> AccountIndex -> IO (Either String (AccountKey, WalletAddress))
-deriveAccount g entropy n = case B32.masterKey (B39.entropySeed entropy "") of
-  Left e -> pure $ Left e
-  Right master -> fmap account <$> deriveAddress g master path
+deriveAccount g entropy n = runExceptT $ do
+  master <- liftEither $ B32.masterKey $ B39.entropySeed entropy ""
+  (xk, address) <- ExceptT $ deriveAddress g master path
+  pure (B32.xkKey xk, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address})
   where
     path = bip44Path Ethereum n
-    account (xk, a) = (B32.xkKey xk, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address = a})
 
 accountSecret :: AccountKey -> Text
 accountSecret k = "0x" <> decodeLatin1 (BAE.convertToBase BAE.Base16 $ S.unPrivateKey k)

@@ -96,7 +96,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Store.Wallets (Wallet (..), bindAccount, createWallet, deleteWallet, getWallet, getWalletInfo, heldAccount)
+import Simplex.Chat.Store.Wallets
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -1506,7 +1506,7 @@ processChatCommand cxt nm = \case
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIGetWallet userId -> withUserId userId $ \user ->
-    CRWallet user <$> withFastStore (\db -> getWallet db >>= mapM (liftIO . getWalletInfo db userId))
+    CRWallet user <$> withFastStore' (\db -> getWallet db >>= mapM (getWalletInfo db user))
   APICreateWallet mnemonic_ -> withUser $ \user -> do
     (entropy, counter) <- case mnemonic_ of
       Nothing -> (,Just 1) <$> (liftIO . newEntropy =<< asks random)
@@ -1517,7 +1517,7 @@ processChatCommand cxt nm = \case
   APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user -> do
     (entropy, n) <- withWallet $ \db w@Wallet {entropy, nextAccountIndex} -> do
       n <- maybe (liftEither $ nextAccount nextAccountIndex) pure accountIdx_
-      held <- liftIO $ bindAccount db userId w n
+      held <- liftIO $ bindAccount db user w n
       unless held $ throwError "another profile holds this account"
       pure (entropy, n)
     CRWalletAddress user . snd <$> walletAccount entropy n
@@ -1528,14 +1528,13 @@ processChatCommand cxt nm = \case
     CRWalletMnemonic user . masterMnemonic <$> withWallet (\_ Wallet {entropy} -> pure entropy)
   APIExportWalletAccount userId n -> withUserId userId $ \user -> do
     entropy <- withWallet $ \db w@Wallet {entropy} -> do
-      held <- liftIO $ heldAccount db userId w n
+      held <- liftIO $ heldAccount db user w n
       unless held $ throwError "this profile does not hold this account"
       pure entropy
     (k, a) <- walletAccount entropy n
     pure $ CRWalletAccountSecret user a (accountSecret k)
   APIDeleteWallet -> withUser_ $ do
-    deleted <- withFastStore' deleteWallet
-    unless deleted $ throwCmdError "this device has no wallet"
+    withWallet $ \db -> liftIO . deleteWallet db
     ok_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
@@ -6122,8 +6121,8 @@ withExpirationDate globalTTL chatItemTTL action = do
 
 withWallet :: (DB.Connection -> Wallet -> ExceptT String IO a) -> CM a
 withWallet action =
-  liftEitherWith (ChatError . CECommandError)
-    =<< withFastStore (\db -> getWallet db >>= liftIO . runExceptT . maybe (throwError "this device has no wallet") (action db))
+  withFastStore' (\db -> runExceptT $ liftIO (getWallet db) >>= maybe (throwError "this device has no wallet") (action db))
+    >>= either throwCmdError pure
 
 walletAccount :: WalletEntropy -> AccountIndex -> CM (AccountKey, WalletAddress)
 walletAccount entropy n = do

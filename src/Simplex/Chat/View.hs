@@ -197,15 +197,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
   CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
-  CRWallet u info_ -> ttyUser u $ case info_ of
-    Nothing -> ["no wallet on this device"]
-    Just WalletInfo {accountIndexes, nextAccountIndex} ->
-      let next = maybe "unknown" tshow nextAccountIndex
-          accounts = if null accountIndexes then "no accounts for this profile" else "accounts: " <> T.intercalate ", " (map (tshow . unAccountIndex) accountIndexes)
-       in [plain $ "wallet, next account " <> next <> ", " <> accounts]
+  CRWallet u info_ -> ttyUser u $ viewWalletInfo info_
   CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
-  CRWalletAddress u a -> ttyUser u [walletAddressRow a]
-  CRWalletAccountSecret u a secret -> ttyUser u [walletAddressRow a <> "  " <> plain secret]
+  CRWalletAddress u a -> ttyUser u [viewWalletAddress a]
+  CRWalletAccountSecret u a secret -> ttyUser u [viewWalletAddress a <> "  " <> plain secret]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -1113,10 +1108,6 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   ContactConnection _ -> []
   CInfoInvalidJSON {} -> []
 
-walletAddressRow :: WalletAddress -> StyledString
-walletAddressRow WalletAddress {accountIndex, keyPath, address} =
-  plain $ tshow (unAccountIndex accountIndex) <> "  " <> keyPath <> "  " <> safeDecodeUtf8 (strEncode address)
-
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let getLDN :: Contact -> ContactName
@@ -1894,6 +1885,17 @@ day = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 
 dayTime :: UTCTime -> Text
 dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
+
+viewWalletInfo :: Maybe WalletInfo -> [StyledString]
+viewWalletInfo = maybe ["no wallet on this device"] $ \WalletInfo {accountIndexes, nextAccountIndex} ->
+  [plain $ "wallet, next account " <> maybe "unknown" tshow nextAccountIndex <> ", " <> viewAccounts accountIndexes]
+  where
+    viewAccounts [] = "no accounts for this profile"
+    viewAccounts ns = "accounts: " <> T.intercalate ", " (map (tshow . unAccountIndex) ns)
+
+viewWalletAddress :: WalletAddress -> StyledString
+viewWalletAddress WalletAddress {accountIndex, keyPath, address} =
+  plain $ tshow (unAccountIndex accountIndex) <> "  " <> keyPath <> "  " <> safeDecodeUtf8 (strEncode address)
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
