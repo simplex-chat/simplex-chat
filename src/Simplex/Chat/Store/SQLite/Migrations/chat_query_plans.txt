@@ -1408,14 +1408,6 @@ Query:
 Plan:
 
 Query: 
-          INSERT INTO wallet_accounts (wallet_seed_id, account_index, user_id) VALUES (?, ?, ?)
-          ON CONFLICT (wallet_seed_id, account_index) DO UPDATE SET user_id = excluded.user_id
-          WHERE wallet_accounts.user_id IS NULL OR wallet_accounts.user_id = excluded.user_id
-          RETURNING wallet_account_id
-        
-Plan:
-
-Query: 
           SELECT
             -- ChatItem
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
@@ -2098,14 +2090,6 @@ Query:
           (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       
 Plan:
-
-Query: 
-        INSERT INTO wallet_seeds (entropy, next_account_index) VALUES (?, ?)
-        ON CONFLICT (single_seed) DO NOTHING
-        RETURNING wallet_seed_id
-      
-Plan:
-SEARCH wallet_accounts USING COVERING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=?)
 
 Query: 
         SELECT
@@ -5181,6 +5165,13 @@ Plan:
 SEARCH group_members USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 
 Query: 
+      INSERT INTO wallet_accounts (wallet_seed_id, account_index, user_id) VALUES (?,?,?)
+      ON CONFLICT (wallet_seed_id, account_index) DO UPDATE SET user_id = excluded.user_id
+      WHERE wallet_accounts.user_id IS NULL
+    
+Plan:
+
+Query: 
       SELECT DISTINCT group_id, worker_scope
       FROM delivery_jobs
       WHERE failed = 0 AND job_status = ?
@@ -7291,9 +7282,9 @@ SEARCH contacts USING COVERING INDEX sqlite_autoindex_contacts_2 (user_id=?)
 SEARCH display_names USING COVERING INDEX sqlite_autoindex_display_names_2 (user_id=?)
 SEARCH contact_profiles USING COVERING INDEX idx_contact_profiles_user_id (user_id=?)
 
-Query: DELETE FROM wallet_seeds RETURNING wallet_seed_id
+Query: DELETE FROM wallet_seeds WHERE wallet_seed_id = ?
 Plan:
-SCAN wallet_seeds
+SEARCH wallet_seeds USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH wallet_accounts USING COVERING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=?)
 
 Query: DROP TABLE IF EXISTS temp_delete_members
@@ -7419,6 +7410,9 @@ Plan:
 Query: INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, auto_accept_group_invitations, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?,?)
 Plan:
 
+Query: INSERT INTO wallet_seeds (entropy, next_account_index) VALUES (?,?)
+Plan:
+
 Query: INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)
 Plan:
 
@@ -7492,6 +7486,12 @@ Plan:
 SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
 SEARCH group_relays USING COVERING INDEX idx_group_relays_chat_relay_id (chat_relay_id=?)
+
+Query: SELECT EXISTS (SELECT 1 FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ? AND user_id = ?)
+Plan:
+SCAN CONSTANT ROW
+SCALAR SUBQUERY 1
+SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
 
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
@@ -7975,10 +7975,6 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT wallet_account_id FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ? AND user_id = ?
-Plan:
-SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
 
 Query: SELECT wallet_seed_id, entropy, next_account_index FROM wallet_seeds
 Plan:
