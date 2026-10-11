@@ -53,7 +53,7 @@ With the `isLastModal` check, the effect does not close a different screen, such
 
 When there is no active user:
 - Clicking the row now only hides the picker, as opening any modal does. The modal closes itself, and the picker is not reopened.
-- After the mobile disconnects with the address screen open, the picker does not reopen by itself (observed in testing). The app checks for open left-panel modals when the user becomes null, and the address modal closes itself only after that check. Master does the same when any other left-panel screen is open.
+- After the mobile disconnects with the address screen open, the picker does not reopen by itself (observed in testing). When the state with no user and no connected mobile begins, the app checks for open left-panel modals, and the address modal closes itself only after that check. Master does the same when any other left-panel screen is open.
 
 The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding. The only Android path is case 3, where the screen now closes itself instead of crashing. With an active user, behaviour does not change on any platform.
 
