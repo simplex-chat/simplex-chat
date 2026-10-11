@@ -112,10 +112,12 @@ Unset: unchanged.
 ## 6. Node.js package
 
 ```
-download-libs.js   RELEASE_TAG = 'core-<version>'
+download-libs.js   RELEASE_TAG = 'core-<version>', set in the Node.js release commit, once release core-<version> exists
 package.json       version: Node.js release cycle
 release commits    RELEASE_TAG removed from their edits (author build@simplex.chat)
 ```
+
+This change: `RELEASE_TAG` unchanged, `'v7.1.0-beta.6'`.
 
 Platforms: `linux-aarch64` added by the assets in section 2; `download-libs.js` maps `arm64` to `aarch64` (lines 46-50).
 Postgres: Linux x86_64 only (lines 19-22).
@@ -138,7 +140,7 @@ Line 531: `matrix.opnessl_dir` → `matrix.openssl_dir`.
 
 ## 9. Verification
 
-1. Branch run of `build.yml` with temporary edits: `push` trigger on the branch, `bump` true for the branch, tag `core-test-<version>`.
+1. Branch run of `build.yml` with temporary edits: `push` trigger and bump condition with the branch, tag `core-test-<version>`, cabal version increment in the head commit of the push.
 2. `npm install` of the Node.js package with `RELEASE_TAG = 'core-test-<version>'` on Linux x86_64, Linux aarch64, macOS aarch64, macOS x86_64, Windows x86_64.
 3. Postgres: `SIMPLEX_BACKEND=postgres npm install` on Linux x86_64.
 4. Release `core-test-<version>` and its tag deleted after verification.
