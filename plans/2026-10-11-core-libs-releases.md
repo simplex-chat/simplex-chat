@@ -23,7 +23,7 @@ A further change requires a new cabal version.
 | Asset | Job | Backend |
 |---|---|---|
 | `simplex-chat-libs-linux-x86_64.zip` | `build-linux`, 22.04 x86_64 | sqlite |
-| `simplex-chat-libs-linux-x86_64-postgres.zip` | `build-linux`, 22.04 x86_64 | postgres |
+| `simplex-chat-libs-linux-x86_64-postgres.zip` | `build-linux-postgres` | postgres |
 | `simplex-chat-libs-linux-aarch64.zip` | `build-linux`, 22.04 aarch64 | sqlite |
 | `simplex-chat-libs-macos-aarch64.zip` | `build-macos`, `macos-latest` | sqlite |
 | `simplex-chat-libs-macos-x86_64.zip` | `build-macos`, `macos-15-intel` | sqlite |
@@ -87,7 +87,7 @@ Library release runs are never cancelled; other runs are cancelled by the next p
 
 | Job | Entries | Position | Build |
 |---|---|---|---|
-| `build-linux` | 22.04 x86_64 and 22.04 aarch64, GHC 9.6.3 (matrix key `libs: true`) | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-linux.sh`; x86_64 also `postgres` |
+| `build-linux` | 22.04 x86_64 and 22.04 aarch64, GHC 9.6.3 (matrix key `libs: true`) | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-linux.sh` |
 | `build-macos` | both (matrix key `arch`) | after "Run tests" | `SKIP_VLC=1 scripts/desktop/build-lib-mac.sh` |
 | `build-windows` | `windows-latest` | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-windows.sh`; `dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll` |
 
@@ -109,12 +109,26 @@ Conditions:
 
 | Job | Build | Upload |
 |---|---|---|
-| `build-linux` | `libs_tag` set, `matrix.libs`; Postgres also `x86_64` | `!cancelled()`, sqlite build succeeded |
+| `build-linux` | `libs_tag` set, `matrix.libs` | `libs_tag` set, `matrix.libs` |
 | `build-macos` | `!cancelled()`, `libs_tag` set, CLI build succeeded | `!cancelled()`, library build succeeded |
 | `build-windows` | `libs_tag` set | `libs_tag` set |
 
 A failed job leaves its assets absent; the other jobs upload theirs.
 A re-run of a failed job uploads its assets to the same release; an asset of the same name is replaced.
+
+### 3.4. `build-linux-postgres`
+
+Edits of the existing job:
+
+```
+if                    needs.maybe-release.outputs.libs_tag, replaces the v* tag condition
+Copy libs from container
+                      files copied to postgres-libs/libs/
+                      zip -r simplex-chat-libs-linux-x86_64-postgres.zip libs, in postgres-libs
+Upload postgres library
+                      replaces the artifact upload
+                      softprops/action-gh-release@v2, files postgres-libs/*.zip, other inputs as in 3.3
+```
 
 ## 4. Scripts: `SKIP_VLC`
 
@@ -127,9 +141,8 @@ Unset: unchanged.
 | `scripts/desktop/build-lib-mac.sh` | 154 | `[ -n "$SKIP_VLC" ] \|\| scripts/desktop/prepare-vlc-mac.sh` |
 | `scripts/desktop/build-lib-windows.sh` | 64 | `[ -n "$SKIP_VLC" ] \|\| scripts/desktop/prepare-vlc-windows.sh` |
 
-## 5. `build.yml`: removed jobs
+## 5. `build.yml`: removed job
 
-`build-linux-postgres`, with its header comment.
 `release-nodejs-libs`, with its header comment.
 
 ## 6. Node.js package
