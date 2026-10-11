@@ -351,6 +351,23 @@ class ChatApi:
             return r["member"]
         raise ChatCommandError("error adding member", r)
 
+    async def api_add_member_via_group(
+        self, group_id: int, via_group_id: int, group_member_id: int, member_role: T.GroupMemberRole
+    ) -> T.GroupMember:
+        r = await self.send_chat_cmd(
+            CC.APIAddMemberViaGroup_cmd_string(
+                {
+                    "groupId": group_id,
+                    "viaGroupId": via_group_id,
+                    "groupMemberId": group_member_id,
+                    "memberRole": member_role,
+                }
+            )
+        )
+        if r["type"] == "sentGroupInvitationViaGroup":
+            return r["member"]
+        raise ChatCommandError("error adding member", r)
+
     async def api_join_group(self, group_id: int) -> T.GroupInfo:
         r = await self.send_chat_cmd(CC.APIJoinGroup_cmd_string({"groupId": group_id}))
         if r["type"] == "userAcceptedGroupSent":

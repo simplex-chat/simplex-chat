@@ -2878,15 +2878,51 @@ processChatCommand cxt nm = \case
                 pure $ CRSentGroupInvitation user gInfo contact member {memberRole = memRole}
               Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
+  APIAddMemberViaGroup groupId viaGroupId gmId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
+    (g@(GIK gInfo _), viaGInfo, m) <- withFastStore $ \db ->
+      (,,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupInfo db cxt user viaGroupId <*> getGroupMember db cxt user viaGroupId gmId
+    let GroupMember {localDisplayName = mName} = m
+    when (viaGroupId == groupId) $ throwChatError $ CEGroupDuplicateMember mName
+    when (useRelays' gInfo) $ throwCmdError "can't invite member to channel"
+    when (useRelays' viaGInfo) $ throwCmdError "can't invite member from channel"
+    assertUserGroupRole gInfo $ max GRAdmin memRole
+    assertUserGroupRole viaGInfo GRAuthor
+    unless (groupFeatureUserAllowed SGFDirectMessages viaGInfo) $ throwCmdError "direct messages not allowed"
+    when (incognitoMembership viaGInfo) $ throwChatError CEContactIncognitoCantInvite
+    when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
+    mConn <- case memberConn m of
+      Just conn | memberCurrent m -> pure conn
+      _ -> throwChatError CEGroupMemberNotActive
+    unless (m `supportsVersion` groupInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
+    let sendInvitation = sendGrpInvitationViaGroup user viaGInfo m mConn g
+    withFastStore' (\db -> getMemberInvitedVia db cxt user gInfo m) >>= \case
+      Nothing -> do
+        gVar <- asks random
+        subMode <- chatReadVar subscriptionMode
+        (agentConnId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
+        member <- withFastStore $ \db -> createNewMemberViaGroup db gVar cxt user gInfo m mConn memRole agentConnId cReq subMode
+        sendInvitation member cReq
+        pure $ CRSentGroupInvitationViaGroup user gInfo member viaGInfo m
+      Just member@GroupMember {groupMemberId, memberStatus, memberRole = mRole}
+        | memberStatus == GSMemInvited -> do
+            unless (mRole == memRole) $ withFastStore' $ \db -> updateGroupMemberRole db user member memRole
+            withFastStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
+              Just cReq -> do
+                sendInvitation member {memberRole = memRole} cReq
+                pure $ CRSentGroupInvitationViaGroup user gInfo member {memberRole = memRole} viaGInfo m
+              Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo mName
+        | otherwise -> throwChatError $ CEGroupDuplicateMember mName
   APIJoinGroup groupId enableNtfs -> withUser $ \user@User {userId} -> do
     withGroupLock "joinGroup" groupId $ do
-      (invitation, ct) <- withFastStore $ \db -> do
+      (invitation, ct_) <- withFastStore $ \db -> do
         inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db cxt user groupId
-        (inv,) <$> getContactViaMember db cxt user fromMember
+        (inv,) <$> forM (memberContactId fromMember) (\_ -> getContactViaMember db cxt user fromMember)
       let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership, chatSettings}, groupKeys = gks} = invitation
-          Contact {activeConn} = ct
-      case activeConn of
-        Just Connection {peerChatVRange} -> do
+          peerChatVRange_ = case ct_ of
+            Nothing -> Right $ memberChatVRange' fromMember
+            Just ct@Contact {activeConn} -> maybe (Left ct) (\Connection {peerChatVRange} -> Right peerChatVRange) activeConn
+      case peerChatVRange_ of
+        Right peerChatVRange -> do
           subMode <- chatReadVar subscriptionMode
           dm <- encodeXGrpAcpt user (GIK g gks) peerChatVRange
           agentConnId <- case memberConn fromMember of
@@ -2907,9 +2943,11 @@ processChatCommand cxt nm = \case
                 updateGroupMemberStatus db userId fromMember GSMemInvited
                 updateGroupMemberStatus db userId membership GSMemInvited
               throwError e
-          updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` eToView
+          updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` \case
+            ChatErrorStore SEChatItemNotFoundByGroupId {} -> pure ()
+            e -> eToView e
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
-        Nothing -> throwChatError $ CEContactNotActive ct
+        Left ct -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
     (g@(GIK gInfo _), m) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupMemberById db cxt user gmId
     -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
@@ -4357,6 +4395,25 @@ processChatCommand cxt nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
+    sendGrpInvitationViaGroup :: User -> GroupInfo -> GroupMember -> Connection -> GroupInfoKeys -> GroupMember -> ConnReqInvitation -> CM ()
+    sendGrpInvitationViaGroup user viaGInfo GroupMember {localDisplayName} mConn (GIK gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} gks) GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+      let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
+          GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+          groupInv =
+            GroupInvitation
+              { fromMember = MemberIdRole userMemberId userRole,
+                fromMemberKey = Just $ groupMemberKey gks,
+                invitedMember = MemberIdRole memberId memRole,
+                connRequest = cReq,
+                groupProfile,
+                business = businessChat,
+                groupLinkId = Nothing,
+                groupSize = Just currentMemCount
+              }
+      (msg, _, _) <- sendDirectMemberMessage mConn (XGrpInv groupInv) (groupId' viaGInfo)
+      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+      ci <- saveSndChatItem user (CDGroupSnd viaGInfo Nothing) msg content
+      toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat viaGInfo Nothing) ci]
     addRelays :: User -> GroupInfoKeys -> ShortLinkContact -> [UserChatRelay] -> CM [(UserChatRelay, Either ChatError GroupRelay)]
     addRelays user g@(GIK gInfo@GroupInfo {membership} gks) groupSLink relays =
       mapConcurrently addRelay relays
@@ -4812,7 +4869,7 @@ processChatCommand cxt nm = \case
         shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId' conn) SCMInvitation userLinkData Nothing False Nothing)
     updateCIGroupInvitationStatus :: User -> GroupInfo -> CIGroupInvitationStatus -> CM ()
     updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
-      AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db cxt user groupId
+      AChatItem _ _ cInfo ci@ChatItem {content, meta = meta@CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db cxt user groupId
       case (cInfo, content) of
         (DirectChat ct@Contact {contactId}, CIRcvGroupInvitation ciGroupInv@CIGroupInvitation {status} memRole)
           | status == CIGISPending -> do
@@ -4821,6 +4878,14 @@ processChatCommand cxt nm = \case
               updateDirectChatItemView user ct itemId aciContent False False timed_ Nothing
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, itemId)
+        (GroupChat g _, CIRcvGroupInvitation ciGroupInv@CIGroupInvitation {status} memRole)
+          | status == CIGISPending -> do
+              let content' = CIRcvGroupInvitation (ciGroupInv {status = newStatus} :: CIGroupInvitation) memRole
+              timed_ <- sndGroupCITimed False g Nothing
+              ci' <- withFastStore' $ \db -> updateGroupChatItem db user (groupId' g) ci {meta = meta {itemTimed = timed_}} content' False False Nothing
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci')
+              forM_ (timed_ >>= timedDeleteAt') $
+                startProximateTimedItemThread user (ChatRef CTGroup (groupId' g) Nothing, itemId)
         _ -> pure () -- prohibited
     assertAllowedContent :: MsgContent -> CM ()
     assertAllowedContent = \case
@@ -6229,6 +6294,7 @@ chatCommandP =
       "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_add #" *> (APIAddMemberViaGroup <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),

@@ -232,6 +232,8 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.inv` message is sent to invite contact to the group via contact's direct connection and includes group member connection address. This message MUST only be sent by members with `admin` or `owner` role. Optional `groupLinkId` is included when this message is sent to contacts connected via the user's group link. This identifier is a random byte sequence, with no global or even local uniqueness - it is only used for the user's invitations to a given group to provide confirmation to the contact that the group invitation is for the same group the contact was connecting to via the group link, so that the invitation can be automatically accepted by the contact - the contact compares it with the group link id contained in the group link uri's data field.
 
+`x.grp.inv` message can also be sent to a group member via the member connection, to invite the member to another group. In this case, the message MUST only be sent when direct messages are allowed for the sender in the group of the member connection, and receiving clients MUST ignore it otherwise.
+
 `x.grp.acpt` message is sent as part of group member connection handshake, only to the inviting user. It optionally includes the invited member's group profile. The inviting user replies with `x.grp.mem.info` that includes the inviting member's group profile.
 
 `x.grp.link.inv` message is sent as part of connection handshake to member joining via group link, and contains group profile and initial information about inviting and joining member.

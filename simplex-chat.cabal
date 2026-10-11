@@ -171,6 +171,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
           Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
           Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_bindings
+          Simplex.Chat.Store.Postgres.Migrations.M20261010_invite_member_via_group
           Simplex.Chat.Store.Postgres.Migrations.M20261030_wallet_seeds
   else
       exposed-modules:
@@ -350,6 +351,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260918_badge_issue_errors
           Simplex.Chat.Store.SQLite.Migrations.M20260923_preferences_json
           Simplex.Chat.Store.SQLite.Migrations.M20260925_badge_bindings
+          Simplex.Chat.Store.SQLite.Migrations.M20261010_invite_member_via_group
           Simplex.Chat.Store.SQLite.Migrations.M20261030_wallet_seeds
   other-modules:
       Paths_simplex_chat

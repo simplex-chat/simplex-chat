@@ -55,6 +55,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -110,6 +111,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -322,6 +324,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -359,6 +362,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -396,6 +400,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -621,6 +626,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -657,6 +663,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -694,6 +701,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -731,6 +739,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -1304,6 +1313,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -1342,6 +1352,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -1997,6 +2008,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -2034,6 +2046,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -6290,6 +6303,29 @@ Query:
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
     LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
+   WHERE m.user_id = ? AND m.group_id = ? AND m.invited_via_group_member_id = ? AND m.member_status NOT IN (?,?,?)
+Plan:
+SEARCH m USING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
+SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+    SELECT
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
+      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
+      m.created_at, m.updated_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
+      c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version,
+      bp.badge_proof, bp.badge_pres_header, bp.badge_key_idx, bp.badge_type, bp.badge_expiry, bp.badge_extra
+    FROM group_members m
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    LEFT JOIN connections c ON c.group_member_id = m.group_member_id
+    LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.removed_at < ?
 Plan:
 SEARCH m USING INDEX idx_group_members_user_id (user_id=?)
@@ -7045,6 +7081,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -7077,6 +7114,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -7109,6 +7147,7 @@ SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_membe
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
@@ -7651,7 +7690,7 @@ SCAN files
 
 Query: SELECT count(1) FROM group_members
 Plan:
-SCAN group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id
+SCAN group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id
 
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
@@ -7750,6 +7789,10 @@ SCAN group_members
 Query: SELECT issue_failed_since, issue_error FROM badge_purchases
 Plan:
 SCAN badge_purchases
+
+Query: SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item_id DESC LIMIT 1
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
 Query: SELECT last_insert_rowid()
 Plan:
@@ -8236,6 +8279,10 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE group_members SET roster_served_version = ?, updated_at = ? WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_members SET sent_inv_queue_info = ?, invited_via_group_member_id = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
