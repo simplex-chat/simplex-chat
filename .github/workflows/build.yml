@@ -528,7 +528,7 @@ jobs:
         run: |
           echo "ignore-project: False"                                                    >> cabal.project.local
           echo "package simplexmq"                                                        >> cabal.project.local
-          echo "    extra-include-dirs: ${{ matrix.opnessl_dir }}/openssl@3.0/include"    >> cabal.project.local
+          echo "    extra-include-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/include"    >> cabal.project.local
           echo "    extra-lib-dirs: ${{ matrix.openssl_dir}}/openssl@3.0/lib"             >> cabal.project.local
           echo ""                                                                         >> cabal.project.local
           echo "package direct-sqlcipher"                                                 >> cabal.project.local
