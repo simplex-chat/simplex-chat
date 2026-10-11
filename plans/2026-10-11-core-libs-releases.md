@@ -1,6 +1,6 @@
 # Core library releases: implementation plan
 
-Libraries for the Node.js package are released per core version, from pushes to `master` and `stable`.
+Libraries for the Node.js package are released per core version, from the commit on `master` or `stable` that changes the version.
 
 ## 1. Release identity
 
@@ -8,9 +8,11 @@ Libraries for the Node.js package are released per core version, from pushes to 
 repository     simplex-chat/simplex-chat-libs
 tag            core-<version>
 version        version: field of simplex-chat.cabal, e.g. 7.1.0.10
-trigger        every push to master or stable
-build          when `gh release view core-<version>` fails in simplex-chat-libs
+build          push to master or stable, head commit changes version: compared with its first parent
+source         the head commit of that push
 ```
+
+A version change that is not the head commit of its push is not released.
 
 Rule: a core version is final once a published package depends on it.
 Its migrations and chat protocol versions stay unchanged.
@@ -18,116 +20,79 @@ A further change requires a new cabal version.
 
 ## 2. Assets
 
-| Asset | Runner | Backend |
+| Asset | Job | Backend |
 |---|---|---|
-| `simplex-chat-libs-linux-x86_64.zip` | `ubuntu-22.04` | sqlite |
-| `simplex-chat-libs-linux-x86_64-postgres.zip` | `ubuntu-22.04` | postgres |
-| `simplex-chat-libs-linux-aarch64.zip` | `ubuntu-22.04-arm` | sqlite |
-| `simplex-chat-libs-macos-aarch64.zip` | `macos-latest` | sqlite |
-| `simplex-chat-libs-macos-x86_64.zip` | `macos-15-intel` | sqlite |
-| `simplex-chat-libs-windows-x86_64.zip` | `windows-latest` | sqlite |
-| `SHA256SUMS` | `ubuntu-latest` | — |
+| `simplex-chat-libs-linux-x86_64.zip` | `build-linux`, 22.04 x86_64 | sqlite |
+| `simplex-chat-libs-linux-x86_64-postgres.zip` | `build-linux`, 22.04 x86_64 | postgres |
+| `simplex-chat-libs-linux-aarch64.zip` | `build-linux`, 22.04 aarch64 | sqlite |
+| `simplex-chat-libs-macos-aarch64.zip` | `build-macos`, `macos-latest` | sqlite |
+| `simplex-chat-libs-macos-x86_64.zip` | `build-macos`, `macos-15-intel` | sqlite |
+| `simplex-chat-libs-windows-x86_64.zip` | `build-windows` | sqlite |
+| `SHA256SUMS` | `release-nodejs-libs` | — |
 
 Zip content: directory `libs/` with the top-level files of `apps/multiplatform/common/src/commonMain/cpp/desktop/libs/<os>-<arch>/`.
 Windows zip: also `libs/libsimplex.lib`.
 Asset names: as built by `download-libs.js` (line 123).
 
-## 3. Workflow `.github/workflows/libs.yml`
+## 3. `build.yml`
 
-```yaml
-on:
-  push:
-    branches:
-      - master
-      - stable
+### 3.1. `check-version`
 
-concurrency:
-  group: libs
-  cancel-in-progress: false
-```
-
-Jobs:
-
-| Job | Needs | Condition |
-|---|---|---|
-| `check` | — | — |
-| `build-linux` | `check` | `needs.check.outputs.build == 'true'` |
-| `build-macos` | `check` | `needs.check.outputs.build == 'true'` |
-| `build-windows` | `check` | `needs.check.outputs.build == 'true'` |
-| `release` | `check`, `build-linux`, `build-macos`, `build-windows` | all builds succeeded |
-
-### 3.1. `check`
+New job, after `maybe-release`.
 
 ```
 runner     ubuntu-latest
+checkout   fetch-depth: 2
 version    sed -n 's/^version: *//p' simplex-chat.cabal
-build      true when `gh release view core-<version> --repo simplex-chat/simplex-chat-libs` fails
-token      secrets.NODEJS_REPO_TOKEN
-outputs    version, build
+bump       push event, ref master or stable, version differs from HEAD^1:simplex-chat.cabal
+outputs    version, bump
 ```
 
-### 3.2. `build-linux`
+### 3.2. Concurrency
 
-Matrix:
+Workflow-level `concurrency`: removed.
 
-```
-arch      runner             image hash                                                                 backend
-x86_64    ubuntu-22.04       sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5    sqlite
-x86_64    ubuntu-22.04       sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5    postgres
-aarch64   ubuntu-22.04-arm   sha256:6a62a4157b8775eaf4959cb629e757d32d39d1f4c8ac1b0ddc2510b555cf72f3    sqlite
-```
-
-Steps, as `build-linux` in `build.yml` (lines 153-230):
-
-1. Checkout, free disk space, cache restore (key with `libs`, arch and backend).
-2. Docker image from `Dockerfile.build`: `TAG=22.04`, `HASH`, `GHC=9.6.3`, user UID and GID.
-3. Container start with `~/.cabal` and the workspace mounted.
-4. `cabal.project.local`: `ignore-project: False`, `direct-sqlcipher` with `flags: +openssl`.
-5. In the container: `cabal clean`, `cabal update`, then `SKIP_VLC=1 scripts/desktop/build-lib-linux.sh <backend>`.
-6. Zip and artifact upload.
-7. Cache permissions fix, as `build.yml` lines 356-361.
-
-### 3.3. `build-macos`
-
-Matrix:
+Job-level `concurrency` in `build-linux`, `build-macos`, `build-windows`:
 
 ```
-arch      runner           openssl_dir
-aarch64   macos-latest     /opt/homebrew/opt
-x86_64    macos-15-intel   /usr/local/opt
+group                ${{ github.workflow }}-${{ github.ref }}-<job>-<matrix entry>, and -${{ github.sha }} when bump
+cancel-in-progress   not a v* tag and not bump
 ```
 
-Steps, as `build-macos` in `build.yml` (lines 510-537):
+Bump runs are never cancelled; other runs are cancelled by the next push to the same ref.
 
-1. Checkout, `./.github/actions/prepare-build`.
-2. `brew install openssl@3.0`.
-3. `cabal.project.local`: `simplexmq` and `direct-sqlcipher` with `extra-include-dirs: <openssl_dir>/openssl@3.0/include`, `extra-lib-dirs: <openssl_dir>/openssl@3.0/lib`; `direct-sqlcipher` with `flags: +openssl`.
-4. `cabal update`, then `SKIP_VLC=1 scripts/desktop/build-lib-mac.sh`.
-5. Zip of `libs/mac-<arch>/` as `simplex-chat-libs-macos-<arch>.zip`, artifact upload.
+### 3.3. Library steps
 
-### 3.4. `build-windows`
+`needs` of the three build jobs: adds `check-version`.
 
-Steps, as `build-windows` in `build.yml` (lines 621-697):
+| Job | Entries | Position | Steps |
+|---|---|---|---|
+| `build-linux` | 22.04 x86_64 and 22.04 aarch64, GHC 9.6.3 (matrix key `libs: true`) | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-linux.sh`; x86_64 also `postgres`; upload |
+| `build-macos` | both (matrix key `arch`) | after "Run tests", `!cancelled()`, CLI build succeeded | `SKIP_VLC=1 scripts/desktop/build-lib-mac.sh`; upload |
+| `build-windows` | `windows-latest` | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-windows.sh`; `dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll`; upload |
 
-1. Checkout, `./.github/actions/prepare-build` with `cache_path: "C:/cabal"`.
-2. Pagefile 16GB.
-3. MSYS2 `ucrt64` with `git`, `perl`, `make`, `toolchain:p`, `cmake:p`.
-4. `export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)`, `cabal update`, then `SKIP_VLC=1 scripts/desktop/build-lib-windows.sh`.
-5. `dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll`.
-6. Zip of `libs/windows-x86_64/` and `libsimplex.lib`, artifact upload.
+Condition of all library steps: `needs.check-version.outputs.bump == 'true'`.
+Linux steps run in the build container.
+Artifacts: `libs-<platform>-<arch>`, each with directories `<asset name>/libs/`.
 
-### 3.5. `release`
+### 3.4. `release-nodejs-libs`
 
-1. Artifact download: one directory `libs/` per asset name.
-2. One zip per artifact, then `sha256sum simplex-chat-libs-*.zip > SHA256SUMS`.
-3. `softprops/action-gh-release@v2`:
+Replaces the job body of the same name; header comment and secrets comment kept.
 
 ```
+needs        check-version, build-linux, build-macos, build-windows
+condition    !cancelled() and bump
+steps        download artifacts libs-*, merged
+             zip of each of the six asset names; missing asset fails the job
+             sha256sum simplex-chat-libs-*.zip > SHA256SUMS
+             softprops/action-gh-release@v2
 repository   simplex-chat/simplex-chat-libs
 tag_name     core-<version>
 files        simplex-chat-libs-*.zip, SHA256SUMS
 token        secrets.NODEJS_REPO_TOKEN
 ```
+
+The release follows the build jobs, after their tests; test results do not affect it.
 
 ## 4. Scripts: `SKIP_VLC`
 
@@ -140,12 +105,9 @@ Unset: unchanged.
 | `scripts/desktop/build-lib-mac.sh` | 154 | `[ -n "$SKIP_VLC" ] \|\| scripts/desktop/prepare-vlc-mac.sh` |
 | `scripts/desktop/build-lib-windows.sh` | 64 | `[ -n "$SKIP_VLC" ] \|\| scripts/desktop/prepare-vlc-windows.sh` |
 
-## 5. `build.yml`
+## 5. `build.yml`: removed job
 
-Removed jobs:
-
-- `build-linux-postgres`, with its header comment.
-- `release-nodejs-libs`, with its header comment.
+`build-linux-postgres`, with its header comment.
 
 ## 6. Node.js package
 
@@ -165,7 +127,7 @@ Add-on releases: separate from library releases, triggered by changes of the Nod
 Effects of this plan on `ep/node-add-on`:
 
 ```
-release-nodejs-libs   removed by section 5; its add-on upload edits move to the add-on release
+release-nodejs-libs   replaced by section 3.4; its add-on upload edits move to the add-on release
 RELEASE_TAG           library release core-<version>; add-on assets in a separate release
 SHA256                library values from SHA256SUMS of release core-<version>
 ```
@@ -176,7 +138,7 @@ Line 531: `matrix.opnessl_dir` → `matrix.openssl_dir`.
 
 ## 9. Verification
 
-1. Branch run of `libs.yml` with a temporary `push` trigger on the branch, tag `core-test-<version>`.
+1. Branch run of `build.yml` with temporary edits: `push` trigger on the branch, `bump` true for the branch, tag `core-test-<version>`.
 2. `npm install` of the Node.js package with `RELEASE_TAG = 'core-test-<version>'` on Linux x86_64, Linux aarch64, macOS aarch64, macOS x86_64, Windows x86_64.
 3. Postgres: `SIMPLEX_BACKEND=postgres npm install` on Linux x86_64.
-4. Release `core-test-<version>` deleted after verification.
+4. Release `core-test-<version>` and its tag deleted after verification.
