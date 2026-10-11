@@ -69,12 +69,23 @@ jobs:
 # Create release, but only if it's triggered by tag push.
 # On pull requests/commits push, this job will always complete.
 
+# Secrets:
+# -------
+# NODEJS_REPO_TOKEN
+#  Only select repositories: simplex-chat-libs
+#  Permissions:
+#   * Contents (Read and Write)
+
   maybe-release:
     runs-on: ubuntu-latest
+    outputs:
+      libs_tag: ${{ steps.libs_commit.outputs.tag }}
     steps:
       - name: Clone project
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'push'
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
 
       - name: Build changelog
         id: build_changelog
@@ -100,29 +111,47 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  check-version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.check.outputs.version }}
-      bump: ${{ steps.check.outputs.bump }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-
       - name: Check version change
-        id: check
+        id: check_version
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable' || github.ref == 'refs/heads/ep/lib-release'
         shell: bash
         run: |
           version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
           prev_version=$(git show HEAD^1:simplex-chat.cabal | sed -n 's/^version: *//p')
-          echo "version=$version" >> $GITHUB_OUTPUT
-          if [ "${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable' || github.ref == 'refs/heads/ep/lib-release') }}" = true ] && [ "$version" != "$prev_version" ]; then
-            echo "bump=true" >> $GITHUB_OUTPUT
-          else
-            echo "bump=false" >> $GITHUB_OUTPUT
+          if [ "$version" != "$prev_version" ]; then
+            echo "version=$version" >> $GITHUB_OUTPUT
           fi
+
+      - name: Clone libs repo
+        if: steps.check_version.outputs.version
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}-libs
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+          path: libs-repo
+
+      - name: Commit and tag libs release
+        id: libs_commit
+        if: steps.check_version.outputs.version
+        working-directory: libs-repo
+        run: |
+          tag=core-test-${{ steps.check_version.outputs.version }}
+          printf 'version: %s\ncommit: %s\n' "${{ steps.check_version.outputs.version }}" "${{ github.sha }}" > core-release
+          git config user.name "SimpleX Chat"
+          git config user.email "build@simplex.chat"
+          git add core-release
+          git commit -m "$tag"
+          git tag "$tag"
+          git push --atomic origin HEAD "$tag"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: Create libs release
+        if: steps.check_version.outputs.version
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ steps.libs_commit.outputs.tag }}
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
 # =========================
 #        Linux Build
@@ -130,11 +159,11 @@ jobs:
 
   build-linux:
     name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
-    needs: [maybe-release, variables, check-version]
+    needs: [maybe-release, variables]
     runs-on: ${{ matrix.runner }}
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}${{ needs.check-version.outputs.bump == 'true' && format('-{0}', github.sha) || '' }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && needs.check-version.outputs.bump != 'true' }}
+      group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}-${{ needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -272,27 +301,34 @@ jobs:
           strip /out/simplex-chat
 
       - name: Build library
-        if: needs.check-version.outputs.bump == 'true' && matrix.libs
+        id: linux_lib_build
+        if: needs.maybe-release.outputs.libs_tag && matrix.libs
         shell: docker exec -t builder sh -eu {0}
         run: |
           SKIP_VLC=1 scripts/desktop/build-lib-linux.sh
-          mkdir -p release-libs/simplex-chat-libs-linux-${{ matrix.arch }}/libs
-          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/simplex-chat-libs-linux-${{ matrix.arch }}/libs/ \;
+          name=simplex-chat-libs-linux-${{ matrix.arch }}
+          mkdir -p release-libs/$name/libs
+          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Build Postgres library
-        if: needs.check-version.outputs.bump == 'true' && matrix.libs && matrix.arch == 'x86_64'
+        if: needs.maybe-release.outputs.libs_tag && matrix.libs && matrix.arch == 'x86_64'
         shell: docker exec -t builder sh -eu {0}
         run: |
           SKIP_VLC=1 scripts/desktop/build-lib-linux.sh postgres
-          mkdir -p release-libs/simplex-chat-libs-linux-x86_64-postgres/libs
-          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64 -maxdepth 1 -type f -exec cp {} release-libs/simplex-chat-libs-linux-x86_64-postgres/libs/ \;
+          name=simplex-chat-libs-linux-x86_64-postgres
+          mkdir -p release-libs/$name/libs
+          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64 -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Upload libraries
-        if: needs.check-version.outputs.bump == 'true' && matrix.libs
-        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.linux_lib_build.outcome == 'success' }}
+        uses: softprops/action-gh-release@v2
         with:
-          name: libs-linux-${{ matrix.arch }}
-          path: release-libs
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
+          files: release-libs/*.zip
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
       - name: Build CLI deb
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
@@ -445,11 +481,11 @@ jobs:
 
   build-macos:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
-    needs: [maybe-release, variables, check-version]
+    needs: [maybe-release, variables]
     runs-on: ${{ matrix.os }}
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-macos-${{ matrix.os }}${{ needs.check-version.outputs.bump == 'true' && format('-{0}', github.sha) || '' }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && needs.check-version.outputs.bump != 'true' }}
+      group: ${{ github.workflow }}-${{ github.ref }}-macos-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -563,19 +599,23 @@ jobs:
 
       - name: Build library
         id: mac_lib_build
-        if: ${{ !cancelled() && needs.check-version.outputs.bump == 'true' && steps.mac_cli_build.outcome == 'success' }}
+        if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
         shell: bash
         run: |
           SKIP_VLC=1 scripts/desktop/build-lib-mac.sh
-          mkdir -p release-libs/simplex-chat-libs-macos-${{ matrix.arch }}/libs
-          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/simplex-chat-libs-macos-${{ matrix.arch }}/libs/ \;
+          name=simplex-chat-libs-macos-${{ matrix.arch }}
+          mkdir -p release-libs/$name/libs
+          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Upload library
         if: ${{ !cancelled() && steps.mac_lib_build.outcome == 'success' }}
-        uses: actions/upload-artifact@v4
+        uses: softprops/action-gh-release@v2
         with:
-          name: libs-macos-${{ matrix.arch }}
-          path: release-libs
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
+          files: release-libs/*.zip
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
 # =========================
 #      Windows Build
@@ -583,11 +623,11 @@ jobs:
 
   build-windows:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
-    needs: [maybe-release, variables, check-version]
+    needs: [maybe-release, variables]
     runs-on: ${{ matrix.os }}
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-windows-${{ matrix.os }}${{ needs.check-version.outputs.bump == 'true' && format('-{0}', github.sha) || '' }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && needs.check-version.outputs.bump != 'true' }}
+      group: ${{ github.workflow }}-${{ github.ref }}-windows-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -627,6 +667,7 @@ jobs:
             git
             perl
             make
+            zip
           pacboy: >-
             toolchain:p
             cmake:p
@@ -656,22 +697,26 @@ jobs:
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Build library
-        if: needs.check-version.outputs.bump == 'true'
+        if: needs.maybe-release.outputs.libs_tag
         shell: msys2 {0}
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           SKIP_VLC=1 scripts/desktop/build-lib-windows.sh
           dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
-          mkdir -p release-libs/simplex-chat-libs-windows-x86_64/libs
-          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/windows-x86_64 -maxdepth 1 -type f -exec cp {} release-libs/simplex-chat-libs-windows-x86_64/libs/ \;
-          cp libsimplex.lib release-libs/simplex-chat-libs-windows-x86_64/libs/
+          name=simplex-chat-libs-windows-x86_64
+          mkdir -p release-libs/$name/libs
+          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/windows-x86_64 -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          cp libsimplex.lib release-libs/$name/libs/
+          (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Upload library
-        if: needs.check-version.outputs.bump == 'true'
-        uses: actions/upload-artifact@v4
+        if: needs.maybe-release.outputs.libs_tag
+        uses: softprops/action-gh-release@v2
         with:
-          name: libs-windows-x86_64
-          path: release-libs
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
+          files: release-libs/*.zip
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v')
@@ -706,71 +751,3 @@ jobs:
           bin_hash: ${{ steps.windows_desktop_build.outputs.package_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
-# =========================
-#   NodeJS libs release
-# =========================
-
-# Secrets:
-# -------
-# NODEJS_REPO_TOKEN
-#  Only select repositories: simplex-chat-libs
-#  Permissions:
-#   * Contents (Read and Write)
-
-  release-nodejs-libs:
-    runs-on: ubuntu-latest
-    needs: [check-version, build-linux, build-macos, build-windows]
-    if: ${{ !cancelled() && needs.check-version.outputs.bump == 'true' }}
-    steps:
-      - name: Download libraries
-        uses: actions/download-artifact@v4
-        with:
-          pattern: libs-*
-          merge-multiple: true
-          path: artifacts
-
-      - name: Build archives
-        run: |
-          mkdir release
-          release_dir=$PWD/release
-          for name in \
-            simplex-chat-libs-linux-x86_64 \
-            simplex-chat-libs-linux-x86_64-postgres \
-            simplex-chat-libs-linux-aarch64 \
-            simplex-chat-libs-macos-aarch64 \
-            simplex-chat-libs-macos-x86_64 \
-            simplex-chat-libs-windows-x86_64; do
-            (cd "artifacts/$name" && zip -r "$release_dir/$name.zip" libs)
-          done
-          cd release
-          sha256sum simplex-chat-libs-*.zip > SHA256SUMS
-
-      - name: Checkout libs repo
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.repository }}-libs
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
-          path: libs-repo
-
-      - name: Commit and tag release in libs repo
-        id: libs_commit
-        working-directory: libs-repo
-        run: |
-          tag=core-test-${{ needs.check-version.outputs.version }}
-          printf 'version: %s\ncommit: %s\n' "${{ needs.check-version.outputs.version }}" "${{ github.sha }}" > core-release
-          git config user.name "SimpleX Chat"
-          git config user.email "build@simplex.chat"
-          git add core-release
-          git commit -m "$tag"
-          git tag "$tag"
-          git push origin HEAD "$tag"
-          echo "tag=$tag" >> $GITHUB_OUTPUT
-
-      - name: Create release in libs repo and upload artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ steps.libs_commit.outputs.tag }}
-          files: release/*
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}

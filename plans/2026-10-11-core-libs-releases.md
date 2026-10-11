@@ -28,71 +28,31 @@ A further change requires a new cabal version.
 | `simplex-chat-libs-macos-aarch64.zip` | `build-macos`, `macos-latest` | sqlite |
 | `simplex-chat-libs-macos-x86_64.zip` | `build-macos`, `macos-15-intel` | sqlite |
 | `simplex-chat-libs-windows-x86_64.zip` | `build-windows` | sqlite |
-| `SHA256SUMS` | `release-nodejs-libs` | — |
 
 Zip content: directory `libs/` with the top-level files of `apps/multiplatform/common/src/commonMain/cpp/desktop/libs/<os>-<arch>/`.
 Windows zip: also `libs/libsimplex.lib`.
 Asset names: as built by `download-libs.js` (line 123).
+Checksums: `digest` (sha256) of each asset in the GitHub release API.
 
 ## 3. `build.yml`
 
-### 3.1. `check-version`
+### 3.1. `maybe-release`
 
-New job, after `maybe-release`.
-
-```
-runner     ubuntu-latest
-checkout   fetch-depth: 2
-version    sed -n 's/^version: *//p' simplex-chat.cabal
-bump       push event, ref master or stable, version differs from HEAD^1:simplex-chat.cabal
-outputs    version, bump
-```
-
-### 3.2. Concurrency
-
-Workflow-level `concurrency`: removed.
-
-Job-level `concurrency` in `build-linux`, `build-macos`, `build-windows`:
+The release is created before the build jobs; each build job uploads its assets, as for `v*` tags.
 
 ```
-group                ${{ github.workflow }}-${{ github.ref }}-<job>-<matrix entry>, and -${{ github.sha }} when bump
-cancel-in-progress   not a v* tag and not bump
+outputs        libs_tag: tag of the created library release, empty otherwise
+Clone project  condition: push event; fetch-depth: 2
 ```
 
-Bump runs are never cancelled; other runs are cancelled by the next push to the same ref.
+Steps after "Create release":
 
-### 3.3. Library steps
-
-`needs` of the three build jobs: adds `check-version`.
-
-| Job | Entries | Position | Steps |
-|---|---|---|---|
-| `build-linux` | 22.04 x86_64 and 22.04 aarch64, GHC 9.6.3 (matrix key `libs: true`) | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-linux.sh`; x86_64 also `postgres`; upload |
-| `build-macos` | both (matrix key `arch`) | after "Run tests", `!cancelled()`, CLI build succeeded | `SKIP_VLC=1 scripts/desktop/build-lib-mac.sh`; upload |
-| `build-windows` | `windows-latest` | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-windows.sh`; `dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll`; upload |
-
-Condition of all library steps: `needs.check-version.outputs.bump == 'true'`.
-Linux steps run in the build container.
-Artifacts: `libs-<platform>-<arch>`, each with directories `<asset name>/libs/`.
-
-### 3.4. `release-nodejs-libs`
-
-Replaces the job body of the same name; header comment and secrets comment kept.
-
-```
-needs        check-version, build-linux, build-macos, build-windows
-condition    !cancelled() and bump
-steps        download artifacts libs-*, merged
-             zip of each of the six asset names; missing asset fails the job
-             sha256sum simplex-chat-libs-*.zip > SHA256SUMS
-             checkout of simplex-chat-libs
-             commit and tag in simplex-chat-libs, pushed to master
-             softprops/action-gh-release@v2
-repository   simplex-chat/simplex-chat-libs
-tag_name     core-<version>
-files        simplex-chat-libs-*.zip, SHA256SUMS
-token        secrets.NODEJS_REPO_TOKEN
-```
+| Step | Condition | Action |
+|---|---|---|
+| Check version change | ref `master` or `stable` | output `version` when `version:` of `simplex-chat.cabal` differs from `HEAD^1:simplex-chat.cabal` |
+| Clone libs repo | `version` set | checkout of simplex-chat-libs to `libs-repo`, token `NODEJS_REPO_TOKEN` |
+| Commit and tag libs release | `version` set | commit and tag below; `git push --atomic origin HEAD <tag>`; output `tag` |
+| Create libs release | `version` set | `softprops/action-gh-release@v2`, repository simplex-chat-libs, `tag_name` = `tag`, without files |
 
 Commit in simplex-chat-libs:
 
@@ -106,8 +66,55 @@ tag          core-<version>, on this commit
 ```
 
 `NODEJS_REPO_TOKEN`: a token of the build account; releases are attributed to the token owner.
+Secrets comment: above `maybe-release`.
 
-The release follows the build jobs, after their tests; test results do not affect it.
+A failure of `maybe-release` skips the build jobs, as for `v*` tags.
+
+### 3.2. Concurrency
+
+Workflow-level `concurrency`: removed.
+
+Job-level `concurrency` in `build-linux`, `build-macos`, `build-windows`:
+
+```
+group                ${{ github.workflow }}-${{ github.ref }}-<job>-<matrix entry>-${{ needs.maybe-release.outputs.libs_tag }}
+cancel-in-progress   not a v* tag and libs_tag empty
+```
+
+Library release runs are never cancelled; other runs are cancelled by the next push to the same ref.
+
+### 3.3. Library steps
+
+| Job | Entries | Position | Build |
+|---|---|---|---|
+| `build-linux` | 22.04 x86_64 and 22.04 aarch64, GHC 9.6.3 (matrix key `libs: true`) | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-linux.sh`; x86_64 also `postgres` |
+| `build-macos` | both (matrix key `arch`) | after "Run tests" | `SKIP_VLC=1 scripts/desktop/build-lib-mac.sh` |
+| `build-windows` | `windows-latest` | after "Build CLI" | `SKIP_VLC=1 scripts/desktop/build-lib-windows.sh`; `dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll` |
+
+Each build step: staging in `release-libs/<asset name>/libs/`, then `zip -r` to `release-libs/<asset name>.zip`.
+Linux steps run in the build container.
+Windows: `zip` added to the MSYS2 `install` list.
+
+Upload step, after the build steps of the job:
+
+```
+action       softprops/action-gh-release@v2
+repository   ${{ github.repository }}-libs
+tag_name     needs.maybe-release.outputs.libs_tag
+files        release-libs/*.zip
+token        secrets.NODEJS_REPO_TOKEN
+```
+
+Conditions:
+
+| Job | Build | Upload |
+|---|---|---|
+| `build-linux` | `libs_tag` set, `matrix.libs`; Postgres also `x86_64` | `!cancelled()`, sqlite build succeeded |
+| `build-macos` | `!cancelled()`, `libs_tag` set, CLI build succeeded | `!cancelled()`, library build succeeded |
+| `build-windows` | `libs_tag` set | `libs_tag` set |
+
+A failed job leaves its assets absent; the other jobs upload theirs.
+A re-run of a failed job uploads its assets to the same release; an asset of the same name is replaced.
 
 ## 4. Scripts: `SKIP_VLC`
 
@@ -120,9 +127,10 @@ Unset: unchanged.
 | `scripts/desktop/build-lib-mac.sh` | 154 | `[ -n "$SKIP_VLC" ] \|\| scripts/desktop/prepare-vlc-mac.sh` |
 | `scripts/desktop/build-lib-windows.sh` | 64 | `[ -n "$SKIP_VLC" ] \|\| scripts/desktop/prepare-vlc-windows.sh` |
 
-## 5. `build.yml`: removed job
+## 5. `build.yml`: removed jobs
 
 `build-linux-postgres`, with its header comment.
+`release-nodejs-libs`, with its header comment.
 
 ## 6. Node.js package
 
@@ -144,9 +152,9 @@ Add-on releases: separate from library releases, triggered by changes of the Nod
 Effects of this plan on `ep/node-add-on`:
 
 ```
-release-nodejs-libs   replaced by section 3.4; its add-on upload edits move to the add-on release
+release-nodejs-libs   removed; its add-on upload edits move to the add-on release
 RELEASE_TAG           library release core-<version>; add-on assets in a separate release
-SHA256                library values from SHA256SUMS of release core-<version>
+SHA256                library values from the asset digests of release core-<version>
 ```
 
 ## 8. `build.yml` fix
@@ -155,7 +163,7 @@ Line 531: `matrix.opnessl_dir` → `matrix.openssl_dir`.
 
 ## 9. Verification
 
-1. Branch run of `build.yml` with temporary edits: `push` trigger and bump condition with the branch, tag `core-test-<version>`, cabal version increment in the head commit of the push.
+1. Branch run of `build.yml` with temporary edits: `push` trigger and "Check version change" condition with the branch, tag `core-test-<version>`, cabal version increment in the head commit of the push.
 2. `npm install` of the Node.js package with `RELEASE_TAG = 'core-test-<version>'` on Linux x86_64, Linux aarch64, macOS aarch64, macOS x86_64, Windows x86_64.
 3. Postgres: `SIMPLEX_BACKEND=postgres npm install` on Linux x86_64.
 4. Release `core-test-<version>` and its tag deleted after verification.
