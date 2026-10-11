@@ -27,6 +27,7 @@ struct CIFileView: View {
         if smallViewSize != nil {
             fileIndicator()
             .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .onChange(of: file?.loaded) { _ in openReceivedFile() }
         } else {
             // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
             let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
@@ -58,6 +59,13 @@ struct CIFileView: View {
             .padding(.trailing, 12)
             .simultaneousGesture(TapGesture().onEnded(fileAction))
             .disabled(!itemInteractive)
+            .onChange(of: file?.loaded) { _ in openReceivedFile() }
+        }
+    }
+
+    private func openReceivedFile() {
+        if let file, m.receivedFileToOpen(file, inChatList: smallViewSize != nil) {
+            showMarkdownFile(file)
         }
     }
 
@@ -93,6 +101,9 @@ struct CIFileView: View {
                 if let prohibited = file.fileProhibited {
                     showProhibitedFileAlert(file, prohibited)
                 } else {
+                    if isMarkdownFile(file) {
+                        m.openWhenReceived(file, inChatList: smallViewSize != nil)
+                    }
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
@@ -117,7 +128,7 @@ struct CIFileView: View {
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
@@ -128,12 +139,12 @@ struct CIFileView: View {
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case .sndComplete:
                 logger.debug("CIFileView fileAction - in .sndComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case let .sndError(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndError")
@@ -143,6 +154,14 @@ struct CIFileView: View {
                 showFileErrorAlert(sndFileError, temporary: true)
             default: break
             }
+        }
+    }
+
+    private func openFile(_ file: CIFile, _ fileSource: CryptoFile) {
+        if isMarkdownFile(file) {
+            showMarkdownFile(file)
+        } else {
+            saveCryptoFile(fileSource)
         }
     }
 

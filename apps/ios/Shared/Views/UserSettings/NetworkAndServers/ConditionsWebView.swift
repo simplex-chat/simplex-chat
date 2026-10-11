@@ -16,7 +16,9 @@ struct ConditionsWebView: UIViewRepresentable {
     @State var pageLoaded = false
 
     func makeUIView(context: Context) -> WKWebView {
-        let view = WKWebView()
+        let config = WKWebViewConfiguration()
+        config.defaultWebpagePreferences.allowsContentJavaScript = false
+        let view = WKWebView(frame: .zero, configuration: config)
         view.backgroundColor = .clear
         view.isOpaque = false
         view.navigationDelegate = context.coordinator
@@ -48,9 +50,23 @@ struct ConditionsWebView: UIViewRepresentable {
             font-family: Menlo;
             background: \(theme.colors.secondary.opacity(theme.colors.isLight ? 0.2 : 0.3).toHTMLHex());
         }
+        pre {
+            overflow-x: auto;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid \(theme.colors.secondary.toHTMLHex());
+            padding: 4px 8px;
+        }
+        img {
+            max-width: 100%;
+        }
         </style>
         """
-        let head = "<head><meta name='viewport' content='width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=no'>\(styles)</head>"
+        let csp = "<meta http-equiv='Content-Security-Policy' content=\"default-src 'none'; style-src 'unsafe-inline'; img-src data:\">"
+        let head = "<head>\(csp)<meta name='viewport' content='width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=no'>\(styles)</head>"
         webView.loadHTMLString(head + html, baseURL: nil)
         DispatchQueue.main.async {
             pageLoaded = true
@@ -73,7 +89,7 @@ struct ConditionsWebView: UIViewRepresentable {
                 decisionHandler(.cancel)
                 openExternalLink(url)
             default:
-                decisionHandler(.allow)
+                decisionHandler(url.scheme == "about" ? .allow : .cancel)
             }
         }
     }

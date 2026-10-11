@@ -772,7 +772,7 @@ expect fun ConditionsBox(modifier: Modifier, scrollState: ScrollState, content: 
 @Composable
 private fun ConditionsMarkdown(text: String) {
   Markdown(text,
-    markdownColor(linkText = MaterialTheme.colors.primary),
+    markdownColor(),
     markdownTypography(
       h1 = MaterialTheme.typography.body1,
       h2 = MaterialTheme.typography.h3.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
@@ -780,6 +780,7 @@ private fun ConditionsMarkdown(text: String) {
       h4 = MaterialTheme.typography.h5.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
       h5 = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
       link = MaterialTheme.typography.body1.copy(
+        color = MaterialTheme.colors.primary,
         textDecoration = TextDecoration.Underline
       )
     ),
@@ -861,7 +862,7 @@ fun ConditionsLinkButton() {
   }
 }
 
-private fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
+fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
   override fun openUri(uri: String) {
     parentUriHandler.openExternalLink(uri)
   }

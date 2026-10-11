@@ -80,6 +80,7 @@ fun CIFileView(
           if (prohibited != null) {
             showProhibitedFileAlert(file, prohibited)
           } else {
+            if (isMarkdownFile(file)) chatModel.openWhenReceived(file, smallView)
             receiveFile(file.fileId)
           }
         }
@@ -105,6 +106,8 @@ fun CIFileView(
           showFileErrorAlert(file.fileStatus.sndFileError)
         file.fileStatus is CIFileStatus.SndWarning ->
           showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
+        isMarkdownFile(file) && file.loaded ->
+          showMarkdownFile(file, saveFileLauncher)
         file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
@@ -181,9 +184,12 @@ fun CIFileView(
     }
   }
 
+  KeyChangeEffect(file?.fileStatus) {
+    if (file != null && chatModel.receivedFileToOpen(file, smallView)) showMarkdownFile(file, saveFileLauncher)
+  }
   val showOpenSaveMenu = rememberSaveable(file?.fileId) { mutableStateOf(false) }
   val ext = file?.fileSource?.filePath?.substringAfterLast(".")?.takeIf { it.isNotBlank() }
-  val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null) getLoadedFilePath(file) else null
+  val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null && !isMarkdownFile(file)) getLoadedFilePath(file) else null
   if (loadedFilePath != null && file?.fileSource != null) {
     val encrypted = file.fileSource.cryptoArgs != null
     SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })

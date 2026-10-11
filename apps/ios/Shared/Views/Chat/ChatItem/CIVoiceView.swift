@@ -250,6 +250,11 @@ struct VoiceMessagePlayer: View {
         .onChange(of: chatModel.chatId) { _ in
             stopPlayback()
         }
+        .onChange(of: recordingFile?.loaded) { _ in
+            if let recordingFile, chatModel.receivedFileToOpen(recordingFile, inChatList: sizeMultiplier != 1), let recordingSource = getLoadedFileSource(recordingFile) {
+                startPlayback(recordingSource)
+            }
+        }
         .onDisappear {
             if sizeMultiplier == 1 && chatModel.chatId == nil {
                 stopPlayback()
@@ -303,6 +308,7 @@ struct VoiceMessagePlayer: View {
     private func downloadButton(_ recordingFile: CIFile, _ icon: String) -> some View {
         playPauseIcon(icon, theme.colors.primary)
             .simultaneousGesture(TapGesture().onEnded {
+                chatModel.openWhenReceived(recordingFile, inChatList: sizeMultiplier != 1)
                 Task {
                     if let user = chatModel.currentUser {
                         await receiveFile(user: user, fileId: recordingFile.fileId)

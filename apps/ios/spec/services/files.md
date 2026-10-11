@@ -114,7 +114,8 @@ Defined in [`SimpleXChat/FileUtils.swift`](../../SimpleXChat/FileUtils.swift):
 | `MAX_IMAGE_SIZE_AUTO_RCV` | 522,240 (510 KB) | [L21](../../SimpleXChat/FileUtils.swift#L21) |
 | `MAX_VOICE_SIZE_AUTO_RCV` | 522,240 (510 KB) | [L24](../../SimpleXChat/FileUtils.swift#L24) |
 | `MAX_VIDEO_SIZE_AUTO_RCV` | 1,047,552 (1023 KB) | [L27](../../SimpleXChat/FileUtils.swift#L27) |
-| `MAX_FILE_SIZE_XFTP` | 1,073,741,824 (1 GB) | [L30](../../SimpleXChat/FileUtils.swift#L30) |
+| `MAX_MARKDOWN_VIEW_SIZE` | 1,048,576 (1 MB) | [L29](../../SimpleXChat/FileUtils.swift#L29) |
+| `MAX_FILE_SIZE_XFTP` | 1,073,741,824 (1 GB) | [L32](../../SimpleXChat/FileUtils.swift#L32) |
 | `MAX_FILE_SIZE_LOCAL` | Int64.max (no limit) | [L32](../../SimpleXChat/FileUtils.swift#L32) |
 | `MAX_FILE_SIZE_SMP` | 8,000,000 (~7.6 MB) | [L34](../../SimpleXChat/FileUtils.swift#L34) |
 | `MAX_VOICE_MESSAGE_LENGTH` | 300 s (5 min) | [L36](../../SimpleXChat/FileUtils.swift#L36) |

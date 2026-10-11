@@ -1,293 +1,232 @@
 # Markdown file viewer: implementation plan
 
-Markdown files from chats are viewed in the Android, desktop and iOS apps, formatted or as text.
+Markdown files from chats are viewed in the Android, desktop and iOS apps, formatted or as text, full screen.
 
 ## 1. Files that qualify
+
+By name and size only:
 
 ```
 name      file.fileName ends with .md or .markdown, case-insensitive
 size      file.fileSize <= MAX_MARKDOWN_VIEW_SIZE
-Kotlin    file.forwardingAllowed() (ChatModel.kt:4610)
-iOS       getLoadedFileSource(file) != nil (SimpleXChat/ImageUtils.swift:15)
 ```
 
-`forwardingAllowed()` is true for a local file present with full size (`getLoadedFilePath`, Files.kt:107), and for a loaded file of a linked mobile on desktop.
-
-Constant, the value of `MAX_VIDEO_SIZE_AUTO_RCV`:
-
 ```
-MAX_MARKDOWN_VIEW_SIZE    1_047_552
-Kotlin                    views/helpers/Utils.kt, after line 121
-iOS                       SimpleXChat/FileUtils.swift, after line 27
+MAX_MARKDOWN_VIEW_SIZE    1_048_576
+Kotlin                    views/helpers/Utils.kt, after MAX_VIDEO_SIZE_AUTO_RCV
+iOS                       SimpleXChat/FileUtils.swift, after MAX_VIDEO_SIZE_AUTO_RCV
 ```
-
-Other files, and Markdown files over the limit: tap actions unchanged.
 
 Function, in each viewer file:
 
 ```
-Kotlin    fun isMarkdownFile(file: CIFile?): Boolean
-iOS       func isMarkdownFile(_ file: CIFile?) -> Bool
+Kotlin    fun isMarkdownFile(file: CIFile): Boolean
+iOS       func isMarkdownFile(_ file: CIFile) -> Bool
 ```
 
-## 2. Opening
+Other files, and Markdown files over the limit: tap actions unchanged.
 
-| Platform | Place | Change |
-| --- | --- | --- |
-| Android | `CIFileView.kt:194-200`, `onClick` | qualifying file: `showMarkdownFile(file)`; other files: menu or `fileAction()`, as now |
-| desktop | `CIFileView.kt:194-200`, `onClick` | qualifying file: `showMarkdownFile(file)`; other files: `fileAction()`, as now |
-| iOS | `CIFileView.swift:117-137`, `fileAction` cases `.rcvComplete`, `.sndStored` with `.local`, `.sndComplete` | qualifying file: `showMarkdownFile(file)`; other files: `saveCryptoFile`, as now |
+## 2. Tap and long press
 
-- The same views are used for chat list previews (`ChatPreviewView.kt:350`, `ChatPreviewView.swift:441`); the viewer is opened from there too.
-- Android: "Open with" of `SaveOrOpenFileMenu` is not shown for qualifying files; "Share" in the item menu (`ChatItemView.kt:426`) stays.
-- Desktop with a linked mobile: `file.loadRemoteFile(true)` before reading, as in `fileAction` (`CIFileView.kt:109-114`).
-
-## 3. Reading in memory
-
-The file is read and decoded off the main thread, before the viewer is shown:
+Tap on a qualifying file, every platform:
 
 ```
-Kotlin    withLongRunningApi (Dispatchers.Default, Utils.kt:46)
-iOS       Task, the view shown on the main actor
+file status                     action
+received or sent, file loaded   viewer
+desktop with a linked mobile    loadRemoteFile, then viewer
+RcvInvitation, RcvAborted       reception started; viewer shown on completion, in the same chat
+other statuses                  as now: waiting alerts, error alerts
 ```
 
-Kotlin:
+Long press: the existing Save item of the item menu (`ChatItemView.kt`, `ChatView.swift`).
+
+Places:
 
 ```
-path        getLoadedFilePath(file) (Files.kt:107)
-encrypted   readCryptoFile(path, cryptoArgs) (CryptoFile.kt:36)
-plain       File(path).readBytes()
-text        String(bytes, Charsets.UTF_8)
+Kotlin    CIFileView.kt, onClick and fileAction
+iOS       CIFileView.swift, fileAction
 ```
 
-iOS:
+- Android: "Open with" of `SaveOrOpenFileMenu` is not shown for qualifying files; "Share" in the item menu stays.
+- Present locally: `getLoadedFilePath(file)` (Kotlin), `getLoadedFileSource(file)` (iOS), as for other files.
+
+## 3. Open on completion
+
+Shared by Markdown files, images and voice messages (section 6).
+
+State in the chat model:
 
 ```
-path        getAppFilePath(fileSource.filePath)
-read        getFileData(path, fileSource.cryptoArgs) (SimpleXChat/ImageUtils.swift:41)
-text        String(decoding: data, as: UTF8.self)
+fileToOpen    chat ID and file ID of the last tapped file whose reception was started
 ```
 
-- `readCryptoFile` (Kotlin and iOS): core `chatReadFile` (`Mobile/File.hs:87`); the file is decrypted by `CF.readFile` into memory and returned as bytes.
-- Bytes and text are held only in memory, in the viewer's state.
-- Invalid UTF-8 sequences are replaced by U+FFFD in both decoders.
-- Read error: alert with the error text; the viewer is not opened.
-
 ```
-Kotlin    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.message)
-iOS       showAlert(NSLocalizedString("Error reading file", comment: "alert title"), message: error.localizedDescription)
+openWhenReceived(file)      fileToOpen = (current chat ID, file.fileId)
+receivedFileToOpen(file)    true when fileToOpen has file.fileId, the file is loaded and the current chat is the same; fileToOpen cleared
 ```
 
-## 4. Viewer
+- Kotlin: `KeyChangeEffect(file.fileStatus)` in the item view calls `receivedFileToOpen`; the effect runs on a status change only, so the item is opened when reception completes while the item is in the chat view.
+- iOS: `.onChange(of: file.loaded)` in the item view, with the same rule.
+- Chat list previews (small views) do not call `receivedFileToOpen`.
+
+## 4. Reading in memory
+
+The file is read and decoded off the main thread, before the viewer is shown.
 
 ```
-title       file name
-views       formatted
-            text
-switch      toolbar button; its state is the preference
-save        toolbar button
+Kotlin    withLongRunningApi
+          encrypted: readCryptoFile(path, cryptoArgs) (CryptoFile.kt:36)
+          plain: File(path).readBytes()
+          text: String(bytes, Charsets.UTF_8)
+iOS       Task
+          getFileData(path, cryptoArgs) (SimpleXChat/ImageUtils.swift:41)
+          text: String(decoding: data, as: UTF8.self)
+          html: MarkdownParser().html(from: text)
 ```
 
-Preference, default formatted:
+- `readCryptoFile`: core `chatReadFile` (`Mobile/File.hs:87`); the file is decrypted by `CF.readFile` into memory.
+- Bytes, text and HTML are held only in memory, in the viewer's state.
+- Read error: alert with the error text; the viewer is not shown.
+- File absent: "File not found" alert (Kotlin); no action (iOS), as for other files.
+
+## 5. Viewer
 
 ```
-Kotlin    appPrefs.markdownFileTextView
-iOS       DEFAULT_MARKDOWN_FILE_TEXT_VIEW
+presentation   full screen, like the image viewer
+toolbar        back or close
+               switch between the formatted and the text view
+               save
+title          file name
+preference     view chosen last; default formatted
 ```
 
-### 4.1. Kotlin
+### 5.1. Kotlin
 
-New file `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/MarkdownFileView.kt`:
-
-```
-fun isMarkdownFile(file: CIFile?): Boolean
-fun showMarkdownFile(file: CIFile)
-@Composable fun MarkdownFileView(file: CIFile, text: String)
-```
-
-`showMarkdownFile`:
+Renderer: `com.mikepenz:multiplatform-markdown-renderer` and `-m2`, 0.27.0 → 0.34.0 (`common/build.gradle.kts:80-81`).
 
 ```
-withLongRunningApi:
-  load remote file if connected to a mobile and the path is missing
-  read bytes, decode text (section 3)
-  error: alert, return
-  ModalManager.center.showModal(endButtons = { switch; save(bytes) }) { MarkdownFileView(file, text) }
+0.34.0 dependencies   kotlin-stdlib 2.1.20, org.jetbrains:markdown 0.7.3, kotlinx-collections-immutable 0.3.8
+compose               compileOnly; built with Compose 1.8.0, the app uses 1.8.2
+app                   Kotlin 2.1.20, Compose Multiplatform 1.8.2
+added                 table component, LazyMarkdownSuccess, success lambda of Markdown()
 ```
 
-- Modal with end buttons: as in `CIInvalidJSONView.kt:26`.
-- Switch: `IconButton`; icon `ic_code` in the formatted view, `ic_article` in the text view; sets `appPrefs.markdownFileTextView`.
-- Save: `IconButton` with `ic_download`; `rememberFileChooserLauncher(false, file) { to -> copyBytesToFile(ByteArrayInputStream(bytes), to) {} }` (Files.kt:65); `launch(file.fileName)` in `withLongRunningApi`.
-- On save, the decrypted bytes are written only to the chosen destination, without the temporary file of `rememberSaveFileLauncher` (`CIFileView.kt:310`).
-
-`MarkdownFileView`:
+New file `views/chat/item/MarkdownFileView.kt`:
 
 ```
-title       AppBarTitle(file.fileName)
-formatted   DocumentMarkdown(text, GFMFlavourDescriptor(), image = sourceImage, custom = sourceTable)
-            inside ColumnWithScrollBar
-            LocalUriHandler provided by internalUriHandler(parent), as in OperatorView.kt:753-755
-text        SelectionContainer { Text(text, fontFamily = FontFamily.Monospace) }
-            inside ColumnWithScrollBar
+isMarkdownFile(file)
+showMarkdownFile(file)     loadRemoteFile if needed, read, ModalManager.fullscreen.showModal
+MarkdownFileView           formatted or text view by appPrefs.markdownFileTextView
 ```
 
-Components of the formatted view:
+Formatted view:
 
 ```
-sourceImage   source text of the image node, color MaterialTheme.colors.secondary
-sourceTable   GFMElementTypes.TABLE: source text of the node, monospace, horizontal scroll, inside MarkdownCodeBackground
-              other node types: empty
+renderer      m2 Markdown(), GFM flavour
+lazy          success lambda: LazyColumnWithScrollBar, title item, one item per top-level node (MarkdownElement)
+links         LocalUriHandler provided by internalUriHandler(parent) (OperatorView.kt), then openExternalLink
+code spans    annotator: source text between the backticks; inlineCode style, inlineCodeBackground
+images        data:image URIs: decoded by an ImageTransformer (base64ToBitmap, 4320 px limit)
+              other image links: the annotator appends the source text; nothing is fetched
+tables        default table component
 ```
 
-Library behaviour, multiplatform-markdown-renderer 0.27.0:
+Text view: `LazyColumnWithScrollBar`, title item, one monospace `Text` per line, inside `SelectionContainer`.
+
+Toolbar end buttons:
 
 ```
-TABLE node     rendered through components.custom only
-custom set     each node passed to it counts as handled; its children are skipped
-images         loaded only by an image transformer of a renderer coil module
-dependencies   renderer and renderer-m2 (build.gradle.kts:80-81)
-code blocks    horizontal scroll
-flavour        Markdown() default: GFMFlavourDescriptor()
+switch   ic_code in the formatted view, ic_article in the text view; sets appPrefs.markdownFileTextView
+save     ic_download; rememberFileChooserLauncher; copyBytesToFile(ByteArrayInputStream(bytes)) (Files.kt:65)
 ```
 
 `OperatorView.kt`:
 
 ```
-772-808   private fun ConditionsMarkdown(text)
-          becomes fun DocumentMarkdown(
-            text: String,
-            flavour: MarkdownFlavourDescriptor = CommonMarkFlavourDescriptor(),
-            image: MarkdownComponent = CurrentComponentsBridge.image,
-            custom: CustomMarkdownComponent? = null
-          )
-          markdownComponents(...) gets image = image, custom = custom
-755       ConditionsMarkdown(conditionsText) becomes DocumentMarkdown(conditionsText)
-864       private fun internalUriHandler becomes fun internalUriHandler
+markdownColor(linkText = primary)    markdownColor(); link colour moved to the link text style (linkText deprecated in 0.34.0)
+private fun internalUriHandler       fun internalUriHandler
 ```
 
-Operator conditions: rendering unchanged, with the current arguments as defaults.
+`SimpleXAPI.kt`: `markdownFileTextView = mkBoolPreference(SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW, false)`.
 
-`SimpleXAPI.kt`:
-
-```
-after 144   val markdownFileTextView = mkBoolPreference(SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW, false)
-after 431   private const val SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW = "MarkdownFileTextView"
-```
-
-`moko-resources/base/strings.xml`, after line 689:
+`moko-resources/base/strings.xml`:
 
 ```
 markdown_formatted_view   Formatted view
 markdown_text_view        Text view
 ```
 
-The strings are the content descriptions of the switch: `markdown_text_view` in the formatted view, `markdown_formatted_view` in the text view.
+### 5.2. iOS
 
-`CIFileView.kt:194-200`:
-
-```
-onClick =
-  isMarkdownFile(file)                            -> showMarkdownFile(file)
-  appPlatform.isAndroid && loadedFilePath != null -> showOpenSaveMenu.value = true
-  else                                            -> fileAction()
-```
-
-### 4.2. iOS
-
-New file `apps/ios/Shared/Views/Chat/ChatItem/MarkdownFileView.swift`.
-It is added to the SimpleX target in `SimpleX.xcodeproj/project.pbxproj`, at the four places of `CIFileView.swift` (lines 170, 562, 1125, 1602).
+New file `Shared/Views/Chat/ChatItem/MarkdownFileView.swift`, added to the SimpleX target in `project.pbxproj`.
 
 ```
-func isMarkdownFile(_ file: CIFile?) -> Bool
-func showMarkdownFile(_ file: CIFile)
-struct MarkdownFileView: View
+isMarkdownFile(file)
+showMarkdownFile(file)     read, parse, showAppSheet(fullScreen: true)
+MarkdownFileView           NavigationView; toolbar: close, switch, save
 ```
 
-`showMarkdownFile`:
-
 ```
-Task:
-  read data, decode text (section 3)
-  error: alert, return
-  showAppSheet { MarkdownFileView(file: file, text: text) } on the main actor
-```
-
-- `showAppSheet` (`AppSheet.swift:34`): presentation from the top view controller, with screen protection and environment objects.
-
-`MarkdownFileView`:
-
-```
-container   NavigationView, title file.fileName, inline display mode
-switch      toolbar button; @AppStorage(DEFAULT_MARKDOWN_FILE_TEXT_VIEW) private var textView = false
-            symbol "chevron.left.forwardslash.chevron.right" in the formatted view, "doc.richtext" in the text view
-save        toolbar button, symbol "square.and.arrow.up"; saveCryptoFile(fileSource) (CIFileView.swift:254)
-formatted   ConditionsWebView(html: MarkdownParser().html(from: text)), Ink 0.6.0
-text        ScrollView { Text(text).font(.system(.body, design: .monospaced)).textSelection(.enabled) }
+formatted   ConditionsWebView(html:), Ink 0.6.0
+text        ScrollView, LazyVStack, one monospace Text per line, text selection
+switch      @AppStorage(DEFAULT_MARKDOWN_FILE_TEXT_VIEW)
+save        saveCryptoFile(fileSource) (CIFileView.swift)
+close       dismiss of the top view controller
 ```
 
-- Save of an encrypted file, by `saveCryptoFile`, the current save action of file items: the file is decrypted into the temporary folder, the share sheet is shown, and the copy is removed after the sheet is closed.
+`AppSheet.swift`: `showAppSheet(fullScreen: Bool = false, content:)`; full screen: `modalPresentationStyle = .fullScreen`.
 
-`SettingsView.swift`:
-
-```
-after 86    let DEFAULT_MARKDOWN_FILE_TEXT_VIEW = "markdownFileTextView"
-after 147   DEFAULT_MARKDOWN_FILE_TEXT_VIEW: false,
-```
+`SettingsView.swift`: `DEFAULT_MARKDOWN_FILE_TEXT_VIEW = "markdownFileTextView"`, default false.
 
 `ConditionsWebView.swift`, shared with the operator conditions:
 
 ```
-makeUIView 18-31     WKWebViewConfiguration, defaultWebpagePreferences.allowsContentJavaScript = false
-loadPage 37-58       head: <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
-                     style: table { border-collapse: collapse }
-                     style: th, td { border; padding }
-                     style: pre { overflow-x: auto }
-Coordinator 64-79    linkActivated: cancel, openExternalLink(url), as now
-                     other navigation: allowed for about:blank only
+configuration   allowsContentJavaScript = false
+head            Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:
+style           table, th, td borders; pre overflow-x auto; img max-width 100%
+navigation      linkActivated: openExternalLink, as now
+                other navigation: allowed for about: URLs only
 ```
 
-Library behaviour, Ink 0.6.0:
+- Ink 0.6.0 passes inline HTML to the output; scripts, frames and loads from the network are blocked by the policy and the JavaScript setting.
+- Images: data URIs only.
+
+## 6. Images and voice messages: open on completion
+
+Current behaviour, both apps: a tap on an image or a voice message that is not received starts reception only; a second tap opens the image or plays the message.
+
+Change, separate from the viewer:
 
 ```
-tables        supported
-inline HTML   passed to the output
-images        output as <img>
+image   tap starts reception, openWhenReceived; on completion in the same chat: full screen image view; Android: keyboard hidden first, as on tap
+voice   tap starts reception, openWhenReceived; on completion in the same chat: playback
 ```
 
-- Scripts, images, frames and other loads from the HTML are blocked by the Content Security Policy.
-- Scripts are also blocked by the JavaScript setting.
-- Navigation from inline HTML, such as `<meta http-equiv="refresh">`, is blocked by the navigation policy.
-- iOS deployment target 15.0: `allowsContentJavaScript` and `textSelection` are available.
-
-## 5. Links
-
 ```
-Kotlin    LocalUriHandler -> internalUriHandler(parent) -> openExternalLink (Utils.kt:613)
-iOS       linkActivated -> openExternalLink (ShareSheet.swift:94)
-behaviour SimpleX contact and address links: opened in the app
-          other links: confirmation alert with the link, then the system handler
+Kotlin   CIImageView.kt: receive branch, KeyChangeEffect, chat view only
+         CIVoiceView.kt: VoiceMsgIndicator receive branches, KeyChangeEffect, chat view only
+iOS      CIImageView.swift: receive branch, onChange, chat view only
+         CIVoiceView.swift: downloadButton, onChange, chat view only
 ```
 
-Links in messages: the same rules.
+## 7. Size limit
 
-## 6. Specs
+1 MB.
+4 MB: formatted views render lazily (Kotlin: one lazy item per top-level node; iOS: WKWebView); text views render one lazy item per line.
+A single top-level block (one table, code block or paragraph) is still laid out at once.
 
-```
-apps/multiplatform/spec/services/files.md     section 2: MAX_MARKDOWN_VIEW_SIZE
-apps/multiplatform/spec/client/chat-view.md   section 9, views/chat/item/: MarkdownFileView.kt
-apps/ios/spec/services/files.md               size table: MAX_MARKDOWN_VIEW_SIZE
-apps/ios/spec/client/chat-view.md             MarkdownFileView, next to CIFileView
-```
+## 8. Checks
 
-## 7. Checks
-
-1. Plain and encrypted local files: formatted and text views on Android, desktop and iOS.
+1. Plain and encrypted files: formatted and text views on Android, desktop and iOS.
 2. Desktop linked to a mobile: file loaded from the mobile, then shown.
-3. File over 1023 KB: tap action as before.
-4. View switch: kept after closing the viewer and after an app restart.
-5. Save: file at the chosen destination equal to the original; Kotlin: temporary folder unchanged.
-6. Links: confirmation alert; SimpleX links opened in the app.
-7. Remote image in the file: not loaded on either platform.
-8. iOS, inline HTML with `<script>`, `<img>`, `<iframe>` and `<meta http-equiv="refresh">`: no effect.
-9. Tables: monospace block in Kotlin, HTML table on iOS.
-10. Operator conditions: rendering unchanged on both platforms.
+3. File over 1 MB: tap action as before.
+4. File not received: one tap; viewer shown on completion in the same chat; not shown after leaving the chat.
+5. Same for images and voice messages.
+6. View switch kept after closing the viewer and after a restart.
+7. Save: the file at the chosen destination equals the original.
+8. Links: confirmation alert; SimpleX links opened in the app.
+9. Link inside backticks: shown as code.
+10. Remote image: not loaded; data URI image: shown.
+11. iOS inline HTML with `<script>`, `<img src=https:...>`, `<iframe>`, `<meta http-equiv="refresh">`: no effect.
+12. Tables on both platforms.
+13. Operator conditions: rendering unchanged, links in the primary colour.

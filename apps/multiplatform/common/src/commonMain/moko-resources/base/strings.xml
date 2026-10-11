@@ -687,6 +687,9 @@
   <string name="file_saved">File saved</string>
   <string name="file_not_found">File not found</string>
   <string name="error_saving_file">Error saving file</string>
+  <string name="markdown_formatted_view">Formatted view</string>
+  <string name="markdown_text_view">Text view</string>
+  <string name="not_a_text_file">Not a text file</string>
   <string name="loading_remote_file_title">Loading the file </string>
   <string name="loading_remote_file_desc">Please, wait while the file is being loaded from the linked mobile</string>
   <string name="file_error">File error</string>

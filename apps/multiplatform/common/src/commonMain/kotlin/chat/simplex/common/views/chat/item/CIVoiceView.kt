@@ -87,13 +87,16 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, showTimestamp, sizeMultiplier, play, pause, longClick, receiveFile) {
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, showTimestamp, sizeMultiplier, play, pause, longClick, { chatModel.openWhenReceived(file, smallView); receiveFile(it) }) {
         AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
       }
       if (smallView) {
         KeyChangeEffect(chatModel.chatId.value, chatModel.currentUser.value?.userId, chatModel.currentRemoteHost.value) {
           AudioPlayer.stop()
         }
+      }
+      KeyChangeEffect(file.fileStatus) {
+        if (chatModel.receivedFileToOpen(file, smallView)) play()
       }
     } else if (smallView) {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, sizeMultiplier, {}, {}, longClick, receiveFile)

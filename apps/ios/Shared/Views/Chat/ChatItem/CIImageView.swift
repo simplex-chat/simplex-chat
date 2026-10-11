@@ -54,6 +54,7 @@ struct CIImageView: View {
                                 if let prohibited = file.fileProhibited {
                                     showProhibitedFileAlert(file, prohibited)
                                 } else {
+                                    m.openWhenReceived(file, inChatList: smallView)
                                     Task {
                                         if let user = m.currentUser {
                                             await receiveFile(user: user, fileId: file.fileId)
@@ -93,6 +94,11 @@ struct CIImageView: View {
         }
         .onDisappear {
             showFullScreenImage = false
+        }
+        .onChange(of: file?.loaded) { _ in
+            if let file, m.receivedFileToOpen(file, inChatList: smallView) {
+                showFullScreenImage = true
+            }
         }
     }
 
