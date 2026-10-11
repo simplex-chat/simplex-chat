@@ -5876,11 +5876,11 @@ Query:
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id
     JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+   WHERE g.group_id = ? AND g.user_id = ? AND mu.user_id = ? AND mu.contact_id = ?
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
