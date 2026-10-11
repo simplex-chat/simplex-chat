@@ -342,11 +342,11 @@ If calls on different threads overlap, the list, `toRemove` and the modal count 
 
 ### Affected Locations
 
-- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt`: `modalViews` and `toRemove` (105-108), `showCustomModal` (133-152), `closeModal` and `closeModals` (170-189), the cleanup in `showInView` (224-226), `closeAllModalsEverywhere` (262)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt`: `modalViews` and `toRemove` (105-108), `isLastModal` (119), `showCustomModal` (133-152), `closeModal` and `closeModals` (170-189), the cleanup in `showInView` (224-226), `closeAllModalsEverywhere` (262)
 - `common/src/commonMain/kotlin/chat/simplex/common/views/localauth/LocalAuthView.kt:93`
 - `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt:166`, `:679`
-- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt:3272-3276` (`end`), `:3440` (`RemoteHostConnected`), `:3512` (`RemoteCtrlStopped`)
-- `common/src/commonMain/kotlin/chat/simplex/common/views/WelcomeView.kt:365`, `:384`, `:409`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt:3271-3276` (`end`), `:3440` (`RemoteHostConnected`), `:3512` (`RemoteCtrlStopped`)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/WelcomeView.kt:365`, `:384`
 - `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/UserProfilesView.kt:336`
 
 ### Impact

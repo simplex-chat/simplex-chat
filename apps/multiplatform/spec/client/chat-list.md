@@ -54,7 +54,7 @@ ChatListView
 
 ## 2. ChatListView Composable
 
-**Location:** [`ChatListView.kt#L179`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L179)
+**Location:** [`ChatListView.kt#L216`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L216)
 
 ```kotlin
 fun ChatListView(
@@ -225,7 +225,7 @@ On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) re
 
 ### TagsView
 
-**Location:** [`ChatListView.kt#L1214`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1214)
+**Location:** [`ChatListView.kt#L1281`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1281)
 
 Renders a horizontally scrollable row of tag chips (via `TagsRow`, which is a platform-specific `expect` composable).
 
@@ -279,7 +279,7 @@ fun UserPicker(
 - **Android:** Renders as a slide-up overlay panel on the chat list, triggered by tapping the user profile button in the toolbar.
 - **Desktop:** Rendered inline in the left column of `DesktopScreen`, always accessible.
 - Closes automatically when any `ModalManager.start` modal opens.
-- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal composes nothing and closes itself, only while it is the top modal (`ModalManager.isLastModal`).
+- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal composes nothing and closes itself when it is the top modal (`ModalManager.isLastModal`); if another screen covers it, it closes when the user goes back to it.
 - [GAP] The Chat preferences row returns early from its modal content when there is no active user, leaving an invisible modal on the stack (see `product/gaps.md` GAP-08).
 
 ### Content
@@ -323,7 +323,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 
 ## 10. Crowdfunding Banner
 
-**Location:** [`GetStakeBanner.kt#L31`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L31)
+**Location:** [`GetStakeBanner.kt#L35`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L35)
 
 ```kotlin
 fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)

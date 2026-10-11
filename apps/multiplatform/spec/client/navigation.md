@@ -126,7 +126,7 @@ When onboarding is complete:
 
 ## 4. Android Layout
 
-**Location:** [`App.kt#L296`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L296)
+**Location:** [`App.kt#L313`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L313)
 
 ```kotlin
 @Composable
@@ -165,7 +165,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ## 5. Desktop Layout
 
-**Location:** [`App.kt#L410`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L410)
+**Location:** [`App.kt#L429`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L429)
 
 ```kotlin
 @Composable
@@ -192,7 +192,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 ### CenterPartOfScreen
 
-**Location:** [`App.kt#L373`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L373)
+**Location:** [`App.kt#L390`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L390)
 
 - When `chatId` is null and no center modals: shows "No selected chat" placeholder.
 - When `chatId` is null and center modals open: shows `ModalManager.center`.
@@ -201,7 +201,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 ### StartPartOfScreen
 
-**Location:** [`App.kt#L352`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L352)
+**Location:** [`App.kt#L369`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L369)
 
 Routes between:
 - `SetDeliveryReceiptsView` (if `chatModel.setDeliveryReceipts` is true)
@@ -259,7 +259,7 @@ Each `ModalManager` maintains a stack of `ModalViewHolder` objects with:
 | `isLastModal(data)` | Check if the modal with this `ModalData` is the top modal not being removed |
 | `showInView` | Render the current modal stack into the composable tree |
 
-[GAP] `closeModals` clears the stack without the `runAtomically` lock, and both it and `closeModal` are also called from background threads (for example `closeAllModalsEverywhere`, or a modal's `close` called from `withBGApi`), so stack changes can interleave with each other and with the animation cleanup (see `product/gaps.md` GAP-09).
+[GAP] `closeModals`, the push in `showCustomModal` and the non-animated removal in `closeModal` change the stack without the `runAtomically` lock, and `closeModals` and `closeModal` are also called from background threads (for example `closeAllModalsEverywhere`, or a modal's `close` called from `withBGApi`), so stack changes can interleave with each other and with the animation cleanup (see `product/gaps.md` GAP-09).
 
 ### Usage Pattern
 

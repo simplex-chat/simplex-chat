@@ -66,8 +66,9 @@ An early `return@showCustomModal`, as the "Chat preferences" row does, would avo
 1. `views/helpers/ModalView.kt`: add `ModalManager.isLastModal(data)`, true when `data` belongs to the top modal that is not being removed.
 2. `views/chatlist/UserPicker.kt`: in the "SimpleX address" row, compose `UserAddressView` only when `currentUser` is not null. Otherwise run `LaunchedEffect(modal, ModalManager.start.modalCount.value)`, which closes the modal when `isLastModal(modal)` is true.
 3. Documentation, under `apps/multiplatform/`:
-   - `spec/client/navigation.md`: list `isLastModal` among the `ModalManager` methods, and add a `[GAP]` note for GAP-09.
-   - `spec/client/chat-list.md`, UserPicker section: describe the address row closing itself with no active user, and add a `[GAP]` note for GAP-08.
+   - `spec/client/navigation.md`: list `isLastModal` among the `ModalManager` methods, add a `[GAP]` note for GAP-09, link the `ModalManager` location, and update stale line links.
+   - `spec/client/chat-list.md`, UserPicker section: describe the address row closing itself with no active user, add a `[GAP]` note for GAP-08, and update stale line links.
+   - `spec/README.md`: update the number of known gaps.
    - `product/views/user-profiles.md`: describe the address row with no active profile.
    - `product/gaps.md`: add GAP-08 ("Chat preferences" leaves an invisible modal with no active user) and GAP-09 (`ModalManager` is not fully synchronized with background threads).
 
