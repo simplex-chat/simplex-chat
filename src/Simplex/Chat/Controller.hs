@@ -71,7 +71,6 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.Chat.Wallet (WalletAddress, WalletInfo)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
-import Simplex.Messaging.Crypto.BIP44 (AccountIndex)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
@@ -441,11 +440,9 @@ data ChatCommand
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APIGetWallet {userId :: UserId}
-  | APICreateWallet {mnemonic :: Maybe Text}
-  | APIBindWalletAccount {userId :: UserId, accountIndex_ :: Maybe AccountIndex}
-  | APIGetWalletAddress {accountIndex :: AccountIndex}
+  | APICreateWallet
+  | APICreateWalletAccount {userId :: UserId}
   | APIExportWalletMnemonic
-  | APIExportWalletAccount {userId :: UserId, accountIndex :: AccountIndex}
   | APIDeleteWallet
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -752,9 +749,8 @@ allowRemoteCommand = \case
   SetFilesFolder _ -> False
   SetRemoteHostsFolder _ -> False
   APISetEncryptLocalFiles _ -> False
-  APICreateWallet _ -> False
+  APICreateWallet -> False
   APIExportWalletMnemonic -> False
-  APIExportWalletAccount {} -> False
   APIDeleteWallet -> False
 #if !defined(dbPostgres)
   APIExportArchive _ -> False
@@ -887,10 +883,9 @@ data ChatResponse
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
-  | CRWallet {user :: User, walletInfo_ :: Maybe WalletInfo}
+  | CRWallet {user :: User, walletInfo :: WalletInfo}
   | CRWalletMnemonic {user :: User, mnemonic :: Text}
   | CRWalletAddress {user :: User, walletAddress :: WalletAddress}
-  | CRWalletAccountSecret {user :: User, walletAddress :: WalletAddress, secret :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}

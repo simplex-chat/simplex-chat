@@ -217,7 +217,6 @@ undocumentedResponses =
     "CRUserServersValidation",
     "CRVersionInfo",
     "CRWallet",
-    "CRWalletAccountSecret",
     "CRWalletAddress",
     "CRWalletMnemonic",
     "CRWelcome"

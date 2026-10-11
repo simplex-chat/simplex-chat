@@ -998,7 +998,7 @@ CREATE TABLE group_member_badge_proofs(
 CREATE TABLE wallet_seeds(
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   entropy BLOB NOT NULL CHECK(length(entropy) IN(16, 20, 24, 28, 32)),
-  next_account_index INTEGER CHECK(next_account_index BETWEEN 0 AND 2147483648),
+  next_account_index INTEGER NOT NULL CHECK(next_account_index BETWEEN 0 AND 2147483648),
   single_seed INTEGER NOT NULL DEFAULT 1
 ) STRICT;
 CREATE TABLE wallet_accounts(

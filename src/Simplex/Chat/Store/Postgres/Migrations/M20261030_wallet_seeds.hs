@@ -12,7 +12,7 @@ m20261030_wallet_seeds =
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   entropy BYTEA NOT NULL CHECK (length(entropy) IN (16, 20, 24, 28, 32)),
-  next_account_index BIGINT CHECK (next_account_index BETWEEN 0 AND 2147483648),
+  next_account_index BIGINT NOT NULL CHECK (next_account_index BETWEEN 0 AND 2147483648),
   single_seed SMALLINT NOT NULL DEFAULT 1
 );
 

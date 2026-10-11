@@ -197,10 +197,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
   CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
-  CRWallet u info_ -> ttyUser u $ viewWalletInfo info_
+  CRWallet u info -> ttyUser u $ viewWalletInfo info
   CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
   CRWalletAddress u a -> ttyUser u [viewWalletAddress a]
-  CRWalletAccountSecret u a secret -> ttyUser u [viewWalletAddress a <> "  " <> plain secret]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -1886,9 +1885,9 @@ day = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 dayTime :: UTCTime -> Text
 dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
-viewWalletInfo :: Maybe WalletInfo -> [StyledString]
-viewWalletInfo = maybe ["no wallet on this device"] $ \WalletInfo {accountIndexes, nextAccountIndex} ->
-  [plain $ "wallet, next account " <> maybe "unknown" tshow nextAccountIndex <> ", " <> viewAccounts accountIndexes]
+viewWalletInfo :: WalletInfo -> [StyledString]
+viewWalletInfo WalletInfo {accountIndexes, nextAccountIndex} =
+  [plain $ "wallet, next account " <> tshow nextAccountIndex <> ", " <> viewAccounts accountIndexes]
   where
     viewAccounts [] = "no accounts for this profile"
     viewAccounts ns = "accounts: " <> T.intercalate ", " (map (tshow . unAccountIndex) ns)
@@ -2925,6 +2924,8 @@ viewChatError isCmd logLevel testView = \case
       | testView -> ["duplicate group message, group id: " <> sShow groupId <> ", message id: " <> sShow sharedMsgId]
       | otherwise -> []
     SEUserNoteFolderNotFound -> ["no notes folder"]
+    SEWalletNotFound -> ["no wallet on this device"]
+    SEDuplicateWallet -> ["this device already has a wallet"]
     SEInternalError {message}
       | testView && message == "referenced group member not found" -> []
     e -> ["chat db error: " <> sShow e]

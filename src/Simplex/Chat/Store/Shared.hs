@@ -167,6 +167,8 @@ data StoreError
   | SEDeliveryTaskNotFound {taskId :: Int64}
   | SEInvalidDeliveryJob {jobId :: Int64}
   | SEDeliveryJobNotFound {jobId :: Int64}
+  | SEWalletNotFound
+  | SEDuplicateWallet
   | -- | Error when reading work item that suspends worker - do not use!
     SEWorkItemError {errContext :: String}
   deriving (Show, Exception)
