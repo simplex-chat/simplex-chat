@@ -51,6 +51,7 @@ export type ChatResponse =
   | CR.RemoteCtrlConnecting
   | CR.SentConfirmation
   | CR.SentGroupInvitation
+  | CR.SentGroupInvitationViaGroup
   | CR.SentInvitation
   | CR.SentInvitationToContact
   | CR.ServiceReplyAccepted
@@ -117,6 +118,7 @@ export namespace CR {
     | "remoteCtrlConnecting"
     | "sentConfirmation"
     | "sentGroupInvitation"
+    | "sentGroupInvitationViaGroup"
     | "sentInvitation"
     | "sentInvitationToContact"
     | "serviceReplyAccepted"
@@ -443,6 +445,15 @@ export namespace CR {
     groupInfo: T.GroupInfo
     contact: T.Contact
     member: T.GroupMember
+  }
+
+  export interface SentGroupInvitationViaGroup extends Interface {
+    type: "sentGroupInvitationViaGroup"
+    user: T.User
+    groupInfo: T.GroupInfo
+    member: T.GroupMember
+    viaGroupInfo: T.GroupInfo
+    viaMember: T.GroupMember
   }
 
   export interface SentInvitation extends Interface {
