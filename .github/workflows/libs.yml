@@ -12,6 +12,7 @@ on:
     branches:
       - master
       - stable
+      - ep/lib-release
 
 concurrency:
   group: libs
@@ -39,7 +40,7 @@ jobs:
         run: |
           version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
           echo "version=$version" >> $GITHUB_OUTPUT
-          if gh release view "core-$version" --repo "${{ github.repository }}-libs" > /dev/null; then
+          if gh release view "core-test-$version" --repo "${{ github.repository }}-libs" > /dev/null; then
             echo "build=false" >> $GITHUB_OUTPUT
           else
             echo "build=true" >> $GITHUB_OUTPUT
@@ -296,6 +297,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           repository: ${{ github.repository }}-libs
-          tag_name: core-${{ needs.check.outputs.version }}
+          tag_name: core-test-${{ needs.check.outputs.version }}
           files: release/*
           token: ${{ secrets.NODEJS_REPO_TOKEN }}
