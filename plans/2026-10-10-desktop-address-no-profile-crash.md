@@ -30,11 +30,11 @@ The screen can be shown in that state in three ways:
    - If another screen is on top of it, it crashes when the user goes back to it.
 
    `UserAddressView` closes itself when the user changes (`KeyChangeEffect` on the user), but with a null user it is never reached.
-2. **The row is clicked with no active user.** With no profile and no connected mobile, the user picker still shows the "Create SimpleX address" row. The picker even opens by itself in this state, at startup or when the state begins while no left-panel screen is open (`App.kt`, `desktopNoUserNoRemote`). Clicking the row crashes immediately.
+2. **The row is clicked with no active user.** With no active profile, for example with no profile and no connected mobile, the user picker still shows the "Create SimpleX address" row. The picker even opens by itself in this state, at startup or when the state begins while no left-panel screen is open (`App.kt`, `desktopNoUserNoRemote`). Clicking the row crashes immediately.
 
    At startup this state needs a mobile that was linked before; with no linked mobile, startup shows onboarding instead (`Core.kt`).
 
-   The state is also reached by deleting the active profile when no other visible profile remains, including the only profile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
+   The state is also reached by deleting the active profile when no other visible profile remains, including the only profile, and including the last visible profile of a connected mobile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
 3. **The self-destruct passcode is entered while the screen is open.** `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does it create the new profile and call `closeAllModalsEverywhere`.
    - On Android, the shared modal stack stays composed under the lock screen, so in between the address screen recomposes with a null user.
    - On desktop, `initChatController` replaces the main screen with the splash screen shortly afterwards (`localUserCreated = null`), so the crash needs a frame to fall in that short window.
@@ -56,6 +56,10 @@ When there is no active user:
 - After the mobile disconnects with the address screen open, the picker does not reopen by itself (observed in testing). When the state with no user and no connected mobile begins, the app checks for open left-panel modals, and the address modal closes itself only after that check. Master does the same when any other left-panel screen is open.
 
 The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding. The only Android path is case 3, where the screen now closes itself instead of crashing. With an active user, behaviour does not change on any platform.
+
+### Security
+
+The change is UI-only and crosses no trust boundary: it reads local state and closes a local screen. It sends nothing and changes no stored data.
 
 ### Rejected alternative
 

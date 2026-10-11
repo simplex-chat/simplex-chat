@@ -279,7 +279,7 @@ fun UserPicker(
 - **Android:** Renders as a slide-up overlay panel on the chat list, triggered by tapping the user profile button in the toolbar.
 - **Desktop:** Rendered inline in the left column of `DesktopScreen`, always accessible.
 - Closes automatically when any `ModalManager.start` modal opens.
-- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal composes nothing and closes itself when it is the top modal (`ModalManager.isLastModal`); if another screen covers it, it closes when the user goes back to it.
+- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal draws nothing and closes itself when it is the top modal (`ModalManager.isLastModal`); if another screen covers it, it closes when the user goes back to it.
 - [GAP] The Chat preferences row returns early from its modal content when there is no active user, leaving an invisible modal on the stack (see `product/gaps.md` GAP-08).
 
 ### Content
