@@ -338,7 +338,7 @@ Several of these methods are called from background threads as well as the main 
 
 On Android `start`, `center`, `end` and `fullscreen` are one shared stack, so all of these calls change the same collections.
 
-If calls on different threads overlap, the list, `toRemove` and the modal count can become inconsistent. A later push, animation cleanup or read can then throw `IndexOutOfBoundsException`.
+If calls on different threads overlap, the list, `toRemove` and the modal count can become inconsistent. A later push or animation cleanup can then throw `IndexOutOfBoundsException`, and a read that overlaps a change can throw as well.
 
 ### Affected Locations
 

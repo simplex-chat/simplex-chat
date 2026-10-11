@@ -21,7 +21,7 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatLis
 
 ## Executive Summary
 
-The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 179 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
+The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 216 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
 
 ---
 
@@ -67,8 +67,8 @@ fun ChatListView(
 
 ### Initialization
 
-- Shows "What's New" modal on first launch after update (line ~185), with a 1-second delay.
-- On desktop, closing a chat resets audio/video players (line ~193).
+- Shows "What's New" modal on first launch after update (line ~220), with a 1-second delay.
+- On desktop, closing a chat resets audio/video players (line ~235).
 
 ### Layout Modes
 
@@ -89,8 +89,8 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Android-specific
 
-- `SetNotificationsModeAdditions`: Notification permission setup (line ~243).
-- `UserPicker`: Overlay side panel for user switching (line ~247).
+- `SetNotificationsModeAdditions`: Notification permission setup (line ~280).
+- `UserPicker`: Overlay side panel for user switching (line ~284).
 
 ---
 
@@ -114,7 +114,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Active Filter Types
 
-Defined as sealed class `ActiveFilter` (line ~59):
+Defined as sealed class `ActiveFilter` (line ~61):
 
 ```kotlin
 sealed class ActiveFilter {
@@ -137,7 +137,7 @@ sealed class ActiveFilter {
 
 ### Search Filtering
 
-The `filteredChats` function (line ~1474) applies filters in this order:
+The `filteredChats` function (line ~1541) applies filters in this order:
 
 1. **SimpleX link match:** If a pasted link resolved to a known contact/group, show only that chat.
 2. **Text search:** Case-insensitive match against `chat.chatInfo.chatViewName`, `chat.chatInfo.fullName`, and `chat.chatInfo.localAlias`.
@@ -148,7 +148,7 @@ The `filteredChats` function (line ~1474) applies filters in this order:
 
 ### Search Bar
 
-`ChatListSearchBar` (line ~765) provides:
+`ChatListSearchBar` (line ~788) provides:
 - Text input with search icon.
 - SimpleX link detection: When a pasted string contains a single SimpleX link, it triggers `planAndConnect` for connection, suppressing normal search.
 - Unread filter toggle button (right side, when search is empty).
