@@ -535,19 +535,22 @@ fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
   if (res == null) {
     showInvalidLinkAlert(uri, err)
   } else {
-    val message = if (uri.count() > 160) uri.substring(0, 159) + "…" else uri
+    val shownUri = displayedUri(uri)
+    val message = if (shownUri.count() > 160) shownUri.substring(0, 159) + "…" else shownUri
     val sanitizedUri = res.second
     if (sanitizedUri == null) {
       AlertManager.shared.showAlertDialog(
         generalGetString(MR.strings.privacy_chat_list_open_web_link_question),
         message,
         confirmText = generalGetString(MR.strings.open_verb),
-        onConfirm = { safeOpenUri(uri, uriHandler) }
+        onConfirm = { safeOpenUri(uri, uriHandler) },
+        parseHtml = false
       )
     } else {
       AlertManager.shared.showAlertDialogButtonsColumn(
         generalGetString(MR.strings.privacy_chat_list_open_web_link_question),
         message,
+        parseHtml = false,
         buttons = {
         Column {
           SectionItemView({
@@ -585,7 +588,7 @@ fun safeOpenUri(uri: String, uriHandler: UriHandler) {
 }
 
 fun showInvalidLinkAlert(uri: String, error: String? = null) {
-  val message = if (error.isNullOrEmpty()) { uri } else { error + "\n" + uri }
+  val message = if (error.isNullOrEmpty()) { displayedUri(uri) } else { error + "\n" + displayedUri(uri) }
   AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_parsing_uri_title), message)
 }
 

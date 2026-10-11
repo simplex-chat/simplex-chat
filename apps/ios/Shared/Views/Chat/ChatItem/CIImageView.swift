@@ -95,11 +95,7 @@ struct CIImageView: View {
         .onDisappear {
             showFullScreenImage = false
         }
-        .onChange(of: file?.loaded) { _ in
-            if let file, m.receivedFileToOpen(file, inChatList: smallView) {
-                showFullScreenImage = true
-            }
-        }
+        .modifier(OpenWhenReceived(file: file, inChatList: smallView) { _ in showFullScreenImage = true })
     }
 
     private func imageView(_ img: UIImage) -> some View {

@@ -174,8 +174,8 @@ fun CIImageView(
   }
 
   val view = LocalMultiplatformView()
-  KeyChangeEffect(file?.fileStatus) {
-    if (file != null && chatModel.receivedFileToOpen(file, smallView)) {
+  if (file != null) {
+    OpenWhenReceivedEffect(file, smallView) {
       hideKeyboard(view)
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->
         ImageFullScreenView(imageProvider, close)

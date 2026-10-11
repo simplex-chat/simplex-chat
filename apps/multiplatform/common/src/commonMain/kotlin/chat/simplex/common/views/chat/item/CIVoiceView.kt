@@ -95,9 +95,7 @@ fun CIVoiceView(
           AudioPlayer.stop()
         }
       }
-      KeyChangeEffect(file.fileStatus) {
-        if (chatModel.receivedFileToOpen(file, smallView)) play()
-      }
+      OpenWhenReceivedEffect(file, smallView, play)
     } else if (smallView) {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, sizeMultiplier, {}, {}, longClick, receiveFile)
     } else {

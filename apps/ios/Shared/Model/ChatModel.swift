@@ -495,6 +495,12 @@ final class ChatModel: ObservableObject {
         return f.place != .chatList || chatListShown
     }
 
+    func cancelFileToOpen(_ file: CIFile, inChatList: Bool) {
+        if let f = fileToOpen, f.fileId == file.fileId, (f.place == .chatList) == inChatList {
+            fileToOpen = nil
+        }
+    }
+
     private func fileOpenPlace(_ inChatList: Bool) -> FileOpenPlace? {
         inChatList ? FileOpenPlace.chatList : chatId.map(FileOpenPlace.inChat)
     }

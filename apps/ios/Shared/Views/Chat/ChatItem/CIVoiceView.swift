@@ -250,11 +250,11 @@ struct VoiceMessagePlayer: View {
         .onChange(of: chatModel.chatId) { _ in
             stopPlayback()
         }
-        .onChange(of: recordingFile?.loaded) { _ in
-            if let recordingFile, chatModel.receivedFileToOpen(recordingFile, inChatList: sizeMultiplier != 1), let recordingSource = getLoadedFileSource(recordingFile) {
+        .modifier(OpenWhenReceived(file: recordingFile, inChatList: sizeMultiplier != 1) { file in
+            if let recordingSource = getLoadedFileSource(file) {
                 startPlayback(recordingSource)
             }
-        }
+        })
         .onDisappear {
             if sizeMultiplier == 1 && chatModel.chatId == nil {
                 stopPlayback()

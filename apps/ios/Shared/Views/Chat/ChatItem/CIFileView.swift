@@ -27,7 +27,7 @@ struct CIFileView: View {
         if smallViewSize != nil {
             fileIndicator()
             .simultaneousGesture(TapGesture().onEnded(fileAction))
-            .onChange(of: file?.loaded) { _ in openReceivedFile() }
+            .modifier(OpenWhenReceived(file: file, inChatList: true, open: showMarkdownFile))
         } else {
             // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
             let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
@@ -59,13 +59,7 @@ struct CIFileView: View {
             .padding(.trailing, 12)
             .simultaneousGesture(TapGesture().onEnded(fileAction))
             .disabled(!itemInteractive)
-            .onChange(of: file?.loaded) { _ in openReceivedFile() }
-        }
-    }
-
-    private func openReceivedFile() {
-        if let file, m.receivedFileToOpen(file, inChatList: smallViewSize != nil) {
-            showMarkdownFile(file)
+            .modifier(OpenWhenReceived(file: file, inChatList: false, open: showMarkdownFile))
         }
     }
 
@@ -268,6 +262,27 @@ func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
         NSLocalizedString("Large file!", comment: "file alert title"),
         message: largeFileMessage(file.fileSize, badgeIssue: badgeIssue)
     )
+}
+
+struct OpenWhenReceived: ViewModifier {
+    @EnvironmentObject var m: ChatModel
+    let file: CIFile?
+    let inChatList: Bool
+    let open: (CIFile) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: file?.fileStatus) { _ in
+                guard let file else { return }
+                switch file.fileStatus {
+                case .rcvError, .rcvCancelled, .rcvAborted: m.cancelFileToOpen(file, inChatList: inChatList)
+                default: if m.receivedFileToOpen(file, inChatList: inChatList) { open(file) }
+                }
+            }
+            .onDisappear {
+                if let file { m.cancelFileToOpen(file, inChatList: inChatList) }
+            }
+    }
 }
 
 func saveCryptoFile(_ fileSource: CryptoFile) {

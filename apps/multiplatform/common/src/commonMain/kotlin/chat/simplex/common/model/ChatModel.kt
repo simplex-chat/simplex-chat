@@ -227,10 +227,15 @@ object ChatModel {
     return f.place != FileOpenPlace.ChatList || chatListShown()
   }
 
+  fun cancelFileToOpen(file: CIFile, inChatList: Boolean) {
+    val f = fileToOpen
+    if (f != null && f.fileId == file.fileId && (f.place == FileOpenPlace.ChatList) == inChatList) fileToOpen = null
+  }
+
   private fun fileOpenPlace(inChatList: Boolean): FileOpenPlace? =
     if (inChatList) FileOpenPlace.ChatList else chatId.value?.let { FileOpenPlace.InChat(it) }
 
-  private fun chatListShown(): Boolean =
+  fun chatListShown(): Boolean =
     (appPlatform.isDesktop || chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen()
 
   // preferences

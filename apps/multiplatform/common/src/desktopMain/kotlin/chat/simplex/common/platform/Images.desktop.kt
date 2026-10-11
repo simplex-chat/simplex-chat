@@ -54,6 +54,29 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   }
 }
 
+actual fun decodeBase64Image(base64: String, width: Int): ImageBitmap? =
+  try {
+    val stream = ImageIO.createImageInputStream(ByteArrayInputStream(Base64.getMimeDecoder().decode(base64)))
+    val reader = ImageIO.getImageReaders(stream).next()
+    try {
+      reader.setInput(stream)
+      val imageWidth = reader.getWidth(0)
+      val imageHeight = reader.getHeight(0)
+      if (imageWidth <= 0 || imageHeight <= 0 || imageWidth > MAX_IMAGE_DIMENSION || imageHeight > MAX_IMAGE_DIMENSION) {
+        null
+      } else {
+        val sampleSize = Integer.highestOneBit(maxOf(1, imageWidth / width))
+        val param = reader.defaultReadParam.apply { setSourceSubsampling(sampleSize, sampleSize, 0, 0) }
+        reader.read(0, param).toComposeImageBitmap()
+      }
+    } finally {
+      reader.dispose()
+    }
+  } catch (e: Throwable) {
+    Log.e(TAG, "decodeBase64Image error: $e")
+    null
+  }
+
 actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   var img = image
   var str = compressImageStr(img)

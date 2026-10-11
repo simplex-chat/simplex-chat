@@ -12,12 +12,14 @@ import WebKit
 
 struct ConditionsWebView: UIViewRepresentable {
     @State var html: String
+    var openLink: (URL) -> Void = openExternalLink
     @EnvironmentObject var theme: AppTheme
     @State var pageLoaded = false
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.allowsContentJavaScript = false
+        config.websiteDataStore = .nonPersistent()
         let view = WKWebView(frame: .zero, configuration: config)
         view.backgroundColor = .clear
         view.isOpaque = false
@@ -37,8 +39,9 @@ struct ConditionsWebView: UIViewRepresentable {
     }
 
     private func loadPage(_ webView: WKWebView) {
+        let nonce = UUID().uuidString
         let styles = """
-        <style>
+        <style nonce="\(nonce)">
         body {
             color: \(theme.colors.onBackground.toHTMLHex());
             font-family: Helvetica;
@@ -65,7 +68,7 @@ struct ConditionsWebView: UIViewRepresentable {
         }
         </style>
         """
-        let csp = "<meta http-equiv='Content-Security-Policy' content=\"default-src 'none'; style-src 'unsafe-inline'; img-src data:\">"
+        let csp = "<meta http-equiv='Content-Security-Policy' content=\"default-src 'none'; style-src 'nonce-\(nonce)'; img-src data:; base-uri 'none'; form-action 'none'\">"
         let head = "<head>\(csp)<meta name='viewport' content='width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=no'>\(styles)</head>"
         webView.loadHTMLString(head + html, baseURL: nil)
         DispatchQueue.main.async {
@@ -74,10 +77,16 @@ struct ConditionsWebView: UIViewRepresentable {
     }
 
     func makeCoordinator() -> Cordinator {
-        Cordinator()
+        Cordinator(openLink: openLink)
     }
 
     class Cordinator: NSObject, WKNavigationDelegate {
+        let openLink: (URL) -> Void
+
+        init(openLink: @escaping (URL) -> Void) {
+            self.openLink = openLink
+        }
+
         func webView(_ webView: WKWebView,
                      decidePolicyFor navigationAction: WKNavigationAction,
                      decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -87,7 +96,7 @@ struct ConditionsWebView: UIViewRepresentable {
             switch navigationAction.navigationType {
             case .linkActivated:
                 decisionHandler(.cancel)
-                openExternalLink(url)
+                openLink(url)
             default:
                 decisionHandler(url.scheme == "about" ? .allow : .cancel)
             }

@@ -2,6 +2,10 @@ import SwiftUI
 import SimpleXChat
 import Ink
 
+private let MAX_MARKDOWN_LINE_LENGTH = 15_000
+private let MAX_MARKDOWN_NESTING = 16
+private let MAX_MARKDOWN_TABLE_ROWS = 200
+
 func isMarkdownFile(_ file: CIFile) -> Bool {
     let ext = (file.fileName as NSString).pathExtension.lowercased()
     return file.fileSize <= MAX_MARKDOWN_VIEW_SIZE && (ext == "md" || ext == "markdown")
@@ -12,22 +16,16 @@ func showMarkdownFile(_ file: CIFile) {
     Task {
         do {
             let data = try getFileData(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs)
-            guard let text = textFileContent(data) else {
-                await MainActor.run {
-                    showAlert(
-                        title: NSLocalizedString("Not a text file", comment: "alert title"),
-                        buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                        buttonAction: { saveCryptoFile(fileSource) },
-                        cancelButton: true
-                    )
-                }
-                return
-            }
+            let text = decodedText(data)
             let lines = text.components(separatedBy: "\n")
-            let html = MarkdownParser().html(from: text)
+            let html = withinMarkdownLimits(lines)
+                ? MarkdownParser(modifiers: [Modifier(target: .html) { escapedHTML($0.markdown) }]).html(from: text)
+                : nil
+            let shownLines = lines.flatMap(chunkedLine)
+            let hasBidiControls = text.unicodeScalars.contains(where: isBidiControl)
             await MainActor.run {
                 showAppSheet(fullScreen: true) {
-                    MarkdownFileView(file: file, fileSource: fileSource, lines: lines, html: html)
+                    MarkdownFileView(file: file, fileSource: fileSource, lines: shownLines, html: html, hasBidiControls: hasBidiControls)
                 }
             }
         } catch {
@@ -38,11 +36,89 @@ func showMarkdownFile(_ file: CIFile) {
     }
 }
 
-private func textFileContent(_ data: Data) -> String? {
-    guard let text = String(data: data, encoding: .utf8),
-          !text.unicodeScalars.contains(where: { $0.value < 0x20 && $0 != "\t" && $0 != "\n" && $0 != "\r" })
-    else { return nil }
-    return text
+private func decodedText(_ data: Data) -> String {
+    var text = String.UnicodeScalarView()
+    var parser = Unicode.UTF8.ForwardParser()
+    var bytes = data.makeIterator()
+    while true {
+        switch parser.parseScalar(from: &bytes) {
+        case let .valid(encoded): text.append(replacingControlChar(Unicode.UTF8.decode(encoded)))
+        case let .error(length): text.append(contentsOf: repeatElement("?" as Unicode.Scalar, count: length))
+        case .emptyInput: return String(text)
+        }
+    }
+}
+
+private func replacingControlChar(_ s: Unicode.Scalar) -> Unicode.Scalar {
+    s.value < 0x20 && s != "\t" && s != "\n" && s != "\r" ? "?" : s
+}
+
+private func withinMarkdownLimits(_ lines: [String]) -> Bool {
+    var tableRows = 0
+    for line in lines {
+        tableRows = line.contains("|") ? tableRows + 1 : 0
+        if line.count > MAX_MARKDOWN_LINE_LENGTH || nestingLevel(line) > MAX_MARKDOWN_NESTING || tableRows > MAX_MARKDOWN_TABLE_ROWS {
+            return false
+        }
+    }
+    return true
+}
+
+private func nestingLevel(_ line: String) -> Int {
+    let content = line.drop(while: { $0 == " " || $0 == "\t" || $0 == ">" })
+    let prefix = line[..<content.startIndex]
+    let quotes = prefix.filter { $0 == ">" }.count
+    let listItem = content.first.map { "-*+".contains($0) || $0.isNumber } ?? false
+    return quotes + (listItem ? (prefix.count - quotes) / 2 : 0)
+}
+
+private func chunkedLine(_ line: String) -> [String] {
+    let chars = Array(line)
+    return stride(from: 0, to: max(chars.count, 1), by: MAX_MARKDOWN_LINE_LENGTH).map {
+        String(chars[$0 ..< min($0 + MAX_MARKDOWN_LINE_LENGTH, chars.count)])
+    }
+}
+
+private func escapedHTML(_ s: Substring) -> String {
+    s.replacingOccurrences(of: "&", with: "&amp;")
+        .replacingOccurrences(of: "<", with: "&lt;")
+        .replacingOccurrences(of: ">", with: "&gt;")
+}
+
+private func isBidiControl(_ s: Unicode.Scalar) -> Bool {
+    [0x061C, 0x200E, 0x200F].contains(s.value) || (0x202A...0x202E).contains(s.value) || (0x2066...0x2069).contains(s.value)
+}
+
+private func withInvisibleCharMarkers(_ line: String) -> Text {
+    var text = Text(verbatim: "")
+    var plain = ""
+    for s in line.unicodeScalars {
+        if s.properties.generalCategory == .format {
+            text = text + Text(verbatim: plain) + Text(verbatim: unicodeMarker(s)).foregroundColor(.orange)
+            plain = ""
+        } else {
+            plain.unicodeScalars.append(s)
+        }
+    }
+    return text + Text(verbatim: plain)
+}
+
+private func openMarkdownFileLink(_ url: URL) {
+    let uri = url.absoluteString
+    let parsed = parseSimpleXMarkdown(uri)
+    let format = parsed?.count == 1 ? parsed?.first?.format : nil
+    switch format {
+    case let .simplexLink(_, _, simplexUri, _)?:
+        if let simplexUrl = URL(string: simplexUri) {
+            ChatModel.shared.appOpenUrl = simplexUrl
+        } else {
+            showInvalidLinkAlert(uri)
+        }
+    case .uri? where uri.hasPrefix("https://") || uri.hasPrefix("http://"):
+        openBrowserAlert(uri: uri)
+    default:
+        showInvalidLinkAlert(uri)
+    }
 }
 
 struct MarkdownFileView: View {
@@ -50,25 +126,31 @@ struct MarkdownFileView: View {
     let file: CIFile
     let fileSource: CryptoFile
     let lines: [String]
-    let html: String
+    let html: String?
+    let hasBidiControls: Bool
 
     var body: some View {
         NavigationView {
-            Group {
-                if textView {
+            VStack(spacing: 0) {
+                if hasBidiControls {
+                    Text("This file has text direction characters. The text can be shown in a different order than it is written.")
+                        .foregroundColor(.orange)
+                        .padding()
+                }
+                if let html, !textView {
+                    ConditionsWebView(html: html, openLink: openMarkdownFileLink)
+                        .padding(.horizontal)
+                } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 0) {
                             ForEach(lines.indices, id: \.self) { i in
-                                Text(lines[i])
+                                withInvisibleCharMarkers(lines[i])
                                     .font(.system(.body, design: .monospaced))
                                     .textSelection(.enabled)
                             }
                         }
                         .padding()
                     }
-                } else {
-                    ConditionsWebView(html: html)
-                        .padding(.horizontal)
                 }
             }
             .modifier(ThemedBackground())
@@ -83,10 +165,12 @@ struct MarkdownFileView: View {
                     }
                 }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
-                        textView.toggle()
-                    } label: {
-                        Image(systemName: textView ? "doc.richtext" : "chevron.left.forwardslash.chevron.right")
+                    if html != nil {
+                        Button {
+                            textView.toggle()
+                        } label: {
+                            Image(systemName: textView ? "doc.richtext" : "chevron.left.forwardslash.chevron.right")
+                        }
                     }
                     Button {
                         saveCryptoFile(fileSource)

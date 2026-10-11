@@ -107,7 +107,7 @@ fun CIFileView(
         file.fileStatus is CIFileStatus.SndWarning ->
           showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
         isMarkdownFile(file) && file.loaded ->
-          showMarkdownFile(file, saveFileLauncher)
+          showMarkdownFile(file)
         file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
@@ -184,8 +184,8 @@ fun CIFileView(
     }
   }
 
-  KeyChangeEffect(file?.fileStatus) {
-    if (file != null && chatModel.receivedFileToOpen(file, smallView)) showMarkdownFile(file, saveFileLauncher)
+  if (file != null && isMarkdownFile(file)) {
+    OpenWhenReceivedEffect(file, smallView) { showMarkdownFile(file) }
   }
   val showOpenSaveMenu = rememberSaveable(file?.fileId) { mutableStateOf(false) }
   val ext = file?.fileSource?.filePath?.substringAfterLast(".")?.takeIf { it.isNotBlank() }
@@ -244,6 +244,25 @@ fun CIFileView(
 
 // the core decides whether a received file is above the size the sender's badge allows
 fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
+
+@Composable
+fun OpenWhenReceivedEffect(file: CIFile, inChatList: Boolean, open: () -> Unit) {
+  KeyChangeEffect(file.fileStatus) {
+    when (file.fileStatus) {
+      is CIFileStatus.RcvError, is CIFileStatus.RcvCancelled, is CIFileStatus.RcvAborted -> chatModel.cancelFileToOpen(file, inChatList)
+      else -> if (chatModel.receivedFileToOpen(file, inChatList)) open()
+    }
+  }
+  if (inChatList) {
+    val chatListShown = chatModel.chatListShown()
+    KeyChangeEffect(chatListShown) {
+      if (!chatListShown) chatModel.cancelFileToOpen(file, inChatList)
+    }
+  }
+  DisposableEffect(Unit) {
+    onDispose { chatModel.cancelFileToOpen(file, inChatList) }
+  }
+}
 
 fun showProhibitedFileAlert(file: CIFile, prohibited: FileProhibited) {
   val badgeIssue = when (prohibited.badgeStatus) {

@@ -33,10 +33,13 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.res.*
 import com.mikepenz.markdown.compose.Markdown
+import com.mikepenz.markdown.compose.components.MarkdownComponents
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownHeader
 import com.mikepenz.markdown.m2.markdownColor
 import com.mikepenz.markdown.m2.markdownTypography
+import com.mikepenz.markdown.model.MarkdownPadding
+import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.model.markdownPadding
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -773,40 +776,49 @@ expect fun ConditionsBox(modifier: Modifier, scrollState: ScrollState, content: 
 private fun ConditionsMarkdown(text: String) {
   Markdown(text,
     markdownColor(),
-    markdownTypography(
-      h1 = MaterialTheme.typography.body1,
-      h2 = MaterialTheme.typography.h3.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
-      h3 = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Bold),
-      h4 = MaterialTheme.typography.h5.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
-      h5 = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
-      link = MaterialTheme.typography.body1.copy(
-        color = MaterialTheme.colors.primary,
-        textDecoration = TextDecoration.Underline
-      )
-    ),
+    documentMarkdownTypography(),
     Modifier.padding(8.dp),
     // using CommonMarkFlavourDescriptor instead of GFMFlavourDescriptor because it shows `https://simplex.chat/` (link inside backticks) incorrectly
     flavour = CommonMarkFlavourDescriptor(),
-    components = markdownComponents(
-      heading2 = {
-        Spacer(Modifier.height(10.dp))
-        MarkdownHeader(it.content, it.node, it.typography.h2)
-        Spacer(Modifier.height(5.dp))
-      },
-      heading3 = {
-        Spacer(Modifier.height(10.dp))
-        MarkdownHeader(it.content, it.node, it.typography.h3)
-        Spacer(Modifier.height(3.dp))
-      },
-      heading4 = {
-        Spacer(Modifier.height(10.dp))
-        MarkdownHeader(it.content, it.node, it.typography.h4)
-        Spacer(Modifier.height(4.dp))
-      },
-    ),
-    padding = markdownPadding(block = 4.dp)
+    components = documentMarkdownComponents,
+    padding = documentMarkdownPadding()
   )
 }
+
+@Composable
+fun documentMarkdownTypography(): MarkdownTypography =
+  markdownTypography(
+    h1 = MaterialTheme.typography.body1,
+    h2 = MaterialTheme.typography.h3.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
+    h3 = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Bold),
+    h4 = MaterialTheme.typography.h5.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
+    h5 = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+    link = MaterialTheme.typography.body1.copy(
+      color = MaterialTheme.colors.primary,
+      textDecoration = TextDecoration.Underline
+    )
+  )
+
+val documentMarkdownComponents: MarkdownComponents = markdownComponents(
+  heading2 = {
+    Spacer(Modifier.height(10.dp))
+    MarkdownHeader(it.content, it.node, it.typography.h2)
+    Spacer(Modifier.height(5.dp))
+  },
+  heading3 = {
+    Spacer(Modifier.height(10.dp))
+    MarkdownHeader(it.content, it.node, it.typography.h3)
+    Spacer(Modifier.height(3.dp))
+  },
+  heading4 = {
+    Spacer(Modifier.height(10.dp))
+    MarkdownHeader(it.content, it.node, it.typography.h4)
+    Spacer(Modifier.height(4.dp))
+  },
+)
+
+@Composable
+fun documentMarkdownPadding(): MarkdownPadding = markdownPadding(block = 4.dp)
 
 @Composable
 private fun ConditionsLinkView(conditionsLink: String) {
@@ -862,7 +874,7 @@ fun ConditionsLinkButton() {
   }
 }
 
-fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
+private fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
   override fun openUri(uri: String) {
     parentUriHandler.openExternalLink(uri)
   }
