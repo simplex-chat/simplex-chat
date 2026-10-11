@@ -7943,15 +7943,11 @@ Query: SELECT user_id FROM users WHERE local_display_name = ?
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_2 (local_display_name=?)
 
-<<<<<<< HEAD
 Query: SELECT user_id FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ?
 Plan:
 SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
 
-Query: SELECT via_contact_uri FROM connections WHERE connection_id = ?
-=======
 Query: SELECT via_contact_uri, pres_header FROM connections WHERE connection_id = ?
->>>>>>> master
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
