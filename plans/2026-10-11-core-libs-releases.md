@@ -83,7 +83,7 @@ Steps, as `build-linux` in `build.yml` (lines 153-230):
 2. Docker image from `Dockerfile.build`: `TAG=22.04`, `HASH`, `GHC=9.6.3`, user UID and GID.
 3. Container start with `~/.cabal` and the workspace mounted.
 4. `cabal.project.local`: `ignore-project: False`, `direct-sqlcipher` with `flags: +openssl`.
-5. In the container: `cabal update`, then `SKIP_VLC=1 scripts/desktop/build-lib-linux.sh <backend>`.
+5. In the container: `cabal clean`, `cabal update`, then `SKIP_VLC=1 scripts/desktop/build-lib-linux.sh <backend>`.
 6. Zip and artifact upload.
 7. Cache permissions fix, as `build.yml` lines 356-361.
 
@@ -102,7 +102,7 @@ Steps, as `build-macos` in `build.yml` (lines 510-537):
 1. Checkout, `./.github/actions/prepare-build`.
 2. `brew install openssl@3.0`.
 3. `cabal.project.local`: `simplexmq` and `direct-sqlcipher` with `extra-include-dirs: <openssl_dir>/openssl@3.0/include`, `extra-lib-dirs: <openssl_dir>/openssl@3.0/lib`; `direct-sqlcipher` with `flags: +openssl`.
-4. `SKIP_VLC=1 scripts/desktop/build-lib-mac.sh`.
+4. `cabal update`, then `SKIP_VLC=1 scripts/desktop/build-lib-mac.sh`.
 5. Zip of `libs/mac-<arch>/` as `simplex-chat-libs-macos-<arch>.zip`, artifact upload.
 
 ### 3.4. `build-windows`
@@ -112,14 +112,14 @@ Steps, as `build-windows` in `build.yml` (lines 621-697):
 1. Checkout, `./.github/actions/prepare-build` with `cache_path: "C:/cabal"`.
 2. Pagefile 16GB.
 3. MSYS2 `ucrt64` with `git`, `perl`, `make`, `toolchain:p`, `cmake:p`.
-4. `export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)`, then `SKIP_VLC=1 scripts/desktop/build-lib-windows.sh`.
+4. `export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)`, `cabal update`, then `SKIP_VLC=1 scripts/desktop/build-lib-windows.sh`.
 5. `dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll`.
 6. Zip of `libs/windows-x86_64/` and `libsimplex.lib`, artifact upload.
 
 ### 3.5. `release`
 
-1. Artifact download.
-2. `sha256sum simplex-chat-libs-*.zip > SHA256SUMS`.
+1. Artifact download: one directory `libs/` per asset name.
+2. One zip per artifact, then `sha256sum simplex-chat-libs-*.zip > SHA256SUMS`.
 3. `softprops/action-gh-release@v2`:
 
 ```
