@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20260924_wallet_seeds where
+module Simplex.Chat.Store.SQLite.Migrations.M20261030_wallet_seeds where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20260924_wallet_seeds :: Query
-m20260924_wallet_seeds =
+m20261030_wallet_seeds :: Query
+m20261030_wallet_seeds =
   [sql|
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,8 +27,8 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
-down_m20260924_wallet_seeds :: Query
-down_m20260924_wallet_seeds =
+down_m20261030_wallet_seeds :: Query
+down_m20261030_wallet_seeds =
   [sql|
 DROP INDEX idx_wallet_accounts_user_id;
 DROP INDEX idx_wallet_accounts_wallet_seed_id_account_index;

@@ -29,6 +29,7 @@ fun CIGroupInvitationView(
   memberRole: GroupMemberRole,
   showTimestamp: Boolean,
   chatIncognito: Boolean = false,
+  groupChat: Boolean = false,
   joinGroup: (Long, () -> Unit) -> Unit,
   timedMessagesTTL: Int?
 ) {
@@ -111,6 +112,9 @@ fun CIGroupInvitationView(
           val secondaryColor = MaterialTheme.colors.secondary
           Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
           Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (groupChat) {
+              Text(if (sent) String.format(stringResource(MR.strings.group_invitation_for_member_only), groupInvitation.localDisplayName) else stringResource(MR.strings.group_invitation_for_you_only), fontSize = 12.sp, color = secondaryColor)
+            }
             if (action) {
               Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
               Text(

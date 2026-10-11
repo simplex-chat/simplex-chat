@@ -2705,7 +2705,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
         await groupChatItemsDeleted(user, groupInfo, chatItemIDs, member_)
-    case let .receivedGroupInvitation(user, groupInfo, _, _):
+    case let .receivedGroupInvitation(user, groupInfo, _, _),
+         let .receivedGroupInvitationViaGroup(user, groupInfo, _, _, _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated

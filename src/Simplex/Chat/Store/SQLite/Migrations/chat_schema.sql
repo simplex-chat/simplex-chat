@@ -211,7 +211,8 @@ CREATE TABLE groups(
   roster_blob BLOB,
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
-  applied_complete_roster_version INTEGER, -- received
+  applied_complete_roster_version INTEGER,
+  relay_request_public_group_id BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -259,6 +260,7 @@ CREATE TABLE group_members(
   roster_served_version INTEGER,
   member_security_code TEXT,
   member_security_code_verified_at TEXT,
+  invited_via_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -390,6 +392,7 @@ CREATE TABLE connections(
   via_short_link_contact BLOB,
   via_contact_uri BLOB,
   relay_test INTEGER NOT NULL DEFAULT 0,
+  pres_header BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -981,6 +984,17 @@ CREATE TABLE badge_code_redemptions(
   created_at TEXT NOT NULL,
   UNIQUE(user_id, code)
 ) STRICT;
+CREATE TABLE group_member_badge_proofs(
+  group_member_id INTEGER PRIMARY KEY REFERENCES group_members ON DELETE CASCADE,
+  badge_proof BLOB NOT NULL,
+  badge_pres_header BLOB NOT NULL,
+  badge_key_idx INTEGER NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_expiry TEXT NOT NULL,
+  badge_extra TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
 CREATE TABLE wallet_seeds(
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   entropy BLOB NOT NULL CHECK(length(entropy) IN(16, 20, 24, 28, 32)),
@@ -1555,6 +1569,9 @@ CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
 );
 CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
   badge_code_redemption_id
+);
+CREATE INDEX idx_group_members_invited_via_group_member_id ON group_members(
+  invited_via_group_member_id
 );
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
 CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_accounts(

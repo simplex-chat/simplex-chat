@@ -159,7 +159,7 @@ The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is
 
 - `src/Simplex/Chat/Wallet.hs`, derivation.
 - `src/Simplex/Chat/Store/Wallets.hs`, the two tables.
-- `src/Simplex/Chat/Store/SQLite/Migrations/M20260924_wallet_seeds.hs` and the corresponding Postgres migration.
+- `src/Simplex/Chat/Store/SQLite/Migrations/M20261030_wallet_seeds.hs` and the corresponding Postgres migration.
 - `tests/WalletTests.hs`.
 - Derivation uses the `BIP32`, `BIP39`, `Secp256k1` and `Eth.Address` modules from simplexmq (simplex-chat/simplexmq#1843) and adds no dependency to this package.
 
