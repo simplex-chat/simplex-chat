@@ -1408,6 +1408,14 @@ Query:
 Plan:
 
 Query: 
+          INSERT INTO wallet_accounts (wallet_seed_id, account_index, user_id) VALUES (?, ?, ?)
+          ON CONFLICT (wallet_seed_id, account_index) DO UPDATE SET user_id = excluded.user_id
+          WHERE wallet_accounts.user_id IS NULL OR wallet_accounts.user_id = excluded.user_id
+          RETURNING wallet_account_id
+        
+Plan:
+
+Query: 
           SELECT
             -- ChatItem
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
@@ -4451,22 +4459,6 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        UPDATE wallet_accounts SET user_id = ?
-        WHERE wallet_seed_id = ? AND account_index = ? AND user_id IS NULL
-        RETURNING wallet_account_id
-      
-Plan:
-SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
-
-Query: 
-        UPDATE wallet_seeds SET next_account_index = next_account_index + 1
-        WHERE wallet_seed_id = ? AND next_account_index < 2147483648
-        RETURNING next_account_index - 1
-      
-Plan:
-SEARCH wallet_seeds USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
         WITH user_groups AS MATERIALIZED (
           SELECT g.group_id
           FROM groups g
@@ -5786,13 +5778,6 @@ Query:
     
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE wallet_seeds SET next_account_index = ?
-      WHERE wallet_seed_id = ? AND next_account_index IS NOT NULL AND next_account_index <= ?
-    
-Plan:
-SEARCH wallet_seeds USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE xftp_file_descriptions
@@ -7434,9 +7419,6 @@ Plan:
 Query: INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, auto_accept_group_invitations, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO wallet_accounts (wallet_seed_id, account_index, user_id) VALUES (?, ?, ?)
-Plan:
-
 Query: INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)
 Plan:
 
@@ -7986,10 +7968,6 @@ Query: SELECT user_id FROM users WHERE local_display_name = ?
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_2 (local_display_name=?)
 
-Query: SELECT user_id FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ?
-Plan:
-SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
-
 Query: SELECT via_contact_uri, pres_header FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -7998,7 +7976,11 @@ Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE conne
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT wallet_seed_id, entropy, next_account_index FROM wallet_seeds ORDER BY wallet_seed_id LIMIT 1
+Query: SELECT wallet_account_id FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ? AND user_id = ?
+Plan:
+SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
+
+Query: SELECT wallet_seed_id, entropy, next_account_index FROM wallet_seeds
 Plan:
 SCAN wallet_seeds
 
@@ -8533,4 +8515,8 @@ SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ? AND next_account_index <= ?
+Plan:
+SEARCH wallet_seeds USING INTEGER PRIMARY KEY (rowid=?)
 
