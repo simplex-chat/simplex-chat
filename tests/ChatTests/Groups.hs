@@ -166,7 +166,7 @@ chatGroupTests = do
   describe "merge members and contacts" $ do
     it "new member should merge with existing contact" testMergeMemberExistingContact
     it "new contact should merge with existing member" testMergeContactExistingMember
-    it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
+    it "new contact should merge with multiple existing members" $ withTestOutput testMergeContactMultipleMembers
     it "new group link host contact should merge with single existing contact out of multiple" testMergeGroupLinkHostMultipleContacts
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage

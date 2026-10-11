@@ -68,7 +68,7 @@ import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportSe
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, listDirectory, removePathForcibly)
-import System.FilePath ((</>))
+import System.FilePath (takeFileName, (</>))
 import qualified System.Terminal as C
 import System.Terminal.Internal (Command (..), Terminal (..), VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -79,7 +79,6 @@ import Data.String (fromString)
 import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
 import qualified Database.PostgreSQL.Simple as PSQL
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
-import System.FilePath (takeFileName)
 #else
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
@@ -541,14 +540,14 @@ getTermLine :: HasCallStack => TestCC -> IO String
 getTermLine = getTermLine' Nothing
 
 getTermLine' :: HasCallStack => Maybe String -> TestCC -> IO String
-getTermLine' expected cc@TestCC {printOutput} =
+getTermLine' expected cc@TestCC {printOutput, ccParams = TestParams {tmpPath}} =
   20000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
       -- when True $ do
       when printOutput $ do
         name <- userName cc
-        putStrLn $ name <> ": " <> s
+        putStrLn $ takeFileName tmpPath <> " " <> name <> ": " <> s
       pure s
     Nothing -> do
       name <- userName cc

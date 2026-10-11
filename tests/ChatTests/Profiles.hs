@@ -104,7 +104,7 @@ chatProfileTests = do
     it "create and connect via contact link" testUserContactLink
     it "rotate address ratchet keys" testRotateAddressRatchetKeys
     it "create address on specified server" testCreateAddressOnServer
-    it "retry connecting via contact link" testRetryConnectingViaContactLink
+    it "retry connecting via contact link" $ withTestOutput testRetryConnectingViaContactLink
     it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -1470,9 +1470,10 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
         bob <## "subscribed 1 connections on server localhost"
         alice ##> "/ac bob"
         alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-        concurrently_
-          (bob <## "alice (Alice): contact is connected")
-          (alice <## "bob (Bob): contact is connected")
+        withDiagnosticsOnFailure [(alice, "bob"), (bob, "alice")] $
+          concurrently_
+            (bob <## "alice (Alice): contact is connected")
+            (alice <## "bob (Bob): contact is connected")
         alice #> "@bob message 1"
         bob <# "alice> message 1"
         bob #> "@alice message 2"
