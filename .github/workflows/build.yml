@@ -5,7 +5,6 @@ on:
     branches:
       - master
       - stable
-      - ep/lib-release
     tags:
       - "v*"
       - "!*-fdroid"
@@ -114,7 +113,7 @@ jobs:
 
       - name: Check version change
         id: check_version
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable' || github.ref == 'refs/heads/ep/lib-release'
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable'
         shell: bash
         run: |
           version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
@@ -136,7 +135,7 @@ jobs:
         if: steps.check_version.outputs.version
         working-directory: libs-repo
         run: |
-          tag=core-test-${{ steps.check_version.outputs.version }}
+          tag=core-${{ steps.check_version.outputs.version }}
           printf 'version: %s\ncommit: %s\n' "${{ steps.check_version.outputs.version }}" "${{ github.sha }}" > core-release
           git config user.name "SimpleX Chat"
           git config user.email "build@simplex.chat"
