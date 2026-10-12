@@ -389,8 +389,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           now <- getCurrentTime
           pure $ searchResultsPage rowCursor (n > length gs) [(row, searchEntry now g gLink_) | row@(g, _, gLink_) <- gs]
       where
-        rowCursor (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, GroupReg {createdAt}, _) =
-          SearchCursor {lastMembers = currentMembers, lastCreatedAt = createdAt, lastGroupId = groupId}
+        rowCursor (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, _, _) = SCMembers currentMembers groupId
     groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt $ simplexChatContact cReq) strEncodeTxt sLnk_
     withAdminUsers action = void . forkIO $ do
       forM_ superUsers $ \KnownContact {contactId} -> action contactId
@@ -1295,7 +1294,10 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         updateSearchRequest :: SearchType -> (GroupInfo, GroupReg, Maybe CreatedLinkContact) -> IO ()
         updateSearchRequest searchType (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, GroupReg {createdAt}, _) = do
           searchTime <- getCurrentTime
-          let searchCursor = SearchCursor {lastMembers = currentMembers, lastCreatedAt = createdAt, lastGroupId = groupId}
+          let searchCursor = case searchType of
+                STAll -> SCMembers currentMembers groupId
+                STRecent -> SCRecent createdAt groupId
+                STSearch _ -> SCMembers currentMembers groupId
               search = SearchRequest {searchType, searchTime, searchCursor}
           atomically $ TM.insert (contactId' ct) search searchRequests
         getRegisteredGroupByLink :: AConnectionLink -> IO (Maybe (GroupInfo, GroupReg, CreatedLinkContact))

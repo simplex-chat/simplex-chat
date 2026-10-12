@@ -58,6 +58,7 @@ object ConnectProgressManager {
   private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
   fun startConnectProgress(text: String, owner: ConnectProgressOwner = ConnectProgressOwner.Connect, onCancel: (() -> Unit)? = null) {
+    if (owner == ConnectProgressOwner.DirectorySearch && this.owner == ConnectProgressOwner.Connect) return
     connectInProgress.value = text
     this.owner = owner
     this.onCancel = onCancel

@@ -21,7 +21,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List (intercalate, isPrefixOf, stripPrefix)
+import Data.List (intercalate, isPrefixOf, isSuffixOf, stripPrefix)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
@@ -29,10 +29,11 @@ import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRServiceResponse), PresetServers (..))
+import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Protocol (maxServiceBodyLength, supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -133,6 +134,8 @@ chatDirectTests = do
     it "service request dropped when service processing is off" testServiceRequestDroppedWhenOff
     it "service request to a non-DR address fails fast" testServiceRequestNonDRAddress
     it "service request to an address upgraded by key rotation" testServiceRequestUpgradedAddress
+    it "service request over the size bound travels compressed" testServiceRequestCompressed
+    it "service request rejected without a reason times out" testServiceRequestRejectedNoReason
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "delete user with chat tags" testDeleteUserChatTags
@@ -2138,6 +2141,56 @@ testServiceRequestUpgradedAddress =
           alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
           replyConnId <- serviceReplyConnId alice
           alice <## ("service reply sent, connection id: " <> replyConnId)
+      )
+
+testServiceRequestCompressed :: HasCallStack => TestParams -> IO ()
+testServiceRequestCompressed =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
+    let request = "{\"ping\":\"" <> unwords (map show [1 .. 3000 :: Int]) <> "\"}"
+    length request `shouldSatisfy` (> maxServiceBodyLength)
+    concurrently_
+      ( do
+          r <- sendChatCmdStr (chatController bob) ("/_service_request 1 " <> sLink <> " " <> request)
+          case r of
+            Right (CRServiceResponse _ responseData) -> J.encode responseData `shouldBe` "{\"pong\":2}"
+            _ -> expectationFailure $ "unexpected response: " <> show r
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          -- the test terminal queues only the last row of a line that wrapped
+          received <- getTermLine alice
+          received `shouldSatisfy` (`isSuffixOf` ("request: " <> request))
+          alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
+          replyConnId <- serviceReplyConnId alice
+          alice <## ("service reply sent, connection id: " <> replyConnId)
+      )
+
+-- without a reason nothing is sent back, so the requester waits out its timeout
+testServiceRequestRejectedNoReason :: HasCallStack => TestParams -> IO ()
+testServiceRequestRejectedNoReason =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <### ["chat started", "subscribed 1 connections on server localhost"]
+    concurrently_
+      ( do
+          bob ##> ("/_service_request 1 " <> sLink <> " timeout=5 {\"ping\":1}")
+          bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASETimeout}}"
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          alice <## "request: {\"ping\":1}"
+          alice ##> ("/_reject_service_request 1 " <> reqId)
+          alice <## "ok"
       )
 
 testMultipleUserAddresses :: HasCallStack => TestParams -> IO ()

@@ -54,6 +54,7 @@ module Directory.Store
   )
 where
 
+import Control.Monad (join)
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Data.Aeson ((.:), (.=))
@@ -346,40 +347,43 @@ getAllListedGroups_ db cxt user@User {userId, userContactId} = do
 
 searchListedGroups :: ChatController -> User -> SearchType -> Maybe SearchCursor -> Int -> IO (Either String ([(GroupInfo, GroupReg, Maybe GroupLink)], Int))
 searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageSize =
-  withDB' "searchListedGroups" cc $ \db -> do
+  fmap join . withDB' "searchListedGroups" cc $ \db -> do
     currentTs <- getCurrentTime
     case searchType of
       STAll -> case cursor_ of
         Nothing -> do
           gs <- groups currentTs $ DB.query db (listedGroupQuery <> membersOrderBy <> " LIMIT ?") (userId, userContactId, GRSActive, pageSize)
           n <- count $ DB.query db countQuery' (Only GRSActive)
-          pure (gs, n)
-        Just SearchCursor {lastMembers, lastGroupId} -> do
+          pure $ Right (gs, n)
+        Just SCMembers {lastMembers, lastGroupId} -> do
           gs <- groups currentTs $ DB.query db (listedGroupQuery <> membersCond <> membersOrderBy <> " LIMIT ?") (userId, userContactId, GRSActive, lastMembers, lastMembers, lastGroupId, pageSize)
           n <- count $ DB.query db (countQuery' <> membersCond) (GRSActive, lastMembers, lastMembers, lastGroupId)
-          pure (gs, n)
+          pure $ Right (gs, n)
+        Just SCRecent {} -> pure wrongCursor
         where
           countQuery' = countQuery <> " WHERE r.group_reg_status = ? "
       STRecent -> case cursor_ of
         Nothing -> do
           gs <- groups currentTs $ DB.query db (listedGroupQuery <> recentOrderBy <> " LIMIT ?") (userId, userContactId, GRSActive, pageSize)
           n <- count $ DB.query db countQuery' (Only GRSActive)
-          pure (gs, n)
-        Just SearchCursor {lastCreatedAt, lastGroupId} -> do
+          pure $ Right (gs, n)
+        Just SCRecent {lastCreatedAt, lastGroupId} -> do
           gs <- groups currentTs $ DB.query db (listedGroupQuery <> recentCond <> recentOrderBy <> " LIMIT ?") (userId, userContactId, GRSActive, lastCreatedAt, lastCreatedAt, lastGroupId, pageSize)
           n <- count $ DB.query db (countQuery' <> recentCond) (GRSActive, lastCreatedAt, lastCreatedAt, lastGroupId)
-          pure (gs, n)
+          pure $ Right (gs, n)
+        Just SCMembers {} -> pure wrongCursor
         where
           countQuery' = countQuery <> " WHERE r.group_reg_status = ? "
       STSearch search -> case cursor_ of
         Nothing -> do
           gs <- groups currentTs $ DB.query db (listedGroupQuery <> searchCond <> membersOrderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, s, s, s, s) :. (sDomain, pageSize))
           n <- count $ DB.query db (countQuery' <> searchCond) (GRSActive, s, s, s, s, sDomain)
-          pure (gs, n)
-        Just SearchCursor {lastMembers, lastGroupId} -> do
+          pure $ Right (gs, n)
+        Just SCMembers {lastMembers, lastGroupId} -> do
           gs <- groups currentTs $ DB.query db (listedGroupQuery <> membersCond <> searchCond <> membersOrderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, lastMembers, lastMembers, lastGroupId) :. (s, s, s, s, sDomain, pageSize))
           n <- count $ DB.query db (countQuery' <> membersCond <> searchCond) ((GRSActive, lastMembers, lastMembers, lastGroupId) :. (s, s, s, s, sDomain))
-          pure (gs, n)
+          pure $ Right (gs, n)
+        Just SCRecent {} -> pure wrongCursor
         where
           s = likeEscape $ T.toLower search
           -- a bare "#"/"@" maps to "#", matching no stored domain (domains are stored unprefixed)
@@ -390,6 +394,8 @@ searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageS
   where
     groups currentTs = (map (toGroupInfoRegLink currentTs (storeCxt cc) user) <$>)
     count = maybeFirstRow' 0 fromOnly
+    -- only a forged request pairs a mode with another mode's cursor: restarting from the first page would make a client loop
+    wrongCursor = Left "search cursor does not match the search type"
     listedGroupQuery = groupReqQuery <> " AND r.group_reg_status = ? "
     countQuery = "SELECT COUNT(1) FROM groups g JOIN sx_directory_group_regs r ON g.group_id = r.group_id "
     -- the cursor conditions must stay paired with the order by of the same sort key:

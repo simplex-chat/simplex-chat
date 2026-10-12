@@ -199,7 +199,7 @@ viewName = T.unpack . MD.viewName . T.pack
 
 testDirectoryService :: HasCallStack => TestParams -> IO ()
 testDirectoryService ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -289,7 +289,7 @@ testDirectoryService ps =
 
 testSuspendResume :: HasCallStack => TestParams -> IO ()
 testSuspendResume ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroup superUser bob "privacy" "Privacy"
@@ -356,7 +356,7 @@ testSuspendResume ps =
 
 testDeleteGroup :: HasCallStack => TestParams -> IO ()
 testDeleteGroup ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroup superUser bob "privacy" "Privacy"
@@ -368,7 +368,7 @@ testDeleteGroup ps =
 
 testDeleteGroupAdmin :: HasCallStack => TestParams -> IO ()
 testDeleteGroupAdmin ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -402,7 +402,7 @@ testDeleteGroupAdmin ps =
 
 testSetRole :: HasCallStack => TestParams -> IO ()
 testSetRole ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -438,7 +438,7 @@ testSetRole ps =
 
 testJoinGroup :: HasCallStack => TestParams -> IO ()
 testJoinGroup ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan -> do
@@ -491,7 +491,7 @@ testJoinGroup ps =
 
 testSearchByLink :: HasCallStack => TestParams -> IO ()
 testSearchByLink ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       submitGroup bob "privacy" "Privacy"
@@ -532,7 +532,7 @@ testSearchByLink ps =
 
 testGroupNameWithSpaces :: HasCallStack => TestParams -> IO ()
 testGroupNameWithSpaces ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroup superUser bob "Privacy & Security" ""
@@ -550,7 +550,7 @@ testGroupNameWithSpaces ps =
 
 testSearchGroups :: HasCallStack => TestParams -> IO ()
 testSearchGroups ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -637,7 +637,7 @@ testSearchGroups ps =
 -- group has the most members, so it sorts first, and a group_id cursor would send it again.
 testSearchGroupsPaging :: HasCallStack => TestParams -> IO ()
 testSearchGroupsPaging ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -696,7 +696,7 @@ testSearchGroupsPaging ps =
 
 testDirectorySearchRpc :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpc ps =
-  withDirectoryService ps $ \superUser (dsShortLink, _) ->
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, _) ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsShortLink
       registerGroupId superUser bob "PrivacyGroup" "" 1 1
@@ -715,21 +715,26 @@ testDirectorySearchRpc ps =
 -- the cursor is echoed back exactly as received, which is what the apps do with it
 testDirectorySearchRpcPaging :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpcPaging ps =
-  withDirectoryService ps $ \superUser (dsShortLink, _) ->
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, _) ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsShortLink
       forM_ [1 .. 4 :: Int] $ \i -> registerGroupId superUser bob ("group" <> show i) "" i i
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         (page1, cursor) <- searchNames cath dsShortLink "group" Nothing
         page1 `shouldBe` ["group1", "group2", "group3"]
+        -- anyone can send this request, so the cursor must not reveal when a group was registered
+        maybe "" (LB.unpack . J.encode) cursor `shouldNotContain` "lastCreatedAt"
         (page2, cursor') <- searchNames cath dsShortLink "group" cursor
         page2 `shouldBe` ["group4"]
         cursor' `shouldBe` Nothing
+        -- only a forged request pairs text search with a creation-time cursor, and it must not restart from the first page
+        cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"group\",\"searchCursor\":{\"type\":\"recent\",\"lastCreatedAt\":\"2026-01-01T00:00:00Z\",\"lastGroupId\":1}}")
+        cath <## "service response: {\"errorMessage\":\"search failed\",\"type\":\"error\"}"
 
 -- the search text is a substring: '%' and '_' in it match literally, and its length is bounded
 testDirectorySearchRpcLiteral :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpcLiteral ps =
-  withDirectoryService ps $ \superUser (dsShortLink, _) ->
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, _) ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsShortLink
       registerGroupId superUser bob "PrivacyGroup" "" 1 1
@@ -755,7 +760,7 @@ testDirectorySearchRpcLiteral ps =
 -- over the cap a request is refused at once with a reason, so the requester does not wait out its timeout
 testDirectorySearchRpcBusy :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpcBusy ps =
-  withDirectoryServiceOpts ps (\o -> o {maxServiceRequestsInFlight = 0}) $ \_superUser (dsShortLink, _) ->
+  withDirectoryServiceOptsLinks ps (\o -> o {maxServiceRequestsInFlight = 0}) $ \_superUser (dsShortLink, _) ->
     withNewTestChat ps "cath" cathProfile $ \cath -> do
       cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
       cath <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASERejected {rejectReason = \"service is busy\"}}}"
@@ -788,7 +793,7 @@ searchEntryOnly u dsLink text = do
 
 testDirectorySearchEntryFields :: HasCallStack => TestParams -> IO ()
 testDirectorySearchEntryFields ps =
-  withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, dsLink) ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroupWithImage superUser bob "PrivacyGroup" "Private chats" 1
@@ -812,7 +817,7 @@ testDirectorySearchEntryFields ps =
 -- a channel publishes its own link in the profile, so groupPublicLink takes the other branch
 testDirectorySearchChannelEntry :: HasCallStack => TestParams -> IO ()
 testDirectorySearchChannelEntry ps =
-  withDirectoryServiceCfg ps testCfg $ \superUser (dsShortLink, dsLink) ->
+  withDirectoryServiceCfgLinks ps testCfg $ \superUser (dsShortLink, dsLink) ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
         bob `connectVia` dsLink
@@ -858,7 +863,7 @@ testSearchEntryImageBound ps =
 -- one entry with a large image nearly fills a response, so both groups match but only one is sent
 testDirectorySearchImagePaging :: HasCallStack => TestParams -> IO ()
 testDirectorySearchImagePaging ps =
-  withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, dsLink) ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroupWithImage superUser bob "photos1" "Photo group" 1
@@ -874,7 +879,7 @@ testDirectorySearchImagePaging ps =
 -- the link in a result actually works: this is what happens when a user taps a row in the app
 testDirectorySearchJoinGroup :: HasCallStack => TestParams -> IO ()
 testDirectorySearchJoinGroup ps =
-  withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
+  withDirectoryServiceLinks ps $ \superUser (dsShortLink, dsLink) ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -965,10 +970,9 @@ channelFoundSubscribers u name = do
 testSearchResultsPage :: HasCallStack => TestParams -> IO ()
 testSearchResultsPage _ps = do
   g <- C.newRandom
-  now <- getCurrentTime
   -- base64 of random bytes does not compress, so the envelope decides what fits
   let randomText n = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes n g)
-      cursor gId = SearchCursor {lastMembers = 1, lastCreatedAt = now, lastGroupId = gId}
+      cursor gId = SCMembers {lastMembers = 1, lastGroupId = gId}
       page r = case r of
         DRSearchResults {entries, searchCursor} -> (map (\DirectorySearchEntry {displayName} -> displayName) entries, lastGroupId <$> searchCursor)
         DRError e -> error $ T.unpack e
@@ -1000,7 +1004,7 @@ testSearchResultsPage _ps = do
 
 testInviteToOwnersGroup :: HasCallStack => TestParams -> IO ()
 testInviteToOwnersGroup ps =
-  withDirectoryServiceCfgOwnersGroup ps testCfg True Nothing $ \superUser (_, dsLink) ->
+  withDirectoryServiceCfgOwnersGroup ps testCfg True Nothing $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroupId superUser bob "privacy" "Privacy" 2 1
@@ -1018,7 +1022,7 @@ testInviteToOwnersGroup ps =
 
 testInviteOwnerAfterLeavingOwnersGroup :: HasCallStack => TestParams -> IO ()
 testInviteOwnerAfterLeavingOwnersGroup ps =
-  withDirectoryServiceCfgOwnersGroup ps testCfg True Nothing $ \superUser (_, dsLink) ->
+  withDirectoryServiceCfgOwnersGroup ps testCfg True Nothing $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroupId superUser bob "privacy" "Privacy" 2 1
@@ -1046,7 +1050,7 @@ testInviteOwnerAfterLeavingOwnersGroup ps =
 
 testDelistedOwnerLeaves :: HasCallStack => TestParams -> IO ()
 testDelistedOwnerLeaves ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1063,7 +1067,7 @@ testDelistedOwnerLeaves ps =
 
 testDelistedOwnerRemoved :: HasCallStack => TestParams -> IO ()
 testDelistedOwnerRemoved ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1084,7 +1088,7 @@ testDelistedOwnerRemoved ps =
 
 testNotDelistedMemberLeaves :: HasCallStack => TestParams -> IO ()
 testNotDelistedMemberLeaves ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1099,7 +1103,7 @@ testNotDelistedMemberLeaves ps =
 
 testNotDelistedMemberRemoved :: HasCallStack => TestParams -> IO ()
 testNotDelistedMemberRemoved ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1118,7 +1122,7 @@ testNotDelistedMemberRemoved ps =
 -- modified client), then leaves that second membership while remaining the owner.
 testNotDelistedOwnerRejoinsViaLink :: HasCallStack => TestParams -> IO ()
 testNotDelistedOwnerRejoinsViaLink ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       submitGroup bob "privacy" "Privacy"
@@ -1163,7 +1167,7 @@ testNotDelistedOwnerRejoinsViaLink ps =
 
 testDelistedServiceRemoved :: HasCallStack => TestParams -> IO ()
 testDelistedServiceRemoved ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1181,7 +1185,7 @@ testDelistedServiceRemoved ps =
 
 testDelistedGroupDeleted :: HasCallStack => TestParams -> IO ()
 testDelistedGroupDeleted ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1205,7 +1209,7 @@ testDelistedGroupDeleted ps =
 
 testDelistedRoleChanges :: HasCallStack => TestParams -> IO ()
 testDelistedRoleChanges ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1258,7 +1262,7 @@ testDelistedRoleChanges ps =
 
 testNotDelistedMemberRoleChanged :: HasCallStack => TestParams -> IO ()
 testNotDelistedMemberRoleChanged ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1273,7 +1277,7 @@ testNotDelistedMemberRoleChanged ps =
 
 testNotSentApprovalBadRoles :: HasCallStack => TestParams -> IO ()
 testNotSentApprovalBadRoles ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1299,7 +1303,7 @@ testNotSentApprovalBadRoles ps =
 
 testNotApprovedBadRoles :: HasCallStack => TestParams -> IO ()
 testNotApprovedBadRoles ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1336,7 +1340,7 @@ testNotApprovedBadRoles ps =
 
 testRegOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
 testRegOwnerChangedProfile ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1355,7 +1359,7 @@ testRegOwnerChangedProfile ps =
 
 testAnotherOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
 testAnotherOwnerChangedProfile ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1376,7 +1380,7 @@ testAnotherOwnerChangedProfile ps =
 
 testNotConnectedOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
 testNotConnectedOwnerChangedProfile ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         withNewTestChat ps "dan" danProfile $ \dan -> do
@@ -1398,7 +1402,7 @@ testNotConnectedOwnerChangedProfile ps =
 
 testRegOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
 testRegOwnerRemovedLink ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1420,7 +1424,7 @@ testRegOwnerRemovedLink ps =
 
 testAnotherOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
 testAnotherOwnerRemovedLink ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1444,7 +1448,7 @@ testAnotherOwnerRemovedLink ps =
 
 testNotConnectedOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
 testNotConnectedOwnerRemovedLink ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         withNewTestChat ps "dan" danProfile $ \dan -> do
@@ -1470,7 +1474,7 @@ testNotConnectedOwnerRemovedLink ps =
 
 testDuplicateAskConfirmation :: HasCallStack => TestParams -> IO ()
 testDuplicateAskConfirmation ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1490,7 +1494,7 @@ testDuplicateAskConfirmation ps =
 
 testDuplicateProhibitRegistration :: HasCallStack => TestParams -> IO ()
 testDuplicateProhibitRegistration ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1502,7 +1506,7 @@ testDuplicateProhibitRegistration ps =
 
 testDuplicateProhibitConfirmation :: HasCallStack => TestParams -> IO ()
 testDuplicateProhibitConfirmation ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1521,7 +1525,7 @@ testDuplicateProhibitConfirmation ps =
 
 testDuplicateProhibitWhenUpdated :: HasCallStack => TestParams -> IO ()
 testDuplicateProhibitWhenUpdated ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1552,7 +1556,7 @@ testDuplicateProhibitWhenUpdated ps =
 
 testDuplicateProhibitApproval :: HasCallStack => TestParams -> IO ()
 testDuplicateProhibitApproval ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1578,7 +1582,7 @@ testDuplicateProhibitApproval ps =
 
 testListUserGroups :: HasCallStack => Bool -> TestParams -> IO ()
 testListUserGroups promote ps =
-  withDirectoryServiceCfgOwnersGroup ps testCfg False (Just webDir) $ \superUser (_, dsLink) ->
+  withDirectoryServiceCfgOwnersGroup ps testCfg False (Just webDir) $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1641,7 +1645,7 @@ checkListings webDir listed promoted =
 
 testAlwaysCaptcha :: HasCallStack => TestParams -> IO ()
 testAlwaysCaptcha ps =
-  withDirectoryServiceOpts ps (\o -> o {alwaysCaptcha = True}) $ \superUser (_, dsLink) ->
+  withDirectoryServiceOpts ps (\o -> o {alwaysCaptcha = True}) $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1681,7 +1685,7 @@ testAlwaysCaptcha ps =
 
 testAlwaysObserver :: HasCallStack => TestParams -> IO ()
 testAlwaysObserver ps =
-  withDirectoryServiceOpts ps (\o -> o {alwaysObserver = True}) $ \superUser (_, dsLink) ->
+  withDirectoryServiceOpts ps (\o -> o {alwaysObserver = True}) $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1709,7 +1713,7 @@ testAlwaysObserver ps =
 
 testKnocking :: HasCallStack => TestParams -> IO ()
 testKnocking ps =
-  withDirectoryServiceOpts ps (\o -> o {knocking = True}) $ \superUser (_, dsLink) ->
+  withDirectoryServiceOpts ps (\o -> o {knocking = True}) $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1732,7 +1736,7 @@ testKnocking ps =
 
 testCaptchaByDefault :: HasCallStack => TestParams -> IO ()
 testCaptchaByDefault ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1763,7 +1767,7 @@ testCaptchaByDefault ps =
 
 testCapthaScreening :: HasCallStack => TestParams -> IO ()
 testCapthaScreening ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1849,7 +1853,7 @@ testVoiceCaptchaScreening ps@TestParams {tmpPath} = do
       "print(5)"
     ]
   setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
-  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser (_, dsLink) ->
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1908,7 +1912,7 @@ testVoiceCaptchaRetry ps@TestParams {tmpPath} = do
       "print(5)"
     ]
   setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
-  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser (_, dsLink) ->
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -1960,7 +1964,7 @@ testVoiceCaptchaVoiceDisabled ps@TestParams {tmpPath} = do
       "print(5)"
     ]
   setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
-  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser (_, dsLink) ->
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -2017,7 +2021,7 @@ testVoiceCaptchaOldClient ps@TestParams {tmpPath} = do
       "print(5)"
     ]
   setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
-  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser (_, dsLink) ->
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps testCfg {chatVRange = (chatVRange testCfg) {maxVersion = prevVersion memberSupportVoiceVersion}} "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -2058,8 +2062,11 @@ testVoiceCaptchaOldClient ps@TestParams {tmpPath} = do
       cath <## "      Correct, you joined the group privacy"
       cath <## "#privacy: you joined the group"
 
-withDirectoryServiceOpts :: HasCallStack => TestParams -> (DirectoryOpts -> DirectoryOpts) -> (TestCC -> (String, String) -> IO ()) -> IO ()
-withDirectoryServiceOpts ps modOpts test = do
+withDirectoryServiceOpts :: HasCallStack => TestParams -> (DirectoryOpts -> DirectoryOpts) -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryServiceOpts ps modOpts test = withDirectoryServiceOptsLinks ps modOpts $ \superUser (_, dsLink) -> test superUser dsLink
+
+withDirectoryServiceOptsLinks :: HasCallStack => TestParams -> (DirectoryOpts -> DirectoryOpts) -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceOptsLinks ps modOpts test = do
   dsLinks <-
     withNewTestChatCfg ps testCfg serviceDbPrefix directoryProfile $ \ds ->
       withNewTestChatCfg ps testCfg "super_user" aliceProfile $ \superUser -> do
@@ -2072,14 +2079,14 @@ withDirectoryServiceOpts ps modOpts test = do
       superUser <## "subscribed 1 connections on server localhost"
       test superUser dsLinks
 
-withDirectoryServiceVoiceCaptcha :: HasCallStack => TestParams -> FilePath -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceVoiceCaptcha :: HasCallStack => TestParams -> FilePath -> (TestCC -> String -> IO ()) -> IO ()
 withDirectoryServiceVoiceCaptcha ps voiceScript test =
   withXFTPServer ps $ withDirectoryServiceOpts ps (\o -> o {voiceCaptchaGenerator = Just voiceScript}) test
 
 testRestoreDirectory :: HasCallStack => TestParams -> IO ()
 testRestoreDirectory ps = do
   testListUserGroups False ps
-  restoreDirectoryService ps 11 $ \superUser (_, _dsLink) ->
+  restoreDirectoryService ps 11 $ \superUser _dsLink ->
     withTestChat ps "bob" $ \bob ->
       withTestChat ps "cath" $ \cath -> do
         bob <## "subscribed 5 connections on server localhost"
@@ -2179,15 +2186,25 @@ addCathAsOwner bob cath = do
   joinGroup "privacy" cath bob
   cath <## "#privacy: member 'SimpleX Directory' is connected"
 
-withDirectoryService :: HasCallStack => TestParams -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()) -> IO ()
 withDirectoryService ps = withDirectoryServiceCfg ps testCfg
 
-withDirectoryServiceCfg :: HasCallStack => TestParams -> ChatConfig -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceLinks :: HasCallStack => TestParams -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceLinks ps = withDirectoryServiceCfgLinks ps testCfg
+
+withDirectoryServiceCfg :: HasCallStack => TestParams -> ChatConfig -> (TestCC -> String -> IO ()) -> IO ()
 withDirectoryServiceCfg ps cfg = withDirectoryServiceCfgOwnersGroup ps cfg False Nothing
 
--- passes both link forms: only the short one works for service requests, so those tests need it
-withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> (String, String) -> IO ()) -> IO ()
-withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
+withDirectoryServiceCfgLinks :: HasCallStack => TestParams -> ChatConfig -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceCfgLinks ps cfg = withDirectoryServiceCfgOwnersGroupLinks ps cfg False Nothing
+
+withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test =
+  withDirectoryServiceCfgOwnersGroupLinks ps cfg createOwnersGroup webFolder $ \superUser (_, dsLink) -> test superUser dsLink
+
+-- service request tests need the short link: only it carries the address ratchet keys
+withDirectoryServiceCfgOwnersGroupLinks :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withDirectoryServiceCfgOwnersGroupLinks ps cfg createOwnersGroup webFolder test = do
   dsLinks <-
     withNewTestChatCfg ps cfg serviceDbPrefix directoryProfile $ \ds ->
       withNewTestChatCfg ps cfg "super_user" aliceProfile $ \superUser -> do
@@ -2208,29 +2225,29 @@ withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
         getContactLinks ds True
   withDirectoryOwnersGroup ps cfg dsLinks createOwnersGroup webFolder test
 
-restoreDirectoryService :: HasCallStack => TestParams -> Int -> (TestCC -> (String, String) -> IO ()) -> IO ()
+restoreDirectoryService :: HasCallStack => TestParams -> Int -> (TestCC -> String -> IO ()) -> IO ()
 restoreDirectoryService ps connCount test = do
-  dsLinks <-
+  dsLink <-
     withTestChat ps serviceDbPrefix $ \ds -> do
       ds .<## ("subscribed " <> show connCount <> " connections on server localhost")
       ds ##> "/sa"
-      dsLinks <- getContactLinks ds False
+      dsLink <- getContactLink ds False
       ds <## "auto_accept on"
-      pure dsLinks
-  withDirectory ps testCfg dsLinks test
+      pure dsLink
+  withDirectory ps testCfg dsLink test
 
-withDirectory :: HasCallStack => TestParams -> ChatConfig -> (String, String) -> (TestCC -> (String, String) -> IO ()) -> IO ()
-withDirectory ps cfg dsLinks = withDirectoryOwnersGroup ps cfg dsLinks False Nothing
+withDirectory :: HasCallStack => TestParams -> ChatConfig -> String -> (TestCC -> String -> IO ()) -> IO ()
+withDirectory ps cfg dsLink = withDirectoryOwnersGroup ps cfg dsLink False Nothing
 
-withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> (String, String) -> Bool -> Maybe FilePath -> (TestCC -> (String, String) -> IO ()) -> IO ()
-withDirectoryOwnersGroup ps cfg dsLinks createOwnersGroup webFolder test = do
+withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> link -> Bool -> Maybe FilePath -> (TestCC -> link -> IO ()) -> IO ()
+withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
   let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] (if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing) webFolder
   runDirectory ps cfg opts $
     withTestChatCfg ps cfg "super_user" $ \superUser -> do
       if createOwnersGroup
         then superUser <## "subscribed 2 connections on server localhost"
         else superUser <## "subscribed 1 connections on server localhost"
-      test superUser dsLinks
+      test superUser dsLink
 
 runDirectory :: TestParams -> ChatConfig -> DirectoryOpts -> IO () -> IO ()
 runDirectory ps cfg opts action = do
@@ -2485,7 +2502,7 @@ groupNotFound_ suffix u s = do
 
 testCaptchaTooManyAttempts :: HasCallStack => TestParams -> IO ()
 testCaptchaTooManyAttempts ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -2524,7 +2541,7 @@ testCaptchaTooManyAttempts ps =
 
 testCaptchaUnknownCommand :: HasCallStack => TestParams -> IO ()
 testCaptchaUnknownCommand ps =
-  withDirectoryService ps $ \superUser (_, dsLink) ->
+  withDirectoryService ps $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
@@ -2550,7 +2567,7 @@ testCaptchaUnknownCommand ps =
 
 testHelpNoAudio :: HasCallStack => TestParams -> IO ()
 testHelpNoAudio ps =
-  withDirectoryService ps $ \_ (_, dsLink) ->
+  withDirectoryService ps $ \_ dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       -- commands help should not mention /audio
@@ -2567,7 +2584,7 @@ testHelpNoAudio ps =
 
 testAudioCommandInDM :: HasCallStack => TestParams -> IO ()
 testAudioCommandInDM ps =
-  withDirectoryService ps $ \_ (_, dsLink) ->
+  withDirectoryService ps $ \_ dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       bob #> "@'SimpleX Directory' /audio"
@@ -2576,7 +2593,7 @@ testAudioCommandInDM ps =
 
 testRegisterChannelViaCard :: HasCallStack => TestParams -> IO ()
 testRegisterChannelViaCard ps =
-  withDirectoryServiceCfg ps testCfg $ \superUser (_, dsLink) ->
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
         -- bob connects to directory service first
@@ -2645,7 +2662,7 @@ testRegisterChannelViaCard ps =
 -- owner sets a name; directory verifies name<->link consistency and shows the verified name to the admin
 testDirectoryChannelName :: HasCallStack => TestParams -> IO ()
 testDirectoryChannelName ps = withSmpServerAndNames ps $ \reg ->
-  withDirectoryServiceCfg ps testCfg $ \superUser (_, dsLink) ->
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
         enableNamesRole bob
@@ -2677,7 +2694,7 @@ testDirectoryChannelName ps = withSmpServerAndNames ps $ \reg ->
 -- the app renders simplexName as the directory's claim, so it has to reach the entry
 testDirectorySearchVerifiedName :: HasCallStack => TestParams -> IO ()
 testDirectorySearchVerifiedName ps = withSmpServerAndNames ps $ \reg ->
-  withDirectoryServiceCfg ps testCfg $ \superUser (dsShortLink, dsLink) ->
+  withDirectoryServiceCfgLinks ps testCfg $ \superUser (dsShortLink, dsLink) ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
         enableNamesRole bob
@@ -2698,7 +2715,7 @@ testDirectorySearchVerifiedName ps = withSmpServerAndNames ps $ \reg ->
 -- registry re-pointed to a different link after the owner set the name: directory verification fails
 testDirectoryChannelNameNotVerified :: HasCallStack => TestParams -> IO ()
 testDirectoryChannelNameNotVerified ps = withSmpServerAndNames ps $ \reg ->
-  withDirectoryServiceCfg ps testCfg $ \superUser (_, dsLink) ->
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
         enableNamesRole bob
@@ -2730,7 +2747,7 @@ testDirectoryChannelNameNotVerified ps = withSmpServerAndNames ps $ \reg ->
 
 testLinkAsTextSearch :: HasCallStack => TestParams -> IO ()
 testLinkAsTextSearch ps =
-  withDirectoryServiceCfg ps testCfg $ \_superUser (_, dsLink) ->
+  withDirectoryServiceCfg ps testCfg $ \_superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
         bob `connectVia` dsLink
@@ -2742,7 +2759,7 @@ testLinkAsTextSearch ps =
 
 testNonOwnerSharesCard :: HasCallStack => TestParams -> IO ()
 testNonOwnerSharesCard ps =
-  withDirectoryServiceCfg ps testCfg $ \_superUser (_, dsLink) ->
+  withDirectoryServiceCfg ps testCfg $ \_superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay ->
         withNewTestChatCfg ps testCfg "cath" cathProfile $ \cath -> do
@@ -2757,7 +2774,7 @@ testNonOwnerSharesCard ps =
 
 testDeleteChannelRegistration :: HasCallStack => TestParams -> IO ()
 testDeleteChannelRegistration ps =
-  withDirectoryServiceCfg ps testCfg $ \superUser (_, dsLink) ->
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
         bob `connectVia` dsLink
@@ -2793,7 +2810,7 @@ testDeleteChannelRegistration ps =
 
 testReregistrationAlreadyListed :: HasCallStack => TestParams -> IO ()
 testReregistrationAlreadyListed ps =
-  withDirectoryServiceCfg ps testCfg $ \superUser (_, dsLink) ->
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
         bob `connectVia` dsLink

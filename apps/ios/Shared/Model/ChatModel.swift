@@ -314,6 +314,7 @@ class ConnectProgressManager: ObservableObject {
     static let shared = ConnectProgressManager()
 
     func startConnectProgress(_ text: String, owner: ConnectProgressOwner = .connect, onCancel: (() -> Void)? = nil) {
+        if owner == .directorySearch && self.owner == .connect { return }
         connectInProgress = text
         self.owner = owner
         self.onCancel = onCancel

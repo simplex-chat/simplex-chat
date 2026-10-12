@@ -117,10 +117,9 @@ recentRoundedTime roundTo now t
        in Just $ systemToUTCTime $ MkSystemTime secs 0
 
 groupDirectoryEntry :: UTCTime -> GroupInfo -> Maybe GroupLink -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_ =
-  let GroupProfile {displayName, shortDescr, description, image, memberAdmission, publicGroup} = groupProfile
-      gt = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
-      entryType = DETGroup gt memberAdmission groupSummary
+groupDirectoryEntry now g@GroupInfo {groupProfile} gLink_ =
+  let GroupProfile {displayName, shortDescr, description, image, publicGroup} = groupProfile
+      entryType = groupEntryType g
       description' = case publicGroup of
         Just PublicGroupProfile {groupType = gt', groupLink = sLnk} ->
           let gtStr = case gt' of GTChannel -> "channel"; _ -> "group"
@@ -138,13 +137,13 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
               DirectoryEntry
                 { entryType,
                   displayName,
-                  simplexName = shortNameInfoStr . SimplexNameInfo NTPublicGroup <$> verifiedGroupDomain g,
+                  simplexName = groupSimplexName g,
                   groupLink,
                   shortDescr = toFormattedText <$> shortDescr,
                   welcomeMessage = toFormattedText <$> description',
                   imageFile = fst <$> imgData,
-                  activeAt = recentRoundedTime 900 now $ fromMaybe createdAt chatTs,
-                  createdAt = recentRoundedTime 86400 now createdAt
+                  activeAt = groupActiveAt now g,
+                  createdAt = groupCreatedAt now g
                 }
             imgData = imgFileData groupLink =<< image
          in (de, imgData)
@@ -172,6 +171,20 @@ groupPublicLink GroupInfo {groupProfile = GroupProfile {publicGroup}} gLink_ = c
   Nothing -> toPublicLink . connLinkContact <$> gLink_
   where
     toPublicLink (CCLink fullLink shortLink) = PublicLink (Just fullLink) shortLink
+
+-- what the web listing and the search RPC both publish about a group, defined once so their privacy rounding cannot diverge
+groupEntryType :: GroupInfo -> DirectoryEntryType
+groupEntryType GroupInfo {groupProfile = GroupProfile {memberAdmission, publicGroup}, groupSummary} =
+  DETGroup ((\PublicGroupProfile {groupType} -> groupType) <$> publicGroup) memberAdmission groupSummary
+
+groupSimplexName :: GroupInfo -> Maybe Text
+groupSimplexName g = shortNameInfoStr . SimplexNameInfo NTPublicGroup <$> verifiedGroupDomain g
+
+groupActiveAt :: UTCTime -> GroupInfo -> Maybe UTCTime
+groupActiveAt now GroupInfo {chatTs, createdAt} = recentRoundedTime 900 now $ fromMaybe createdAt chatTs
+
+groupCreatedAt :: UTCTime -> GroupInfo -> Maybe UTCTime
+groupCreatedAt now GroupInfo {createdAt} = recentRoundedTime 86400 now createdAt
 
 generateListing :: FilePath -> [(GroupInfo, GroupReg, Maybe GroupLink)] -> IO ()
 generateListing dir gs = do

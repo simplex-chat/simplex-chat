@@ -18,11 +18,9 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Directory.Listing
 import Directory.Search
-import Directory.Store
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Protocol (compressServiceBody)
 import Simplex.Chat.Types
-import Simplex.Messaging.SimplexName (SimplexNameInfo (..), SimplexNameType (..), shortNameInfoStr)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 
 data DirectoryRequest = DRSearch
@@ -87,20 +85,20 @@ searchResultsPage rowCursor storeHasMore rows = fit entryRows
     lastMaybe = foldl' (\_ x -> Just x) Nothing
 
 searchEntry :: UTCTime -> GroupInfo -> Maybe GroupLink -> Maybe DirectorySearchEntry
-searchEntry now g@GroupInfo {groupProfile, chatTs, createdAt = groupCreatedAt, groupSummary} gLink_ =
+searchEntry now g@GroupInfo {groupProfile} gLink_ =
   entry <$> groupPublicLink g gLink_
   where
-    GroupProfile {displayName, shortDescr, image, memberAdmission, publicGroup} = groupProfile
+    GroupProfile {displayName, shortDescr, image} = groupProfile
     entry link@PublicLink {connShortLink} =
       DirectorySearchEntry
-        { entryType = DETGroup ((\PublicGroupProfile {groupType} -> groupType) <$> publicGroup) memberAdmission groupSummary,
+        { entryType = groupEntryType g,
           displayName,
-          simplexName = shortNameInfoStr . SimplexNameInfo NTPublicGroup <$> verifiedGroupDomain g,
+          simplexName = groupSimplexName g,
           -- the apps connect through the short link, and a full link is hundreds of bytes of the envelope
           groupLink = if isJust connShortLink then link {connFullLink = Nothing} else link,
           shortDescr,
           -- an owner can put any size of image in the profile we store, so bound what we relay
           image = image >>= \img@(ImageData t) -> if T.length t > maxProfileImageSize then Nothing else Just img,
-          activeAt = recentRoundedTime 900 now $ fromMaybe groupCreatedAt chatTs,
-          createdAt = recentRoundedTime 86400 now groupCreatedAt
+          activeAt = groupActiveAt now g,
+          createdAt = groupCreatedAt now g
         }

@@ -7,7 +7,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Types
-import Simplex.Messaging.Parsers (defaultJSON)
+import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 
 data SearchRequest = SearchRequest
   { searchType :: SearchType,
@@ -15,14 +15,12 @@ data SearchRequest = SearchRequest
     searchCursor :: SearchCursor
   }
 
--- Where the last page ended: each search mode reads the field it sorts by, and the group ID
--- breaks ties, because member counts and timestamps are not unique.
-data SearchCursor = SearchCursor
-  { lastMembers :: Int64,
-    lastCreatedAt :: UTCTime,
-    lastGroupId :: GroupId
-  }
+-- Where the last page ended: the value the search mode sorts by, and the group ID that breaks ties.
+-- The service RPC sends it to anyone, so it carries nothing else: text search must not reveal registration times.
+data SearchCursor
+  = SCMembers {lastMembers :: Int64, lastGroupId :: GroupId}
+  | SCRecent {lastCreatedAt :: UTCTime, lastGroupId :: GroupId}
 
 data SearchType = STAll | STRecent | STSearch Text
 
-$(JQ.deriveJSON defaultJSON ''SearchCursor)
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "SC") ''SearchCursor)
