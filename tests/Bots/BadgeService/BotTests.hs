@@ -2290,7 +2290,7 @@ testStoreReceiptAfterRestart ps = do
       pure invoiceId
     writeIORef broken False
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      expectLinesWithin 60 alice $ "subscribed 1 connections on server localhost" : creditedLines "" invoiceId "1: supporter"
+      expectLinesWithin 60 alice (creditedLines "" invoiceId "1: supporter") ["subscribed 1 connections on server localhost"]
       heldStoreReceipts (chatController alice) `shouldReturn` 0
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
@@ -2359,21 +2359,26 @@ inAnyOrder cc blocks = do
       start : _ -> start `isPrefixOf` l
       [] -> False
 
--- | All of the lines under one budget, in any order: the agent's subscription summary is not
--- ordered against a settlement, and getTermLine' bounds every single line at 20 seconds.
-expectLinesWithin :: HasCallStack => Int -> TestCC -> [String] -> IO ()
-expectLinesWithin seconds cc@TestCC {termQ, printOutput} = go (seconds * 10)
+-- | The required lines under one budget in any order, and the tolerated ones only if they come at
+-- all: the agent announces UP for a subscription that was still pending in the session answering it
+-- (simplexmq processSubOk), so "subscribed N connections" may never be printed, and when it is it
+-- races a settlement that arrived in the same batch. getTermLine' would bound each line at 20s.
+expectLinesWithin :: HasCallStack => Int -> TestCC -> [String] -> [String] -> IO ()
+expectLinesWithin seconds cc@TestCC {termQ, printOutput} required tolerated = go (seconds * 10) required
   where
-    go _ [] = pure ()
-    go 0 outstanding = error $ "no line starting one of " <> show outstanding <> " in " <> show seconds <> " seconds"
     go n outstanding =
       100000 `timeout` atomically (readTQueue termQ) >>= \case
-        Nothing -> go (n - 1) outstanding
         Just line -> do
           when printOutput $ userName cc >>= \name -> putStrLn $ name <> ": " <> line
           case break (`isPrefixOf` line) outstanding of
             (earlier, _ : others) -> go n (earlier <> others)
-            _ -> error $ "expected a line starting one of " <> show outstanding <> ", got " <> show line
+            _
+              | any (`isPrefixOf` line) tolerated -> go n outstanding
+              | otherwise -> error $ "unexpected " <> show line <> ", awaiting " <> show outstanding
+        Nothing
+          | null outstanding -> pure ()
+          | n > 0 -> go (n - 1) outstanding
+          | otherwise -> error $ "no line starting one of " <> show outstanding <> " in " <> show seconds <> " seconds"
 
 -- | Counts the Google verifications the service makes, re-arming the one-shot hook each time.
 countGoogleVerifications :: IORef (IO ()) -> IO (IO Int)
