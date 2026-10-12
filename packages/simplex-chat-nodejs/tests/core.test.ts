@@ -216,7 +216,7 @@ describe("Core tests", () => {
     const script = `
       const {Worker} = require("worker_threads");
       const simplex = require(${JSON.stringify(addon)});
-      try { simplex.load(${JSON.stringify(addon)}) } catch (e) { console.log(e.message.endsWith("does not export hs_init_with_rtsopts")) }
+      try { simplex.load(${JSON.stringify(addon)}) } catch (e) { console.log(JSON.stringify(e.message.endsWith("does not export hs_init_with_rtsopts"))) }
       const load = ${JSON.stringify(`require(${JSON.stringify(addon)}).load(${JSON.stringify(libPath)})`)};
       const workers = Array.from({length: 4}, () => new Worker(load, {eval: true}));
       Promise.all(workers.map((w) => new Promise((resolve, reject) => w.on("exit", resolve).on("error", reject))))
@@ -224,13 +224,13 @@ describe("Core tests", () => {
           simplex.load(${JSON.stringify(libPath)});
           const [ctrl] = await simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp");
           await simplex.chat_send_cmd(ctrl, "/_stop");
-          console.log(JSON.stringify(codes), await simplex.chat_close_store(ctrl) === "");
+          console.log(JSON.stringify({codes, closed: await simplex.chat_close_store(ctrl) === ""}));
         });
     `;
     const child = spawnSync(process.execPath, ["-e", script], {timeout: 30000, encoding: "utf8"});
     if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
     expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
-      .toEqual({status: 0, signal: null, stdout: "true\n[0,0,0,0] true"});
+      .toEqual({status: 0, signal: null, stdout: 'true\n{"codes":[0,0,0,0],"closed":true}'});
   }, 35000);
 
   it("should let the process exit while a receiver is idle", () => {
