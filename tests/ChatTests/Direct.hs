@@ -2171,7 +2171,6 @@ testServiceRequestCompressed =
           alice <## ("service reply sent, connection id: " <> replyConnId)
       )
 
--- without a reason nothing is sent back, so the requester waits out its timeout
 testServiceRequestRejectedNoReason :: HasCallStack => TestParams -> IO ()
 testServiceRequestRejectedNoReason =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
