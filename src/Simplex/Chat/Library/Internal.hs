@@ -3001,7 +3001,7 @@ saveSndChatItems ::
   Bool ->
   CM [Either ChatError (ChatItem c 'MDSnd)]
 saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
-  createdAt <- liftIO getCurrentTime
+  createdAt <- liftIO getCurrentTimeSeconds
   cxt <- chatStoreCxt
   when (contactChatDeleted cd || any (\NewSndChatItemData {content} -> ciRequiresAttention content) (rights itemsData)) $
     void (withStore' $ \db -> updateChatTsStats db cxt user cd createdAt Nothing)
@@ -3016,6 +3016,11 @@ saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
       Right <$> case cd of
         CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
+
+getCurrentTimeSeconds :: IO UTCTime
+getCurrentTimeSeconds = roundDown <$> getCurrentTime
+  where
+    roundDown t@UTCTime {utctDayTime} = t {utctDayTime = fromInteger (floor utctDayTime)}
 
 saveRcvChatItemNoParse :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv, ChatInfo c)
 saveRcvChatItemNoParse user cd msg brokerTs = saveRcvChatItem user cd msg brokerTs . ciContentNoParse

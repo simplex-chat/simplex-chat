@@ -2657,7 +2657,7 @@ processChatCommand cxt nm = \case
           let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
             partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
-          timestamp <- liftIO getCurrentTime
+          timestamp <- liftIO getCurrentTimeSeconds
           let hasLink = msgContentHasLink mc $ parseMaybeMarkdownList $ msgContentText mc
           lift . void $ withStoreBatch' $ \db -> map (createCI db user hasLink timestamp) ctSndMsgs
           pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
