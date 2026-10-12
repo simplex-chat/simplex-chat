@@ -16,7 +16,8 @@ export const SECTIONS = [
     note: "the names store: search a name, pay, and the name is registered to a wallet made in your browser",
     rows: [
       { label: "Registering a name, start to finish", kind: "desktop", cells: ["N1", "N1a", "N2", "N3", "N4", "N5", "N6", "N6a", "N6b", "N7"] },
-      { label: "What a search can find", kind: "desktop", cells: [null, "N1b", "N1c", "N2a", "N2b", "N2c", "N2f", "N2d", "N2e"] },
+      { label: "What a search can find", kind: "desktop", cells: [null, "N1b", "N1c", "N2a", "N2b", "N2c", "N2d", "N2e"] },
+      { label: "Before paying: links, then the phrase", kind: "desktop", cells: [null, null, null, "N3g", "N3h"] },
     ],
   },
   {
@@ -44,22 +45,22 @@ export const SECTIONS = [
   },
   {
     title: "Refused at checkout",
-    note: "the badge checkout's refusals, with the name's summary",
+    note: "what POST /api/invoice can refuse, on the names store's own pages",
     rows: [{ label: "POST /api/invoice says no", kind: "desktop", cells: [null, null, null, "N3a", "N3b", "N3c", "N3d", "N3e"] }],
   },
   {
     title: "The other ways a payment ends",
-    note: "the payment endings are the badges store's; the last row is the names store's own phrase pages, beside the shared unknown link",
+    note: "the same endings as the badges store, on the names store's own pages; the last row is about the phrase, and a link to nothing",
     rows: [
       { label: "Paying in Bitcoin or Monero", kind: "desktop", cells: [null, null, null, null, "N4a", "N4b", "N4c", "N4d"] },
       { label: "Paying by card", kind: "desktop", cells: [null, null, null, null, "N10", "N10a", "N10b", "N10c"] },
-      { label: "A phrase this browser cannot show, and a link to nothing", kind: "desktop", cells: [null, null, null, null, null, null, "N3f", "N7a", "N7b", "N11"] },
+      { label: "A phrase this browser cannot show, and a link to nothing", kind: "desktop", cells: [null, null, null, null, null, null, "N3f", "N7a", "N7b", "N7c", "N11"] },
     ],
   },
   {
     title: "Your names, the badges store, and the dark theme",
     note: "each store keeps its own history, on its own host; the badges store only gains a link here",
-    rows: [{ label: "History, the other store, then three screens dark", kind: "desktop", cells: ["N13", "N12", "N12a", "B0", null, "D2", "D6a", "D7"] }],
+    rows: [{ label: "History, the other store, then three screens dark", kind: "desktop", cells: [null, "N12", "N12a", "B0", "N12b", "D2", "D6a", "D7"] }],
   },
   {
     title: "simplex.domains on a phone",
@@ -77,52 +78,52 @@ export const FRAMES = {
   N1: {
     url: HOST, label: "simplex.domains",
     title: "Search",
-    text: "The first screen. The field ends in .simplex and a magnifying glass: the glass, Enter and the Search button all search. The rules line stays hidden until a mistake. The invest block keeps the badge pages' place under the button, with Check your code.",
+    text: "The first screen: a frosted header, the headline, and one search bar ending in a .simplex tag and Search; Enter searches too. The rules line stays hidden until a mistake. Below, how it works and the investor card with Check your code.",
   },
   N1a: {
     url: HOST, from: "N1", label: "types a name", color: "blue",
     title: "Typed",
-    text: "Nothing is sent while typing. Search asks GET /api/name/:label, which hashes the name for the resolver.",
+    text: "Nothing is sent while typing. Search sends keccak(name) and its length, GET /api/name/:hash?length=7: the service never sees a name before an order reveals it.",
   },
   N2: {
     url: HOST, from: "N1a", label: "Search: available", color: "blue",
     title: "Available, with its price",
-    text: "The service's price for this name for 2 years; prices are internal and may differ by name. No price list, no term to choose.",
+    text: "The answer right under the search: the name, chips for its length and term, and the service's price for 2 years; prices are internal and may differ by name. No price list, no term to choose.",
   },
   N3: {
     url: `${HOST}/#/checkout`, from: "N2", label: "Register dynamis.simplex", color: "blue",
     title: "Check your order, and pay",
-    text: "Here the browser makes the name's wallet: 128-bit entropy, a 12-word phrase, the address at m/44'/60'/0'/0/0, stored before the order is created. Only the address goes with the order. I have a code sits under Pay.",
+    text: "Step 2 of 5. The browser makes the name's wallet: 128-bit entropy, a 12-word phrase, the address at m/44'/60'/0'/0/0, stored with the name and a commitment secret. The order carries the address, the name's hash and length, and the commitment, never the name. Optional links, the payment method, and the order card with Continue, I have a code and the investor line.",
   },
   N4: {
-    url: ORDER, from: "N3", label: "Pay with Bitcoin", color: "blue",
+    url: ORDER, from: "N3h", label: "written down: Bitcoin", color: "blue",
     title: "Paying in crypto",
-    text: "Shared with badges.",
+    text: "Step 4 of 5: amount, QR, address and reference, the rate held for an hour. The payment logic is the shared package's; this view is the names store's own.",
   },
   N5: {
     url: ORDER, from: "N4", label: "the full amount arrives", color: "blue",
     title: "Payment received",
-    text: "Shared: settlement hands the order to the registration worker.",
+    text: "Settlement hands the order to the registration worker; the page moves on by itself.",
   },
   N6: {
     url: ORDER, from: "N5", label: "it confirms: registration starts", color: "blue",
     title: "Committing",
-    text: "The app's steps (canvas 9), run by the service from its own funded key, with the buyer's address as owner. The name belongs to that address from the start: nothing is held for anyone.",
+    text: "Step 5 of 5: the app's steps (canvas 9), run by the service from its own funded key, with the buyer's address as owner. The name belongs to that address from the start.",
   },
   N6a: {
     url: ORDER, from: "N6", label: "the commit is mined", color: "blue",
     title: "Waiting a minute",
-    text: "The controller's minCommitmentAge. The steps live in the service, so a reload or another device shows where it is.",
+    text: "The controller's minCommitmentAge. Then this page reveals the name and secret, so it must be open; reopening the link finishes it, and another browser asks for the phrase (N7c).",
   },
   N6b: {
     url: ORDER, from: "N6a", label: "60 seconds later", color: "blue",
     title: "Registering",
-    text: "The register transaction, dry-run first; registered at its receipt plus 3 blocks.",
+    text: "After the reveal, the register transaction, dry-run first; registered at its receipt plus 3 blocks. Search answers registered for this name from now.",
   },
   N7: {
     url: ORDER, from: "N6b", label: "registered", color: "blue",
     title: "Yours, with its recovery phrase",
-    text: "The 12 words own the name; the QR carries them to the app. The phrase never left this browser, so nobody can make another: the page says to write it down.",
+    text: "The 12 words own the name; the QR carries them to the app. Next steps: import in the app, point the name at an address, keep the phrase safe.",
   },
   N1b: {
     url: HOST, from: "N1a", label: "Search, with 5 letters", color: "orange",
@@ -142,17 +143,12 @@ export const FRAMES = {
   N2b: {
     url: HOST, from: "N1a", label: "taken, linked to nothing", color: "orange",
     title: "Taken, pointing nowhere",
-    text: "Registered without links, such as a name bought here whose owner has not set records yet.",
+    text: "Registered without links: a name bought here whose owner has not set records yet, or one whose register the service has just sent. Nothing is held before that.",
   },
   N2c: {
     url: HOST, from: "N1a", label: "reserved", color: "orange",
     title: "Reserved",
     text: "With a way to reach the SimpleX team, as the app does.",
-  },
-  N2f: {
-    url: HOST, from: "N1a", label: "held by another order", color: "orange",
-    title: "Being registered",
-    text: "Another order holds the name. A second order is refused (name_pending), so two buyers never pay for one name.",
   },
   N2d: {
     url: HOST, from: "N1a", label: "503: the resolver is down", color: "orange",
@@ -167,17 +163,17 @@ export const FRAMES = {
   K1: {
     url: HOST, from: "N2", label: "Check your code", color: "blue",
     title: "Check your code",
-    text: "A popup over the search: POST /api/code/check says what the code covers and that it is unused, spending nothing. This is an investor code, SN- for any name and 7 years; the service's table, not the text, decides.",
+    text: "A popup over the page: POST /api/code/check says what the code covers and that it is unused, spending nothing. This is an investor code, SN6- for names of 6+ letters and 7 years; the service's table, not the text, decides.",
   },
   K2: {
     url: HOST, from: "K1", label: "Use this code", color: "blue",
     title: "Covered: $0",
-    text: "While the code is applied, a name it covers shows $0 and the code's own term, 7 years here.",
+    text: "While the code is applied, a name it covers shows $0 and the code's own term, 7 years here, with Remove beside the code.",
   },
   K3: {
     url: `${HOST}/#/checkout`, from: "K2", label: "Register with code", color: "blue",
     title: "Checkout at $0",
-    text: "No payment step: POST /api/name/register reserves the code, and the steps start as at N6, on ?registration=<id>; the code is spent when the name registers.",
+    text: "No payment: the method section reads Paid with your code. After the phrase (N3h), POST /api/name/register reserves the code, and the steps start as at N6, on ?registration=<id>; the code is spent when the name registers.",
   },
   K8: {
     url: `${HOST}/?registration=r4Hq9TzW2mXc7LpN5vBd8k`, from: "K3", label: "the steps finish, as N6-N7", color: "blue",
@@ -197,12 +193,12 @@ export const FRAMES = {
   K4: {
     url: `${HOST}/#/checkout`, from: "N3", label: "I have a code", color: "blue",
     title: "A code at checkout",
-    text: "I have a code opens the entry in place; a covering code turns Pay into Register with code.",
+    text: "I have a code opens the entry in the order card; a covering code takes the total to $0.",
   },
   K7: {
     url: `${HOST}/#/checkout`, from: "N3", label: "a code for longer names", color: "orange",
     title: "Does not cover this name",
-    text: "The code covers 8+ letters and the name has 7; the buyer can still pay.",
+    text: "The code covers 8+ letters and the name has 7; the total stays and the buyer can still pay.",
   },
   N9: {
     url: ORDER, from: "N6", label: "the commit fails", color: "orange",
@@ -212,12 +208,12 @@ export const FRAMES = {
   N8: {
     url: ORDER, from: "N6b", label: "registered elsewhere first", color: "orange",
     title: "Someone was faster",
-    text: "Possible only for names registered outside the store. The commit was mined, but the register dry run caught it, so register was never sent. The payment is kept (canvas 10a). A code order ends here too, its code released unspent (not drawn).",
+    text: "Another registrar, or another order here, registered it first: nothing is held. The commit was mined, but the register dry run caught it, so register was never sent. The payment is kept (canvas 10a). A code order ends here too, its code released unspent (not drawn).",
   },
   N8a: {
     url: ORDER, from: "N8", label: "Choose another name", color: "orange",
     title: "Another name, same payment",
-    text: "Search on the order's own page: any name at or under what was paid, registered to the same wallet, so the phrase owns the new name. A cheaper one refunds nothing; a dearer one cannot be registered.",
+    text: "Search on the order's own page: any name at or under what was paid, committed and revealed again for the same wallet, so the phrase owns the new name. A cheaper one refunds nothing; a dearer one cannot be registered.",
   },
   N8b: {
     url: ORDER, from: "N8", label: "Take a code", color: "orange",
@@ -252,7 +248,7 @@ export const FRAMES = {
   N3a: {
     url: `${HOST}/#/checkout`, from: "N3", label: "503 provider_unavailable", color: "orange",
     title: "A method is unavailable",
-    text: "Shared: shown disabled, Pay relabels.",
+    text: "Shown on the tile, which cannot be chosen; another method is selected.",
   },
   N3b: {
     url: `${HOST}/#/checkout`, from: "N3", label: "catalog_changed", color: "orange",
@@ -262,55 +258,70 @@ export const FRAMES = {
   N3c: {
     url: `${HOST}/#/checkout`, from: "N3", label: "429", color: "orange",
     title: "Too many attempts",
-    text: "Shared: Pay is off for Retry-After.",
+    text: "Try again stays off for Retry-After.",
   },
   N3d: {
     url: `${HOST}/#/checkout`, from: "N3", label: "network, 5xx, bad_request", color: "orange",
     title: "That did not go through",
-    text: "A prototype of the shared failure screen without its badge invest block; stage 5 makes that block optional.",
+    text: "Nothing was created or charged.",
   },
   N3e: {
     url: `${HOST}/#/checkout`, from: "N3", label: "a card payment awaits confirmation", color: "orange",
     title: "An order is already waiting",
-    text: "The shared rule: a second order would be a second charge.",
+    text: "A second order would be a second charge, so Continue is off until the waiting one is opened.",
   },
-  N4a: { url: ORDER, from: "N4", label: "less than the amount", color: "orange", title: "Part of the amount", text: "Shared." },
-  N4b: { url: ORDER, from: "N4", label: "Cancel this invoice", color: "orange", title: "Cancelled", text: "Shared; the new-invoice button reads Get a new invoice here, not Buy a new code." },
-  N4c: { url: ORDER, from: "N4", label: "the window closes, nothing sent", color: "orange", title: "Expired, nothing received", text: "Shared." },
-  N4d: { url: ORDER, from: "N4a", label: "the window closes", color: "orange", title: "Expired, part paid", text: "Shared: the buyer quotes the reference." },
+  N4a: { url: ORDER, from: "N4", label: "less than the amount", color: "orange", title: "Part of the amount", text: "The rest to send, with the rate's remaining time." },
+  N4b: { url: ORDER, from: "N4", label: "Cancel this invoice", color: "orange", title: "Cancelled", text: "Get a new invoice starts the same order again." },
+  N4c: { url: ORDER, from: "N4", label: "the window closes, nothing sent", color: "orange", title: "Expired, nothing received", text: "Nothing was received." },
+  N4d: { url: ORDER, from: "N4a", label: "the window closes", color: "orange", title: "Expired, part paid", text: "The buyer quotes the reference." },
   N10: {
-    url: ORDER, from: "N3", label: "Pay with Card", color: "blue",
+    url: ORDER, from: "N3h", label: "written down: Card", color: "blue",
     title: "Paying by card",
-    text: "The name's rows over Stripe's Payment Element, drawn as a stand-in.",
+    text: "Stripe's Payment Element, drawn as a stand-in, beside the order card.",
   },
-  N10a: { url: ORDER, from: "N10", label: "Stripe.js does not load", color: "orange", title: "The card form did not load", text: "Shared, with Get a new invoice." },
-  N10b: { url: ORDER, from: "N10", label: "the card is accepted", color: "blue", title: "Card submitted", text: "Shared: once paid, registration starts at N6." },
-  N10c: { url: ORDER, from: "N10b", label: "fifteen minutes, still open", color: "orange", title: "Taking longer than expected", text: "Shared." },
+  N10a: { url: ORDER, from: "N10", label: "Stripe.js does not load", color: "orange", title: "The card form did not load", text: "Try again, or a new invoice." },
+  N10b: { url: ORDER, from: "N10", label: "the card is accepted", color: "blue", title: "Card submitted", text: "Once paid, registration starts at N6." },
+  N10c: { url: ORDER, from: "N10b", label: "fifteen minutes, still open", color: "orange", title: "Taking longer than expected", text: "The page keeps working; the reference is for support." },
   N7a: {
     url: ORDER, from: "N3f", label: "paid anyway, then registered", color: "orange",
     title: "The phrase could not be saved",
-    text: "Storage was refused at checkout, which warned (\"This browser will not keep your recovery phrase\"); the phrase lived in memory and is shown once.",
+    text: "Storage was refused at checkout, which warned (\"This browser will not keep your recovery phrase\"); the copy written down before paying is the only one.",
+  },
+  N3g: {
+    url: `${HOST}/#/checkout`, from: "N3", label: "Link your SimpleX address", color: "blue",
+    title: "Linking at registration",
+    text: "Optional. Each link is previewed through POST /api/link/preview, so a typo shows before paying. The page puts setText calls for simplex.contact and simplex.channel into the commitment's data; the links reach the service only with the reveal, and the register transaction sets them.",
+  },
+  N3h: {
+    url: `${HOST}/#/checkout`, from: "N3", label: "Continue", color: "blue",
+    title: "The phrase before paying",
+    text: "Shown before the order exists, and Continue waits for the checkbox: if the browser crashes or loses its storage after paying, the written phrase rebuilds the owner key and the commitment secret. Register with code passes here too.",
   },
   N3f: {
     url: `${HOST}/#/checkout`, from: "N3", label: "this browser refuses storage", color: "orange",
     title: "The phrase will not be kept",
-    text: "Checked before the order is created. The buyer can still pay; the phrase then lives only in this page.",
+    text: "Checked before the order is created. The buyer can still pay; the phrase lives in this page and in the copy written down at the next step.",
+  },
+  N7c: {
+    url: ORDER, from: "N7b", label: "Enter your recovery phrase", color: "blue",
+    title: "Restore with the phrase",
+    text: "The page derives the owner and commitment secret and checks the owner matches. From Your names (Restore with a phrase) it also asks the name and finds the order with POST /api/registration/find, signed by the name's key.",
   },
   N7b: {
     url: ORDER, label: "a registered order opened elsewhere",
     title: "Not on this device",
-    text: "The name is registered, but its phrase exists only in the buying browser. Nobody can make another, and the page says so.",
+    text: "The order link opened where the phrase is not stored: the page asks for the written phrase and carries on, revealing if the registration waits for it.",
   },
-  N11: { url: `${HOST}/?order=k2Vn8...`, label: "?order= names no invoice", title: "This link does not work", text: "Shared." },
+  N11: { url: `${HOST}/?order=k2Vn8...`, label: "?order= names no invoice", title: "This link does not work", text: "Search a name starts again." },
   N12: {
-    url: `${HOST}/#/names`, from: "N13", label: "Your names", color: "blue",
+    url: `${HOST}/#/names`, from: "N1", label: "Your names, in the header", color: "blue",
     title: "Your names",
-    text: "Seen a little after the dynamis order completed. Names with their phrases (shown on request), registrations in progress, and codes. Each store keeps its own history, on its own host.",
+    text: "Seen a little after the dynamis order completed. Names with their status, where they point, Show phrase and Edit links; registrations in progress; codes. Check a code and Restore with a phrase sit above. Each store keeps its own history, on its own host.",
   },
-  N13: {
-    url: HOST, label: "the menu",
-    title: "The menu",
-    text: "The shared menu, relabelled for names, with the badges store linked at its end.",
+  N12b: {
+    url: `${HOST}/#/names`, from: "N12", label: "Edit links", color: "blue",
+    title: "Changing links later",
+    text: "The page signs an EIP-712 SetBatch with the name's key and POST /api/name/records relays multicallWithSig, SimpleX paying the gas against the name's edit credits. Needs the names v2 RFC's SimplexResolver; until it is deployed, the phrase in a wallet edits links through the dApp, at the owner's cost.",
   },
   N12a: {
     url: `${HOST}/#/names`, from: "N12", label: "Check a code", color: "blue",
@@ -318,22 +329,22 @@ export const FRAMES = {
     text: "Asks the service what a code covers and adds it to the list, where Use applies it to a search.",
   },
   B0: {
-    url: "badges.simplex.chat", from: "N13", label: "SimpleX badges", color: "blue",
+    url: "badges.simplex.chat", from: "N1", label: "SimpleX badges, in the header", color: "blue",
     title: "The badges store",
-    text: "Unchanged but for one link to simplex.domains; the names store links back from its menu.",
+    text: "Unchanged but for one link to simplex.domains; the names store links back from its header.",
   },
-  D2: { screen: "N2", theme: "dark", url: HOST, label: "dark theme", title: "N2, dark", text: "Every new rule uses the existing tokens." },
-  D6a: { screen: "N6a", theme: "dark", url: ORDER, label: "dark theme", title: "N6a, dark", text: "The steps on the dark ground." },
+  D2: { screen: "N2", theme: "dark", url: HOST, label: "dark theme", title: "N2, dark", text: "The dark theme follows simplex.domains: navy ground, cyan accents." },
+  D6a: { screen: "N6a", theme: "dark", url: ORDER, label: "dark theme", title: "N6a, dark", text: "The progress track on the dark ground." },
   D7: { screen: "N7", theme: "dark", url: ORDER, label: "dark theme", title: "N7, dark", text: "The QR keeps its white ground, so it still scans." },
-  M2: { screen: "N2", url: HOST, label: "a phone", title: "N2 at 390 px", text: "Field, glass, answer and price in one column." },
-  M3: { screen: "N3", url: `${HOST}/#/checkout`, from: "M2", label: "Register", color: "blue", title: "N3 at 390 px", text: "The methods stay side by side." },
-  M6a: { screen: "N6a", url: ORDER, from: "M3", label: "paid", color: "blue", title: "N6a at 390 px", text: "The steps at phone width." },
-  M7: { screen: "N7", url: ORDER, from: "M6a", label: "registered", color: "blue", title: "N7 at 390 px", text: "The phrase in two columns." },
+  M2: { screen: "N2", url: HOST, label: "a phone", title: "N2 at 390 px", text: "The search bar keeps its button as an arrow; the result stacks." },
+  M3: { screen: "N3", url: `${HOST}/#/checkout`, from: "M2", label: "Register", color: "blue", title: "N3 at 390 px", text: "One column; the order card follows the details." },
+  M6a: { screen: "N6a", url: ORDER, from: "M3", label: "paid", color: "blue", title: "N6a at 390 px", text: "The track and the countdown at phone width." },
+  M7: { screen: "N7", url: ORDER, from: "M6a", label: "registered", color: "blue", title: "N7 at 390 px", text: "The phrase in two columns, then the next steps." },
   M2a: { screen: "N2a", url: HOST, from: "M2", label: "another name: taken", color: "orange", title: "N2a at 390 px", text: "Links hide; pictures, names and Open stay." },
   OP1: {
     label: "the operator's terminal, --run-cli",
     title: "Issuing by hand",
-    text: "//issue name [length] [years]: SN7- for a length, SN- for any name (investors, 7 years here), 2 years by default. //revoke takes either kind.",
+    text: "//issue name <length> [years]: every code covers a length, SN6- for investors (7 years here), 2 years by default. //revoke takes either kind.",
   },
   OP2: {
     label: "the managed group",
@@ -343,9 +354,9 @@ export const FRAMES = {
 };
 
 export const NOTES = [
-  "Design document, not screenshots of a build: every web screen is rendered from mockups/screens.js on the webapp's own compiled modules and styles.css, so the shared screens are the real ones and the name screens are prototypes for nameScreens.ts.",
-  "Two stores to the user: names at simplex.domains, badges at badges.simplex.chat; one service (StoreService) and one webapp codebase behind both.",
-  "Non-custodial: the browser makes each name's wallet (128-bit entropy, a 12-word BIP-39 phrase, account m/44'/60'/0'/0/0) with vendored @noble/secp256k1 and @noble/hashes, and sends only the address; the service pays for and sends commit and register with that owner.",
-  "A paid name registers for 2 years, a code for its own term; the price is the service's answer for the searched name. Codes (SN6-, SN-, ...) come from the operator, the app (not yet in #7530) or, for a taken order, the service; never sold here; the service's table is their truth.",
+  "Design document, not screenshots of a build: the names screens are rendered from mockups/domains.js on simplex.domains' fonts and tokens, prototypes for the names app in that repo; the badges landing is the real badges webapp.",
+  "Two stores, two webapps: names at simplex.domains, from its own repo (a submodule of simplex-chat); badges at badges.simplex.chat. One service (StoreService) exports both; one library (@simplex-chat/store) holds the logic they share.",
+  "Non-custodial: the browser makes each name's wallet (128-bit entropy, a 12-word BIP-39 phrase, account m/44'/60'/0'/0/0) with vendored @noble/secp256k1 and @noble/hashes, and sends the address and a commitment, revealing the name only after the commit; the service pays for and sends commit and register with that owner and holds no name before then.",
+  "A paid name registers for 2 years, a code for its own term; the price is the service's answer for the searched name. Codes (SN6-, SN7-, SN20-, ...) come from the operator, the app (not yet in #7530) or, for a taken order, the service; never sold here; the service's table is their truth.",
   "Regenerate after npm run build in apps/simplex-badge-service/web with: PLAYWRIGHT=<playwright index.mjs> node plans/names-codes/mockups/board.mjs",
 ];

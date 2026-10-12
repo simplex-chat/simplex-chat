@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Renders every frame of layout.mjs to ../screens/<tag>.jpg and composes ../names-flow.svg around them.
-// Needs `npm run build` in apps/simplex-badge-service/web first, and Playwright with Chromium, which is
-// deliberately not a dependency of the webapp:
+// Names frames render domains.js on simplex.domains' fonts and logos (a checkout of that repo, beside this
+// one or at $SIMPLEX_DOMAINS); the badges landing renders on the compiled badges webapp. Needs `npm run build`
+// in apps/simplex-badge-service/web first, and Playwright with Chromium, which is deliberately not a
+// dependency of the webapp:
 //   npm install --prefix /tmp/pw playwright && npx --prefix /tmp/pw playwright install chromium
 //   PLAYWRIGHT=/tmp/pw/node_modules/playwright/index.mjs node plans/names-codes/mockups/board.mjs
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
@@ -14,11 +16,14 @@ const HERE = fileURLToPath(new URL(".", import.meta.url));
 const OUT = join(HERE, "..");
 const SCREENS_DIR = join(OUT, "screens");
 const DIST = join(HERE, "../../../apps/simplex-badge-service/web/dist/assets");
+const DOMAINS = process.env.SIMPLEX_DOMAINS ?? join(HERE, "../../../../simplex.domains");
+// frames drawn by screens.js on the badges webapp; every other frame is the names store's, from domains.js
+const OTHER_FRAMES = new Set(["B0", "A1", "A2", "OP1", "OP2"]);
 // A made-up origin: module scripts do not load from file://, and intercepting requests needs no server.
 const ORIGIN = "http://mockups.local";
 // JPEG, not PNG: the page's background wash makes a PNG about four times larger, and the board embeds one per frame.
 const JPEG_QUALITY = 85;
-const CONTENT_TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2" };
+const CONTENT_TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 
 const KINDS = {
   desktop: { viewport: { width: 1024, height: 900 }, scale: 400 / 1024, pitch: 500 },
@@ -38,6 +43,14 @@ const PHONE_BAR = 16;
 const ROW_HEAD = 104;
 const LANE_STEP = 7;
 const LANES = 7;
+
+const NAMES_PAGE = (id, theme) => `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="domains.css"></head><body>
+<script type="module">
+import { render } from "./domains.js";
+try { render(${JSON.stringify(id)}, ${theme ? JSON.stringify(theme) : "undefined"}); document.body.dataset.ready = "1"; }
+catch (e) { document.body.dataset.error = String(e && e.stack || e); }
+</script></body></html>`;
 
 const PAGE = (id, theme) => `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -71,8 +84,9 @@ async function renderAll(frames) {
   const site = mkdtempSync(join(tmpdir(), "names-board-"));
   try {
     cpSync(buildHash(), join(site, "assets"), { recursive: true });
-    cpSync(join(HERE, "screens.js"), join(site, "screens.js"));
-    cpSync(join(HERE, "mockups.css"), join(site, "mockups.css"));
+    if (!existsSync(join(DOMAINS, "fonts"))) throw new Error(`board: ${DOMAINS} has no fonts - check out simplex.domains there or set SIMPLEX_DOMAINS`);
+    for (const dir of ["fonts", "img"]) cpSync(join(DOMAINS, dir), join(site, "domains", dir), { recursive: true });
+    for (const file of ["screens.js", "mockups.css", "domains.js", "domains.css", "fixtures.js"]) cpSync(join(HERE, file), join(site, file));
     rmSync(SCREENS_DIR, { recursive: true, force: true });
     mkdirSync(SCREENS_DIR, { recursive: true });
     const browser = await chromium.launch();
@@ -83,7 +97,8 @@ async function renderAll(frames) {
         try {
           await page.route(`${ORIGIN}/**`, (route) => {
             const path = new URL(route.request().url()).pathname;
-            const body = path === "/page.html" ? PAGE(f.screen ?? f.tag, f.theme) : readFileOr(join(site, path));
+            const id = f.screen ?? f.tag;
+            const body = path === "/page.html" ? (OTHER_FRAMES.has(id) ? PAGE : NAMES_PAGE)(id, f.theme) : readFileOr(join(site, path));
             if (body === undefined) return route.fulfill({ status: 404, body: "" });
             return route.fulfill({ status: 200, contentType: CONTENT_TYPES[extname(path)] ?? "application/octet-stream", body });
           });
