@@ -11,6 +11,9 @@ module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter)
 import Control.Concurrent.STM (atomically)
+import Control.Monad (forM_)
+import qualified Data.ByteArray as BA
+import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString.Char8 (ByteString)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -34,6 +37,7 @@ import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, ba
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
+import Simplex.Messaging.Crypto.BIP39 (unEntropy)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (BrokerErrorType (..), ErrorType (AUTH), NetworkError (..))
 import Simplex.Messaging.Util (tshow)
@@ -59,6 +63,12 @@ badgeTests = do
     it "reads a code as typed - any case, separators, ambiguous characters" testCodeNormalisation
     it "rejects a code whose check character does not match" testCodeCheckCharacter
     it "hashes the canonical form, whatever was typed" testCodeHash
+  describe "name codes" $ do
+    it "encodes the entropy and its checksum" testNameCodeVectors
+    it "a generated name code reads back" testNameCodeRoundTrip
+    it "reads a name code as typed - any case, separators, ambiguous characters" testNameCodeNormalisation
+    it "rejects every single-character substitution and adjacent transposition" testNameCodeChecksum
+    it "rejects a malformed name code" testNameCodeMalformed
   describe "ledger transitions" $ do
     it "issues a twelve month code one month at a time, and no thirteenth" testTwelveMonths
     it "lapses only the elapsed months after a gap, leaving paidThrough unchanged" testLapseAfterGap
@@ -328,6 +338,70 @@ testCodeHash = do
   code <- randomBadgeCode drg
   Just typed <- pure $ parseBadgeCode $ T.toLower $ formatBadgeCode code
   badgeCodeHash typed `shouldBe` badgeCodeHash code
+
+testNameCodeVectors :: IO ()
+testNameCodeVectors =
+  forM_ nameCodeVectors $ \(entropy, formatted) -> do
+    let code = parseNameCode formatted
+    parsedNameCode formatted `shouldBe` Just formatted
+    (convertToBase Base16 . (BA.convert :: BA.ScrubbedBytes -> ByteString) . unEntropy . nameCodeEntropy) <$> code `shouldBe` Just entropy
+
+testNameCodeRoundTrip :: IO ()
+testNameCodeRoundTrip = do
+  drg <- C.newRandom
+  code <- randomNameCode drg
+  let formatted = formatNameCode code
+  T.length formatted `shouldBe` 38 -- SN-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX
+  T.take 3 formatted `shouldBe` "SN-"
+  parsedNameCode formatted `shouldBe` Just formatted
+
+testNameCodeNormalisation :: IO ()
+testNameCodeNormalisation = do
+  parsedNameCode (T.toLower fixedNameCode) `shouldBe` Just fixedNameCode
+  parsedNameCode (T.replace "-" " " fixedNameCode) `shouldBe` Just fixedNameCode
+  parsedNameCode (T.filter (/= '-') fixedNameCode) `shouldBe` Just fixedNameCode
+  parsedNameCode (T.replace "SN-00000" "SN-OOOOO" zeroNameCode) `shouldBe` Just zeroNameCode
+
+testNameCodeChecksum :: IO ()
+testNameCodeChecksum = do
+  forM_ [3 .. T.length fixedNameCode - 1] $ \i ->
+    forM_ ("0123456789ABCDEFGHJKMNPQRSTVWXYZ" :: String) $ \c ->
+      if T.index fixedNameCode i == '-' || T.index fixedNameCode i == c
+        then pure ()
+        else parsedNameCode (replaceAt i c fixedNameCode) `shouldBe` Nothing
+  forM_ adjacentPairs $ \i ->
+    parsedNameCode (swapAt i fixedNameCode) `shouldBe` Nothing
+  where
+    replaceAt i c t = T.take i t <> T.singleton c <> T.drop (i + 1) t
+    swapAt i t = T.take i t <> T.singleton (T.index t (i + 1)) <> T.singleton (T.index t i) <> T.drop (i + 2) t
+    adjacentPairs = [i | i <- [3 .. T.length fixedNameCode - 2], let a = T.index fixedNameCode i; b = T.index fixedNameCode (i + 1), a /= '-', b /= '-', a /= b]
+
+testNameCodeMalformed :: IO ()
+testNameCodeMalformed = do
+  parsedNameCode "" `shouldBe` Nothing
+  parsedNameCode (T.drop 3 fixedNameCode) `shouldBe` Nothing
+  parsedNameCode ("SB" <> T.drop 2 fixedNameCode) `shouldBe` Nothing
+  parsedNameCode (T.dropEnd 1 fixedNameCode) `shouldBe` Nothing
+  parsedNameCode (fixedNameCode <> "0") `shouldBe` Nothing
+  parsedNameCode (T.replace "KT45V" "KT45U" fixedNameCode) `shouldBe` Nothing
+
+parsedNameCode :: T.Text -> Maybe T.Text
+parsedNameCode = fmap formatNameCode . parseNameCode
+
+-- entropy and its name code, computed by a separate Python implementation of the format
+nameCodeVectors :: [(ByteString, T.Text)]
+nameCodeVectors =
+  [ ("00000000000000000000000000000000", zeroNameCode),
+    ("7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f", "SN-FXZQY-ZVZFX-ZQYZV-ZFXZQ-YZVZF-Y3XSQ"),
+    ("ffffffffffffffffffffffffffffffff", "SN-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-XDCD9"),
+    ("9e885d952ad362caeb4efe34a8e91bd2", fixedNameCode)
+  ]
+
+zeroNameCode :: T.Text
+zeroNameCode = "SN-00000-00000-00000-00000-00000-0VME2"
+
+fixedNameCode :: T.Text
+fixedNameCode = "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BT"
 
 -- Ledger transitions, against plans/2026-07-30-supporter-badges-v3-ux.md §3
 
