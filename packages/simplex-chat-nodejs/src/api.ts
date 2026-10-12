@@ -80,6 +80,11 @@ export type DbConfig =
       connectionString: string
     }
 
+function chatErrorEvent(err: unknown): ChatEvent {
+  if (err instanceof core.ChatAPIError && err.chatError) return {type: "chatError", chatError: err.chatError}
+  throw err
+}
+
 function dbConfigToMigrateArgs(db: DbConfig): [string, string] {
   switch (db.type) {
     case "sqlite":
@@ -171,7 +176,7 @@ export class ChatApi {
   private async runEventsLoop(): Promise<void> {
     while (this.receiveEvents) {
       try {
-        const event = await this.recvChatEvent()
+        const event = await this.recvChatEvent().catch(chatErrorEvent)
         if (!event) continue
         const subs = this.subscribers[event.type]
         if (subs) {
@@ -194,12 +199,7 @@ export class ChatApi {
           }
         }
       } catch(err) {
-        const e = err as core.ChatAPIError
-        if ("chatError" in e) {
-          console.log("Chat error", e.chatError)
-        } else {
-          console.log("Invalid event", e)
-        }
+        console.log("Invalid event", err)
       }
     }
   }

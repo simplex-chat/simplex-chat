@@ -110,6 +110,16 @@ describe("startChat lifecycle", () => {
     await chat.stopChat()
   })
 
+  it("passes event errors to chatError subscribers", async () => {
+    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatStopped"})
+    const chatError = {type: "errorStore", storeError: {type: "connectionNotFound", agentConnId: "Y29ubg=="}} as T.ChatError
+    jest.mocked(core.chatRecvMsgWait).mockRejectedValueOnce(new core.ChatAPIError("Chat event error (see chatError property)", chatError))
+    const received = new Promise(resolve => chat.on("chatError", event => resolve(event)))
+    await chat.startChat()
+    await expect(received).resolves.toEqual({type: "chatError", chatError})
+    await chat.stopChat()
+  })
+
   it("receives with a 500 ms wait", async () => {
     const chat = await chatWithResponses()
     await chat.recvChatEvent()
