@@ -23,7 +23,7 @@ When there is no current user, the address modal closes itself instead of compos
 
 The "SimpleX address" row of the user picker opens `UserAddressView` with `shareViaProfile = it.currentUser.value!!.addressShared`. The modal content reads `currentUser`, so it recomposes whenever `currentUser` changes. It throws whenever it is composed while `currentUser` is null, that is, when there is no active user. A desktop that was only used with a linked mobile has no active user of its own.
 
-The screen can be shown in that state in two ways:
+The screen can be shown in that state in three ways:
 
 1. **The mobile disconnects.** The screen was opened for the mobile's profile, and then the mobile disconnects. `switchUIRemoteHost(null)` sets `currentUser` to the local user, which is null, and the left-panel modals stay open.
    - If the address screen is on top, it crashes when it recomposes.
@@ -36,9 +36,9 @@ The screen can be shown in that state in two ways:
 
    No active user also follows from deleting the active profile when no other visible profile remains, including the only profile, and including the last visible profile of a connected mobile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
 
-A third path is possible but not confirmed: entering the self-destruct passcode while the screen is open. `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`. That calls `initChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does `deleteStorageAndRestart` create the new profile and call `closeAllModalsEverywhere`.
-- On Android, the shared modal stack stays composed under the lock screen, so the address screen would recompose with a null user. Android's main loop catches exceptions (`SimplexApp.kt`). `GlobalExceptionsHandler` (`UI.android.kt`) then closes the top modal, recreates the activity and posts a crash alert, and the self-destruct flow hides all alerts at its end. A test on an Android build of master showed no visible crash. That is consistent with this recovery, but it does not show whether the exception was thrown; logcat was not checked.
-- On desktop, `initChatController` replaces the main screen with the splash screen shortly afterwards (`localUserCreated = null`), so the crash needs a frame to fall in that short window. This was not tested.
+3. **The self-destruct passcode is entered while the screen is open.** `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`. That calls `initChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does `deleteStorageAndRestart` create the new profile and call `closeAllModalsEverywhere`.
+   - On Android, the shared modal stack stays composed under the lock screen, so the address screen can recompose with a null user and throw. It throws only if a frame falls after `currentUser` becomes null and before onboarding replaces the main screen, so it does not happen on every run. Android's main loop catches exceptions (`SimplexApp.kt`). `GlobalExceptionsHandler` (`UI.android.kt`) then closes the top modal, recreates the activity and posts a crash alert, and the self-destruct flow hides all alerts at its end, so no crash is visible.
+   - On desktop, `initChatController` replaces the main screen with the splash screen shortly afterwards (`localUserCreated = null`), so the crash needs a frame to fall in that short window. This was not tested.
 
 ### Self-closing modal
 
@@ -56,7 +56,7 @@ When there is no active user:
 - Clicking the row now only hides the picker, as opening any modal does. The modal closes itself, and the picker is not reopened.
 - After the mobile disconnects with the address screen open, the picker does not reopen by itself (observed in testing). When the state with no user and no connected mobile begins, the app checks for open left-panel modals, and the address modal closes itself only after that check. Master does the same when any other left-panel screen is open.
 
-The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding. If the self-destruct path above does throw on Android, the branch closes the screen itself instead of recovering through `GlobalExceptionsHandler`. With an active user, behaviour does not change on any platform.
+The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding. In the self-destruct case on Android, the screen can no longer throw, so `GlobalExceptionsHandler` does not have to recover. With an active user, behaviour does not change on any platform.
 
 ### Security
 
@@ -88,4 +88,6 @@ Desktop AppImages from master and from this branch, each with a fresh database, 
 - This branch, case 2, double click (seven runs, 8 to 40 ms apart): no crash, and no leftover. With `LaunchedEffect(Unit)` the address screen reappeared after onboarding in 2 of 3 runs at 30 ms.
 - This branch, case 2, "Settings" then "Create SimpleX address" 100 ms apart: no crash, and Settings stays open. With the close keyed on the modal count but without the `isLastModal` check, Settings was closed too.
 - This branch, with a local profile: the address screen opens and closes normally. When the mobile disconnects with its address screen open, the screen closes through `UserAddressView`'s own user-change effect, and the app returns to the local profile.
-- Android build of master (not of this branch), self-destruct passcode entered with the address screen opened from the user picker: no visible crash; logcat not checked.
+- Android (Waydroid: Android 13 with arm64 translation), debug APKs of master and of this branch, fresh app data, case 3 with the address screen opened from the user picker:
+  - master, two runs: in one, logcat shows `App crashed, thread name: main` with the NPE at `UserPicker.kt:223`; in the other, no exception. No crash is visible in either, as in an earlier manual test.
+  - This branch: one run completed to the new profile with no exception in logcat. As master did not throw on every run, this checks for no new failure rather than proving the fix. An earlier run hung during self-destruct, with the main thread, a coroutine thread and a Haskell worker all waiting for the native allocator lock under arm64 translation.
