@@ -21,6 +21,7 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM (atomically)
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -31,26 +32,28 @@ import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
-import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XInfo, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
-import Simplex.Messaging.Agent (sendMessages, vrValue)
+import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
-import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
-import Simplex.Messaging.Protocol (MsgFlags (..))
+import Simplex.Messaging.Client (pattern NRMInteractive)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
+import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Protocol (MsgFlags (..), SubscriptionMode (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
@@ -79,6 +82,7 @@ chatGroupTests = do
     it "create and delete group" testGroupDelete
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
+    it "invitee join group after deleting inviting contact" testGroupJoinWhenInviterDeleted
     it "re-add member in status invited" testGroupReAddInvited
     it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
@@ -175,6 +179,15 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
+  describe "invite member via group" $ do
+    it "invite member of another group" testInviteMemberViaGroup
+    it "auto-accept invitation from member of another group" testInviteMemberViaGroupAutoAccept
+    it "repeat invitation before joining, after joining and after leaving" testInviteMemberViaGroupRepeat
+    it "join with incognito profile of another group" testInviteMemberViaGroupIncognito
+    it "reject invitation from member of another group" testInviteMemberViaGroupReject
+    it "invitation disappears after joining" testInviteMemberViaGroupDisappearing
+    it "prohibited without direct messages or with wrong group" testInviteMemberViaGroupProhibited
+    it "prohibited for member with previous version" testInviteMemberViaGroupPrevVersion
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
@@ -306,6 +319,9 @@ chatGroupTests = do
       it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
       it "should deliver support scope messages via relay" testChannelSupportScope
       it "should add relay to existing channel" testChannelAddRelay
+      it "should not add relay when the invitation owner key differs from link data" testChannelAddRelayOwnerKeyMismatch
+      it "should not add relay when the invitation group id differs from link data" testChannelAddRelayGroupIdMismatch
+      it "should ignore relay invitation without the owner's signature" testChannelRelayInvUnsigned
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
@@ -899,6 +915,33 @@ testGroupDeleteWhenInvited =
             bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
+
+testGroupJoinWhenInviterDeleted :: HasCallStack => TestParams -> IO ()
+testGroupJoinWhenInviterDeleted =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as member"
+            bob <## "use /j team to accept"
+        ]
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      alice <## "bob (Bob) deleted contact with you"
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
 
 testGroupReAddInvited :: HasCallStack => TestParams -> IO ()
 testGroupReAddInvited =
@@ -5404,6 +5447,192 @@ testMemberContactAcceptIncognito =
       cath ?<# (bobIncognito <> "> hi")
       cath ?#> ("@" <> bobIncognito <> " hey")
       bob ?<# (cathIncognito <> "> hey")
+
+testInviteMemberViaGroup :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroup =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      createClub alice
+      threadDelay 1000000
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      cath <// 50000
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "sent invitation to join group club as member")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "received invitation to join group club as member")])
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        (bob <## "#club: you joined the group")
+      checkInvitationStatus bob "accepted"
+      alice #> "#club hello"
+      bob <# "#club alice_1> hello"
+      bob #> "#club hi"
+      alice <# "#club bob_1> hi"
+
+testInviteMemberViaGroupAutoAccept :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupAutoAccept =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      bob ##> "/set accept group invitations on"
+      bob <## "ok"
+      createClub alice
+      threadDelay 1000000
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      alice <## "invitation to join the group #club sent to bob in #team"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        (bob <## "#club: you joined the group")
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "received invitation to join group club as member")])
+
+testInviteMemberViaGroupRepeat :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupRepeat =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      addBob alice bob bobId "club"
+      bob ##> "/gs"
+      bob
+        <### [ "#team (2 members)",
+               "#club - you are invited (/j club to join, /d #club to delete invitation)"
+             ]
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        (bob <## "#club: you joined the group")
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      alice <## "contact bob is already in the group"
+      bob ##> "/l club"
+      concurrentlyN_
+        [ do
+            bob <## "#club: you left the group"
+            bob <## "use /d #club to delete the group",
+          alice <## "#club: bob_1 left the group (signed)"
+        ]
+      addBob alice bob bobId "club_1"
+
+testInviteMemberViaGroupIncognito :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupIncognito =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c i " <> gLink)
+      bobIncognito <- getTermLine bob
+      bob <## "connection request sent incognito!"
+      alice <## (bobIncognito <> ": accepting request to join group #team...")
+      concurrentlyN_
+        [ alice <## ("#team: " <> bobIncognito <> " joined the group"),
+          do
+            bob <## "#team: joining the group..."
+            bob <## ("#team: you joined the group incognito as " <> bobIncognito)
+        ]
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" (T.pack bobIncognito)
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      concurrentlyN_
+        [ alice <## ("invitation to join the group #club sent to " <> bobIncognito <> " in #team"),
+          do
+            bob <## "#club: alice in #team invites you to join the group as member"
+            bob <## ("use /j club to join incognito as " <> bobIncognito)
+        ]
+      bob ##> "/j club"
+      concurrently_
+        (alice <## ("#club: " <> bobIncognito <> "_1 joined the group"))
+        (bob <## ("#club: you joined the group incognito as " <> bobIncognito))
+
+testInviteMemberViaGroupReject :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupReject =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      bob ##> "/d #club"
+      bob <## "#club: you deleted your local copy of the group"
+      checkInvitationStatus bob "rejected"
+
+testInviteMemberViaGroupDisappearing :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupDisappearing =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/set disappear #team on 1"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (1 sec)"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (1 sec)"
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        ( bob
+            <### [ "#club: you joined the group",
+                   "timed message deleted: received invitation to join group club as member"
+                 ]
+        )
+
+testInviteMemberViaGroupProhibited :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupProhibited =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/set direct #team off"
+      alice <## "updated group preferences:"
+      alice <## "Direct messages: off"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "Direct messages: off"
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      alice <## "bad chat command: direct messages not allowed"
+      alice ##> ("/_add #2 #2 " <> show bobId <> " member")
+      alice <## ("chat db error: SEGroupMemberNotFound {groupMemberId = " <> show bobId <> "}")
+
+testInviteMemberViaGroupPrevVersion :: HasCallStack => TestParams -> IO ()
+testInviteMemberViaGroupPrevVersion ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+      alice <## "peer chat protocol version range incompatible"
+
+createClub :: HasCallStack => TestCC -> IO ()
+createClub cc = do
+  cc ##> "/g club"
+  cc <## "group #club is created"
+  cc <## "to add members use /a club <name> or /create link #club"
+
+addBob :: HasCallStack => TestCC -> TestCC -> GroupMemberId -> String -> IO ()
+addBob alice bob bobId club = do
+  alice ##> ("/_add #2 #1 " <> show bobId <> " member")
+  concurrentlyN_
+    [ alice <## "invitation to join the group #club sent to bob in #team",
+      do
+        bob <## ("#" <> club <> ": alice in #team invites you to join the group as member")
+        bob <## ("use /j " <> club <> " to accept")
+    ]
+
+checkInvitationStatus :: HasCallStack => TestCC -> String -> IO ()
+checkInvitationStatus cc status = do
+  [Only content] <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only String]
+  content `shouldContain` ("\"status\":\"" <> status <> "\"")
 
 testGroupMsgForwardMessage :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardMessage =
@@ -11298,6 +11527,76 @@ testChannelAddRelay ps =
             alice #> "#team hello"
             [bob, cath] *<# "#team> hello"
             [dan, eve] *<# "#team> hello [>>]"
+
+testChannelAddRelayOwnerKeyMismatch :: HasCallStack => TestParams -> IO ()
+testChannelAddRelayOwnerKeyMismatch ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        _ <- prepareChannel1Relay "team" alice bob
+        cath ##> "/ad"
+        (cathSLink, _cLink) <- getContactLinks cath True
+        alice ##> ("/relays name=cath " <> cathSLink)
+        alice <## "ok"
+        (otherKey :: C.PublicKeyEd25519, otherPrivKey :: C.PrivateKeyEd25519) <- atomically . C.generateKeyPair =<< C.newRandom
+        withCCTransaction alice $ \db -> do
+          DB.execute db "UPDATE groups SET member_priv_key = ?" (Only otherPrivKey)
+          DB.execute db "UPDATE group_members SET member_pub_key = ? WHERE member_category = 'user'" (Only otherKey)
+        alice ##> "/_add relays #1 2"
+        alice <## "#team: group relays:"
+        alice <## "  - relay id 1: active"
+        alice <## "  - relay id 2: invited"
+        cath <## "exception: getLinkDataCreateRelayLink: owner key of invitation does not match link data"
+        queryRelayOwnStatus cath 1 `shouldReturn` Just "invited"
+
+testChannelAddRelayGroupIdMismatch :: HasCallStack => TestParams -> IO ()
+testChannelAddRelayGroupIdMismatch ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        _ <- prepareChannel1Relay "team" alice bob
+        cath ##> "/ad"
+        (cathSLink, _cLink) <- getContactLinks cath True
+        alice ##> ("/relays name=cath " <> cathSLink)
+        alice <## "ok"
+        withCCTransaction alice $ \db ->
+          DB.execute db "UPDATE group_profiles SET public_group_id = ?" (Only (B64UrlByteString "other group id"))
+        alice ##> "/_add relays #1 2"
+        alice <## "#team: group relays:"
+        alice <## "  - relay id 1: active"
+        alice <## "  - relay id 2: invited"
+        cath <## "exception: getLinkDataCreateRelayLink: linkEntityId does not match publicGroupId of profile or invitation"
+        queryRelayOwnStatus cath 1 `shouldReturn` Just "invited"
+
+testChannelRelayInvUnsigned :: HasCallStack => TestParams -> IO ()
+testChannelRelayInvUnsigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+      cath ##> "/ad"
+      (cathSLink, _cLink) <- getContactLinks cath True
+      sendUnsignedRelayInv alice cathSLink
+      cath <##. "error: x.grp.relay.inv: invitation is not signed by the owner"
+
+sendUnsignedRelayInv :: TestCC -> String -> IO ()
+sendUnsignedRelayInv cc relayAddress =
+  withCCUser cc $ \user -> do
+    relayLink :: ShortLinkContact <- either fail pure $ strDecode (B.pack relayAddress)
+    (memberKey, _) <- atomically . C.generateKeyPair =<< C.newRandom
+    let inv =
+          GroupRelayInvitation
+            { fromMember = MemberIdRole (MemberId "owner") GROwner,
+              fromMemberProfile = aliceProfile,
+              relayMemberId = MemberId "relay",
+              groupLink = relayLink,
+              publicGroupId = Just $ B64UrlByteString "group id",
+              fromMemberKey = Just $ MemberKey memberKey
+            }
+        joinRelay = do
+          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user relayLink
+          (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+          dm <- encodeConnInfo $ XGrpRelayInv inv
+          withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
+    runExceptT joinRelay `runReaderT` chatController cc >>= either (fail . show) (\_ -> pure ())
 
 testChannelAddRelayWithRoster :: HasCallStack => TestParams -> IO ()
 testChannelAddRelayWithRoster ps =

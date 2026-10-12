@@ -564,6 +564,16 @@ export class ChatApi {
   }
 
   /**
+   * Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+   * Network usage: interactive.
+   */
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    const r = await this.sendChatCmd(CC.APIAddMemberViaGroup.cmdString({groupId, viaGroupId, groupMemberId, memberRole}))
+    if (r.type === "sentGroupInvitationViaGroup") return r.member
+    throw new ChatCommandError("error adding member", r)
+  }
+
+  /**
    * Join group.
    * Network usage: interactive.
    */
