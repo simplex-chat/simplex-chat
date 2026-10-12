@@ -1,3 +1,4 @@
+import * as crypto from "crypto"
 import * as fs from "fs"
 import * as http from "http"
 import * as https from "https"
@@ -6,8 +7,7 @@ import * as path from "path"
 import {pipeline} from "stream/promises"
 import extract = require("extract-zip")
 import type {Backend} from "./core"
-
-export const LIBS_RELEASE = "core-7.1.0.11"
+import {ADDON_RELEASE, LIBS_RELEASE, SHA256} from "./release"
 
 const GITHUB_REPO = "simplex-chat/simplex-chat-libs"
 const REQUEST_TIMEOUT_MS = 60_000
@@ -45,21 +45,23 @@ export function cacheRoot(platform: string, env: NodeJS.ProcessEnv, home: string
   return path.join(env.XDG_CACHE_HOME || path.join(home, ".cache"), "simplex-chat")
 }
 
-function releaseUrl(asset: string): string {
-  return `https://github.com/${GITHUB_REPO}/releases/download/${LIBS_RELEASE}/${asset}`
-}
-
-export function libsUrl(backend: Backend, tag: string): string {
+export function libsAsset(backend: Backend, tag: string): string {
   const suffix = backend === "postgres" ? "-postgres" : ""
-  return releaseUrl(`simplex-chat-libs-${tag}${suffix}.zip`)
+  return `simplex-chat-libs-${tag}${suffix}.zip`
 }
 
-function addonName(tag: string): string {
+export function addonAsset(tag: string): string {
   return `simplex-chat-nodejs-${tag}.node`
 }
 
-export function addonUrl(tag: string): string {
-  return releaseUrl(addonName(tag))
+export function releaseUrl(release: string, asset: string): string {
+  return `https://github.com/${GITHUB_REPO}/releases/download/${release}/${asset}`
+}
+
+function pinnedSha256(asset: string): string {
+  const sha256 = SHA256[asset]
+  if (!sha256) throw new Error(`no SHA-256 is pinned for ${asset}`)
+  return sha256
 }
 
 export function libPath(dir: string): string {
@@ -83,7 +85,10 @@ export async function resolveLibsDir(
     throw new Error(`postgres backend is only supported on linux-x86_64; current platform is ${tag}`)
   }
   const target = path.resolve(cacheRoot(platform, env), LIBS_RELEASE, backend)
-  if (!fs.existsSync(path.join(target, lib))) await installLibs(libsUrl(backend, tag), target, lib)
+  if (!fs.existsSync(path.join(target, lib))) {
+    const asset = libsAsset(backend, tag)
+    await installLibs(releaseUrl(LIBS_RELEASE, asset), pinnedSha256(asset), target, lib)
+  }
   return target
 }
 
@@ -97,17 +102,19 @@ export async function resolveAddonPath(
     if (!fs.existsSync(file)) throw new Error(`SIMPLEX_ADDON_PATH does not exist: ${file}`)
     return file
   }
-  const tag = platformTag(platform, arch)
-  const target = path.resolve(cacheRoot(platform, env), LIBS_RELEASE, addonName(tag))
-  if (!fs.existsSync(target)) await installAddon(addonUrl(tag), target)
+  if (!ADDON_RELEASE) throw new Error("no prebuilt Node.js add-on is pinned in this version; set SIMPLEX_ADDON_PATH")
+  const asset = addonAsset(platformTag(platform, arch))
+  const target = path.resolve(cacheRoot(platform, env), ADDON_RELEASE, asset)
+  if (!fs.existsSync(target)) await installAddon(releaseUrl(ADDON_RELEASE, asset), pinnedSha256(asset), target)
   return target
 }
 
-export function installLibs(url: string, target: string, lib: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
+export function installLibs(url: string, sha256: string, target: string, lib: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
   return inTempDir(target, async tmp => {
     console.error(`Downloading libsimplex from ${url} ...`)
     const zipPath = path.join(tmp, "libs.zip")
     await download(url, zipPath, timeoutMs)
+    await verifySha256(zipPath, sha256, url)
     await extract(zipPath, {dir: tmp})
     const extracted = path.join(tmp, "libs")
     if (!fs.existsSync(path.join(extracted, lib))) throw new Error(`libs/${lib} missing from ${url}`)
@@ -115,13 +122,21 @@ export function installLibs(url: string, target: string, lib: string, timeoutMs:
   })
 }
 
-export function installAddon(url: string, target: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
+export function installAddon(url: string, sha256: string, target: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
   return inTempDir(target, async tmp => {
     console.error(`Downloading the Node.js add-on from ${url} ...`)
     const file = path.join(tmp, path.basename(target))
     await download(url, file, timeoutMs)
+    await verifySha256(file, sha256, url)
     await renameInto(file, target, target)
   })
+}
+
+async function verifySha256(file: string, expected: string, url: string): Promise<void> {
+  const hash = crypto.createHash("sha256")
+  for await (const chunk of fs.createReadStream(file)) hash.update(chunk)
+  const actual = hash.digest("hex")
+  if (actual !== expected) throw new Error(`SHA-256 of ${url} is ${actual}, expected ${expected}`)
 }
 
 // The temp dir is next to the target, so the final rename stays on one filesystem.

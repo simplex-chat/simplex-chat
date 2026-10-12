@@ -4,12 +4,22 @@ import * as https from "https"
 import * as os from "os"
 import * as path from "path"
 import {AddressInfo} from "net"
-import {addonUrl, cacheRoot, installAddon, installLibs, LIBS_RELEASE, libPath, libsUrl, MAX_REDIRECTS, platformTag, resolveAddonPath, resolveLibsDir} from "../src/libs"
+import * as crypto from "crypto"
+import {addonAsset, cacheRoot, installAddon, installLibs, libPath, libsAsset, MAX_REDIRECTS, platformTag, releaseUrl, resolveAddonPath, resolveLibsDir} from "../src/libs"
+import * as release from "../src/release"
 import {main, parseInstallArgs} from "../src/cli"
 import * as libs from "../src/libs"
 import {storedZip} from "./zip"
 
+jest.mock("../src/release", () => ({LIBS_RELEASE: "core-test", ADDON_RELEASE: "nodejs-addon-test", SHA256: {}}))
+
 const LIB = "libtest.so"
+const ADDON = Buffer.from("addon")
+const PINNED = release.SHA256 as {[asset: string]: string}
+
+function sha256(data: Buffer): string {
+  return crypto.createHash("sha256").update(data).digest("hex")
+}
 const LINUX_LIB = "libsimplex.so"
 const {XDG_CACHE_HOME, LOCALAPPDATA, SIMPLEX_LIBS_DIR, SIMPLEX_ADDON_PATH} = process.env
 
@@ -74,10 +84,10 @@ describe("paths", () => {
   })
 
   it("uses the release URLs", () => {
-    const release = `https://github.com/simplex-chat/simplex-chat-libs/releases/download/${LIBS_RELEASE}`
-    expect(libsUrl("sqlite", "macos-aarch64")).toBe(`${release}/simplex-chat-libs-macos-aarch64.zip`)
-    expect(libsUrl("postgres", "linux-x86_64")).toBe(`${release}/simplex-chat-libs-linux-x86_64-postgres.zip`)
-    expect(addonUrl("windows-x86_64")).toBe(`${release}/simplex-chat-nodejs-windows-x86_64.node`)
+    const releases = "https://github.com/simplex-chat/simplex-chat-libs/releases/download"
+    expect(releaseUrl("core-7.1.0.11", libsAsset("sqlite", "macos-aarch64"))).toBe(`${releases}/core-7.1.0.11/simplex-chat-libs-macos-aarch64.zip`)
+    expect(releaseUrl("core-7.1.0.11", libsAsset("postgres", "linux-x86_64"))).toBe(`${releases}/core-7.1.0.11/simplex-chat-libs-linux-x86_64-postgres.zip`)
+    expect(releaseUrl("nodejs-addon-1", addonAsset("windows-x86_64"))).toBe(`${releases}/nodejs-addon-1/simplex-chat-nodejs-windows-x86_64.node`)
   })
 
   it("resolves an absolute SIMPLEX_LIBS_DIR", async () => {
@@ -146,9 +156,11 @@ describe("installLibs", () => {
   afterEach(() => fs.rmSync(tmp, {recursive: true, force: true}))
 
   const good = storedZip({[`libs/${LIB}`]: "lib", "libs/libHSdep.so": "dep"})
+  const GOOD_SHA = sha256(good)
   routes["/good.zip"] = res => res.writeHead(200).end(good)
   routes["/redirect.zip"] = res => res.writeHead(302, {location: "/good.zip"}).end()
-  routes["/nolib.zip"] = res => res.writeHead(200).end(storedZip({"other/file": "x"}))
+  const nolib = storedZip({"other/file": "x"})
+  routes["/nolib.zip"] = res => res.writeHead(200).end(nolib)
   routes["/stall.zip"] = res => { res.writeHead(200); res.write(good.subarray(0, 10)) }
   let loopRequests = 0
   routes["/loop.zip"] = res => { loopRequests++; res.writeHead(302, {location: "/loop.zip"}).end() }
@@ -182,20 +194,20 @@ describe("installLibs", () => {
 
   it("follows a redirect and installs libs/", async () => {
     const target = path.join(tmp, "v1", "sqlite")
-    await installLibs(`${base}/redirect.zip`, target, LIB)
+    await installLibs(`${base}/redirect.zip`, GOOD_SHA, target, LIB)
     expect(fs.readFileSync(path.join(target, LIB), "utf8")).toBe("lib")
     expect(fs.existsSync(path.join(target, "libHSdep.so"))).toBe(true)
   })
 
   it("downloads into a temp dir next to the target", async () => {
-    await installLibs(`${base}/observed.zip`, path.join(tmp, "sqlite"), LIB)
+    await installLibs(`${base}/observed.zip`, GOOD_SHA, path.join(tmp, "sqlite"), LIB)
     expect(downloadDirs).toHaveLength(1)
     expect(leftovers()).toEqual([])
   })
 
   it("stops following a redirect loop", async () => {
     loopRequests = 0
-    await expect(installLibs(`${base}/loop.zip`, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("too many redirects")
+    await expect(installLibs(`${base}/loop.zip`, GOOD_SHA, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("too many redirects")
     expect(loopRequests).toBe(MAX_REDIRECTS + 1)
     expect(leftovers()).toEqual([])
   })
@@ -203,69 +215,72 @@ describe("installLibs", () => {
   it("follows an https redirect to another host", async () => {
     const requested = mockHttps()
     const target = path.join(tmp, "sqlite")
-    await installLibs("https://libs.test/cross-host.zip", target, LIB)
+    await installLibs("https://libs.test/cross-host.zip", GOOD_SHA, target, LIB)
     expect(requested).toEqual(["https://libs.test/cross-host.zip", "https://objects.libs.test/good.zip"])
     expect(fs.readFileSync(path.join(target, LIB), "utf8")).toBe("lib")
   })
 
   it("rejects a redirect from https to http", async () => {
     mockHttps("/to-http.zip")
-    await expect(installLibs("https://libs.test/libs.zip", path.join(tmp, "sqlite"), LIB)).rejects.toThrow("changes protocol")
+    await expect(installLibs("https://libs.test/libs.zip", GOOD_SHA, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("changes protocol")
     expect(leftovers()).toEqual([])
   })
 
   it("rejects an invalid redirect location", async () => {
-    await expect(installLibs(`${base}/bad-location.zip`, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("Invalid URL")
+    await expect(installLibs(`${base}/bad-location.zip`, GOOD_SHA, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("Invalid URL")
     expect(leftovers()).toEqual([])
   })
 
   it("rejects a redirect without a location", async () => {
-    await expect(installLibs(`${base}/no-location.zip`, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("HTTP 302")
+    await expect(installLibs(`${base}/no-location.zip`, GOOD_SHA, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("HTTP 302")
     expect(leftovers()).toEqual([])
   })
 
   it("rejects 404 and cleans up", async () => {
     const target = path.join(tmp, "sqlite")
-    await expect(installLibs(`${base}/missing.zip`, target, LIB)).rejects.toThrow("HTTP 404")
+    await expect(installLibs(`${base}/missing.zip`, GOOD_SHA, target, LIB)).rejects.toThrow("HTTP 404")
     expect(leftovers()).toEqual([])
     expect(fs.existsSync(target)).toBe(false)
   })
 
   it("rejects a zip without the lib", async () => {
     const target = path.join(tmp, "sqlite")
-    await expect(installLibs(`${base}/nolib.zip`, target, LIB)).rejects.toThrow(`libs/${LIB} missing`)
+    await expect(installLibs(`${base}/nolib.zip`, sha256(nolib), target, LIB)).rejects.toThrow(`libs/${LIB} missing`)
     expect(leftovers()).toEqual([])
   })
 
   it("times out a request without a response", async () => {
-    await expect(installLibs(`${base}/hang.zip`, path.join(tmp, "sqlite"), LIB, 200)).rejects.toThrow("timeout")
+    await expect(installLibs(`${base}/hang.zip`, GOOD_SHA, path.join(tmp, "sqlite"), LIB, 200)).rejects.toThrow("timeout")
     expect(leftovers()).toEqual([])
   })
 
   it("times out a stalled download", async () => {
     const target = path.join(tmp, "sqlite")
-    await expect(installLibs(`${base}/stall.zip`, target, LIB, 200)).rejects.toThrow("timeout")
+    await expect(installLibs(`${base}/stall.zip`, GOOD_SHA, target, LIB, 200)).rejects.toThrow("timeout")
     expect(leftovers()).toEqual([])
   })
 
   it.each(["sqlite", "postgres"] as const)("installs %s into a relative XDG_CACHE_HOME and returns an absolute path", async backend => {
     const zip = storedZip({[`libs/${LINUX_LIB}`]: "lib"})
+    const asset = libsAsset(backend, "linux-x86_64")
+    PINNED[asset] = sha256(zip)
     routes["/libsimplex.zip"] = res => res.writeHead(200).end(zip)
     const requested = mockHttps("/libsimplex.zip")
     const cache = path.relative(process.cwd(), path.join(tmp, "cache"))
     const dir = await resolveLibsDir(backend, {XDG_CACHE_HOME: cache}, "linux", "x64")
-    expect(requested).toEqual([libsUrl(backend, "linux-x86_64")])
+    expect(requested).toEqual([releaseUrl("core-test", asset)])
     expect(path.isAbsolute(dir)).toBe(true)
-    expect(dir).toBe(path.join(tmp, "cache", "simplex-chat", LIBS_RELEASE, backend))
+    expect(dir).toBe(path.join(tmp, "cache", "simplex-chat", "core-test", backend))
     expect(fs.readFileSync(path.join(dir, LINUX_LIB), "utf8")).toBe("lib")
   })
 
   it("downloads the add-on into the cache", async () => {
-    routes["/addon.node"] = res => res.writeHead(200).end("addon")
+    routes["/addon.node"] = res => res.writeHead(200).end(ADDON)
+    PINNED[addonAsset("linux-x86_64")] = sha256(ADDON)
     const requested = mockHttps("/addon.node")
     const addon = await resolveAddonPath({XDG_CACHE_HOME: tmp}, "linux", "x64")
-    const version = path.join(tmp, "simplex-chat", LIBS_RELEASE)
-    expect(requested).toEqual([addonUrl("linux-x86_64")])
+    const version = path.join(tmp, "simplex-chat", "nodejs-addon-test")
+    expect(requested).toEqual([releaseUrl("nodejs-addon-test", addonAsset("linux-x86_64"))])
     expect(addon).toBe(path.join(version, "simplex-chat-nodejs-linux-x86_64.node"))
     expect(fs.readFileSync(addon, "utf8")).toBe("addon")
     expect(fs.readdirSync(version)).toEqual(["simplex-chat-nodejs-linux-x86_64.node"])
@@ -273,31 +288,56 @@ describe("installLibs", () => {
 
   it("does not download a cached add-on", async () => {
     const requested = mockHttps("/addon.node")
-    const cached = path.join(cacheRoot("darwin", {}), LIBS_RELEASE, "simplex-chat-nodejs-macos-aarch64.node")
+    const cached = path.join(cacheRoot("darwin", {}), "nodejs-addon-test", "simplex-chat-nodejs-macos-aarch64.node")
     fs.mkdirSync(path.dirname(cached), {recursive: true})
     fs.writeFileSync(cached, "addon")
     await expect(resolveAddonPath({}, "darwin", "arm64")).resolves.toBe(cached)
     expect(requested).toEqual([])
   })
 
+  it("rejects a download with another SHA-256 and cleans up", async () => {
+    const target = path.join(tmp, "sqlite")
+    await expect(installLibs(`${base}/good.zip`, sha256(ADDON), target, LIB)).rejects.toThrow(`SHA-256 of ${base}/good.zip is ${GOOD_SHA}, expected ${sha256(ADDON)}`)
+    expect(fs.readdirSync(tmp)).toEqual([])
+  })
+
+  it("rejects an add-on with another SHA-256", async () => {
+    routes["/addon.node"] = res => res.writeHead(200).end(ADDON)
+    const target = path.join(tmp, "simplex.node")
+    await expect(installAddon(`${base}/addon.node`, GOOD_SHA, target)).rejects.toThrow("SHA-256 of")
+    expect(fs.readdirSync(tmp)).toEqual([])
+  })
+
+  it("rejects an asset without a pinned SHA-256", async () => {
+    mockHttps("/good.zip")
+    await expect(resolveLibsDir("sqlite", {XDG_CACHE_HOME: tmp}, "darwin", "x64"))
+      .rejects.toThrow("no SHA-256 is pinned for simplex-chat-libs-macos-x86_64.zip")
+  })
+
+  it("requires SIMPLEX_ADDON_PATH without a pinned add-on release", async () => {
+    jest.replaceProperty(release, "ADDON_RELEASE", undefined)
+    await expect(resolveAddonPath({XDG_CACHE_HOME: tmp}, "linux", "x64"))
+      .rejects.toThrow("no prebuilt Node.js add-on is pinned in this version; set SIMPLEX_ADDON_PATH")
+  })
+
   it("rejects a missing add-on and cleans up", async () => {
     const target = path.join(tmp, "simplex.node")
-    await expect(installAddon(`${base}/missing.node`, target)).rejects.toThrow("HTTP 404")
+    await expect(installAddon(`${base}/missing.node`, sha256(ADDON), target)).rejects.toThrow("HTTP 404")
     expect(fs.readdirSync(tmp)).toEqual([])
   })
 
   it("accepts EPERM from rename onto an installed add-on", async () => {
-    routes["/addon.node"] = res => res.writeHead(200).end("addon")
+    routes["/addon.node"] = res => res.writeHead(200).end(ADDON)
     const target = path.join(tmp, "simplex.node")
     fs.writeFileSync(target, "addon")
     renameFails("EPERM")
-    await expect(installAddon(`${base}/addon.node`, target)).resolves.toBeUndefined()
+    await expect(installAddon(`${base}/addon.node`, sha256(ADDON), target)).resolves.toBeUndefined()
     expect(leftovers()).toEqual([])
   })
 
   it("does not download a cached lib", async () => {
     const requested = mockHttps("/good.zip")
-    const cached = path.join(tmp, "simplex-chat", LIBS_RELEASE, "postgres")
+    const cached = path.join(tmp, "simplex-chat", "core-test", "postgres")
     fs.mkdirSync(cached, {recursive: true})
     fs.writeFileSync(path.join(cached, LINUX_LIB), "lib")
     await expect(resolveLibsDir("postgres", {XDG_CACHE_HOME: tmp}, "linux", "x64")).resolves.toBe(cached)
@@ -308,7 +348,7 @@ describe("installLibs", () => {
     const target = path.join(tmp, "sqlite")
     fs.mkdirSync(target)
     fs.writeFileSync(path.join(target, "other"), "x")
-    await expect(installLibs(`${base}/good.zip`, target, LIB)).rejects.toThrow(`another process partially populated ${target}`)
+    await expect(installLibs(`${base}/good.zip`, GOOD_SHA, target, LIB)).rejects.toThrow(`another process partially populated ${target}`)
     expect(leftovers()).toEqual([])
   })
 
@@ -323,21 +363,21 @@ describe("installLibs", () => {
     fs.mkdirSync(target)
     fs.writeFileSync(path.join(target, LIB), "lib")
     renameFails(code)
-    await expect(installLibs(`${base}/good.zip`, target, LIB)).resolves.toBeUndefined()
+    await expect(installLibs(`${base}/good.zip`, GOOD_SHA, target, LIB)).resolves.toBeUndefined()
     expect(leftovers()).toEqual([])
   })
 
   it("rethrows EPERM from rename when the target does not exist", async () => {
     renameFails("EPERM")
-    await expect(installLibs(`${base}/good.zip`, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("EPERM")
+    await expect(installLibs(`${base}/good.zip`, GOOD_SHA, path.join(tmp, "sqlite"), LIB)).rejects.toThrow("EPERM")
     expect(leftovers()).toEqual([])
   })
 
   it("lets concurrent installs share one target", async () => {
     const target = path.join(tmp, "sqlite")
     await Promise.all([
-      installLibs(`${base}/good.zip`, target, LIB),
-      installLibs(`${base}/good.zip`, target, LIB),
+      installLibs(`${base}/good.zip`, GOOD_SHA, target, LIB),
+      installLibs(`${base}/good.zip`, GOOD_SHA, target, LIB),
     ])
     expect(fs.readFileSync(path.join(target, LIB), "utf8")).toBe("lib")
     expect(leftovers()).toEqual([])
