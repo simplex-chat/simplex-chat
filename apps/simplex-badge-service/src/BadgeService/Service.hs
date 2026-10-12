@@ -7,6 +7,7 @@
 module BadgeService.Service
   ( ServiceState (..),
     newServiceState,
+    configureStoreVerifier,
     welcomeGetOpts,
     checkIssuerKey,
     badgeService,
@@ -22,7 +23,7 @@ where
 
 import BadgeService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import BadgeService.Codes (issueFailedText, issueOneCode, singleUse)
-import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import BadgeService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
 import BadgeService.Log (logError, logInfo, logWarn)
@@ -142,6 +143,8 @@ configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case se
     apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificate} ->
       (\root -> verifyAppleTransaction root aBundleId) <$> orExit (readAppleRoot aRootCertificate)
     google <- forM playStore $ orExit . playStoreVerifier
+    forM_ appleStore $ \AppleStoreConfig {aBundleId} -> logInfo $ "verifying App Store receipts for " <> aBundleId
+    forM_ playStore $ \PlayStoreConfig {gPackageName} -> logInfo $ "verifying Play purchases for " <> gPackageName
     pure
       env
         { storeVerifier =

@@ -236,9 +236,10 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   needs both Play Console permissions Google's
   [getting started](https://developers.google.com/android-publisher/getting_started) lists for its
   billing APIs: "View financial data, orders, and cancellation survey responses" to read a
-  purchase, and "Manage orders and subscriptions" to acknowledge it. Without the second, no Play
-  purchase is credited: each is answered `internal` and logged as an error naming the
-  acknowledgement, and the app presents it again once the permission is granted. The key signs in
+  purchase, and "Manage orders and subscriptions" to acknowledge it. Without the second, a Play
+  purchase the app has not already acknowledged itself is answered `internal` and logged as an
+  error naming the acknowledgement, and the app presents it again once the permission is granted,
+  which must be within three days, before Play refunds it. The key signs in
   for an access token, so keep the file readable by this service alone.
 
 Which answers are terminal for a purchase and which leave it to be presented again is listed per

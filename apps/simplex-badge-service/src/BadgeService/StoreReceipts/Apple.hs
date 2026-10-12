@@ -48,15 +48,16 @@ verifyAppleTransaction root ourBundleId jws = case T.splitOn "." jws of
       JT.parseEither appleTransactionP o
   _ -> Left "not three dot-separated parts"
 
+-- | A header or chain in a shape Apple may yet adopt proves no forgery, so it fails rather than refuses.
 certificateChain :: Text -> Either Text [ByteString]
 certificateChain header = do
   o <- maybe (Left "the header is not base64url JSON") Right $ jsonObject header
   case JM.lookup "alg" o of
     Just (J.String "ES256") -> Right ()
-    _ -> Left "the header does not name ES256"
+    _ -> failed "the header does not name ES256"
   case JM.lookup "x5c" o of
     Just (J.Array certs) -> traverse der $ toList certs
-    _ -> Left "the header carries no x5c chain"
+    _ -> failed "the header carries no x5c chain"
   where
     der = \case
       J.String c | Right bs <- B64.decode (encodeUtf8 c) -> Right bs
@@ -78,9 +79,9 @@ signingChain root = \case
     unless (marked receiptSigningLeaf leaf && marked appleIntermediate intermediate) $
       failed "Apple issued this chain, but not to sign receipts"
     pure leaf
-  _ -> Left "x5c is not leaf, intermediate and root"
+  _ -> failed "x5c is not leaf, intermediate and root"
   where
-    certificate = either (const $ Left "an x5c certificate does not decode") Right . decodeSignedCertificate
+    certificate = either (const $ failed "an x5c certificate does not decode") Right . decodeSignedCertificate
     signedBy issuer cert = verifySignedSignature cert (certPubKey $ getCertificate issuer) == SignaturePass
     marked oid cert = case certExtensions (getCertificate cert) of
       Extensions (Just exts) -> any ((== oid) . extRawOID) exts

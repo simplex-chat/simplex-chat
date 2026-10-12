@@ -42,10 +42,10 @@ data VerifiedStoreTransaction = VerifiedStoreTransaction
 -- SRInvalid alone is terminal: the client drops the purchase's keys and nothing presents it again.
 -- So only a verdict no later attempt could change is SRInvalid; when in doubt, SRUnreachable.
 data StoreRefusal
-  = SRInvalid Text -- a verdict that cannot change, and the client consumes the purchase: forged, malformed, refunded
+  = SRInvalid Text -- a verdict that cannot change, and the client consumes the purchase: forged, malformed, refunded, a test purchase
   | SRPending -- a real purchase the store has not settled; it may yet
   | SRUnreachable Text -- no verdict: the store was not asked, did not answer, or does not know the token (a Play 404 may be lag)
-  | SRVerifierFailed Text -- a bug, not the store's answer
+  | SRVerifierFailed Text -- this service's own failure, its bug or misconfiguration, never the store's answer
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
 
@@ -57,7 +57,7 @@ newtype StoreVerifierFailure = StoreVerifierFailure Text
 instance Exception StoreVerifierFailure
 
 -- | Apple signs its receipt and ships the certificate chain in it, so it is verified with no network
--- call; a Play token is opaque and must be asked about, which is why only that field is in IO.
+-- call; a Play token is opaque and must be asked about, which is why only the Play fields are in IO.
 data StoreVerifier = StoreVerifier
   { -- the JWS; every Left becomes SRInvalid, so a verifier that cannot reach a verdict throws instead
     verifyApple :: Maybe (Text -> Either Text VerifiedStoreTransaction),
@@ -95,12 +95,12 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
           StoreReceipt
             (StoreTransactionRef PPGoogle (googlePurchaseRef token))
             (maybe unconfigured (\verify -> online "google verifier" $ verify productId token) verifyGoogle)
-            ((\acknowledge -> online "google acknowledgement" $ acknowledge productId token) <$> acknowledgeGoogle)
+            ((\acknowledge -> online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle)
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
   where
     unconfigured = pure $ Left SRNotConfigured
-    -- nothing was fetched, so a throw or an overrun is a bug or a malformed receipt, never an outage
+    -- nothing was fetched, so a throw or an overrun is this service's failure or a shape it does not know, never an outage
     offline verdict =
       (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))
         `catch` (\(StoreVerifierFailure reason) -> pure $ Left $ SRVerifierFailed $ "apple verifier: " <> reason)
@@ -116,8 +116,9 @@ googleProductId pid = case T.uncons pid of
   Just (c, _) -> T.length pid <= 150 && (isAsciiLower c || isDigit c) && T.all (\x -> isAsciiLower x || isDigit x || x == '_' || x == '.') pid
   Nothing -> False
 
+-- | Not empty or only dots, which a URL path resolves away.
 googleToken :: Text -> Bool
-googleToken t = not (T.null t) && T.length t <= 4096 && T.all (\x -> isAsciiLower x || isAsciiUpper x || isDigit x || x == '.' || x == '_' || x == '-') t
+googleToken t = not (T.all (== '.') t) && T.length t <= 4096 && T.all (\x -> isAsciiLower x || isAsciiUpper x || isDigit x || x == '.' || x == '_' || x == '-') t
 
 -- | What the log may say about a token: its length and the kinds of character in it, never any of them.
 tokenShape :: Text -> Text

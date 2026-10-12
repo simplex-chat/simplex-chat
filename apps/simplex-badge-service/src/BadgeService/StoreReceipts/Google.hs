@@ -79,16 +79,14 @@ instance J.FromJSON ServiceAccountFile where
   parseJSON = J.withObject "service account key" $ \o -> ServiceAccountFile <$> o J..: "client_email" <*> o J..: "private_key"
 
 verifyPurchase :: PlayEnv -> Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
-verifyPurchase env productId token
-  | T.all (== '.') token = pure $ Left $ SRUnreachable "a Play token this service will not send: only dots, which a URL path resolves away"
-  | otherwise = (>>= purchaseVerdict productId token) <$> readPurchase env productId token
+verifyPurchase env productId token = (>>= purchaseVerdict productId token) <$> readPurchase env productId token
 
 -- | Acknowledged, never consumed: consuming drops the purchase from the app's purchase query,
 -- which is how the app finds a purchase it has not yet settled.
 acknowledgePurchase :: PlayEnv -> Text -> Text -> IO (Either StoreRefusal ())
 acknowledgePurchase env productId token =
   readPurchase env productId token >>= \case
-    Left refusal -> pure $ Left refusal
+    Left refusal -> pure $ Left $ acknowledging refusal
     Right ProductPurchase {alreadyAcknowledged = True} -> pure $ Right ()
     Right _ -> bimap acknowledging (const ()) <$> playCall env (\req -> req {method = methodPost}) (purchaseUrl env productId token <> ":acknowledge")
   where

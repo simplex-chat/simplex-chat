@@ -2290,8 +2290,9 @@ testStoreReceiptAfterRestart ps = do
       pure invoiceId
     writeIORef broken False
     withTestChatCfg ps cfg "alice" $ \alice -> do
+      -- restart, resubscribe and a service round trip can outlast one line's 20 seconds in a parallel run; the lines follow the settlement
+      shouldReturnWithinSeconds 60 (heldStoreReceipts (chatController alice)) 0
       inAnyOrder alice [["subscribed 1 connections on server localhost"], creditedLines "" invoiceId "1: supporter"]
-      heldStoreReceipts (chatController alice) `shouldReturn` 0
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
 createInvoice cc userId = do

@@ -38,7 +38,7 @@ idle_seconds = 60
 
 ; optional; without it every App Store receipt is answered provider_not_configured, which the app retries later.
 ; root_certificate is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer, in DER;
-; compose mounts only this ini, so mount the certificate read-only beside it.
+; uncomment its mount in compose.yml.
 ;[apple]
 ;bundle_id = chat.simplex.app
 ;root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
@@ -46,8 +46,8 @@ idle_seconds = 60
 ; optional; without it every Play receipt is answered provider_not_configured, which the app retries later.
 ; service_account_file is the JSON key of a service account with the Play Console permissions "View
 ; financial data, orders, and cancellation survey responses" and "Manage orders and subscriptions", to
-; read and acknowledge purchases. Without the second, no Play purchase is credited: each is answered
-; internal until the permission is granted. Mount it read-only beside this ini, readable by the service's user alone.
+; read and acknowledge purchases. Without the second, a purchase the app has not already acknowledged
+; itself is answered internal until the permission is granted. Uncomment its mount in compose.yml; the file must be readable by the service's user alone.
 ;[google]
 ;package_name = chat.simplex.app
 ;service_account_file = /etc/simplex-badge-service/play-service-account.json

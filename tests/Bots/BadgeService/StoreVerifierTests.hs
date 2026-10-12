@@ -5,7 +5,8 @@
 
 module Bots.BadgeService.StoreVerifierTests (badgeStoreVerifierTests) where
 
-import BadgeService.Config (PlayStoreConfig (..))
+import BadgeService.Config (PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Service (ServiceState (..), configureStoreVerifier, newServiceState)
 import BadgeService.StoreReceipts
 import BadgeService.StoreReceipts.Apple (readAppleRoot, verifyAppleTransaction)
 import BadgeService.StoreReceipts.Google (playStoreVerifier)
@@ -33,7 +34,7 @@ import Data.X509
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import System.Directory (createDirectoryIfMissing)
-import System.FilePath ((</>))
+import System.FilePath (takeDirectory, (</>))
 import Test.Hspec
 import UnliftIO.Temporary (withTempDirectory)
 
@@ -45,8 +46,8 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "refuses a leaf the intermediate did not sign, though the intermediate is genuine" testAppleForgedLeaf
     it "fails, rather than refuses, a leaf signature the library cannot check" testAppleLeafUncheckable
     it "refuses a tampered payload" testAppleTamperedPayload
-    it "refuses a chain that is not exactly leaf, intermediate and root" testAppleChainLength
-    it "refuses a header that names another algorithm" testAppleOtherAlgorithm
+    it "fails, rather than refuses, a chain that is not exactly leaf, intermediate and root, a shape Apple may yet adopt" testAppleChainLength
+    it "fails, rather than refuses, a header that names another algorithm, a shape Apple may yet adopt" testAppleOtherAlgorithm
     it "fails, rather than refuses, another app's bundle id, since ours may be misconfigured" testAppleOtherBundle
     it "refuses a refunded transaction" testAppleRevoked
     it "reports Sandbox, Xcode and LocalTesting transactions as test purchases" testAppleSandbox
@@ -70,6 +71,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "sends no token that is only dots, and describes a token outside the grammar without quoting it" testPlayTokensNotSent
     it "acknowledges a purchase, unless it is acknowledged or consumed already" testPlayAcknowledges
     it "reports an acknowledgement Play refuses or does not answer" testPlayAcknowledgementFails
+    it "acknowledges through the verifier a [google] section configures" testPlayConfiguredAcknowledges
 
 -- * App Store
 
@@ -259,7 +261,7 @@ testAppleChainLength = do
   chain@TestChain {rootCert, intermediateCert, leafCert} <- trustedChain
   forM_ [[leafCert, rootCert], [leafCert, intermediateCert], [leafCert, intermediateCert, rootCert, rootCert]] $ \x5c -> do
     jws <- signedTransaction chain x5c es256 $ transactionPayload [] []
-    outcome <$> appleVerdict rootCert jws `shouldReturn` Invalid
+    outcome <$> appleVerdict rootCert jws `shouldReturn` Failed
 
 testAppleOtherAlgorithm :: IO ()
 testAppleOtherAlgorithm = do
@@ -267,7 +269,7 @@ testAppleOtherAlgorithm = do
   let x5c = [leafCert, intermediateCert, rootCert]
   forM_ ["none", "HS256", "ES384"] $ \alg -> do
     jws <- signedTransaction chain x5c (J.object ["alg" J..= (alg :: Text)]) $ transactionPayload [] []
-    outcome <$> appleVerdict rootCert jws `shouldReturn` Invalid
+    outcome <$> appleVerdict rootCert jws `shouldReturn` Failed
 
 testAppleOtherBundle :: IO ()
 testAppleOtherBundle = do
@@ -467,7 +469,8 @@ testPlayHangsOrIsGone :: IO ()
 testPlayHangsOrIsGone = withFakePlay $ \fake -> do
   verifier <- playVerifier fake
   answerPurchase fake testToken PlayHang
-  answeredAs verifier testToken Unreachable
+  r <- playVerdict verifier testToken
+  (outcome r, reason r) `shouldBe` (Unreachable, "google verifier timed out")
   -- not a stopped stub's port, which a test running alongside may already have been given
   gone <- playVerifier fake {fpConfig = (fpConfig fake) {gApiHost = "http://127.0.0.1:1"}}
   answeredAs gone testToken Unreachable
@@ -517,6 +520,7 @@ testPlayAcknowledgementFails = withFakePlay $ \fake -> do
   let acknowledgedAs expected = do
         r <- acknowledgement verifier SPGoogle {productId = "badge_supporter_01", token = testToken}
         outcome <$> r `shouldBe` Just expected
+        maybe "" reason r `shouldSatisfy` ("acknowledging: " `T.isPrefixOf`)
         maybe "" reason r `shouldNotSatisfy` (testToken `T.isInfixOf`)
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
   answerAcknowledgements fake $ Just 403
@@ -527,4 +531,14 @@ testPlayAcknowledgementFails = withFakePlay $ \fake -> do
   answerPurchase fake testToken PlayHang
   acknowledgedAs Unreachable
   readTVarIO (fpAcknowledged fake) `shouldReturn` []
+
+testPlayConfiguredAcknowledges :: IO ()
+testPlayConfiguredAcknowledges = withFakePlay $ \fake@FakePlay {fpConfig} -> do
+  let ini = takeDirectory (gServiceAccountFile fpConfig) </> "badge_service.ini"
+  writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+  Right cfg <- readServiceConfig ini
+  ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {playStore = Just fpConfig})
+  answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
+  acknowledgement storeVerifier SPGoogle {productId = "badge_supporter_01", token = testToken} `shouldReturn` Just (Right ())
+  readTVarIO (fpAcknowledged fake) `shouldReturn` [testToken]
 
