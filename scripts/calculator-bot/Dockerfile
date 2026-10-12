@@ -77,10 +77,10 @@ RUN cd packages/simplex-chat-client/types/typescript && \
     npx tsc
 
 COPY packages/simplex-chat-nodejs packages/simplex-chat-nodejs
-# npm install builds the add-on from binding.gyp.
 RUN cd packages/simplex-chat-nodejs && \
     npm install --no-audit --no-fund && \
     npm install --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript && \
+    npx node-gyp rebuild && \
     npx tsc && \
     cp src/simplex.* dist/
 
