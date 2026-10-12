@@ -1,0 +1,85 @@
+name: packages release PR
+
+# Opens or updates the release PR of simplex-chat (npm, PyPI) and @simplex-chat/types for this branch:
+# pins of new library and add-on releases with their SHA-256, and version bumps of changed packages.
+# Merging the PR publishes the packages (packages-publish.yml).
+
+# Secrets:
+# -------
+# NODEJS_REPO_TOKEN
+#  Reads releases of simplex-chat-libs
+# RELEASE_PR_TOKEN
+#  Only select repositories: simplex-chat
+#  Permissions:
+#   * Contents (Read and Write)
+#   * Pull requests (Read and Write)
+#  A PR opened with GITHUB_TOKEN does not run the checks of other workflows.
+
+on:
+  workflow_dispatch:
+    inputs:
+      nodejs_version:
+        description: "simplex-chat npm version, bumped when needed by default"
+        required: false
+      types_version:
+        description: "@simplex-chat/types version, bumped when needed by default"
+        required: false
+      python_version:
+        description: "simplex-chat PyPI version, bumped when needed by default"
+        required: false
+  workflow_call:
+  push:
+    branches:
+      - master
+      - stable
+    paths:
+      - "packages/simplex-chat-nodejs/**"
+      - "packages/simplex-chat-client/types/typescript/**"
+      - "packages/simplex-chat-python/**"
+      # nodejs-addon.yml updates the PR after the add-on release
+      - "!packages/simplex-chat-nodejs/cpp/**"
+      - "!packages/simplex-chat-nodejs/binding.gyp"
+
+concurrency:
+  group: packages-release-pr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-pr:
+    # A merged release PR changes only versions and pins.
+    if: "${{ !startsWith(github.event.head_commit.message, 'packages: release') }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Update pins and versions
+        id: prepare
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          NPM_SCOPE: ${{ vars.NPM_SCOPE }}
+          PYPI_URL: ${{ vars.PYPI_URL }}
+          PYPI_PROJECT: ${{ vars.PYPI_PROJECT }}
+        run: |
+          python3 scripts/ci/packages_release.py prepare \
+            --nodejs-version "${{ inputs.nodejs_version }}" \
+            --types-version "${{ inputs.types_version }}" \
+            --python-version "${{ inputs.python_version }}" \
+            --summary "$RUNNER_TEMP/summary.md"
+          echo "title=$(head -n 1 "$RUNNER_TEMP/summary.md")" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update release PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.RELEASE_PR_TOKEN }}
+          branch: packages-release/${{ github.ref_name }}
+          base: ${{ github.ref_name }}
+          title: ${{ steps.prepare.outputs.title }}
+          commit-message: ${{ steps.prepare.outputs.title }}
+          body-path: ${{ runner.temp }}/summary.md
+          author: SimpleX Chat <build@simplex.chat>
+          committer: SimpleX Chat <build@simplex.chat>
+          delete-branch: true

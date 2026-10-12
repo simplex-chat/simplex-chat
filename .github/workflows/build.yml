@@ -839,49 +839,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
 # =========================
-#      Node.js add-on
+#   Packages release PR
 # =========================
 
-  build-nodejs-addon:
-    name: "Node.js add-on ${{ matrix.platform }}"
-    needs: [maybe-release]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-22.04
-            platform: linux-x86_64
-          - os: ubuntu-22.04-arm
-            platform: linux-aarch64
-          - os: macos-latest
-            platform: macos-aarch64
-          - os: macos-15-intel
-            platform: macos-x86_64
-          - os: windows-latest
-            platform: windows-x86_64
-    defaults:
-      run:
-        shell: bash
-        working-directory: packages/simplex-chat-nodejs
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
+# A new library release updates the Node.js and Python packages in a release PR.
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Build add-on
-        run: |
-          npm install --ignore-scripts --no-audit --no-fund
-          npx --yes node-gyp rebuild
-          cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
-
-      - name: Upload add-on artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplex-nodejs-addon-${{ matrix.platform }}
-          path: packages/simplex-chat-nodejs/build/simplex-chat-nodejs-${{ matrix.platform }}.node
-          if-no-files-found: error
+  packages-release-pr:
+    needs: [maybe-release, build-linux, build-linux-postgres, build-macos, build-windows]
+    if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag }}
+    uses: ./.github/workflows/packages-release-pr.yml
+    secrets: inherit
