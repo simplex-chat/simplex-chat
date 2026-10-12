@@ -19,6 +19,7 @@ templateEngineOverride: njk
     <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg" />
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    {% include "markdown-alternate.html" %}
     <meta name="theme-color" content="#050920">
 
     <link rel="preload" href="/img/design_3/cover.webp" as="image" type="image/webp">
@@ -1019,13 +1020,14 @@ templateEngineOverride: njk
                 <div class="cf-hero-text">
                     <h1>The only<br>messaging network<br>without any <br class="cf-br-narrow">user identifiers</h1>
                     <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or user accounts.</p>
-                    <p class="lead lead-short">No phone numbers, emails, or accounts.</p>
+                    <p class="lead lead-short" data-markdown-skip>No phone numbers, emails, or accounts.</p>
                     <div class="cf-hero-cta">
                         <a class="cf-pill cf-primary" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
                             Invest on {{ wfLogo() }}
                         </a>
                         <a class="cf-cta-link" id="cf-hero-subscribe" href="#request">Subscribe for updates</a>
                     </div>
+                    <template data-markdown><p>The full crowdfunding memo, in Markdown for AI assistants: <a href="/wefunder.md">simplex.chat/wefunder.md</a></p></template>
                     <div class="cf-stats">
                         <div class="cf-stat">
                             <img src="/img/crowdfunding/cloud-download.png" alt="">

@@ -55,7 +55,7 @@ templateEngineOverride: njk
                             <p class="text-grey-black dark:text-white text-[14px] text-center">{{ point | i18n({}, lang ) | safe }}</p>
                             {% endfor %}
                         </div>
-                        <p class="text-grey-black dark:text-white text-[12px] text-center">{{ "tap-to-close" | i18n({}, lang ) | safe }}</p>
+                        <p data-markdown-skip class="text-grey-black dark:text-white text-[12px] text-center">{{ "tap-to-close" | i18n({}, lang ) | safe }}</p>
                     </div>
                 </div>
                 {% endfor %}

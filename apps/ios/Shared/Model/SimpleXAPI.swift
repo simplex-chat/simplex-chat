@@ -1361,8 +1361,12 @@ func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     switch r {
     case .result(.userProfileNoChange): return (profile, [])
     case let .result(.userProfileUpdated(_, _, toProfile, updateSummary)): return (toProfile, updateSummary.changedContacts)
-    case .error(.errorStore(.duplicateName)): return nil;
-    default: throw r.unexpected
+    case .error(.errorStore(.duplicateName)), .error(.error(.userExists)): return nil;
+    default:
+        await MainActor.run {
+            showErrorAlert(r.unexpected, NSLocalizedString("Error saving profile", comment: "alert title"))
+        }
+        throw r.unexpected
     }
 }
 
@@ -2720,7 +2724,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
         await groupChatItemsDeleted(user, groupInfo, chatItemIDs, member_)
-    case let .receivedGroupInvitation(user, groupInfo, _, _):
+    case let .receivedGroupInvitation(user, groupInfo, _, _),
+         let .receivedGroupInvitationViaGroup(user, groupInfo, _, _, _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated

@@ -1115,7 +1115,7 @@ object ChatModel {
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
     val current = currentUser.value ?: return
     val updated = current.copy(
-      profile = newProfile.toLocalProfile(current.profile.profileId),
+      profile = newProfile.toLocalProfile(current.profile.profileId).copy(localBadge = current.profile.localBadge, contactDomainVerified = current.profile.contactDomainVerified),
       fullPreferences = preferences ?: current.fullPreferences
     )
     val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }

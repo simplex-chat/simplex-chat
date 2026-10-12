@@ -720,11 +720,11 @@ fun ChatItemView(
                   DeleteItemMenu()
                 }
                 is CIContent.RcvGroupInvitation -> {
-                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
+                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, groupChat = cInfo is ChatInfo.Group, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
                   DeleteItemMenu()
                 }
                 is CIContent.SndGroupInvitation -> {
-                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
+                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, groupChat = cInfo is ChatInfo.Group, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
                   DeleteItemMenu()
                 }
                 is CIContent.RcvDirectEventContent -> {

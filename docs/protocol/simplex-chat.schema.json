@@ -325,9 +325,6 @@
     "introInvitation": {
       "properties": {
         "groupConnReq": {"ref": "connReqUri"}
-      },
-      "optionalProperties": {
-        "directConnReq": {"ref": "connReqUri"}
       }
     },
     "groupMemberRole": {
@@ -571,6 +568,9 @@
         "params": {
           "properties": {
             "memberId": {"ref": "base64url"}
+          },
+          "optionalProperties": {
+            "profile": {"ref": "profile"}
           }
         }
       }

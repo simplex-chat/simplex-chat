@@ -75,10 +75,10 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
               noMaintenance
               img_ <- mapM loadImageFile userImageFile
               createActiveUser cc coreOptions createBot userDisplayName img_
-            Just u@User {localDisplayName} -> do
+            Just u@User {profile = LocalProfile {displayName}} -> do
               forM_ userDisplayName $ \name ->
-                when (localDisplayName /= name) $ do
-                  putStrLn $ "Active user display name " <> show localDisplayName <> " does not match --user-display-name " <> show name
+                when (displayName /= name) $ do
+                  putStrLn $ "Active user display name " <> show displayName <> " does not match --user-display-name " <> show name
                   exitFailure
               -- --user-image-file only applies when the profile is created; ignore it for an existing user
               forM_ userImageFile $ \_ ->

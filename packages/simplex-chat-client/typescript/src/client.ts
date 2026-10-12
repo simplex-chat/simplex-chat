@@ -261,6 +261,12 @@ export class ChatClient {
     throw new ChatCommandError("error adding member", r)
   }
 
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    const r = await this.sendChatCmd(CC.APIAddMemberViaGroup.cmdString({groupId, viaGroupId, groupMemberId, memberRole}))
+    if (r.type === "sentGroupInvitationViaGroup") return r.member
+    throw new ChatCommandError("error adding member", r)
+  }
+
   async apiJoinGroup(groupId: number): Promise<T.GroupInfo> {
     const r = await this.sendChatCmd(CC.APIJoinGroup.cmdString({groupId}))
     if (r.type === "userAcceptedGroupSent") return r.groupInfo

@@ -1930,8 +1930,10 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiUpdateProfile(userId, profile))
     if (r is API.Result && r.res is CR.UserProfileNoChange) return profile to emptyList()
     if (r is API.Result && r.res is CR.UserProfileUpdated) return r.res.toProfile to r.res.updateSummary.changedContacts
-    if (r is API.Error && r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName) {
+    if (r is API.Error && (r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName || r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.UserExists)) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
+    } else if (!(networkErrorAlert(r))) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_profile), "${r.responseType}: ${r.details}")
     }
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
     return null
@@ -1943,7 +1945,12 @@ object ChatController {
     return when {
       r is API.Result && r.res is CR.UserProfileNoChange -> null
       r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
-      else -> throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiSetProfileAddress", generalGetString(MR.strings.error_saving_profile), r)
+        }
+        throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+      }
     }
   }
 
@@ -3139,6 +3146,13 @@ object ChatController {
             chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           }
           // TODO NtfManager.shared.notifyGroupInvitation
+        }
+      }
+      is CR.ReceivedGroupInvitationViaGroup -> {
+        if (active(r.user)) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
+          }
         }
       }
       is CR.UserAcceptedGroupSent -> {
@@ -6829,6 +6843,7 @@ sealed class CR {
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val user: UserRef, val group: Group): CR()
   @Serializable @SerialName("receivedGroupInvitation") class ReceivedGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("receivedGroupInvitationViaGroup") class ReceivedGroupInvitationViaGroup(val user: UserRef, val groupInfo: GroupInfo, val viaGroupInfo: GroupInfo, val viaMember: GroupMember, val memberRole: GroupMemberRole): CR()
   @Serializable @SerialName("groupDeletedUser") class GroupDeletedUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
   @Serializable @SerialName("memberAccepted") class MemberAccepted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
@@ -7030,6 +7045,7 @@ sealed class CR {
     is LeftMemberUser -> "leftMemberUser"
     is GroupMembers -> "groupMembers"
     is ReceivedGroupInvitation -> "receivedGroupInvitation"
+    is ReceivedGroupInvitationViaGroup -> "receivedGroupInvitationViaGroup"
     is GroupDeletedUser -> "groupDeletedUser"
     is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
     is MemberAccepted -> "memberAccepted"
@@ -7222,6 +7238,7 @@ sealed class CR {
     is LeftMemberUser -> withUser(user, json.encodeToString(groupInfo))
     is GroupMembers -> withUser(user, json.encodeToString(group))
     is ReceivedGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmemberRole: $memberRole")
+    is ReceivedGroupInvitationViaGroup -> withUser(user, "groupInfo: $groupInfo\nviaGroupInfo: $viaGroupInfo\nviaMember: $viaMember\nmemberRole: $memberRole")
     is GroupDeletedUser -> withUser(user, json.encodeToString(groupInfo))
     is JoinedGroupMemberConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member")
     is MemberAccepted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")

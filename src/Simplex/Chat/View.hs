@@ -208,6 +208,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   -- CRGroupConversationsDeleted u _g _conversations -> ttyUser u []
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ -> ttyUser u $ viewSentGroupInvitation g c
+  CRSentGroupInvitationViaGroup u g _ viaG viaM -> ttyUser u ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyMember viaM <> " in " <> ttyGroup' viaG]
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u@User {profile = LocalProfile {localBadge}} p -> ttyUser u $ viewUserProfile localBadge p
@@ -515,7 +516,8 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
      in ttyUser u [sShow connId <> ": END"]
   CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> tshow (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtServiceSubStatus srv event -> [plain $ serviceSubEventStr srv event]
-  CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
+  CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g (ttyContact' c) r
+  CEvtReceivedGroupInvitationViaGroup {user = u, groupInfo = g, viaGroupInfo = viaG, viaMember = m, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g (ttyMember m <> " in " <> ttyGroup' viaG) r
   CEvtUserJoinedGroup u g m -> ttyUser u $ viewUserJoinedGroup g m
   CEvtGroupLinkDataUpdated u g groupLink relays relaysChanged
     | relaysChanged -> ttyUser u $ viewGroupLinkRelaysUpdated g groupLink relays
@@ -733,7 +735,6 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
       GroupChat g scopeInfo -> case chatDir of
         CIGroupSnd -> case content of
           CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to context mc
-          CISndGroupInvitation {} -> showSndItemProhibited to
           _ -> showSndItem to
           where
             to = ttyToGroup g scopeInfo
@@ -744,7 +745,6 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
             CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
             CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
             CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
-            CIRcvGroupInvitation {} | isJust m_ -> showRcvItemProhibited from
             CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
             CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
             _ -> showRcvItem from
@@ -1404,9 +1404,9 @@ viewConnectedToGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, m
     ]
   _ -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
 
-viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
-viewReceivedGroupInvitation g c role =
-  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> showRole role
+viewReceivedGroupInvitation :: GroupInfo -> StyledString -> GroupMemberRole -> [StyledString]
+viewReceivedGroupInvitation g inviter role =
+  ttyFullGroup g <> ": " <> inviter <> " invites you to join the group as " <> showRole role
     : case incognitoMembershipProfile g of
       Just mp -> ["use " <> highlight ("/j " <> viewGroupName g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile mp)]
       Nothing -> ["use " <> highlight ("/j " <> viewGroupName g) <> " to accept"]
