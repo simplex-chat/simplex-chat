@@ -21,7 +21,7 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatLis
 
 ## Executive Summary
 
-The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 216 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
+The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 179 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
 
 ---
 
@@ -54,7 +54,7 @@ ChatListView
 
 ## 2. ChatListView Composable
 
-**Location:** [`ChatListView.kt#L216`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L216)
+**Location:** [`ChatListView.kt#L179`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L179)
 
 ```kotlin
 fun ChatListView(
@@ -67,8 +67,8 @@ fun ChatListView(
 
 ### Initialization
 
-- Shows "What's New" modal on first launch after update (line ~220), with a 1-second delay.
-- On desktop, closing a chat resets audio/video players (line ~235).
+- Shows "What's New" modal on first launch after update (line ~185), with a 1-second delay.
+- On desktop, closing a chat resets audio/video players (line ~193).
 
 ### Layout Modes
 
@@ -89,8 +89,8 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Android-specific
 
-- `SetNotificationsModeAdditions`: Notification permission setup (line ~280).
-- `UserPicker`: Overlay side panel for user switching (line ~284).
+- `SetNotificationsModeAdditions`: Notification permission setup (line ~243).
+- `UserPicker`: Overlay side panel for user switching (line ~247).
 
 ---
 
@@ -114,7 +114,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Active Filter Types
 
-Defined as sealed class `ActiveFilter` (line ~61):
+Defined as sealed class `ActiveFilter` (line ~59):
 
 ```kotlin
 sealed class ActiveFilter {
@@ -137,7 +137,7 @@ sealed class ActiveFilter {
 
 ### Search Filtering
 
-The `filteredChats` function (line ~1541) applies filters in this order:
+The `filteredChats` function (line ~1474) applies filters in this order:
 
 1. **SimpleX link match:** If a pasted link resolved to a known contact/group, show only that chat.
 2. **Text search:** Case-insensitive match against `chat.chatInfo.chatViewName`, `chat.chatInfo.fullName`, and `chat.chatInfo.localAlias`.
@@ -148,7 +148,7 @@ The `filteredChats` function (line ~1541) applies filters in this order:
 
 ### Search Bar
 
-`ChatListSearchBar` (line ~788) provides:
+`ChatListSearchBar` (line ~765) provides:
 - Text input with search icon.
 - SimpleX link detection: When a pasted string contains a single SimpleX link, it triggers `planAndConnect` for connection, suppressing normal search.
 - Unread filter toggle button (right side, when search is empty).
@@ -225,7 +225,7 @@ On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) re
 
 ### TagsView
 
-**Location:** [`ChatListView.kt#L1281`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1281)
+**Location:** [`ChatListView.kt#L1214`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1214)
 
 Renders a horizontally scrollable row of tag chips (via `TagsRow`, which is a platform-specific `expect` composable).
 
@@ -279,7 +279,7 @@ fun UserPicker(
 - **Android:** Renders as a slide-up overlay panel on the chat list, triggered by tapping the user profile button in the toolbar.
 - **Desktop:** Rendered inline in the left column of `DesktopScreen`, always accessible.
 - Closes automatically when any `ModalManager.start` modal opens.
-- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal draws nothing and closes itself when it is the top modal (`ModalManager.isLastModal`); if another screen covers it, it closes when the user goes back to it.
+- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal draws nothing and closes itself when it is the top modal (`ModalManager.start.isLastModal`); if another screen covers it, it closes when the user goes back to it.
 - [GAP] The Chat preferences row returns early from its modal content when there is no active user, leaving an invisible modal on the stack (see `product/gaps.md` GAP-08).
 
 ### Content
@@ -323,7 +323,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 
 ## 10. Crowdfunding Banner
 
-**Location:** [`GetStakeBanner.kt#L35`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L35)
+**Location:** [`GetStakeBanner.kt#L31`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L31)
 
 ```kotlin
 fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)

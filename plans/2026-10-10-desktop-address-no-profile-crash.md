@@ -48,7 +48,7 @@ The effect is keyed on the modal and on the modal count of `ModalManager.start` 
 
 A modal that is covered after an animation ends is disposed. It is composed afresh when it becomes the top again, for example when the user goes back to it, and the effect runs then.
 
-With the `isLastModal` check, the effect does not close a different screen, such as one opened just before or just after the address screen during an animation. This holds for stack changes on the main thread. As before, `ModalManager` is not synchronized with background calls such as `closeAllModalsEverywhere`; see GAP-09.
+With the `isLastModal` check, the effect does not close a different screen, such as one opened just before or just after the address screen during an animation. This holds for stack changes on the main thread. As before, `ModalManager` is not synchronized with background calls such as `closeAllModalsEverywhere`.
 
 ### Visible behaviour
 
@@ -71,11 +71,11 @@ An early `return@showCustomModal`, as the "Chat preferences" row does, would avo
 1. `views/helpers/ModalView.kt`: add `ModalManager.isLastModal(data)`, true when `data` belongs to the top modal that is not being removed.
 2. `views/chatlist/UserPicker.kt`: in the "SimpleX address" row, compose `UserAddressView` only when `currentUser` is not null. Otherwise run `LaunchedEffect(modal, ModalManager.start.modalCount.value)`, which closes the modal when `isLastModal(modal)` is true.
 3. Documentation, under `apps/multiplatform/`:
-   - `spec/client/navigation.md`: list `isLastModal` among the `ModalManager` methods, add a `[GAP]` note for GAP-09, link the `ModalManager` location, and update stale line links and line numbers.
-   - `spec/client/chat-list.md`: in the UserPicker section, describe the address row closing itself with no active user and add a `[GAP]` note for GAP-08; elsewhere, update stale line links and line numbers.
+   - `spec/client/navigation.md`: list `isLastModal` among the `ModalManager` methods.
+   - `spec/client/chat-list.md`, UserPicker section: describe the address row closing itself with no active user, and add a `[GAP]` note for GAP-08.
    - `spec/README.md`: update the number of known gaps.
    - `product/views/user-profiles.md`: describe the address row with no active profile.
-   - `product/gaps.md`: add GAP-08 ("Chat preferences" leaves an invisible modal with no active user) and GAP-09 (`ModalManager` is not fully synchronized with background threads).
+   - `product/gaps.md`: add GAP-08 ("Chat preferences" leaves an invisible modal with no active user).
 
 ## Verification
 

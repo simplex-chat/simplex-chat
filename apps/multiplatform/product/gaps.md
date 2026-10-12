@@ -14,7 +14,6 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 8. [UI: Chat Preferences Leaves an Invisible Modal Without a Profile](#gap-08-ui-chat-preferences-leaves-an-invisible-modal-without-a-profile)
-9. [Concurrency: ModalManager Not Fully Synchronized](#gap-09-concurrency-modalmanager-not-fully-synchronized)
 
 ---
 
@@ -304,7 +303,7 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 The "Chat preferences" row of the user picker opens `PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)`. With no active user, the modal content returns early. The modal stays on `ModalManager.start` with nothing drawn and no back button.
 
-This happens when the row is clicked with no active user, for example on a desktop with no profile and no connected mobile. It also happens when the user becomes null while the preferences screen is open, for example when the mobile disconnects.
+This happens when the row is clicked with no active user, for example on a desktop with no profile and no connected mobile. It also happens when the user becomes null while the preferences screen is open, for example when the mobile disconnects on a desktop with no profile of its own.
 
 ### Affected Locations
 
@@ -317,42 +316,4 @@ Clicking the row hides the picker and shows nothing. The leftover modal stays un
 
 ### Recommendation
 
-Close the modal when there is no active user, as the "SimpleX address" row does (`ModalManager.isLastModal` and `close`), or hide both rows when there is no active user.
-
----
-
-## GAP-09: Concurrency: ModalManager Not Fully Synchronized
-
-**Severity:** Low
-**Category:** Concurrency
-**Platforms:** Android, Desktop
-
-### Description
-
-`ModalManager` keeps its stack in an `ArrayList` (`modalViews`) and a set of pending removals (`toRemove`), and derives the modal count from both. Only some updates to `toRemove` go through the `runAtomically` spin lock. `closeModals()`, the push in `showCustomModal` and the non-animated removal in `closeModal` change the collections without it, and `showInView` and `isLastModal` read them without it.
-
-Several of these methods are called from background threads as well as the main thread. For example:
-- `closeModals()` through `closeAllModalsEverywhere`, in the self-destruct flow and when switching profile or remote host from the user picker;
-- `closeModals()` in core event handlers: `start` on `RemoteHostConnected`, `fullscreen` on `RemoteCtrlStopped`, and `end` after a delay on `Dispatchers.Default`;
-- `closeModal` when a modal's `close` is called from `withBGApi`, for example after creating or deleting a profile.
-
-On Android `start`, `center`, `end` and `fullscreen` are one shared stack, so all of these calls change the same collections.
-
-If calls on different threads overlap, the list, `toRemove` and the modal count can become inconsistent. A later push or animation cleanup can then throw `IndexOutOfBoundsException`, and a read that overlaps a change can throw as well.
-
-### Affected Locations
-
-- `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt`: `modalViews` and `toRemove` (105-108), `isLastModal` (119), `showCustomModal` (133-152), `closeModal` and `closeModals` (170-189), the cleanup in `showInView` (224-226), `closeAllModalsEverywhere` (262)
-- `common/src/commonMain/kotlin/chat/simplex/common/views/localauth/LocalAuthView.kt:93`
-- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt:166`, `:679`
-- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt:3271-3276` (`end`), `:3440` (`RemoteHostConnected`), `:3512` (`RemoteCtrlStopped`)
-- `common/src/commonMain/kotlin/chat/simplex/common/views/WelcomeView.kt:365`, `:384`
-- `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/UserProfilesView.kt:336`
-
-### Impact
-
-A crash is possible when calls on different threads overlap; no reproduction is known.
-
-### Recommendation
-
-Make every `ModalManager` mutation run on the main thread, for example by dispatching `closeAllModalsEverywhere`, the event-handler calls and `close` callbacks to `Dispatchers.Main`, or take the same lock in every method that reads or changes the stack.
+Close the modal when there is no active user, as the "SimpleX address" row does (`ModalManager.start.isLastModal` and `close`), or hide both rows when there is no active user.
