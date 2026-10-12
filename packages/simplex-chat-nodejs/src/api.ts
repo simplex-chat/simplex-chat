@@ -998,24 +998,8 @@ export class ChatApi {
   }
 }
 
-const maxMessageTextBytes = 13_000
-
-function splitPoint(text: string): number | undefined {
-  let bytes = 0
-  let end = 0
-  let afterNewline: number | undefined
-  for (const char of text) {
-    bytes += Buffer.byteLength(JSON.stringify(char)) - 2
-    if (bytes > maxMessageTextBytes) return afterNewline ?? end
-    end += char.length
-    if (char === "\n" && end > 1) afterNewline = end
-  }
-  return undefined
-}
-
 /**
  * Text shown as a live message while it is written, e.g. a streamed reply.
- * Text over the message size limit is continued in further messages.
  */
 export class LiveMessage {
   private tasks: Promise<void> = Promise.resolve()
@@ -1023,7 +1007,6 @@ export class LiveMessage {
   private writing = false
   private timer: NodeJS.Timeout | undefined = undefined
   private item: {itemId: number, text: string} | undefined = undefined
-  private sentLength = 0
 
   /**
    * @param chat - Chat API, or an object with its methods to send, update and delete messages.
@@ -1077,21 +1060,10 @@ export class LiveMessage {
 
   private async showText(text: string, live: boolean): Promise<void> {
     try {
-      for (let length = this.unsentSplit(text); length !== undefined; length = this.unsentSplit(text)) {
-        await this.showMessage(text.slice(this.sentLength, this.sentLength + length).replace(/\n$/, ""), false)
-        this.sentLength += length
-      }
-      await this.showMessage(text.slice(this.sentLength), live)
+      await this.showMessage(text, live)
     } finally {
-      if (!live) {
-        this.sentLength = 0
-        this.item = undefined
-      }
+      if (!live) this.item = undefined
     }
-  }
-
-  private unsentSplit(text: string): number | undefined {
-    return splitPoint(text.slice(this.sentLength))
   }
 
   private async showMessage(text: string, live: boolean): Promise<void> {

@@ -194,42 +194,6 @@ describe("LiveMessage", () => {
     expect(calls).toEqual(['send #5 "Hello" live=true', 'update #5 1 "Hello" live=false'])
   })
 
-  it("continues text over the limit after its last newline", async () => {
-    const {live, calls} = recordingLiveMessage()
-    const line = "a".repeat(8000)
-    live.update("")
-    live.update(`${line}\n${line}`)
-    await wait(interval * 2)
-    await live.end(`${line}\n${line}\nend`)
-    expect(calls).toEqual([
-      'send #5 "" live=true',
-      `update #5 1 ${json(line)} live=false`,
-      `send #5 ${json(line)} live=true`,
-      `update #5 2 ${json(`${line}\nend`)} live=false`,
-    ])
-  })
-
-  it("continues text over the limit without a newline", async () => {
-    const {live, calls} = recordingLiveMessage()
-    await live.end("a".repeat(20000))
-    expect(calls).toEqual([`send #5 ${json("a".repeat(13000))} live=false`, `send #5 ${json("a".repeat(7000))} live=false`])
-  })
-
-  it("counts bytes of JSON-encoded characters", async () => {
-    const {live, calls} = recordingLiveMessage()
-    await live.end("ж".repeat(7000))
-    await live.end('"'.repeat(7000))
-    await live.end("😀".repeat(4000))
-    expect(calls).toEqual([
-      `send #5 ${json("ж".repeat(6500))} live=false`,
-      `send #5 ${json("ж".repeat(500))} live=false`,
-      `send #5 ${json('"'.repeat(6500))} live=false`,
-      `send #5 ${json('"'.repeat(500))} live=false`,
-      `send #5 ${json("😀".repeat(3250))} live=false`,
-      `send #5 ${json("😀".repeat(750))} live=false`,
-    ])
-  })
-
   it("deletes a live message without text", async () => {
     const {live, calls} = recordingLiveMessage()
     live.update("")

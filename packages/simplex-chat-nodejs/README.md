@@ -87,7 +87,7 @@ async function onMessage(ci, content, chat) {
 
 `streamReply` stands for your function that returns text fragments as an async iterable.
 
-`update` sends the first text at once, and then updates the message at most once per 3 seconds (`interval` parameter). `end` finalizes the message; a message without text is deleted. Text over the message size limit is continued in further messages.
+`update` sends the first text at once, and then updates the message at most once per 3 seconds (`interval` parameter). `end` finalizes the message; a message without text is deleted.
 
 The underlying commands: `apiSendMessages` with `liveMessage = true` sends a live message, `apiUpdateChatItem` with `liveMessage = true` updates it, and with `liveMessage = false` finalizes it.
 

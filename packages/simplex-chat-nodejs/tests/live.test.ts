@@ -21,7 +21,7 @@ describe("Live message tests (use local SMP server)", () => {
     expect(await chat.sendChatCmd(`/smp ${smpServer.address}`)).toMatchObject({type: "cmdOk"})
   }
 
-  it("should show, update, finalize, continue and delete live messages", async () => {
+  it("should show, update, finalize and delete live messages", async () => {
     const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
     const bob = await api.ChatApi.init({type: "sqlite", filePrefix: bobPath})
     const aliceUser = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
@@ -53,17 +53,6 @@ describe("Live message tests (use local SMP server)", () => {
     const finalized = updated(meta => meta.itemId === itemId && meta.itemLive === false && meta.itemText === "Hello world")
     await live.end("Hello world")
     expect((await finalized)?.chatItem.chatItem.meta.itemEdited).toBe(false)
-
-    const text = "a".repeat(13000) + "b".repeat(10)
-    const partFinalized = updated(meta => meta.itemLive === false && meta.itemText === "a".repeat(13000))
-    const continued = received(meta => meta.itemLive === true && meta.itemText === "b".repeat(10))
-    live.update("")
-    live.update(text)
-    expect(await partFinalized).toBeDefined()
-    expect(await continued).toBeDefined()
-    const continuationFinalized = updated(meta => meta.itemLive === false && meta.itemText === "b".repeat(10) + "!")
-    await live.end(text + "!")
-    expect(await continuationFinalized).toBeDefined()
 
     const emptyStarted = received(meta => meta.itemLive === true && meta.itemText === "")
     live.update("")
