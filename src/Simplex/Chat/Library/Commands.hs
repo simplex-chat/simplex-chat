@@ -2657,7 +2657,7 @@ processChatCommand cxt nm = \case
           let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
             partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
-          timestamp <- liftIO getCurrentTimeSeconds
+          timestamp <- liftIO getCurrentTime
           let hasLink = msgContentHasLink mc $ parseMaybeMarkdownList $ msgContentText mc
           lift . void $ withStoreBatch' $ \db -> map (createCI db user hasLink timestamp) ctSndMsgs
           pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
@@ -2676,7 +2676,7 @@ processChatCommand cxt nm = \case
       combineResults _ _ (Left e) = Left e
       createCI :: DB.Connection -> User -> Bool -> UTCTime -> (Contact, SndMessage) -> IO ()
       createCI db user hasLink createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) False sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False hasLink createdAt
+        void $ createNewSndChatItem db user (CDDirectSnd ct) False sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False hasLink (roundDownToSecond createdAt) createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg

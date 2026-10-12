@@ -3001,7 +3001,7 @@ saveSndChatItems ::
   Bool ->
   CM [Either ChatError (ChatItem c 'MDSnd)]
 saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
-  createdAt <- liftIO getCurrentTimeSeconds
+  createdAt <- liftIO getCurrentTime
   cxt <- chatStoreCxt
   when (contactChatDeleted cd || any (\NewSndChatItemData {content} -> ciRequiresAttention content) (rights itemsData)) $
     void (withStore' $ \db -> updateChatTsStats db cxt user cd createdAt Nothing)
@@ -3010,17 +3010,16 @@ saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
     createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId, signedMsg_}, content, itemTexts, itemMentions, ciFile, quotedItem, itemForwarded} = do
       let hasLink_ = ciContentHasLink content (snd itemTexts)
-      ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ createdAt
+          itemTs = roundDownToSecond createdAt
+      ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ itemTs createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ createdAt Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
+      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ itemTs Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
       Right <$> case cd of
         CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
 
-getCurrentTimeSeconds :: IO UTCTime
-getCurrentTimeSeconds = roundDown <$> getCurrentTime
-  where
-    roundDown t@UTCTime {utctDayTime} = t {utctDayTime = fromInteger (floor utctDayTime)}
+roundDownToSecond :: UTCTime -> UTCTime
+roundDownToSecond t@UTCTime {utctDayTime} = t {utctDayTime = fromInteger (floor utctDayTime)}
 
 saveRcvChatItemNoParse :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv, ChatInfo c)
 saveRcvChatItemNoParse user cd msg brokerTs = saveRcvChatItem user cd msg brokerTs . ciContentNoParse
@@ -3358,7 +3357,7 @@ createChatItems ::
   CM' [Either ChatError AChatItem]
 createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
-  let itemTs = fromMaybe createdAt itemTs_
+  let itemTs = fromMaybe (roundDownToSecond createdAt) itemTs_
   cxt <- asks storeCxt
   void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
   withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
@@ -3414,9 +3413,10 @@ createLocalChatItems user cd itemsData createdAt = do
     createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, Maybe MarkdownList)) -> IO (ChatItem 'CTLocal 'MDSnd)
     createItem db (content, ciFile, itemForwarded, ts@(_, ft_)) = do
       let hasLink_ = ciContentHasLink content ft_
-      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing Nothing Nothing createdAt
+          itemTs = roundDownToSecond createdAt
+      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing Nothing Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing createdAt
+      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing createdAt
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =
