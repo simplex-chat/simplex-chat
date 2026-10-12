@@ -8078,13 +8078,10 @@ Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
-<<<<<<< HEAD
 Query: UPDATE contact_profiles SET contact_domain_verified = 2 WHERE contact_profile_id = ?
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
-=======
->>>>>>> master
 Query: UPDATE contact_profiles SET contact_domain_verified = NULL WHERE user_id = ? AND contact_profile_id = ?
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
@@ -8293,13 +8290,10 @@ Query: UPDATE group_profiles SET description = ? WHERE display_name = ?
 Plan:
 SCAN group_profiles
 
-<<<<<<< HEAD
-=======
 Query: UPDATE group_profiles SET public_group_id = ?
 Plan:
 SCAN group_profiles
 
->>>>>>> master
 Query: UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?
 Plan:
 SEARCH group_relays USING INTEGER PRIMARY KEY (rowid=?)
