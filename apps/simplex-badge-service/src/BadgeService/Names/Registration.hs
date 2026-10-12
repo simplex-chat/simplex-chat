@@ -11,12 +11,11 @@ module BadgeService.Names.Registration
     registerWithCreditCalldata,
     registerIntentDigest,
     verifyRegisterIntent,
-    selector,
   )
 where
 
 import Control.Monad (unless, when)
-import Control.Monad.Except (ExceptT (..), liftEither, runExceptT, throwError)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Crypto.Number.Serialize (i2ospOf_)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -34,6 +33,7 @@ import Simplex.Messaging.SimplexName (SimplexTLD)
 
 data Registration = Registration
   { rLabel :: Text,
+    rTLD :: SimplexTLD,
     rOwner :: Address,
     rDuration :: Word64,
     rSecret :: ByteString,
@@ -51,51 +51,49 @@ data RegisterIntent = RegisterIntent
 sponsorDomain :: Word64 -> Address -> Eip712Domain
 sponsorDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexSponsor", edVersion = "1", edChainId, edVerifyingContract}
 
-makeCommitment :: SimplexTLD -> Registration -> ByteString
-makeCommitment tld r = keccak256 $ abiTuple [Dynamic $ registrationTuple tld r]
+makeCommitment :: Registration -> ByteString
+makeCommitment r = keccak256 $ abiTuple [Dynamic $ registrationTuple r]
 
 commitCalldata :: ByteString -> ByteString
 commitCalldata commitment = selector "commit(bytes32)" <> commitment
 
-registerWithCreditCalldata :: SimplexTLD -> RegisterIntent -> ByteString
-registerWithCreditCalldata tld RegisterIntent {riRegistration, riDeadline, riSignature} =
+registerWithCreditCalldata :: RegisterIntent -> ByteString
+registerWithCreditCalldata RegisterIntent {riRegistration, riDeadline, riSignature} =
   selector "registerWithCredit((string,address,uint256,bytes32,address,bytes[],uint8,bytes32),uint256,bytes)"
     <> abiTuple
-      [ Dynamic $ registrationTuple tld riRegistration,
+      [ Dynamic $ registrationTuple riRegistration,
         Static $ uint256 riDeadline,
         Dynamic $ abiBytes $ serializeSignature riSignature
       ]
 
-registerIntentDigest :: SimplexTLD -> Eip712Domain -> Registration -> Word64 -> Either String ByteString
-registerIntentDigest tld domain r@Registration {rLabel, rOwner, rResolver} deadline =
+registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> ByteString
+registerIntentDigest domain r@Registration {rLabel, rOwner, rResolver} deadline =
   hashTypedData
     domain
     "RegisterName(string label,address owner,address resolver,bytes[] data,uint256 deadline)"
     [ VString $ encodeUtf8 rLabel,
       VAddress rOwner,
       VAddress rResolver,
-      VArray $ map VBytes $ recordCalls tld r,
-      VUint $ toInteger deadline
+      VArray $ map VBytes $ recordCalls r,
+      VUint $ fromIntegral deadline
     ]
 
-verifyRegisterIntent :: SimplexTLD -> Eip712Domain -> Word64 -> RegisterIntent -> IO (Either String Registration)
-verifyRegisterIntent tld domain now RegisterIntent {riRegistration = r@Registration {rOwner, rSecret}, riDeadline, riSignature} = runExceptT $ do
+verifyRegisterIntent :: Eip712Domain -> Word64 -> RegisterIntent -> IO (Either String ())
+verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner, rSecret}, riDeadline, riSignature} = runExceptT $ do
   unless (B.length rSecret == 32) $ throwError "secret: expected 32 bytes"
   when (now > riDeadline) $ throwError "intent expired"
-  digest <- liftEither $ registerIntentDigest tld domain r riDeadline
-  signer <- ExceptT $ recoverAddress riSignature digest
+  signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
-  pure r
 
-registrationTuple :: SimplexTLD -> Registration -> ByteString
-registrationTuple tld r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver} =
+registrationTuple :: Registration -> ByteString
+registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver} =
   abiTuple
     [ Dynamic $ abiBytes $ encodeUtf8 rLabel,
       Static $ addressWord rOwner,
       Static $ uint256 rDuration,
       Static rSecret,
       Static $ addressWord rResolver,
-      Dynamic $ abiArray $ map abiBytes $ recordCalls tld r,
+      Dynamic $ abiArray $ map abiBytes $ recordCalls r,
       Static reverseRecord,
       Static referrer
     ]
@@ -103,12 +101,12 @@ registrationTuple tld r@Registration {rLabel, rOwner, rDuration, rSecret, rResol
     reverseRecord = uint256 (0 :: Int)
     referrer = B.replicate 32 0
 
-recordCalls :: SimplexTLD -> Registration -> [ByteString]
-recordCalls tld Registration {rLabel, rContactLinks, rChannelLinks} =
+recordCalls :: Registration -> [ByteString]
+recordCalls Registration {rLabel, rTLD, rContactLinks, rChannelLinks} =
   [setText key ls | (key, ls) <- [("simplex.contact", rContactLinks), ("simplex.channel", rChannelLinks)], not (null ls)]
   where
-    setText key ls = selector "setText(bytes32,string,string)" <> abiTuple [Static node, Dynamic $ abiBytes key, Dynamic $ abiBytes $ encodeUtf8 $ T.intercalate "," ls]
-    node = namehash tld rLabel
+    setText key ls = selector "setText(bytes32,string,string)" <> abiTuple [Static node, Dynamic $ abiBytes key, Dynamic $ abiBytes $ encodeUtf8 $ T.intercalate ";" ls]
+    node = namehash rTLD rLabel
 
 namehash :: SimplexTLD -> Text -> ByteString
 namehash tld label = keccak256 $ tldNode <> keccak256 (encodeUtf8 label)

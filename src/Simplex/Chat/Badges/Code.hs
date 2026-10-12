@@ -38,7 +38,6 @@ import Control.Concurrent.STM
 import Control.Monad (guard)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import Crypto.Random (ChaChaDRG)
-import qualified Data.ByteArray as BA
 import Data.Bits (shiftR)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -151,19 +150,18 @@ parseNameCode t = do
   vs <- mapM charValue $ T.unpack body
   guard $ length vs == nameCodeLength
   let (payload, digest) = foldl' (\acc v -> acc * toInteger base + toInteger v) 0 vs `divMod` (2 ^ checksumBits)
-      entropy = i2ospOf_ 16 payload :: ByteString
-  guard $ digest == checksum entropy
-  NameCode <$> eitherToMaybe (mkEntropy $ BA.convert entropy)
+  guard $ digest == checksum payload
+  NameCode <$> eitherToMaybe (mkEntropy $ i2ospOf_ 16 payload)
 
 formatNameCode :: NameCode -> Text
 formatNameCode (NameCode e) = T.intercalate "-" $ nameCodePrefix : T.chunksOf groupLength (T.pack $ map valueChar values)
   where
-    entropy = BA.convert (unEntropy e) :: ByteString
-    n = os2ip entropy * 2 ^ checksumBits + checksum entropy
+    payload = os2ip $ unEntropy e
+    n = payload * 2 ^ checksumBits + checksum payload
     values = reverse $ take nameCodeLength $ map (fromInteger . (`mod` toInteger base)) $ iterate (`div` toInteger base) n
 
 nameCodeEntropy :: NameCode -> WalletEntropy
 nameCodeEntropy (NameCode e) = e
 
-checksum :: ByteString -> Integer
-checksum = (`shiftR` (256 - checksumBits)) . os2ip . C.sha256Hash
+checksum :: Integer -> Integer
+checksum = (`shiftR` (256 - checksumBits)) . os2ip . C.sha256Hash . i2ospOf_ 16

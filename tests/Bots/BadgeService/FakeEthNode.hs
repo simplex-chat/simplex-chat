@@ -5,9 +5,7 @@ module Bots.BadgeService.FakeEthNode
   ( FakeEthNode (..),
     withFakeEthNode,
     revertCalls,
-    failCalls,
     sentTransactions,
-    requestedMethods,
     fakeGas,
     fakeTip,
     fakeBaseFee,
@@ -30,6 +28,7 @@ import Network.Wai (Application, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Numeric (showHex)
 import Simplex.Messaging.Crypto (keccak256)
+import Simplex.Messaging.Util (eitherToMaybe)
 
 data FakeEthNode = FakeEthNode
   { fnUrl :: String,
@@ -39,8 +38,6 @@ data FakeEthNode = FakeEthNode
 
 data FakeState = FakeState
   { fsRevert :: Maybe ByteString,
-    fsFailure :: Maybe Text,
-    fsMethods :: [Text],
     fsSent :: [ByteString]
   }
 
@@ -51,7 +48,7 @@ fakeBaseFee = 2000000000
 
 withFakeEthNode :: (FakeEthNode -> IO a) -> IO a
 withFakeEthNode action = do
-  fnState <- newTVarIO FakeState {fsRevert = Nothing, fsFailure = Nothing, fsMethods = [], fsSent = []}
+  fnState <- newTVarIO FakeState {fsRevert = Nothing, fsSent = []}
   fnManager <- HTTP.newManager HTTP.defaultManagerSettings
   Warp.testWithApplication (pure $ fakeApp fnState) $ \port ->
     action FakeEthNode {fnUrl = "http://127.0.0.1:" <> show port, fnManager, fnState}
@@ -59,14 +56,8 @@ withFakeEthNode action = do
 revertCalls :: FakeEthNode -> ByteString -> IO ()
 revertCalls FakeEthNode {fnState} revert = atomically $ modifyTVar' fnState $ \s -> s {fsRevert = Just revert}
 
-failCalls :: FakeEthNode -> Text -> IO ()
-failCalls FakeEthNode {fnState} message = atomically $ modifyTVar' fnState $ \s -> s {fsFailure = Just message}
-
 sentTransactions :: FakeEthNode -> IO [ByteString]
 sentTransactions FakeEthNode {fnState} = reverse . fsSent <$> readTVarIO fnState
-
-requestedMethods :: FakeEthNode -> IO [Text]
-requestedMethods FakeEthNode {fnState} = reverse . fsMethods <$> readTVarIO fnState
 
 fakeApp :: TVar FakeState -> Application
 fakeApp st req respond = do
@@ -81,15 +72,12 @@ fakeApp st req respond = do
 
 answer :: TVar FakeState -> Text -> [J.Value] -> STM [JT.Pair]
 answer st method params = do
-  modifyTVar' st $ \s -> s {fsMethods = method : fsMethods s}
-  FakeState {fsRevert, fsFailure, fsSent} <- readTVar st
+  FakeState {fsRevert, fsSent} <- readTVar st
   case (method, params) of
-    ("eth_call", _) | Just message <- fsFailure -> pure ["error" .= J.object ["code" .= (-32603 :: Int), "message" .= message, "data" .= J.object ["message" .= message]]]
-    ("eth_call", _) -> pure $ maybe (result $ hex "") reverted fsRevert
     ("eth_estimateGas", _) -> pure $ maybe (result $ quantity fakeGas) reverted fsRevert
     ("eth_getTransactionCount", _) -> pure $ result $ quantity $ toInteger $ length fsSent
     ("eth_maxPriorityFeePerGas", _) -> pure $ result $ quantity fakeTip
-    ("eth_getBlockByNumber", _) -> pure ["result" .= J.object ["baseFeePerGas" .= quantity fakeBaseFee]]
+    ("eth_getBlockByNumber", _) -> pure $ result $ J.object ["baseFeePerGas" .= quantity fakeBaseFee]
     ("eth_sendRawTransaction", [J.String raw]) | Just tx <- fromHex raw -> do
       modifyTVar' st $ \s -> s {fsSent = tx : fsSent}
       pure $ result $ hex $ keccak256 tx
@@ -105,4 +93,4 @@ hex :: ByteString -> Text
 hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
 
 fromHex :: Text -> Maybe ByteString
-fromHex t = T.stripPrefix "0x" t >>= either (const Nothing) Just . convertFromBase Base16 . encodeUtf8
+fromHex t = T.stripPrefix "0x" t >>= eitherToMaybe . convertFromBase Base16 . encodeUtf8

@@ -23,7 +23,7 @@ import Simplex.Messaging.Crypto.BIP44 (CoinType (..), bip44Path, mkAccountIndex)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.Address (Address, deriveAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
-import Simplex.Messaging.SimplexName (SimplexTLD)
+import Simplex.Messaging.Util ((<$$>))
 
 data EphemeralWallet = EphemeralWallet
   { ewCode :: NameCode,
@@ -40,11 +40,9 @@ redemptionCode = formatNameCode . ewCode
 walletFromCode :: TVar ChaChaDRG -> Text -> IO (Either String EphemeralWallet)
 walletFromCode g = maybe (pure $ Left "invalid name code") (walletFromNameCode g) . parseNameCode
 
-signRegisterIntent :: TVar ChaChaDRG -> SimplexTLD -> Eip712Domain -> EphemeralWallet -> Registration -> Word64 -> IO (Either String RegisterIntent)
-signRegisterIntent g tld domain EphemeralWallet {ewKey} riRegistration riDeadline = runExceptT $ do
-  digest <- liftEither $ registerIntentDigest tld domain riRegistration riDeadline
-  riSignature <- ExceptT $ signRecoverable g ewKey digest
-  pure RegisterIntent {riRegistration, riDeadline, riSignature}
+signRegisterIntent :: TVar ChaChaDRG -> Eip712Domain -> EphemeralWallet -> Registration -> Word64 -> IO (Either String RegisterIntent)
+signRegisterIntent g domain EphemeralWallet {ewKey} r deadline =
+  RegisterIntent r deadline <$$> signRecoverable g ewKey (registerIntentDigest domain r deadline)
 
 walletFromNameCode :: TVar ChaChaDRG -> NameCode -> IO (Either String EphemeralWallet)
 walletFromNameCode g ewCode = runExceptT $ do
