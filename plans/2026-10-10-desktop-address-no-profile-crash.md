@@ -30,13 +30,15 @@ The screen can be shown in that state in two ways:
    - If another screen is on top of it, it crashes when the user goes back to it.
 
    `UserAddressView` closes itself when the user changes (`KeyChangeEffect` on the user), but with a null user it is never reached.
-2. **The row is clicked with no active user.** With no active profile, for example with no profile and no connected mobile, the user picker still shows the "Create SimpleX address" row. The picker even opens by itself in this state, at startup or when the state begins while no left-panel screen is open (`App.kt`, `desktopNoUserNoRemote`). Clicking the row crashes immediately.
+2. **The row is clicked with no active user.** With no active profile, for example with no profile and no connected mobile, the user picker still shows the "Create SimpleX address" row. With no profile and no connected mobile, the picker even opens by itself, at startup or when the state begins while no left-panel screen is open (`App.kt`, `desktopNoUserNoRemote`). Clicking the row crashes immediately.
 
-   At startup this state needs a mobile that was linked before; with no linked mobile, startup shows onboarding instead (`Core.kt`).
+   At startup, no profile and no connected mobile needs a mobile that was linked before; with no linked mobile, startup shows onboarding instead (`Core.kt`).
 
-   The state is also reached by deleting the active profile when no other visible profile remains, including the only profile, and including the last visible profile of a connected mobile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
+   No active user also follows from deleting the active profile when no other visible profile remains, including the only profile, and including the last visible profile of a connected mobile. `doRemoveUser` (`UserProfilesView.kt`) then calls `changeActiveUser_` with no user, which sets `currentUser` from `apiGetActiveUser`. After the deletion there is no active user, so it is null.
 
-Code reading suggested a third path: entering the self-destruct passcode while the screen is open. `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`), and only later creates the new profile and calls `closeAllModalsEverywhere`. An Android build of master did not crash when this was tested with the address screen open, so this path is not counted as a trigger; why it does not crash was not investigated.
+A third path is possible but not confirmed: entering the self-destruct passcode while the screen is open. `deleteStorageAndRestart` (`LocalAuthView.kt`) calls `reinitChatController`. That calls `initChatController`, which sets `currentUser` from the new empty database to null (`Core.kt`). Only later does `deleteStorageAndRestart` create the new profile and call `closeAllModalsEverywhere`.
+- On Android, the shared modal stack stays composed under the lock screen, so the address screen would recompose with a null user. Android's main loop catches exceptions (`SimplexApp.kt`). `GlobalExceptionsHandler` (`UI.android.kt`) then closes the top modal, recreates the activity and posts a crash alert, and the self-destruct flow hides all alerts at its end. A test on an Android build of master showed no visible crash. That is consistent with this recovery, but it does not show whether the exception was thrown; logcat was not checked.
+- On desktop, `initChatController` replaces the main screen with the splash screen shortly afterwards (`localUserCreated = null`), so the crash needs a frame to fall in that short window. This was not tested.
 
 ### Self-closing modal
 
@@ -54,7 +56,7 @@ When there is no active user:
 - Clicking the row now only hides the picker, as opening any modal does. The modal closes itself, and the picker is not reopened.
 - After the mobile disconnects with the address screen open, the picker does not reopen by itself (observed in testing). When the state with no user and no connected mobile begins, the app checks for open left-panel modals, and the address modal closes itself only after that check. Master does the same when any other left-panel screen is open.
 
-The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding, and the self-destruct test above did not crash on master. So no Android behaviour change is expected. With an active user, behaviour does not change on any platform.
+The change is in common code. On Android the user picker is not reachable without an active user, because deleting the last visible profile returns to onboarding. If the self-destruct path above does throw on Android, the branch closes the screen itself instead of recovering through `GlobalExceptionsHandler`. With an active user, behaviour does not change on any platform.
 
 ### Security
 
@@ -77,7 +79,7 @@ An early `return@showCustomModal`, as the "Chat preferences" row does, would avo
 
 ## Verification
 
-Desktop AppImages from master and from this branch, each with a fresh database. The v7.1.0-beta.6 CLI acts as the linked mobile (`/connect remote ctrl`). "Leftover" is checked by creating a profile afterwards: a leftover modal reappears as the address screen when onboarding finishes.
+Desktop AppImages from master and from this branch, each with a fresh database, unless stated otherwise. The v7.1.0-beta.6 CLI acts as the linked mobile (`/connect remote ctrl`). "Leftover" is checked by creating a profile afterwards: a leftover modal reappears as the address screen when onboarding finishes.
 
 - master, case 1: NPE at `UserPicker.kt:223`.
 - master, case 2: NPE at `UserPicker.kt:223` with the reported stack (`showCustomModal` 157, `ModalView.kt:218`).
@@ -86,4 +88,4 @@ Desktop AppImages from master and from this branch, each with a fresh database. 
 - This branch, case 2, double click (seven runs, 8 to 40 ms apart): no crash, and no leftover. With `LaunchedEffect(Unit)` the address screen reappeared after onboarding in 2 of 3 runs at 30 ms.
 - This branch, case 2, "Settings" then "Create SimpleX address" 100 ms apart: no crash, and Settings stays open. With the close keyed on the modal count but without the `isLastModal` check, Settings was closed too.
 - This branch, with a local profile: the address screen opens and closes normally. When the mobile disconnects with its address screen open, the screen closes through `UserAddressView`'s own user-change effect, and the app returns to the local profile.
-- Android build of master, self-destruct passcode entered with the address screen open: no crash.
+- Android build of master (not of this branch), self-destruct passcode entered with the address screen opened from the user picker: no visible crash; logcat not checked.
