@@ -9,13 +9,13 @@ plugins {
 }
 
 android {
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "chat.simplex.app"
         namespace = "chat.simplex.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
         versionCode = (extra["android.version_code"] as String).toInt()

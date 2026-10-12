@@ -37,7 +37,7 @@ public struct KeyChainItem {
     }
 }
 
-func randomDatabasePassword() -> String {
+func randomDatabasePassword() -> String? {
     var keyData = Data(count: 32)
     let status = keyData.withUnsafeMutableBytes {
         SecRandomCopyBytes(kSecRandomDefault, 32, $0.baseAddress!)
@@ -46,7 +46,7 @@ func randomDatabasePassword() -> String {
         return keyData.base64EncodedString()
     } else {
         logger.error("randomDatabasePassword: error \(status)")
-        return ""
+        return nil
     }
 }
 

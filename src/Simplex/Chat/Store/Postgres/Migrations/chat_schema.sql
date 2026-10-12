@@ -618,7 +618,8 @@ CREATE TABLE test_chat_schema.connections (
     short_link_inv bytea,
     via_short_link_contact bytea,
     via_contact_uri bytea,
-    relay_test smallint DEFAULT 0 NOT NULL
+    relay_test smallint DEFAULT 0 NOT NULL,
+    pres_header bytea
 );
 
 
@@ -944,6 +945,20 @@ ALTER TABLE test_chat_schema.files ALTER COLUMN file_id ADD GENERATED ALWAYS AS 
 
 
 
+CREATE TABLE test_chat_schema.group_member_badge_proofs (
+    group_member_id bigint NOT NULL,
+    badge_proof bytea NOT NULL,
+    badge_pres_header bytea NOT NULL,
+    badge_key_idx bigint NOT NULL,
+    badge_type text NOT NULL,
+    badge_expiry timestamp with time zone NOT NULL,
+    badge_extra text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
+);
+
+
+
 CREATE TABLE test_chat_schema.group_member_intros (
     group_member_intro_id bigint NOT NULL,
     re_group_member_id bigint NOT NULL,
@@ -1007,7 +1022,8 @@ CREATE TABLE test_chat_schema.group_members (
     removed_at timestamp with time zone,
     roster_served_version bigint,
     member_security_code text,
-    member_security_code_verified_at timestamp with time zone
+    member_security_code_verified_at timestamp with time zone,
+    invited_via_group_member_id bigint
 );
 
 
@@ -1170,7 +1186,8 @@ CREATE TABLE test_chat_schema.groups (
     roster_blob bytea,
     group_domain_verified smallint,
     stored_roster_version bigint,
-    applied_complete_roster_version bigint
+    applied_complete_roster_version bigint,
+    relay_request_public_group_id bytea
 );
 
 
@@ -1938,6 +1955,11 @@ ALTER TABLE ONLY test_chat_schema.files
 
 
 
+ALTER TABLE ONLY test_chat_schema.group_member_badge_proofs
+    ADD CONSTRAINT group_member_badge_proofs_pkey PRIMARY KEY (group_member_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.group_member_intros
     ADD CONSTRAINT group_member_intros_pkey PRIMARY KEY (group_member_intro_id);
 
@@ -2688,6 +2710,10 @@ CREATE INDEX idx_group_members_invited_by_group_member_id ON test_chat_schema.gr
 
 
 
+CREATE INDEX idx_group_members_invited_via_group_member_id ON test_chat_schema.group_members USING btree (invited_via_group_member_id);
+
+
+
 CREATE INDEX idx_group_members_member_profile_id ON test_chat_schema.group_members USING btree (member_profile_id);
 
 
@@ -3404,6 +3430,11 @@ ALTER TABLE ONLY test_chat_schema.users
 
 
 
+ALTER TABLE ONLY test_chat_schema.group_member_badge_proofs
+    ADD CONSTRAINT group_member_badge_proofs_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY test_chat_schema.group_member_intros
     ADD CONSTRAINT group_member_intros_re_group_member_id_fkey FOREIGN KEY (re_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
@@ -3436,6 +3467,11 @@ ALTER TABLE ONLY test_chat_schema.group_members
 
 ALTER TABLE ONLY test_chat_schema.group_members
     ADD CONSTRAINT group_members_invited_by_group_member_id_fkey FOREIGN KEY (invited_by_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_members
+    ADD CONSTRAINT group_members_invited_via_group_member_id_fkey FOREIGN KEY (invited_via_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
 
 
 

@@ -11,7 +11,7 @@ import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.KeyChangeEffect
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.onboarding.ReadableTextWithLink
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun AddContactLearnMore(close: () -> Unit) {

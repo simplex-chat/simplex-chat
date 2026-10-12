@@ -34,7 +34,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
@@ -720,11 +720,11 @@ fun ChatItemView(
                   DeleteItemMenu()
                 }
                 is CIContent.RcvGroupInvitation -> {
-                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
+                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, groupChat = cInfo is ChatInfo.Group, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
                   DeleteItemMenu()
                 }
                 is CIContent.SndGroupInvitation -> {
-                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
+                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, groupChat = cInfo is ChatInfo.Group, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
                   DeleteItemMenu()
                 }
                 is CIContent.RcvDirectEventContent -> {

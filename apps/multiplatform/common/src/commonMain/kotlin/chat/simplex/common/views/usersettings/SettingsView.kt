@@ -35,7 +35,7 @@ import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: () -> Unit) {
@@ -73,6 +73,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
 
 val simplexTeamUri =
   "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
+
+val simplexNewsUri =
+  "simplex:/c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA?h=smp18.simplex.im"
 
 @Composable
 fun SettingsLayout(
@@ -161,6 +164,7 @@ fun HelpAndSupportView(
 
     SectionView(stringResource(MR.strings.settings_section_title_contact)) {
       if (!chatModel.desktopNoUserNoRemote) {
+        SettingsActionItem(painterResource(MR.images.ic_bigtop_updates), stringResource(MR.strings.follow_simplex_network_news), { uriHandler.openVerifiedSimplexUri(simplexNewsUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
       }
       SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)

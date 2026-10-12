@@ -197,8 +197,7 @@ Events:
 {
   "memberId": "<member ID>",
   "memberIntro": {
-    "groupConnReq": "<group conn req>",
-    "directConnReq": "<direct conn req>"
+    "groupConnReq": "<group conn req>"
   }
 }
 
@@ -214,8 +213,7 @@ Events:
     },
   },
   "memberIntro": {
-    "groupConnReq": "<group conn req>",
-    "directConnReq": "<direct conn req>"
+    "groupConnReq": "<group conn req>"
   }
 }
 

@@ -59,6 +59,19 @@ def APISetProfileAddress_cmd_string(self: APISetProfileAddress) -> str:
 APISetProfileAddress_Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
 
 
+# Set or remove SimpleX name of bot address. The name must be registered with the address short link.
+# Network usage: interactive.
+class APISetUserDomain(TypedDict):
+    userId: int  # int64
+    simplexDomain: NotRequired[str]
+
+
+def APISetUserDomain_cmd_string(self: APISetUserDomain) -> str:
+    return '/_set domain ' + str(self['userId']) + ((' ' + self.get('simplexDomain')) if self.get('simplexDomain') is not None else '')
+
+APISetUserDomain_Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
+
+
 # Set bot address settings.
 # Network usage: interactive.
 class APISetAddressSettings(TypedDict):
@@ -220,6 +233,21 @@ def APIAddMember_cmd_string(self: APIAddMember) -> str:
     return '/_add #' + str(self['groupId']) + ' ' + str(self['contactId']) + ' ' + str(self['memberRole'])
 
 APIAddMember_Response = CR.SentGroupInvitation | CR.ChatCmdError
+
+
+# Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+# Network usage: interactive.
+class APIAddMemberViaGroup(TypedDict):
+    groupId: int  # int64
+    viaGroupId: int  # int64
+    groupMemberId: int  # int64
+    memberRole: "T.GroupMemberRole"
+
+
+def APIAddMemberViaGroup_cmd_string(self: APIAddMemberViaGroup) -> str:
+    return '/_add #' + str(self['groupId']) + ' #' + str(self['viaGroupId']) + ' ' + str(self['groupMemberId']) + ' ' + str(self['memberRole'])
+
+APIAddMemberViaGroup_Response = CR.SentGroupInvitationViaGroup | CR.ChatCmdError
 
 
 # Join group.

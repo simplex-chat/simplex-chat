@@ -1,0 +1,88 @@
+---
+permalink: /llms.txt
+eleventyExcludeFromCollections: true
+---
+# SimpleX
+
+> SimpleX is the first messaging network without user identifiers of any kind – no phone numbers, usernames or random IDs – so nobody, including its servers, can see who talks to whom. SimpleX Chat is the free, open-source app for iOS, Android, Linux, macOS and Windows that uses this network, and the company that builds both.
+
+Each conversation uses its own one-way message queues with random addresses, and contacts are stored only on users' devices. Messages are end-to-end encrypted with a double ratchet that adds a post-quantum key exchange on every step. Anyone can run servers; SimpleX Chat and Flux operate the servers preset in the app. Trail of Bits assessed the implementation in 2022 and reviewed the cryptographic design in 2024.
+
+Every page of simplex.chat is also available as Markdown: replace `.html` with `.md` (simplex.chat/docs/simplex.md), or add `.md` to the path (simplex.chat/why.md).
+
+## Start here
+
+- [Key facts](https://simplex.chat/llms/facts.md): numbers with dates and sources; also as [JSON](https://simplex.chat/llms/facts.json)
+- [Answers to common questions](https://simplex.chat/llms/answers.md): how SimpleX works, security, limitations, comparisons, governance, business model
+- [Why we are building SimpleX Network](https://simplex.chat/why.md), and [the film on YouTube](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+- [SimpleX Chat home page](https://simplex.chat/index.md)
+- [The world's most secure messaging](https://simplex.chat/messaging.md): features and comparisons with other messengers
+- [Timeline](https://simplex.chat/llms/timeline.md): milestones from 2021 to the roadmap
+
+## How SimpleX works
+
+- [How SimpleX works](https://simplex.chat/docs/simplex.md): platform overview and comparison with peer-to-peer and federated networks
+- [Glossary](https://simplex.chat/docs/glossary.md)
+- [FAQ](https://simplex.chat/faq.md)
+- [Public names whitepaper](https://simplex.chat/docs/protocol/names-overview.md): names for channels and businesses, without user identifiers
+- [Channels whitepaper](https://simplex.chat/docs/protocol/channels-overview.md): scalable public channels
+- [Chat protocol](https://simplex.chat/docs/protocol/simplex-chat.md)
+- [All documentation](https://simplex.chat/docs.md)
+
+## Protocol specifications
+
+- [SimpleX network overview](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/overview-tjr.md)
+- [SimpleX Messaging Protocol](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/simplex-messaging.md)
+- [Agent protocol](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/agent-protocol.md)
+- [Post-quantum double ratchet](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/pqdr.md)
+- [Security model](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/security.md)
+- [XFTP file transfer protocol](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/xftp.md)
+- [XRCP remote control protocol](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/xrcp.md)
+- [Push notifications](https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/protocol/push-notifications.md)
+
+## Security
+
+- [Security policy and audits](https://simplex.chat/security.md)
+- [Trail of Bits implementation assessment, 2022](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf)
+- [Trail of Bits cryptographic design review, 2024](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf)
+- [Transparency reports](https://simplex.chat/transparency.md)
+- [Reproducible builds](https://simplex.chat/reproduce.md)
+- [Privacy policy](https://simplex.chat/privacy.md)
+
+## Use SimpleX
+
+- [Download the apps](https://simplex.chat/downloads.md)
+- [App guide](https://simplex.chat/docs/guide/readme.md)
+- [Directory of public groups and channels](https://simplex.chat/directory.md), with live data in [listing.json](https://directory.simplex.chat/data/listing.json)
+- [SimpleX for business](https://simplex.chat/docs/business.md)
+- [Host your own messaging server](https://simplex.chat/docs/server.md) and [file server](https://simplex.chat/docs/xftp-server.md)
+
+## For AI agents and developers
+
+- [SimpleX for AI agents and developers](https://simplex.chat/llms/agents.md): a bot in five minutes, the API, building from source, OpenClaw, asking the team
+- [Bot API guide](https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/bots/README.md)
+- [Terminal client](https://simplex.chat/docs/cli.md)
+- [Source code](https://github.com/simplex-chat)
+
+## Company, crowdfunding and investment
+
+- [Crowdfunding page](https://simplex.chat/crowdfunding.md)
+- [Wefunder memo](https://simplex.chat/wefunder.md): the full memo from the Wefunder page
+- [Wefunder page](https://wefunder.com/simplex.chat) and [Wefunder AI profile](https://wefunder.com/simplex.chat.ai.txt)
+- [SimpleX Crowdfunding News](https://simplex.chat/crowdfunding-news.md): the crowdfunding news channel, with links to its recent posts in JSON
+- [Livestream: Foundation for the Future](https://simplex.chat/livestream.md)
+- [About SimpleX Chat](https://simplex.chat/about.md)
+- [Donate](https://simplex.chat/donate.md)
+
+## Blog
+
+- [All posts](https://simplex.chat/blog.md)
+- [SimpleX Network News](https://simplex.chat/news.md): the news channel, with links to its recent posts in JSON
+{% for post in collections.blogs.slice(0, 10) -%}
+- [{{ post.data.title | plainText | safe }}](https://simplex.chat{{ post.url | markdownUrl }}) ({{ post.date.toISOString().slice(0, 10) }})
+{% endfor %}
+## Optional
+
+- [Full text of the core pages in one file](https://simplex.chat/llms-full.txt)
+- [Publications about SimpleX](https://simplex.chat/links.md): reviews, articles, videos, podcasts and community projects
+- [Translations](https://simplex.chat/docs/translations.md)

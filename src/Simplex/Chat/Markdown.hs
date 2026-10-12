@@ -518,11 +518,11 @@ displayNameTextP_ = (,"") <$> quoted '\'' <|> splitPunctuation <$> takeNameTill 
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 commandTextP :: Parser (Text, Text)
-commandTextP = do
-  (cmd, punct) <- displayNameTextP_
-  case T.words cmd of
-    (keyword : _) | T.all (\c -> isAlpha c || isDigit c || c == '_') keyword -> pure (cmd, punct)
-    _ -> fail "invalid command keyword"
+commandTextP = commandText <$> displayNameTextP_
+  where
+    commandText (cmd, punct)
+      | T.null cmd = (punct, "")
+      | otherwise = (cmd, punct)
 
 splitPunctuation :: Text -> (Text, Text)
 splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)

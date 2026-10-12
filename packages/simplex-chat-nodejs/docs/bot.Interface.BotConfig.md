@@ -34,13 +34,13 @@ Defined in: [src/bot.ts:42](../src/bot.ts#L42)
 
 #### Index Signature
 
-\[`key`: `string`\]: ((`chatItem`, `command`) => `void` \| `Promise`\<`void`\>) \| `undefined`
+\[`key`: `string`\]: ((`chatItem`, `command`, `chat`) => `void` \| `Promise`\<`void`\>) \| `undefined`
 
 ***
 
 ### onMessage?
 
-> `optional` **onMessage?**: (`chatItem`, `content`) => `void` \| `Promise`\<`void`\>
+> `optional` **onMessage?**: (`chatItem`, `content`, `chat`) => `void` \| `Promise`\<`void`\>
 
 Defined in: [src/bot.ts:40](../src/bot.ts#L40)
 
@@ -53,6 +53,10 @@ Defined in: [src/bot.ts:40](../src/bot.ts#L40)
 ##### content
 
 `MsgContent`
+
+##### chat
+
+[`ChatApi`](api.Class.ChatApi.md)
 
 #### Returns
 

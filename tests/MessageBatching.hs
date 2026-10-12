@@ -33,6 +33,7 @@ import Simplex.Chat.Protocol
     GrpMsgForward (GrpMsgForward),
     MsgContent (MCText),
     VerifiedMsg (VMUnsigned),
+    fwdMemberName,
     maxBatchElementCount,
     maxEncodedMsgLength,
     mcSimple,
@@ -49,6 +50,7 @@ batchingTests = describe "message batching tests" $ do
   it "splits a batch that exceeds the element count limit" testBatchElementCountLimit
   it "does not create a relay delivery body when every task is oversized" testRelayBatchAllLarge
   it "classifies a task that fits raw but not as a framed singleton as large" testRelayBatchSingletonOverflow
+  it "shortens forwarded member names" testFwdMemberName
 
 instance IsString SndMessage where
   fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing}
@@ -189,6 +191,11 @@ testRelayBatchSingletonOverflow = do
   body_ `shouldBe` Nothing
   map deliveryTaskId accepted `shouldBe` []
   map deliveryTaskId large `shouldBe` [1]
+
+testFwdMemberName :: IO ()
+testFwdMemberName = do
+  fwdMemberName "sixteen_chars_ab" `shouldBe` "sixteen_chars_ab"
+  fwdMemberName "seventeen_chars_a" `shouldBe` "seventeen_chars_…"
 
 runBatcherTest :: BatchMode -> Int -> [SndMessage] -> [ChatError] -> [ByteString] -> Spec
 runBatcherTest mode maxLen msgs expectedErrors expectedBatches =

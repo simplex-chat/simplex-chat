@@ -28,7 +28,7 @@ import chat.simplex.common.views.newchat.darkStops
 import chat.simplex.common.views.newchat.gradientPoints
 import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.common.views.onboarding.GetStakeView
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 // Spec: spec/client/chat-list.md#GetStakeBanner
 @Composable

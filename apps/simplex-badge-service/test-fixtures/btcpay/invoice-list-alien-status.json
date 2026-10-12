@@ -1,0 +1,133 @@
+{
+  "_fixture": "The same list response carrying an invoice whose `status` this build does not know -- the store enumerates every invoice, ours and not. Hand-written from the documented schema, since a real BTCPay will not produce a status on demand. The alien entry must be SKIPPED and the healthy one in the SAME response must still settle.",
+  "response": [
+    {
+      "metadata": {},
+      "checkout": {
+        "speedPolicy": "MediumSpeed",
+        "paymentMethods": [
+          "BTC-CHAIN"
+        ],
+        "defaultPaymentMethod": null,
+        "expirationMinutes": 60,
+        "monitoringMinutes": 4320,
+        "paymentTolerance": 0.5,
+        "redirectURL": null,
+        "redirectAutomatically": false,
+        "requiresRefundEmail": false,
+        "defaultLanguage": null
+      },
+      "receipt": {
+        "enabled": null,
+        "showQR": null,
+        "showPayments": null
+      },
+      "id": "AlienStatusInvoiceRef",
+      "storeId": "BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT",
+      "amount": "54.00",
+      "currency": "USD",
+      "type": "Standard",
+      "checkoutLink": "https://btcpay.example.org/i/AlienStatusInvoiceRef",
+      "createdTime": 1700000000,
+      "expirationTime": 1700003600,
+      "monitoringExpiration": 1700259200,
+      "status": "Frobnicated",
+      "additionalStatus": "None",
+      "availableStatusesForManualMarking": [
+        "Settled",
+        "Invalid"
+      ],
+      "archived": false,
+      "paymentMethods": [
+        {
+          "paymentMethodId": "BTC-CHAIN",
+          "currency": "BTC",
+          "destination": "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
+          "paymentLink": "bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq?amount=0.00050000",
+          "rate": "108000.12",
+          "paymentMethodPaid": "0.00050000",
+          "totalPaid": "9.99999999",
+          "due": "0.00000000",
+          "amount": "0.00050000",
+          "networkFee": "0.00000500",
+          "activated": true,
+          "payments": [
+            {
+              "id": "8e3a1f0c9d2b4a5768f90e1c2d3b4a5968f70e1c2d3b4a5968f70e1c2d3b4a59-0",
+              "receivedDate": 1700003600,
+              "value": "0.00050000",
+              "fee": "0.00000000",
+              "status": "Settled",
+              "destination": "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"
+            }
+          ],
+          "additionalData": {}
+        }
+      ]
+    },
+    {
+      "metadata": {},
+      "checkout": {
+        "speedPolicy": "MediumSpeed",
+        "paymentMethods": [
+          "BTC-CHAIN"
+        ],
+        "defaultPaymentMethod": null,
+        "expirationMinutes": 60,
+        "monitoringMinutes": 4320,
+        "paymentTolerance": 0.5,
+        "redirectURL": null,
+        "redirectAutomatically": false,
+        "requiresRefundEmail": false,
+        "defaultLanguage": null
+      },
+      "receipt": {
+        "enabled": null,
+        "showQR": null,
+        "showPayments": null
+      },
+      "id": "SettledInvoiceRefAAAA",
+      "storeId": "BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT",
+      "amount": "54.00",
+      "currency": "USD",
+      "type": "Standard",
+      "checkoutLink": "https://btcpay.example.org/i/SettledInvoiceRefAAAA",
+      "createdTime": 1700000000,
+      "expirationTime": 1700003600,
+      "monitoringExpiration": 1700259200,
+      "status": "Settled",
+      "additionalStatus": "None",
+      "availableStatusesForManualMarking": [
+        "Settled",
+        "Invalid"
+      ],
+      "archived": false,
+      "paymentMethods": [
+        {
+          "paymentMethodId": "BTC-CHAIN",
+          "currency": "BTC",
+          "destination": "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
+          "paymentLink": "bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq?amount=0.00050000",
+          "rate": "108000.12",
+          "paymentMethodPaid": "0.00050000",
+          "totalPaid": "9.99999999",
+          "due": "0.00000000",
+          "amount": "0.00050000",
+          "networkFee": "0.00000500",
+          "activated": true,
+          "payments": [
+            {
+              "id": "8e3a1f0c9d2b4a5768f90e1c2d3b4a5968f70e1c2d3b4a5968f70e1c2d3b4a59-0",
+              "receivedDate": 1700003600,
+              "value": "0.00050000",
+              "fee": "0.00000000",
+              "status": "Settled",
+              "destination": "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"
+            }
+          ],
+          "additionalData": {}
+        }
+      ]
+    }
+  ]
+}

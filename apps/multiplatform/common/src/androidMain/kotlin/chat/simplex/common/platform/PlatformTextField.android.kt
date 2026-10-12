@@ -39,7 +39,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter

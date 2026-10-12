@@ -59,7 +59,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlin.math.absoluteValue
@@ -1033,7 +1033,7 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   return v != lastVersion
 }
 
-private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat"
+private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=app"
 
 private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
 
@@ -1197,7 +1197,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
 
   ColumnWithScrollBar(Modifier.pinchZoom().padding(horizontal = DEFAULT_PADDING)) {
     // in the center of the window the page is wide enough for the title to fit on one line
-    val title = "Get a stake in\nSimpleX Chat"
+    val title = "Invest in\nSimpleX Chat"
     AppBarTitle(if (inCenterOfWindow) title.replace("\n", " ") else title, withPadding = false)
     // What's new already shows the image of the first slide, above the link that opens this page
     if (showFirstImage) {

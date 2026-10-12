@@ -3,7 +3,7 @@ package chat.simplex.common.views.call
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -21,7 +21,7 @@ data class Call(
   val localMediaSources: CallMediaSources = CallMediaSources(mic = true, camera = initialCallType == CallMediaType.Video),
   val localCapabilities: CallCapabilities? = null,
   val peerMediaSources: CallMediaSources = CallMediaSources(),
-  val sharedKey: String? = null,
+  val hasSharedKey: Boolean = false,
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null,
   var connectedAt: Instant? = null,
@@ -32,14 +32,14 @@ data class Call(
 
   val androidCallState: Closeable
 ) {
-  val encrypted: Boolean get() = localEncrypted && sharedKey != null
+  val encrypted: Boolean get() = localEncrypted && hasSharedKey
   private val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
 
   val encryptionStatus: String get() = when(callState) {
     CallState.WaitCapabilities -> ""
     CallState.InvitationSent -> generalGetString(if (localEncrypted) MR.strings.status_e2e_encrypted else MR.strings.status_no_e2e_encryption)
-    CallState.InvitationAccepted -> generalGetString(if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_contact_has_e2e_encryption)
-    else -> generalGetString(if (!localEncrypted) MR.strings.status_no_e2e_encryption else if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_e2e_encrypted)
+    CallState.InvitationAccepted -> generalGetString(if (!hasSharedKey) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_contact_has_e2e_encryption)
+    else -> generalGetString(if (!localEncrypted) MR.strings.status_no_e2e_encryption else if (!hasSharedKey) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_e2e_encrypted)
   }
 
   val hasVideo: Boolean

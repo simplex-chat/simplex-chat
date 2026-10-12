@@ -1198,6 +1198,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     // group events
     case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: Set<Int64>, byUser: Bool, member_: GroupMember?)
     case receivedGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, memberRole: GroupMemberRole)
+    case receivedGroupInvitationViaGroup(user: UserRef, groupInfo: GroupInfo, viaGroupInfo: GroupInfo, viaMember: GroupMember, memberRole: GroupMemberRole)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
     case groupLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
     case businessLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, fromContact: Contact)
@@ -1279,6 +1280,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .chatItemsDeleted: "chatItemsDeleted"
         case .groupChatItemsDeleted: "groupChatItemsDeleted"
         case .receivedGroupInvitation: "receivedGroupInvitation"
+        case .receivedGroupInvitationViaGroup: "receivedGroupInvitationViaGroup"
         case .userAcceptedGroupSent: "userAcceptedGroupSent"
         case .groupLinkConnecting: "groupLinkConnecting"
         case .businessLinkConnecting: "businessLinkConnecting"
@@ -1363,6 +1365,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .groupChatItemsDeleted(u, gInfo, chatItemIDs, byUser, member_):
             return withUser(u, "chatItemIDs: \(String(describing: chatItemIDs))\ngroupInfo: \(String(describing: gInfo))\nbyUser: \(byUser)\nmember_: \(String(describing: member_))")
         case let .receivedGroupInvitation(u, groupInfo, contact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmemberRole: \(memberRole)")
+        case let .receivedGroupInvitationViaGroup(u, groupInfo, viaGroupInfo, viaMember, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nviaGroupInfo: \(viaGroupInfo)\nviaMember: \(viaMember)\nmemberRole: \(memberRole)")
         case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
         case let .groupLinkConnecting(u, groupInfo, hostMember): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))")
         case let .businessLinkConnecting(u, groupInfo, hostMember, fromContact): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))\nfromContact: \(String(describing: fromContact))")
@@ -1938,10 +1941,13 @@ enum UserServersError: Decodable {
     case storageMissing(protocol: ServerProtocol, user: UserRef?)
     case proxyMissing(protocol: ServerProtocol, user: UserRef?)
     case duplicateServer(protocol: ServerProtocol, duplicateServer: String, duplicateHost: String)
+    case tooManyHosts(protocol: ServerProtocol, tooManyHostsServer: String)
     case duplicateChatRelayAddress(duplicateChatRelay: String, duplicateAddress: String)
 
     var globalError: String? {
         switch self {
+        case .tooManyHosts:
+            return globalSMPError
         case let .noServers(`protocol`, _):
             switch `protocol` {
             case .smp: return globalSMPError
@@ -1984,6 +1990,8 @@ enum UserServersError: Decodable {
             } else {
                 return text
             }
+        case let .tooManyHosts(.smp, server):
+            return String.localizedStringWithFormat(NSLocalizedString("Server %@ has more than two host names.", comment: "servers error"), serverHostname(server))
         default:
             return nil
         }

@@ -46,7 +46,7 @@ import chat.simplex.common.views.badges.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -779,7 +779,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   } else {
     withBGApi {
       chatModel.appOpenUrlConnecting.value = true
-      planAndConnect(rhId, uri, close = null, cleanup = { chatModel.appOpenUrlConnecting.value = false })
+      planAndConnect(rhId, uri, close = { ModalManager.closeAllModalsEverywhere() }, cleanup = { chatModel.appOpenUrlConnecting.value = false })
     }
   }
 }

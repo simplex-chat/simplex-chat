@@ -32,7 +32,12 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     } else if useKeychain {
         if !hasDatabase() {
             logger.debug("chatMigrateInit generating a random DB key")
-            dbKey = randomDatabasePassword()
+            guard let key = randomDatabasePassword() else {
+                let result = (false, DBMigrationResult.errorKeyGeneration)
+                migrationResult = result
+                return result
+            }
+            dbKey = key
             initialRandomDBPassphraseGroupDefault.set(true)
         } else if let key = kcDatabasePassword.get() {
             dbKey = key
@@ -56,7 +61,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
 
 public func chatInitTemporaryDatabase(url: URL, key: String? = nil, confirmation: MigrationConfirmation = .error) -> (DBMigrationResult, chat_ctrl?) {
     let dbPath = url.path
-    let dbKey = key ?? randomDatabasePassword()
+    guard let dbKey = key ?? randomDatabasePassword() else { return (.errorKeyGeneration, nil) }
     logger.debug("chatInitTemporaryDatabase path: \(dbPath)")
     var temporaryController: chat_ctrl? = nil
     var cPath = dbPath.cString(using: .utf8)!
@@ -66,14 +71,14 @@ public func chatInitTemporaryDatabase(url: URL, key: String? = nil, confirmation
     return (dbMigrationResult(dataFromCString(cjson)), temporaryController)
 }
 
-public func chatInitControllerRemovingDatabases() {
+public func chatInitControllerRemovingDatabases() throws {
     let dbPath = getAppDatabasePath().path
     let fm = FileManager.default
     // Remove previous databases, otherwise, can be .errorNotADatabase with nil controller
     try? fm.removeItem(atPath: dbPath + CHAT_DB)
     try? fm.removeItem(atPath: dbPath + AGENT_DB)
 
-    let dbKey = randomDatabasePassword()
+    guard let dbKey = randomDatabasePassword() else { throw RuntimeError("Cannot generate random database passphrase") }
     logger.debug("chatInitControllerRemovingDatabases path: \(dbPath)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
@@ -353,6 +358,7 @@ public enum DBMigrationResult: Decodable, Equatable {
     case errorMigration(dbFile: String, migrationError: MigrationError)
     case errorSQL(dbFile: String, migrationSQLError: String)
     case errorKeychain
+    case errorKeyGeneration
     case unknown(json: String)
 }
 

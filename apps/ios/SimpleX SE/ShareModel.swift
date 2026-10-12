@@ -247,6 +247,11 @@ class ShareModel: ObservableObject {
                 title: "Keychain error",
                 message: "Cannot access keychain to save database password"
             )
+        case .errorKeyGeneration:
+            ErrorAlert(
+                title: "Database error",
+                message: "Cannot generate random database passphrase"
+            )
         case .invalidConfirmation:
             ErrorAlert("Invalid migration confirmation")
         case let .unknown(json):

@@ -38,7 +38,7 @@ import chat.simplex.common.views.chatlist.openGetStake
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.common.views.usersettings.UserAddressView
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin

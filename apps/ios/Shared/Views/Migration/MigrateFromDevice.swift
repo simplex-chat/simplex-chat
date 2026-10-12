@@ -709,6 +709,8 @@ private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: 
         alert.wrappedValue = .wrongPassphrase()
     case .errorKeychain:
         alert.wrappedValue = .keychainError()
+    case .errorKeyGeneration:
+        alert.wrappedValue = .databaseError(message: NSLocalizedString("Cannot generate random database passphrase", comment: "alert message"))
     case let .errorSQL(_, error):
         alert.wrappedValue = .databaseError(message: error)
     case let .unknown(error):

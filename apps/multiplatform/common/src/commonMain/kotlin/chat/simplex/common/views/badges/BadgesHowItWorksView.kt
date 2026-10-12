@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.views.onboarding.ReadableTextWithLink
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun BadgesHowItWorksView() {

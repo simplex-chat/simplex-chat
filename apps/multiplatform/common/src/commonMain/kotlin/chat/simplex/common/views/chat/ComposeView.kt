@@ -42,7 +42,7 @@ import chat.simplex.common.views.newchat.RelayProgressIndicator
 import chat.simplex.common.views.newchat.RelayStatusIndicator
 import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.newchat.relayDisplayName
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -2153,7 +2153,8 @@ private fun ownerRelayState(chat: Chat, chatModel: ChatModel): OwnerRelayState? 
   if (!gInfo.useRelays || gInfo.membership.memberRole != GroupMemberRole.Owner ||
     gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
   ) return null
-  val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
+  if (ChannelRelaysModel.groupId.value != gInfo.groupId) return null
+  val relays = ChannelRelaysModel.groupRelays.toList()
   if (relays.isEmpty()) return OwnerRelayState(emptyList(), 0, 0, 0, true)
   val relayMembers = relays.map { relay ->
     relay to chatModel.groupMembers.value.firstOrNull { it.groupMemberId == relay.groupMemberId }
@@ -2186,6 +2187,7 @@ private fun subscriberRelayState(chat: Chat, chatModel: ChatModel): SubscriberRe
   val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
   val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
   val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
+  if (total == 0 && !chatModel.membersLoaded.value) return null
   val noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
   return SubscriberRelayState(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
 }

@@ -117,7 +117,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             encryptor.delegate = self
             frameEncryptor = encryptor
 
-            let decryptor = RTCFrameDecryptor.init(sizeChange: -Int32(WebRTCClient.ivTagBytes))
+            let decryptor = RTCFrameDecryptor.init(sizeChange: 0)
             decryptor.delegate = self
             frameDecryptor = decryptor
         }
@@ -508,11 +508,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     func frameDecryptor(_ decryptor: RTCFrameDecryptor, mediaType: RTCRtpMediaType, withFrame encrypted: Data) -> Data? {
         guard encrypted.count > 0 else { return nil }
+        let isKeyFrame = encrypted[0] & 1 == 0
+        let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
+        guard encrypted.count >= clearTextBytesSize + WebRTCClient.ivTagBytes else { return nil }
         if var key: [CChar] = activeCall?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(encrypted.count) {
             memcpy(pointer, (encrypted as NSData).bytes, encrypted.count)
-            let isKeyFrame = encrypted[0] & 1 == 0
-            let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
             logCrypto("decrypt", chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize)))
             return Data(bytes: pointer, count: encrypted.count - WebRTCClient.ivTagBytes)
         } else {
@@ -522,11 +523,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     func frameEncryptor(_ encryptor: RTCFrameEncryptor, mediaType: RTCRtpMediaType, withFrame unencrypted: Data) -> Data? {
         guard unencrypted.count > 0 else { return nil }
+        let isKeyFrame = unencrypted[0] & 1 == 0
+        let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
+        guard unencrypted.count >= clearTextBytesSize else { return nil }
         if var key: [CChar] = activeCall?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(unencrypted.count + WebRTCClient.ivTagBytes) {
             memcpy(pointer, (unencrypted as NSData).bytes, unencrypted.count)
-            let isKeyFrame = unencrypted[0] & 1 == 0
-            let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
             logCrypto("encrypt", chat_encrypt_media(chat_ctrl, &key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + WebRTCClient.ivTagBytes - clearTextBytesSize)))
             return Data(bytes: pointer, count: unencrypted.count + WebRTCClient.ivTagBytes)
         } else {

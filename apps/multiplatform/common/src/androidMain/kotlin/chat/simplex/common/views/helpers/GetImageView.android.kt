@@ -33,7 +33,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.json
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.newchat.ActionButton
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.serialization.builtins.*
 import java.io.File
 import java.net.URI

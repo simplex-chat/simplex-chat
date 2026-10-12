@@ -47,7 +47,7 @@ export const defaultBotAddressSettings: BotAddressSettings = {
   businessAddress: false
 }
 
-export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}) => void | Promise<void>
+export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}, chat: ChatApi) => void | Promise<void>
 
 export type EventSubscribers = {[K in CEvt.Tag]?: EventSubscriberFunc<K>}
 
@@ -79,6 +79,11 @@ export type DbConfig =
       /** PostgreSQL connection string (e.g. `postgres://user:pass@host/db`). */
       connectionString: string
     }
+
+function chatErrorEvent(err: unknown): ChatEvent {
+  if (err instanceof core.ChatAPIError && err.chatError) return {type: "chatError", chatError: err.chatError}
+  throw err
+}
 
 function dbConfigToMigrateArgs(db: DbConfig): [string, string] {
   switch (db.type) {
@@ -171,13 +176,13 @@ export class ChatApi {
   private async runEventsLoop(): Promise<void> {
     while (this.receiveEvents) {
       try {
-        const event = await this.recvChatEvent()
+        const event = await this.recvChatEvent().catch(chatErrorEvent)
         if (!event) continue
         const subs = this.subscribers[event.type]
         if (subs) {
           for (const {subscriber, once} of [...subs]) {
             try {
-              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event)
+              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event, this)
               if (p instanceof Promise) await p
             } catch(e) {
               console.log(`${event.type} event processing error`, e)
@@ -187,19 +192,14 @@ export class ChatApi {
         }
         for (const r of [...this.receivers]) {          
           try {
-            const p = r(event)
+            const p = r(event, this)
             if (p instanceof Promise) await p
           } catch(e) {
             console.log(`${event.type} event processing error`, e)
           }
         }
       } catch(err) {
-        const e = err as core.ChatAPIError
-        if ("chatError" in e) {
-          console.log("Chat error", e.chatError)
-        } else {
-          console.log("Invalid event", e)
-        }
+        console.log("Invalid event", err)
       }
     }
   }
@@ -422,7 +422,18 @@ export class ChatApi {
     const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))
     if (r.type !== "userContactLinkUpdated") {
       throw new ChatCommandError("error changing user contact address settings", r)
-    }  
+    }
+  }
+
+  async apiSetUserDomain(userId: number, simplexDomain?: string): Promise<T.User> {
+    const r = await this.sendChatCmd(CC.APISetUserDomain.cmdString({userId, simplexDomain}))
+    switch (r.type) {
+      case "userProfileUpdated":
+      case "userProfileNoChange":
+        return r.user
+      default:
+        throw new ChatCommandError("error setting SimpleX name", r)
+    }
   }
 
   /**
@@ -550,6 +561,16 @@ export class ChatApi {
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     const r = await this.sendChatCmd(CC.APIAddMember.cmdString({groupId, contactId, memberRole}))
     if (r.type === "sentGroupInvitation") return r.member
+    throw new ChatCommandError("error adding member", r)
+  }
+
+  /**
+   * Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+   * Network usage: interactive.
+   */
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    const r = await this.sendChatCmd(CC.APIAddMemberViaGroup.cmdString({groupId, viaGroupId, groupMemberId, memberRole}))
+    if (r.type === "sentGroupInvitationViaGroup") return r.member
     throw new ChatCommandError("error adding member", r)
   }
 

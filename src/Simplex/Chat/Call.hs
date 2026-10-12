@@ -1,11 +1,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
@@ -21,6 +23,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
+import Data.Word (Word16)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (Contact, ContactId, User)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), fromTextField_)
@@ -28,6 +31,8 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON)
+import Simplex.Messaging.Version
+import Simplex.Messaging.Version.Internal
 
 data Call = Call
   { contactId :: ContactId,
@@ -38,6 +43,52 @@ data Call = Call
     callTs :: UTCTime
   }
   deriving (Show)
+
+-- Call version history:
+-- 1 - DH secret is used as media key (also assumed when call messages have no version)
+-- 2 - media key is derived from DH secret with HKDF (2026-10-01)
+
+data CallVersion
+
+instance VersionScope CallVersion
+
+type VersionCall = Version CallVersion
+
+type VersionRangeCall = VersionRange CallVersion
+
+pattern VersionCall :: Word16 -> VersionCall
+pattern VersionCall v = Version v
+
+initialCallVersion :: VersionCall
+initialCallVersion = VersionCall 1
+
+callMediaKdfVersion :: VersionCall
+callMediaKdfVersion = VersionCall 2
+
+-- This should not be used directly in code, instead use `callVRange` from ChatConfig
+currentCallVersion :: VersionCall
+currentCallVersion = VersionCall 2
+
+supportedCallVRange :: VersionRangeCall
+supportedCallVRange = mkVersionRange initialCallVersion currentCallVersion
+
+callInitialVRange :: VersionRangeCall
+callInitialVRange = versionToRange initialCallVersion
+
+newtype CallVersionRange = CallVersionRange {fromCallVRange :: VersionRangeCall}
+  deriving (Eq, Show)
+  deriving (FromJSON, ToJSON) via (StrJSON "CallVersionRange" VersionRangeCall)
+
+callMediaKey :: VersionCall -> CallId -> C.PublicKeyX25519 -> C.PrivateKeyX25519 -> C.Key
+callMediaKey v (CallId salt) peerPubKey privKey
+  | v >= callMediaKdfVersion = C.Key $ C.hkdf salt dhSecret "SimpleXCallMediaKey" callMediaKeySize
+  | otherwise = C.Key dhSecret
+  where
+    dhSecret = C.dhBytes' $ C.dh' peerPubKey privKey
+
+-- AES-256-GCM key used by the apps for frame encryption
+callMediaKeySize :: Int
+callMediaKeySize = 32
 
 isRcvInvitation :: Call -> Bool
 isRcvInvitation Call {callState} = case callState of
@@ -68,7 +119,8 @@ data CallState
   | CallInvitationReceived
       { peerCallType :: CallType,
         localDhPubKey :: Maybe C.PublicKeyX25519,
-        sharedKey :: Maybe C.Key
+        sharedKey :: Maybe C.Key,
+        callVersion :: Maybe VersionCall
       }
   | CallOfferSent
       { localCallType :: CallType,
@@ -134,7 +186,8 @@ encryptedCall CallType {capabilities = CallCapabilities {encryption}} = encrypti
 -- | * Types for chat protocol
 data CallInvitation = CallInvitation
   { callType :: CallType,
-    callDhPubKey :: Maybe C.PublicKeyX25519
+    callDhPubKey :: Maybe C.PublicKeyX25519,
+    callVRange :: Maybe CallVersionRange
   }
   deriving (Eq, Show)
 
@@ -149,7 +202,8 @@ data CallCapabilities = CallCapabilities
 data CallOffer = CallOffer
   { callType :: CallType,
     rtcSession :: WebRTCSession,
-    callDhPubKey :: Maybe C.PublicKeyX25519
+    callDhPubKey :: Maybe C.PublicKeyX25519,
+    callVersion :: Maybe VersionCall
   }
   deriving (Eq, Show)
 

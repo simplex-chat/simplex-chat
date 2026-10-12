@@ -16,6 +16,7 @@ module Simplex.Chat.Web
     webPreviewWorker,
     writeCorsConfig,
     removeStaleFiles,
+    publicGroupIdFileName,
     channelContentChanged,
     channelProfileUpdated,
     channelRemoved,
@@ -416,9 +417,11 @@ removeStaleFiles dir activeFiles = do
         let f' = if takeExtension f == ".tmp" then dropExtension f else f
             base = dropExtension f'
          in takeExtension f' == ".json" && not (null base) && all isBase64Url base
-      isBase64Url c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_'
+      isBase64Url c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '='
   allFiles <- S.filter isPreviewFile . S.fromList <$> listDirectory dir
-  mapM_ (\f -> removeFile (dir </> f)) $ S.difference allFiles activeFiles
+  forM_ (S.difference allFiles activeFiles) $ \f ->
+    removeFile (dir </> f) `catchOwn'` \(e :: SomeException) ->
+      logError $ "web preview: error removing stale file " <> T.pack f <> ": " <> tshow e
 
 toFormattedText :: Text -> Maybe MarkdownList
 toFormattedText t = case parseMaybeMarkdownList t of

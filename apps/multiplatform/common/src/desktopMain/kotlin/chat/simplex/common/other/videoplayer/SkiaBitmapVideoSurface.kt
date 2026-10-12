@@ -76,12 +76,11 @@ internal class SkiaBitmapVideoSurface : VideoSurface(VideoSurfaceAdapters.getVid
     override fun getBufferFormat(sourceWidth: Int, sourceHeight: Int): BufferFormat {
       // libvlc passes the size the decoder padded the picture to, not the size of the picture (dav1d
       // pads to a multiple of 128, so 1920x1080 arrives as 1920x1152), and vlc stretches the picture to
-      // fill whatever size is returned. Ask for the size of the track being played instead. The format
-      // is negotiated more than once, and vlc has not selected the track yet on the first calls
-      val player = mediaPlayer
-      val tracks = player?.media()?.info()?.videoTracks()
-      val playingTrack = player?.video()?.track()
-      val track = tracks?.firstOrNull { it.id() == playingTrack } ?: tracks?.singleOrNull()
+      // fill whatever size is returned. Ask for the size of the video track instead. Not the selected
+      // track: video().track() takes the input lock, which stop() holds while it waits for this thread
+      // to finish, so asking here deadlocks both, and every caller of the player after them
+      val tracks = mediaPlayer?.media()?.info()?.videoTracks()
+      val track = tracks?.singleOrNull()
       // Both track sides or neither: one side from the track and the other from the padded size libvlc
       // passed never described the same picture, and transposing such a pair compounds the mismatch
       val trackW = track?.width() ?: 0

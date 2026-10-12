@@ -767,6 +767,7 @@ struct ComposeView: View {
         let connectedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
         let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
         let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
+        guard total > 0 || chatModel.membersLoaded else { return nil }
         let noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
         return (hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
     }
