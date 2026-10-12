@@ -4124,7 +4124,7 @@ Plan:
 SEARCH file_badge_proofs USING INDEX idx_file_badge_proofs_file_id_kind (file_id=?)
 
 Query: 
-        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.payment, r.next_attempt_at, r.retry_delay
+        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay
         FROM badge_store_receipts r
         JOIN users u ON u.user_id = r.user_id
         WHERE r.user_id = ? AND r.payment IS NOT NULL AND u.shown_badge_id IS NULL
@@ -4138,7 +4138,7 @@ USE TEMP B-TREE FOR ORDER BY
 
 Query: 
         SELECT r.badge_store_receipt_id, r.user_id, r.purchase_key, r.purchase_priv_key, r.master_key,
-          r.payment, r.next_attempt_at, r.retry_delay, p.badge_purchase_id, r.credit_error
+          r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay, p.badge_purchase_id, r.credit_error
         FROM badge_store_receipts r
         LEFT JOIN badge_purchases p ON p.badge_store_receipt_id = r.badge_store_receipt_id
         WHERE r.provider = ? AND r.transaction_ref = ?
