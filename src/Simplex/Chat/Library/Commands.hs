@@ -1964,7 +1964,7 @@ processChatCommand cxt nm = \case
         (_, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
-          Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData Nothing
+          Just sLinkData -> (\(g, _, _) -> g) <$> updateGroupFromLinkData user gInfo sLinkData Nothing
           _ -> pure gInfo
         when (memberRole' (membership gInfo) /= GROwner && memberCurrent (membership gInfo)) $
           withGroupLock "syncSubscriberRelays" groupId $
@@ -2197,8 +2197,10 @@ processChatCommand cxt nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing domain_
-            when (isJust domain_) $ setOtherNameChatsMoved user (GroupChat gInfo Nothing)
+            (gInfo, hostMember_, moved) <- withStore $ \db -> do
+              (g, hm_) <- createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing domain_
+              (g, hm_,) <$> if isJust domain_ then liftIO (setOtherNameChatsMoved db user (GroupChat g Nothing)) else pure ([], [])
+            nameMovedToView user moved
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -2211,8 +2213,10 @@ processChatCommand cxt nm = \case
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq sLnk) -> do
-        ct <- withStore $ \db -> createPreparedContact db cxt user (linkPresHeader <$> sLnk) profile accLink welcomeSharedMsgId (True <$ domain_)
-        when (isJust domain_) $ setOtherNameChatsMoved user (DirectChat ct)
+        (ct, moved) <- withStore $ \db -> do
+          ct <- createPreparedContact db cxt user (linkPresHeader <$> sLnk) profile accLink welcomeSharedMsgId (True <$ domain_)
+          (ct,) <$> if isJust domain_ then liftIO (setOtherNameChatsMoved db user (DirectChat ct)) else pure ([], [])
+        nameMovedToView user moved
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
@@ -2229,7 +2233,6 @@ processChatCommand cxt nm = \case
         domain_ = if verifiedDomain == groupClaim gp then verifiedDomain else Nothing
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId domain_
-    when (isJust domain_) $ setOtherNameChatsMoved user (GroupChat gInfo Nothing)
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2244,8 +2247,10 @@ processChatCommand cxt nm = \case
     when (isNothing preparedContact) $ throwCmdError "contact doesn't have link to connect"
     when (isJust $ contactConn ct) $ throwCmdError "contact already has connection"
     newUser <- privateGetUser newUserId
-    ct'@Contact {profile = LocalProfile {contactDomainVerified}} <- withFastStore $ \db -> updatePreparedContactUser db cxt user ct newUser
-    when (contactDomainVerified == Just DVVerified) $ setOtherNameChatsMoved newUser (DirectChat ct')
+    (ct', moved) <- withFastStore $ \db -> do
+      ct'@Contact {profile = LocalProfile {contactDomainVerified}} <- updatePreparedContactUser db cxt user ct newUser
+      (ct',) <$> if contactDomainVerified == Just DVVerified then liftIO (setOtherNameChatsMoved db newUser (DirectChat ct')) else pure ([], [])
+    nameMovedToView newUser moved
     -- create changed feature items (new user may have different preferences)
     lift $ createContactChangedFeatureItems user ct ct'
     pure $ CRContactUserChanged user ct newUser ct'
@@ -2260,8 +2265,10 @@ processChatCommand cxt nm = \case
           when (isJust $ memberConn hostMember) $ throwCmdError "host member already has connection"
           pure $ Just hostMember
     newUser <- privateGetUser newUserId
-    gInfo'@GroupInfo {groupDomainVerified} <- withFastStore $ \db -> updatePreparedGroupUser db cxt user gInfo hostMember_ newUser
-    when (groupDomainVerified == Just DVVerified) $ setOtherNameChatsMoved newUser (GroupChat gInfo' Nothing)
+    (gInfo', moved) <- withFastStore $ \db -> do
+      gInfo'@GroupInfo {groupDomainVerified} <- updatePreparedGroupUser db cxt user gInfo hostMember_ newUser
+      (gInfo',) <$> if groupDomainVerified == Just DVVerified then liftIO (setOtherNameChatsMoved db newUser (GroupChat gInfo' Nothing)) else pure ([], [])
+    nameMovedToView newUser moved
     pure $ CRGroupUserChanged user gInfo newUser gInfo'
   APIConnectPreparedContact contactId incognito msgContent_ -> withUser $ \user -> do
     ct@Contact {preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
@@ -2425,8 +2432,12 @@ processChatCommand cxt nm = \case
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
     domain <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
     (verified, reason) <- verifyEntityDomain user nm NTContact domain connLink_
-    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v) verified
-    when (verified == Just True) $ setOtherNameChatsMoved user (DirectChat ct')
+    (ct', moved) <- case verified of
+      Just v -> withFastStore' $ \db -> do
+        ct' <- setContactDomainVerified db user ct v
+        (ct',) <$> if v then setOtherNameChatsMoved db user (DirectChat ct') else pure ([], [])
+      Nothing -> pure (ct, ([], []))
+    nameMovedToView user moved
     pure $ CRContactDomainVerified user ct' reason
   APIVerifyGroupDomain groupId -> withUser $ \user -> do
     g@GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
@@ -2440,8 +2451,10 @@ processChatCommand cxt nm = \case
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
         Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered")
         Left e -> throwError e
-    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified
-    when verified $ setOtherNameChatsMoved user (GroupChat g' Nothing)
+    (g', moved) <- withFastStore' $ \db -> do
+      g' <- setGroupDomainVerified db user g verified
+      (g',) <$> if verified then setOtherNameChatsMoved db user (GroupChat g' Nothing) else pure ([], [])
+    nameMovedToView user moved
     pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}, groupDirectInv} <- withFastStore $ \db -> getContact db cxt user contactId
@@ -4179,10 +4192,14 @@ processChatCommand cxt nm = \case
       checkGroupProfileSize p'
       when (useRelays' gInfo && isJust (ma' >>= review)) $ throwCmdError "Admission review is not supported in channels"
       -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
-      gInfo' <- withStore $ \db -> do
+      (gInfo', moved) <- withStore $ \db -> do
         g <- updateGroupProfile db user gInfo p'
-        if domainVerified then liftIO $ setGroupDomainVerified db user g True else pure g
-      when domainVerified $ setOtherNameChatsMoved user (GroupChat gInfo' Nothing)
+        if domainVerified
+          then liftIO $ do
+            g' <- setGroupDomainVerified db user g True
+            (g',) <$> setOtherNameChatsMoved db user (GroupChat g' Nothing)
+          else pure (g, ([], []))
+      nameMovedToView user moved
       msg <- case businessChat of
         Just BusinessChatInfo {businessId} -> do
           ms <- withStore' $ \db -> getGroupMembers db cxt user gInfo'
@@ -4558,29 +4575,31 @@ processChatCommand cxt nm = \case
                     planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
                     refreshContact ct' = case (planDomain, linkProfile_) of
                       (Just _, Just p) -> updateContactFromLinkData user ct' presHeader p
-                      _ -> pure ct'
-                    knownMoved = NCMoved . movedChat <$> knownChat_
+                      _ -> pure (ct', ([], []))
+                    knownMoved moved = NCMoved . movedChat moved <$> knownChat_
                 forM_ planDomain $ \nameDomain ->
                   unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> do
-                    ct'' <- refreshContact ct'
-                    pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') knownMoved)
+                    (ct'', moved) <- refreshContact ct'
+                    pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') (knownMoved moved))
                   _ -> do
                     let ContactLinkData _ UserContactData {owners} = cData
                         ov = verifyLinkOwner rootKey owners l' sig_
                     plan <- setNameChange (NCMoved <$> knownChat_) <$> contactRequestPlan user cReq contactSLinkData_ ov
                     case plan of
                       CPContactAddress (CAPKnown ct') _ -> do
-                        ct'' <- refreshContact ct'
-                        pure (con l' cReq, CPContactAddress (CAPKnown ct'') knownMoved)
+                        (ct'', moved) <- refreshContact ct'
+                        pure (con l' cReq, CPContactAddress (CAPKnown ct'') (knownMoved moved))
                       CPContactAddress (CAPContactViaAddress ct') _ -> do
-                        ct'' <- refreshContact ct'
-                        pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') knownMoved)
+                        (ct'', moved) <- refreshContact ct'
+                        pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') (knownMoved moved))
                       CPGroupLink (GLPKnown g@GroupInfo {businessChat = Just _} u o os) _ | Just d <- planDomain -> do
-                        g' <- withFastStore' $ \db -> setPreparedGroupDomain db user g d
-                        setOtherNameChatsMoved user (GroupChat g' Nothing)
-                        pure (con l' cReq, CPGroupLink (GLPKnown g' u o os) knownMoved)
+                        (g', moved) <- withFastStore' $ \db -> do
+                          g' <- setPreparedGroupDomain db user g d
+                          (g',) <$> setOtherNameChatsMoved db user (GroupChat g' Nothing)
+                        nameMovedToView user moved
+                        pure (con l' cReq, CPGroupLink (GLPKnown g' u o os) (knownMoved moved))
                       _ -> pure (con l' cReq, plan)
               knownLinkPlans :: CM (Maybe (ACreatedConnLink, ConnectionPlan))
               knownLinkPlans = withFastStore $ \db ->
@@ -4621,7 +4640,7 @@ processChatCommand cxt nm = \case
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
                     nc_ = NCMoved <$> knownChat_
-                    knownMoved = NCMoved . movedChat <$> knownChat_
+                    knownMoved moved = NCMoved . movedChat moved <$> knownChat_
                 plan <- if
                   | not direct && unsupportedGroupType groupSLinkData_ -> pure $ CPGroupLink (GLPUpdateRequired groupSLinkData_) nc_
                   | not direct && null relays -> pure $ CPGroupLink (GLPNoRelays groupSLinkData_) nc_
@@ -4642,7 +4661,7 @@ processChatCommand cxt nm = \case
                       -- data and mark it verified, so the check below passes and future by-name lookups match
                       case (planDomain, plan0, groupSLinkData_) of
                         (Just nameDomain, CPGroupLink (GLPKnown g u o os) _, Just sLinkData) ->
-                          (\(g', _) -> CPGroupLink (GLPKnown g' u o os) knownMoved) <$> updateGroupFromLinkData user g sLinkData (Just nameDomain)
+                          (\(g', _, moved) -> CPGroupLink (GLPKnown g' u o os) (knownMoved moved)) <$> updateGroupFromLinkData user g sLinkData (Just nameDomain)
                         _ -> pure plan0
                 forM_ planDomain $ \nameDomain ->
                   let domain_ = (\GroupProfile {publicGroup} -> claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) =<< case plan of
@@ -4667,14 +4686,14 @@ processChatCommand cxt nm = \case
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let ov = verifyLinkOwner rk owners l' sig_
                     glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
-                (g', updated) <- case groupSLinkData_ of
+                (g', updated, _) <- case groupSLinkData_ of
                   Just sLinkData -> updateGroupFromLinkData user g sLinkData Nothing
-                  _ -> pure (g, False)
+                  _ -> pure (g, False, ([], []))
                 pure (con l' cReq, CPGroupLink (GLPKnown g' updated ov (ListDef glOwners)) Nothing)
-          movedChat :: AChatInfo -> AChatInfo
-          movedChat (AChatInfo t c) = AChatInfo t $ case c of
-            DirectChat ct'@Contact {profile = p} -> DirectChat ct' {profile = p {contactDomainVerified = Just DVMoved}}
-            GroupChat g s -> GroupChat g {groupDomainVerified = Just DVMoved} s
+          movedChat :: ([ContactId], [GroupId]) -> AChatInfo -> AChatInfo
+          movedChat (ctIds, gIds) (AChatInfo t c) = AChatInfo t $ case c of
+            DirectChat ct'@Contact {contactId, profile = p} | contactId `elem` ctIds -> DirectChat ct' {profile = p {contactDomainVerified = Just DVMoved}}
+            GroupChat g@GroupInfo {groupId} s | groupId `elem` gIds -> GroupChat g {groupDomainVerified = Just DVMoved} s
             _ -> c
           knownNamePlan :: (ACreatedConnLink, ConnectionPlan) -> (Maybe AChatInfo -> ShortLinkContact -> CM (ACreatedConnLink, ConnectionPlan)) -> CM (ACreatedConnLink, ConnectionPlan)
           knownNamePlan r@(l, plan) linkPlan
@@ -4683,10 +4702,14 @@ processChatCommand cxt nm = \case
                 tryAllErrors resolveSLink >>= \case
                   Right l'
                     | ACCL SCMContact (CCLink _ (Just sl)) <- l, sameShortLinkContact sl l' -> pure r
-                    | otherwise -> (knownChatLink <$> linkPlan knownChat_ l') `catchAllErrors` \_ -> pure r
+                    | otherwise -> (knownChatLink <$> linkPlan knownChat_ l') `catchAllErrors` knownPlanOnError
                   Left (ChatError (CESimplexDomainNotReady _ (SDENameWarning w))) | w /= NWNotRegistered -> pure (l, setNameChange (Just $ NCLapsed w) plan)
-                  Left _ -> pure r
+                  Left e -> knownPlanOnError e
             where
+              knownPlanOnError = \case
+                e@ChatErrorAgent {agentError} | temporaryOrHostError agentError -> throwError e
+                e@ChatErrorStore {} -> throwError e
+                e -> r <$ logWarn ("known chat plan used, name lookup error: " <> tshow e)
               knownChat_ = planChat plan
               knownChatLink r'@(_, p) = if isKnownChat p then (l, setNameChange Nothing p) else r'
               isKnownChat p = isJust knownChat_ && refOf (planChat p) == refOf knownChat_
@@ -5212,7 +5235,11 @@ processChatCommand cxt nm = \case
           useRelays = not direct
       subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
       gVar <- asks random
-      withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_ verifiedDomain
+      (gInfo, hostMember_, moved) <- withStore $ \db -> do
+        (g, hm_) <- createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_ verifiedDomain
+        (g, hm_,) <$> if isJust verifiedDomain then liftIO (setOtherNameChatsMoved db user (GroupChat g Nothing)) else pure ([], [])
+      nameMovedToView user moved
+      pure (gInfo, hostMember_)
 
     getSharedMsgId :: CM SharedMsgId
     getSharedMsgId = do

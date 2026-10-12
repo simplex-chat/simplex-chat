@@ -2991,15 +2991,17 @@ object ChatController {
       is CR.NameMoved -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.chats.value.filter { it.remoteHostId == rhId }.forEach { chat ->
-              when (val cInfo = chat.chatInfo) {
-                is ChatInfo.Direct -> if (cInfo.contact.contactId in r.contactIds) {
-                  chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Direct(cInfo.contact.copy(profile = cInfo.contact.profile.copy(contactDomainVerified = DomainVerification.Moved))))
-                }
-                is ChatInfo.Group -> if (cInfo.groupInfo.groupId in r.groupIds) {
-                  chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Group(cInfo.groupInfo.copy(groupDomainVerified = DomainVerification.Moved), groupChatScope = null))
-                }
-                else -> {}
+            fun chatInfo(id: String) = chatModel.chatsContext.chats.value.firstOrNull { it.remoteHostId == rhId && it.id == id }?.chatInfo
+            r.contactIds.forEach { contactId ->
+              val cInfo = chatInfo("@$contactId")
+              if (cInfo is ChatInfo.Direct) {
+                chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Direct(cInfo.contact.copy(profile = cInfo.contact.profile.copy(contactDomainVerified = DomainVerification.Moved))))
+              }
+            }
+            r.groupIds.forEach { groupId ->
+              val cInfo = chatInfo("#$groupId")
+              if (cInfo is ChatInfo.Group) {
+                chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Group(cInfo.groupInfo.copy(groupDomainVerified = DomainVerification.Moved), groupChatScope = null))
               }
             }
           }

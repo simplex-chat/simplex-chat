@@ -1684,8 +1684,9 @@ func planAndConnect(
                                     theme: theme,
                                     subtitle: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert subtitle"),
                                     cancelTitle: NSLocalizedString("OK", comment: "alert button"),
-                                    confirmTitle: nil,
-                                    onCancel: { cleanup?() }
+                                    confirmTitle: connectOther?.title,
+                                    onCancel: { cleanup?() },
+                                    onConfirm: connectOther?.action
                                 )
                             } else {
                                 showAlert(
@@ -1711,8 +1712,9 @@ func planAndConnect(
                                     theme: theme,
                                     subtitle: NSLocalizedString("This group requires a newer version of the app. Please update the app to join.", comment: "alert subtitle"),
                                     cancelTitle: NSLocalizedString("OK", comment: "alert button"),
-                                    confirmTitle: nil,
-                                    onCancel: { cleanup?() }
+                                    confirmTitle: connectOther?.title,
+                                    onCancel: { cleanup?() },
+                                    onConfirm: connectOther?.action
                                 )
                             } else {
                                 showAlert(

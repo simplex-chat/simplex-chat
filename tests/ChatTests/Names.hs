@@ -968,13 +968,13 @@ testPlanNameOtherKindMoved :: HasCallStack => TestParams -> IO ()
 testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice bob -> do
   bob ##> "/_connect plan 1 @team.simplex"
   knownContactPlan "alice" "team.simplex" bob
-  alice ##> "/da"
-  alice <## "Your chat address is deleted - accepted contacts will remain connected."
-  alice <## "To create a new chat address use /ad"
-  bob <## "alice removed contact address"
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
   alice ##> "/ad"
   (contactLink2, _) <- getContactLinks alice True
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink2) (T.pack channelLink))
+  alice ##> "/_set domain 2 team.simplex"
+  alice <## "new contact address set"
   bob ##> "/_connect plan 1 team.simplex"
   knownGroupPlan "team" "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"

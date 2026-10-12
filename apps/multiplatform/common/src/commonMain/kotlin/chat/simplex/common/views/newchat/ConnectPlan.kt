@@ -428,6 +428,8 @@ private suspend fun planAndConnectTask(
               },
               subtitle = generalGetString(MR.strings.channel_no_active_relays_try_later),
               confirmText = null,
+              connectOtherButton = connectOtherButton,
+              onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
               dismissText = generalGetString(MR.strings.ok),
               onDismiss = { cleanup() }
             )
@@ -455,6 +457,8 @@ private suspend fun planAndConnectTask(
               },
               subtitle = generalGetString(MR.strings.group_link_requires_newer_version),
               confirmText = null,
+              connectOtherButton = connectOtherButton,
+              onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
               dismissText = generalGetString(MR.strings.ok),
               onDismiss = { cleanup() }
             )
