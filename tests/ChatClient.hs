@@ -670,6 +670,7 @@ smpServerCfg p =
       prometheusInterval = Nothing,
       prometheusMetricsFile = "tests/smp-server-metrics.txt",
       pendingENDInterval = 500000,
+      authErrorDelay = 10,
       ntfDeliveryInterval = 200000,
       authErrorDelay = 20000,
       smpServerVRange = supportedServerSMPRelayVRange,

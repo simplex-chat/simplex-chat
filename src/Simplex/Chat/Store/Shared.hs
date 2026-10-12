@@ -956,8 +956,9 @@ getGroupInfoRow db cxt User {userId, userContactId} groupId = ExceptT $ do
   firstRow (toGroupInfo currentTs cxt userContactId chatTags) (SEGroupNotFound groupId) $
     DB.query
       db
-      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
-      (groupId, userId, userContactId)
+      -- mu.user_id steers the planner to idx_group_members_group_id; contact_id index is quadratic over all groups
+      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.user_id = ? AND mu.contact_id = ?")
+      (groupId, userId, userId, userContactId)
 
 setPreparedGroupLinkInfo_ :: DB.Connection -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Int64 -> Maybe Int64 -> UTCTime -> IO ()
 setPreparedGroupLinkInfo_ db GroupInfo {groupId, membership} cReq cReqHash customUserProfileId publicMemberCount_ currentTs = do
