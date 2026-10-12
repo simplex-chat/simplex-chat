@@ -7,7 +7,7 @@ import {pipeline} from "stream/promises"
 import extract = require("extract-zip")
 import type {Backend} from "./core"
 
-export const LIBS_VERSION = "7.1.0-beta.6"
+export const LIBS_RELEASE = "core-7.1.0.11"
 
 const GITHUB_REPO = "simplex-chat/simplex-chat-libs"
 const REQUEST_TIMEOUT_MS = 60_000
@@ -46,7 +46,7 @@ export function cacheRoot(platform: string, env: NodeJS.ProcessEnv, home: string
 }
 
 function releaseUrl(asset: string): string {
-  return `https://github.com/${GITHUB_REPO}/releases/download/v${LIBS_VERSION}/${asset}`
+  return `https://github.com/${GITHUB_REPO}/releases/download/${LIBS_RELEASE}/${asset}`
 }
 
 export function libsUrl(backend: Backend, tag: string): string {
@@ -82,7 +82,7 @@ export async function resolveLibsDir(
   if (backend === "postgres" && tag !== "linux-x86_64") {
     throw new Error(`postgres backend is only supported on linux-x86_64; current platform is ${tag}`)
   }
-  const target = path.resolve(cacheRoot(platform, env), `v${LIBS_VERSION}`, backend)
+  const target = path.resolve(cacheRoot(platform, env), LIBS_RELEASE, backend)
   if (!fs.existsSync(path.join(target, lib))) await installLibs(libsUrl(backend, tag), target, lib)
   return target
 }
@@ -98,7 +98,7 @@ export async function resolveAddonPath(
     return file
   }
   const tag = platformTag(platform, arch)
-  const target = path.resolve(cacheRoot(platform, env), `v${LIBS_VERSION}`, addonName(tag))
+  const target = path.resolve(cacheRoot(platform, env), LIBS_RELEASE, addonName(tag))
   if (!fs.existsSync(target)) await installAddon(addonUrl(tag), target)
   return target
 }

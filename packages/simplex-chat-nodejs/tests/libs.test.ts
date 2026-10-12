@@ -4,7 +4,7 @@ import * as https from "https"
 import * as os from "os"
 import * as path from "path"
 import {AddressInfo} from "net"
-import {addonUrl, cacheRoot, installAddon, installLibs, LIBS_VERSION, libPath, libsUrl, MAX_REDIRECTS, platformTag, resolveAddonPath, resolveLibsDir} from "../src/libs"
+import {addonUrl, cacheRoot, installAddon, installLibs, LIBS_RELEASE, libPath, libsUrl, MAX_REDIRECTS, platformTag, resolveAddonPath, resolveLibsDir} from "../src/libs"
 import {main, parseInstallArgs} from "../src/cli"
 import * as libs from "../src/libs"
 import {storedZip} from "./zip"
@@ -74,7 +74,7 @@ describe("paths", () => {
   })
 
   it("uses the release URLs", () => {
-    const release = `https://github.com/simplex-chat/simplex-chat-libs/releases/download/v${LIBS_VERSION}`
+    const release = `https://github.com/simplex-chat/simplex-chat-libs/releases/download/${LIBS_RELEASE}`
     expect(libsUrl("sqlite", "macos-aarch64")).toBe(`${release}/simplex-chat-libs-macos-aarch64.zip`)
     expect(libsUrl("postgres", "linux-x86_64")).toBe(`${release}/simplex-chat-libs-linux-x86_64-postgres.zip`)
     expect(addonUrl("windows-x86_64")).toBe(`${release}/simplex-chat-nodejs-windows-x86_64.node`)
@@ -256,7 +256,7 @@ describe("installLibs", () => {
     const dir = await resolveLibsDir(backend, {XDG_CACHE_HOME: cache}, "linux", "x64")
     expect(requested).toEqual([libsUrl(backend, "linux-x86_64")])
     expect(path.isAbsolute(dir)).toBe(true)
-    expect(dir).toBe(path.join(tmp, "cache", "simplex-chat", `v${LIBS_VERSION}`, backend))
+    expect(dir).toBe(path.join(tmp, "cache", "simplex-chat", LIBS_RELEASE, backend))
     expect(fs.readFileSync(path.join(dir, LINUX_LIB), "utf8")).toBe("lib")
   })
 
@@ -264,7 +264,7 @@ describe("installLibs", () => {
     routes["/addon.node"] = res => res.writeHead(200).end("addon")
     const requested = mockHttps("/addon.node")
     const addon = await resolveAddonPath({XDG_CACHE_HOME: tmp}, "linux", "x64")
-    const version = path.join(tmp, "simplex-chat", `v${LIBS_VERSION}`)
+    const version = path.join(tmp, "simplex-chat", LIBS_RELEASE)
     expect(requested).toEqual([addonUrl("linux-x86_64")])
     expect(addon).toBe(path.join(version, "simplex-chat-nodejs-linux-x86_64.node"))
     expect(fs.readFileSync(addon, "utf8")).toBe("addon")
@@ -273,7 +273,7 @@ describe("installLibs", () => {
 
   it("does not download a cached add-on", async () => {
     const requested = mockHttps("/addon.node")
-    const cached = path.join(cacheRoot("darwin", {}), `v${LIBS_VERSION}`, "simplex-chat-nodejs-macos-aarch64.node")
+    const cached = path.join(cacheRoot("darwin", {}), LIBS_RELEASE, "simplex-chat-nodejs-macos-aarch64.node")
     fs.mkdirSync(path.dirname(cached), {recursive: true})
     fs.writeFileSync(cached, "addon")
     await expect(resolveAddonPath({}, "darwin", "arm64")).resolves.toBe(cached)
@@ -297,7 +297,7 @@ describe("installLibs", () => {
 
   it("does not download a cached lib", async () => {
     const requested = mockHttps("/good.zip")
-    const cached = path.join(tmp, "simplex-chat", `v${LIBS_VERSION}`, "postgres")
+    const cached = path.join(tmp, "simplex-chat", LIBS_RELEASE, "postgres")
     fs.mkdirSync(cached, {recursive: true})
     fs.writeFileSync(path.join(cached, LINUX_LIB), "lib")
     await expect(resolveLibsDir("postgres", {XDG_CACHE_HOME: tmp}, "linux", "x64")).resolves.toBe(cached)
