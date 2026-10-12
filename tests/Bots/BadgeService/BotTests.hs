@@ -28,7 +28,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, cancel)
-import Control.Concurrent.STM (TQueue, atomically, readTMVar)
+import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue)
 import Control.Monad (forM_, void, when)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
@@ -2290,9 +2290,8 @@ testStoreReceiptAfterRestart ps = do
       pure invoiceId
     writeIORef broken False
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      -- restart, resubscribe and a service round trip can outlast one line's 20 seconds in a parallel run; the lines follow the settlement
-      shouldReturnWithinSeconds 60 (heldStoreReceipts (chatController alice)) 0
-      inAnyOrder alice [["subscribed 1 connections on server localhost"], creditedLines "" invoiceId "1: supporter"]
+      expectLinesWithin 60 alice $ "subscribed 1 connections on server localhost" : creditedLines "" invoiceId "1: supporter"
+      heldStoreReceipts (chatController alice) `shouldReturn` 0
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
 createInvoice cc userId = do
@@ -2359,6 +2358,22 @@ inAnyOrder cc blocks = do
     startsWith l = \case
       start : _ -> start `isPrefixOf` l
       [] -> False
+
+-- | All of the lines under one budget, in any order: the agent's subscription summary is not
+-- ordered against a settlement, and getTermLine' bounds every single line at 20 seconds.
+expectLinesWithin :: HasCallStack => Int -> TestCC -> [String] -> IO ()
+expectLinesWithin seconds cc@TestCC {termQ, printOutput} = go (seconds * 10)
+  where
+    go _ [] = pure ()
+    go 0 outstanding = error $ "no line starting one of " <> show outstanding <> " in " <> show seconds <> " seconds"
+    go n outstanding =
+      100000 `timeout` atomically (readTQueue termQ) >>= \case
+        Nothing -> go (n - 1) outstanding
+        Just line -> do
+          when printOutput $ userName cc >>= \name -> putStrLn $ name <> ": " <> line
+          case break (`isPrefixOf` line) outstanding of
+            (earlier, _ : others) -> go n (earlier <> others)
+            _ -> error $ "expected a line starting one of " <> show outstanding <> ", got " <> show line
 
 -- | Counts the Google verifications the service makes, re-arming the one-shot hook each time.
 countGoogleVerifications :: IORef (IO ()) -> IO (IO Int)

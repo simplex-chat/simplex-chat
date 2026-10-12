@@ -680,10 +680,7 @@ createCCNoteFolder cc =
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
 shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
-shouldEventuallyReturn = shouldReturnWithinSeconds 20
-
-shouldReturnWithinSeconds :: (HasCallStack, Eq a, Show a) => Int -> IO a -> a -> Expectation
-shouldReturnWithinSeconds seconds action expected = go (seconds * 10)
+shouldEventuallyReturn action expected = go (200 :: Int)
   where
     go n = do
       r <- action
