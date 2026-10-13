@@ -6,7 +6,7 @@ name: packages
 #    npm prerelease versions get dist-tag beta, others latest.
 # 3. The release PR packages-release/<branch> pins new library and add-on releases with their SHA-256
 #    and bumps the versions of changed packages. Merging it publishes them (step 2).
-# Pull requests that change the add-on only build it.
+# Pull requests build the add-on and run the package tests on every platform.
 
 # Publishing uses trusted publishing (OIDC) for this workflow on npm and PyPI,
 # or the NPM_TOKEN and PYPI_API_TOKEN secrets when they are set.
@@ -51,13 +51,14 @@ on:
       - ".github/workflows/packages.yml"
   pull_request:
     paths:
-      - "packages/simplex-chat-nodejs/cpp/**"
-      - "packages/simplex-chat-nodejs/binding.gyp"
+      - "packages/simplex-chat-nodejs/**"
+      - "packages/simplex-chat-client/types/typescript/**"
+      - "packages/simplex-chat-python/**"
       - ".github/workflows/packages.yml"
 
 concurrency:
   group: packages-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -99,8 +100,8 @@ jobs:
             echo "missing=true" >> "$GITHUB_OUTPUT"
           fi
 
-  addon-build:
-    name: "addon-build ${{ matrix.platform }}"
+  build:
+    name: "build ${{ matrix.platform }}"
     needs: addon
     if: github.event_name == 'pull_request' || needs.addon.outputs.missing
     runs-on: ${{ matrix.os }}
@@ -131,14 +132,28 @@ jobs:
         with:
           node-version: 22
 
-      # Only node-addon-api: the package dependencies can be bumped to versions that are not published yet.
-      - name: Build add-on
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # The local types: the dependency can be bumped to a version that is not published yet.
+      - name: Build simplex-chat (npm) and add-on
         run: |
-          deps="$RUNNER_TEMP/addon-deps"
-          npm install --prefix "$deps" --ignore-scripts --no-audit --no-fund \
-            "node-addon-api@$(node -p 'require("./package.json").devDependencies["node-addon-api"]')"
-          NODE_PATH="$deps/node_modules" npx --yes node-gyp rebuild
+          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
+          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
+          npx --yes node-gyp rebuild
+          npx tsc && cp src/simplex.* dist
           cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
+
+      - name: Test simplex-chat (npm)
+        run: npx jest
+
+      - name: Test simplex-chat (PyPI)
+        working-directory: packages/simplex-chat-python
+        run: |
+          python -m pip install -e ".[test]"
+          python -m pytest -q
 
       - name: Upload add-on artifact
         uses: actions/upload-artifact@v7
@@ -239,10 +254,10 @@ jobs:
 
   release:
     # After publish, for its version tags. A failed publish leaves its versions unbumped.
-    needs: [addon, addon-build, publish]
+    needs: [addon, build, publish]
     # A merged release PR changes only versions and pins.
     if: >-
-      !cancelled() && needs.addon.outputs.release_branch && needs.addon-build.result != 'failure'
+      !cancelled() && needs.addon.outputs.release_branch && needs.build.result != 'failure'
       && !startsWith(github.event.head_commit.message, 'packages: release')
     runs-on: ubuntu-latest
     steps:
