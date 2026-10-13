@@ -28,7 +28,7 @@ func showMarkdownFile(_ file: CIFile) {
             let shownLines = lines.flatMap(chunkedLine)
             let hasBidiControls = text.unicodeScalars.contains(where: isBidiControl)
             await MainActor.run {
-                showAppSheet(fullScreen: true) {
+                showAppSheet {
                     MarkdownFileView(file: file, fileSource: fileSource, lines: shownLines, html: html, hasBidiControls: hasBidiControls)
                 }
             }
@@ -194,13 +194,6 @@ struct MarkdownFileView: View {
             .navigationTitle(file.fileName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        getTopViewController()?.dismiss(animated: true)
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     if html != nil {
                         Button {

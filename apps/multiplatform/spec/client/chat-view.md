@@ -313,7 +313,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `EmojiItemView.kt` | Large emoji-only message |
 | `FramedItemView.kt` | Message bubble frame (quoted item, text, media) |
 | `ImageFullScreenView.kt` | Fullscreen image gallery |
-| `MarkdownFileView.kt` | Fullscreen Markdown file viewer, formatted or as text |
+| `MarkdownFileView.kt` | Markdown file viewer, formatted or as text |
 | `IntegrityErrorItemView.kt` | Message integrity error |
 | `MarkedDeletedItemView.kt` | Marked-as-deleted / moderated message |
 | `TextItemView.kt` | Plain text message with markdown |

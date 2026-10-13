@@ -31,15 +31,13 @@ private struct PrivacySensitive: ViewModifier {
 
 // Presented from the top view controller instead of a .sheet on a parent view, so an alert button or
 // a view that is itself in a sheet can open it.
-func showAppSheet<Content: View>(fullScreen: Bool = false, @ViewBuilder content: () -> Content) {
+func showAppSheet<Content: View>(@ViewBuilder content: () -> Content) {
     if let topController = getTopViewController() {
         let v = content()
             .modifier(PrivacySensitive())
             .environmentObject(ChatModel.shared)
             .environmentObject(AppTheme.shared)
-        let c = UIHostingController(rootView: v)
-        if fullScreen { c.modalPresentationStyle = .fullScreen }
-        topController.present(c, animated: true)
+        topController.present(UIHostingController(rootView: v), animated: true)
     }
 }
 

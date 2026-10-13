@@ -242,7 +242,7 @@ Renders file attachments with filename, size, and download/open actions. Shows t
 
 **File**: [`Shared/Views/Chat/ChatItem/MarkdownFileView.swift`](../../Shared/Views/Chat/ChatItem/MarkdownFileView.swift)
 
-Full-screen viewer of Markdown files up to `MAX_MARKDOWN_VIEW_SIZE` (1 MB), formatted or as text, with Save. Opened by a tap on the file item, or when reception completes after the tap that started it.
+Sheet with a viewer of Markdown files up to `MAX_MARKDOWN_VIEW_SIZE` (1 MB), formatted or as text, with Save. Opened by a tap on the file item, or when reception completes after the tap that started it.
 
 ### [CILinkView](../../Shared/Views/Chat/ChatItem/CILinkView.swift#L14)
 

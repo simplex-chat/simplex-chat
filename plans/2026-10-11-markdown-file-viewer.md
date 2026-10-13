@@ -1,6 +1,6 @@
 # Markdown file viewer: implementation plan
 
-Markdown files from chats are viewed in the Android, desktop and iOS apps, formatted or as text, full screen.
+Markdown files from chats are viewed in the Android, desktop and iOS apps, formatted or as text.
 
 ## 1. Files that qualify
 
@@ -137,8 +137,10 @@ Text view: lines longer than 15 000 characters are split.
 ## 5. Viewer
 
 ```
-presentation   full screen, like the image viewer
-toolbar        back or close
+presentation   Android: full screen, like the image viewer
+               desktop: over the conversation
+               iOS: sheet
+toolbar        back (Kotlin)
                switch between the formatted and the text view
                save
 title          file name
@@ -160,7 +162,7 @@ New file `views/chat/item/MarkdownFileView.kt`:
 
 ```
 isMarkdownFile(file)
-showMarkdownFile(file)     loadRemoteFile if needed, read, ModalManager.fullscreen.showModal
+showMarkdownFile(file)     loadRemoteFile if needed, read, ModalManager.center.showModal
 MarkdownFileView           formatted or text view by appPrefs.markdownFileTextView
 ```
 
@@ -225,6 +227,14 @@ ConditionsMarkdown styles           moved to documentMarkdownStyle(h1): Document
 
 `SimpleXAPI.kt`: `markdownFileTextView = mkBoolPreference(SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW, false)`.
 
+Centre placement on desktop: modals are drawn over the open conversation.
+
+```
+ModalView.kt             showCustomModal: chatId is not changed
+App.kt                   CenterPartOfScreen: ModalManager.center.showInView() after ChatView
+ChatListNavLinkView.kt   "Set contact name": back button on desktop
+```
+
 `moko-resources/base/strings.xml`:
 
 ```
@@ -239,8 +249,8 @@ New file `Shared/Views/Chat/ChatItem/MarkdownFileView.swift`, added to the Simpl
 
 ```
 isMarkdownFile(file)
-showMarkdownFile(file)     read, parse, showAppSheet(fullScreen: true)
-MarkdownFileView           NavigationView; toolbar: close, switch, save
+showMarkdownFile(file)     read, parse, showAppSheet
+MarkdownFileView           NavigationView; toolbar: switch, save
 ```
 
 ```
@@ -248,11 +258,9 @@ formatted   ConditionsWebView(html:openLink:), Ink 0.6.0, raw HTML escaped by an
 text        ScrollView, LazyVStack, one monospace Text per line, text selection, format characters as [U+XXXX]
 switch      @AppStorage(DEFAULT_MARKDOWN_FILE_TEXT_VIEW); hidden over the limits
 save        saveCryptoFile(fileSource) (CIFileView.swift)
-close       dismiss of the top view controller
+close       swipe down
 links       openMarkdownFileLink: parseSimpleXMarkdown; simplexLink: appOpenUrl; uri, http or https: openBrowserAlert; other: showInvalidLinkAlert
 ```
-
-`AppSheet.swift`: `showAppSheet(fullScreen: Bool = false, content:)`; full screen: `modalPresentationStyle = .fullScreen`.
 
 `SettingsView.swift`: `DEFAULT_MARKDOWN_FILE_TEXT_VIEW = "markdownFileTextView"`, default false.
 
@@ -307,3 +315,5 @@ A single top-level block (one table, code block or paragraph) is still laid out 
 19. Operator conditions: rendering unchanged, links in the primary colour.
 20. File with CRLF line endings: same formatted and text views as with LF.
 21. Level 1 heading in the Kotlin formatted view: larger than level 2.
+22. Desktop: the viewer covers the conversation only; back or Escape returns to the conversation; opening another chat closes the viewer.
+23. Desktop, other centre modals over an open chat (What's New, create profile, "Set contact name", invalid data item): the chat is shown again after back.

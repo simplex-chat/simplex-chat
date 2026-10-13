@@ -96,7 +96,7 @@ fun showMarkdownFile(file: CIFile) {
       formatted,
       bidiControlChar.containsMatchIn(text)
     )
-    ModalManager.fullscreen.showModal(endButtons = {
+    ModalManager.center.showModal(endButtons = {
       if (formatted != null) MarkdownViewSwitch()
       MarkdownFileSaveButton(file, bytes)
     }) {
