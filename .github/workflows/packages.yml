@@ -234,11 +234,12 @@ jobs:
         run: git tag "python-v$VERSION" && git push origin "python-v$VERSION"
 
   release:
+    # After publish, for its version tags. A failed publish leaves its versions unbumped.
     needs: [addon, addon-build, publish]
     # A merged release PR changes only versions and pins.
     if: >-
       !cancelled() && needs.addon.outputs.release_branch && needs.addon-build.result != 'failure'
-      && needs.publish.result == 'success' && !startsWith(github.event.head_commit.message, 'packages: release')
+      && !startsWith(github.event.head_commit.message, 'packages: release')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
