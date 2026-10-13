@@ -18,6 +18,7 @@
 5. [Error Types (ChatError)](#5-error-types)
 6. [FFI Bridge Functions](#6-ffi-bridge-functions)
 7. [Result Type (APIResult)](#7-result-type)
+8. [Directory Search and Connection Plans](#8-directory-search-and-connection-plans)
 
 ---
 
@@ -290,6 +291,12 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiSyncContactRatchet` | `contactId, force` | Sync double-ratchet state | [L120](../Shared/Model/AppAPITypes.swift#L120) |
 | `apiSyncGroupMemberRatchet` | `groupId, groupMemberId, force` | Sync member ratchet | [L121](../Shared/Model/AppAPITypes.swift#L121) |
 
+### 2.18 Service Requests
+
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiSendServiceRequest` | `userId, target, timeoutSec: Double?, requestJSON` | Send a JSON request to a service address (e.g. SimpleX Directory) and wait up to the timeout for its response (`/_service_request`); returns `serviceResponse` | [L137](../Shared/Model/AppAPITypes.swift#L137) |
+
 ---
 
 ## 3. Response Types
@@ -327,6 +334,7 @@ Contact, message, and profile responses ([`AppAPITypes.swift` L779](../Shared/Mo
 |----------|-----------|-------------|--------|
 | `invitation` | `user, connLinkInvitation, connection` | Created invitation link | [L780](../Shared/Model/AppAPITypes.swift#L780) |
 | `connectionPlan` | `user, connLink, connectionPlan` | Connection plan preview | [L783](../Shared/Model/AppAPITypes.swift#L783) |
+| `serviceResponse` | `user, responseData: JSONValue` | A service's response to `apiSendServiceRequest`, left undecoded for the caller | [L862](../Shared/Model/AppAPITypes.swift#L862) |
 | `newPreparedChat` | `user, chat: ChatData` | Prepared contact/group | [L784](../Shared/Model/AppAPITypes.swift#L784) |
 | `startedConnectionToGroup` | `user, groupInfo, relayResults: [RelayConnectionResult]` | Group/channel join initiated; relay results indicate per-relay connection success/failure | [L790](../Shared/Model/AppAPITypes.swift#L790) |
 | `contactDeleted` | `user, contact` | Contact deleted | [L793](../Shared/Model/AppAPITypes.swift#L793) |
@@ -479,7 +487,7 @@ public enum ChatError: Decodable, Hashable, Error {
 
 | Category | Enum | Description | Source |
 |----------|------|-------------|--------|
-| Chat logic | `ChatErrorType` | Business logic errors (e.g., invalid state, permission denied, `chatRelayExists`) | [`APITypes.swift` L722](../SimpleXChat/APITypes.swift#L722) |
+| Chat logic | `ChatErrorType` | Business logic errors (e.g., invalid state, permission denied, `chatRelayExists`) | [`APITypes.swift` L788](../SimpleXChat/APITypes.swift#L788) |
 | SMP Agent | `AgentErrorType` | Protocol/network errors from the SMP agent layer | [`APITypes.swift` L884](../SimpleXChat/APITypes.swift#L884) |
 | Database store | `StoreError` | SQLite query/constraint errors (includes relay-related: `relayUserNotFound`, `duplicateMemberId`, `userChatRelayNotFound`, `groupRelayNotFound`, `groupRelayNotFoundByMemberId`) | [`APITypes.swift` L802](../SimpleXChat/APITypes.swift#L802) |
 | Database engine | `DatabaseError` | DB open/migration/encryption errors | [`APITypes.swift` L871](../SimpleXChat/APITypes.swift#L871) |
@@ -596,6 +604,20 @@ The `decodeAPIResult<R>` function ([`APITypes.swift` L86](../SimpleXChat/APIType
 
 ---
 
+## 8. Directory Search and Connection Plans
+
+Wrappers in [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) used by the online search (see [Chat List, Online Search](client/chat-list.md#11-online-search)):
+
+| Function | Description | Source |
+|----------|-------------|--------|
+| `apiSearchDirectory(_ text:, cursor:)` | Sends `apiSendServiceRequest` to `DIRECTORY_SERVICE_LINK` with `DIRECTORY_SEARCH_TIMEOUT_SEC` and the search request; returns `parseDirectorySearchResponse(responseData)`, or nil on any error (logged). Blocks for up to the timeout | [L1044](../Shared/Model/SimpleXAPI.swift#L1044) |
+| `apiConnectPlan(connLink:, resolveMode:, linkOwnerSig:, inProgress:, onFailure:)` | Plans a connection; returns `ConnectionPlanResult?`. `notResolvedLocally` (a `.never` lookup that matched nothing) returns nil silently; any other failure is handled by `onFailure` | [L1064](../Shared/Model/SimpleXAPI.swift#L1064) |
+| `ConnectPlanFailure` | `.alert` (default, every existing caller): `apiConnectResponseAlert`; `.log`: debug log only, used by the online search so name resolution and per-entry lookups never raise alerts | [L1060](../Shared/Model/SimpleXAPI.swift#L1060) |
+
+A service response is carried as [`JSONValue`](../SimpleXChat/APITypes.swift#L722) (any JSON), so the framework does not depend on a service's own types; callers decode it with [`decodeJSONValue`](../SimpleXChat/APITypes.swift#L760).
+
+---
+
 ## Source Files
 
 | File | Path |
@@ -605,6 +627,7 @@ The `decodeAPIResult<R>` function ([`APITypes.swift` L86](../SimpleXChat/APIType
 | ChatEvent enum | [`Shared/Model/AppAPITypes.swift` L1069](../Shared/Model/AppAPITypes.swift#L1069) |
 | APIResult, ChatError | [`SimpleXChat/APITypes.swift` L27, L699](../SimpleXChat/APITypes.swift#L27) |
 | FFI bridge functions | [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) |
+| Service response JSON | [`SimpleXChat/APITypes.swift` L722](../SimpleXChat/APITypes.swift#L722) |
 | Low-level FFI | [`SimpleXChat/API.swift`](../SimpleXChat/API.swift) |
 | Data types | `SimpleXChat/ChatTypes.swift` |
 | C header | `SimpleXChat/SimpleX.h` |

@@ -271,11 +271,11 @@ enum ActiveFilter {
 
 ---
 
-## 5. [ChannelRelaysModel](../Shared/Model/ChatModel.swift#L336-L350)
+## 5. [ChannelRelaysModel](../Shared/Model/ChatModel.swift#L354-L368)
 
 **Class**: `class ChannelRelaysModel: ObservableObject`
 **Singleton**: `ChannelRelaysModel.shared`
-**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L336)
+**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L354)
 
 Holds runtime relay state for the currently viewed channel. Used by `ChannelRelaysView` to display and manage relays. Reset when the view is dismissed.
 
@@ -283,14 +283,14 @@ Holds runtime relay state for the currently viewed channel. Used by `ChannelRela
 
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `groupId` | `Int64?` | Group ID of the channel whose relays are loaded | [L338](../Shared/Model/ChatModel.swift#L338) |
-| `groupRelays` | `[GroupRelay]` | Current relay instances for the channel | [L339](../Shared/Model/ChatModel.swift#L339) |
+| `groupId` | `Int64?` | Group ID of the channel whose relays are loaded | [L356](../Shared/Model/ChatModel.swift#L356) |
+| `groupRelays` | `[GroupRelay]` | Current relay instances for the channel | [L357](../Shared/Model/ChatModel.swift#L357) |
 
 ### Methods
 
 | Method | Description | Line |
 |--------|-------------|------|
-| `set(groupId:groupRelays:)` | Populate all properties at once | [L341](../Shared/Model/ChatModel.swift#L341) |
+| `set(groupId:groupRelays:)` | Populate all properties at once | [L359](../Shared/Model/ChatModel.swift#L359) |
 | `reset()` | Clear all properties to nil/empty | [L346](../Shared/Model/ChatModel.swift#L346) |
 
 ---
@@ -468,6 +468,7 @@ App-level UI settings stored in `UserDefaults.standard`:
 | `DEFAULT_SHOW_LA_NOTICE` | `Bool` | Show LA setup notice |
 | `DEFAULT_NOTIFICATION_ALERT_SHOWN` | `Bool` | Notification permission alert shown |
 | `DEFAULT_CALL_KIT_CALLS_IN_RECENTS` | `Bool` | Show CallKit calls in recents |
+| `DEFAULT_DIRECTORY_SEARCH_ALERT_SHOWN` | `Bool` | The user chose "Search and don't show again" in the online search alert; in `hintDefaults` (see [Chat List, Online Search](client/chat-list.md#11-online-search)) |
 
 ### GroupDefaults
 
