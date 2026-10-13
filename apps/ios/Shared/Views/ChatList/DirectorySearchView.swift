@@ -13,11 +13,13 @@ enum DirectoryFooter {
     case retry, showMore
 }
 
-// Directory results are not chats and are never saved: they live as long as the search text does.
+// Online results are not chats and are never saved: they live as long as the search text does.
 @MainActor
 class OnlineSearchModel: ObservableObject {
-    @Published private(set) var entries: [DirectorySearchEntry] = []
+    @Published private(set) var names: [NameSearchResult] = []
+    @Published private(set) var directory: [DirectoryResult] = []
     @Published private(set) var loading = false
+    @Published private(set) var resolvingNames = false
     @Published private(set) var failed = false
     // tells "nothing searched yet" apart from "searched and found nothing"
     @Published private(set) var searched = false
@@ -26,32 +28,63 @@ class OnlineSearchModel: ObservableObject {
     private var searchedText = ""
     // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
     private var generation = 0
+    private var spinnerShown = false
 
-    var showResults: Bool { loading || searched }
+    var searching: Bool { loading || resolvingNames }
+    var showResults: Bool { searching || searched || !names.isEmpty }
     var footer: DirectoryFooter? { failed ? .retry : cursor != nil ? .showMore : nil }
 
     func reset() {
         generation += 1
-        entries = []
+        names = []
+        directory = []
         cursor = nil
         loading = false
+        resolvingNames = false
         failed = false
         searched = false
         searchedText = ""
-        ConnectProgressManager.shared.stopConnectProgress(.directorySearch)
+        updateSpinner()
     }
 
-    // a way out of the wait, not out of the results: the page already shown stays
+    // a way out of the wait, not out of the results: what is already shown stays
     func cancelRequest() {
         generation += 1
         loading = false
+        resolvingNames = false
+        updateSpinner()
     }
 
-    func search(_ text: String) async {
+    func search(_ text: String, name: String?) async {
         let text = text.trimmingCharacters(in: .whitespaces)
-        guard !text.isEmpty, !(loading && text == searchedText) else { return }
+        guard !text.isEmpty, !(searching && text == searchedText) else { return }
         reset()
         searchedText = text
+        if let name {
+            resolvingNames = true
+            updateSpinner()
+            // captured here: the async let initializer runs later, in the child task, possibly after a reset
+            let gen = generation
+            async let resolution: Void = resolveNames(name, generation: gen)
+            await request(append: false)
+            await resolution
+        } else {
+            await request(append: false)
+        }
+    }
+
+    func searchDirectory(_ text: String) async {
+        let text = text.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty, !(loading && text == searchedText) else { return }
+        if text == searchedText {
+            directory = []
+            cursor = nil
+            failed = false
+            searched = false
+        } else {
+            reset()
+            searchedText = text
+        }
         await request(append: false)
     }
 
@@ -64,34 +97,83 @@ class OnlineSearchModel: ObservableObject {
     func retry() async {
         if cursor != nil {
             await loadMore()
-        } else {
-            await search(searchedText)
+        } else if !loading {
+            await request(append: false)
         }
+    }
+
+    func rows(shownChatIds: Set<ChatId>) -> OnlineSearchRows {
+        let nameChatIds = Set(names.compactMap { $0.localChatId })
+        let nameLinks = Set(names.compactMap { $0.resolvedLink })
+        func isAmong(_ ids: Set<ChatId>, _ id: ChatId?) -> Bool {
+            id.map { ids.contains($0) } ?? false
+        }
+        return OnlineSearchRows(
+            names: names.filter { !isAmong(shownChatIds, $0.localChatId) },
+            directory: directory.filter {
+                !isAmong(shownChatIds, $0.localChatId) && !isAmong(nameChatIds, $0.localChatId) && !nameLinks.contains($0.entry.link)
+            },
+            footer: footer
+        )
+    }
+
+    private func resolveNames(_ name: String, generation gen: Int) async {
+        let targets = name.hasPrefix("@") || name.hasPrefix("#") ? [name] : ["@" + name, "#" + name]
+        var results: [NameSearchResult] = []
+        for target in targets {
+            // checked before each target: a cancelled or replaced search must not send more names to the server
+            guard gen == generation else { return }
+            if let r = await apiConnectPlan(connLink: target, resolveMode: .unknown, inProgress: BoxedValue(false), onFailure: .log),
+               let result = NameSearchResult(target: target, result: r) {
+                results.append(result)
+            }
+        }
+        guard gen == generation else { return }
+        resolvingNames = false
+        updateSpinner()
+        names = results
     }
 
     private func request(append: Bool) async {
         let gen = generation
         loading = true
         failed = false
-        ConnectProgressManager.shared.startConnectProgress(
-            NSLocalizedString("Searching directory…", comment: "in progress text"),
-            owner: .directorySearch
-        ) { [weak self] in
-            Task { @MainActor in self?.cancelRequest() }
-        }
+        updateSpinner()
         let r = await apiSearchDirectory(searchedText, cursor: cursor)
+        var page: [DirectoryResult] = []
+        if let r {
+            var seen = Set(directory.map { $0.id })
+            for entry in r.entries {
+                guard seen.insert(entry.id).inserted else { continue }
+                let plan = await apiConnectPlan(connLink: entry.link, resolveMode: .never, inProgress: BoxedValue(false), onFailure: .log)
+                page.append(DirectoryResult(entry: entry, localChatId: plan.flatMap { planLocalChatId($0.connectionPlan) }))
+            }
+        }
         guard gen == generation else { return }
-        ConnectProgressManager.shared.stopConnectProgress(.directorySearch)
         loading = false
         searched = true
+        updateSpinner()
         guard let r else {
             failed = true
             return
         }
         cursor = r.cursor
-        let known = Set(entries.map { $0.id })
-        let fresh = r.entries.filter { !known.contains($0.id) }
-        entries = append ? entries + fresh : fresh
+        directory = append ? directory + page : page
+    }
+
+    private func updateSpinner() {
+        guard searching != spinnerShown else { return }
+        spinnerShown = searching
+        if spinnerShown {
+            ConnectProgressManager.shared.startConnectProgress(
+                NSLocalizedString("Searching directory…", comment: "in progress text"),
+                owner: .directorySearch
+            ) { [weak self] in
+                Task { @MainActor in self?.cancelRequest() }
+            }
+        } else {
+            ConnectProgressManager.shared.stopConnectProgress(.directorySearch)
+        }
     }
 }
 
@@ -168,6 +250,33 @@ struct DirectorySearchRow: View {
     }
 }
 
+struct NameSearchRow: View {
+    @EnvironmentObject var theme: AppTheme
+    var result: NameSearchResult
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProfileImage(imageStr: result.image, iconName: result.iconName, size: 42)
+            VStack(alignment: .leading, spacing: 2) {
+                if let profileName = result.profileName {
+                    (Text(profileName).fontWeight(.bold) + Text(verbatim: " (\(result.simplexName))").foregroundColor(theme.colors.secondary))
+                        .lineLimit(1)
+                } else {
+                    Text(result.simplexName).fontWeight(.bold).lineLimit(1)
+                }
+                if let descr = result.descr, !descr.isEmpty {
+                    Text(descr)
+                        .foregroundColor(theme.colors.secondary)
+                        .lineLimit(2)
+                }
+            }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+}
+
 struct DirectoryShowMoreRow: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var onlineSearch: OnlineSearchModel
@@ -208,7 +317,7 @@ func confirmDirectorySearch(_ search: @escaping () -> Void) {
 private func showDirectorySearchAlert(onSearch: @escaping () -> Void) {
     showAlert(
         NSLocalizedString("Search in Directory?", comment: "alert title"),
-        message: NSLocalizedString("The text in the search field will be sent to SimpleX Directory to find public groups and channels.\n\nNo contact is created and your profile is not sent.", comment: "alert message"),
+        message: NSLocalizedString("The text in the search field will be sent to SimpleX Directory to find public groups and channels. If it is a SimpleX name, it will also be sent to your server that resolves names.\n\nNo contact is created and your profile is not sent.", comment: "alert message"),
         actions: {[
             UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .cancel),
             UIAlertAction(

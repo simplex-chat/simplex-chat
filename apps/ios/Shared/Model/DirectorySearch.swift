@@ -98,3 +98,89 @@ func parseDirectorySearchResponse(_ resp: JSONValue) -> DirectorySearchResults? 
     }
     return DirectorySearchResults(entries: entries, cursor: r.searchCursor)
 }
+
+func planLocalChatId(_ plan: ConnectionPlan) -> ChatId? {
+    switch plan {
+    case let .contactAddress(contactAddressPlan):
+        switch contactAddressPlan {
+        case let .known(contact), let .connectingProhibit(contact), let .contactViaAddress(contact): return contact.id
+        case .ok, .ownLink, .connectingConfirmReconnect: return nil
+        }
+    case let .groupLink(groupLinkPlan):
+        switch groupLinkPlan {
+        case let .known(groupInfo), let .ownLink(groupInfo): return groupInfo.id
+        case let .connectingProhibit(groupInfo_): return groupInfo_?.id
+        case .ok, .connectingConfirmReconnect, .noRelays, .updateRequired: return nil
+        }
+    case let .invitationLink(invitationLinkPlan):
+        switch invitationLinkPlan {
+        case let .known(contact): return contact.id
+        case let .connecting(contact_): return contact_?.id
+        case .ok, .ownLink: return nil
+        }
+    case .error: return nil
+    }
+}
+
+struct NameSearchResult: Identifiable {
+    let target: String
+    let simplexName: String
+    let profileName: String?
+    let descr: String?
+    let image: String?
+    let iconName: String
+    let localChatId: ChatId?
+    // the link the core resolved the name to, never a profile field the name's owner wrote
+    let resolvedLink: String?
+
+    var id: String { target }
+
+    init?(target: String, result: ConnectionPlanResult) {
+        let profile: (any NamedChat)?
+        switch result.connectionPlan {
+        case let .contactAddress(contactAddressPlan):
+            switch contactAddressPlan {
+            case let .ok(contactSLinkData_, _): profile = contactSLinkData_?.profile
+            case let .contactViaAddress(contact), let .connectingProhibit(contact), let .known(contact): profile = contact.profile
+            case .connectingConfirmReconnect: profile = nil
+            case .ownLink: return nil
+            }
+            iconName = "person.crop.circle.fill"
+            resolvedLink = nil
+        case let .groupLink(groupLinkPlan):
+            let groupProfile: GroupProfile?
+            switch groupLinkPlan {
+            case let .ok(_, groupSLinkData_, _), let .noRelays(groupSLinkData_), let .updateRequired(groupSLinkData_): groupProfile = groupSLinkData_?.groupProfile
+            case let .known(groupInfo), let .ownLink(groupInfo): groupProfile = groupInfo.groupProfile
+            case let .connectingProhibit(groupInfo_): groupProfile = groupInfo_?.groupProfile
+            case .connectingConfirmReconnect: groupProfile = nil
+            }
+            profile = groupProfile
+            iconName = groupProfile?.isChannel == true ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"
+            resolvedLink = result.connLink.connShortLink
+        case .invitationLink, .error:
+            return nil
+        }
+        self.target = target
+        simplexName = result.planSimplexName?.shortStr ?? target
+        profileName = profile?.displayName
+        descr = profile?.shortDescr
+        image = profile?.image
+        localChatId = planLocalChatId(result.connectionPlan)
+    }
+}
+
+struct DirectoryResult: Identifiable {
+    let entry: DirectorySearchEntry
+    let localChatId: ChatId?
+
+    var id: String { entry.id }
+}
+
+struct OnlineSearchRows {
+    var names: [NameSearchResult]
+    var directory: [DirectoryResult]
+    var footer: DirectoryFooter?
+
+    var isEmpty: Bool { names.isEmpty && directory.isEmpty && footer == nil }
+}

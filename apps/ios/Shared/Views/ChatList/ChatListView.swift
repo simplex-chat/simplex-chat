@@ -447,9 +447,11 @@ struct ChatListView: View {
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 .padding(.horizontal)
                 if onlineSearch.showResults {
+                    let rows = onlineSearch.rows(shownChatIds: [])
                     List {
-                        directoryRows()
-                        if !onlineSearch.loading && onlineSearch.entries.isEmpty && onlineSearch.footer == nil {
+                        nameRows(rows.names)
+                        directoryRows(rows)
+                        if !onlineSearch.searching && rows.isEmpty {
                             Text("No chats found")
                                 .foregroundColor(theme.colors.secondary)
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -478,31 +480,49 @@ struct ChatListView: View {
         }
     }
 
-    @ViewBuilder private func directoryRows() -> some View {
-        let footer = onlineSearch.footer
-        if !onlineSearch.entries.isEmpty || footer != nil {
-            Text("Directory")
-                .font(.callout)
-                .foregroundColor(theme.colors.secondary)
-                .accessibilityAddTraits(.isHeader)
-                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            ForEach(onlineSearch.entries) { entry in
-                DirectorySearchRow(entry: entry)
+    @ViewBuilder private func nameRows(_ names: [NameSearchResult]) -> some View {
+        if !names.isEmpty {
+            searchPartHeader("Names")
+            ForEach(names) { result in
+                NameSearchRow(result: result)
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .listRowBackground(Color.clear)
                     .onTapGesture {
                         searchFocussed = false
-                        planAndConnect(entry.link, theme: theme, dismiss: false, cleanup: nil)
+                        planAndConnect(result.target, theme: theme, dismiss: false, cleanup: nil)
                     }
             }
-            switch footer {
+        }
+    }
+
+    @ViewBuilder private func directoryRows(_ rows: OnlineSearchRows) -> some View {
+        if !rows.directory.isEmpty || rows.footer != nil {
+            searchPartHeader("Directory")
+            ForEach(rows.directory) { result in
+                DirectorySearchRow(entry: result.entry)
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .listRowBackground(Color.clear)
+                    .onTapGesture {
+                        searchFocussed = false
+                        planAndConnect(result.entry.link, theme: theme, dismiss: false, cleanup: nil)
+                    }
+            }
+            switch rows.footer {
             case .retry: directoryRetryRow()
             case .showMore: directoryShowMoreRow()
             case nil: EmptyView()
             }
         }
+    }
+
+    private func searchPartHeader(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.callout)
+            .foregroundColor(theme.colors.secondary)
+            .accessibilityAddTraits(.isHeader)
+            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
     }
 
     private func openGetStake() {
@@ -512,6 +532,7 @@ struct ChatListView: View {
 
     private var chatListContent: some View {
         let cs = filteredChats()
+        let rows = onlineSearch.rows(shownChatIds: Set(cs.map { $0.id }))
         return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
@@ -614,7 +635,8 @@ struct ChatListView: View {
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
                     }
-                    directoryRows()
+                    nameRows(rows.names)
+                    directoryRows(rows)
                     if !addressCreationCardShown && hasConversations {
                         ConnectBannerCard()
                             .padding(.vertical, 6)
@@ -641,8 +663,8 @@ struct ChatListView: View {
                     }
                 }
             }
-            // this covers the whole list, so it must not hide the directory section or its own messages
-            if cs.isEmpty && !chatModel.chats.isEmpty && !onlineSearch.loading && onlineSearch.entries.isEmpty && onlineSearch.footer == nil {
+            // this covers the whole list, so it must not hide the online results or their messages
+            if cs.isEmpty && !chatModel.chats.isEmpty && !onlineSearch.searching && rows.isEmpty {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
@@ -840,7 +862,7 @@ struct ChatListSearchBar: View {
         VStack(spacing: 12) {
             // a typed name shows a row to connect to it (as on Android mobile): with the reachable toolbar it
             // replaces the tags above the search field; in top bar mode the tags stay and it moves below (end of VStack)
-            if oneHandUI, let candidate = connectNameCandidate {
+            if oneHandUI, let candidate = connectNameCandidate, onlineSearch.names.isEmpty {
                 ConnectByNameRow(
                     name: candidate,
                     searchText: $searchText,
@@ -864,7 +886,7 @@ struct ChatListSearchBar: View {
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
                         .submitLabel(.search)
-                        .onSubmit(runDirectorySearch)
+                        .onSubmit(runOnlineSearch)
                     if connectProgressManager.showConnectProgress != nil {
                         ProgressView()
                     }
@@ -891,7 +913,7 @@ struct ChatListSearchBar: View {
                     toggleFilterButton()
                 }
             }
-            if !oneHandUI, let candidate = connectNameCandidate {
+            if !oneHandUI, let candidate = connectNameCandidate, onlineSearch.names.isEmpty {
                 ConnectByNameRow(
                     name: candidate,
                     searchText: $searchText,
@@ -1015,7 +1037,14 @@ struct ChatListSearchBar: View {
     private func runDirectorySearch() {
         let text = searchTrimmed
         guard !text.isEmpty, !searchShowingSimplexLink else { return }
-        confirmDirectorySearch { Task { await onlineSearch.search(text) } }
+        confirmDirectorySearch { Task { await onlineSearch.searchDirectory(text) } }
+    }
+
+    private func runOnlineSearch() {
+        let text = searchTrimmed
+        guard !text.isEmpty, !searchShowingSimplexLink else { return }
+        let name = connectNameCandidate
+        confirmDirectorySearch { Task { await onlineSearch.search(text, name: name) } }
     }
 }
 

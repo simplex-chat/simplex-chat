@@ -1057,7 +1057,11 @@ func apiSearchDirectory(_ text: String, cursor: JSONValue?) async -> DirectorySe
     return nil
 }
 
-func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> ConnectionPlanResult? {
+enum ConnectPlanFailure {
+    case alert, log
+}
+
+func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>, onFailure: ConnectPlanFailure = .alert) async -> ConnectionPlanResult? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return nil
@@ -1068,7 +1072,12 @@ func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, l
     }
     // a .never (typing) search that matches nothing locally is not an error to surface
     if case .error(.error(.notResolvedLocally)) = r { return nil }
-    if let r { await apiConnectResponseAlert(r) }
+    if let r {
+        switch onFailure {
+        case .alert: await apiConnectResponseAlert(r)
+        case .log: logger.debug("apiConnectPlan: \(String(describing: r))")
+        }
+    }
     return nil
 }
 
