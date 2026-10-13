@@ -5308,6 +5308,7 @@ storeReceiptRefused :: BadgeServiceErrorCode -> Bool
 storeReceiptRefused = \case
   BSEReceiptInvalid -> True
   BSEReceiptUsed -> True
+  BSETestPurchase -> True
   _ -> False
 
 -- | The same reference the service claims a transaction by, read without verifying anything.

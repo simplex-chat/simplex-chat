@@ -39,10 +39,11 @@ data VerifiedStoreTransaction = VerifiedStoreTransaction
   deriving (Eq, Show)
 
 -- | The reasons are for the service's log alone and must never quote the receipt.
--- SRInvalid alone is terminal: the client drops the purchase's keys and nothing presents it again.
--- So only a verdict no later attempt could change is SRInvalid; when in doubt, SRUnreachable.
+-- SRInvalid and SRTestPurchase are terminal: the client drops the purchase's keys and nothing
+-- presents it again. So only a verdict no later attempt could change is either; when in doubt, SRUnreachable.
 data StoreRefusal
-  = SRInvalid Text -- a verdict that cannot change, and the client consumes the purchase: forged, malformed, refunded, a test purchase
+  = SRInvalid Text -- a verdict that cannot change, and the client consumes the purchase: forged, malformed, refunded
+  | SRTestPurchase -- the store vouched for it, but it cost nothing; terminal, and named so the app can say why
   | SRPending -- a real purchase the store has not settled; it may yet
   | SRUnreachable Text -- no verdict: the store was not asked, did not answer, or does not know the token (a Play 404 may be lag)
   | SRVerifierFailed Text -- this service's own failure, its bug or misconfiguration, never the store's answer

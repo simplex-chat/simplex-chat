@@ -1724,8 +1724,8 @@ testStoreReceiptInvalid ps =
     refused (googlePayment "badge_supporter_01" "not-a-purchase") `shouldReturn` (BSEReceiptInvalid, Nothing)
     refused SPApple {jws = "not.a.jws"} `shouldReturn` (BSEReceiptInvalid, Nothing)
     refused SPApple {jws = unsignedJWS "{\"transactionId\":\"2000000812345699\",\"productId\":\"BADGE_SUPPORTER_01\"}"} `shouldReturn` (BSEReceiptInvalid, Nothing)
-    -- refused by the service, which the store would have vouched for
-    refused SPApple {jws = appleSandboxJWS} `shouldReturn` (BSEReceiptInvalid, Nothing)
+    -- named rather than lumped in with a forgery, since the device that bought it already knows
+    refused SPApple {jws = appleSandboxJWS} `shouldReturn` (BSETestPurchase, Nothing)
     nothingPurchased cc
 
 testStorePending :: HasCallStack => TestParams -> IO ()

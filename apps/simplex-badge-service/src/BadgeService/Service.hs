@@ -451,7 +451,7 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
               | transactionRef /= providerRef -> storeRefusalResponse $ SRVerifierFailed "verified a transaction other than the one claimed"
             Right VerifiedStoreTransaction {quantity}
               | quantity /= 1 -> storeRefusalResponse $ SRVerifierFailed $ "verified a quantity of " <> tshow quantity
-            Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse $ SRInvalid "test purchase"
+            Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse SRTestPurchase
             -- another key's credit is told only once the store vouched for the receipt, or it would reveal which transactions were credited
             Right tx -> case credit of
               Uncredited -> newPurchase tx
@@ -486,10 +486,12 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
                     Just purchaseId -> liftIO $ firstMonthResponse db purchaseId (Just paymentId) firstMonth
                 pure $ fromRight (errorResponse BSEInternal) r
 
--- | The client learns only the code: a forged receipt, a refunded purchase and a test one are all receipt_invalid.
+-- | A forged receipt and a refunded one are both receipt_invalid, so the client learns nothing a
+-- forger could iterate on. A test purchase is named, since the device that made it already knows.
 storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
 storeRefusalResponse = \case
   SRInvalid reason -> logInfo ("store receipt refused: " <> reason) $> errorResponse BSEReceiptInvalid
+  SRTestPurchase -> logInfo "store receipt refused: test purchase" $> errorResponse BSETestPurchase
   SRPending -> pure $ errorResponse BSEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
   SRVerifierFailed reason -> logError ("store receipt not verified: " <> reason) $> errorResponse BSEInternal

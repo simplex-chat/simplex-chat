@@ -75,12 +75,14 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
 
 -- * App Store
 
-data Outcome = Invalid | Pending | Unreachable | Failed | NotConfigured | Verdict
+-- TestPurchase is the service's own refusal after a verifier vouched, so no verifier returns it here
+data Outcome = Invalid | TestPurchase | Pending | Unreachable | Failed | NotConfigured | Verdict
   deriving (Eq, Show)
 
 outcome :: Either StoreRefusal a -> Outcome
 outcome = \case
   Left (SRInvalid _) -> Invalid
+  Left SRTestPurchase -> TestPurchase
   Left SRPending -> Pending
   Left (SRUnreachable _) -> Unreachable
   Left (SRVerifierFailed _) -> Failed

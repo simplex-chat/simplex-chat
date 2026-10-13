@@ -36,6 +36,6 @@ mockGoogle productId token = pure $ Right $ vouched (googlePurchaseRef token) pr
 
 vouched :: Text -> Text -> VerifiedStoreTransaction
 vouched transactionRef productId =
-  -- not a test purchase, though nothing was paid: a test purchase is refused as receipt_invalid, which is
+  -- not a test purchase, though nothing was paid: a test purchase is refused as test_purchase, which is
   -- terminal and drops the client's keys, so every dev purchase would fail for good
   VerifiedStoreTransaction {transactionRef, productId, quantity = 1, testPurchase = False, paid = Nothing}

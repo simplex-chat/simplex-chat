@@ -244,6 +244,7 @@ data BadgeServiceErrorCode
   | BSECodeExpired
   | BSEReceiptInvalid
   | BSEReceiptUsed
+  | BSETestPurchase -- the store vouched for a purchase that cost nothing: Apple's sandbox, a Play license tester
   | BSEInternal
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
@@ -345,6 +346,7 @@ instance TextEncoding BadgeServiceErrorCode where
     BSECodeExpired -> "code_expired"
     BSEReceiptInvalid -> "receipt_invalid"
     BSEReceiptUsed -> "receipt_used"
+    BSETestPurchase -> "test_purchase"
     BSEInternal -> "internal"
     BSEUnknown t -> t
   textDecode s = Just $ case s of
@@ -365,6 +367,7 @@ instance TextEncoding BadgeServiceErrorCode where
     "code_expired" -> BSECodeExpired
     "receipt_invalid" -> BSEReceiptInvalid
     "receipt_used" -> BSEReceiptUsed
+    "test_purchase" -> BSETestPurchase
     "internal" -> BSEInternal
     t -> BSEUnknown t
 

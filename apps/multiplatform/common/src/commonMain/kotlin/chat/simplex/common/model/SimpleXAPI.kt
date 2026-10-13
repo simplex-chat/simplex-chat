@@ -7475,6 +7475,7 @@ sealed class BadgeServiceErrorCode {
   object CodeExpired: BadgeServiceErrorCode()
   object ReceiptInvalid: BadgeServiceErrorCode()
   object ReceiptUsed: BadgeServiceErrorCode()
+  object TestPurchase: BadgeServiceErrorCode()
   object Internal: BadgeServiceErrorCode()
   data class Unknown(val code: String): BadgeServiceErrorCode()
 
@@ -7497,6 +7498,7 @@ sealed class BadgeServiceErrorCode {
       is CodeExpired -> "code_expired"
       is ReceiptInvalid -> "receipt_invalid"
       is ReceiptUsed -> "receipt_used"
+      is TestPurchase -> "test_purchase"
       is Internal -> "internal"
       is Unknown -> code
     }
@@ -7511,6 +7513,7 @@ fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
   is BadgeServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
   is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
   is BadgeServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
+  is BadgeServiceErrorCode.TestPurchase -> generalGetString(MR.strings.badges_error_test_purchase)
   is BadgeServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
   is BadgeServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
   is BadgeServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
@@ -7540,6 +7543,7 @@ object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
       "code_expired" -> BadgeServiceErrorCode.CodeExpired
       "receipt_invalid" -> BadgeServiceErrorCode.ReceiptInvalid
       "receipt_used" -> BadgeServiceErrorCode.ReceiptUsed
+      "test_purchase" -> BadgeServiceErrorCode.TestPurchase
       "internal" -> BadgeServiceErrorCode.Internal
       else -> BadgeServiceErrorCode.Unknown(v)
     }

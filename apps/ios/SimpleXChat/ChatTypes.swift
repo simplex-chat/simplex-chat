@@ -348,10 +348,6 @@ public struct BadgeIssueError: Decodable, Hashable {
     public var reason: BadgeIssueFailure
 }
 
-// TestFlight, Xcode and App Review builds buy in Apple's sandbox, which the badge service refuses by
-// design; the receipt file's name is the only build-level signal of it available before iOS 16.
-public let appStoreSandboxBuild = Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
-
 public enum BadgeIssueFailure: Decodable, Hashable {
     // retryable is the service's own view of transience: it gave retryAfter
     case serviceError(code: BadgeServiceErrorCode, retryable: Bool)
@@ -375,8 +371,6 @@ public enum BadgeIssueFailure: Decodable, Hashable {
 
     public var purchaseText: String {
         switch self {
-        case .serviceError(.receiptInvalid, _) where appStoreSandboxBuild:
-            NSLocalizedString("Sandbox purchases are not credited. This build buys in Apple's sandbox, so badges can only be bought in the App Store version of the app.", comment: "alert message")
         case let .serviceError(code, _):
             badgeServiceErrorText(code)
                 ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the purchase: %@", comment: "badge purchase error"), code.text)
@@ -387,7 +381,7 @@ public enum BadgeIssueFailure: Decodable, Hashable {
 
     public var purchaseAlertTitle: String {
         switch self {
-        case .serviceError(.receiptInvalid, _) where appStoreSandboxBuild:
+        case .serviceError(.testPurchase, _):
             NSLocalizedString("Sandbox purchase", comment: "alert title")
         default: NSLocalizedString("Purchase error", comment: "alert title")
         }

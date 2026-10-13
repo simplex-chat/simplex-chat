@@ -716,7 +716,7 @@ testServiceRetryAfter = do
   badgeErrorRetryAfter BSEInternal `shouldBe` Nothing
   mapM_
     (\code -> badgeErrorRetryAfter code `shouldBe` Nothing)
-    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEProviderNotConfigured, BSEUnknown "future_code"]
+    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEProviderNotConfigured, BSETestPurchase, BSEUnknown "future_code"]
 
 -- The app shows the recorded failure in a sentence, so an agent error is stored as the agent
 -- error and not as the chat error wrapping it, whether or not it can clear on its own.

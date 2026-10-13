@@ -379,7 +379,7 @@ private func storeReceipt(_ verification: VerificationResult<Transaction>) -> Ba
 // a sweep that hands over a receipt refused while the app was not running learns it only from this answer
 private func badgeReceiptRefused(_ error: Error) -> Bool {
     if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError {
-        return code == .receiptInvalid || code == .receiptUsed
+        return code == .receiptInvalid || code == .receiptUsed || code == .testPurchase
     }
     return false
 }
