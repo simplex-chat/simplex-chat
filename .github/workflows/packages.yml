@@ -6,7 +6,8 @@ name: packages
 #    npm prerelease versions get dist-tag beta, others latest.
 # 3. The release PR packages-release/<branch> pins new library and add-on releases with their SHA-256
 #    and bumps the versions of changed packages. Merging it publishes them (step 2).
-# Pull requests build the add-on and run the package tests on every platform.
+# Package tests run on every platform with the pinned libsimplex. build.yml runs them with the libsimplex it builds:
+# for pull requests that change the chat core (linux-x86_64), and for a new library release before its release PR.
 
 # Publishing uses trusted publishing (OIDC) for this workflow on npm and PyPI,
 # or the NPM_TOKEN and PYPI_API_TOKEN secrets when they are set.
@@ -38,8 +39,17 @@ on:
       python_version:
         description: "simplex-chat PyPI version, bumped when needed by default"
         required: false
-  # build.yml, after a library release
+  # build.yml: a pull request that changes the chat core, or a new library release
   workflow_call:
+    inputs:
+      libs_artifact:
+        description: "test with simplex-chat-libs-linux-x86_64 built by the calling run"
+        type: boolean
+        default: false
+      libs_release:
+        description: "test with this simplex-chat-libs release"
+        type: string
+        default: ""
   push:
     branches:
       - master
@@ -57,7 +67,8 @@ on:
       - ".github/workflows/packages.yml"
 
 concurrency:
-  group: packages-${{ github.ref }}
+  # build.yml and this workflow both run for a pull request that changes the core and the packages
+  group: ${{ github.workflow }}-packages-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -75,6 +86,8 @@ jobs:
       tag: ${{ steps.tag.outputs.tag }}
       release_branch: ${{ steps.branch.outputs.release_branch }}
       missing: ${{ steps.release.outputs.missing }}
+      platforms: ${{ steps.plan.outputs.platforms }}
+      test: ${{ steps.plan.outputs.test }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -100,26 +113,29 @@ jobs:
             echo "missing=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Build plan
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          RELEASE_MISSING: ${{ steps.release.outputs.missing }}
+          LIBS_ARTIFACT: ${{ inputs.libs_artifact }}
+          LIBS_RELEASE: ${{ inputs.libs_release }}
+        run: |
+          if [ -n "$BASE" ]; then git fetch -q --depth=1 origin "$BASE"; fi
+          python3 scripts/ci/packages_release.py build-plan --event "$EVENT" --base "$BASE" \
+            --release-missing "$RELEASE_MISSING" --libs-artifact "$LIBS_ARTIFACT" --libs-release "$LIBS_RELEASE" >> "$GITHUB_OUTPUT"
+
   build:
     name: "build ${{ matrix.platform }}"
     needs: addon
-    if: github.event_name == 'pull_request' || needs.addon.outputs.missing
+    if: needs.addon.outputs.platforms != '[]'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-22.04
-            platform: linux-x86_64
-          - os: ubuntu-22.04-arm
-            platform: linux-aarch64
-          - os: macos-latest
-            platform: macos-aarch64
-          - os: macos-15-intel
-            platform: macos-x86_64
-          - os: windows-latest
-            platform: windows-x86_64
+        include: ${{ fromJSON(needs.addon.outputs.platforms) }}
     defaults:
       run:
         shell: bash
@@ -147,12 +163,33 @@ jobs:
           npx tsc && cp src/simplex.* dist
           cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
 
+      - name: Download libsimplex of this run
+        if: needs.addon.outputs.test && inputs.libs_artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: simplex-chat-libs-${{ matrix.platform }}
+          path: ${{ runner.temp }}/libsimplex
+
+      - name: Download libsimplex release
+        if: needs.addon.outputs.test && inputs.libs_release
+        env:
+          URL: https://github.com/${{ github.repository }}-libs/releases/download/${{ inputs.libs_release }}/simplex-chat-libs-${{ matrix.platform }}.zip
+        run: curl -fsSL --create-dirs -o "$RUNNER_TEMP/libsimplex/simplex-chat-libs-${{ matrix.platform }}.zip" "$URL"
+
+      - name: Unpack libsimplex
+        if: needs.addon.outputs.test && (inputs.libs_artifact || inputs.libs_release)
+        run: python -m zipfile -e "$RUNNER_TEMP/libsimplex/simplex-chat-libs-${{ matrix.platform }}.zip" "$RUNNER_TEMP/libsimplex"
+
       - name: Test simplex-chat (npm)
+        if: needs.addon.outputs.test
+        env:
+          SIMPLEX_LIBS_DIR: ${{ (inputs.libs_artifact || inputs.libs_release) && format('{0}/libsimplex/libs', runner.temp) || '' }}
         # A failed test can leave chat controllers running, and jest then waits for them.
         # Tests on the public preset servers fail in CI when a server is slow to connect.
         run: npx jest --forceExit --testNamePattern '^(?!.*use preset servers)'
 
       - name: Test simplex-chat (PyPI)
+        if: needs.addon.outputs.test
         working-directory: packages/simplex-chat-python
         run: |
           python -m pip install -e ".[test]"
