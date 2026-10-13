@@ -272,6 +272,7 @@ chatTypesDocsData =
     (sti @ContactUserPreferences, STRecord, "", [], "", ""),
     (sti @CryptoFile, STRecord, "", [], "", ""),
     (sti @CryptoFileArgs, STRecord, "", [], "", ""),
+    (sti @DomainVerification, STEnum, "DV", [], "", ""),
     (sti @DroppedMsg, STRecord, "", [], "", ""),
     (sti @E2EInfo, STRecord, "", [], "", ""),
     (sti @ErrorType, STUnion, "", [], "", ""),
@@ -334,7 +335,10 @@ chatTypesDocsData =
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
     (sti @MsgVerified, STUnion, "MV", [], "", ""),
+    (sti @NameChange, STUnion, "NC", [], "", ""),
     (sti @NameErrorType, STUnion, "", [], "", ""),
+    (sti @NamePrice, STRecord, "", [], "", ""),
+    (sti @NameWarning, STUnion, "NW", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
@@ -505,6 +509,7 @@ deriving instance Generic ContactStatus
 deriving instance Generic ContactUserPreferences
 deriving instance Generic CryptoFile
 deriving instance Generic CryptoFileArgs
+deriving instance Generic DomainVerification
 deriving instance Generic DroppedMsg
 deriving instance Generic E2EInfo
 deriving instance Generic ErrorType
@@ -574,7 +579,10 @@ deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
 deriving instance Generic MsgVerified
+deriving instance Generic NameChange
 deriving instance Generic NameErrorType
+deriving instance Generic NamePrice
+deriving instance Generic NameWarning
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
