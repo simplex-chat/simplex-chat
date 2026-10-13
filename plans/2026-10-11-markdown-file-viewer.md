@@ -52,47 +52,46 @@ iOS       CIFileView.swift, fileAction
 
 ## 3. Open on completion
 
-Shared by Markdown files, images and voice messages (section 6).
+In master (#7700), for images, voice messages, video and files. The viewer adds only the Markdown case to the file tap action.
 
-State in the chat model:
-
-```
-fileToOpen    file ID and place of the last tapped file whose reception was started
-place         InChat(chat ID): tap in the chat view
-              ChatList: tap in a chat list preview
-```
+A tap that starts reception registers the file. On completion the tap action of the received file is performed:
 
 ```
-openWhenReceived(file, inChatList)      fileToOpen = (file.fileId, place of the tap)
-receivedFileToOpen(file, inChatList)    false unless fileToOpen has file.fileId and the place of the calling view, and the file is loaded
+image    full screen view
+voice    playback
+video    playback; locally encrypted: decrypted first; chat list preview: full screen player
+file     Markdown: viewer
+         other: share sheet (iOS), open/save menu (Android), save dialog (desktop)
+```
+
+Kotlin, chat model:
+
+```
+fileToOpen                              file ID of the last tapped file
+                                        inChatList: tap in a chat list preview
+openWhenReceived(file, inChatList)      sets fileToOpen
+receivedFileToOpen(file, inChatList)    false unless fileToOpen has file.fileId and inChatList, and the file is loaded
                                         then fileToOpen cleared
-                                        InChat: true
-                                        ChatList: true when the chat list is shown
+                                        chat view: true
+                                        chat list preview: true on desktop, or when no chat is open
 ```
 
-Chat list shown:
+Item views: `OpenWhenReceivedEffect(file, inChatList, open)` (`CIFileView.kt`), on a change of `file.loaded`; in `CIImageView.kt`, `CIVoiceView.kt`, `CIVideoView.kt`, `CIFileView.kt`.
+
+iOS, chat model:
 
 ```
-Android    no chat open; no modal open
-desktop    no start or full screen modal open
-iOS        no chat open; no view controller presented
+fileToOpen                      file ID of the last tapped file
+                                chat ID at the tap; nil in the chat list
+                                open callback of the tapped view
+openWhenReceived(file, open)    sets fileToOpen
+receivedFileToOpen(file)        fileToOpen has file.fileId, and the open chat is the chat at the tap
+openReceivedFile(file)          receivedFileToOpen rechecked; fileToOpen cleared; open(file)
 ```
 
-```
-cancelFileToOpen(file, inChatList)      fileToOpen cleared when it has file.fileId and the same kind of place
-```
+Event `rcvFileComplete` (`SimpleXAPI.swift`): for the active user, when `receivedFileToOpen(file)`: `openReceivedFile(file)` on the main actor.
 
-Cleared:
-
-```
-later tap                               fileToOpen replaced
-RcvError, RcvCancelled, RcvAborted      cancelFileToOpen
-item view disposed (Kotlin)             cancelFileToOpen: item scrolled out, chat closed
-item view disappears (iOS)              cancelFileToOpen: item scrolled out, chat closed, chat list left
-chat list hidden (Kotlin, list record)  cancelFileToOpen
-```
-
-Item views: `OpenWhenReceivedEffect` (Kotlin, `CIFileView.kt`), `OpenWhenReceived` view modifier (iOS, `CIFileView.swift`), on `fileStatus` changes.
+`fileToOpen` is replaced by a later tap.
 
 ## 4. Reading in memory
 
@@ -279,39 +278,21 @@ other data URIs        not shown
 other image links      the source text; nothing is fetched
 ```
 
-## 6. Images and voice messages: open on completion
-
-Current behaviour, both apps: a tap on an image or a voice message that is not received starts reception only; a second tap opens the image or plays the message.
-
-Change, separate from the viewer:
-
-```
-image   tap starts reception, openWhenReceived; on completion in the same place: full screen image view; Android: keyboard hidden first, as on tap
-voice   tap starts reception, openWhenReceived; on completion in the same place: playback
-```
-
-```
-Kotlin   CIImageView.kt: receive branch, OpenWhenReceivedEffect
-         CIVoiceView.kt: receiveFile passed to VoiceLayout, OpenWhenReceivedEffect
-iOS      CIImageView.swift: receive branch, OpenWhenReceived
-         CIVoiceView.swift: downloadButton, OpenWhenReceived
-```
-
-## 7. Size limit
+## 6. Size limit
 
 1 MB.
 4 MB: formatted views render lazily (Kotlin: one lazy item per top-level node; iOS: WKWebView); text views render one lazy item per line.
 A single top-level block (one table, code block or paragraph) is still laid out at once.
 
-## 8. Checks
+## 7. Checks
 
 1. Plain and encrypted files: formatted and text views on Android, desktop and iOS.
 2. Desktop linked to a mobile: file loaded from the mobile, then shown.
 3. File over 1 MB: tap action as before.
 4. File not received: one tap; viewer shown on completion in the same chat; not shown after leaving the chat.
-5. Same for images and voice messages.
-6. Tap in a chat list preview: opened on completion while the chat list is shown; not opened after a chat or a modal is opened.
-7. Not opened on completion after a reception error, cancel or abort, or after the item scrolled out of view.
+5. Same for images, voice messages, video and other files, each with its tap action.
+6. Tap in a chat list preview: opened on completion while the chat list is shown; Android, iOS: not opened after a chat is opened; desktop: opened while a chat is open.
+7. Not opened after a reception error, cancel or abort. Kotlin: not opened after the item scrolled out of view.
 8. Invalid UTF-8 and control characters: shown as "?".
 9. Lines over 15 000 characters, 33 tree levels (Kotlin), 17 nesting levels (iOS), 5 nested square brackets (iOS), 201 table rows: text view only, long lines split.
 10. Bidi controls: warning; format characters as [U+XXXX] in the text view.
