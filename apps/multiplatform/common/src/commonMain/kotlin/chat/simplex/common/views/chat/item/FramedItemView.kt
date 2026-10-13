@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat.item
 
-import chat.simplex.common.views.chat.group.MemberProfileImage
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -27,6 +26,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.group.MemberProfileImage
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.newchat.planAndConnect
@@ -265,10 +265,12 @@ fun FramedItemView(
       verticalAlignment = Alignment.CenterVertically
     ) {
       Icon(painterResource(MR.images.ic_reply), null, Modifier.size(FLAT_REPLY_ICON_SIZE), tint = color)
-      ciReplyAvatar(qi)
+      FlatAvatarContrast {
+        ciReplyAvatar(qi)
+      }
       val sender = qi.sender(membership())
       if (sender != null) {
-        Text(sender, Modifier.widthIn(max = FLAT_REPLY_SENDER_MAX_WIDTH), fontSize = FLAT_REPLY_FONT_SIZE, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(sender, Modifier.widthIn(max = FLAT_REPLY_SENDER_MAX_WIDTH * fontSizeSqrtMultiplier), fontSize = FLAT_REPLY_FONT_SIZE, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
       }
       val replyStyle = TextStyle(fontSize = FLAT_REPLY_FONT_SIZE, color = color)
       Box(Modifier.weight(1f, fill = false)) {

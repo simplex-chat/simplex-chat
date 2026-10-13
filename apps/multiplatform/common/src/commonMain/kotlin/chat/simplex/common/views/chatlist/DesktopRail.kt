@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +26,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ReactionIcon
+import chat.simplex.common.views.chat.item.flatContrastSecondaryVariant
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.res.*
@@ -45,10 +47,11 @@ private val RAIL_UNREAD_DOT_SIZE = 6.dp
 private const val RAIL_ACTIVE_BACKGROUND_ALPHA = 0.1f
 private val RAIL_ITEM_INSET = 6.dp
 private const val RAIL_TILE_CIRCLE_PERCENT = 50f
-// hovered and active tiles get rounder corners reduced to this share, as circles turn into rounded squares
+// hovered and active tiles scale their corner radius by this ratio, so circles turn into rounded squares
 private const val RAIL_TILE_HOVER_CORNER_RATIO = 0.6f
 private const val RAIL_TILE_ALPHA = 0.15f
 private val RAIL_INITIAL_FONT_SIZE = 18.sp
+private val RAIL_FADE_HEIGHT = 12.dp
 private const val RAIL_MARK_ACTIVE_FRACTION = 0.8f
 private const val RAIL_MARK_HOVER_FRACTION = 0.4f
 // the rail and the chat list are shaded apart from the chat, which keeps the theme background and wallpaper:
@@ -57,8 +60,6 @@ private const val FLAT_RAIL_SHADE_LIGHT = 0.07f
 private const val FLAT_LIST_SHADE_LIGHT = 0.035f
 private const val FLAT_RAIL_SHADE_DARK = 0.5f
 private const val FLAT_LIST_LIFT_DARK = 0.045f
-// raises the contrast of secondaryVariant elements on the shaded list, such as placeholder avatars
-private const val FLAT_PLACEHOLDER_CONTRAST = 0.15f
 
 @Composable
 fun flatRailColor(): Color =
@@ -75,7 +76,7 @@ fun FlatListSurface(content: @Composable () -> Unit) {
   val background = flatListColor()
   Box(Modifier.fillMaxSize().background(background)) {
     MaterialTheme(
-      colors = colors.copy(background = background, secondaryVariant = colors.secondaryVariant.mixWith(colors.onBackground, 1 - FLAT_PLACEHOLDER_CONTRAST)),
+      colors = colors.copy(background = background, secondaryVariant = flatContrastSecondaryVariant(colors)),
       typography = MaterialTheme.typography,
       shapes = MaterialTheme.shapes,
       content = content
@@ -94,16 +95,26 @@ fun DesktopRail(userPickerState: MutableStateFlow<AnimatedViewState>, setPerform
       .padding(vertical = DEFAULT_PADDING_HALF),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Column(
-      Modifier.weight(1f).verticalScroll(rememberScrollState()),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF)
-    ) {
-      if (chatModel.users.isNotEmpty()) {
-        RailUsers(userPickerState)
-        Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
-        RailTags()
+    val railColor = flatRailColor()
+    Box(Modifier.weight(1f)) {
+      Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF)
+      ) {
+        if (chatModel.users.isNotEmpty()) {
+          RailUsers(userPickerState)
+          Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
+          RailTags()
+        }
       }
+      Box(
+        Modifier
+          .align(Alignment.BottomCenter)
+          .fillMaxWidth()
+          .height(RAIL_FADE_HEIGHT)
+          .background(Brush.verticalGradient(listOf(Color.Transparent, railColor)))
+      )
     }
     Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF / 2))
     RailItem(MR.images.ic_settings, stringResource(MR.strings.settings_section_title_settings), active = false) {
@@ -126,50 +137,52 @@ private fun RailUsers(userPickerState: MutableStateFlow<AnimatedViewState>) {
   }
   val switchAllowed = profileSwitchAllowed(remember { chatModel.sharedContent }.value) && !remember { chatModel.switchingUsersAndHosts }.value
   val switchEnabled = switchAllowed && (remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote)
-  users.forEach { u -> key(u.user.userId) {
-    val user = u.user
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered = interactionSource.collectIsHoveredAsState().value
-    val tileSize = RAIL_ITEM_SIZE * fontSizeSqrtMultiplier
-    val markHeight by animateDpAsState(
-      when {
-        user.activeUser -> tileSize * RAIL_MARK_ACTIVE_FRACTION
-        hovered -> tileSize * RAIL_MARK_HOVER_FRACTION
-        else -> 0.dp
-      }
-    )
-    val baseCorner = remember { appPreferences.profileImageCornerRadius.state }.value.coerceIn(0f, RAIL_TILE_CIRCLE_PERCENT)
-    val corner by animateFloatAsState(if (user.activeUser || hovered) baseCorner * RAIL_TILE_HOVER_CORNER_RATIO else baseCorner)
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-      Box(
-        Modifier
-          .align(Alignment.CenterStart)
-          .size(RAIL_ACTIVE_MARK_WIDTH, markHeight)
-          .background(MaterialTheme.colors.primary, RoundedCornerShape(topEnd = RAIL_ACTIVE_MARK_WIDTH, bottomEnd = RAIL_ACTIVE_MARK_WIDTH))
+  users.forEach { u ->
+    key(u.user.userId) {
+      val user = u.user
+      val interactionSource = remember { MutableInteractionSource() }
+      val hovered = interactionSource.collectIsHoveredAsState().value
+      val tileSize = RAIL_ITEM_SIZE * fontSizeSqrtMultiplier
+      val markHeight by animateDpAsState(
+        when {
+          user.activeUser -> tileSize * RAIL_MARK_ACTIVE_FRACTION
+          hovered -> tileSize * RAIL_MARK_HOVER_FRACTION
+          else -> 0.dp
+        }
       )
-      Box {
+      val baseCorner = remember { appPreferences.profileImageCornerRadius.state }.value.coerceIn(0f, RAIL_TILE_CIRCLE_PERCENT)
+      val corner by animateFloatAsState(if (user.activeUser || hovered) baseCorner * RAIL_TILE_HOVER_CORNER_RATIO else baseCorner)
+      Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Box(
           Modifier
-            .size(tileSize)
-            .clip(RoundedCornerShape(percent = corner.roundToInt()))
-            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, enabled = if (user.activeUser) switchAllowed else switchEnabled) {
-              if (user.activeUser) {
-                ModalManager.start.closeModals()
-                userPickerState.value = AnimatedViewState.VISIBLE
-              } else {
-                if (userPickerState.value.isVisible()) userPickerState.value = AnimatedViewState.HIDING
-                switchToUser(user)
+            .align(Alignment.CenterStart)
+            .size(RAIL_ACTIVE_MARK_WIDTH, markHeight)
+            .background(MaterialTheme.colors.primary, RoundedCornerShape(topEnd = RAIL_ACTIVE_MARK_WIDTH, bottomEnd = RAIL_ACTIVE_MARK_WIDTH))
+        )
+        Box {
+          Box(
+            Modifier
+              .size(tileSize)
+              .clip(RoundedCornerShape(percent = corner.roundToInt()))
+              .clickable(interactionSource = interactionSource, indication = LocalIndication.current, enabled = if (user.activeUser) switchAllowed else switchEnabled) {
+                if (user.activeUser) {
+                  ModalManager.start.closeModals()
+                  userPickerState.value = AnimatedViewState.VISIBLE
+                } else {
+                  if (userPickerState.value.isVisible()) userPickerState.value = AnimatedViewState.HIDING
+                  switchToUser(user)
+                }
               }
-            }
-        ) {
-          RailProfileTile(user)
-        }
-        if (!user.activeUser && u.unreadCount > 0) {
-          userUnreadBadge(u.unreadCount, user.showNtfs, hasPadding = false)
+          ) {
+            RailProfileTile(user)
+          }
+          if (!user.activeUser && u.unreadCount > 0) {
+            userUnreadBadge(u.unreadCount, user.showNtfs, hasPadding = false)
+          }
         }
       }
     }
-  } }
+  }
 }
 
 @Composable
@@ -192,8 +205,9 @@ fun firstGrapheme(text: String): String {
   iterator.setText(text)
   var end = iterator.next()
   if (end == BreakIterator.DONE) return ""
-  // JDK 17 splits a flag emoji into its two regional indicators
-  if (text.codePointAt(0) in REGIONAL_INDICATORS && end < text.length && text.codePointAt(end) in REGIONAL_INDICATORS) {
+  // JDK before 20 splits a flag emoji into its two regional indicators; newer JDKs return the whole flag
+  val first = text.codePointAt(0)
+  if (first in REGIONAL_INDICATORS && end == Character.charCount(first) && end < text.length && text.codePointAt(end) in REGIONAL_INDICATORS) {
     end = iterator.next()
   }
   return text.substring(0, end)

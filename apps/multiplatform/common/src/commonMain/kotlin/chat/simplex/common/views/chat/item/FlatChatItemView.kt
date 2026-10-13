@@ -42,6 +42,8 @@ val FLAT_TEXT_VERTICAL_PADDING = 2.dp
 private val FLAT_ROW_INSET = 4.dp
 private val FLAT_ROW_CORNER = 6.dp
 private const val FLAT_SUBTLE_FILL_ALPHA = 0.04f
+// raises placeholder avatar contrast on the shaded list and on light wallpapers, keeping the theme color
+private const val FLAT_PLACEHOLDER_CONTRAST = 0.15f
 private const val FLAT_HIGHLIGHT_ALPHA = 0.12f
 private const val FLAT_BORDER_ALPHA = 0.12f
 private val FLAT_BAR_BUTTON_SIZE = 24.dp
@@ -156,7 +158,9 @@ fun FlatChatItemRow(
       Box(Modifier.width(FLAT_GUTTER_WIDTH * fontSizeSqrtMultiplier)) {
         if (showHeader) {
           Box(Modifier.align(Alignment.TopCenter)) {
-            FlatSenderImage(chatInfo, cItem, showMemberInfo, showChatInfo)
+            FlatAvatarContrast {
+              FlatSenderImage(chatInfo, cItem, showMemberInfo, showChatInfo)
+            }
           }
         } else if (hovered && cItem.content.hasFlatSender) {
           Text(
@@ -213,6 +217,14 @@ fun BoxScope.FlatHoverBarSlot(
       Modifier.align(Alignment.TopEnd).padding(end = DEFAULT_PADDING)
     )
   }
+}
+
+fun flatContrastSecondaryVariant(colors: Colors): Color = colors.secondaryVariant.mixWith(colors.onBackground, 1 - FLAT_PLACEHOLDER_CONTRAST)
+
+@Composable
+fun FlatAvatarContrast(content: @Composable () -> Unit) {
+  val colors = MaterialTheme.colors
+  MaterialTheme(colors = colors.copy(secondaryVariant = flatContrastSecondaryVariant(colors)), typography = MaterialTheme.typography, shapes = MaterialTheme.shapes, content = content)
 }
 
 private data class FlatSender(val name: String, val badge: LocalBadge?, val role: String?)

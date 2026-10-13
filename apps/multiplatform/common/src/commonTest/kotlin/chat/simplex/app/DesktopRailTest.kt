@@ -21,6 +21,11 @@ class DesktopRailTest {
   }
 
   @Test
+  fun firstGraphemeTakesOnlyFirstOfTwoFlags() {
+    assertEquals("🇺🇦", firstGrapheme("🇺🇦🇺🇸 news"))
+  }
+
+  @Test
   fun firstGraphemeKeepsCombiningMarks() {
     assertEquals("é", firstGrapheme("émilie"))
   }

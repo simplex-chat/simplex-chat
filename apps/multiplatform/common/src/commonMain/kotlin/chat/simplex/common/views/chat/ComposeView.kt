@@ -1,7 +1,6 @@
 @file:UseSerializers(UriSerializer::class, ComposeMessageSerializer::class)
 package chat.simplex.common.views.chat
 
-import chat.simplex.common.LocalFlatLayout
 import SectionItemView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,6 +28,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.*
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
