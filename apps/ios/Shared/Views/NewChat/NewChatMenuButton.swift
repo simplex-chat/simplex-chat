@@ -234,15 +234,15 @@ struct ContactsList: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     
     var body: some View {
-        let contactChats = chatModel.chats.filter { chat in chatPredicate(chat, !searchText.isEmpty) }
-        let filteredContactChats = filteredContactChats(
-            showUnreadAndFavorites: showUnreadAndFavorites,
+        let (contactChats, filteredContactChats) = Self.shownChats(
+            chats: chatModel.chats,
+            predicate: chatPredicate,
+            searchText: searchText,
             searchShowingSimplexLink: searchShowingSimplexLink,
             searchChatFilteredBySimplexLink: searchChatFilteredBySimplexLink,
-            searchText: searchText,
-            contactChats: contactChats
+            showUnreadAndFavorites: showUnreadAndFavorites
         )
-        
+
         if !filteredContactChats.isEmpty {
             Section(header: Group {
                 if let header = header {
@@ -278,13 +278,13 @@ struct ContactsList: View {
         .listRowInsets(EdgeInsets(top: 7, leading: 0, bottom: 7, trailing: 0))
     }
 
-    private func chatComparator(chat1: Chat, chat2: Chat) -> Bool {
+    private static func chatComparator(chat1: Chat, chat2: Chat) -> Bool {
         let r1 = chatOrderRank(chat1)
         let r2 = chatOrderRank(chat2)
         return r1 > r2 ? true : r1 < r2 ? false : chat1.chatInfo.chatTs > chat2.chatInfo.chatTs
     }
         
-    private func filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: Bool) -> Bool {
+    private static func filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: Bool) -> Bool {
         var meetsPredicate = true
         let s = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let cInfo = chat.chatInfo
@@ -305,8 +305,27 @@ struct ContactsList: View {
 
         return meetsPredicate
     }
-    
-    func filteredContactChats(
+
+    static func shownChats(
+        chats: [Chat],
+        predicate: (Chat, Bool) -> Bool,
+        searchText: String,
+        searchShowingSimplexLink: Bool,
+        searchChatFilteredBySimplexLink: String?,
+        showUnreadAndFavorites: Bool
+    ) -> (contactChats: [Chat], shown: [Chat]) {
+        let contactChats = chats.filter { chat in predicate(chat, !searchText.isEmpty) }
+        let shown = filteredContactChats(
+            showUnreadAndFavorites: showUnreadAndFavorites,
+            searchShowingSimplexLink: searchShowingSimplexLink,
+            searchChatFilteredBySimplexLink: searchChatFilteredBySimplexLink,
+            searchText: searchText,
+            contactChats: contactChats
+        )
+        return (contactChats, shown)
+    }
+
+    private static func filteredContactChats(
         showUnreadAndFavorites: Bool,
         searchShowingSimplexLink: Bool,
         searchChatFilteredBySimplexLink: String?,

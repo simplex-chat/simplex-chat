@@ -11,7 +11,7 @@ import SimpleXChat
 
 // Directory results are not chats and are never saved: they live as long as the search text does.
 @MainActor
-class DirectorySearchModel: ObservableObject {
+class OnlineSearchModel: ObservableObject {
     @Published private(set) var entries: [DirectorySearchEntry] = []
     @Published private(set) var loading = false
     @Published private(set) var failed = false
@@ -54,6 +54,15 @@ class DirectorySearchModel: ObservableObject {
     func loadMore() async {
         guard cursor != nil, !loading else { return }
         await request(append: true)
+    }
+
+    // a failed "Show more" keeps its cursor, so the retry resumes the page rather than starting over
+    func retry() async {
+        if cursor != nil {
+            await loadMore()
+        } else {
+            await search(searchedText)
+        }
     }
 
     private func request(append: Bool) async {
@@ -153,7 +162,44 @@ struct DirectorySearchRow: View {
     }
 }
 
-func showDirectorySearchAlert(onSearch: @escaping () -> Void) {
+struct DirectoryShowMoreRow: View {
+    @EnvironmentObject var theme: AppTheme
+    @ObservedObject var onlineSearch: OnlineSearchModel
+
+    var body: some View {
+        Button {
+            Task { await onlineSearch.loadMore() }
+        } label: {
+            Text("Show more")
+                .foregroundColor(theme.colors.primary)
+        }
+        .disabled(onlineSearch.loading)
+    }
+}
+
+struct DirectoryRetryRow: View {
+    @EnvironmentObject var theme: AppTheme
+    var onlineSearch: OnlineSearchModel
+
+    var body: some View {
+        Button {
+            Task { await onlineSearch.retry() }
+        } label: {
+            Text("Search failed, tap to retry")
+                .foregroundColor(theme.colors.primary)
+        }
+    }
+}
+
+func confirmDirectorySearch(_ search: @escaping () -> Void) {
+    if UserDefaults.standard.bool(forKey: DEFAULT_DIRECTORY_SEARCH_ALERT_SHOWN) {
+        search()
+    } else {
+        showDirectorySearchAlert(onSearch: search)
+    }
+}
+
+private func showDirectorySearchAlert(onSearch: @escaping () -> Void) {
     showAlert(
         NSLocalizedString("Search in Directory?", comment: "alert title"),
         message: NSLocalizedString("The text in the search field will be sent to SimpleX Directory to find public groups and channels.\n\nNo contact is created and your profile is not sent.", comment: "alert message"),
