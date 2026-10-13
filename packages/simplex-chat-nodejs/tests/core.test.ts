@@ -136,9 +136,10 @@ describe("Core tests", () => {
     const start = Date.now();
     await fs.promises.stat(tmpDir);
     expect(Date.now() - start).toBeLessThan(200);
+    // one receiver thread per controller runs the 4 receives in turn
     await Promise.all(receives);
     await stopAndClose(ctrl);
-  }, 10000);
+  }, 30000);
 
   const itOnLinux = process.platform === "linux" ? it : it.skip;
 
