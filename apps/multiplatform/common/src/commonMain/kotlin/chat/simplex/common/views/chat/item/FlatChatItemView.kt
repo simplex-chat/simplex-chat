@@ -155,9 +155,10 @@ fun FlatChatItemRow(
           Text(
             cItem.timestampText,
             Modifier.align(Alignment.TopEnd).padding(top = FLAT_TEXT_VERTICAL_PADDING + 3.dp, end = FLAT_GUTTER_TIME_END_PADDING),
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             color = MaterialTheme.colors.secondary,
-            maxLines = 1
+            maxLines = 1,
+            softWrap = false
           )
         }
       }
@@ -312,7 +313,7 @@ fun FlatHoverBar(
             Modifier.size(FLAT_BAR_BUTTON_SIZE).clip(CircleShape).clickable { setReaction(cInfo, cItem, true, r) },
             contentAlignment = Alignment.Center
           ) {
-            ReactionIcon(r.text, 12.sp)
+            ReactionIcon(r.text, 14.sp)
           }
         }
         Box {
@@ -340,12 +341,13 @@ private fun FlatBarButton(icon: ImageResource, description: String, onClick: () 
   }
 }
 
+// with nothing to show, the reserved meta is the timestamp alone; any icon adds space before it
 @Composable
 fun flatMetaVisible(ci: ChatItem, chatTTL: Int?, showViaProxy: Boolean): Boolean =
   reserveSpaceForMeta(
     ci.meta, chatTTL, ci.encryptedFile, MaterialTheme.colors.secondary,
     showStatus = ci.chatDir.sent, showViaProxy = showViaProxy, showTimestamp = true, signedFileVerified = ci.file?.loaded
-  ).isNotEmpty()
+  ) != ci.meta.timestampText
 
 @Composable
 fun Modifier.flatQuoteBar(): Modifier {

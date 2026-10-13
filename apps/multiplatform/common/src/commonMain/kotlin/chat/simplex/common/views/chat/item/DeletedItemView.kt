@@ -28,7 +28,7 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
     contentColor = LocalContentColor.current
   ) {
     Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+      Modifier.padding(horizontal = 12.dp, vertical = if (LocalFlatLayout.current) FLAT_TEXT_VERTICAL_PADDING else 6.dp),
       verticalAlignment = Alignment.Bottom
     ) {
       Text(

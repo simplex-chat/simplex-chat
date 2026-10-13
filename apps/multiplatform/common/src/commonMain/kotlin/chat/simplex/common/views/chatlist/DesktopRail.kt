@@ -70,6 +70,7 @@ private fun RowScope.RailContent(userPickerState: MutableStateFlow<AnimatedViewS
         RailTags()
       }
     }
+    Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF / 2))
     RailItem(MR.images.ic_settings, stringResource(MR.strings.settings_section_title_settings), active = false) {
       ModalManager.start.closeModals()
       ModalManager.start.showModalCloseable(cardScreen = true) { close ->

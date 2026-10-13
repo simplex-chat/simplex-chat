@@ -16,6 +16,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.LocalFlatLayout
@@ -92,7 +93,7 @@ fun FramedItemView(
         ) {
           Text(
             sender,
-            style = TextStyle(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
+            style = TextStyle(fontSize = 13.5.sp, fontWeight = if (flat) FontWeight.SemiBold else null, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
             maxLines = 1
           )
           ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
@@ -126,7 +127,7 @@ fun FramedItemView(
       .background(if (flat) Color.Transparent else if (sent) sentColor else receivedColor)
       .fillMaxWidth()
       .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-      .padding(start = if (flat) FLAT_TEXT_START_PADDING else 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
+      .padding(start = if (flat) FLAT_TEXT_START_PADDING else 8.dp, top = if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
   }
 
   @Composable

@@ -144,7 +144,7 @@ fun ChatItemView(
       Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = if (flat) Arrangement.spacedBy(4.dp) else Arrangement.Start,
-        modifier = if (flat) Modifier.padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING) else Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)
+        modifier = if (flat) Modifier.padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING, bottom = FLAT_TEXT_VERTICAL_PADDING * 2) else Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)
       ) {
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
@@ -212,8 +212,8 @@ fun ChatItemView(
               )
               .onRightClick { showReactionsMenu() }
           }
-          Row(modifier.padding(if (flat) PaddingValues(horizontal = FLAT_PILL_HORIZONTAL_PADDING, vertical = 2.dp) else PaddingValues(2.dp)), verticalAlignment = Alignment.CenterVertically) {
-            ReactionIcon(r.reaction.text, fontSize = 12.sp)
+          Row(modifier.padding(if (flat) PaddingValues(horizontal = FLAT_PILL_HORIZONTAL_PADDING, vertical = 3.dp) else PaddingValues(2.dp)), verticalAlignment = Alignment.CenterVertically) {
+            ReactionIcon(r.reaction.text, fontSize = if (flat) 14.sp else 12.sp)
             DefaultDropdownMenu(showMenu = showReactionMenu) {
               reactionMenuItems.value.forEach { m ->
                 ItemAction(

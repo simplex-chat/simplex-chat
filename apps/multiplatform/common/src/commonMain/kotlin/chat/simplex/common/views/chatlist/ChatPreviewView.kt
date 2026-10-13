@@ -52,6 +52,9 @@ fun ChatPreviewView(
   defaultClickAction: () -> Unit
 ) {
   val cInfo = chat.chatInfo
+  val flat = LocalFlatLayout.current
+  val titleStyle = if (flat) MaterialTheme.typography.body1 else MaterialTheme.typography.h3
+  val titleWeight = if (!flat) FontWeight.Bold else if (chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat) FontWeight.SemiBold else FontWeight.Normal
 
   @Composable
   fun inactiveIcon() {
@@ -84,13 +87,12 @@ fun ChatPreviewView(
 
   @Composable
   fun chatPreviewTitleText(color: Color = Color.Unspecified) {
-    val flat = LocalFlatLayout.current
     Text(
       cInfo.chatViewName,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
-      style = if (flat) MaterialTheme.typography.body1 else MaterialTheme.typography.h3,
-      fontWeight = if (!flat) FontWeight.Bold else if (chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat) FontWeight.SemiBold else FontWeight.Normal,
+      style = titleStyle,
+      fontWeight = titleWeight,
       color = color
     )
   }
@@ -159,8 +161,8 @@ fun ChatPreviewView(
             cInfo.nameBadge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.h3,
-            fontWeight = FontWeight.Bold,
+            style = titleStyle,
+            fontWeight = titleWeight,
             color = color
           )
         }
@@ -466,7 +468,7 @@ fun ChatPreviewView(
     }
   }
 
-  if (LocalFlatLayout.current) {
+  if (flat) {
     LaunchedEffect(chatModel.deletedChats.value) {
       val ci = chat.chatItems.lastOrNull()
       val playing = AudioPlayer.currentlyPlaying.value
@@ -567,7 +569,7 @@ fun ChatPreviewView(
   }
 }
 
-internal val COMPACT_CHAT_IMAGE_SIZE = 32.dp
+internal val COMPACT_CHAT_IMAGE_SIZE = 28.dp
 // cancels the 3dp yOffset that UnreadBadge applies for the two-line row
 private val COMPACT_BADGE_Y_CORRECTION = 3.dp
 

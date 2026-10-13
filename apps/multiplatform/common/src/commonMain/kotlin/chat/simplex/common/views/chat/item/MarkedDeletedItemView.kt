@@ -31,7 +31,7 @@ fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatIn
     contentColor = LocalContentColor.current
   ) {
     Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+      Modifier.padding(horizontal = 12.dp, vertical = if (LocalFlatLayout.current) FLAT_TEXT_VERTICAL_PADDING else 6.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.weight(1f, false)) {
