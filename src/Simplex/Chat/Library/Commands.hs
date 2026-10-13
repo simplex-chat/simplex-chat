@@ -65,6 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import Simplex.Chat.Wallet (deriveAccount, masterMnemonic, newEntropy)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -95,6 +96,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Store.Wallets
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -1502,6 +1504,18 @@ processChatCommand cxt nm = \case
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
+  APIGetWallet userId -> withUserId userId $ \user ->
+    CRWallet user <$> withFastStore (`getWalletInfo` user)
+  APICreateWallet -> withUser $ \user -> do
+    entropy <- liftIO . newEntropy =<< asks random
+    CRWallet user <$> withFastStore (`createWallet` entropy)
+  APICreateWalletAccount userId -> withUserId userId $ \user -> do
+    (entropy, n) <- withFastStore (`createAccount` user)
+    g <- asks random
+    CRWalletAddress user <$> liftError' (ChatError . CEInternalError) (deriveAccount g entropy n)
+  APIExportWalletMnemonic -> withUser $ \user ->
+    CRWalletMnemonic user . masterMnemonic <$> withFastStore getWalletEntropy
+  APIDeleteWallet -> withUser_ $ withFastStore deleteWallet >> ok_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -6312,6 +6326,11 @@ chatCommandP =
       "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
       "/_badge ack " *> (APIAckBadgeAlert <$> A.decimal <* A.space <*> A.decimal <* A.space <*> badgeAlertKindP <* A.space <*> onOffP <* A.space <*> textP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
+      "/_wallet create new" $> APICreateWallet,
+      "/_wallet create account " *> (APICreateWalletAccount <$> A.decimal),
+      "/_wallet export master" $> APIExportWalletMnemonic,
+      "/_wallet delete" $> APIDeleteWallet,
+      "/_wallet " *> (APIGetWallet <$> A.decimal),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),

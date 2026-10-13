@@ -60,6 +60,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Wallet (WalletAddress (..), WalletInfo (..))
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent (DatabaseDiff (..))
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
@@ -68,6 +69,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BIP44 (unAccountIndex)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
@@ -195,6 +197,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
   CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
+  CRWallet u info -> ttyUser u $ viewWalletInfo info
+  CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
+  CRWalletAddress u a -> ttyUser u [viewWalletAddress a]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -1882,6 +1887,17 @@ day = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 dayTime :: UTCTime -> Text
 dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
+viewWalletInfo :: WalletInfo -> [StyledString]
+viewWalletInfo WalletInfo {accountIndexes, nextAccountIndex} =
+  [plain $ "wallet, next account " <> tshow nextAccountIndex <> ", " <> viewAccounts accountIndexes]
+  where
+    viewAccounts [] = "no accounts for this profile"
+    viewAccounts ns = "accounts: " <> T.intercalate ", " (map (tshow . unAccountIndex) ns)
+
+viewWalletAddress :: WalletAddress -> StyledString
+viewWalletAddress WalletAddress {accountIndex, keyPath, address} =
+  plain $ tshow (unAccountIndex accountIndex) <> "  " <> keyPath <> "  " <> safeDecodeUtf8 (strEncode address)
+
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
@@ -2945,6 +2961,8 @@ viewChatError isCmd logLevel testView = \case
       | testView -> ["duplicate group message, group id: " <> sShow groupId <> ", message id: " <> sShow sharedMsgId]
       | otherwise -> []
     SEUserNoteFolderNotFound -> ["no notes folder"]
+    SEWalletNotFound -> ["no wallet on this device"]
+    SEDuplicateWallet -> ["this device already has a wallet"]
     SEInternalError {message}
       | testView && message == "referenced group member not found" -> []
     e -> ["chat db error: " <> sShow e]

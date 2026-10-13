@@ -4424,6 +4424,12 @@ DeliveryJobNotFound:
 - type: "deliveryJobNotFound"
 - jobId: int64
 
+WalletNotFound:
+- type: "walletNotFound"
+
+DuplicateWallet:
+- type: "duplicateWallet"
+
 WorkItemError:
 - type: "workItemError"
 - errContext: string
