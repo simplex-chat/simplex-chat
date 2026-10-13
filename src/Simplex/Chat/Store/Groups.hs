@@ -2819,15 +2819,12 @@ updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} 
     (prefsToRow (Just ps) :. (currentTs, userId, groupId))
   pure (g :: GroupInfo) {groupProfile = p {groupPreferences = Just ps}, fullGroupPreferences = mergeGroupPreferences $ Just ps}
 
-updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> BusinessChatType -> Profile -> ExceptT StoreError IO GroupInfo
-updateGroupProfileFromMember db user g@GroupInfo {groupId} chatType Profile {displayName = n, fullName = fn, shortDescr = sd, description = descr, image = img} = do
+updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> Profile -> ExceptT StoreError IO GroupInfo
+updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName = n, fullName = fn, shortDescr = sd, description = descr, image = img} = do
   p_ <- liftIO $ getGroupProfileById db groupId -- to avoid any race conditions with UI
-  p@GroupProfile {description = gDescr} <- maybe (throwError $ SEGroupNotFound groupId) pure p_
+  p <- maybe (throwError $ SEGroupNotFound groupId) pure p_
   let g' = g {groupProfile = p} :: GroupInfo
-      descr' = case chatType of
-        BCBusiness -> descr
-        BCCustomer -> gDescr
-      p' = p {displayName = n, fullName = fn, shortDescr = sd, description = descr', image = img} :: GroupProfile
+      p' = p {displayName = n, fullName = fn, shortDescr = sd, description = descr, image = img} :: GroupProfile
   updateGroupProfile db user g' p'
 
 getGroupProfileById :: DB.Connection -> GroupId -> IO (Maybe GroupProfile)

@@ -2955,8 +2955,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         p'' = redactedMemberProfile gInfo m p'
         contentChanged = not (sameProfileContent (redactedMemberProfile gInfo m (fromLocalProfile p)) p'')
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
-          Just bc@BusinessChatInfo {chatType} | isMainBusinessMember bc m -> do
-            g' <- withStore $ \db -> updateGroupProfileFromMember db user g chatType p'
+          Just bc@BusinessChatInfo {chatType} | isMainBusinessMember bc m && chatType == BCBusiness -> do
+            g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
             toView $ CEvtGroupUpdated user g g' (Just m) ((\(RcvMessage {msgSigned}, _) -> msgSigned) =<< msgTs_)
           _ -> pure ()
         isMainBusinessMember BusinessChatInfo {chatType, businessId, customerId} GroupMember {memberId} = case chatType of
