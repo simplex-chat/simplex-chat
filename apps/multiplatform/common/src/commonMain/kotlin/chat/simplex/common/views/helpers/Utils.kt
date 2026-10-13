@@ -617,11 +617,25 @@ fun UriHandler.openExternalLink(uri: String) {
   } else {
     AlertManager.shared.showAlertDialog(
       title = generalGetString(MR.strings.open_external_link_title),
-      text = uri,
+      text = displayedUri(uri),
       confirmText = generalGetString(MR.strings.open_verb),
-      onConfirm = { uriHandler.openUriCatching(uri) }
+      onConfirm = { uriHandler.openUriCatching(uri) },
+      parseHtml = false
     )
   }
+}
+
+val invisibleChar = Regex("\\p{Cf}")
+
+private val nonAsciiChar = Regex("[^\\x00-\\x7F]")
+
+fun unicodeMarker(c: String): String = "[U+" + Integer.toHexString(c.codePointAt(0)).uppercase().padStart(4, '0') + "]"
+
+fun displayedUri(uri: String): String {
+  val authorityStart = uri.indexOf("://").takeIf { it >= 0 }?.plus(3) ?: 0
+  val authorityEnd = uri.indexOfAny(charArrayOf('/', '?', '#'), authorityStart).takeIf { it >= 0 } ?: uri.length
+  val authority = uri.substring(authorityStart, authorityEnd).replace(nonAsciiChar) { unicodeMarker(it.value) }
+  return uri.replaceRange(authorityStart, authorityEnd, authority).replace(invisibleChar) { unicodeMarker(it.value) }
 }
 
 fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(

@@ -474,8 +474,25 @@ final class ChatModel: ObservableObject {
     // another in its place; only the badge alert shows regardless. Set while rendering, so not published.
     var chatListBanner: ChatListBanner?
 
+    var fileToOpen: (fileId: Int64, chatId: String?, open: (CIFile) -> Void)?
+
     func bannerSlotFree(for banner: ChatListBanner) -> Bool {
         chatListBanner == nil || chatListBanner == banner
+    }
+
+    func openWhenReceived(_ file: CIFile, open: @escaping (CIFile) -> Void) {
+        fileToOpen = (fileId: file.fileId, chatId: chatId, open: open)
+    }
+
+    func receivedFileToOpen(_ file: CIFile) -> Bool {
+        if let f = fileToOpen { f.fileId == file.fileId && f.chatId == chatId } else { false }
+    }
+
+    func openReceivedFile(_ file: CIFile) {
+        if let f = fileToOpen, receivedFileToOpen(file) {
+            fileToOpen = nil
+            f.open(file)
+        }
     }
 
     static let shared = ChatModel()
