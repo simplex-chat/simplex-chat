@@ -26,7 +26,7 @@ struct CIFileView: View {
     var body: some View {
         if smallViewSize != nil {
             fileIndicator()
-            .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
         } else {
             // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
             let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
@@ -56,7 +56,7 @@ struct CIFileView: View {
             .padding(.bottom, 6)
             .padding(.leading, 10)
             .padding(.trailing, 12)
-            .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
             .disabled(!itemInteractive)
         }
     }
@@ -85,7 +85,7 @@ struct CIFileView: View {
         return false
     }
 
-    private func fileAction() {
+    private func fileAction(_ file: CIFile?) {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
@@ -93,6 +93,7 @@ struct CIFileView: View {
                 if let prohibited = file.fileProhibited {
                     showProhibitedFileAlert(file, prohibited)
                 } else {
+                    m.openWhenReceived(file) { fileAction($0) }
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
