@@ -3078,6 +3078,10 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 
 @Composable
 private fun DateSeparator(date: Instant) {
+  if (LocalFlatLayout.current) {
+    FlatDateSeparator(getTimestampDateText(date))
+    return
+  }
   Text(
     text = getTimestampDateText(date),
     Modifier.padding(vertical = DEFAULT_PADDING_HALF + 4.dp, horizontal = DEFAULT_PADDING_HALF).fillMaxWidth(),

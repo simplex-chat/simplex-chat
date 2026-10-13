@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -12,6 +13,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.ui.theme.*
 
@@ -22,7 +24,7 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     shape = RoundedCornerShape(18.dp),
-    color = if (sent) sentColor else receivedColor,
+    color = if (LocalFlatLayout.current) Color.Transparent else if (sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current
   ) {
     Row(

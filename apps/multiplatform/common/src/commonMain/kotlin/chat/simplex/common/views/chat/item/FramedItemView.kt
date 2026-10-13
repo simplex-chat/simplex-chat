@@ -52,6 +52,7 @@ fun FramedItemView(
   val chatInfo = chat.chatInfo
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
+  val flat = LocalFlatLayout.current
 
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
@@ -122,10 +123,10 @@ fun FramedItemView(
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
     return Modifier
-      .background(if (sent) sentColor else receivedColor)
+      .background(if (flat) Color.Transparent else if (sent) sentColor else receivedColor)
       .fillMaxWidth()
       .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-      .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
+      .padding(start = if (flat) FLAT_TEXT_START_PADDING else 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
   }
 
   @Composable
@@ -158,8 +159,7 @@ fun FramedItemView(
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
-      Modifier
-        .background(if (sent) sentColor else receivedColor)
+      (if (flat) Modifier.flatQuoteBar() else Modifier.background(if (sent) sentColor else receivedColor))
         .fillMaxWidth()
     ) {
       when (qi.content) {
@@ -381,7 +381,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, sent && !flat, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
                 if (mc.text != "") {
                   CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
@@ -428,14 +428,16 @@ fun FramedItemView(
           }
         }
       }
-      Box(
-        Modifier
-          .padding(
-            bottom = 6.dp,
-            end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
-          )
-      ) {
-        CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+      if (!flat || flatMetaVisible(ci, chatTTL, showViaProxy)) {
+        Box(
+          Modifier
+            .padding(
+              bottom = if (flat) FLAT_META_BOTTOM_PADDING else 6.dp,
+              end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
+            )
+        ) {
+          CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+        }
       }
     }
   }
@@ -458,12 +460,13 @@ fun CIMarkdownText(
   val chatInfo = chat.chatInfo
   val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
   val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true)
+  val flat = LocalFlatLayout.current
 
-  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
+  Box(Modifier.padding(vertical = if (flat) FLAT_TEXT_VERTICAL_PADDING else 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
-      meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
+      meta = if (!flat || flatMetaVisible(ci, chatTTL, showViaProxy)) ci.meta else null, chatTTL = chatTTL, linkMode = linkMode,
       mentions = ci.mentions, userMemberId = when {
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null

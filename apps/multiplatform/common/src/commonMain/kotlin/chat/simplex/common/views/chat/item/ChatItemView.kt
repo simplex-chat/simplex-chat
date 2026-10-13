@@ -141,7 +141,11 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (flat) Arrangement.spacedBy(4.dp) else Arrangement.Start,
+        modifier = if (flat) Modifier.padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING) else Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)
+      ) {
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
           val reactionMenuItems = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
@@ -155,7 +159,7 @@ fun ChatItemView(
             }
           }
 
-          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+          var modifier = if (flat) Modifier.flatReactionPill(r.userReacted) else Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
             fun showReactionsMenu() {
               when (cInfo) {
@@ -208,7 +212,7 @@ fun ChatItemView(
               )
               .onRightClick { showReactionsMenu() }
           }
-          Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
+          Row(modifier.padding(if (flat) PaddingValues(horizontal = FLAT_PILL_HORIZONTAL_PADDING, vertical = 2.dp) else PaddingValues(2.dp)), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
             DefaultDropdownMenu(showMenu = showReactionMenu) {
               reactionMenuItems.value.forEach { m ->
@@ -227,7 +231,7 @@ fun ChatItemView(
                 )
               }
             }
-            if (r.totalReacted > 1) {
+            if (r.totalReacted > 1 || flat) {
               Spacer(Modifier.width(4.dp))
               Text(
                 "${r.totalReacted}",

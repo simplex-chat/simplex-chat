@@ -11,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +49,14 @@ private val FLAT_ROW_MIN_HEIGHT = FLAT_BAR_BUTTON_SIZE + FLAT_BAR_PADDING * 3
 private const val FLAT_QUICK_REACTIONS = 3
 // same window as getItemSeparation in ChatView.kt
 private const val FLAT_GROUP_SECONDS = 60
+// keeps the meta on the last text line, as the 6dp bottom padding does with the 7dp bubble text padding
+val FLAT_META_BOTTOM_PADDING = 1.dp
+private val FLAT_QUOTE_BAR_WIDTH = 3.dp
+private const val FLAT_QUOTE_BAR_ALPHA = 0.25f
+private val FLAT_PILL_SHAPE = RoundedCornerShape(50)
+val FLAT_PILL_HORIZONTAL_PADDING = 6.dp
+private const val FLAT_REACTED_BACKGROUND_ALPHA = 0.1f
+private const val FLAT_REACTED_BORDER_ALPHA = 0.4f
 
 fun flatItemHasHeader(item: ChatItem, older: ChatItem?): Boolean =
   item.content.hasFlatSender && (
@@ -327,5 +337,44 @@ fun FlatHoverBar(
 private fun FlatBarButton(icon: ImageResource, description: String, onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(FLAT_BAR_BUTTON_SIZE)) {
     Icon(painterResource(icon), description, Modifier.size(FLAT_BAR_ICON_SIZE), tint = MaterialTheme.colors.secondary)
+  }
+}
+
+@Composable
+fun flatMetaVisible(ci: ChatItem, chatTTL: Int?, showViaProxy: Boolean): Boolean =
+  reserveSpaceForMeta(
+    ci.meta, chatTTL, ci.encryptedFile, MaterialTheme.colors.secondary,
+    showStatus = ci.chatDir.sent, showViaProxy = showViaProxy, showTimestamp = true, signedFileVerified = ci.file?.loaded
+  ).isNotEmpty()
+
+@Composable
+fun Modifier.flatQuoteBar(): Modifier {
+  val color = MaterialTheme.colors.onBackground.copy(alpha = FLAT_QUOTE_BAR_ALPHA)
+  return padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING)
+    .drawBehind { drawRect(color, size = Size(FLAT_QUOTE_BAR_WIDTH.toPx(), size.height)) }
+}
+
+@Composable
+fun Modifier.flatReactionPill(userReacted: Boolean): Modifier {
+  val background = if (userReacted) MaterialTheme.colors.primary.copy(alpha = FLAT_REACTED_BACKGROUND_ALPHA) else MaterialTheme.colors.onBackground.copy(alpha = FLAT_HOVER_ALPHA)
+  val border = if (userReacted) MaterialTheme.colors.primary.copy(alpha = FLAT_REACTED_BORDER_ALPHA) else MaterialTheme.colors.onBackground.copy(alpha = FLAT_BAR_BORDER_ALPHA)
+  return clip(FLAT_PILL_SHAPE).background(background).border(1.dp, border, FLAT_PILL_SHAPE)
+}
+
+@Composable
+fun FlatDateSeparator(text: String) {
+  Box(Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING_HALF), contentAlignment = Alignment.Center) {
+    Divider()
+    Text(
+      text,
+      Modifier
+        .background(MaterialTheme.colors.background, FLAT_PILL_SHAPE)
+        .border(1.dp, MaterialTheme.colors.onBackground.copy(alpha = FLAT_BAR_BORDER_ALPHA), FLAT_PILL_SHAPE)
+        .padding(horizontal = FLAT_TEXT_START_PADDING, vertical = FLAT_TEXT_VERTICAL_PADDING * 2),
+      fontSize = 13.sp,
+      fontWeight = FontWeight.SemiBold,
+      color = MaterialTheme.colors.onBackground,
+      maxLines = 1
+    )
   }
 }
