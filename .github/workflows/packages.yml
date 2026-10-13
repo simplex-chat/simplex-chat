@@ -149,7 +149,8 @@ jobs:
 
   publish:
     needs: addon
-    if: needs.addon.outputs.release_branch
+    # Trusted publishing accepts this workflow only when it is not called by another one (build.yml).
+    if: needs.addon.outputs.release_branch && contains(github.workflow_ref, '/.github/workflows/packages.yml@')
     runs-on: ubuntu-latest
     permissions:
       contents: write
