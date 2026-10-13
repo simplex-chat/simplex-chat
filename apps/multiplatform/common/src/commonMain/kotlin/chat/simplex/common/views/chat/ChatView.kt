@@ -1992,7 +1992,7 @@ fun BoxScope.ChatItemsList(
         val sent = cItem.chatDir.sent
 
         @Composable
-        fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable () -> Unit = { }) {
+        fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit = { }) {
           Box(
             modifier = modifier.padding(
               bottom = if (itemSeparation.largeGap) {
@@ -2026,7 +2026,7 @@ fun BoxScope.ChatItemsList(
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
           if (flat) {
             ChatItemBox {
-              AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+              AnimatedVisibility(selectionVisible, Modifier.align(Alignment.TopStart).padding(top = flatSelectionTopPadding(flatHeader)), enter = fadeIn(), exit = fadeOut()) {
                 SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
               }
               val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }

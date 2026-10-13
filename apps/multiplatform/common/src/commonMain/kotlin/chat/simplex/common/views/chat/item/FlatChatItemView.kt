@@ -401,3 +401,12 @@ fun FlatDateSeparator(text: String) {
     )
   }
 }
+
+// matches the icon size in SelectedListItem
+private val SELECTION_CHECKBOX_SIZE = 22.dp
+
+// aligns the selection checkbox with the avatar on header rows and with the first text line otherwise
+@Composable
+fun flatSelectionTopPadding(showHeader: Boolean): Dp =
+  if (showHeader) FLAT_HEADER_TOP_PADDING + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier - SELECTION_CHECKBOX_SIZE * fontSizeMultiplier) / 2
+  else FLAT_TEXT_VERTICAL_PADDING + 1.dp
