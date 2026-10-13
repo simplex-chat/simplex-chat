@@ -65,6 +65,7 @@ private fun RowScope.RailContent(userPickerState: MutableStateFlow<AnimatedViewS
       }
     }
     RailItem(MR.images.ic_settings, stringResource(MR.strings.settings_section_title_settings), active = false) {
+      ModalManager.start.closeModals()
       ModalManager.start.showModalCloseable(cardScreen = true) { close ->
         SettingsView(chatModel, setPerformLA, close)
       }
@@ -98,6 +99,7 @@ private fun RailUsers(userPickerState: MutableStateFlow<AnimatedViewState>) {
           .clip(CircleShape)
           .clickable(enabled = enabled) {
             if (user.activeUser) {
+              ModalManager.start.closeModals()
               userPickerState.value = AnimatedViewState.VISIBLE
             } else {
               switchToUser(user)
@@ -149,6 +151,7 @@ private fun RailTags() {
     }
   }
   RailItem(MR.images.ic_add, stringResource(MR.strings.chat_list_add_list), active = false) {
+    ModalManager.start.closeModals()
     ModalManager.start.showModalCloseable { close ->
       TagListEditor(rhId = rhId, close = close)
     }
