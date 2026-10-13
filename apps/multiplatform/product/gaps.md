@@ -13,6 +13,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
+8. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-08-desktop-emoji-picker-without-skin-tones-and-localized-search)
 
 ---
 
@@ -289,3 +290,29 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 - GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.
+
+---
+
+## GAP-08: Desktop: Emoji Picker Without Skin Tones and Localized Search
+
+**Severity:** Low
+**Category:** Feature / Platform
+**Platform:** Desktop only
+
+### Description
+
+The desktop compose emoji picker lists emoji without skin tone variants, and its search matches English Unicode emoji names only.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/views/chat/ComposeEmojiPicker.desktop.kt`
+- `scripts/desktop/generate-emoji-data.py` (`../../scripts/desktop/` relative to `apps/multiplatform/`) -- drops skin tone variants
+
+### Impact
+
+Desktop users cannot pick a skin tone in the picker, and search in other languages finds nothing.
+
+### Recommendation
+
+1. Keep the skin tone variants in the generated data, grouped by base emoji, and add a skin tone choice to the picker.
+2. Add localized names (CLDR annotations) to the generated data for search.
