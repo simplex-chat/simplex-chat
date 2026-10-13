@@ -39,8 +39,8 @@ private val RAIL_UNREAD_DOT_SIZE = 6.dp
 private const val RAIL_ACTIVE_BACKGROUND_ALPHA = 0.12f
 private const val RAIL_BACKGROUND_ALPHA = 0.04f
 
-@Composable
 // Spec: spec/client/chat-list.md#DesktopRail
+@Composable
 fun DesktopRail(userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit) {
   Row(
     Modifier

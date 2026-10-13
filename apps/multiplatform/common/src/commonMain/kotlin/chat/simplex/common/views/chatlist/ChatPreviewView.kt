@@ -55,13 +55,14 @@ fun ChatPreviewView(
   val flat = LocalFlatLayout.current
   val titleStyle = if (flat) MaterialTheme.typography.body1 else MaterialTheme.typography.h3
   val titleWeight = if (!flat) FontWeight.Bold else if (chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat) FontWeight.SemiBold else FontWeight.Normal
+  val titleMuted = flat && !cInfo.ntfsEnabled(false) && chat.chatStats.unreadMentions == 0
 
   @Composable
   fun inactiveIcon() {
     Icon(
       painterResource(MR.images.ic_cancel_filled),
       stringResource(MR.strings.icon_descr_group_inactive),
-      Modifier.size(18.sp.toDp()).background(MaterialTheme.colors.background, CircleShape),
+      Modifier.size((if (flat) COMPACT_INACTIVE_ICON_SIZE else 18.sp).toDp()).background(MaterialTheme.colors.background, CircleShape),
       tint = MaterialTheme.colors.secondary
     )
   }
@@ -93,7 +94,7 @@ fun ChatPreviewView(
       overflow = TextOverflow.Ellipsis,
       style = titleStyle,
       fontWeight = titleWeight,
-      color = color
+      color = if (titleMuted && color == Color.Unspecified) MaterialTheme.colors.secondary else color
     )
   }
 
@@ -163,7 +164,7 @@ fun ChatPreviewView(
             overflow = TextOverflow.Ellipsis,
             style = titleStyle,
             fontWeight = titleWeight,
-            color = color
+            color = if (titleMuted && color == Color.Unspecified) MaterialTheme.colors.secondary else color
           )
         }
       }
@@ -442,7 +443,7 @@ fun ChatPreviewView(
           UnreadBadge(
             text = if (n > 0) unreadCountStr(n) else "",
             backgroundColor = if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,
-            yOffset = 3.dp
+            yOffset = if (flat) 0.dp else 3.dp
           )
         }
       }
@@ -487,9 +488,7 @@ fun ChatPreviewView(
         chatPreviewTitle()
       }
       Spacer(Modifier.width(8.sp.toDp()))
-      Box(Modifier.offset(y = -COMPACT_BADGE_Y_CORRECTION)) {
-        chatPreviewUnreadIndicator()
-      }
+      chatPreviewUnreadIndicator()
       Spacer(Modifier.width(4.sp.toDp()))
       chatStatusImage()
     }
@@ -570,8 +569,7 @@ fun ChatPreviewView(
 }
 
 internal val COMPACT_CHAT_IMAGE_SIZE = 28.dp
-// cancels the 3dp yOffset that UnreadBadge applies for the two-line row
-private val COMPACT_BADGE_Y_CORRECTION = 3.dp
+private val COMPACT_INACTIVE_ICON_SIZE = 12.sp
 
 @Composable
 private fun SmallContentPreview(borderColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.12f), content: @Composable BoxScope.() -> Unit) {

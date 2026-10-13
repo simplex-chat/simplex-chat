@@ -127,7 +127,7 @@ fun FramedItemView(
       .background(if (flat) Color.Transparent else if (sent) sentColor else receivedColor)
       .fillMaxWidth()
       .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-      .padding(start = if (flat) FLAT_TEXT_START_PADDING else 8.dp, top = if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
+      .padding(start = if (flat) FLAT_TEXT_START_PADDING else 8.dp, top = if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) (if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp) else 0.dp)
   }
 
   @Composable
@@ -237,7 +237,7 @@ fun FramedItemView(
     .clipChatItem(ci, tailVisible, revealed = true)
     .background(
       when {
-        transparentBackground || LocalFlatLayout.current -> Color.Transparent
+        transparentBackground || flat -> Color.Transparent
         sent -> sentColor
         else -> receivedColor
       }
@@ -429,7 +429,7 @@ fun FramedItemView(
           }
         }
       }
-      if (!flat || flatMetaVisible(ci, chatTTL, showViaProxy)) {
+      if (!flat || flatMetaVisible(ci, chatTTL, showViaProxy, MaterialTheme.colors.secondary)) {
         Box(
           Modifier
             .padding(
@@ -437,7 +437,7 @@ fun FramedItemView(
               end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
             )
         ) {
-          CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+          CIMetaView(ci, chatTTL, metaColor, showStatus = !flat || sent, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
         }
       }
     }
@@ -467,7 +467,7 @@ fun CIMarkdownText(
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
-      meta = if (!flat || flatMetaVisible(ci, chatTTL, showViaProxy)) ci.meta else null, chatTTL = chatTTL, linkMode = linkMode,
+      meta = if (!flat || flatMetaVisible(ci, chatTTL, showViaProxy, MaterialTheme.colors.secondary)) ci.meta else null, chatTTL = chatTTL, linkMode = linkMode,
       mentions = ci.mentions, userMemberId = when {
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null

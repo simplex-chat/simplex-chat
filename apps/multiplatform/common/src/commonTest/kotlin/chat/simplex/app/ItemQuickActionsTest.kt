@@ -42,6 +42,12 @@ class ItemQuickActionsTest {
   }
 
   @Test
+  fun replyHiddenWhenContactCannotReceive() {
+    val deletedContact = ChatInfo.Direct(Contact.sampleData.copy(contactStatus = ContactStatus.Deleted))
+    assertEquals(false, itemQuickActions(deletedContact, rcvItem(), live = false).reply)
+  }
+
+  @Test
   fun replyAndForwardHiddenWhenLive() {
     assertEquals(ItemQuickActions(react = true, reply = false, forward = false), itemQuickActions(direct, rcvItem(), live = true))
   }

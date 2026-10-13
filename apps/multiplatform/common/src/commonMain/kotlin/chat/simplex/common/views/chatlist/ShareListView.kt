@@ -222,5 +222,5 @@ private fun ShareList(
   }
 }
 
-fun profileSwitchAllowed(sharedContent: SharedContent?): Boolean =
+internal fun profileSwitchAllowed(sharedContent: SharedContent?): Boolean =
   sharedContent !is SharedContent.Forward && sharedContent !is SharedContent.ChatLink && sharedContent !is SharedContent.MyAddress

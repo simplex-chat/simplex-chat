@@ -3,6 +3,8 @@ package chat.simplex.app
 import chat.simplex.common.model.*
 import chat.simplex.common.views.chat.item.flatHoverBarVisible
 import chat.simplex.common.views.chat.item.flatItemHasHeader
+import chat.simplex.common.views.chat.item.flatMetaVisible
+import androidx.compose.ui.graphics.Color
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -89,11 +91,24 @@ class FlatChatItemViewTest {
   }
 
   @Test
-  fun hoverBarShownForHoveredMessageOnly() {
+  fun hoverBarShownForHoveredMessage() {
+    assertTrue(flatHoverBarVisible(msg(1, CIDirection.DirectRcv(), 0), rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
+  }
+
+  @Test
+  fun hoverBarHiddenWhenRowNotHovered() {
+    assertFalse(flatHoverBarVisible(msg(1, CIDirection.DirectRcv(), 0), rowHovered = false, reactionPickerOpen = false, canReact = true, selecting = false))
+  }
+
+  @Test
+  fun hoverBarHiddenInSelectionMode() {
     val message = msg(1, CIDirection.DirectRcv(), 0)
-    assertTrue(flatHoverBarVisible(message, rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
-    assertFalse(flatHoverBarVisible(message, rowHovered = false, reactionPickerOpen = false, canReact = true, selecting = false))
     assertFalse(flatHoverBarVisible(message, rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = true))
+    assertFalse(flatHoverBarVisible(message, rowHovered = false, reactionPickerOpen = true, canReact = true, selecting = true))
+  }
+
+  @Test
+  fun hoverBarHiddenForEventAndLiveDummyItems() {
     assertFalse(flatHoverBarVisible(featureEvent(2, 0), rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
     assertFalse(flatHoverBarVisible(msg(ChatItem.TEMP_LIVE_CHAT_ITEM_ID, CIDirection.DirectSnd(), 0), rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
   }
@@ -103,6 +118,30 @@ class FlatChatItemViewTest {
     val message = msg(1, CIDirection.DirectRcv(), 0)
     assertTrue(flatHoverBarVisible(message, rowHovered = false, reactionPickerOpen = true, canReact = true, selecting = false))
     assertFalse(flatHoverBarVisible(message, rowHovered = false, reactionPickerOpen = true, canReact = false, selecting = false))
+  }
+
+  @Test
+  fun headerGroupsLocalNotes() {
+    assertTrue(flatItemHasHeader(msg(1, CIDirection.LocalSnd(), 0), older = null))
+    assertFalse(flatItemHasHeader(msg(2, CIDirection.LocalSnd(), 10), older = msg(1, CIDirection.LocalSnd(), 0)))
+  }
+
+  @Test
+  fun metaHiddenForPlainReceivedMessage() {
+    val received = ChatItem.getSampleData(1, CIDirection.DirectRcv(), noon, status = CIStatus.RcvRead())
+    assertFalse(flatMetaVisible(received, chatTTL = null, showViaProxy = false, secondaryColor = Color.Gray))
+  }
+
+  @Test
+  fun metaShownForEditedReceivedMessage() {
+    val edited = ChatItem.getSampleData(1, CIDirection.DirectRcv(), noon, status = CIStatus.RcvRead(), itemEdited = true)
+    assertTrue(flatMetaVisible(edited, chatTTL = null, showViaProxy = false, secondaryColor = Color.Gray))
+  }
+
+  @Test
+  fun metaShownForSentMessage() {
+    val sent = ChatItem.getSampleData(1, CIDirection.DirectSnd(), noon, status = CIStatus.SndSent(SndCIStatusProgress.Complete))
+    assertTrue(flatMetaVisible(sent, chatTTL = null, showViaProxy = false, secondaryColor = Color.Gray))
   }
 
   @Test

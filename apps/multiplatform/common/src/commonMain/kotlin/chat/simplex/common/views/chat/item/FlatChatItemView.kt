@@ -12,11 +12,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -38,20 +42,21 @@ private val FLAT_HEADER_TOP_PADDING = 8.dp
 // matches the horizontal text padding in CIMarkdownText
 val FLAT_TEXT_START_PADDING = 12.dp
 val FLAT_TEXT_VERTICAL_PADDING = 2.dp
-private const val FLAT_HOVER_ALPHA = 0.04f
+private const val FLAT_SUBTLE_FILL_ALPHA = 0.04f
 private const val FLAT_HIGHLIGHT_ALPHA = 0.12f
-private const val FLAT_BAR_BORDER_ALPHA = 0.12f
+private const val FLAT_BORDER_ALPHA = 0.12f
 private val FLAT_BAR_BUTTON_SIZE = 24.dp
 private val FLAT_BAR_ICON_SIZE = 16.dp
 private val FLAT_BAR_PADDING = 2.dp
-// the hover bar has to fit inside the row: pointer events do not reach a part drawn outside the row bounds
-private val FLAT_ROW_MIN_HEIGHT = FLAT_BAR_BUTTON_SIZE + FLAT_BAR_PADDING * 3
+// keeps the hover bar inside the row: the bar hides as soon as the pointer leaves the row bounds
+private val FLAT_ROW_MIN_HEIGHT = FLAT_BAR_BUTTON_SIZE + FLAT_BAR_PADDING * 2 + 2.dp
 private const val FLAT_QUICK_REACTIONS = 3
 // same window as getItemSeparation in ChatView.kt
 private const val FLAT_GROUP_SECONDS = 60
 // keeps the meta on the last text line, as the 6dp bottom padding does with the 7dp bubble text padding
 val FLAT_META_BOTTOM_PADDING = 1.dp
 private val FLAT_QUOTE_BAR_WIDTH = 3.dp
+val FLAT_DELETED_FONT_SIZE = 14.sp
 private const val FLAT_QUOTE_BAR_ALPHA = 0.25f
 private val FLAT_PILL_SHAPE = RoundedCornerShape(50)
 val FLAT_PILL_HORIZONTAL_PADDING = 6.dp
@@ -82,7 +87,7 @@ private fun sameFlatSender(item: ChatItem, older: ChatItem): Boolean {
 
 private fun localDate(item: ChatItem) = item.meta.itemTs.toLocalDateTime(TimeZone.currentSystemDefault()).date
 
-fun flatHoverBarVisible(cItem: ChatItem, rowHovered: Boolean, reactionPickerOpen: Boolean, canReact: Boolean, selecting: Boolean): Boolean =
+internal fun flatHoverBarVisible(cItem: ChatItem, rowHovered: Boolean, reactionPickerOpen: Boolean, canReact: Boolean, selecting: Boolean): Boolean =
   !selecting && cItem.content.msgContent != null && !cItem.isLiveDummy && (rowHovered || (reactionPickerOpen && canReact))
 
 private val CIContent.hasFlatSender: Boolean get() = when (this) {
@@ -121,6 +126,7 @@ private val CIContent.hasFlatSender: Boolean get() = when (this) {
   is CIContent.ChatBanner -> false
 }
 
+// Spec: spec/client/chat-view.md#FlatLayout
 @Composable
 fun FlatChatItemRow(
   chatInfo: ChatInfo,
@@ -137,13 +143,13 @@ fun FlatChatItemRow(
   val hovered = interactionSource.collectIsHoveredAsState().value
   val background = when {
     highlighted -> MaterialTheme.colors.primary.copy(alpha = FLAT_HIGHLIGHT_ALPHA)
-    hovered -> MaterialTheme.colors.onBackground.copy(alpha = FLAT_HOVER_ALPHA)
+    hovered -> MaterialTheme.colors.onBackground.copy(alpha = FLAT_SUBTLE_FILL_ALPHA)
     else -> Color.Transparent
   }
   Box(modifier.fillMaxWidth().hoverable(interactionSource).background(background)) {
     Row(
       Modifier
-        .heightIn(min = FLAT_ROW_MIN_HEIGHT)
+        .heightIn(min = if (cItem.content.msgContent != null) FLAT_ROW_MIN_HEIGHT else 0.dp)
         .padding(top = if (showHeader) FLAT_HEADER_TOP_PADDING else 0.dp, end = DEFAULT_PADDING_HALF)
     ) {
       Box(Modifier.width(FLAT_GUTTER_WIDTH * fontSizeSqrtMultiplier)) {
@@ -187,8 +193,13 @@ fun BoxScope.FlatHoverBarSlot(
 ) {
   val showReactionPicker = remember { mutableStateOf(false) }
   if (!rowHovered && !showReactionPicker.value) return
-  val quickActions = itemQuickActions(cInfo, cItem, live = composeState.value.liveMessage != null)
-  if (flatHoverBarVisible(cItem, rowHovered, showReactionPicker.value, quickActions.react, selecting)) {
+  val live by remember { derivedStateOf { composeState.value.liveMessage != null } }
+  val quickActions = itemQuickActions(cInfo, cItem, live)
+  val visible = flatHoverBarVisible(cItem, rowHovered, showReactionPicker.value, quickActions.react, selecting)
+  LaunchedEffect(visible, quickActions.react) {
+    if (!visible || !quickActions.react) showReactionPicker.value = false
+  }
+  if (visible) {
     FlatHoverBar(
       quickActions,
       cInfo,
@@ -200,8 +211,6 @@ fun BoxScope.FlatHoverBarSlot(
       showMenu,
       Modifier.align(Alignment.TopEnd).padding(end = DEFAULT_PADDING)
     )
-  } else {
-    showReactionPicker.value = false
   }
 }
 
@@ -269,7 +278,10 @@ private fun FlatSenderImage(chatInfo: ChatInfo, cItem: ChatItem, showMemberInfo:
         ChatInfoImage(chatInfo, size)
       }
     is CIDirection.GroupSnd -> when {
-      cItem.meta.showGroupAsSender -> ChatInfoImage(chatInfo, size)
+      cItem.meta.showGroupAsSender ->
+        Box(Modifier.clip(CircleShape).clickable { showChatInfo() }) {
+          ChatInfoImage(chatInfo, size)
+        }
       chatInfo is ChatInfo.Group -> MemberImage(chatInfo.groupInfo.membership)
       else -> UserImage(chatInfo, size)
     }
@@ -289,7 +301,7 @@ private fun UserImage(chatInfo: ChatInfo, size: Dp) {
 }
 
 @Composable
-fun FlatHoverBar(
+private fun FlatHoverBar(
   quickActions: ItemQuickActions,
   cInfo: ChatInfo,
   cItem: ChatItem,
@@ -303,7 +315,7 @@ fun FlatHoverBar(
   Surface(
     modifier,
     shape = RoundedCornerShape(DEFAULT_PADDING_HALF),
-    border = BorderStroke(1.dp, MaterialTheme.colors.onBackground.copy(alpha = FLAT_BAR_BORDER_ALPHA)),
+    border = BorderStroke(1.dp, MaterialTheme.colors.onBackground.copy(alpha = FLAT_BORDER_ALPHA)),
     elevation = 2.dp
   ) {
     Row(Modifier.padding(FLAT_BAR_PADDING), verticalAlignment = Alignment.CenterVertically) {
@@ -342,24 +354,33 @@ private fun FlatBarButton(icon: ImageResource, description: String, onClick: () 
 }
 
 // with nothing to show, the reserved meta is the timestamp alone; any icon adds space before it
-@Composable
-fun flatMetaVisible(ci: ChatItem, chatTTL: Int?, showViaProxy: Boolean): Boolean =
+fun flatMetaVisible(ci: ChatItem, chatTTL: Int?, showViaProxy: Boolean, secondaryColor: Color): Boolean =
   reserveSpaceForMeta(
-    ci.meta, chatTTL, ci.encryptedFile, MaterialTheme.colors.secondary,
+    ci.meta, chatTTL, ci.encryptedFile, secondaryColor,
     showStatus = ci.chatDir.sent, showViaProxy = showViaProxy, showTimestamp = true, signedFileVerified = ci.file?.loaded
   ) != ci.meta.timestampText
+
+fun Modifier.flatStartOffset(offset: () -> Dp): Modifier = layout { measurable, constraints ->
+  val offsetPx = offset().roundToPx()
+  val placeable = measurable.measure(constraints.offset(horizontal = -offsetPx))
+  layout(placeable.width + offsetPx, placeable.height) { placeable.place(offsetPx, 0) }
+}
 
 @Composable
 fun Modifier.flatQuoteBar(): Modifier {
   val color = MaterialTheme.colors.onBackground.copy(alpha = FLAT_QUOTE_BAR_ALPHA)
   return padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING)
-    .drawBehind { drawRect(color, size = Size(FLAT_QUOTE_BAR_WIDTH.toPx(), size.height)) }
+    .drawBehind {
+      val width = FLAT_QUOTE_BAR_WIDTH.toPx()
+      val x = if (layoutDirection == LayoutDirection.Rtl) size.width - width else 0f
+      drawRect(color, topLeft = Offset(x, 0f), size = Size(width, size.height))
+    }
 }
 
 @Composable
 fun Modifier.flatReactionPill(userReacted: Boolean): Modifier {
-  val background = if (userReacted) MaterialTheme.colors.primary.copy(alpha = FLAT_REACTED_BACKGROUND_ALPHA) else MaterialTheme.colors.onBackground.copy(alpha = FLAT_HOVER_ALPHA)
-  val border = if (userReacted) MaterialTheme.colors.primary.copy(alpha = FLAT_REACTED_BORDER_ALPHA) else MaterialTheme.colors.onBackground.copy(alpha = FLAT_BAR_BORDER_ALPHA)
+  val background = if (userReacted) MaterialTheme.colors.primary.copy(alpha = FLAT_REACTED_BACKGROUND_ALPHA) else MaterialTheme.colors.onBackground.copy(alpha = FLAT_SUBTLE_FILL_ALPHA)
+  val border = if (userReacted) MaterialTheme.colors.primary.copy(alpha = FLAT_REACTED_BORDER_ALPHA) else MaterialTheme.colors.onBackground.copy(alpha = FLAT_BORDER_ALPHA)
   return clip(FLAT_PILL_SHAPE).background(background).border(1.dp, border, FLAT_PILL_SHAPE)
 }
 
@@ -371,7 +392,7 @@ fun FlatDateSeparator(text: String) {
       text,
       Modifier
         .background(MaterialTheme.colors.background, FLAT_PILL_SHAPE)
-        .border(1.dp, MaterialTheme.colors.onBackground.copy(alpha = FLAT_BAR_BORDER_ALPHA), FLAT_PILL_SHAPE)
+        .border(1.dp, MaterialTheme.colors.onBackground.copy(alpha = FLAT_BORDER_ALPHA), FLAT_PILL_SHAPE)
         .padding(horizontal = FLAT_TEXT_START_PADDING, vertical = FLAT_TEXT_VERTICAL_PADDING * 2),
       fontSize = 13.sp,
       fontWeight = FontWeight.SemiBold,

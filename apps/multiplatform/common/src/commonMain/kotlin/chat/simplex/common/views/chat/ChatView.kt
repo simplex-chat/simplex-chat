@@ -2033,7 +2033,7 @@ fun BoxScope.ChatItemsList(
               val showMenu = remember { mutableStateOf(false) }
               FlatChatItemRow(
                 chatInfo, cItem, flatHeader, highlighted.value, showMemberInfo, showChatInfo,
-                Modifier.padding(start = selectionOffset),
+                Modifier.flatStartOffset { selectionOffset },
                 hoverBar = { rowHovered ->
                   FlatHoverBarSlot(rowHovered, chatInfo, cItem, composeState, useLinkPreviews, selecting = selectedChatItems.value != null, setReaction, forwardItem, showMenu)
                 }
