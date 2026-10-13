@@ -13,6 +13,7 @@ import androidx.core.graphics.scale
 import boofcv.android.ConvertBitmap
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.R
+import chat.simplex.common.views.helpers.decodeSampledBitmapFromByteArray
 import chat.simplex.common.views.helpers.errorBitmap
 import chat.simplex.common.views.helpers.getFileName
 import java.io.ByteArrayOutputStream
@@ -43,16 +44,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
 
 actual fun decodeBase64Image(base64: String, width: Int): ImageBitmap? =
   try {
-    val imageBytes = Base64.decode(base64, Base64.DEFAULT)
-    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
-    if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION) {
-      null
-    } else {
-      options.inJustDecodeBounds = false
-      options.inSampleSize = Integer.highestOneBit(maxOf(1, options.outWidth / width))
-      BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)?.asImageBitmap()
-    }
+    decodeSampledBitmapFromByteArray(Base64.decode(base64, Base64.DEFAULT), width, width, MAX_IMAGE_DIMENSION).asImageBitmap()
   } catch (e: Exception) {
     Log.e(TAG, "decodeBase64Image error: $e")
     null
