@@ -37,27 +37,27 @@ data FakeEthNode = FakeEthNode
   }
 
 data FakeState = FakeState
-  { fsRevert :: Maybe ByteString,
+  { fsRevert :: Bool,
     fsSent :: [ByteString]
   }
 
-fakeGas, fakeTip, fakeBaseFee :: Integer
+fakeGas, fakeTip, fakeBaseFee :: Num a => a
 fakeGas = 200000
 fakeTip = 1000000000
 fakeBaseFee = 2000000000
 
 withFakeEthNode :: (FakeEthNode -> IO a) -> IO a
 withFakeEthNode action = do
-  fnState <- newTVarIO FakeState {fsRevert = Nothing, fsSent = []}
+  fnState <- newTVarIO FakeState {fsRevert = False, fsSent = []}
   fnManager <- HTTP.newManager HTTP.defaultManagerSettings
   Warp.testWithApplication (pure $ fakeApp fnState) $ \port ->
     action FakeEthNode {fnUrl = "http://127.0.0.1:" <> show port, fnManager, fnState}
 
-revertCalls :: FakeEthNode -> ByteString -> IO ()
-revertCalls FakeEthNode {fnState} revert = atomically $ modifyTVar' fnState $ \s -> s {fsRevert = Just revert}
+revertCalls :: FakeEthNode -> IO ()
+revertCalls FakeEthNode {fnState} = atomically $ modifyTVar' fnState $ \s -> s {fsRevert = True}
 
 sentTransactions :: FakeEthNode -> IO [ByteString]
-sentTransactions FakeEthNode {fnState} = reverse . fsSent <$> readTVarIO fnState
+sentTransactions FakeEthNode {fnState} = fsSent <$> readTVarIO fnState
 
 fakeApp :: TVar FakeState -> Application
 fakeApp st req respond = do
@@ -74,7 +74,7 @@ answer :: TVar FakeState -> Text -> [J.Value] -> STM [JT.Pair]
 answer st method params = do
   FakeState {fsRevert, fsSent} <- readTVar st
   case (method, params) of
-    ("eth_estimateGas", _) -> pure $ maybe (result $ quantity fakeGas) reverted fsRevert
+    ("eth_estimateGas", _) -> pure $ if fsRevert then reverted else result $ quantity fakeGas
     ("eth_getTransactionCount", _) -> pure $ result $ quantity $ toInteger $ length fsSent
     ("eth_maxPriorityFeePerGas", _) -> pure $ result $ quantity fakeTip
     ("eth_getBlockByNumber", _) -> pure $ result $ J.object ["baseFeePerGas" .= quantity fakeBaseFee]
@@ -84,7 +84,7 @@ answer st method params = do
     _ -> pure ["error" .= J.object ["code" .= (-32601 :: Int), "message" .= ("method not found" :: Text)]]
   where
     result v = ["result" .= v]
-    reverted revert = ["error" .= J.object ["code" .= (3 :: Int), "message" .= ("execution reverted" :: Text), "data" .= hex revert]]
+    reverted = ["error" .= J.object ["code" .= (3 :: Int), "message" .= ("execution reverted" :: Text)]]
 
 quantity :: Integer -> Text
 quantity n = "0x" <> T.pack (showHex n "")

@@ -138,8 +138,8 @@ nameCodeLength = 30
 nameCodePrefix :: Text
 nameCodePrefix = "SN"
 
-checksumBits :: Int
-checksumBits = 22
+nameCodeChecksumBits :: Int
+nameCodeChecksumBits = 22
 
 randomNameCode :: TVar ChaChaDRG -> IO NameCode
 randomNameCode drg = NameCode <$> atomically (randomEntropy ES128 drg)
@@ -149,19 +149,19 @@ parseNameCode t = do
   body <- T.stripPrefix nameCodePrefix $ T.toUpper $ T.filter isAlphaNum t
   vs <- mapM charValue $ T.unpack body
   guard $ length vs == nameCodeLength
-  let (payload, digest) = foldl' (\acc v -> acc * toInteger base + toInteger v) 0 vs `divMod` (2 ^ checksumBits)
-  guard $ digest == checksum payload
+  let (payload, digest) = foldl' (\acc v -> acc * toInteger base + toInteger v) 0 vs `divMod` (2 ^ nameCodeChecksumBits)
+  guard $ digest == nameCodeChecksum payload
   NameCode <$> eitherToMaybe (mkEntropy $ i2ospOf_ 16 payload)
 
 formatNameCode :: NameCode -> Text
 formatNameCode (NameCode e) = T.intercalate "-" $ nameCodePrefix : T.chunksOf groupLength (T.pack $ map valueChar values)
   where
     payload = os2ip $ unEntropy e
-    n = payload * 2 ^ checksumBits + checksum payload
+    n = payload * 2 ^ nameCodeChecksumBits + nameCodeChecksum payload
     values = reverse $ take nameCodeLength $ map (fromInteger . (`mod` toInteger base)) $ iterate (`div` toInteger base) n
 
 nameCodeEntropy :: NameCode -> WalletEntropy
 nameCodeEntropy (NameCode e) = e
 
-checksum :: Integer -> Integer
-checksum = (`shiftR` (256 - checksumBits)) . os2ip . C.sha256Hash . i2ospOf_ 16
+nameCodeChecksum :: Integer -> Integer
+nameCodeChecksum = (`shiftR` (256 - nameCodeChecksumBits)) . os2ip . C.sha256Hash . i2ospOf_ 16

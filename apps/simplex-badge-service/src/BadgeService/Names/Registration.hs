@@ -71,7 +71,7 @@ registerIntentDigest domain r@Registration {rLabel, rOwner, rResolver} deadline 
   hashTypedData
     domain
     "RegisterName(string label,address owner,address resolver,bytes[] data,uint256 deadline)"
-    [ VString $ encodeUtf8 rLabel,
+    [ VBytes $ encodeUtf8 rLabel,
       VAddress rOwner,
       VAddress rResolver,
       VArray $ map VBytes $ recordCalls r,

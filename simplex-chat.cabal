@@ -438,8 +438,6 @@ executable simplex-badge-service
       BadgeService.Group
       BadgeService.Group.Command
       BadgeService.Log
-      BadgeService.Names.Chain
-      BadgeService.Names.Registration
       BadgeService.Options
       BadgeService.Orders
       BadgeService.Poller

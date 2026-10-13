@@ -1,6 +1,6 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module BadgeService.Names.Chain
   ( ChainClient (..),
@@ -14,7 +14,7 @@ where
 import BadgeService.Names.Registration (RegisterIntent, commitCalldata, registerWithCreditCalldata)
 import Control.Concurrent.STM (TVar)
 import Control.Exception (try)
-import Control.Monad.Except (ExceptT (..), liftEither, runExceptT, withExceptT)
+import Control.Monad.Except (ExceptT, liftEither, runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
@@ -33,7 +33,7 @@ import Numeric (readHex)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
-import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import Simplex.Messaging.Util (eitherToMaybe, liftError', tshow)
 
 data ChainClient = ChainClient
   { ccManager :: Manager,
@@ -44,10 +44,7 @@ data ChainClient = ChainClient
     ccRegistrarKey :: Secp256k1PrivateKey
   }
 
-data ChainError
-  = CERpc Text
-  | CEReverted ByteString
-  | CEInternal Text
+newtype ChainError = ChainError Text
   deriving (Eq, Show)
 
 newtype TxHash = TxHash ByteString
@@ -69,39 +66,29 @@ sendTransaction g c@ChainClient {ccChainId, ccRegistrarKey} to calldata = runExc
   let tx =
         Eip1559Tx
           { txChainId = ccChainId,
-            txNonce = fromInteger nonce,
-            txMaxPriorityFeePerGas = fromInteger tip,
-            txMaxFeePerGas = fromInteger $ 2 * baseFee + tip,
-            txGasLimit = fromInteger gas,
+            txNonce = nonce,
+            txMaxPriorityFeePerGas = tip,
+            txMaxFeePerGas = 2 * baseFee + tip,
+            txGasLimit = gas,
             txTo = to,
             txValue = 0,
             txData = calldata
           }
-  raw <- withExceptT (CEInternal . T.pack) $ ExceptT $ signEip1559Tx g ccRegistrarKey tx
+  raw <- liftError' (ChainError . T.pack) $ signEip1559Tx g ccRegistrarKey tx
   TxHash <$> rpc c "eth_sendRawTransaction" [J.String $ hex raw] bytes
 
 rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> ExceptT ChainError IO a
 rpc ChainClient {ccManager, ccRpcUrl} method params parseResult = do
-  resp <- withExceptT (CERpc . httpError) $ ExceptT $ try $ do
+  resp <- liftError' (\(e :: HTTP.HttpException) -> ChainError $ tshow e) $ try $ do
     req <- HTTP.parseRequest ccRpcUrl
     HTTP.httpLbs req {HTTP.method = "POST", HTTP.requestHeaders = [(hContentType, "application/json")], HTTP.requestBody = HTTP.RequestBodyLBS body} ccManager
-  liftEither $ either (Left . CERpc . T.pack) id $ JT.parseEither response =<< J.eitherDecode (HTTP.responseBody resp)
+  liftEither $ either (Left . ChainError . T.pack) id $ JT.parseEither response =<< J.eitherDecode (HTTP.responseBody resp)
   where
     body = J.encode $ J.object ["jsonrpc" .= ("2.0" :: Text), "id" .= (1 :: Int), "method" .= method, "params" .= params]
     response = J.withObject "JSON-RPC response" $ \o -> o .:? "error" >>= maybe (Right <$> (parseResult =<< o .: "result")) rpcError
-    rpcError = J.withObject "JSON-RPC error" $ \e -> do
-      revert <- e .:? "data"
-      message <- e .: "message"
-      pure $ Left $ case revert of
-        Just (J.String d) | Just bs <- fromHex d -> CEReverted bs
-        _ -> CERpc message
+    rpcError = J.withObject "JSON-RPC error" $ \e -> Left . ChainError <$> e .: "message"
 
-httpError :: HTTP.HttpException -> Text
-httpError = \case
-  HTTP.HttpExceptionRequest _ content -> tshow content
-  e -> tshow e
-
-quantity :: J.Value -> JT.Parser Integer
+quantity :: (Eq a, Num a) => J.Value -> JT.Parser a
 quantity = J.withText "quantity" $ \t -> case T.stripPrefix "0x" t of
   Just h | [(n, "")] <- readHex (T.unpack h) -> pure n
   _ -> fail $ "not a quantity: " <> T.unpack t
