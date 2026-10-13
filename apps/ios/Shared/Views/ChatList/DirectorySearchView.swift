@@ -9,6 +9,10 @@
 import SwiftUI
 import SimpleXChat
 
+enum DirectoryFooter {
+    case retry, showMore
+}
+
 // Directory results are not chats and are never saved: they live as long as the search text does.
 @MainActor
 class OnlineSearchModel: ObservableObject {
@@ -23,8 +27,8 @@ class OnlineSearchModel: ObservableObject {
     // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
     private var generation = 0
 
-    var hasMore: Bool { cursor != nil }
     var showResults: Bool { loading || searched }
+    var footer: DirectoryFooter? { failed ? .retry : cursor != nil ? .showMore : nil }
 
     func reset() {
         generation += 1
@@ -144,6 +148,8 @@ struct DirectorySearchRow: View {
                     .foregroundColor(theme.colors.secondary)
             }
             Spacer()
+            Text(isChannel ? "Join channel" : "Join group")
+                .foregroundColor(theme.colors.primary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())

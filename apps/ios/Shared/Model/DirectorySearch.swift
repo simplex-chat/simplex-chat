@@ -30,17 +30,41 @@ struct DirectorySearchEntry: Decodable, Hashable, Identifiable {
     var entryType: DirectoryEntryType
     var displayName: String
     var simplexName: String? = nil
-    var groupLink: DirectoryPublicLink
+    let link: String
     var shortDescr: String? = nil
     var image: String? = nil
     var activeAt: Date? = nil
     var createdAt: Date? = nil
 
-    // the directory drops entries with no link, but the response is untrusted input
-    var connectLink: String? { groupLink.connShortLink ?? groupLink.connFullLink }
-
     // the link is stable and unique per entry, so it also de-duplicates across pages
-    var id: String { connectLink ?? displayName }
+    var id: String { link }
+
+    enum CodingKeys: String, CodingKey {
+        case entryType, displayName, simplexName, groupLink, shortDescr, image, activeAt, createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        entryType = try c.decode(DirectoryEntryType.self, forKey: .entryType)
+        displayName = try c.decode(String.self, forKey: .displayName)
+        simplexName = try c.decodeIfPresent(String.self, forKey: .simplexName)
+        shortDescr = try c.decodeIfPresent(String.self, forKey: .shortDescr)
+        image = try c.decodeIfPresent(String.self, forKey: .image)
+        activeAt = try c.decodeIfPresent(Date.self, forKey: .activeAt)
+        createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt)
+        let groupLink = try c.decode(DirectoryPublicLink.self, forKey: .groupLink)
+        // untrusted input: only group and channel links are kept, as the core fetches an invitation link even in a store-only plan
+        guard let link = groupLink.connShortLink ?? groupLink.connFullLink,
+              let linkType = simplexLinkType(link),
+              linkType == .group || linkType == .channel else {
+            throw DecodingError.dataCorruptedError(forKey: .groupLink, in: c, debugDescription: "not a group or channel link")
+        }
+        self.link = link
+    }
+}
+
+func simplexLinkType(_ s: String) -> SimplexLinkType? {
+    if case let .link(text, linkType, _) = strConnectTarget(s), text == s { linkType } else { nil }
 }
 
 // entries stay undecoded here so they can be decoded one at a time: one entry the app does not

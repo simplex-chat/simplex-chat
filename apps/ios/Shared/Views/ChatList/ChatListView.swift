@@ -447,7 +447,18 @@ struct ChatListView: View {
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 .padding(.horizontal)
                 if onlineSearch.showResults {
-                    List { directoryRows() }.listStyle(.plain)
+                    List {
+                        directoryRows()
+                        if !onlineSearch.loading && onlineSearch.entries.isEmpty && onlineSearch.footer == nil {
+                            Text("No chats found")
+                                .foregroundColor(theme.colors.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                        }
+                    }
+                    .listStyle(.plain)
                 } else {
                     VStack(spacing: 0) {
                         ConnectOnboardingView()
@@ -468,25 +479,29 @@ struct ChatListView: View {
     }
 
     @ViewBuilder private func directoryRows() -> some View {
-        ForEach(onlineSearch.entries) { entry in
-            DirectorySearchRow(entry: entry)
-                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                .listRowBackground(Color.clear)
-                .onTapGesture {
-                    guard let link = entry.connectLink else { return }
-                    searchFocussed = false
-                    planAndConnect(link, theme: theme, dismiss: false, cleanup: nil)
-                }
-        }
-        if onlineSearch.failed {
-            directoryRetryRow()
-        } else if onlineSearch.hasMore {
-            directoryShowMoreRow()
-        } else if onlineSearch.searched && onlineSearch.entries.isEmpty {
-            Text("No results")
+        let footer = onlineSearch.footer
+        if !onlineSearch.entries.isEmpty || footer != nil {
+            Text("Directory")
+                .font(.callout)
                 .foregroundColor(theme.colors.secondary)
+                .accessibilityAddTraits(.isHeader)
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
+            ForEach(onlineSearch.entries) { entry in
+                DirectorySearchRow(entry: entry)
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .listRowBackground(Color.clear)
+                    .onTapGesture {
+                        searchFocussed = false
+                        planAndConnect(entry.link, theme: theme, dismiss: false, cleanup: nil)
+                    }
+            }
+            switch footer {
+            case .retry: directoryRetryRow()
+            case .showMore: directoryShowMoreRow()
+            case nil: EmptyView()
+            }
         }
     }
 
@@ -599,14 +614,7 @@ struct ChatListView: View {
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
                     }
-                    if onlineSearch.showResults {
-                        Section {
-                            directoryRows()
-                        } header: {
-                            Text("Directory")
-                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                        }
-                    }
+                    directoryRows()
                     if !addressCreationCardShown && hasConversations {
                         ConnectBannerCard()
                             .padding(.vertical, 6)
@@ -634,7 +642,7 @@ struct ChatListView: View {
                 }
             }
             // this covers the whole list, so it must not hide the directory section or its own messages
-            if cs.isEmpty && !chatModel.chats.isEmpty && !onlineSearch.showResults {
+            if cs.isEmpty && !chatModel.chats.isEmpty && !onlineSearch.loading && onlineSearch.entries.isEmpty && onlineSearch.footer == nil {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
@@ -841,7 +849,8 @@ struct ChatListSearchBar: View {
                     dismiss: false
                 )
                 searchInDirectoryRow()
-            } else if oneHandUI, !searchTrimmed.isEmpty {
+            // a SimpleX link connects on its own, so the directory is not offered for one
+            } else if oneHandUI, !searchTrimmed.isEmpty, !searchShowingSimplexLink {
                 searchInDirectoryRow()
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
@@ -891,7 +900,7 @@ struct ChatListSearchBar: View {
                     dismiss: false
                 )
             }
-            if !oneHandUI, !searchTrimmed.isEmpty {
+            if !oneHandUI, !searchTrimmed.isEmpty, !searchShowingSimplexLink {
                 searchInDirectoryRow()
             }
         }
@@ -999,10 +1008,7 @@ struct ChatListSearchBar: View {
     }
 
     @ViewBuilder private func searchInDirectoryRow() -> some View {
-        // a SimpleX link connects on its own, so the directory is not offered for one
-        if !searchShowingSimplexLink {
-            SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: runDirectorySearch)
-        }
+        SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: runDirectorySearch)
     }
 
     // whatever is typed here gets sent to the directory, so ask before the first time
