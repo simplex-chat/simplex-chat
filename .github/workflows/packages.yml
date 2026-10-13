@@ -127,7 +127,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -141,7 +141,7 @@ jobs:
           cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
 
       - name: Upload add-on artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: simplex-nodejs-addon-${{ matrix.platform }}
           path: packages/simplex-chat-nodejs/build/simplex-chat-nodejs-${{ matrix.platform }}.node
@@ -169,14 +169,14 @@ jobs:
 
       - name: Setup Node.js
         if: steps.plan.outputs.types_version || steps.plan.outputs.nodejs_version
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
       - name: Setup Python
         if: steps.plan.outputs.python_version
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -254,7 +254,7 @@ jobs:
       # Outside the checkout: the release PR commits every change in it.
       - name: Download add-on artifacts
         if: needs.addon.outputs.missing
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: simplex-nodejs-addon-*
           merge-multiple: true
@@ -262,7 +262,7 @@ jobs:
 
       - name: Create add-on release
         if: needs.addon.outputs.missing
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           repository: ${{ github.repository }}-libs
           tag_name: ${{ needs.addon.outputs.tag }}
@@ -286,7 +286,7 @@ jobs:
           echo "title=$(head -n 1 "$RUNNER_TEMP/summary.md")" >> "$GITHUB_OUTPUT"
 
       - name: Create or update release PR
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.RELEASE_PR_TOKEN }}
           branch: packages-release/${{ github.ref_name }}
