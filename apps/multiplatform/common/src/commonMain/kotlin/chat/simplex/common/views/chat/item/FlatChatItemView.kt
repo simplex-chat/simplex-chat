@@ -11,15 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,12 +54,11 @@ private const val FLAT_QUICK_REACTIONS = 3
 private const val FLAT_GROUP_SECONDS = 60
 // keeps the meta on the last text line, as the 6dp bottom padding does with the 7dp bubble text padding
 val FLAT_META_BOTTOM_PADDING = 1.dp
-private val FLAT_QUOTE_BAR_WIDTH = 3.dp
 val FLAT_DELETED_FONT_SIZE = 14.sp
 val FLAT_REPLY_AVATAR_SIZE = 16.dp
 val FLAT_REPLY_ICON_SIZE = 14.dp
 val FLAT_REPLY_FONT_SIZE = 13.sp
-private const val FLAT_QUOTE_BAR_ALPHA = 0.25f
+val FLAT_REPLY_SENDER_MAX_WIDTH = 160.dp
 private val FLAT_PILL_SHAPE = RoundedCornerShape(50)
 val FLAT_PILL_HORIZONTAL_PADDING = 6.dp
 private const val FLAT_REACTED_BACKGROUND_ALPHA = 0.1f
@@ -289,16 +284,16 @@ private fun FlatSenderImage(chatInfo: ChatInfo, cItem: ChatItem, showMemberInfo:
           ChatInfoImage(chatInfo, size)
         }
       chatInfo is ChatInfo.Group -> MemberImage(chatInfo.groupInfo.membership)
-      else -> UserImage(chatInfo, size)
+      else -> FlatUserImage(chatInfo, size)
     }
     is CIDirection.DirectSnd,
     is CIDirection.LocalSnd,
-    is CIDirection.LocalRcv -> UserImage(chatInfo, size)
+    is CIDirection.LocalRcv -> FlatUserImage(chatInfo, size)
   }
 }
 
 @Composable
-private fun UserImage(chatInfo: ChatInfo, size: Dp) {
+fun FlatUserImage(chatInfo: ChatInfo, size: Dp) {
   if (chatInfo.incognito) {
     IncognitoImage(size)
   } else {
@@ -370,17 +365,6 @@ fun Modifier.flatStartOffset(offset: () -> Dp): Modifier = layout { measurable, 
   val offsetPx = offset().roundToPx()
   val placeable = measurable.measure(constraints.offset(horizontal = -offsetPx))
   layout(placeable.width + offsetPx, placeable.height) { placeable.place(offsetPx, 0) }
-}
-
-@Composable
-fun Modifier.flatQuoteBar(): Modifier {
-  val color = MaterialTheme.colors.onBackground.copy(alpha = FLAT_QUOTE_BAR_ALPHA)
-  return padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING)
-    .drawBehind {
-      val width = FLAT_QUOTE_BAR_WIDTH.toPx()
-      val x = if (layoutDirection == LayoutDirection.Rtl) size.width - width else 0f
-      drawRect(color, topLeft = Offset(x, 0f), size = Size(width, size.height))
-    }
 }
 
 @Composable

@@ -447,14 +447,16 @@ private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewSt
     DesktopRail(userPickerState, setPerformLA = AppLock::setPerformLA)
   }
   Box(Modifier.padding(start = railWidth).width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-    @Composable
-    fun StartPart() {
-      StartPartOfScreen(userPickerState)
-      tryOrShowError("UserPicker", error = {}) {
-        UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
+    // movable, so switching the flat layout keeps the chat list and user picker state
+    val startPart = remember {
+      movableContentOf {
+        StartPartOfScreen(userPickerState)
+        tryOrShowError("UserPicker", error = {}) {
+          UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
+        }
       }
     }
-    if (LocalFlatLayout.current) FlatSurface(flatListColor()) { StartPart() } else StartPart()
+    if (LocalFlatLayout.current) FlatListSurface { startPart() } else startPart()
   }
   Box(Modifier.padding(start = railWidth).widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
     ModalManager.start.showInView()
@@ -462,7 +464,7 @@ private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewSt
   }
   Row(Modifier.padding(start = railWidth + DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
     Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
-      if (LocalFlatLayout.current) FlatSurface(flatChatColor()) { CenterPartOfScreen() } else CenterPartOfScreen()
+      CenterPartOfScreen()
     }
     if (ModalManager.end.hasModalsOpen()) {
       VerticalDivider()

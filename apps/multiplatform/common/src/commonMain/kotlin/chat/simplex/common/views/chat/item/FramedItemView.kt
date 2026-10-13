@@ -96,7 +96,7 @@ fun FramedItemView(
         ) {
           Text(
             sender,
-            style = TextStyle(fontSize = 13.5.sp, fontWeight = if (flat) FontWeight.SemiBold else null, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
+            style = TextStyle(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
             maxLines = 1
           )
           ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
@@ -130,7 +130,7 @@ fun FramedItemView(
       .background(if (flat) Color.Transparent else if (sent) sentColor else receivedColor)
       .fillMaxWidth()
       .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-      .padding(start = if (flat) FLAT_TEXT_START_PADDING else 8.dp, top = if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) (if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp) else 0.dp)
+      .padding(start = if (flat) FLAT_TEXT_START_PADDING else 8.dp, top = if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp, end = 12.dp, bottom = if (pad || ((ci.quotedItem == null || flat) && ci.meta.itemForwarded == null)) (if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp) else 0.dp)
   }
 
   @Composable
@@ -163,7 +163,8 @@ fun FramedItemView(
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
-      (if (flat) Modifier.flatQuoteBar() else Modifier.background(if (sent) sentColor else receivedColor))
+      Modifier
+        .background(if (sent) sentColor else receivedColor)
         .fillMaxWidth()
     ) {
       when (qi.content) {
@@ -238,14 +239,15 @@ fun FramedItemView(
 
   @Composable
   fun ciReplyAvatar(qi: CIQuote) {
+    val size = FLAT_REPLY_AVATAR_SIZE * fontSizeSqrtMultiplier
     when (val dir = qi.chatDir) {
-      is CIDirection.GroupRcv -> MemberProfileImage(FLAT_REPLY_AVATAR_SIZE, dir.groupMember)
-      is CIDirection.GroupSnd -> membership()?.let { MemberProfileImage(FLAT_REPLY_AVATAR_SIZE, it) }
+      is CIDirection.GroupRcv -> MemberProfileImage(size, dir.groupMember)
+      is CIDirection.GroupSnd -> membership()?.let { MemberProfileImage(size, it) }
       is CIDirection.ChannelRcv,
-      is CIDirection.DirectRcv -> ChatInfoImage(chatInfo, FLAT_REPLY_AVATAR_SIZE)
+      is CIDirection.DirectRcv -> ChatInfoImage(chatInfo, size)
       is CIDirection.DirectSnd,
       is CIDirection.LocalSnd,
-      is CIDirection.LocalRcv -> ProfileImage(FLAT_REPLY_AVATAR_SIZE, chatModel.currentUser.value?.image)
+      is CIDirection.LocalRcv -> FlatUserImage(chatInfo, size)
       null -> {}
     }
   }
@@ -266,16 +268,23 @@ fun FramedItemView(
       ciReplyAvatar(qi)
       val sender = qi.sender(membership())
       if (sender != null) {
-        Text(sender, fontSize = FLAT_REPLY_FONT_SIZE, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
+        Text(sender, Modifier.widthIn(max = FLAT_REPLY_SENDER_MAX_WIDTH), fontSize = FLAT_REPLY_FONT_SIZE, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
       }
       val replyStyle = TextStyle(fontSize = FLAT_REPLY_FONT_SIZE, color = color)
       Box(Modifier.weight(1f, fill = false)) {
+        val content = qi.content
         when {
+          content is MsgContent.MCVoice && content.text.isEmpty() -> Text("${stringResource(MR.strings.voice_message)} ${qi.text}", style = replyStyle, maxLines = 1)
+          content is MsgContent.MCChat -> {
+            val prefix = buildAnnotatedString {
+              append(content.chatLink.displayName + if (content.text != content.chatLink.connLinkStr) " - " else "")
+            }
+            ciQuotedMsgTextView(qi, lines = 1, showTimestamp = false, stripLink = content.chatLink.connLinkStr, prefix = prefix, style = replyStyle)
+          }
           qi.text.isNotEmpty() -> ciQuotedMsgTextView(qi, lines = 1, showTimestamp = false, style = replyStyle)
-          qi.content is MsgContent.MCImage -> Text(stringResource(MR.strings.image_descr), style = replyStyle, maxLines = 1)
-          qi.content is MsgContent.MCVideo -> Text(stringResource(MR.strings.video_descr), style = replyStyle, maxLines = 1)
-          qi.content is MsgContent.MCVoice -> Text(stringResource(MR.strings.voice_message), style = replyStyle, maxLines = 1)
-          qi.content is MsgContent.MCFile -> Text(stringResource(MR.strings.icon_descr_file), style = replyStyle, maxLines = 1)
+          content is MsgContent.MCImage -> Text(stringResource(MR.strings.image_descr), style = replyStyle, maxLines = 1)
+          content is MsgContent.MCVideo -> Text(stringResource(MR.strings.video_descr), style = replyStyle, maxLines = 1)
+          content is MsgContent.MCFile -> Text(stringResource(MR.strings.icon_descr_file), style = replyStyle, maxLines = 1)
         }
       }
     }

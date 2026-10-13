@@ -1784,7 +1784,7 @@ fun ComposeView(
         Column {
           ContextSendMessageToConnect(generalGetString(MR.strings.compose_send_direct_message_to_connect))
           Divider()
-          Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
+          Row(Modifier.flatComposeField().padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
             AttachmentAndCommandsButtons()
             SendMsgView_(
               disableSendButton = disableSendButton,
