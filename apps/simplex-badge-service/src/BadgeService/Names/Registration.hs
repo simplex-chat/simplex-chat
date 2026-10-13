@@ -44,6 +44,7 @@ data Registration = Registration
 
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,
+    riNonce :: Word64,
     riDeadline :: Word64,
     riSignature :: RecoverableSignature
   }
@@ -58,31 +59,33 @@ commitCalldata :: ByteString -> ByteString
 commitCalldata commitment = selector "commit(bytes32)" <> commitment
 
 registerWithCreditCalldata :: RegisterIntent -> ByteString
-registerWithCreditCalldata RegisterIntent {riRegistration, riDeadline, riSignature} =
-  selector "registerWithCredit((string,address,uint256,bytes32,address,bytes[],uint8,bytes32),uint256,bytes)"
+registerWithCreditCalldata RegisterIntent {riRegistration, riNonce, riDeadline, riSignature} =
+  selector "registerWithCredit((string,address,uint256,bytes32,address,bytes[],uint8,bytes32),uint256,uint256,bytes)"
     <> abiTuple
       [ Dynamic $ registrationTuple riRegistration,
+        Static $ uint256 riNonce,
         Static $ uint256 riDeadline,
         Dynamic $ abiBytes $ serializeSignature riSignature
       ]
 
-registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> ByteString
-registerIntentDigest domain r@Registration {rLabel, rOwner, rResolver} deadline =
+registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> Word64 -> ByteString
+registerIntentDigest domain r@Registration {rLabel, rOwner, rResolver} nonce deadline =
   hashTypedData
     domain
-    "RegisterName(string label,address owner,address resolver,bytes[] data,uint256 deadline)"
+    "RegisterName(string label,address owner,address resolver,bytes[] data,uint256 nonce,uint256 deadline)"
     [ VBytes $ encodeUtf8 rLabel,
       VAddress rOwner,
       VAddress rResolver,
       VArray $ map VBytes $ recordCalls r,
+      VUint $ fromIntegral nonce,
       VUint $ fromIntegral deadline
     ]
 
 verifyRegisterIntent :: Eip712Domain -> Word64 -> RegisterIntent -> IO (Either String ())
-verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner, rSecret}, riDeadline, riSignature} = runExceptT $ do
+verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner, rSecret}, riNonce, riDeadline, riSignature} = runExceptT $ do
   unless (B.length rSecret == 32) $ throwError "secret: expected 32 bytes"
   when (now > riDeadline) $ throwError "intent expired"
-  signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riDeadline
+  signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
 registrationTuple :: Registration -> ByteString

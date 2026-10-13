@@ -40,7 +40,9 @@ walletFromCode g = maybe (fail "invalid name code") (walletFromNameCode g) . par
 
 signRegisterIntent :: TVar ChaChaDRG -> Eip712Domain -> EphemeralWallet -> Registration -> Word64 -> IO RegisterIntent
 signRegisterIntent g domain EphemeralWallet {ewKey} r deadline =
-  RegisterIntent r deadline <$> (signRecoverable g ewKey (registerIntentDigest domain r deadline) >>= either fail pure)
+  RegisterIntent r nonce deadline <$> (signRecoverable g ewKey (registerIntentDigest domain r nonce deadline) >>= either fail pure)
+  where
+    nonce = 0
 
 walletFromNameCode :: TVar ChaChaDRG -> NameCode -> IO EphemeralWallet
 walletFromNameCode g ewCode = do
