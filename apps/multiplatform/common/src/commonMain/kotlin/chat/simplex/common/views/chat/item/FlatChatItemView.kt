@@ -5,6 +5,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,12 +23,18 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
+import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 
 private val FLAT_GUTTER_WIDTH = 56.dp
 private val FLAT_HEADER_TOP_PADDING = 6.dp
 // matches the horizontal text padding in CIMarkdownText
 private val FLAT_HEADER_START_PADDING = 12.dp
 private const val FLAT_HOVER_ALPHA = 0.04f
+private const val FLAT_BAR_BORDER_ALPHA = 0.12f
+private val FLAT_BAR_BUTTON_SIZE = 30.dp
+private const val FLAT_QUICK_REACTIONS = 3
 
 fun flatItemHasHeader(item: ChatItem, older: ChatItem?): Boolean =
   item.content.hasFlatSender && (
@@ -37,7 +44,7 @@ fun flatItemHasHeader(item: ChatItem, older: ChatItem?): Boolean =
       || getItemSeparationLargeGap(item, older)
   )
 
-private val CIContent.hasFlatSender: Boolean get() = when (this) {
+val CIContent.hasFlatSender: Boolean get() = when (this) {
   is CIContent.SndMsgContent,
   is CIContent.RcvMsgContent,
   is CIContent.SndDeleted,
@@ -186,5 +193,58 @@ private fun UserImage(chatInfo: ChatInfo, size: Dp) {
     IncognitoImage(size)
   } else {
     ProfileImage(size, chatModel.currentUser.value?.image)
+  }
+}
+
+@Composable
+fun FlatHoverBar(
+  quickActions: ItemQuickActions,
+  cInfo: ChatInfo,
+  cItem: ChatItem,
+  setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
+  showReactionPicker: MutableState<Boolean>,
+  reply: () -> Unit,
+  forward: () -> Unit,
+  showMenu: MutableState<Boolean>,
+  modifier: Modifier
+) {
+  Surface(
+    modifier,
+    shape = RoundedCornerShape(DEFAULT_PADDING_HALF),
+    border = BorderStroke(1.dp, MaterialTheme.colors.onBackground.copy(alpha = FLAT_BAR_BORDER_ALPHA)),
+    elevation = 2.dp
+  ) {
+    Row(Modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
+      if (quickActions.react) {
+        availableReactions(cItem).take(FLAT_QUICK_REACTIONS).forEach { r ->
+          Box(
+            Modifier.size(FLAT_BAR_BUTTON_SIZE).clip(CircleShape).clickable { setReaction(cInfo, cItem, true, r) },
+            contentAlignment = Alignment.Center
+          ) {
+            ReactionIcon(r.text, 12.sp)
+          }
+        }
+        Box {
+          FlatBarButton(MR.images.ic_add_reaction, stringResource(MR.strings.add_reaction)) { showReactionPicker.value = true }
+          DefaultDropdownMenu(showReactionPicker) {
+            MsgReactionsMenu(cInfo, cItem, setReaction, showReactionPicker)
+          }
+        }
+      }
+      if (quickActions.reply) {
+        FlatBarButton(MR.images.ic_reply, stringResource(MR.strings.reply_verb), reply)
+      }
+      if (quickActions.forward) {
+        FlatBarButton(MR.images.ic_forward, stringResource(MR.strings.forward_chat_item), forward)
+      }
+      FlatBarButton(MR.images.ic_more_horiz, stringResource(MR.strings.more_actions)) { showMenu.value = true }
+    }
+  }
+}
+
+@Composable
+private fun FlatBarButton(icon: ImageResource, description: String, onClick: () -> Unit) {
+  IconButton(onClick, Modifier.size(FLAT_BAR_BUTTON_SIZE)) {
+    Icon(painterResource(icon), description, Modifier.size(18.dp), tint = MaterialTheme.colors.secondary)
   }
 }
