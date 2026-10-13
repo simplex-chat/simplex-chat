@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.currentUser
@@ -117,7 +118,8 @@ fun ChatItemView(
   val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
-  val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
+  val flat = LocalFlatLayout.current
+  val alignment = if (sent && !flat) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val onLinkLongClick = { _: String -> showMenu.value = true }
@@ -301,14 +303,14 @@ fun ChatItemView(
       }
     }
 
-    Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
+    Column(horizontalAlignment = if (sent && !flat) Alignment.End else Alignment.Start) {
       val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
           cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
       Box {
         Row(verticalAlignment = Alignment.CenterVertically) {
           val bubbleInteractionSource = remember { MutableInteractionSource() }
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
-        if (cItem.chatDir.sent) {
+        if (sent && !flat) {
           GoToItemButton(true, bubbleHovered)
         }
         Column(Modifier.weight(1f, fill = false)) {
@@ -331,7 +333,7 @@ fun ChatItemView(
                     hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
                   }
                   onClick()
-                }, interactionSource = bubbleInteractionSource, indication = LocalIndication.current)
+                }, interactionSource = bubbleInteractionSource, indication = if (flat) null else LocalIndication.current)
               .onRightClick { showMenu.value = true },
           ) {
             @Composable
@@ -543,7 +545,7 @@ fun ChatItemView(
                 if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
                   EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
-                  CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
+                  CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, sent && !flat, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
                 } else {
                   framedItemView()
                 }
@@ -771,7 +773,7 @@ fun ChatItemView(
             }
           }
         }
-        if (!cItem.chatDir.sent) {
+        if (!sent || flat) {
           GoToItemButton(false, bubbleHovered)
         }
         }
@@ -1216,9 +1218,11 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
 }
 
 @Composable
+fun chatItemTailEnabled(): Boolean = remember { appPreferences.chatItemTail.state }.value && !LocalFlatLayout.current
+
+@Composable
 fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boolean = false, revealed: Boolean): Modifier {
-  val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val style = shapeStyle(cItem, chatItemTail.value, tailVisible, revealed)
+  val style = shapeStyle(cItem, chatItemTailEnabled(), tailVisible, revealed)
 
   val offset = if (style is ShapeStyle.Bubble) {
     if (style.tailVisible) {
@@ -1234,8 +1238,7 @@ fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boo
 @Composable
 fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false, revealed: Boolean = false): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
-  val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val style = shapeStyle(chatItem, chatItemTail.value, tailVisible, revealed)
+  val style = shapeStyle(chatItem, chatItemTailEnabled(), tailVisible, revealed)
   val cornerRoundness = chatItemRoundness.value.coerceIn(0f, 1f)
 
   return when (style) {

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -235,15 +236,14 @@ fun FramedItemView(
     .clipChatItem(ci, tailVisible, revealed = true)
     .background(
       when {
-        transparentBackground -> Color.Transparent
+        transparentBackground || LocalFlatLayout.current -> Color.Transparent
         sent -> sentColor
         else -> receivedColor
       }
     )) {
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
-      val chatItemTail = remember { appPreferences.chatItemTail.state }
-      val style = shapeStyle(ci, chatItemTail.value, tailVisible, true)
+      val style = shapeStyle(ci, chatItemTailEnabled(), tailVisible, true)
       val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
       Column(
         Modifier
