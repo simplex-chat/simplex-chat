@@ -348,32 +348,6 @@ fun ChatItemView(
             }
 
             @Composable
-            fun MsgReactionsMenu() {
-              val rs = MsgReaction.supported.mapNotNull { r ->
-                if (null == cItem.reactions.find { it.userReacted && it.reaction.text == r.text }) {
-                  r
-                } else {
-                  null
-                }
-              }
-              if (rs.isNotEmpty()) {
-                Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
-                  rs.forEach() { r ->
-                    Box(
-                      Modifier.size(36.dp).clip(CircleShape).clickable {
-                        setReaction(cInfo, cItem, true, r)
-                        showMenu.value = false
-                      },
-                      contentAlignment = Alignment.Center
-                    ) {
-                      ReactionIcon(r.text, 12.sp)
-                    }
-                  }
-                }
-              }
-            }
-
-            @Composable
             fun DeleteItemMenu() {
               DefaultDropdownMenu(showMenu) {
                 DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -400,17 +374,14 @@ fun ChatItemView(
                   }
                 }
                 cItem.content.msgContent != null && cItem.id >= 0 && !cItem.isReport -> {
+                  val quickActions = itemQuickActions(cInfo, cItem, live)
                   DefaultDropdownMenu(showMenu) {
-                    if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
-                      MsgReactionsMenu()
+                    if (quickActions.react) {
+                      MsgReactionsMenu(cInfo, cItem, setReaction, showMenu)
                     }
-                    if (cItem.meta.itemDeleted == null && !live && !cItem.localNote && cInfo.sendMsgEnabled) {
+                    if (quickActions.reply) {
                       ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), onClick = {
-                        if (composeState.value.editing) {
-                          composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-                        } else {
-                          composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
-                        }
+                        replyToItem(composeState, cItem, useLinkPreviews)
                         showMenu.value = false
                       })
                     }
@@ -467,10 +438,7 @@ fun ChatItemView(
                         showMenu.value = false
                       })
                     }
-                    if (cItem.meta.itemDeleted == null &&
-                      (cItem.file == null || cItem.file.forwardingAllowed()) &&
-                      !cItem.isLiveDummy && !live
-                    ) {
+                    if (quickActions.forward) {
                       ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {
                         forwardItem(cInfo, cItem)
                         showMenu.value = false
@@ -818,6 +786,50 @@ fun ChatItemView(
       }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
         ChatItemReactions()
+      }
+    }
+  }
+}
+
+data class ItemQuickActions(val react: Boolean, val reply: Boolean, val forward: Boolean)
+
+fun itemQuickActions(cInfo: ChatInfo, cItem: ChatItem, live: Boolean): ItemQuickActions =
+  if (cItem.content.msgContent == null || cItem.id < 0 || cItem.isReport) {
+    ItemQuickActions(react = false, reply = false, forward = false)
+  } else {
+    ItemQuickActions(
+      react = cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction,
+      reply = cItem.meta.itemDeleted == null && !live && !cItem.localNote && cInfo.sendMsgEnabled,
+      forward = cItem.meta.itemDeleted == null && (cItem.file == null || cItem.file.forwardingAllowed()) && !cItem.isLiveDummy && !live
+    )
+  }
+
+fun availableReactions(cItem: ChatItem): List<MsgReaction> =
+  MsgReaction.supported.filter { r -> cItem.reactions.none { it.userReacted && it.reaction.text == r.text } }
+
+fun replyToItem(composeState: MutableState<ComposeState>, cItem: ChatItem, useLinkPreviews: Boolean) {
+  composeState.value = if (composeState.value.editing) {
+    ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+  } else {
+    composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+  }
+}
+
+@Composable
+fun MsgReactionsMenu(cInfo: ChatInfo, cItem: ChatItem, setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit, showMenu: MutableState<Boolean>) {
+  val rs = availableReactions(cItem)
+  if (rs.isNotEmpty()) {
+    Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
+      rs.forEach() { r ->
+        Box(
+          Modifier.size(36.dp).clip(CircleShape).clickable {
+            setReaction(cInfo, cItem, true, r)
+            showMenu.value = false
+          },
+          contentAlignment = Alignment.Center
+        ) {
+          ReactionIcon(r.text, 12.sp)
+        }
       }
     }
   }

@@ -1974,10 +1974,8 @@ fun BoxScope.ChatItemsList(
           if (it == DismissValue.DismissedToStart) {
             itemScope.launch {
               if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local && !cItem.isReport) {
-                if (composeState.value.editing) {
-                  composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-                } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-                  composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+                if (composeState.value.editing || cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                  replyToItem(composeState, cItem, useLinkPreviews)
                 }
               }
             }
