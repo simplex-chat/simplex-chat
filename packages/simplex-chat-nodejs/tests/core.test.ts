@@ -255,15 +255,16 @@ describe("Core tests", () => {
       const simplex = require("./build/Release/simplex.node");
       simplex.load(${JSON.stringify(libPath)});
       (async () => {
+        // a new database runs every migration, each committed with a disk flush that takes up to 30 ms on CI runners
+        const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
         for (let i = 0; i < 40; i++) {
-          const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
           const [ctrl] = await simplex.chat_migrate_init(path.join(dir, "simplex"), "key", "yesUp");
           await simplex.chat_send_cmd(ctrl, "/v");
           await simplex.chat_send_cmd(ctrl, "/_stop");
           const res = await simplex.chat_close_store(ctrl);
-          fs.rmSync(dir, {recursive: true, force: true});
           if (res !== "") throw new Error("close failed: " + res);
         }
+        fs.rmSync(dir, {recursive: true, force: true});
       })();
     `;
     const runChild = () => new Promise<{code: number | null, signal: NodeJS.Signals | null, stderr: string}>((resolve) => {
