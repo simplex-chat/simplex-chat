@@ -80,6 +80,7 @@ fun CIFileView(
           if (prohibited != null) {
             showProhibitedFileAlert(file, prohibited)
           } else {
+            chatModel.openWhenReceived(file, smallView)
             receiveFile(file.fileId)
           }
         }
@@ -188,16 +189,18 @@ fun CIFileView(
     val encrypted = file.fileSource.cryptoArgs != null
     SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })
   }
+  val onClick: () -> Unit = {
+    if (appPlatform.isAndroid && loadedFilePath != null) {
+      showOpenSaveMenu.value = true
+    } else {
+      fileAction()
+    }
+  }
+  if (file != null) OpenWhenReceivedEffect(file, smallView, onClick)
   Row(
     Modifier
       .combinedClickable(
-        onClick = {
-          if (appPlatform.isAndroid && loadedFilePath != null) {
-            showOpenSaveMenu.value = true
-          } else {
-            fileAction()
-          }
-        },
+        onClick = onClick,
         onLongClick = { showMenu.value = true }
       )
       .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
@@ -241,20 +244,8 @@ fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
 
 @Composable
 fun OpenWhenReceivedEffect(file: CIFile, inChatList: Boolean, open: () -> Unit) {
-  KeyChangeEffect(file.fileStatus) {
-    when (file.fileStatus) {
-      is CIFileStatus.RcvError, is CIFileStatus.RcvCancelled, is CIFileStatus.RcvAborted -> chatModel.cancelFileToOpen(file, inChatList)
-      else -> if (chatModel.receivedFileToOpen(file, inChatList)) open()
-    }
-  }
-  if (inChatList) {
-    val chatListShown = chatModel.chatListShown()
-    KeyChangeEffect(chatListShown) {
-      if (!chatListShown) chatModel.cancelFileToOpen(file, inChatList)
-    }
-  }
-  DisposableEffect(Unit) {
-    onDispose { chatModel.cancelFileToOpen(file, inChatList) }
+  KeyChangeEffect(file.loaded) {
+    if (chatModel.receivedFileToOpen(file, inChatList)) open()
   }
 }
 

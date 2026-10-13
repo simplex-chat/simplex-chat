@@ -26,7 +26,8 @@ struct CIFileView: View {
     var body: some View {
         if smallViewSize != nil {
             fileIndicator()
-            .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
+            .modifier(OpenWhenReceived(file: file, inChatList: true) { fileAction($0) })
         } else {
             // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
             let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
@@ -56,8 +57,9 @@ struct CIFileView: View {
             .padding(.bottom, 6)
             .padding(.leading, 10)
             .padding(.trailing, 12)
-            .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
             .disabled(!itemInteractive)
+            .modifier(OpenWhenReceived(file: file, inChatList: false) { fileAction($0) })
         }
     }
 
@@ -85,7 +87,7 @@ struct CIFileView: View {
         return false
     }
 
-    private func fileAction() {
+    private func fileAction(_ file: CIFile?) {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
@@ -93,6 +95,7 @@ struct CIFileView: View {
                 if let prohibited = file.fileProhibited {
                     showProhibitedFileAlert(file, prohibited)
                 } else {
+                    m.openWhenReceived(file, inChatList: smallViewSize != nil)
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
@@ -258,17 +261,9 @@ struct OpenWhenReceived: ViewModifier {
     let open: (CIFile) -> Void
 
     func body(content: Content) -> some View {
-        content
-            .onChange(of: file) { file in
-                guard let file else { return }
-                switch file.fileStatus {
-                case .rcvError, .rcvCancelled, .rcvAborted: m.cancelFileToOpen(file, inChatList: inChatList)
-                default: if m.receivedFileToOpen(file, inChatList: inChatList) { open(file) }
-                }
-            }
-            .onDisappear {
-                if let file { m.cancelFileToOpen(file, inChatList: inChatList) }
-            }
+        content.onChange(of: file) { file in
+            if let file, m.receivedFileToOpen(file, inChatList: inChatList) { open(file) }
+        }
     }
 }
 

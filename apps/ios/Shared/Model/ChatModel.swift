@@ -390,11 +390,6 @@ enum ChatListBanner {
     case getStake
 }
 
-enum FileOpenPlace: Equatable {
-    case inChat(ChatId)
-    case chatList
-}
-
 // Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
@@ -420,7 +415,11 @@ final class ChatModel: ObservableObject {
     @Published private(set) var chats: [Chat] = []
     @Published var deletedChats: Set<String> = []
     // current chat
-    @Published var chatId: String?
+    @Published var chatId: String? {
+        didSet {
+            if chatId != oldValue { fileToOpen = nil }
+        }
+    }
     @Published var chatAgentConnId: String?
     @Published var chatSubStatus: SubscriptionStatus?
     @Published var openAroundItemId: ChatItem.ID? = nil
@@ -479,34 +478,20 @@ final class ChatModel: ObservableObject {
     // another in its place; only the badge alert shows regardless. Set while rendering, so not published.
     var chatListBanner: ChatListBanner?
 
-    var fileToOpen: (fileId: Int64, place: FileOpenPlace)?
+    var fileToOpen: (fileId: Int64, inChatList: Bool)?
 
     func bannerSlotFree(for banner: ChatListBanner) -> Bool {
         chatListBanner == nil || chatListBanner == banner
     }
 
     func openWhenReceived(_ file: CIFile, inChatList: Bool) {
-        fileToOpen = fileOpenPlace(inChatList).map { (fileId: file.fileId, place: $0) }
+        fileToOpen = (fileId: file.fileId, inChatList: inChatList)
     }
 
     func receivedFileToOpen(_ file: CIFile, inChatList: Bool) -> Bool {
-        guard let f = fileToOpen, f.fileId == file.fileId, f.place == fileOpenPlace(inChatList), file.loaded else { return false }
+        guard let f = fileToOpen, f.fileId == file.fileId, f.inChatList == inChatList, file.loaded else { return false }
         fileToOpen = nil
-        return f.place != .chatList || chatListShown
-    }
-
-    func cancelFileToOpen(_ file: CIFile, inChatList: Bool) {
-        if let f = fileToOpen, f.fileId == file.fileId, (f.place == .chatList) == inChatList {
-            fileToOpen = nil
-        }
-    }
-
-    private func fileOpenPlace(_ inChatList: Bool) -> FileOpenPlace? {
-        inChatList ? FileOpenPlace.chatList : chatId.map(FileOpenPlace.inChat)
-    }
-
-    private var chatListShown: Bool {
-        chatId == nil && getTopViewController()?.presentingViewController == nil
+        return true
     }
 
     static let shared = ChatModel()

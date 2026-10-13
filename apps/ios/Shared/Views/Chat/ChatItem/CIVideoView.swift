@@ -115,8 +115,26 @@ struct CIVideoView: View {
             // ChatItem can be changed in small view on chat list screen
             setupPlayer(file)
         }
+        .modifier(OpenWhenReceived(file: chatItem.file, inChatList: smallView) { file in
+            setupPlayer(file)
+            if urlDecrypted == nil {
+                decrypt(file: file, completed: playVideo)
+            } else {
+                playVideo()
+            }
+        })
         .onDisappear {
             showFullScreenPlayer = false
+        }
+    }
+
+    private func playVideo() {
+        if smallView {
+            showFullScreenPlayer = urlDecrypted != nil
+        } else if let urlDecrypted {
+            m.stopPreviousRecPlay = urlDecrypted
+            videoPlaying = true
+            player?.play()
         }
     }
 
@@ -424,6 +442,7 @@ struct CIVideoView: View {
         if let prohibited = file.fileProhibited {
             showProhibitedFileAlert(file, prohibited)
         } else {
+            m.openWhenReceived(file, inChatList: smallView)
             Task {
                 if let user = m.currentUser {
                     await receiveFile(user, file.fileId, false, false)
