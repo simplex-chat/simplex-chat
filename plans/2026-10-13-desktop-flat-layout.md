@@ -34,7 +34,9 @@ Views read `LocalFlatLayout.current` only where the bubble look or the list chro
 
 - `ChatItemView.kt`: `chatItemTailEnabled()` = tail preference `&& !LocalFlatLayout.current`, used by `chatItemOffset`, `clipChatItem` and `FramedItemView`, so `shapeStyle` never draws a tail.
 - `ChatItemView`: alignment is start for all items, the bubble click has no indication, voice items (with or without a caption) are not mirrored, and `GoToItemButton` is always on the right.
-- `FramedItemView`: transparent background, 2dp vertical text padding, quotes with a start-edge bar (`flatQuoteBar`, RTL-aware) and a SemiBold sender, forwarded and report header rows without fill.
+- `FramedItemView`: transparent background, 2dp vertical text padding, forwarded and report header rows without fill (the report header also pads at the bottom). The outer container is a `Column`, so the meta follows only the body.
+- Replies: in the flat layout the quote block is replaced by `ciReplyLine`, one compact line above the body: reply icon, `ciReplyAvatar` (16dp scaled, every direction; `FlatUserImage` handles incognito), the sender in SemiBold capped at 160dp scaled with an ellipsis, and a one-line 13sp `secondary` snippet. Media without text shows a label; voice shows "Voice message" and the duration; chat links use their name as prefix and strip the link. A click calls `openQuotedItem` (shared with the bubble quote block); hover tints the text `onBackground` without indication; long-press or right-click opens the menu.
+- Compose: `Modifier.flatComposeField()` (onBackground 6% fill, 8dp corner, 12dp/8dp margins) on the main and "send message to connect" input rows; the top `Divider` is hidden.
 - `ChatItemsList` passes `showTimestamp = itemSeparation.timestamp && !flat`; the time moves to the row header or the hover gutter. `flatMetaVisible` drops the meta and its reserved space for received items that would show only the time; the delivery status is shown only for sent items.
 - `DeletedItemView` and `MarkedDeletedItemView`: transparent, 2dp vertical padding, 14sp text; `CIMetaView` shows no time for deleted content. `CIEventView` uses the flat text padding.
 - Reactions are pills (`flatReactionPill`) with the count always shown and 14sp emoji. `DateSeparator` renders `FlatDateSeparator`, a date pill on a divider.
@@ -46,7 +48,7 @@ The 3 remaining direct reads of `chatItemTail` in `ChatView.kt` are used only by
 
 - `CIContent.hasFlatSender` (private): exhaustive `when`, true for content with a sender (messages, deleted/moderated/blocked, calls, errors, group invitations, invalid JSON), false for events, feature/preference changes, E2EE info and the chat banner.
 - `flatItemHasHeader(item, older)`: pure function. True when the item has a sender and the older item is missing, has no sender, is from a different sender (`sameFlatSender`: same direction, same `groupMemberId` for `GroupRcv`, same `showGroupAsSender` for `GroupSnd`), is 60s or more apart by `createdAt`, or is on a different local date. `getItemSeparationLargeGap` stays private in `ChatView.kt`. The rule does not use `previousItemSeparationLargeGap`, which is false for the oldest loaded item.
-- `FlatChatItemRow`: full-width hoverable row with a `hoverBar` slot. Background: `primary` at 12% when highlighted, `onBackground` at 4% (`FLAT_SUBTLE_FILL_ALPHA`) when hovered. A 56dp gutter shows the avatar on header rows, or the time (10sp, end-aligned) on hover otherwise; a column holds the sender header and the item content. Rows with message content have a minimum height that fits the hover bar.
+- `FlatChatItemRow`: full-width hoverable row with a `hoverBar` slot. Background, drawn inside a 4dp inset with 6dp rounded corners: `primary` at 12% when highlighted, `onBackground` at 4% (`FLAT_SUBTLE_FILL_ALPHA`) when hovered. `FlatAvatarContrast` wraps the gutter and reply avatars, mixing `secondaryVariant` 15% toward `onBackground` so placeholder avatars keep contrast. A 56dp gutter shows the avatar on header rows, or the time (10sp, end-aligned) on hover otherwise; a column holds the sender header and the item content. Rows with message content have a minimum height that fits the hover bar.
 - Sender: `GroupRcv` member (role above `Member`), `ChannelRcv` and `GroupSnd` with `showGroupAsSender` the channel ("channel" label, group image, opens chat info), other `GroupSnd` the user's membership (incognito-correct), `DirectRcv` the contact, other sent and local directions the current user or "Incognito". Avatar click: member info for `GroupRcv`, chat info for `ChannelRcv`, `DirectRcv` and a post shown as the channel; none for other own messages.
 - `ChatView.kt`: `ChatItemsList` computes `flatHeader = LocalFlatLayout.current && flatItemHasHeader(item, merged.oldest().nextItem)` and passes it through `ChatViewListItem`, whose inner wrapper renders `FlatChatItemRow` around `ChatItemViewShortHand` instead of the Group/Direct branches. The selection checkbox and selection click overlay are shared; `Modifier.flatStartOffset` moves the row by the selection offset for sent and received items.
 
@@ -64,8 +66,10 @@ The private `FlatHoverBar` (in `FlatChatItemView.kt`) is a bordered `Surface` wi
 ### Rail (`views/chatlist/DesktopRail.kt`)
 
 - `DESKTOP_RAIL_WIDTH = 64.dp`, scaled by `fontSizeSqrtMultiplier`.
+- Surfaces: `flatRailColor()` darkens the theme background 7% (light) or 50% (dark); `flatListColor()` darkens it 3.5% (light) or lifts it 4.5% toward white (dark). `FlatListSurface` paints the chat-list pane and overrides `MaterialTheme.colors.background` and `secondaryVariant` (`flatContrastSecondaryVariant`) for that pane only. The chat pane keeps the theme background and wallpaper. No dividers between rail, list and chat in the flat layout; the start pane content is a remembered `movableContentOf`, so toggling the layout keeps its state.
+- Profile tiles (keyed by user id): profile image, or `firstGrapheme` of the name on a `primary` 15% tint. Corners follow `profileImageCornerRadius` and scale to 60% on hover or when active; the left marker animates to 0, 40% (hover) or 80% (active) of the tile height. The scroll area ends in a 12dp fade.
 - Users: active and non-hidden users by `activeOrder`, active-user mark, `userUnreadBadge` for others, drawn outside the avatar clip. Click on an inactive user hides `UserPicker` and calls `switchToUser`, extracted from `UserPicker.onUserClicked`; click on the active user opens `UserPicker`. `profileSwitchAllowed`, extracted from `ShareListView`, blocks switching while sharing a forward, chat link or address; switching is also blocked while users are being switched. Inactive users are disabled while chat is not running and no remote host is connected; the active user still opens the picker.
-- Lists: "All", preset tags with chats in `PresetTagKind` order (icons and labels from `presetTagLabel`, now `internal`), user tags with unread dot and `TagsDropdownMenu` on long-press or right-click, "Add list" opening `TagListEditor`. A private `toggleFilter` sets `chatModel.activeChatTagFilter`. Active items get a 40x32dp tinted background; icons scale with `fontSizeSqrtMultiplier`. List, "All", "Add list" and Settings clicks close start modals first.
+- Lists: "All", preset tags with chats in `PresetTagKind` order (icons and labels from `presetTagLabel`, now `internal`), user tags with unread dot and `TagsDropdownMenu` on long-press or right-click, "Add list" opening `TagListEditor`. A private `toggleFilter` sets `chatModel.activeChatTagFilter`. Items have a 6dp inset and an 8dp rounded click area; the active item is neutral (onBackground icon and label on a 40x32dp onBackground 10% background); icons scale with `fontSizeSqrtMultiplier`. List, "All", "Add list" and Settings clicks close start modals first.
 - Settings at the bottom, below a divider, opens `SettingsView` in `ModalManager.start`.
 - `DesktopScreenLayout` draws the rail first and shifts every start offset by the rail width. `ModalManager` adds the rail width when it expands the window for an end modal.
 - `ChatListView`: `TagsView` returns early; the toolbar shows the profile button only when `desktopNoUserNoRemote` and hides the no-user Settings menu button; the divider next to the connect-by-name row is dropped.
@@ -73,7 +77,7 @@ The private `FlatHoverBar` (in `FlatChatItemView.kt`) is a bordered `Surface` wi
 ### Compact chat list
 
 - `ChatPreviewView`: the unread/mention/muted/favorite block became the local composable `chatPreviewUnreadIndicator()`, used by both layouts. In the flat layout the view renders one row: `ChatInfoImage` at 28dp with a 12sp inactive overlay, `chatPreviewTitle()`, the indicator (badge without vertical offset), a spacer and `chatStatusImage()`. Direct and group titles use `titleStyle`/`titleWeight` (`body1`, SemiBold when unread) and the secondary color when muted without unread mentions. A `LaunchedEffect` stops a deleted chat's playing voice message. `ContactRequestView` and `ContactConnectionView` use the 28dp image.
-- `views/chatlist/ChatListNavLinkView.desktop.kt` (desktopMain): 4dp vertical padding instead of 8dp, no dividers.
+- `views/chatlist/ChatListNavLinkView.desktop.kt` (desktopMain): rows inset 6dp horizontally and 1dp vertically with 6dp rounded corners, 4dp vertical padding instead of 8dp, selected row at onBackground 10%, no dividers.
 
 ### Deviations from the approved plan
 
@@ -83,6 +87,13 @@ The private `FlatHoverBar` (in `FlatChatItemView.kt`) is a bordered `Surface` wi
 - `flatItemHasHeader` uses `hasFlatSender` and its own `sameFlatSender` instead of `mergeCategory`, message-content checks and `getItemSeparationLargeGap`.
 - Rail items have text labels under the icons instead of tooltips.
 - Chat list rows have no added hover background.
+- After the user asked for a "general Discord vibe and feel, with SimpleX features, lean design", the Slack-like quote bar (step 12) was replaced by a compact reply line, and the user approved surface tones, rounded inset highlights, rail profile tiles and a rounded compose field (flat layout only). A shaded chat pane in dark themes (step 19) was dropped in step 20 to keep the theme background and wallpaper; as a result the list is lighter than the chat in dark themes.
+
+### Known limitations
+
+- Start-pane modals, `ShareListView` and `SetDeliveryReceiptsView` use the plain theme background over the shaded list.
+- The app-bar blur underlay uses the plain theme background.
+- In dark themes the list is lighter than the chat.
 
 ### Threat model
 
@@ -109,18 +120,25 @@ Each step is one commit.
 15. `desktop: address flat layout re-review findings`: `flatStartOffset`, RTL quote bar, hover bar picker reset in `LaunchedEffect`, row min height only for message items, clickable channel avatar for own channel posts, status only for sent items, `FlatHoverBar` private, deleted-chat voice stop; more tests.
 16. `desktop: align flat selection checkbox with avatar`: `flatSelectionTopPadding`; `ChatItemBox` content gets a `BoxScope` receiver.
 17. `docs: update desktop flat layout after review`: spec, product, impact, README links, this plan.
+18. `desktop: layered surfaces, reply line and rail tiles`: rail and list shades, `FlatListSurface`, first reply line, rail profile tiles with animated corners and marker, rounded rail items, rounded inset list rows, inset row highlight, compose field.
+19. `desktop: fix dark layering and reply line in flat layout`: dark-theme shades (including a shaded chat pane), reply line moved above the body (`Column`), `openQuotedItem` and `ciReplyAvatar` for every direction, hover tint and menu on the reply line, neutral active rail item, stronger selected list row.
+20. `desktop: fix flat list surface, reply line and rail tiles`: start pane as `movableContentOf`, chat pane back to the theme background, `flatQuoteBar` removed, `FlatUserImage`, scaled reply avatar, capped sender, voice and chat-link snippets, report header padding, rail tiles keyed by user id, `firstGrapheme` and `DesktopRailTest`.
+21. `desktop: avatar contrast, rail fade and review nits`: `FlatAvatarContrast` and `flatContrastSecondaryVariant`, rail bottom fade, scaled sender cap, list row constant names; more `DesktopRailTest` cases.
+22. `docs: document lean desktop flat style`: spec (chat-view, chat-list, navigation, compose, impact), product (chat, chat-list, concepts), this plan.
 
 Tests in `common/src/commonTest/kotlin/chat/simplex/app/`:
 
 - `ItemQuickActionsTest` (11): allActionsForRegularMessage, reactDisabledWhenFeatureOff, reactDisabledAfterThreeUserReactions, replyHiddenForLocalNote, replyHiddenWhenContactCannotReceive, replyAndForwardHiddenWhenLive, noQuickActionsForReport, noQuickActionsForLiveDummy, noQuickActionsForDeletedItem, noQuickActionsForEventItem, availableReactionsExcludeUserReacted.
+- `DesktopRailTest` (6): firstGraphemeOfPlainName, firstGraphemeKeepsSurrogatePairEmoji, firstGraphemeKeepsFlagEmoji, firstGraphemeTakesOnlyFirstOfTwoFlags, firstGraphemeKeepsCombiningMarks, firstGraphemeOfEmptyName.
 - `FlatChatItemViewTest` (20): headerShownForOldestItem, headerHiddenForSameSenderWithinMinute, headerShownAfterMinuteGap, headerShownForDifferentGroupMember, headerShownWhenDirectionChanges, headerShownAfterEventItem, headerShownOnDateChangeWithinMinute, headerShownWhenChannelPostFollowsMemberMessage, headerShownWhenOwnerSwitchesBetweenChannelAndOwnName, headerHiddenAfterDeletedMessageFromSameSender, headerGroupsLocalNotes, noHeaderForEventItem, hoverBarShownForHoveredMessage, hoverBarHiddenWhenRowNotHovered, hoverBarHiddenInSelectionMode, hoverBarHiddenForEventAndLiveDummyItems, hoverBarStaysOpenForReactionPickerUntilReactionsUnavailable, metaHiddenForPlainReceivedMessage, metaShownForEditedReceivedMessage, metaShownForSentMessage.
 
 ## Verification
 
-- Read-only code reviews (initial review of rows, rail and docs; re-review of the fix commits; final docs and code check) and four headless screenshot renders (`ImageComposeScene` with real composables, not the running app) reviewed against Slack; their findings are addressed in steps 11 to 17.
+- Read-only code reviews (initial review of rows, rail and docs; re-review of the fix commits; final docs and code check) and four headless screenshot renders (`ImageComposeScene` with real composables, not the running app) reviewed against Slack; their findings are addressed in steps 11 to 17. For the lean Discord-style pass (steps 18 to 21) the user approved the surface tones, rounded inset highlights, compact reply line, rail profile tiles and rounded compose field; steps 19 to 21 address two read-only code reviews and four further headless screenshot renders in light, dark, black and SimpleX themes (with and without the default wallpaper), reviewed against the lean Discord-like goal.
 - Deliberate choices kept after review:
   - The hover bar stays inside the row rather than overlapping the row above, because the bar hides as soon as the pointer leaves the row; rows with message content get a minimum height so the bar fits.
   - Sent messages keep their delivery status ticks, which Slack does not show.
+  - The chat pane keeps the theme background and wallpaper, so in dark themes the list is lighter than the chat.
 
 ## Affected product and spec documents
 
@@ -131,7 +149,8 @@ Tests in `common/src/commonTest/kotlin/chat/simplex/app/`:
 - `apps/multiplatform/product/concepts.md`: PC32 Desktop Flat Layout.
 - `apps/multiplatform/spec/client/chat-view.md`: flat adjustments in ChatItemView (item views, quotes, meta, reactions, date separators), quick action helpers in Context Menu Actions, section 10 Flat Layout (header rule, sender, row background, hover bar, selection), `[REC]` thread side panel.
 - `apps/multiplatform/spec/client/chat-list.md`: compact row, nav link layout, `presetTagLabel`, `switchToUser`, `profileSwitchAllowed`, section 11 Desktop Rail.
-- `apps/multiplatform/spec/client/navigation.md`: `DesktopScreen` flat layout flag, rail column and offsets.
+- `apps/multiplatform/spec/client/navigation.md`: `DesktopScreen` flat layout flag, rail column and offsets, flat surfaces, dividers, `movableContentOf`, known limitations.
+- `apps/multiplatform/spec/client/compose.md`: flat compose field.
 - `apps/multiplatform/spec/state.md`: `desktopFlatLayout` preference.
 - `apps/multiplatform/spec/impact.md`: PC32, new files, changed rows (including item, meta, event, deleted, contact request/connection and share list views).
 - `apps/multiplatform/spec/README.md`: document index descriptions, concept count.

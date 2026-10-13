@@ -127,23 +127,25 @@ Rail (`DesktopRail`), top to bottom:
 
 | Element | Behavior |
 |---|---|
-| User avatars | Active and non-hidden users, most recently active first; the active user is marked on the left edge, others show an unread badge. Click another user to switch to it (closes `UserPicker` if open); click the active user to open `UserPicker` (address, preferences, remote hosts, other actions) |
+| User tiles | Active and non-hidden users, most recently active first. Each tile shows the profile image, or the first character of the name on a light primary tint. Tile corners follow the profile image corner setting and become squarer on hover and for the active user. A marker on the left edge grows on hover and is tallest for the active user. Other users show an unread badge. Click another user to switch to it (closes `UserPicker` if open); click the active user to open `UserPicker` (address, preferences, remote hosts, other actions) |
 | All | Clears the list filter; highlighted when no filter is active |
 | Preset lists | Reports, favorites, contacts, groups, channels, business, notes, each shown when it has chats; click toggles the filter |
 | User lists | Emoji or label icon with name and unread dot; click toggles the filter; long-press or right-click opens the edit/delete/reorder menu |
 | Add list | Opens `TagListEditor` |
 | Settings | Below a divider at the bottom; opens `SettingsView` |
 
-The active item has a tinted background. Clicking a list, All, Add list or Settings closes any open start-panel screen first.
+Items have rounded click areas. The active list item is neutral: a light grey background with full-contrast icon and label. The scrollable area fades out at the bottom. Clicking a list, All, Add list or Settings closes any open start-panel screen first.
 
-Profile switching from the rail is blocked while forwarding messages, sharing a chat link or the user address, and while a switch is in progress. Switching to another user is also blocked while chat is stopped, unless connected to a remote host; the active user's avatar still opens `UserPicker`. With no users, the rail shows only Settings.
+Profile switching from the rail is blocked while forwarding messages, sharing a chat link or the user address, and while a switch is in progress. Switching to another user is also blocked while chat is stopped, unless connected to a remote host; the active user's tile still opens `UserPicker`. With no users, the rail shows only Settings.
+
+Surfaces: the rail and the chat list have their own shades, with no dividers between rail, list and chat. In light themes both are slightly darker than the chat; in dark themes the rail is darker and the list slightly lighter than the chat, so the chat keeps the theme background and wallpaper. Known limitations: start-panel screens (settings and others), the share list and the delivery receipts prompt use the plain theme background over the shaded list, and so does the blur under the app bar.
 
 Chat list changes:
 - The tag filter row (`TagsView`) is hidden and the rail replaces it. The toolbar user avatar button is hidden unless there is no active user and no remote host. With no users while a remote host is connected, the toolbar Settings menu button is hidden too (the rail has Settings).
 - Chat rows are a single line: 28dp avatar (with the inactive icon for inactive contacts and groups), chat name, unread or mention badge (or muted/favorite icon), and status icon. Last message, draft and timestamp are not shown.
 - The chat name is SemiBold when the chat has unread messages and secondary-colored when the chat is muted with no unread mentions.
 - Contact requests and pending connections use the same 28dp image.
-- Rows have smaller vertical padding and no dividers.
+- Rows have smaller vertical padding and no dividers, are slightly inset with rounded corners, and the selected chat has a light grey background.
 
 ### Empty States
 

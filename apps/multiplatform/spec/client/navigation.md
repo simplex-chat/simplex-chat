@@ -1,6 +1,6 @@
 # Navigation Specification
 
-Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (505 lines)
+Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (513 lines)
 
 ---
 
@@ -194,16 +194,23 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>)
 | **Center** | `min = DEFAULT_MIN_CENTER_MODAL_WIDTH`, `weight = 1f` (flexible) | `CenterPartOfScreen` (ChatView with `ModalManager.center` over it; without a chat: `ModalManager.center` or "no selected chat" placeholder) |
 | **Right** | `max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier` (flexible, 0 when empty) | `ModalManager.end` (ChatInfoView, GroupChatInfoView, ChatItemInfoView, etc.) |
 
-In the flat layout the rail is added before the left column and every start offset (left column, left overlay, center/right row, dismiss overlay, left divider) is shifted by the rail width; the left column keeps its width because the desktop `UserPicker` layout assumes it. When an end modal opens, `ModalManager` expands the window by the rail width as well.
+In the flat layout the rail is added before the left column and every start offset (left column, left overlay, center/right row, dismiss overlay) is shifted by the rail width; the left column keeps its width because the desktop `UserPicker` layout assumes it. When an end modal opens, `ModalManager` expands the window by the rail width as well.
+
+The left column content (`StartPartOfScreen` and `UserPicker`) is a remembered `movableContentOf`, so toggling the flat layout keeps its state. In the flat layout it is wrapped in `FlatListSurface`, which paints the list shade and overrides the theme background for that pane only (see [chat-list.md](chat-list.md#DesktopRail)); the rail is painted with `flatRailColor()`, and the chat pane keeps the theme background and wallpaper.
+
+Known limitations of the flat surfaces:
+- start-pane modals (`ModalManager.start`), `ShareListView` and `SetDeliveryReceiptsView` use the plain theme background over the shaded list;
+- the app-bar blur underlay uses the plain theme background;
+- in dark themes the list is lighter than the chat, which keeps wallpapers untouched.
 
 ### Column Separators
 
-- `VerticalDivider` between left and center columns (always visible).
+- `VerticalDivider` between left and center columns (always visible in the regular layout; not drawn in the flat layout, where the rail, list and chat are separated by their shades).
 - `VerticalDivider` between center and right columns (visible when `ModalManager.end.hasModalsOpen()`).
 
 ### Click-to-Dismiss Overlay
 
-When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~467). Clicking it closes start modals and hides the UserPicker.
+When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~473). Clicking it closes start modals and hides the UserPicker.
 
 ### CenterPartOfScreen
 

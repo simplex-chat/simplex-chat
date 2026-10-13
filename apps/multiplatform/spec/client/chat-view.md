@@ -185,12 +185,14 @@ When `LocalFlatLayout.current` is true, `ChatItemView` and the item views it cal
 - Items align to the start regardless of direction, `GoToItemButton` is always on the right, and the bubble click has no indication (the row draws the hover background).
 - Voice items, with or without a caption, are not mirrored for sent messages.
 - [`chatItemTailEnabled()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L1225) returns false, so `shapeStyle` never draws a tail.
-- `FramedItemView` has a transparent background and 2dp vertical text padding (`FLAT_TEXT_VERTICAL_PADDING`). Quotes are drawn with `flatQuoteBar` (a thin bar on the start edge, RTL-aware) instead of a filled box, with the quoted sender in SemiBold. The forwarded and report header rows have no fill and 2dp vertical padding.
+- `FramedItemView` has a transparent background and 2dp vertical text padding (`FLAT_TEXT_VERTICAL_PADDING`). The forwarded and report header rows have no fill and 2dp vertical padding; the report header also pads at the bottom. Its outer container is a `Column`, so in the flat layout the reply line sits above the body and the meta follows only the body.
+- Replies: the quote block is replaced by [`ciReplyLine`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L256-L293), one line above the body: a reply icon, [`ciReplyAvatar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L241-L253) (16dp scaled; member, contact, channel or own avatar, with `FlatUserImage` handling incognito), the quoted sender in SemiBold capped at 160dp (scaled) with an ellipsis, and a one-line 13sp snippet in `secondary`. Media without text shows a label (image, video, file); voice shows "Voice message" with the duration; chat links use the link name as prefix and strip the link. A click calls [`openQuotedItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L227-L238) (shared with the bubble quote block) to scroll to the quoted item; hover tints the text `onBackground` without indication; long-press or right-click opens the item menu.
 - `ChatItemsList` passes `showTimestamp = false`. When `flatMetaVisible()` is false (a received item whose meta would show only the time), `FramedItemView` and `CIMarkdownText` omit the meta and the space reserved for it; otherwise the meta shows its icons, and the delivery status only for sent items.
 - `DeletedItemView` and `MarkedDeletedItemView` are transparent, with 2dp vertical padding and 14sp text (`FLAT_DELETED_FONT_SIZE`). `CIMetaView` returns early for deleted content when the timestamp is hidden.
 - `CIEventView` uses the flat text padding (12dp start, 2dp vertical).
 - `ChatItemReactions` renders pills (`flatReactionPill`, tinted and bordered in primary when the user reacted), always shows the count, uses 14sp emoji, and aligns with the message text.
 - `DateSeparator` renders `FlatDateSeparator`: the date in a pill on a full-width divider.
+- `ComposeView` hides its top `Divider`, and the main input row and the "send message to connect" row use `Modifier.flatComposeField()`: a rounded field (8dp corner, `onBackground` at 6%) with 12dp horizontal and 8dp vertical margins.
 
 Group invitations (`CIGroupInvitationView`) and error items (`IntegrityErrorItemView`, `CIRcvDecryptionError`) keep their rounded coloured card.
 
@@ -392,25 +394,28 @@ The `RelayStatusIndicator` composable in `AddChannelView.kt` renders `RsRejected
 
 **Location:** [`item/FlatChatItemView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt)
 
-Experimental Slack/Discord-like rendering of the message list: full-width rows, avatar and sender name once per group of messages, and no bubbles for text, media and deleted items (see section 4 for the item-level changes). Enabled by `LocalFlatLayout` (provided by `DesktopScreen`, see [navigation.md](navigation.md#DesktopScreen)), so it applies only on desktop with developer tools and the `desktopFlatLayout` preference on. It covers every chat shown in the center and end columns, including reports and member support chats. The Appearance message-shape preview provides `LocalFlatLayout = false`, so bubble settings stay previewable.
+Experimental Slack/Discord-like rendering of the message list: full-width rows, avatar and sender name once per group of messages, and no bubbles for text, media and deleted items (see section 4 for the item-level changes). Enabled by `LocalFlatLayout` (provided by `DesktopScreen`, see [navigation.md](navigation.md#DesktopScreen)), so it applies only on desktop with developer tools and the `desktopFlatLayout` preference on. It covers every chat shown in the center and end columns, including reports and member support chats. The Appearance message-shape preview provides `LocalFlatLayout = false`, so bubble settings stay previewable. The chat pane keeps the theme background and wallpaper; only the rail and the chat list are shaded (see [chat-list.md](chat-list.md#DesktopRail)).
 
 ### Functions
 
 | Function | Purpose |
 |---|---|
-| [`flatItemHasHeader(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L66-L73) | Whether a row shows the sender header. `older` is the next older item in the list |
-| [`sameFlatSender(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L75-L86) | Private; same sender for header grouping |
-| [`flatHoverBarVisible(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L90-L91) | Internal; hover bar visibility rule |
-| [`CIContent.hasFlatSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L93-L127) | Private. True for content that has a sender (messages, deleted/moderated/blocked, calls, errors, group invitations, invalid JSON); false for events, feature and preference changes, E2EE info and the chat banner |
-| [`FlatChatItemRow(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L131-L180) | Full-width hoverable row: a 56dp gutter (scaled by `fontSizeSqrtMultiplier`) with the avatar on header rows or, on hover, the time (10sp, end-aligned) on other rows; then a column with the header and the item content; then the `hoverBar` slot |
-| [`FlatHoverBarSlot(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L183-L215) | Hover bar slot content: holds the reaction picker state, evaluates `itemQuickActions` and `flatHoverBarVisible`, renders the private `FlatHoverBar` |
-| [`FlatHoverBar(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L304-L347) | Private; bordered action bar |
-| [`flatMetaVisible(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L357-L361) | False when the meta would show only the time (status counted only for sent items) |
-| [`Modifier.flatStartOffset(offset)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L363-L367) | Shifts the row by the selection offset and narrows it by the same amount |
-| [`flatSelectionTopPadding(showHeader)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L410-L412) | Top padding that aligns the selection checkbox with the avatar on header rows and with the first text line otherwise |
-| [`Modifier.flatQuoteBar()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L370-L378) | Quote bar on the start edge |
-| [`Modifier.flatReactionPill(userReacted)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L381-L385) | Reaction pill background and border |
-| [`FlatDateSeparator(text)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L388-L403) | Date pill on a divider |
+| [`flatItemHasHeader(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L69-L76) | Whether a row shows the sender header. `older` is the next older item in the list |
+| [`sameFlatSender(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L78-L89) | Private; same sender for header grouping |
+| [`flatHoverBarVisible(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L93-L94) | Internal; hover bar visibility rule |
+| [`CIContent.hasFlatSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L96-L130) | Private. True for content that has a sender (messages, deleted/moderated/blocked, calls, errors, group invitations, invalid JSON); false for events, feature and preference changes, E2EE info and the chat banner |
+| [`FlatChatItemRow(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L134-L185) | Full-width hoverable row, inset 4dp with 6dp rounded corners: a 56dp gutter (scaled by `fontSizeSqrtMultiplier`) with the avatar (inside `FlatAvatarContrast`) on header rows or, on hover, the time (10sp, end-aligned) on other rows; then a column with the header and the item content; then the `hoverBar` slot |
+| [`FlatHoverBarSlot(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L188-L220) | Hover bar slot content: holds the reaction picker state, evaluates `itemQuickActions` and `flatHoverBarVisible`, renders the private `FlatHoverBar` |
+| [`flatContrastSecondaryVariant(colors)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L222) | `secondaryVariant` mixed 15% toward `onBackground`, so placeholder avatars keep contrast on shaded surfaces and light wallpapers |
+| [`FlatAvatarContrast { }`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L225-L228) | Applies `flatContrastSecondaryVariant` to its content (gutter and reply avatars) |
+| [`FlatUserImage(chatInfo, size)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L308-L314) | Own avatar, or `IncognitoImage` in an incognito chat |
+| [`FlatHoverBar(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L317-L360) | Private; bordered action bar |
+| [`flatMetaVisible(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L370-L374) | False when the meta would show only the time (status counted only for sent items) |
+| [`Modifier.flatStartOffset(offset)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L376-L380) | Shifts the row by the selection offset and narrows it by the same amount |
+| [`Modifier.flatReactionPill(userReacted)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L383-L387) | Reaction pill background and border |
+| [`FlatDateSeparator(text)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L390-L405) | Date pill on a divider |
+| [`flatSelectionTopPadding(showHeader)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L412-L414) | Top padding that aligns the selection checkbox with the avatar on header rows and with the first text line otherwise |
+| [`Modifier.flatComposeField()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L420-L424) | Rounded compose field in the flat layout; no-op otherwise |
 
 ### Header Rule
 
@@ -438,6 +443,8 @@ Experimental Slack/Discord-like rendering of the message list: full-width rows, 
 The header shows the name in SemiBold, the role, and `cItem.timestampText`.
 
 ### Row Background
+
+The background is drawn inside a 4dp horizontal inset with 6dp rounded corners.
 
 | State | Background |
 |---|---|

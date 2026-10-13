@@ -229,7 +229,7 @@ Routes each chat to the appropriate click action and context menu based on `chat
 
 On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) receives a highlight background. `nextChatSelected` state is used to suppress the bottom divider when the next chat in the list is selected.
 
-In the desktop flat layout, [`ChatListNavLinkLayout`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.desktop.kt#L29-L69) uses 4dp vertical padding instead of 8dp and draws no dividers.
+In the desktop flat layout, [`ChatListNavLinkLayout`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.desktop.kt#L37-L77) insets each row by 6dp horizontally and 1dp vertically and clips it to 6dp rounded corners, uses 4dp vertical padding instead of 8dp, draws the selected row at `onBackground` 10% (5% in the regular layout), and draws no dividers.
 
 ---
 
@@ -385,20 +385,30 @@ Tapping the card runs `openGetStake()`, which opens `GetStakeView(showFirstImage
 
 ## 11. Desktop Rail
 
-**Location:** [`DesktopRail.kt#L44`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L44)
+**Location:** [`DesktopRail.kt#L89`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L89)
 
 ```kotlin
 fun DesktopRail(userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit)
 ```
 
-Vertical column at the far left of `DesktopScreen` in the desktop flat layout (see [navigation.md](navigation.md#DesktopScreen)). Width [`DESKTOP_RAIL_WIDTH`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L32) (64dp) scaled by `fontSizeSqrtMultiplier`, with a light `onBackground` tint and a `VerticalDivider` on the right.
+Vertical column at the far left of `DesktopScreen` in the desktop flat layout (see [navigation.md](navigation.md#DesktopScreen)). Width [`DESKTOP_RAIL_WIDTH`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L40) (64dp) scaled by `fontSizeSqrtMultiplier`, painted with `flatRailColor()`, with no divider on its right. The scrollable users and tags area ends in a 12dp fade to the rail color; Settings sits below a divider at the bottom.
+
+### Surfaces
+
+| Function | Behavior |
+|---|---|
+| [`flatRailColor()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L65-L66) | Theme background darkened toward black: 7% in light themes, 50% in dark themes |
+| [`flatListColor()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L69-L71) | Light themes: background darkened 3.5%. Dark themes: background lifted 4.5% toward white, because darkening a near-black background is invisible |
+| [`FlatListSurface { }`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L74-L85) | Paints the chat-list pane with `flatListColor()` and overrides `MaterialTheme.colors.background` (to the list color) and `secondaryVariant` (to `flatContrastSecondaryVariant`, for placeholder avatar contrast) for its content only |
+
+The chat pane keeps the theme background and wallpaper. In dark themes the list is therefore lighter than the chat.
 
 ### Content
 
 | Part | Function | Behavior |
 |---|---|---|
-| Users | [`RailUsers`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L84-L127) | Avatars of the active and non-hidden users, sorted by `activeOrder` descending. The active user has a mark on the left edge. Inactive users show `userUnreadBadge`, drawn outside the avatar clip. Clicking an inactive user hides `UserPicker` if visible and calls `switchToUser`; clicking the active user closes start modals and sets `userPickerState` to `VISIBLE`. All avatars are disabled while `profileSwitchAllowed(chatModel.sharedContent)` is false or users are being switched; inactive avatars are also disabled while chat is not running and not connected to a remote host |
-| Tags | [`RailTags`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L130-L171) | "All" (clears `activeChatTagFilter`), preset tags with a non-zero count in `PresetTagKind` order, user tags (emoji or label icon, unread dot, long-press or right-click opens `TagsDropdownMenu`), and "Add list" opening `TagListEditor` in `ModalManager.start` |
-| Settings | [`RailContent`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L57-L81) | Bottom item below a divider, opening `SettingsView` in `ModalManager.start` as a card screen |
+| Users | [`RailUsers`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L130-L186) | Profile tiles of the active and non-hidden users, sorted by `activeOrder` descending and keyed by user id. Each tile ([`RailProfileTile`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L189-L199)) shows the profile image, or the [`firstGrapheme`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L203-L214) of the display name, uppercased, on a `primary` 15% tint. Tile corners follow the user's `profileImageCornerRadius` preference (capped at a circle) and animate to 60% of it on hover or when active. A `primary` marker on the left edge animates to 0, 40% of the tile height on hover, or 80% when active. Inactive users show `userUnreadBadge`, drawn outside the tile clip. Clicking an inactive user hides `UserPicker` if visible and calls `switchToUser`; clicking the active user closes start modals and sets `userPickerState` to `VISIBLE`. All tiles are disabled while `profileSwitchAllowed(chatModel.sharedContent)` is false or users are being switched; inactive tiles are also disabled while chat is not running and not connected to a remote host |
+| Tags | [`RailTags`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L217-L258) | "All" (clears `activeChatTagFilter`), preset tags with a non-zero count in `PresetTagKind` order, user tags (emoji or label icon, unread dot, long-press or right-click opens `TagsDropdownMenu`), and "Add list" opening `TagListEditor` in `ModalManager.start` |
+| Settings | [`DesktopRail`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L89-L127) | Bottom item below a divider, opening `SettingsView` in `ModalManager.start` as a card screen |
 
-Users and tags are shown only when `chatModel.users` is not empty. Each item is a [`RailItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L179-L224): icon (scaled by `fontSizeSqrtMultiplier`) or emoji above a one-line label, primary color when active, with a 40x32dp (scaled) `primary` tinted background behind the icon when active. Clicking a preset or user tag toggles it through the private [`toggleFilter`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L173-L176), which sets `chatModel.activeChatTagFilter` to the tag or back to `null`, as `TagsView` does. "All", tags, "Add list", Settings and the active user avatar call `ModalManager.start.closeModals()` first, because the rail stays clickable while a start-pane modal is open.
+Users and tags are shown only when `chatModel.users` is not empty. Each item is a [`RailItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L266-L313): icon (scaled by `fontSizeSqrtMultiplier`) or emoji above a one-line label, in a click area inset 6dp with 8dp rounded corners. The active item is neutral: `onBackground` icon and label on a 40x32dp (scaled) `onBackground` 10% background; inactive items use `secondary`. Clicking a preset or user tag toggles it through the private [`toggleFilter`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L260-L263), which sets `chatModel.activeChatTagFilter` to the tag or back to `null`, as `TagsView` does. "All", tags, "Add list", Settings and the active user tile call `ModalManager.start.closeModals()` first, because the rail stays clickable while a start-pane modal is open.

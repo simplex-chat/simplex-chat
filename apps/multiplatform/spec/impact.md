@@ -98,7 +98,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chatlist/ChatPreviewView.kt` | PC1, PC2, PC3, PC11, PC32 | Medium | Chat row preview rendering; compact row in flat layout |
 | `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
 | `views/chatlist/UserPicker.kt` | PC19, PC21, PC32 | Medium | Multi-profile switcher overlay; `switchToUser` shared with the rail |
-| `views/chatlist/DesktopRail.kt` | PC19, PC28, PC32 | Medium | Desktop flat layout rail: user switching, tag filters, settings |
+| `views/chatlist/DesktopRail.kt` | PC19, PC28, PC32 | Medium | Desktop flat layout rail: user switching, tag filters, settings; rail and list surfaces (`FlatListSurface`); `firstGrapheme` tested by `commonTest/.../DesktopRailTest.kt` |
 | `views/chatlist/ShareListView.kt` | PC10, PC32 | Low | Share target list; `profileSwitchAllowed` shared with the rail |
 | `views/chatlist/ShareListNavLinkView.kt` | PC10 | Low | Share target navigation |
 | `views/chatlist/ChatHelpView.kt` | PC1 | Low | Empty-state help content |
@@ -111,7 +111,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | `views/chat/ChatView.kt` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC32 | High | Core conversation UI — most messaging features |
-| `views/chat/ComposeView.kt` | PC4, PC6, PC9, PC10, PC11 | High | Message composition — send path for all messages |
+| `views/chat/ComposeView.kt` | PC4, PC6, PC9, PC10, PC11, PC32 | High | Message composition — send path for all messages |
 | `views/chat/SendMsgView.kt` | PC4, PC9 | Medium | Send button and voice record toggle |
 | `views/chat/ComposeVoiceView.kt` | PC9 | Medium | Voice message recording UI |
 | `views/chat/ComposeFileView.kt` | PC10 | Low | File attachment preview in compose area |
