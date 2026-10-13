@@ -27,7 +27,6 @@ struct CIFileView: View {
         if smallViewSize != nil {
             fileIndicator()
             .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
-            .modifier(OpenWhenReceived(file: file, inChatList: true) { fileAction($0) })
         } else {
             // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
             let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
@@ -59,7 +58,6 @@ struct CIFileView: View {
             .padding(.trailing, 12)
             .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
             .disabled(!itemInteractive)
-            .modifier(OpenWhenReceived(file: file, inChatList: false) { fileAction($0) })
         }
     }
 
@@ -95,7 +93,7 @@ struct CIFileView: View {
                 if let prohibited = file.fileProhibited {
                     showProhibitedFileAlert(file, prohibited)
                 } else {
-                    m.openWhenReceived(file, inChatList: smallViewSize != nil)
+                    m.openWhenReceived(file) { fileAction($0) }
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
@@ -252,19 +250,6 @@ func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
         NSLocalizedString("Large file!", comment: "file alert title"),
         message: largeFileMessage(file.fileSize, badgeIssue: badgeIssue)
     )
-}
-
-struct OpenWhenReceived: ViewModifier {
-    @EnvironmentObject var m: ChatModel
-    let file: CIFile?
-    let inChatList: Bool
-    let open: (CIFile) -> Void
-
-    func body(content: Content) -> some View {
-        content.onChange(of: file) { file in
-            if let file, m.receivedFileToOpen(file, inChatList: inChatList) { open(file) }
-        }
-    }
 }
 
 func saveCryptoFile(_ fileSource: CryptoFile) {

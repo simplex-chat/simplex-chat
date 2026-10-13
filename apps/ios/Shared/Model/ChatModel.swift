@@ -415,11 +415,7 @@ final class ChatModel: ObservableObject {
     @Published private(set) var chats: [Chat] = []
     @Published var deletedChats: Set<String> = []
     // current chat
-    @Published var chatId: String? {
-        didSet {
-            if chatId != oldValue { fileToOpen = nil }
-        }
-    }
+    @Published var chatId: String?
     @Published var chatAgentConnId: String?
     @Published var chatSubStatus: SubscriptionStatus?
     @Published var openAroundItemId: ChatItem.ID? = nil
@@ -478,20 +474,20 @@ final class ChatModel: ObservableObject {
     // another in its place; only the badge alert shows regardless. Set while rendering, so not published.
     var chatListBanner: ChatListBanner?
 
-    var fileToOpen: (fileId: Int64, inChatList: Bool)?
+    var fileToOpen: (fileId: Int64, chatId: String?, open: (CIFile) -> Void)?
 
     func bannerSlotFree(for banner: ChatListBanner) -> Bool {
         chatListBanner == nil || chatListBanner == banner
     }
 
-    func openWhenReceived(_ file: CIFile, inChatList: Bool) {
-        fileToOpen = (fileId: file.fileId, inChatList: inChatList)
+    func openWhenReceived(_ file: CIFile, open: @escaping (CIFile) -> Void) {
+        fileToOpen = (fileId: file.fileId, chatId: chatId, open: open)
     }
 
-    func receivedFileToOpen(_ file: CIFile, inChatList: Bool) -> Bool {
-        guard let f = fileToOpen, f.fileId == file.fileId, f.inChatList == inChatList, file.loaded else { return false }
+    func openReceivedFile(_ file: CIFile) {
+        guard let f = fileToOpen, f.fileId == file.fileId else { return }
         fileToOpen = nil
-        return true
+        if f.chatId == chatId { f.open(file) }
     }
 
     static let shared = ChatModel()

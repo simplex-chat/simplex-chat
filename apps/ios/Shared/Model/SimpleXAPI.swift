@@ -2873,6 +2873,9 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await chatItemSimpleUpdate(user, aChatItem)
     case let .rcvFileComplete(user, aChatItem):
         await chatItemSimpleUpdate(user, aChatItem)
+        if active(user), let file = aChatItem.chatItem.file {
+            await MainActor.run { m.openReceivedFile(file) }
+        }
     case let .rcvFileSndCancelled(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
         Task { cleanupFile(aChatItem) }
