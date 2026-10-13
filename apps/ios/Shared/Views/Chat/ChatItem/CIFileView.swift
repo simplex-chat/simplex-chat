@@ -259,7 +259,7 @@ struct OpenWhenReceived: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: file?.fileStatus) { _ in
+            .onChange(of: file) { file in
                 guard let file else { return }
                 switch file.fileStatus {
                 case .rcvError, .rcvCancelled, .rcvAborted: m.cancelFileToOpen(file, inChatList: inChatList)
