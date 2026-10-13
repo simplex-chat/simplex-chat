@@ -1286,11 +1286,12 @@ Network usage: interactive.
 
 ### apiUpdateChatItem()
 
-> **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`, `liveMessage`): `Promise`\<`ChatItem`\>
+> **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`, `liveMessage?`): `Promise`\<`ChatItem`\>
 
-Defined in: [src/api.ts:471](../src/api.ts#L471)
+Defined in: [src/api.ts:483](../src/api.ts#L483)
 
 Update message.
+A live message stays live with `liveMessage = true` and is finalized with `liveMessage = false`.
 Network usage: background.
 
 #### Parameters
@@ -1311,9 +1312,9 @@ Network usage: background.
 
 `MsgContent`
 
-##### liveMessage
+##### liveMessage?
 
-`false`
+`boolean` = `false`
 
 #### Returns
 
