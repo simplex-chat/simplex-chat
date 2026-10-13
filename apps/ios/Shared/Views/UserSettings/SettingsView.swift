@@ -49,6 +49,7 @@ let DEFAULT_SHOULD_IMPORT_APP_SETTINGS = "shouldImportAppSettings"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_ENCRYPTION_STARTED = "encryptionStarted"
 let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
+let DEFAULT_SHOULD_DELETE_DATABASE_BACKUPS = "shouldDeleteDatabaseBackups"
 let DEFAULT_ACCENT_COLOR_RED = "accentColorRed" // deprecated, only used for migration
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for migration
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
@@ -58,6 +59,8 @@ let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
 let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
+let DEFAULT_SUPPORTER_BANNER_SHOWN = "supporterBannerShown"
+let DEFAULT_SUPPORTER_BANNER_TAPPED = "supporterBannerTapped"
 let DEFAULT_GET_STAKE_BANNER_TAPPED = "getStakeBannerTapped"
 let DEFAULT_GET_STAKE_BANNER_DISMISSED = "getStakeBannerDismissed"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
@@ -121,6 +124,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_CHAT_ITEM_TAIL: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
+    DEFAULT_SUPPORTER_BANNER_SHOWN: false,
+    DEFAULT_SUPPORTER_BANNER_TAPPED: false,
     DEFAULT_GET_STAKE_BANNER_TAPPED: false,
     DEFAULT_GET_STAKE_BANNER_DISMISSED: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
@@ -154,6 +159,8 @@ let hintDefaults = [
     DEFAULT_LA_NOTICE_SHOWN,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN,
+    DEFAULT_SUPPORTER_BANNER_SHOWN,
+    DEFAULT_SUPPORTER_BANNER_TAPPED,
     DEFAULT_GET_STAKE_BANNER_TAPPED,
     DEFAULT_GET_STAKE_BANNER_DISMISSED,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
@@ -200,6 +207,8 @@ let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey
 let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED)
 
 let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED_AT)
+
+let shouldDeleteDatabaseBackupsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOULD_DELETE_DATABASE_BACKUPS)
 
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
 
@@ -349,6 +358,22 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                NavigationLink {
+                    BadgesView()
+                        .modifier(ThemedBackground())
+                } label: {
+                    let badgeType = chatModel.currentUser?.profile.localBadge?.badge.badgeType ?? .supporter
+                    ZStack(alignment: .leading) {
+                        Image(badgeImageName(badgeType))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                        Text("Supporter perks").padding(.leading, indent)
+                    }
+                }
+            }
+
             Section(header: Text("Advanced settings").foregroundColor(theme.colors.secondary)) {
                 NavigationLink {
                     NetworkAndServers()
@@ -383,7 +408,7 @@ struct SettingsView: View {
                 NavigationLink {
                     VersionView()
                         .navigationBarTitle("App version")
-                        .modifier(ThemedBackground())
+                        .modifier(ThemedBackground(grouped: true))
                 } label: {
                     Text(verbatim: "v\(appVersion ?? "?")")
                 }

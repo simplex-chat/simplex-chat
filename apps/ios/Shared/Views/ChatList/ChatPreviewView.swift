@@ -426,11 +426,11 @@ struct ChatPreviewView: View {
             }
         case let .image(_, image):
             smallContentPreview(size: dynamicMediaSize) {
-                CIImageView(chatItem: ci, senderProfile: ciSenderProfile(ci, chat.chatInfo), preview: imageFromBase64(image), maxWidth: dynamicMediaSize, smallView: true, showFullScreenImage: $showFullscreenGallery)
+                CIImageView(chatItem: ci, preview: imageFromBase64(image), maxWidth: dynamicMediaSize, smallView: true, showFullScreenImage: $showFullscreenGallery)
             }
         case let .video(_,image, duration):
             smallContentPreview(size: dynamicMediaSize) {
-                CIVideoView(chatItem: ci, senderProfile: ciSenderProfile(ci, chat.chatInfo), preview: imageFromBase64(image), duration: duration, maxWidth: dynamicMediaSize, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
+                CIVideoView(chatItem: ci, preview: imageFromBase64(image), duration: duration, maxWidth: dynamicMediaSize, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
             }
         case let .voice(_, duration):
             smallContentPreviewVoice(size: dynamicMediaSize) {
@@ -438,7 +438,7 @@ struct ChatPreviewView: View {
             }
         case .file:
             smallContentPreviewFile(size: dynamicMediaSize) {
-                CIFileView(chat: chat, file: ci.file, meta: ci.meta, senderProfile: ciSenderProfile(ci, chat.chatInfo), smallViewSize: dynamicMediaSize)
+                CIFileView(chat: chat, file: ci.file, meta: ci.meta, smallViewSize: dynamicMediaSize)
             }
         case let .chat(_, chatLink, ownerSig):
             smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {

@@ -739,6 +739,7 @@ struct ScannerInView: View {
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
+    var placeholderBackground = Color(uiColor: .secondarySystemGroupedBackground)
 
     var body: some View {
         Group {
@@ -777,7 +778,7 @@ struct ScannerInView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                        .fill(placeholderBackground)
                 )
                 .padding(.horizontal)
                 .listRowBackground(Color.clear)
@@ -1195,8 +1196,8 @@ private func showPrepareGroupAlert(
         information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: isChannel
-            ? NSLocalizedString("Open new channel", comment: "new chat action")
-            : NSLocalizedString("Open new group", comment: "new chat action"),
+            ? NSLocalizedString("Open channel", comment: "new chat action")
+            : NSLocalizedString("Open group", comment: "new chat action"),
         secondTitle: connectOtherButton,
         onCancel: { cleanup?() },
         onConfirm: {
@@ -1259,6 +1260,20 @@ private func showOpenKnownContactAlert(
     )
 }
 
+private func memberRoleInformation(_ role: GroupMemberRole, isChannel: Bool) -> String {
+    switch role {
+    case .observer: isChannel
+        ? NSLocalizedString("You are a subscriber", comment: "new chat alert")
+        : NSLocalizedString("You are an observer", comment: "new chat alert")
+    case .moderator: NSLocalizedString("You are a moderator", comment: "new chat alert")
+    case .admin: NSLocalizedString("You are an admin", comment: "new chat alert")
+    case .owner: NSLocalizedString("You are an owner", comment: "new chat alert")
+    default: isChannel
+        ? NSLocalizedString("You are a contributor", comment: "new chat alert")
+        : NSLocalizedString("You are a member", comment: "new chat alert")
+    }
+}
+
 private func showOpenKnownGroupAlert(
     _ groupInfo: GroupInfo,
     theme: AppTheme,
@@ -1278,18 +1293,16 @@ private func showOpenKnownGroupAlert(
             ),
         theme: theme,
         subtitle: groupInfo.useRelays ? subscriberCount : nil,
+        information: groupInfo.nextConnectPrepared || groupInfo.businessChat != nil
+            ? nil
+            : memberRoleInformation(groupInfo.membership.memberRole, isChannel: groupInfo.useRelays),
+        secondaryInformation: true,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
             groupInfo.useRelays
-            ? ( groupInfo.nextConnectPrepared
-                ? NSLocalizedString("Open new channel", comment: "new chat action")
-                : NSLocalizedString("Open channel", comment: "new chat action")
-              )
+            ? NSLocalizedString("Open channel", comment: "new chat action")
             : groupInfo.businessChat == nil
-            ? ( groupInfo.nextConnectPrepared
-                ? NSLocalizedString("Open new group", comment: "new chat action")
-                : NSLocalizedString("Open group", comment: "new chat action")
-              )
+            ? NSLocalizedString("Open group", comment: "new chat action")
             : ( groupInfo.nextConnectPrepared
                 ? NSLocalizedString("Open new chat", comment: "new chat action")
                 : NSLocalizedString("Open chat", comment: "new chat action")

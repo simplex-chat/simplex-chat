@@ -1,0 +1,13 @@
+{
+  "_fixture": "GET /v1/payment_intents?created[gte]=<unix>&limit=<n>, a page of PaymentIntents created within the settle window, from Stripe's documented API schema. NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. List rows carry NO expanded latest_charge, so a succeeded row dates its settlement at read time. Rows exercise the mapping: pi_test_open still open (no signal), pi_test_a succeeded, pi_test_b canceled, and one row with no id for the skip path. The fake serves data verbatim and paginates when _paging is set.",
+  "response": {
+    "object": "list",
+    "has_more": false,
+    "data": [
+      {"id": "pi_test_open", "object": "payment_intent", "status": "requires_payment_method", "amount": 5400, "amount_received": 0, "currency": "usd"},
+      {"id": "pi_test_a", "object": "payment_intent", "status": "succeeded", "amount": 5400, "amount_received": 5400, "currency": "usd"},
+      {"id": "pi_test_b", "object": "payment_intent", "status": "canceled", "amount": 5400, "amount_received": 0, "currency": "usd"},
+      {"object": "payment_intent", "status": "requires_payment_method", "amount": 5400, "amount_received": 0, "currency": "usd"}
+    ]
+  }
+}

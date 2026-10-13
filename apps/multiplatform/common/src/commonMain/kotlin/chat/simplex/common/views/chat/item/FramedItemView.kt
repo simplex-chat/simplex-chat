@@ -23,8 +23,9 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.newchat.planAndConnect
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.ceil
@@ -101,14 +102,35 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
+  fun HeaderText(caption: String, italic: Boolean, fontSize: TextUnit = 12.sp, modifier: Modifier = Modifier) {
+    Text(
+      modifier = modifier,
+      text = buildAnnotatedString {
+        withStyle(SpanStyle(fontSize = fontSize, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
+          append(caption)
+        }
+      },
+      style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
+  }
+
+  @Composable
+  fun headerModifier(pad: Boolean, onClick: (() -> Unit)? = null): Modifier {
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
+    return Modifier
+      .background(if (sent) sentColor else receivedColor)
+      .fillMaxWidth()
+      .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+      .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
+  }
+
+  @Composable
+  fun HeaderRow(modifier: Modifier, caption: String, italic: Boolean, icon: Painter?, iconColor: Color?) {
     Row(
-      Modifier
-        .background(if (sent) sentColor else receivedColor)
-        .fillMaxWidth()
-        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp),
+      modifier,
       horizontalArrangement = Arrangement.spacedBy(4.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -120,21 +142,18 @@ fun FramedItemView(
           tint = iconColor ?: if (isInDarkTheme()) FileDark else FileLight
         )
       }
-      Text(
-        buildAnnotatedString {
-          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
-            append(caption)
-          }
-        },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
+      HeaderText(caption, italic)
     }
   }
 
   @Composable
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
+    HeaderRow(headerModifier(pad), caption, italic, icon, iconColor)
+  }
+
+  @Composable
   fun ciQuoteView(qi: CIQuote) {
+    val blurred = remember { mutableStateOf(appPreferences.privacyMediaBlurRadius.get() > 0) }
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
@@ -152,7 +171,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.image_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(68.dp).clipToBounds()
+            modifier = Modifier.size(68.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCVideo -> {
@@ -164,7 +183,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.video_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(68.dp).clipToBounds()
+            modifier = Modifier.size(68.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCFile, is MsgContent.MCVoice -> {
@@ -201,7 +220,7 @@ fun FramedItemView(
 
   @Composable
   fun ciFileView(ci: ChatItem, text: String) {
-    CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, ciSenderProfile(ci, chatInfo), receiveFile)
+    CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, receiveFile)
     if (text != "" || ci.meta.isLive) {
       CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp)
     }
@@ -293,8 +312,38 @@ fun FramedItemView(
             }
           } else {
             Header()
-            if (ci.meta.itemForwarded != null) {
-              FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+            val forwarded = ci.meta.itemForwarded
+            if (forwarded != null) {
+              val twoRowHeader = if (chatInfo.chatType == ChatType.Local) {
+                forwarded.chatTypeApiIdMsgId != null || forwarded.sourceGroupLink != null
+              } else {
+                when (forwarded) {
+                  is CIForwardedFrom.Group -> forwarded.groupType != null
+                  is CIForwardedFrom.GroupLink -> true
+                  else -> false
+                }
+              }
+              if (twoRowHeader) {
+                val caption = stringResource(if (chatInfo.chatType == ChatType.Local) MR.strings.saved_from else MR.strings.forwarded_from)
+                Column(
+                  headerModifier(pad = true, onClick = {
+                    val target = forwarded.chatTypeApiIdMsgId
+                    val link = forwarded.sourceGroupLink
+                    if (target != null) {
+                      val (chatType, apiId, itemId) = target
+                      withBGApi { openChat(secondaryChatsCtx = null, chat.remoteHostId, chatType, apiId, itemId) }
+                    } else if (link != null) {
+                      withBGApi { planAndConnect(chat.remoteHostId, link, close = null) }
+                    }
+                  }),
+                  verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  HeaderRow(Modifier, caption, true, painterResource(MR.images.ic_forward), null)
+                  HeaderText(forwarded.chatName, italic = false, fontSize = 15.sp, modifier = Modifier.offset(y = (-2).dp))
+                }
+              } else {
+                FramedItemHeader(forwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+              }
             }
           }
           if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
@@ -316,7 +365,7 @@ fun FramedItemView(
           } else {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, false, ciSenderProfile(ci, chatInfo), receiveFile)
+                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, false, receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
@@ -324,7 +373,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVideo -> {
-                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, smallView = false, senderProfile = ciSenderProfile(ci, chatInfo), receiveFile = receiveFile)
+                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, smallView = false, receiveFile = receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {

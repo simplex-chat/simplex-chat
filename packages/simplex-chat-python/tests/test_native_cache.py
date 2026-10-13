@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from simplex_chat._native import _cache_root, _resolve_libs_dir, _download
+from simplex_chat._native import _cache_root, _download, _resolve_libs_dir
 from simplex_chat._version import LIBS_VERSION
 
 
@@ -91,3 +91,13 @@ def test_atomic_install(tmp_path, monkeypatch):
     _download(target, "sqlite")
     assert (target / "libsimplex.so").read_text() == "fake-so"
     assert (target / "libHS-stub.so").read_text() == "fake-hs"
+
+
+def test_libc_on_windows_is_ucrt(monkeypatch):
+    loaded: list[str | None] = []
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr("ctypes.CDLL", lambda name: loaded.append(name))
+    from simplex_chat import _native
+
+    _native._load_libc()
+    assert loaded == ["ucrtbase"]

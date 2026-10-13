@@ -9,9 +9,13 @@ This file is generated automatically.
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
+- [AgentServiceError](#agentserviceerror)
+- [AppVersionRange](#appversionrange)
 - [AutoAccept](#autoaccept)
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
+- [BadgeRedeemError](#badgeredeemerror)
+- [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
@@ -76,6 +80,7 @@ This file is generated automatically.
 - [CreatedConnLink](#createdconnlink)
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
+- [CtrlAppInfo](#ctrlappinfo)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
@@ -84,6 +89,7 @@ This file is generated automatically.
 - [FileError](#fileerror)
 - [FileErrorType](#fileerrortype)
 - [FileInvitation](#fileinvitation)
+- [FileProhibited](#fileprohibited)
 - [FileProtocol](#fileprotocol)
 - [FileStatus](#filestatus)
 - [FileTransferMeta](#filetransfermeta)
@@ -99,7 +105,6 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
-- [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
 - [GroupLinkOwner](#grouplinkowner)
 - [GroupLinkPlan](#grouplinkplan)
@@ -114,7 +119,6 @@ This file is generated automatically.
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
 - [GroupRelay](#grouprelay)
-- [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
@@ -168,8 +172,12 @@ This file is generated automatically.
 - [RcvGroupEvent](#rcvgroupevent)
 - [RcvMsgError](#rcvmsgerror)
 - [RelayCapabilities](#relaycapabilities)
+- [RelayConnectionResult](#relayconnectionresult)
 - [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
+- [RemoteCtrlInfo](#remotectrlinfo)
+- [RemoteCtrlSessionState](#remotectrlsessionstate)
+- [RemoteCtrlStopReason](#remotectrlstopreason)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
@@ -206,6 +214,7 @@ This file is generated automatically.
 - [UserContact](#usercontact)
 - [UserContactLink](#usercontactlink)
 - [UserContactRequest](#usercontactrequest)
+- [UserContactRequestRef](#usercontactrequestref)
 - [UserInfo](#userinfo)
 - [UserProfileUpdateSummary](#userprofileupdatesummary)
 - [UserPwdHash](#userpwdhash)
@@ -362,6 +371,40 @@ INACTIVE:
 
 ---
 
+## AgentServiceError
+
+**Discriminated union type**:
+
+Rejected:
+- type: "rejected"
+- rejectReason: string
+
+Timeout:
+- type: "timeout"
+
+NoPendingRequest:
+- type: "noPendingRequest"
+
+NotDRAddress:
+- type: "notDRAddress"
+
+BadSignature:
+- type: "badSignature"
+
+
+---
+
+## AppVersionRange
+
+Remote controller app version range (min and max as version strings).
+
+**Record type**:
+- minVersion: string
+- maxVersion: string
+
+
+---
+
 ## AutoAccept
 
 **Record type**:
@@ -374,7 +417,7 @@ INACTIVE:
 
 **Record type**:
 - badgeType: [BadgeType](#badgetype)
-- badgeExpiry: UTCTime?
+- badgeExpiry: UTCTime
 - badgeExtra: string
 
 
@@ -387,6 +430,60 @@ INACTIVE:
 - presHeader: string
 - proof: string
 - badgeInfo: [BadgeInfo](#badgeinfo)
+
+
+---
+
+## BadgeRedeemError
+
+**Discriminated union type**:
+
+InvalidCode:
+- type: "invalidCode"
+
+ServiceNotConfigured:
+- type: "serviceNotConfigured"
+
+BadgeActive:
+- type: "badgeActive"
+
+ServiceError:
+- type: "serviceError"
+- serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
+
+InvalidResponse:
+- type: "invalidResponse"
+- message: string
+
+UnknownKeyIndex:
+- type: "unknownKeyIndex"
+
+CredentialNotVerified:
+- type: "credentialNotVerified"
+
+
+---
+
+## BadgeServiceErrorCode
+
+**Enum type**:
+- "bad_request"
+- "unsupported_version"
+- "unknown_purchase_key"
+- "unknown_offer_id"
+- "offer_disabled"
+- "offer_mismatch"
+- "product_unavailable"
+- "payment_not_entitled"
+- "payment_pending"
+- "provider_unavailable"
+- "rate_limited"
+- "code_invalid"
+- "code_used"
+- "code_expired"
+- "receipt_invalid"
+- "receipt_used"
+- "internal"
 
 
 ---
@@ -722,6 +819,8 @@ LocalRcv:
 - fileSource: [CryptoFile](#cryptofile)?
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
+- fileExpires: UTCTime?
+- fileProhibited: [FileProhibited](#fileprohibited)?
 
 
 ---
@@ -807,6 +906,19 @@ Group:
 - msgDir: [MsgDirection](#msgdirection)
 - groupId: int64?
 - chatItemId: int64?
+- memberId: string?
+- sharedMsgId_: string?
+- groupType: [GroupType](#grouptype)?
+
+GroupLink:
+- type: "groupLink"
+- chatName: string
+- msgDir: [MsgDirection](#msgdirection)
+- groupLink: string
+- publicGroupId: string
+- memberId: string?
+- sharedMsgId: string
+- groupType: [GroupType](#grouptype)?
 
 
 ---
@@ -1302,6 +1414,10 @@ CommandError:
 - type: "commandError"
 - message: string
 
+BadgeRedeemError:
+- type: "badgeRedeemError"
+- badgeRedeemError: [BadgeRedeemError](#badgeredeemerror)
+
 AgentCommandError:
 - type: "agentCommandError"
 - message: string
@@ -1423,6 +1539,7 @@ Search:
 **Enum type**:
 - "human"
 - "bot"
+- "business"
 
 
 ---
@@ -1782,6 +1899,7 @@ Error:
 - chatTs: UTCTime?
 - preparedContact: [PreparedContact](#preparedcontact)?
 - contactRequestId: int64?
+- contactRequest: [UserContactRequestRef](#usercontactrequestref)?
 - contactGroupMemberId: int64?
 - contactGrpInvSent: bool
 - groupDirectInv: [GroupDirectInvitation](#groupdirectinvitation)?
@@ -1841,6 +1959,7 @@ ContactViaAddress:
 - "active"
 - "deleted"
 - "deletedByUser"
+- "rejected"
 
 
 ---
@@ -1922,6 +2041,18 @@ connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Py
 **Record type**:
 - fileKey: string
 - fileNonce: string
+
+
+---
+
+## CtrlAppInfo
+
+Remote controller application info.
+
+**Record type**:
+- appVersionRange: [AppVersionRange](#appversionrange)
+- deviceName: string
+- compression: bool
 
 
 ---
@@ -2083,6 +2214,16 @@ NO_FILE:
 - fileConnReq: string?
 - fileInline: [InlineFileMode](#inlinefilemode)?
 - fileDescr: [FileDescr](#filedescr)?
+- fileBadge: [BadgeProof](#badgeproof)?
+
+
+---
+
+## FileProhibited
+
+**Record type**:
+- maxSize: int64
+- badgeStatus: [BadgeStatus](#badgestatus)?
 
 
 ---
@@ -2353,18 +2494,7 @@ MemberSupport:
 - rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-- groupKeys: [GroupKeys](#groupkeys)?
 - groupDomainVerified: bool?
-
-
----
-
-## GroupKeys
-
-**Record type**:
-- publicGroupId: string
-- groupRootKey: [GroupRootKey](#grouprootkey)
-- memberPrivKey: string
 
 
 ---
@@ -2586,21 +2716,6 @@ UpdateRequired:
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
 - relayCap: [RelayCapabilities](#relaycapabilities)
-
-
----
-
-## GroupRootKey
-
-**Discriminated union type**:
-
-Private:
-- type: "private"
-- rootPrivKey: string
-
-Public:
-- type: "public"
-- rootPubKey: string
 
 
 ---
@@ -3400,6 +3515,7 @@ Cancelled:
 - fileId: int64
 - xftpRcvFile: [XFTPRcvFile](#xftprcvfile)?
 - fileInvitation: [FileInvitation](#fileinvitation)
+- fileProhibited: [FileProhibited](#fileprohibited)?
 - fileStatus: [RcvFileStatus](#rcvfilestatus)
 - fileType: [FileType](#filetype)
 - rcvFileInline: [InlineFileMode](#inlinefilemode)?
@@ -3509,6 +3625,15 @@ ParseError:
 
 ---
 
+## RelayConnectionResult
+
+**Record type**:
+- relayMember: [GroupMember](#groupmember)
+- relayError: [ChatError](#chaterror)?
+
+
+---
+
 ## RelayProfile
 
 **Record type**:
@@ -3530,6 +3655,62 @@ ParseError:
 - "active"
 - "inactive"
 - "rejected"
+
+
+---
+
+## RemoteCtrlInfo
+
+**Record type**:
+- remoteCtrlId: int64
+- ctrlDeviceName: string
+- sessionState: [RemoteCtrlSessionState](#remotectrlsessionstate)?
+
+
+---
+
+## RemoteCtrlSessionState
+
+**Discriminated union type**:
+
+Starting:
+- type: "starting"
+
+Searching:
+- type: "searching"
+
+Connecting:
+- type: "connecting"
+
+PendingConfirmation:
+- type: "pendingConfirmation"
+- sessionCode: string
+
+Connected:
+- type: "connected"
+- sessionCode: string
+
+
+---
+
+## RemoteCtrlStopReason
+
+**Discriminated union type**:
+
+DiscoveryFailed:
+- type: "discoveryFailed"
+- chatError: [ChatError](#chaterror)
+
+ConnectionFailed:
+- type: "connectionFailed"
+- chatError: [ChatError](#chaterror)
+
+SetupFailed:
+- type: "setupFailed"
+- chatError: [ChatError](#chaterror)
+
+Disconnected:
+- type: "disconnected"
 
 
 ---
@@ -3561,6 +3742,7 @@ ParseError:
 
 A_MESSAGE:
 - type: "A_MESSAGE"
+- messageErr: string
 
 A_PROHIBITED:
 - type: "A_PROHIBITED"
@@ -3584,6 +3766,10 @@ A_DUPLICATE:
 A_QUEUE:
 - type: "A_QUEUE"
 - queueErr: string
+
+A_SERVICE:
+- type: "A_SERVICE"
+- serviceError: [AgentServiceError](#agentserviceerror)
 
 
 ---
@@ -4334,6 +4520,7 @@ Handshake:
 - sendRcptsContacts: bool
 - sendRcptsSmallGroups: bool
 - autoAcceptMemberContacts: bool
+- autoAcceptGroupInvitations: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - userChatRelay: bool
 - clientService: bool
@@ -4397,6 +4584,16 @@ Handshake:
 - pqSupport: bool
 - welcomeSharedMsgId: string?
 - requestSharedMsgId: string?
+- rejectionSupported: bool
+
+
+---
+
+## UserContactRequestRef
+
+**Record type**:
+- contactRequestId: int64
+- rejectionSupported: bool
 
 
 ---

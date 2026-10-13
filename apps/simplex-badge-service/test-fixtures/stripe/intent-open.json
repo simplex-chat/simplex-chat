@@ -1,0 +1,13 @@
+{
+  "_fixture": "POST /v1/payment_intents and GET /v1/payment_intents/{id} for an unpaid intent (status requires_payment_method), from Stripe's documented API schema. NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. The fake patches id, client_secret, status, amount_received and currency; everything else is served as written.",
+  "response": {
+    "id": "pi_test_open",
+    "object": "payment_intent",
+    "amount": 5400,
+    "amount_received": 0,
+    "currency": "usd",
+    "client_secret": "pi_test_open_secret",
+    "status": "requires_payment_method",
+    "latest_charge": null
+  }
+}

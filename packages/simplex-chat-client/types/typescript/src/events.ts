@@ -17,6 +17,7 @@ export type ChatEvent =
   | CEvt.GroupChatItemsDeleted
   | CEvt.ChatItemsStatusesUpdated
   | CEvt.ReceivedGroupInvitation
+  | CEvt.ReceivedGroupInvitationViaGroup
   | CEvt.UserJoinedGroup
   | CEvt.GroupUpdated
   | CEvt.JoinedGroupMember
@@ -46,11 +47,14 @@ export type ChatEvent =
   | CEvt.ContactConnecting
   | CEvt.BusinessLinkConnecting
   | CEvt.JoinedGroupMemberConnecting
-  | CEvt.SentGroupInvitation
   | CEvt.GroupLinkConnecting
   | CEvt.HostConnected
   | CEvt.HostDisconnected
   | CEvt.SubscriptionStatus
+  | CEvt.ServiceRequest
+  | CEvt.ServiceReplySent
+  | CEvt.RemoteCtrlSessionCode
+  | CEvt.RemoteCtrlStopped
   | CEvt.MessageError
   | CEvt.ChatError
   | CEvt.ChatErrors
@@ -70,6 +74,7 @@ export namespace CEvt {
     | "groupChatItemsDeleted"
     | "chatItemsStatusesUpdated"
     | "receivedGroupInvitation"
+    | "receivedGroupInvitationViaGroup"
     | "userJoinedGroup"
     | "groupUpdated"
     | "joinedGroupMember"
@@ -99,11 +104,14 @@ export namespace CEvt {
     | "contactConnecting"
     | "businessLinkConnecting"
     | "joinedGroupMemberConnecting"
-    | "sentGroupInvitation"
     | "groupLinkConnecting"
     | "hostConnected"
     | "hostDisconnected"
     | "subscriptionStatus"
+    | "serviceRequest"
+    | "serviceReplySent"
+    | "remoteCtrlSessionCode"
+    | "remoteCtrlStopped"
     | "messageError"
     | "chatError"
     | "chatErrors"
@@ -200,6 +208,16 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     contact: T.Contact
+    fromMemberRole: T.GroupMemberRole
+    memberRole: T.GroupMemberRole
+  }
+
+  export interface ReceivedGroupInvitationViaGroup extends Interface {
+    type: "receivedGroupInvitationViaGroup"
+    user: T.User
+    groupInfo: T.GroupInfo
+    viaGroupInfo: T.GroupInfo
+    viaMember: T.GroupMember
     fromMemberRole: T.GroupMemberRole
     memberRole: T.GroupMemberRole
   }
@@ -430,14 +448,6 @@ export namespace CEvt {
     member: T.GroupMember
   }
 
-  export interface SentGroupInvitation extends Interface {
-    type: "sentGroupInvitation"
-    user: T.User
-    groupInfo: T.GroupInfo
-    contact: T.Contact
-    member: T.GroupMember
-  }
-
   export interface GroupLinkConnecting extends Interface {
     type: "groupLinkConnecting"
     user: T.User
@@ -462,6 +472,31 @@ export namespace CEvt {
     server: string
     subscriptionStatus: T.SubscriptionStatus
     connections: string[]
+  }
+
+  export interface ServiceRequest extends Interface {
+    type: "serviceRequest"
+    user: T.User
+    requestId: string
+    signerKey?: string
+    requestData: object
+  }
+
+  export interface ServiceReplySent extends Interface {
+    type: "serviceReplySent"
+    connectionId: string
+  }
+
+  export interface RemoteCtrlSessionCode extends Interface {
+    type: "remoteCtrlSessionCode"
+    remoteCtrl_?: T.RemoteCtrlInfo
+    sessionCode: string
+  }
+
+  export interface RemoteCtrlStopped extends Interface {
+    type: "remoteCtrlStopped"
+    rcsState: T.RemoteCtrlSessionState
+    rcStopReason: T.RemoteCtrlStopReason
   }
 
   export interface MessageError extends Interface {

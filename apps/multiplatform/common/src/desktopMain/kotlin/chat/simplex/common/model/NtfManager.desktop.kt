@@ -6,7 +6,7 @@ import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.sshtools.twoslices.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

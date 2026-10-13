@@ -3,6 +3,7 @@ package chat.simplex.common
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.dataDir
+import chat.simplex.res.*
 import java.io.IOException
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock

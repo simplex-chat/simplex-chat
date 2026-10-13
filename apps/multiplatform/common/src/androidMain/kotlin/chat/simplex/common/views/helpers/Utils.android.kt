@@ -24,7 +24,7 @@ import androidx.core.text.HtmlCompat
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import java.io.*
 import java.net.URI
@@ -233,7 +233,8 @@ actual fun getFileName(uri: URI): String? {
       val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
       cursor.moveToFirst()
       // Can make an exception
-      cursor.getString(nameIndex)
+      // the provider controls this value, and callers use it as a bare file name
+      cursor.getString(nameIndex)?.let { File(it).name }
     }
   } catch (e: Exception) {
     null

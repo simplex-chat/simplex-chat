@@ -11,7 +11,7 @@ import androidx.core.content.ContextCompat
 import chat.simplex.common.helpers.toURI
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.net.URI
 
 @Composable

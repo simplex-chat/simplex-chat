@@ -21,3 +21,4 @@ It automates creating and updating of the bot profile, address and bot commands 
 ## Functions
 
 - [run](bot.Function.run.md)
+- [subscribeChatItems](bot.Function.subscribeChatItems.md)

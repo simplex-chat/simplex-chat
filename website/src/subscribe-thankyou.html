@@ -1,0 +1,77 @@
+---
+title: "Thank you for subscribing - SimpleX Chat"
+description: "Please confirm your subscription to SimpleX Chat updates."
+permalink: /subscribe/thankyou/
+templateEngineOverride: njk
+---
+
+<!DOCTYPE html>
+<html class="bg-[#F3FAFF] dark:bg-[#000832]" lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    {% include "dark-mode.html" %}
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}"/>
+    <meta name="robots" content="noindex">
+    <meta name="Content-Type" content="text/html;charset=utf-8"/>
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+    <meta name="theme-color" content="#F3FAFF">
+
+    <link href="/css/tailwind.css" rel="stylesheet"/>
+    <link href="/css/style.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/design3-nav.css">
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100svh;
+        }
+
+        .thankyou {
+            flex: 1;
+            padding: 180px 24px 120px;
+            max-width: 760px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .thankyou h1 {
+            font-family: "GT-Walsheim", sans-serif;
+            font-weight: 400;
+            font-size: clamp(30px, 4vw, 44px);
+            line-height: 1.15;
+            letter-spacing: -0.025em;
+            color: #023789;
+        }
+        .dark .thankyou h1 { color: #ffffff; }
+        .thankyou p {
+            margin-top: 20px;
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: clamp(16px, 1.4vw, 19px);
+            line-height: 1.6;
+            color: #3f484b;
+        }
+        .dark .thankyou p { color: #dfeaff; }
+    </style>
+
+    <script>
+        if (window.parent !== window) window.parent.postMessage('mc:subscribed', '*');
+    </script>
+</head>
+
+<body class="bg-[#F3FAFF] dark:bg-[#000832]">
+    {% include "navbar.html" %}
+
+    <main class="thankyou">
+        <h1>Thank you for subscribing<br>to SimpleX Chat updates</h1>
+        <p>Please confirm your subscription by clicking the link in the email we just sent you.</p>
+    </main>
+
+    {% include "footer.html" %}
+</body>
+
+</html>

@@ -17,7 +17,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.model.PendingContactConnection
 import chat.simplex.common.model.getTimestampText
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun ContactConnectionView(contactConnection: PendingContactConnection) {

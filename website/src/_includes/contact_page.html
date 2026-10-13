@@ -17,11 +17,11 @@
             <p class="text-grey-black dark:text-white text-base mb-[24px]">{{ "contact-hero-p-3" | i18n({}, lang ) | safe }}</p>
 
             <div class="flex items-center justify-center gap-4 flex-wrap">
-                <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
-                <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+                <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" alt="App Store" /></a>
+                <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Google Play"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" alt="Google Play" /></a>
                 <a href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid"  title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
-                <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
-                <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
+                <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" alt="TestFlight" /></a>
+                <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" alt="Android APK" /></a>
             </div>
         </div>
 
@@ -54,8 +54,8 @@
             <div class="flex flex-col justify-center items-center p-4 w-full max-w-[468px] min-h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
                 <p class="text-xl font-medium text-grey-black dark:text-white mb-4">{{ "install-simplex-app" | i18n({}, lang ) | safe }}</p>
                 <div class="flex flex-wrap items-center justify-center gap-2">
-                    <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
-                    <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+                    <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" alt="App Store" /></a>
+                    <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Google Play"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" alt="Google Play" /></a>
                     <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid"  title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
                 </div>
 

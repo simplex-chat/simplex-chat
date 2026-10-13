@@ -4,18 +4,6 @@ set -e
 # Eleventy OOMs with default 2GB V8 heap when building 280+ pages across 23 languages
 export NODE_OPTIONS=--max-old-space-size=4096
 
-cp -R docs website/src
-rm -rf website/src/docs/contributing
-rm -rf website/src/docs/rfcs
-rm website/src/docs/lang/*/README.md
-rm -rf website/src/docs/dependencies
-rm -f website/src/docs/LINKS.md
-cp -R docs/links/images website/src/link-images 2>/dev/null || true
-cp -R blog website/src
-cp -R images website/src
-rm website/src/blog/README.md
-rm -rf website/src/blog/new
-cp PRIVACY.md website/src/privacy.md
 cd website
 
 langs=()
@@ -30,6 +18,7 @@ for file in langs/*.json; do
 done
 
 npm install
+node copy_sources.js
 cp node_modules/lottie-web/build/player/lottie.min.js src/js
 cp node_modules/ethers/dist/ethers.umd.min.js src/js
 cp node_modules/ethers/dist/ethers.umd.js.map src/js
@@ -38,7 +27,6 @@ cp node_modules/@simplex-chat/xftp-web/dist-web/assets/index.js src/file-assets/
 cp node_modules/@simplex-chat/xftp-web/dist-web/assets/index.css src/file-assets/
 cp node_modules/@simplex-chat/xftp-web/dist-web/assets/crypto.worker.js src/file-assets/
 node merge_translations.js
-node customize_docs_frontmatter.js
 
 # creating folders for each language for internationalization
 for lang in "${langs[@]}"; do
@@ -52,7 +40,7 @@ for lang in "${langs[@]}"; do
   cp src/why.html src/$lang
   cp src/file.html src/$lang
   echo "{\"lang\":\"$lang\"}" > src/$lang/$lang.json
-  echo "done $lang copying"
+  echo "*" > src/$lang/.gitignore
 done
 
 for f in src/js/*.jsc; do
@@ -63,7 +51,6 @@ npm run build
 
 for lang in "${langs[@]}"; do
   rm -rf src/$lang
-  echo "done $lang deletion"
 done
 
 # for val in "${langs[@]}"; do

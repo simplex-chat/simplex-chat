@@ -6,7 +6,7 @@
 
 # Interface: CryptoArgs
 
-Defined in: [src/core.ts:111](../src/core.ts#L111)
+Defined in: [src/core.ts:114](../src/core.ts#L114)
 
 File encryption key and nonce
 
@@ -16,7 +16,7 @@ File encryption key and nonce
 
 > **fileKey**: `string`
 
-Defined in: [src/core.ts:112](../src/core.ts#L112)
+Defined in: [src/core.ts:115](../src/core.ts#L115)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: [src/core.ts:112](../src/core.ts#L112)
 
 > **fileNonce**: `string`
 
-Defined in: [src/core.ts:113](../src/core.ts#L113)
+Defined in: [src/core.ts:116](../src/core.ts#L116)

@@ -138,7 +138,7 @@ public func createErrorNtf(_ dbStatus: DBMigrationResult, _ badgeCount: Int) -> 
         title = NSLocalizedString("Encrypted message: no passphrase", comment: "notification")
     case .errorMigration:
         title = NSLocalizedString("Encrypted message: database migration error", comment: "notification")
-    case .errorSQL:
+    case .errorSQL, .errorKeyGeneration:
         title = NSLocalizedString("Encrypted message: database error", comment: "notification")
     case .errorKeychain:
         title = NSLocalizedString("Encrypted message: keychain error", comment: "notification")

@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.jthemedetecor.OsThemeDetector
 import com.russhwolf.settings.*
 import dev.icerock.moko.resources.ImageResource
