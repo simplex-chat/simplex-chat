@@ -272,7 +272,7 @@ final class BadgeStore: ObservableObject {
     func storePurchaseRefused(_ user: UserRef, _ invoiceId: String, _ refusal: BadgeIssueFailure) async {
         await MainActor.run {
             if active(user) && openStorePurchases(user.userId).contains(where: { $0.invoiceId == invoiceId }) {
-                showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: refusal.purchaseText)
+                showAlert(refusal.purchaseAlertTitle, message: refusal.purchaseText)
             }
         }
         await storePurchaseResolved(user, invoiceId)
