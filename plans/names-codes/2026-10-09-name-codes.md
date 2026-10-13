@@ -297,7 +297,7 @@ confirmations = 3
 ## 12. Deployment
 
 Production is the split deployment in `scripts/badge-service/` (`scripts/store-service/` after the rename):
-- Caddy serves the folders the service exports at boot and proxies `/api` and `/webhooks`; one Caddy serves both sites.
+- Caddy serves the folders the service exports at boot and proxies `/api` on both hosts and `/webhooks` on badges.simplex.chat; one Caddy serves both sites.
 - The service runs with `+client_postgres` and host networking, with its ini mounted read-only.
 
 What changes:
@@ -306,7 +306,7 @@ What changes:
 - **Caddy:**
   - `badges.simplex.chat` serves the badges folder and `simplex.domains` the names folder;
   - both proxy `/api/*`, so each site calls the API on its own origin;
-  - `/webhooks/*` is proxied on both hosts too. Each BTCPay store and Stripe account is set to one webhook URL, or every event arrives twice: today's accounts keep badges.simplex.chat, and an account used only for names may use simplex.domains;
+  - `/webhooks/*` (`/webhooks/btcpay`, `/webhooks/stripe`) stays on badges.simplex.chat only, as today; BTCPay and Stripe send every event there, names payments included;
   - `apps/simplex-badge-service/README.md` (`apps/simplex-store-service/` after the rename) gains the host blocks, and the names site gets a CSP like the badges one.
 - **All-in-one mode** picks the site by `Host` against `names_hosts`.
 - **Chain:** the resolver (`:8000`) and reth (`:8545`) on loopback when they share the host.
@@ -335,4 +335,3 @@ PLAYWRIGHT=/tmp/pw/node_modules/playwright/index.mjs node plans/names-codes/mock
 9. **simplex.domains today** is a countdown page; the store replaces it at launch, in the same tokens and fonts. The mockups' headline is "Own your name on SimpleX" where today's page says "Your SimpleX domain".
 10. **Editing links later** needs the names v2 RFC's `SimplexResolver` with `multicallWithSig` and edit credits (A2), which is not deployed; until then only the dApp, paid by the owner, can change them. Links set at registration add their gas to the service's cost.
 11. **The link separator** inside one `simplex.contact`/`simplex.channel` record is `;`, the `LINK_SEPARATOR` that `snrc-resolve.py` splits on and that must match the dApp's `SIMPLEX_LINK_SEPARATOR`; the page and the service encode with it.
-12. **Hosts and who serves the sites.** This spec has the service export both sites, injecting the Stripe publishable key into each shell, and one Caddy serving them, each proxying `/api` and `/webhooks` on its own origin. The cleaner alternative is a dedicated API host, with both sites as static deployments: the service is API-only with one webhook URL, site releases are not tied to the service image, and pages get the key from `GET /api/config`. It costs CORS for two origins and a `connect-src` entry; the submodule would then serve CI only.

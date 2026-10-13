@@ -32,7 +32,7 @@ Facts that shape the design:
 | Topic | Decision |
 |---|---|
 | Stores | Names at simplex.domains, badges at badges.simplex.chat; separate to the user, each linking the other as a secondary option |
-| Hosts | One Caddy serves both sites, which the service exports. Each site proxies `/api` and `/webhooks` to the service on its own origin: no separate API host, no CORS. Each payment account is set to one webhook URL |
+| Hosts | One Caddy serves both sites, which the service exports with the Stripe key injected. Both badges.simplex.chat and simplex.domains proxy `/api` to the service on their own origin, so there is no CORS; webhooks stay at badges.simplex.chat/webhooks, as today |
 | Code | Two webapps sharing logic, not screens. Badges stay in this repo, built on the library. Names live in the simplex.domains repo in that site's look, and are a submodule of simplex-chat (`apps/simplex-domains`). The shared logic (API client, payments, storage, codes, QR) is `packages/simplex-chat-store`, published as `@simplex-chat/store`. One service exports both sites |
 | Service | The badge service is renamed **StoreService** (`apps/simplex-store-service`, `Simplex.Chat.StoreService`) |
 | Search | One search bar, as registrars draw it (dynadot.com): a search icon, the name, a `.simplex` tag and a Search button inside; Enter searches too. The name is judged when searching, not while typing; the rules line ("6 letters or more…") appears only after such a mistake |
@@ -249,7 +249,7 @@ Two webapps that share logic, not screens. The badges webapp stays in `apps/simp
 ### 6. Deployment (`scripts/badge-service/`, renamed in stage 1)
 
 Production is the split deployment in `scripts/badge-service/`:
-- Caddy serves the folders the service exports at boot and proxies `/api` and `/webhooks`; one Caddy serves both sites.
+- Caddy serves the folders the service exports at boot and proxies `/api` on both hosts and `/webhooks` on badges.simplex.chat; one Caddy serves both sites.
 - The service runs with `+client_postgres` and host networking, with its ini mounted read-only.
 
 Changes:
@@ -260,7 +260,7 @@ Changes:
 - **Caddy:**
   - `badges.simplex.chat` serves the badges folder; `simplex.domains` serves the names folder.
   - Both proxy `/api/*` to the service, so the names site calls the API on its own origin, with no CORS.
-  - `/webhooks/*` is proxied on both hosts too. Each BTCPay store and Stripe account is set to one webhook URL, or every event arrives twice: today's accounts keep badges.simplex.chat, and an account used only for names may use simplex.domains.
+  - `/webhooks/*` (`/webhooks/btcpay`, `/webhooks/stripe`) stays on badges.simplex.chat only, as today; BTCPay and Stripe send every event there, names payments included.
   - `apps/simplex-badge-service/README.md` (renamed in stage 1) gains the host blocks, since the Caddyfile is not in this repository. The names site's CSP follows the badges one in `web/README.md`.
 - **All-in-one mode** (`serve_webapp = on`) picks the site by `Host` against `[listener] names_hosts`.
 - **Chain:** the resolver and reth on loopback when they share the host. The service's key is in the mounted ini, which `Dockerfile.dockerignore` already keeps out of the image.
@@ -283,7 +283,6 @@ Changes:
 - Stages 1–3 and 5–7 do not depend on the chain. They are built and tested against the fake resolver, a fake JSON-RPC node and the mock; a paid order waits in `queued` until stage 4 lands.
 - **Codes differ from #7530 §6/§9** (the `SN7-` format without years in the text, their own table, none sold on the web, and the service's table rather than the text deciding what a code covers, so the app cannot check one offline); agree with #7530 before stage 2.
 - **Stage 5 in order:** the library (5a) and the badges webapp on it (5b) first, then a published release the names webapp (5c) pins, then the submodule (5d).
-- **Open: hosts.** Stage 6 as written (the service exports both sites, `/api` on each origin) or a dedicated API host with static sites and `GET /api/config` (spec §14.12); decide before stage 5b.
 - Stage 4 waits for simplexmq `names` (#1887's signing) to reach the simplexmq the service builds against.
 - **The app side:** importing a name's phrase beside an existing master (#7475/#7530) is needed before a web-bought name shows in an app that already has a wallet. Until then, it can be the master of a device with no wallet (the name shows after `bind account=0`), and it works in any BIP-44 wallet at account 0.
 
