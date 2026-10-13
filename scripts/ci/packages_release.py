@@ -2,6 +2,8 @@
 """Release automation for simplex-chat and @simplex-chat/types on npm and simplex-chat on PyPI.
 
 addon-tag      print the add-on release tag for the current sources
+changes        print whether the changes since a commit touch the chat core and the add-on
+build-plan     print the platforms to build the add-on on and whether to run the package tests
 prepare        update pins and versions for a release PR
 publish-plan   print the package versions that are not published yet
 test-names     rename the packages to NPM_SCOPE and PYPI_PROJECT (test repositories)
@@ -28,6 +30,7 @@ PYTHON_DIR = "packages/simplex-chat-python"
 RELEASE_FILE = f"{NODEJS_DIR}/src/release.ts"
 PYTHON_VERSION_FILE = f"{PYTHON_DIR}/src/simplex_chat/_version.py"
 ADDON_SOURCES = [f"{NODEJS_DIR}/binding.gyp", f"{NODEJS_DIR}/cpp"]
+CORE_SOURCES = ["src", "simplex-chat.cabal", "cabal.project"]
 ADDON_TAG_HASH_LENGTH = 12
 LIBS_ASSETS = [
     "simplex-chat-libs-linux-aarch64.zip",
@@ -37,7 +40,16 @@ LIBS_ASSETS = [
     "simplex-chat-libs-macos-x86_64.zip",
     "simplex-chat-libs-windows-x86_64.zip",
 ]
-ADDON_PLATFORMS = ["linux-aarch64", "linux-x86_64", "macos-aarch64", "macos-x86_64", "windows-x86_64"]
+ADDON_RUNNERS = {
+    "linux-aarch64": "ubuntu-22.04-arm",
+    "linux-x86_64": "ubuntu-22.04",
+    "macos-aarch64": "macos-latest",
+    "macos-x86_64": "macos-15-intel",
+    "windows-x86_64": "windows-latest",
+}
+ADDON_PLATFORMS = list(ADDON_RUNNERS)
+# build.yml builds libsimplex of pull requests on this platform only
+CORE_TEST_PLATFORM = "linux-x86_64"
 ADDON_ASSETS = [f"simplex-chat-nodejs-{platform}.node" for platform in ADDON_PLATFORMS]
 SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
 
@@ -247,6 +259,32 @@ def plan(state: State) -> Plan:
     )
 
 
+@dataclass(frozen=True)
+class BuildPlan:
+    platforms: list[str]
+    test: bool
+
+
+def build_plan(
+    event: str, release_missing: bool, libs_artifact: bool, libs_release: str, core_changed: bool, addon_changed: bool
+) -> BuildPlan:
+    """Each package test runs once, against the libsimplex of the change: a pull request that changes the core
+    is tested by build.yml with its own libsimplex (libs_artifact), a new library release with that release."""
+    if libs_artifact:
+        return BuildPlan([CORE_TEST_PLATFORM], test=True)
+    if libs_release:
+        return BuildPlan(ADDON_PLATFORMS, test=True)
+    if event == "pull_request":
+        if core_changed:
+            return BuildPlan(ADDON_PLATFORMS if addon_changed else [], test=False)
+        return BuildPlan(ADDON_PLATFORMS, test=True)
+    return BuildPlan(ADDON_PLATFORMS if release_missing else [], test=True)
+
+
+def build_matrix(platforms: list[str]) -> str:
+    return json.dumps([{"platform": platform, "os": ADDON_RUNNERS[platform]} for platform in platforms])
+
+
 # Repository and registry access
 
 
@@ -281,6 +319,30 @@ def current_addon_tag() -> str:
         if path.is_file()
     }
     return addon_tag(files, read_json(f"{NODEJS_DIR}/package.json")["devDependencies"]["node-addon-api"])
+
+
+def changed_since(base: str, sources: list[str]) -> bool:
+    diff = subprocess.run(["git", "diff", "--quiet", base, "HEAD", "--", *sources], cwd=ROOT)
+    return diff.returncode != 0
+
+
+def changes(base: str) -> None:
+    print(f"core={'true' if changed_since(base, CORE_SOURCES) else ''}")
+    print(f"addon={'true' if changed_since(base, ADDON_SOURCES) else ''}")
+
+
+def print_build_plan(args: argparse.Namespace) -> None:
+    pull_request = args.event == "pull_request" and not args.libs_artifact
+    result = build_plan(
+        args.event,
+        release_missing=args.release_missing,
+        libs_artifact=args.libs_artifact,
+        libs_release=args.libs_release,
+        core_changed=pull_request and changed_since(args.base, CORE_SOURCES),
+        addon_changed=pull_request and changed_since(args.base, ADDON_SOURCES),
+    )
+    print(f"platforms={build_matrix(result.platforms)}")
+    print(f"test={'true' if result.test else ''}")
 
 
 def publish_tag(package: str, version: str) -> str:
@@ -425,10 +487,23 @@ def test_names() -> None:
         )
 
 
+def github_bool(value: str) -> bool:
+    """GitHub expressions pass booleans to the shell as "true", "false" or ""."""
+    return value == "true"
+
+
 def main(argv: list[str]) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("addon-tag")
+    changes_parser = commands.add_parser("changes")
+    changes_parser.add_argument("base", help="the commit to compare with")
+    build_parser = commands.add_parser("build-plan")
+    build_parser.add_argument("--event", required=True, help="github.event_name")
+    build_parser.add_argument("--base", default="", help="the base commit of a pull request")
+    build_parser.add_argument("--release-missing", type=github_bool, default=False)
+    build_parser.add_argument("--libs-artifact", type=github_bool, default=False)
+    build_parser.add_argument("--libs-release", default="")
     prepare_parser = commands.add_parser("prepare")
     for package in ["nodejs", "types", "python"]:
         prepare_parser.add_argument(f"--{package}-version", help="this version instead of a bump when needed")
@@ -438,6 +513,10 @@ def main(argv: list[str]) -> None:
     args = parser.parse_args(argv)
     if args.command == "addon-tag":
         print(current_addon_tag())
+    elif args.command == "changes":
+        changes(args.base)
+    elif args.command == "build-plan":
+        print_build_plan(args)
     elif args.command == "prepare":
         prepare(args)
     elif args.command == "publish-plan":

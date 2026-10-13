@@ -8,13 +8,18 @@ from unittest import mock
 import packages_release
 from packages_release import (
     ADDON_ASSETS,
+    ADDON_PLATFORMS,
+    BuildPlan,
     LIBS_ASSETS,
     Package,
     Pins,
     State,
     addon_tag,
+    build_matrix,
+    build_plan,
     bump_npm_version,
     bump_python_version,
+    changed_since,
     changed_since_publish,
     published_tag,
     dist_tag,
@@ -184,6 +189,37 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(result.title, "packages: release types 0.13.0, nodejs 7.2.0, python 7.2.0")
 
 
+class BuildPlanTest(unittest.TestCase):
+    def plan(self, event="push", release_missing=False, libs_artifact=False, libs_release="", core=False, addon=False):
+        return build_plan(event, release_missing, libs_artifact, libs_release, core, addon)
+
+    def test_push_builds_a_missing_addon_release_and_tests_it(self):
+        self.assertEqual(self.plan(release_missing=True), BuildPlan(ADDON_PLATFORMS, test=True))
+        self.assertEqual(self.plan(), BuildPlan([], test=True))
+
+    def test_pull_request_tests_with_the_pinned_libs(self):
+        self.assertEqual(self.plan("pull_request"), BuildPlan(ADDON_PLATFORMS, test=True))
+        self.assertEqual(self.plan("pull_request", addon=True), BuildPlan(ADDON_PLATFORMS, test=True))
+
+    def test_core_change_leaves_tests_to_build_yml(self):
+        self.assertEqual(self.plan("pull_request", core=True), BuildPlan([], test=False))
+        self.assertEqual(self.plan("pull_request", core=True, addon=True), BuildPlan(ADDON_PLATFORMS, test=False))
+
+    def test_libsimplex_of_the_pull_request_is_tested_on_its_platform(self):
+        self.assertEqual(
+            self.plan("pull_request", libs_artifact=True, core=True), BuildPlan(["linux-x86_64"], test=True)
+        )
+
+    def test_new_library_release_is_tested_on_every_platform(self):
+        self.assertEqual(self.plan(libs_release="core-1.0.0.2"), BuildPlan(ADDON_PLATFORMS, test=True))
+
+    def test_matrix_names_the_runner_of_each_platform(self):
+        self.assertEqual(
+            build_matrix(["linux-x86_64", "windows-x86_64"]),
+            '[{"platform": "linux-x86_64", "os": "ubuntu-22.04"}, {"platform": "windows-x86_64", "os": "windows-latest"}]',
+        )
+
+
 class ChangedSincePublishTest(unittest.TestCase):
     def setUp(self):
         self.repo = Path(tempfile.mkdtemp())
@@ -228,6 +264,18 @@ class ChangedSincePublishTest(unittest.TestCase):
             self.git("tag", "pkg-v1")
             self.assertEqual(published_tag("pkg", "1"), "refs/tags/pkg-v1")
             self.assertIsNone(published_tag("pkg", "2"))
+
+    def test_changed_since_looks_only_at_the_sources(self):
+        base = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=self.repo, capture_output=True, text=True
+        ).stdout.strip()
+        self.write("other/file.txt", "o")
+        self.commit("other change")
+        with mock.patch.object(packages_release, "ROOT", self.repo):
+            self.assertFalse(changed_since(base, ["pkg"]))
+            self.write("pkg/src.txt", "b")
+            self.commit("source change")
+            self.assertTrue(changed_since(base, ["pkg"]))
 
     def test_ignores_tests_and_other_directories(self):
         self.write("pkg/tests/t.txt", "t")
