@@ -131,10 +131,13 @@ jobs:
         with:
           node-version: 22
 
+      # Only node-addon-api: the package dependencies can be bumped to versions that are not published yet.
       - name: Build add-on
         run: |
-          npm install --ignore-scripts --no-audit --no-fund
-          npx --yes node-gyp rebuild
+          deps="$RUNNER_TEMP/addon-deps"
+          npm install --prefix "$deps" --ignore-scripts --no-audit --no-fund \
+            "node-addon-api@$(node -p 'require("./package.json").devDependencies["node-addon-api"]')"
+          NODE_PATH="$deps/node_modules" npx --yes node-gyp rebuild
           cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
 
       - name: Upload add-on artifact
