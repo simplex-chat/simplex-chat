@@ -31,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.AppLock
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -617,7 +618,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
             SettingsView(chatModel, setPerformLA, close)
           }
         }
-      } else {
+      } else if (!LocalFlatLayout.current) {
         val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
@@ -1279,6 +1280,7 @@ private val TAG_MIN_HEIGHT = 35.dp
 
 @Composable
 private fun TagsView(searchText: MutableState<TextFieldValue>) {
+  if (LocalFlatLayout.current) return
   val userTags = remember { chatModel.userTags }
   val presetTags = remember { chatModel.presetTags }
   val collapsiblePresetTags = presetTags.filter { presetCanBeCollapsed(it.key) && it.value > 0 }
@@ -1605,7 +1607,7 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat
     }
   }
 
-private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Triple<ImageResource, ImageResource?, StringResource> =
+internal fun presetTagLabel(tag: PresetTagKind, active: Boolean): Triple<ImageResource, ImageResource?, StringResource> =
   when (tag) {
     PresetTagKind.GROUP_REPORTS -> Triple(if (active) MR.images.ic_flag_filled else MR.images.ic_flag, null, MR.strings.chat_list_group_reports)
     PresetTagKind.FAVORITES -> Triple(if (active) MR.images.ic_star_filled else MR.images.ic_star, null, MR.strings.chat_list_favorites)

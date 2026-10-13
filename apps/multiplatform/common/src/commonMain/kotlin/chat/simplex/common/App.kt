@@ -429,28 +429,34 @@ fun EndPartOfScreen() {
 
 val LocalFlatLayout = staticCompositionLocalOf { false }
 
+val desktopFlatLayoutEnabled: Boolean
+  get() = appPlatform.isDesktop && appPrefs.developerTools.state.value && appPrefs.desktopFlatLayout.state.value
+
 // Spec: spec/client/navigation.md#DesktopScreen
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
-  val flatLayout = remember { appPrefs.developerTools.state }.value && remember { appPrefs.desktopFlatLayout.state }.value
-  CompositionLocalProvider(LocalFlatLayout provides flatLayout) {
+  CompositionLocalProvider(LocalFlatLayout provides desktopFlatLayoutEnabled) {
     DesktopScreenLayout(userPickerState)
   }
 }
 
 @Composable
 private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewState>) {
-  Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+  val railWidth = if (LocalFlatLayout.current) DESKTOP_RAIL_WIDTH * fontSizeSqrtMultiplier else 0.dp
+  if (LocalFlatLayout.current) {
+    DesktopRail(userPickerState, setPerformLA = AppLock::setPerformLA)
+  }
+  Box(Modifier.padding(start = railWidth).width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
     StartPartOfScreen(userPickerState)
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
     }
   }
-  Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+  Box(Modifier.padding(start = railWidth).widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
     ModalManager.start.showInView()
     SwitchingUsersView()
   }
-  Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+  Row(Modifier.padding(start = railWidth + DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
     Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
       CenterPartOfScreen()
     }
@@ -465,7 +471,7 @@ private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewSt
     Box(
       Modifier
         .fillMaxSize()
-        .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
+        .padding(start = railWidth + DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
           if (chatModel.centerPanelBackgroundClickHandler == null || chatModel.centerPanelBackgroundClickHandler?.invoke() == false) {
             ModalManager.start.closeModals()
@@ -474,7 +480,7 @@ private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewSt
         })
     )
   }
-  VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+  VerticalDivider(Modifier.padding(start = railWidth + DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
   ModalManager.fullscreen.showInView()
 }
 
