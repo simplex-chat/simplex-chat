@@ -10,6 +10,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,9 +33,14 @@ val DESKTOP_RAIL_WIDTH = 64.dp
 private val RAIL_ITEM_SIZE = 40.dp
 private val RAIL_ICON_SIZE = 22.dp
 private val RAIL_ACTIVE_MARK_WIDTH = 4.dp
+private val RAIL_ACTIVE_BACKGROUND_WIDTH = 40.dp
+private val RAIL_ACTIVE_BACKGROUND_HEIGHT = 32.dp
+private val RAIL_UNREAD_DOT_SIZE = 6.dp
+private const val RAIL_ACTIVE_BACKGROUND_ALPHA = 0.12f
 private const val RAIL_BACKGROUND_ALPHA = 0.04f
 
 @Composable
+// Spec: spec/client/chat-list.md#DesktopRail
 fun DesktopRail(userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit) {
   Row(
     Modifier
@@ -82,7 +88,8 @@ private fun RailUsers(userPickerState: MutableStateFlow<AnimatedViewState>) {
         .sortedByDescending { it.user.activeOrder }
     }
   }
-  val enabled = remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote
+  val switchAllowed = profileSwitchAllowed(remember { chatModel.sharedContent }.value) && !remember { chatModel.switchingUsersAndHosts }.value
+  val switchEnabled = switchAllowed && (remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote)
   users.forEach { u ->
     val user = u.user
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -94,19 +101,22 @@ private fun RailUsers(userPickerState: MutableStateFlow<AnimatedViewState>) {
             .background(MaterialTheme.colors.primary, RoundedCornerShape(topEnd = RAIL_ACTIVE_MARK_WIDTH, bottomEnd = RAIL_ACTIVE_MARK_WIDTH))
         )
       }
-      Box(
-        Modifier
-          .clip(CircleShape)
-          .clickable(enabled = enabled) {
-            if (user.activeUser) {
-              ModalManager.start.closeModals()
-              userPickerState.value = AnimatedViewState.VISIBLE
-            } else {
-              switchToUser(user)
+      Box {
+        Box(
+          Modifier
+            .clip(CircleShape)
+            .clickable(enabled = if (user.activeUser) switchAllowed else switchEnabled) {
+              if (user.activeUser) {
+                ModalManager.start.closeModals()
+                userPickerState.value = AnimatedViewState.VISIBLE
+              } else {
+                if (userPickerState.value.isVisible()) userPickerState.value = AnimatedViewState.HIDING
+                switchToUser(user)
+              }
             }
-          }
-      ) {
-        ProfileImage(RAIL_ITEM_SIZE * fontSizeSqrtMultiplier, user.profile.image)
+        ) {
+          ProfileImage(RAIL_ITEM_SIZE * fontSizeSqrtMultiplier, user.profile.image)
+        }
         if (!user.activeUser && u.unreadCount > 0) {
           userUnreadBadge(u.unreadCount, user.showNtfs, hasPadding = false)
         }
@@ -124,6 +134,7 @@ private fun RailTags() {
   val rhId = chatModel.remoteHostId()
 
   RailItem(MR.images.ic_menu, stringResource(MR.strings.chat_list_all), active = activeFilter.value == null) {
+    ModalManager.start.closeModals()
     activeFilter.value = null
   }
   PresetTagKind.entries.filter { (presetTags[it] ?: 0) > 0 }.forEach { tag ->
@@ -159,6 +170,7 @@ private fun RailTags() {
 }
 
 private fun toggleFilter(filter: ActiveFilter) {
+  ModalManager.start.closeModals()
   chatModel.activeChatTagFilter.value = if (chatModel.activeChatTagFilter.value == filter) null else filter
 }
 
@@ -182,14 +194,19 @@ private fun RailItem(
       .padding(vertical = 4.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Box(contentAlignment = Alignment.Center) {
+    Box(
+      Modifier
+        .size(RAIL_ACTIVE_BACKGROUND_WIDTH * fontSizeSqrtMultiplier, RAIL_ACTIVE_BACKGROUND_HEIGHT * fontSizeSqrtMultiplier)
+        .background(if (active) MaterialTheme.colors.primary.copy(alpha = RAIL_ACTIVE_BACKGROUND_ALPHA) else Color.Transparent, RoundedCornerShape(DEFAULT_PADDING_HALF)),
+      contentAlignment = Alignment.Center
+    ) {
       if (emoji != null) {
         ReactionIcon(emoji, fontSize = 18.sp)
       } else {
-        Icon(painterResource(icon), label, Modifier.size(RAIL_ICON_SIZE), tint = color)
+        Icon(painterResource(icon), label, Modifier.size(RAIL_ICON_SIZE * fontSizeSqrtMultiplier), tint = color)
       }
       if (unread) {
-        Box(Modifier.align(Alignment.TopEnd).size(6.dp).background(MaterialTheme.colors.primary, CircleShape))
+        Box(Modifier.align(Alignment.TopEnd).padding(DEFAULT_PADDING_HALF / 2).size(RAIL_UNREAD_DOT_SIZE).background(MaterialTheme.colors.primary, CircleShape))
       }
     }
     Text(

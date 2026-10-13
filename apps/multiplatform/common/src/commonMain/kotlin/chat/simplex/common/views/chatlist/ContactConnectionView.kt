@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.model.PendingContactConnection
 import chat.simplex.common.model.getTimestampText
@@ -22,8 +23,9 @@ import chat.simplex.res.*
 @Composable
 fun ContactConnectionView(contactConnection: PendingContactConnection) {
   Row {
-    Box(Modifier.size(72.dp * fontSizeSqrtMultiplier), contentAlignment = Alignment.Center) {
-      ProfileImage(size = 54.dp * fontSizeSqrtMultiplier, null, if (contactConnection.initiated) MR.images.ic_add_link else MR.images.ic_link)
+    val flat = LocalFlatLayout.current
+    Box(Modifier.size((if (flat) COMPACT_CHAT_IMAGE_SIZE else 72.dp) * fontSizeSqrtMultiplier), contentAlignment = Alignment.Center) {
+      ProfileImage(size = (if (flat) COMPACT_CHAT_IMAGE_SIZE else 54.dp) * fontSizeSqrtMultiplier, null, if (contactConnection.initiated) MR.images.ic_add_link else MR.images.ic_link)
     }
     Column(
       modifier = Modifier

@@ -613,12 +613,12 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
   DefaultAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
-        NavigationButtonMenu {
+        if (!LocalFlatLayout.current) NavigationButtonMenu {
           ModalManager.start.showModalCloseable(cardScreen = true) { close ->
             SettingsView(chatModel, setPerformLA, close)
           }
         }
-      } else if (!LocalFlatLayout.current) {
+      } else if (!LocalFlatLayout.current || chatModel.desktopNoUserNoRemote) {
         val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
@@ -1021,7 +1021,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             // bottom toolbar: search bar below, so on desktop the connect row goes below the tags
             TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
               TagsView(searchText)
-              Divider()
+              if (!LocalFlatLayout.current) Divider()
               ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
             }
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
@@ -1032,7 +1032,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           // top toolbar: search bar above, so on desktop the connect row goes above the tags
           TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
-            Divider()
+            if (!LocalFlatLayout.current) Divider()
             TagsView(searchText)
           }
           Divider()

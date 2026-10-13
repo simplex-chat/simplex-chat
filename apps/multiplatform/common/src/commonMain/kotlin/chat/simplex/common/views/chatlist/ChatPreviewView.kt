@@ -84,12 +84,13 @@ fun ChatPreviewView(
 
   @Composable
   fun chatPreviewTitleText(color: Color = Color.Unspecified) {
+    val flat = LocalFlatLayout.current
     Text(
       cInfo.chatViewName,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
-      style = MaterialTheme.typography.h3,
-      fontWeight = FontWeight.Bold,
+      style = if (flat) MaterialTheme.typography.body1 else MaterialTheme.typography.h3,
+      fontWeight = if (!flat) FontWeight.Bold else if (chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat) FontWeight.SemiBold else FontWeight.Normal,
       color = color
     )
   }
@@ -466,14 +467,28 @@ fun ChatPreviewView(
   }
 
   if (LocalFlatLayout.current) {
+    LaunchedEffect(chatModel.deletedChats.value) {
+      val ci = chat.chatItems.lastOrNull()
+      val playing = AudioPlayer.currentlyPlaying.value
+      // stops a voice message of a deleted chat, as the voice preview effect does in the full row
+      if (ci != null && playing != null && playing.fileSource.filePath == ci.file?.fileSource?.filePath && chatModel.deletedChats.value.contains(chatModel.remoteHostId() to chat.id)) {
+        AudioPlayer.stop(ci)
+      }
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
-      ChatInfoImage(cInfo, size = COMPACT_CHAT_IMAGE_SIZE * fontSizeSqrtMultiplier)
+      Box(contentAlignment = Alignment.BottomEnd) {
+        ChatInfoImage(cInfo, size = COMPACT_CHAT_IMAGE_SIZE * fontSizeSqrtMultiplier)
+        chatPreviewImageOverlayIcon()
+      }
       Spacer(Modifier.width(8.dp))
       Box(Modifier.weight(1f)) {
         chatPreviewTitle()
       }
       Spacer(Modifier.width(8.sp.toDp()))
-      chatPreviewUnreadIndicator()
+      Box(Modifier.offset(y = -COMPACT_BADGE_Y_CORRECTION)) {
+        chatPreviewUnreadIndicator()
+      }
+      Spacer(Modifier.width(4.sp.toDp()))
       chatStatusImage()
     }
     return
@@ -552,7 +567,9 @@ fun ChatPreviewView(
   }
 }
 
-private val COMPACT_CHAT_IMAGE_SIZE = 32.dp
+internal val COMPACT_CHAT_IMAGE_SIZE = 32.dp
+// cancels the 3dp yOffset that UnreadBadge applies for the two-line row
+private val COMPACT_BADGE_Y_CORRECTION = 3.dp
 
 @Composable
 private fun SmallContentPreview(borderColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.12f), content: @Composable BoxScope.() -> Unit) {
