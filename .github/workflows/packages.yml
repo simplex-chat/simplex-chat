@@ -105,6 +105,7 @@ jobs:
     needs: addon
     if: github.event_name == 'pull_request' || needs.addon.outputs.missing
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -147,7 +148,8 @@ jobs:
           cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
 
       - name: Test simplex-chat (npm)
-        run: npx jest
+        # A failed test can leave chat controllers running, and jest then waits for them.
+        run: npx jest --forceExit
 
       - name: Test simplex-chat (PyPI)
         working-directory: packages/simplex-chat-python
