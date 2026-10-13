@@ -2435,7 +2435,7 @@ fun BoxScope.ChatItemsList(
           null
         }
         val showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
-        val flatHeader = flatItemHasHeader(item, merged.oldest().nextItem)
+        val flatHeader = LocalFlatLayout.current && flatItemHasHeader(item, merged.oldest().nextItem)
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
         val itemSeparation: ItemSeparation
         val prevItemSeparationLargeGap: Boolean
