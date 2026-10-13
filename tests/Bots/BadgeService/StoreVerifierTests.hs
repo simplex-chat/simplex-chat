@@ -53,6 +53,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "reports a Sandbox transaction as a test purchase" testAppleSandbox
     it "fails, rather than refuses, a chain Apple did not mark for signing receipts" testAppleUnmarkedChain
     it "fails, rather than refuses, a payload Apple signed in a shape it does not know" testAppleUnknownShape
+    it "fails, rather than refuses, a leaf holding a key it cannot read" testAppleLeafKey
     it "records the price in the currency's minor units, or not at all" testApplePrice
     it "reads the trusted root from a DER file, and reports one it cannot read" testReadAppleRoot
     it "has nothing to acknowledge" testAppleNoAcknowledgement
@@ -112,6 +113,7 @@ data TestChain = TestChain
   { rootCert :: SignedCertificate,
     intermediateCert :: SignedCertificate,
     leafCert :: SignedCertificate,
+    intermediateKey :: ECDSA.PrivateKey,
     leafKey :: ECDSA.PrivateKey
   }
 
@@ -134,7 +136,7 @@ newChain rootName intermediateMarkers leafMarkers = do
   rootCert <- certify rootKey rootName rootName rootPub []
   intermediateCert <- certify rootKey rootName intermediateName intermediatePub intermediateMarkers
   leafCert <- certify intermediateKey intermediateName leafName leafPub leafMarkers
-  pure TestChain {rootCert, intermediateCert, leafCert, leafKey}
+  pure TestChain {rootCert, intermediateCert, leafCert, intermediateKey, leafKey}
 
 trustedChain :: IO TestChain
 trustedChain = newChain appleRootName [intermediateMarker] [receiptLeafMarker]
@@ -311,6 +313,17 @@ testAppleUnknownShape = do
   failsOn $ transactionPayload [("environment", "LocalTesting")] []
   failsOn $ transactionPayload [] ["productId"]
   failsOn $ transactionPayload [("quantity", "1")] []
+
+-- | The key is read before the signature it would check, so the chain and the payload are genuine.
+testAppleLeafKey :: IO ()
+testAppleLeafKey = do
+  chain@TestChain {rootCert, intermediateCert, intermediateKey} <- trustedChain
+  let failsOnLeafKey pub = do
+        leaf <- certify intermediateKey intermediateName leafName pub [receiptLeafMarker]
+        jws <- signedTransaction chain [leaf, intermediateCert, rootCert] es256 $ transactionPayload [] []
+        outcome <$> appleVerdict rootCert jws `shouldReturn` Failed
+  failsOnLeafKey $ PubKeyEC $ PubKeyEC_Named ECC.SEC_p384r1 $ SerializedPoint $ B.cons 4 $ B.replicate 64 1
+  failsOnLeafKey $ PubKeyEC $ PubKeyEC_Named ECC.SEC_p256r1 $ SerializedPoint "\x04"
 
 testApplePrice :: IO ()
 testApplePrice = do
