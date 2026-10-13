@@ -307,7 +307,7 @@ UserPicker
 |                           |  OR (when no chat selected):     |  GroupProfileView          |
 |  UserPicker (overlay)     |    "No selected chat"            |  AddGroupMembersView       |
 |    - profile switcher     |                                  |  MemberAdmission           |
-|    - quick settings       |  OR (when modal open):           |  VerifyCodeView            |
+|    - quick settings       |  Over them (when modal open):    |  VerifyCodeView            |
 |                           |    ModalManager.center content   |  SettingsView subtabs      |
 |  ModalManager.start       |    (settings, new chat, etc.)    |                            |
 |    - secondary modals     |                                  |  ModalManager.end          |
@@ -316,7 +316,7 @@ UserPicker
 
 ModalManager Placement (Desktop):
   - ModalManager.start  -> left panel overlay (settings subviews)
-  - ModalManager.center -> center panel (replaces chat, used when chatId is null)
+  - ModalManager.center -> center panel (drawn over the chat or the placeholder)
   - ModalManager.end    -> right panel (detail/info views)
   - ModalManager.fullscreen -> full window overlay (onboarding, auth, call)
 
