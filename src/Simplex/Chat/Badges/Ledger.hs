@@ -205,15 +205,16 @@ debitTypeTag = \case
   SDLapse -> "lapse"
   SDUnknown {tag} -> tag
 
--- | Rebuilds only what the columns determine: constructors with no fields, and a payment credit.
+-- | Rebuilds only what the columns determine: constructors with no fields, a payment credit and a charge credit.
 -- payment_ is Nothing when the row references no payment, and Just Nothing when that payment had no
 -- invoice, as a store purchase has none. The rest answer Nothing rather than invent a payload.
 -- The client stores each type's JSON and reads that first, so this is its fallback; the service has none.
--- TODO [badges] rebuild charge, transferIn, upgrade and transferOut from their reference columns,
+-- TODO [badges] rebuild transferIn, upgrade and transferOut from their reference columns,
 -- without which the service cannot re-emit a statement carrying one.
-entryTypeFromColumns :: Maybe (Maybe InvoiceId) -> Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
-entryTypeFromColumns payment_ entryType credit_ debit_ = case (entryType, credit_, debit_) of
+entryTypeFromColumns :: Maybe (Maybe InvoiceId) -> Maybe Text -> Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
+entryTypeFromColumns payment_ chargeId_ entryType credit_ debit_ = case (entryType, credit_, debit_) of
   ("credit", Just "payment", _) -> SECredit . SCPayment <$> payment_
+  ("credit", Just "charge", _) -> SECredit . SCCharge <$> chargeId_
   ("credit", Just t, _) -> SECredit <$> creditType t
   ("debit", _, Just t) -> SEDebit <$> debitType t
   _ -> Nothing

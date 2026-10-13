@@ -104,6 +104,7 @@ badgeTests = do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
     it "purchaseBadge request matches the schema" testPurchaseRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
+    it "badgeCredential carries a subscription's state, and reads one it does not know as unknown" testCredentialSubscriptionJSON
     it "error response matches the schema" testErrorResponseJSON
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
   describe "store purchases" $ do
@@ -790,17 +791,19 @@ testEntryTypeColumns = do
   mapM_ (\c -> wireTag (J.toJSON (SECredit c)) "credit" `shouldBe` Just (creditTypeTag c)) credits
   mapM_ (\d -> wireTag (J.toJSON (SEDebit d)) "debit" `shouldBe` Just (debitTypeTag d)) debits
   -- the types this version writes survive a round trip through the columns, a payment credit
-  -- through the payment its row references
+  -- through the payment its row references, and a charge credit through its charge
   mapM_
-    (\t -> uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
+    (\t -> uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
     [SECredit SCCode, SEDebit SDBadge, SEDebit SDLapse]
   let storeCredit = SECredit (SCPayment Nothing)
       invoiceCredit = SECredit (SCPayment (Just (InvoiceId "inv1")))
-  uncurry3 (entryTypeFromColumns (Just Nothing)) (entryTypeColumns storeCredit) `shouldSatisfy` sameEntryType storeCredit
-  uncurry3 (entryTypeFromColumns (Just (Just (InvoiceId "inv1")))) (entryTypeColumns invoiceCredit) `shouldSatisfy` sameEntryType invoiceCredit
+      chargeCredit = SECredit (SCCharge "ch1")
+  uncurry3 (entryTypeFromColumns (Just Nothing) Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` sameEntryType storeCredit
+  uncurry3 (entryTypeFromColumns (Just (Just (InvoiceId "inv1"))) Nothing) (entryTypeColumns invoiceCredit) `shouldSatisfy` sameEntryType invoiceCredit
+  uncurry3 (entryTypeFromColumns Nothing (Just "ch1")) (entryTypeColumns chargeCredit) `shouldSatisfy` sameEntryType chargeCredit
   -- a type that needs a reference column is not silently read back as something else
-  uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` isNothing
-  uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns (SECredit (SCCharge "ch1"))) `shouldSatisfy` isNothing
+  uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` isNothing
+  uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns chargeCredit) `shouldSatisfy` isNothing
   -- which is why every type is stored as its own JSON as well, and read from that first: the
   -- columns alone would answer a row naming an invoice or a purchase as no row at all
   mapM_ roundTrips credits
@@ -939,13 +942,31 @@ testCredentialResponseJSON = do
   mk <- generateMasterKey drg
   let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry = futureTime, badgeExtra = ""}
   Right cred <- issueBadge testKeyIdx sk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = info})
-  let resp = BSPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}}
+  let resp = BSPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Nothing}
   J.toJSON resp
     `shouldBe` J.object
       [ "type" J..= ("badgeCredential" :: T.Text),
         "credential" J..= cred,
         "statement" J..= J.object ["entries" J..= ([] :: [J.Value])]
       ]
+  roundTrips resp
+
+testCredentialSubscriptionJSON :: IO ()
+testCredentialSubscriptionJSON = do
+  let states = [(SSRenewing, "renewing"), (SSCancelled, "cancelled"), (SSBillingRetry, "billingRetry"), (SSEnded, "ended")]
+  mapM_ (\(s, t) -> (J.toJSON s, J.fromJSON (J.String t)) `shouldBe` (J.String t, J.Success s)) states
+  let response subscription_ = J.object $ ["type" J..= ("badgeCredential" :: T.Text), "statement" J..= J.object ["entries" J..= ([] :: [J.Value])]] <> maybe [] (\s -> ["subscription" J..= (s :: T.Text)]) subscription_
+      subscriptionOf v = case J.fromJSON v of
+        J.Success BSPBadgeCredential {subscription} -> Right subscription
+        J.Success _ -> Left "not a badgeCredential"
+        J.Error e -> Left e
+  subscriptionOf (response Nothing) `shouldBe` Right Nothing
+  subscriptionOf (response (Just "billingRetry")) `shouldBe` Right (Just SSBillingRetry)
+  -- a state added by a newer service does not fail the response, and is not read as ended
+  subscriptionOf (response (Just "paused")) `shouldBe` Right (Just (SSUnknown "paused"))
+  J.toJSON (SSUnknown "paused") `shouldBe` J.String "paused"
+  let resp = BSPBadgeCredential {credential = Nothing, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Just SSRenewing}
+  J.toJSON resp `shouldBe` response (Just "renewing")
   roundTrips resp
 
 testErrorResponseJSON :: IO ()

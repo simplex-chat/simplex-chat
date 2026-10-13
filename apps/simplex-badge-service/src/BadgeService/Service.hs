@@ -383,9 +383,9 @@ credentialForEntry BadgeIssuerKey {keyIdx, secretKey} masterKey e@StatementEntry
 issuanceAfter :: StatementEntry -> (StatementEntry, BadgeCredential) -> (StatementEntry, StatementEntry, BadgeCredential)
 issuanceAfter previous (issued, credential) = (previous, issued, credential)
 
-credentialResponse :: Maybe BadgeCredential -> Maybe T.Text -> [StatementEntry] -> BadgeServiceResponse
-credentialResponse credential previousEntryId entries =
-  BSPBadgeCredential {credential, receipt = Nothing, statement = BadgeStatement {entries, previousEntryId}}
+credentialResponse :: Maybe BadgeCredential -> Maybe T.Text -> Maybe SubscriptionState -> [StatementEntry] -> BadgeServiceResponse
+credentialResponse credential previousEntryId subscription entries =
+  BSPBadgeCredential {credential, receipt = Nothing, statement = BadgeStatement {entries, previousEntryId}, subscription}
 
 -- | Nothing is written until the credential is signed, so a signing failure leaves the code unspent.
 redeemCode :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> BadgeMasterKey -> T.Text -> IO BadgeServiceResponse
@@ -420,7 +420,7 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
             -- A key that already redeemed gets its credential back without a use, even if the code has since
             -- expired or been revoked: a client whose reply was lost retries, and would otherwise lose the badge.
             KeyRedeemed KeyPurchase {badgePurchaseId, credential} ->
-              maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
+              maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing Nothing)
                 <$> getLedgerEntries db badgePurchaseId 0
             -- code_used would make the client drop its keys, so the holder could never get the badge back.
             KeyRedeemedUnreadable ->
@@ -504,7 +504,7 @@ creditedResponse db purchaseKey = \case
   Credited CreditedPurchase {purchaseKey = k, badgePurchaseId, credential}
     | k /= purchaseKey -> pure $ Left $ errorResponse BSEReceiptUsed
     | otherwise ->
-        maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
+        maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing Nothing)
           <$> getLedgerEntries db badgePurchaseId 0
 
 signFirstMonth :: BadgeIssuerKey -> ChatController -> BadgeMasterKey -> BadgeType -> Int -> StatementCreditType -> UTCTime -> IO (Either BadgeServiceResponse (StatementEntry, (StatementEntry, BadgeCredential)))
@@ -525,7 +525,7 @@ firstMonthResponse :: DB.Connection -> Int64 -> Maybe T.Text -> (StatementEntry,
 firstMonthResponse db purchaseId creditPaymentId_ (granted, signed) = do
   appendLedgerPlan db purchaseId creditPaymentId_ [granted] $ Just $ issuanceAfter granted signed
   entries_ <- getLedgerEntries db purchaseId 0
-  pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_
+  pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing Nothing) entries_
 
 -- | The purchase is reached through the verified signer key and no other way.
 issueBadgeCmd :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeBalance -> IO BadgeServiceResponse
@@ -565,4 +565,4 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
       -- single opening credit, rather than resending the whole history
       entries_ <- getLedgerEntries db purchaseId (fromMaybe 0 assertedId)
       credential_ <- getCurrentIssuance db purchaseId t
-      pure $ maybe (errorResponse BSEInternal) (credentialResponse credential_ (assertedUuid <$ assertedId)) entries_
+      pure $ maybe (errorResponse BSEInternal) (credentialResponse credential_ (assertedUuid <$ assertedId) Nothing) entries_

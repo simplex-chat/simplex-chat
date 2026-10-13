@@ -251,7 +251,7 @@ getLedgerTip db purchaseId =
       db
       [sql|
         SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
-               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id
+               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id, l.charge_id
         FROM sx_badge_service_badge_ledger l
         LEFT JOIN sx_badge_service_payments pay ON pay.payment_id = l.payment_id
         WHERE l.badge_purchase_id = ?
@@ -276,7 +276,7 @@ getLedgerEntries db purchaseId afterEntryId =
       db
       [sql|
         SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
-               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id
+               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id, l.charge_id
         FROM sx_badge_service_badge_ledger l
         LEFT JOIN sx_badge_service_payments pay ON pay.payment_id = l.payment_id
         WHERE l.badge_purchase_id = ? AND l.entry_id > ?
@@ -284,10 +284,10 @@ getLedgerEntries db purchaseId afterEntryId =
       |]
       (purchaseId, afterEntryId)
 
-toEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType, Text, Maybe Text, Maybe Text, UTCTime) :. (Maybe Text, Maybe Text) -> Maybe StatementEntry
-toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) :. (paymentId_, invoiceId_)) =
+toEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType, Text, Maybe Text, Maybe Text, UTCTime) :. (Maybe Text, Maybe Text, Maybe Text) -> Maybe StatementEntry
+toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) :. (paymentId_, invoiceId_, chargeId_)) =
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType})
-    <$> entryTypeFromColumns ((InvoiceId <$> invoiceId_) <$ paymentId_) entryType_ credit_ debit_
+    <$> entryTypeFromColumns ((InvoiceId <$> invoiceId_) <$ paymentId_) chargeId_ entryType_ credit_ debit_
 
 getCurrentIssuance :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe BadgeCredential)
 getCurrentIssuance db purchaseId now = do
@@ -306,7 +306,7 @@ getCurrentIssuance db purchaseId now = do
     _ -> Nothing
 
 -- | creditPaymentId_ names the payment behind a payment credit among the rows.
--- TODO write the other reference columns (charge_id, from_purchase_id, to_purchase_id) for entry types that carry one; only the tag is written today.
+-- TODO write the other reference columns (from_purchase_id, to_purchase_id) for entry types that carry one; only the tag is written today.
 appendLedgerPlan :: DB.Connection -> Int64 -> Maybe Text -> [StatementEntry] -> Maybe (StatementEntry, StatementEntry, BadgeCredential) -> IO ()
 appendLedgerPlan db purchaseId creditPaymentId_ rows issuance_ = do
   mapM_ appendRow rows
@@ -327,18 +327,19 @@ appendLedgerPlan db purchaseId creditPaymentId_ rows issuance_ = do
   where
     appendRow StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, createdAt, entryType} = do
       let (entryTypeT, creditType, debitType) = entryTypeColumns entryType
-          paymentId_ = case entryType of
-            SECredit SCPayment {} -> creditPaymentId_
-            _ -> Nothing
+          (paymentId_, chargeId_) = case entryType of
+            SECredit SCPayment {} -> (creditPaymentId_, Nothing)
+            SECredit SCCharge {chargeId} -> (Nothing, Just chargeId)
+            _ -> (Nothing, Nothing)
       DB.execute
         db
         [sql|
           INSERT INTO sx_badge_service_badge_ledger
             (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,
-             balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type, payment_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+             balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type, payment_id, charge_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType, paymentId_))
+        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType, paymentId_, chargeId_))
       insertedRowId db
 
 -- The claim takes one use before adding the purchase, so a concurrent revoke or redemption waits on this row and sees the new count.
