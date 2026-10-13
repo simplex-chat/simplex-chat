@@ -484,10 +484,15 @@ final class ChatModel: ObservableObject {
         fileToOpen = (fileId: file.fileId, chatId: chatId, open: open)
     }
 
+    func receivedFileToOpen(_ file: CIFile) -> Bool {
+        if let f = fileToOpen { f.fileId == file.fileId && f.chatId == chatId } else { false }
+    }
+
     func openReceivedFile(_ file: CIFile) {
-        guard let f = fileToOpen, f.fileId == file.fileId else { return }
-        fileToOpen = nil
-        if f.chatId == chatId { f.open(file) }
+        if let f = fileToOpen, receivedFileToOpen(file) {
+            fileToOpen = nil
+            f.open(file)
+        }
     }
 
     static let shared = ChatModel()
