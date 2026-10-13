@@ -50,7 +50,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "fails, rather than refuses, a header that names another algorithm, a shape Apple may yet adopt" testAppleOtherAlgorithm
     it "fails, rather than refuses, another app's bundle id, since ours may be misconfigured" testAppleOtherBundle
     it "refuses a refunded transaction" testAppleRevoked
-    it "reports Sandbox, Xcode and LocalTesting transactions as test purchases" testAppleSandbox
+    it "reports a Sandbox transaction as a test purchase" testAppleSandbox
     it "fails, rather than refuses, a chain Apple did not mark for signing receipts" testAppleUnmarkedChain
     it "fails, rather than refuses, a payload Apple signed in a shape it does not know" testAppleUnknownShape
     it "records the price in the currency's minor units, or not at all" testApplePrice
@@ -290,9 +290,8 @@ testAppleRevoked = do
 testAppleSandbox :: IO ()
 testAppleSandbox = do
   chain <- trustedChain
-  forM_ ["Sandbox", "Xcode", "LocalTesting"] $ \environment -> do
-    jws <- signedBy chain $ transactionPayload [("environment", J.String environment)] []
-    fmap testPurchase <$> appleVerdict (rootCert chain) jws `shouldReturn` Right True
+  jws <- signedBy chain $ transactionPayload [("environment", "Sandbox")] []
+  fmap testPurchase <$> appleVerdict (rootCert chain) jws `shouldReturn` Right True
 
 testAppleUnmarkedChain :: IO ()
 testAppleUnmarkedChain =
@@ -308,6 +307,8 @@ testAppleUnknownShape = do
         jws <- signedBy chain payload
         outcome <$> appleVerdict (rootCert chain) jws `shouldReturn` Failed
   failsOn $ transactionPayload [("environment", "Staging")] []
+  failsOn $ transactionPayload [("environment", "Xcode")] []
+  failsOn $ transactionPayload [("environment", "LocalTesting")] []
   failsOn $ transactionPayload [] ["productId"]
   failsOn $ transactionPayload [("quantity", "1")] []
 

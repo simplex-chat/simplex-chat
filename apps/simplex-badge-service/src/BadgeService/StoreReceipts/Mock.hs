@@ -18,18 +18,18 @@ import Simplex.Messaging.Util (eitherToMaybe)
 mockStoreVerifier :: StoreVerifier
 mockStoreVerifier = noStoreVerifier {verifyApple = Just mockApple, verifyGoogle = Just mockGoogle}
 
-mockApple :: Text -> Either Text VerifiedStoreTransaction
+mockApple :: Text -> Either StoreRefusal VerifiedStoreTransaction
 mockApple signed = case T.splitOn "." signed of
   [_, payload, _] -> do
     o <- case J.decodeStrict' =<< eitherToMaybe (B64U.decodeUnpadded $ encodeUtf8 payload) of
       Just (J.Object obj) -> Right obj
-      _ -> Left "payload is not base64url JSON"
+      _ -> Left $ SRInvalid "payload is not base64url JSON"
     productId <- case JM.lookup "productId" o of
       Just (J.String p) -> Right p
-      _ -> Left "no productId"
-    transactionRef <- maybe (Left "no transactionId") Right $ appleTransactionId signed
+      _ -> Left $ SRInvalid "no productId"
+    transactionRef <- maybe (Left $ SRInvalid "no transactionId") Right $ appleTransactionId signed
     Right $ vouched transactionRef productId
-  _ -> Left "not three dot-separated parts"
+  _ -> Left $ SRInvalid "not three dot-separated parts"
 
 mockGoogle :: Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
 mockGoogle productId token = pure $ Right $ vouched (googlePurchaseRef token) productId

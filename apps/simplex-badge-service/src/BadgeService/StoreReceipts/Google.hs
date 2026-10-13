@@ -114,7 +114,7 @@ playCall env@PlayEnv {accessToken} prepare url =
         Right (code, body) | code >= 200 && code < 300 -> pure $ Right body
         Right (401, _) -> atomically (writeTVar accessToken Nothing) $> Left (SRVerifierFailed "Play refused this service's access token")
         Right (403, _) -> pure $ Left $ SRVerifierFailed "the service account lacks the Play Console permission for this call"
-        -- a 404 among them: Play answers it for a token it issued but has not yet recorded
+        -- a 404 among them, which Play may answer for a token it issued but has not yet recorded
         Right (code, _) -> pure $ Left $ SRUnreachable $ "Play answered HTTP " <> tshow code
 
 purchaseVerdict :: Text -> Text -> ProductPurchase -> Either StoreRefusal VerifiedStoreTransaction

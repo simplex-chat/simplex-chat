@@ -169,6 +169,7 @@ badgeServiceTests = do
       it "should retry a receipt the service could not verify, and credit it with no trigger at all" testStoreReceiptRetried
       it "should credit a second receipt while an earlier one waits for the store" testStoreReceiptNotBlocked
       it "should answer a refused receipt from the record, sending nothing, and not list it" testStoreRefusalKept
+      it "should refuse a test purchase for good, and answer it from the record" testStoreTestPurchaseRefused
       it "should announce a settlement to an owner that is not active, and print nothing for a hidden one" testStoreSettledOtherProfile
       it "should resolve one new transaction handed over twice at once to one record" testStoreReceiptTwoAtOnce
       it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
@@ -2194,6 +2195,18 @@ testStoreRefusalKept ps = do
       (alice </)
       verifications `shouldReturn` 1
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]
+
+testStoreTestPurchaseRefused :: HasCallStack => TestParams -> IO ()
+testStoreTestPurchaseRefused ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsStore = FakeStore {appleSandboxJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      invoiceId <- createInvoice alice 1
+      let purchase = purchaseWithInvoice 1 invoiceId SPApple {jws = appleSandboxJWS}
+      alice ##> purchase
+      alice <### [StartsWith (invoicePurchase "" invoiceId), ConsoleString (refusedLine "" invoiceId "service_error final test_purchase")]
+      heldStoreReceipts (chatController alice) `shouldReturn` 0
+      alice ##> purchase
+      alice <## "cannot get badge: badge service error: test_purchase"
 
 testStoreSettledOtherProfile :: HasCallStack => TestParams -> IO ()
 testStoreSettledOtherProfile ps =

@@ -10,8 +10,8 @@ module BadgeService.StoreReceipts.Apple
   )
 where
 
-import BadgeService.StoreReceipts (StoreVerifierFailure (..), VerifiedStoreTransaction (..))
-import Control.Exception (IOException, throw, try)
+import BadgeService.StoreReceipts (StoreRefusal (..), VerifiedStoreTransaction (..))
+import Control.Exception (IOException, try)
 import Control.Monad (guard, unless)
 import Crypto.Hash.Algorithms (SHA256 (..))
 import Crypto.Number.Serialize (os2ip)
@@ -36,22 +36,24 @@ import Data.X509.Validation (SignatureFailure (..), SignatureVerification (..), 
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 
-verifyAppleTransaction :: SignedCertificate -> Text -> Text -> Either Text VerifiedStoreTransaction
+verifyAppleTransaction :: SignedCertificate -> Text -> Text -> Either StoreRefusal VerifiedStoreTransaction
 verifyAppleTransaction root ourBundleId jws = case T.splitOn "." jws of
   [header, payload, signature] -> do
     leaf <- signingChain root =<< certificateChain header
     sig <- jwsSignature signature
-    unless (ECDSA.verify SHA256 (leafKey leaf) sig (encodeUtf8 $ header <> "." <> payload)) $
-      Left "the signature does not verify"
-    transaction ourBundleId $ either (const $ failed "the payload Apple signed is not a transaction") id $ do
+    key <- leafKey leaf
+    unless (ECDSA.verify SHA256 key sig (encodeUtf8 $ header <> "." <> payload)) $
+      refused "the signature does not verify"
+    tx <- either (const $ failed "the payload Apple signed is not a transaction") Right $ do
       o <- maybe (Left "not base64url JSON") Right $ jsonObject payload
       JT.parseEither appleTransactionP o
-  _ -> Left "not three dot-separated parts"
+    transaction ourBundleId tx
+  _ -> refused "not three dot-separated parts"
 
 -- | A header or chain in a shape Apple may yet adopt proves no forgery, so it fails rather than refuses.
-certificateChain :: Text -> Either Text [ByteString]
+certificateChain :: Text -> Either StoreRefusal [ByteString]
 certificateChain header = do
-  o <- maybe (Left "the header is not base64url JSON") Right $ jsonObject header
+  o <- maybe (refused "the header is not base64url JSON") Right $ jsonObject header
   case JM.lookup "alg" o of
     Just (J.String "ES256") -> Right ()
     _ -> failed "the header does not name ES256"
@@ -61,10 +63,10 @@ certificateChain header = do
   where
     der = \case
       J.String c | Right bs <- B64.decode (encodeUtf8 c) -> Right bs
-      _ -> Left "an x5c certificate is not base64"
+      _ -> refused "an x5c certificate is not base64"
 
 -- | The root in the chain is ignored: trust comes from the configured one alone.
-signingChain :: SignedCertificate -> [ByteString] -> Either Text SignedCertificate
+signingChain :: SignedCertificate -> [ByteString] -> Either StoreRefusal SignedCertificate
 signingChain root = \case
   [leafDer, intermediateDer, _] -> do
     leaf <- certificate leafDer
@@ -73,7 +75,7 @@ signingChain root = \case
     unless (signedBy root intermediate) $ failed "the intermediate is not signed by the configured root"
     case verifySignedSignature leaf (certPubKey $ getCertificate intermediate) of
       SignaturePass -> Right ()
-      SignatureFailed SignatureInvalid -> Left "the leaf is not signed by the intermediate"
+      SignatureFailed SignatureInvalid -> refused "the leaf is not signed by the intermediate"
       SignatureFailed _ -> failed "the intermediate's key cannot check the leaf's signature algorithm"
     -- Apple issues other certificates under this root, developers' among them; only these two mark the receipt-signing chain
     unless (marked receiptSigningLeaf leaf && marked appleIntermediate intermediate) $
@@ -89,18 +91,18 @@ signingChain root = \case
     receiptSigningLeaf = [1, 2, 840, 113635, 100, 6, 11, 1]
     appleIntermediate = [1, 2, 840, 113635, 100, 6, 2, 1]
 
-leafKey :: SignedCertificate -> ECDSA.PublicKey
+leafKey :: SignedCertificate -> Either StoreRefusal ECDSA.PublicKey
 leafKey leaf = case certPubKey (getCertificate leaf) of
-  PubKeyEC (PubKeyEC_Named ECC.SEC_p256r1 pt) | Just p <- unserializePoint p256 pt -> ECDSA.PublicKey p256 p
+  PubKeyEC (PubKeyEC_Named ECC.SEC_p256r1 pt) | Just p <- unserializePoint p256 pt -> Right $ ECDSA.PublicKey p256 p
   _ -> failed "the leaf Apple issued holds no P-256 key"
   where
     p256 = ECC.getCurveByName ECC.SEC_p256r1
 
 -- | JWS carries ES256 as r and s, 32 bytes each, not the DER a certificate uses.
-jwsSignature :: Text -> Either Text ECDSA.Signature
+jwsSignature :: Text -> Either StoreRefusal ECDSA.Signature
 jwsSignature s = case B64U.decodeUnpadded (encodeUtf8 s) of
   Right bs | B.length bs == 64 -> let (r, s') = B.splitAt 32 bs in Right $ ECDSA.Signature (os2ip r) (os2ip s')
-  _ -> Left "the signature is not 64 base64url bytes"
+  _ -> refused "the signature is not 64 base64url bytes"
 
 data AppleTransaction = AppleTransaction
   { transactionId :: Text,
@@ -125,12 +127,16 @@ appleTransactionP o = do
   currency <- o J..:? "currency"
   pure AppleTransaction {transactionId, productId, bundleId, environment, quantity, revoked, price, currency}
 
-transaction :: Text -> AppleTransaction -> Either Text VerifiedStoreTransaction
+transaction :: Text -> AppleTransaction -> Either StoreRefusal VerifiedStoreTransaction
 transaction ourBundleId AppleTransaction {transactionId, productId, bundleId, environment, quantity, revoked, price, currency}
   -- the configured bundle id may be the wrong one, and refusing for good would destroy every genuine purchase
   | bundleId /= ourBundleId = failed "another app's bundle id, or ours misconfigured"
-  | revoked = Left "refunded or revoked"
-  | otherwise =
+  | revoked = refused "refunded or revoked"
+  | otherwise = do
+      testPurchase <- case environment of
+        "Production" -> Right False
+        "Sandbox" -> Right True
+        _ -> failed "an environment this verifier does not know"
       Right
         VerifiedStoreTransaction
           { transactionRef = transactionId,
@@ -139,13 +145,6 @@ transaction ourBundleId AppleTransaction {transactionId, productId, bundleId, en
             testPurchase,
             paid = paidOf price currency
           }
-  where
-    testPurchase = case environment of
-      "Production" -> False
-      "Sandbox" -> True
-      "Xcode" -> True
-      "LocalTesting" -> True
-      _ -> failed "an environment this verifier does not know"
 
 -- | Apple's price is in milliunits of the currency, whatever its minor unit.
 paidOf :: Maybe Integer -> Maybe Text -> Maybe (CurrencyAmount, Text)
@@ -169,8 +168,11 @@ minorUnitDigits c
 jsonObject :: Text -> Maybe J.Object
 jsonObject part = J.decodeStrict' =<< eitherToMaybe (B64U.decodeUnpadded $ encodeUtf8 part)
 
-failed :: Text -> a
-failed = throw . StoreVerifierFailure
+refused :: Text -> Either StoreRefusal a
+refused = Left . SRInvalid
+
+failed :: Text -> Either StoreRefusal a
+failed = Left . SRVerifierFailed . ("apple verifier: " <>)
 
 readAppleRoot :: FilePath -> IO (Either String SignedCertificate)
 readAppleRoot path =

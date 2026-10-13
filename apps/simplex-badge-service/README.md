@@ -230,7 +230,8 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   publishes it at <https://www.apple.com/certificateauthority/AppleRootCA-G3.cer>. A transaction
   for another bundle id, or a chain this root does not verify, is answered `internal` and logged as
   an error rather than refused, since `bundle_id` or `root_certificate` may be the wrong one; check
-  both when those errors appear.
+  both when those errors appear, unless the purchase was made in Xcode's StoreKit testing, which
+  the App Store does not sign, so no root verifies it.
 - `[google]` asks the Google Play Developer API about each purchase, and acknowledges it before
   crediting it, as the service account whose JSON key `service_account_file` holds. The account
   needs both Play Console permissions Google's

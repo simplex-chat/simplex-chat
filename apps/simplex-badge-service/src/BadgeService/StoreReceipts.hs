@@ -6,7 +6,6 @@
 module BadgeService.StoreReceipts
   ( VerifiedStoreTransaction (..),
     StoreRefusal (..),
-    StoreVerifierFailure (..),
     StoreVerifier (..),
     StoreReceipt (..),
     noStoreVerifier,
@@ -14,8 +13,7 @@ module BadgeService.StoreReceipts
   )
 where
 
-import Control.Exception (Exception, catch, evaluate)
-import Data.Bifunctor (first)
+import Control.Exception (evaluate)
 import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, isDigit, isPrint, isSpace)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -50,18 +48,11 @@ data StoreRefusal
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
 
--- | Thrown, never returned, by a verifier that cannot reach a verdict, since its Left is terminal.
--- The reason is logged, so it is always a literal that cannot quote the receipt.
-newtype StoreVerifierFailure = StoreVerifierFailure Text
-  deriving (Show)
-
-instance Exception StoreVerifierFailure
-
 -- | Apple signs its receipt and ships the certificate chain in it, so it is verified with no network
 -- call; a Play token is opaque and must be asked about, which is why only the Play fields are in IO.
 data StoreVerifier = StoreVerifier
-  { -- the JWS; every Left becomes SRInvalid, so a verifier that cannot reach a verdict throws instead
-    verifyApple :: Maybe (Text -> Either Text VerifiedStoreTransaction),
+  { -- the JWS
+    verifyApple :: Maybe (Text -> Either StoreRefusal VerifiedStoreTransaction),
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token
     acknowledgeGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
     -- microseconds; requests are answered one at a time, so a verifier that does not finish holds up every other one
@@ -84,7 +75,7 @@ toStoreReceipt :: StoreVerifier -> ServicePayment -> Maybe (Either StoreRefusal 
 toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, verifyTimeout} = \case
   SPApple {jws} -> Just $ case appleTransactionId jws of
     Nothing -> Left $ SRInvalid "names no transaction"
-    Just ref -> Right $ StoreReceipt (StoreTransactionRef PPApple ref) (maybe unconfigured (\verify -> offline $ first SRInvalid $ verify jws) verifyApple) Nothing
+    Just ref -> Right $ StoreReceipt (StoreTransactionRef PPApple ref) (maybe unconfigured (\verify -> offline $ verify jws) verifyApple) Nothing
   SPGoogle {productId, token}
     -- the claim is the token's hash, so neither string may name any purchase but the one it claims,
     -- whatever path a verifier builds from them
@@ -104,7 +95,6 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
     -- nothing was fetched, so a throw or an overrun is this service's failure or a shape it does not know, never an outage
     offline verdict =
       (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))
-        `catch` (\(StoreVerifierFailure reason) -> pure $ Left $ SRVerifierFailed $ "apple verifier: " <> reason)
         `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
     online what call =
       (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout verifyTimeout (call >>= forced))

@@ -72,7 +72,7 @@ newFakeStore = do
         ]
       verifyApple jws
         | jws == appleThrowingJWS = error "fake verifier bug"
-        | otherwise = maybe (Left "not a fake receipt") Right $ lookup jws appleReceipts
+        | otherwise = maybe (Left $ SRInvalid "not a fake receipt") Right $ lookup jws appleReceipts
       verifyGoogle = googleVerdict pendingSettled googleDown
   pure
     FakeStore
