@@ -15,6 +15,7 @@ on:
       - "apps/simplex-chat/**"
       - "apps/simplex-bot/**"
       - "apps/simplex-bot-advanced/**"
+      - "apps/simplex-badge-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
       - "tests/**"
@@ -25,10 +26,6 @@ on:
       - "scripts/ci/**"
       - "scripts/desktop/**"
       - ".github/**"
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') }}
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
 # 
@@ -69,14 +66,26 @@ jobs:
 # =============================
 
 # Create release, but only if it's triggered by tag push.
-# On pull requests/commits push, this job will always complete.
+# Create simplex-chat-libs release core-<version>, but only if the head commit of a push to master or stable changes the version in simplex-chat.cabal.
+# On pull requests and other pushes, this job will always complete.
+
+# Secrets:
+# -------
+# NODEJS_REPO_TOKEN
+#  Only select repositories: simplex-chat-libs
+#  Permissions:
+#   * Contents (Read and Write)
 
   maybe-release:
     runs-on: ubuntu-latest
+    outputs:
+      libs_tag: ${{ steps.libs_commit.outputs.tag }}
     steps:
       - name: Clone project
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'push'
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
 
       - name: Build changelog
         id: build_changelog
@@ -102,6 +111,48 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check version change
+        id: check_version
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable'
+        shell: bash
+        run: |
+          version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
+          prev_version=$(git show HEAD^1:simplex-chat.cabal | sed -n 's/^version: *//p')
+          if [ "$version" != "$prev_version" ]; then
+            echo "version=$version" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Clone libs repo
+        if: steps.check_version.outputs.version
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}-libs
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+          path: libs-repo
+
+      - name: Commit and tag libs release
+        id: libs_commit
+        if: steps.check_version.outputs.version
+        working-directory: libs-repo
+        run: |
+          tag=core-${{ steps.check_version.outputs.version }}
+          printf 'version: %s\ncommit: %s\n' "${{ steps.check_version.outputs.version }}" "${{ github.sha }}" > core-release
+          git config user.name "SimpleX Chat"
+          git config user.email "build@simplex.chat"
+          git add core-release
+          git commit -m "$tag"
+          git tag "$tag"
+          git push --atomic origin HEAD "$tag"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: Create libs release
+        if: steps.check_version.outputs.version
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ steps.libs_commit.outputs.tag }}
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+
 # =========================
 #        Linux Build
 # =========================
@@ -110,6 +161,9 @@ jobs:
     name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
     runs-on: ${{ matrix.runner }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}-${{ needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -128,6 +182,7 @@ jobs:
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
+            libs: true
           - os: 24.04
             os_underscore: 24_04
             arch: x86_64
@@ -142,6 +197,7 @@ jobs:
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:6a62a4157b8775eaf4959cb629e757d32d39d1f4c8ac1b0ddc2510b555cf72f3'
+            libs: true
           - os: 24.04
             os_underscore: 24_04
             arch: aarch64
@@ -153,6 +209,8 @@ jobs:
       - name: Checkout Code
         if: matrix.should_run == true
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Setup swap
         if: matrix.ghc == '8.10.7' && matrix.should_run == true
@@ -241,6 +299,25 @@ jobs:
             mv "$bin" /out/
           done
           strip /out/simplex-chat
+
+      - name: Build library
+        if: needs.maybe-release.outputs.libs_tag && matrix.libs
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          SKIP_VLC=1 scripts/desktop/build-lib-linux.sh
+          name=simplex-chat-libs-linux-${{ matrix.arch }}
+          mkdir -p release-libs/$name/libs
+          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          (cd release-libs/$name && zip -r ../$name.zip libs)
+
+      - name: Upload library
+        if: needs.maybe-release.outputs.libs_tag && matrix.libs
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
+          files: release-libs/*.zip
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
       - name: Build CLI deb
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
@@ -357,6 +434,14 @@ jobs:
           sudo chmod -R 777 dist-newstyle ~/.cabal
           sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
 
+      - name: Mount RAM disk for tests
+        if: matrix.should_run == true && matrix.arch == 'x86_64'
+        shell: bash
+        run: |
+          mkdir -p tests/tmp
+          sudo mount -t tmpfs -o size=512M tmpfs tests/tmp
+          sudo chown $(id -u):$(id -g) tests/tmp
+
       - name: Run tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         timeout-minutes: 120
@@ -387,7 +472,7 @@ jobs:
     name: "ubuntu-22.04-x86_64 (Postgres lib), GHC: ${{ needs.variables.outputs.GHC_VER }}"
     needs: [maybe-release, variables]
     runs-on: ubuntu-22.04
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: needs.maybe-release.outputs.libs_tag
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -457,15 +542,18 @@ jobs:
           ARCH=x86_64
           GHC_VER=${{ needs.variables.outputs.GHC_VER }}
           BUILD_DIR=$(echo dist-newstyle/build/${ARCH}-linux/ghc-${GHC_VER}/simplex-chat-*)
-          mkdir -p postgres-libs
-          cp ${BUILD_DIR}/build/libsimplex.so postgres-libs/
-          cp ${BUILD_DIR}/build/deps/* postgres-libs/
+          mkdir -p postgres-libs/libs
+          cp ${BUILD_DIR}/build/libsimplex.so postgres-libs/libs/
+          cp ${BUILD_DIR}/build/deps/* postgres-libs/libs/
+          (cd postgres-libs && zip -r simplex-chat-libs-linux-x86_64-postgres.zip libs)
 
-      - name: Upload postgres libs artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload postgres library
+        uses: softprops/action-gh-release@v2
         with:
-          name: simplex-libs-linux-postgres-x86_64
-          path: postgres-libs/
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
+          files: postgres-libs/*.zip
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
       - name: Fix permissions for cache
         shell: bash
@@ -481,16 +569,21 @@ jobs:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
     runs-on: ${{ matrix.os }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-macos-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-latest
+            arch: aarch64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-aarch64
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
             openssl_dir: "/opt/homebrew/opt"
           - os: macos-15-intel
+            arch: x86_64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-x86-64
             desktop_asset_name: simplex-desktop-macos-x86_64.dmg
@@ -498,6 +591,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Prepare build
         uses: ./.github/actions/prepare-build
@@ -515,7 +610,7 @@ jobs:
         run: |
           echo "ignore-project: False"                                                    >> cabal.project.local
           echo "package simplexmq"                                                        >> cabal.project.local
-          echo "    extra-include-dirs: ${{ matrix.opnessl_dir }}/openssl@3.0/include"    >> cabal.project.local
+          echo "    extra-include-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/include"    >> cabal.project.local
           echo "    extra-lib-dirs: ${{ matrix.openssl_dir}}/openssl@3.0/lib"             >> cabal.project.local
           echo ""                                                                         >> cabal.project.local
           echo "package direct-sqlcipher"                                                 >> cabal.project.local
@@ -588,6 +683,26 @@ jobs:
             exit 1
           fi
 
+      - name: Build library
+        id: mac_lib_build
+        if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
+        shell: bash
+        run: |
+          SKIP_VLC=1 scripts/desktop/build-lib-mac.sh
+          name=simplex-chat-libs-macos-${{ matrix.arch }}
+          mkdir -p release-libs/$name/libs
+          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          (cd release-libs/$name && zip -r ../$name.zip libs)
+
+      - name: Upload library
+        if: ${{ !cancelled() && steps.mac_lib_build.outcome == 'success' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
+          files: release-libs/*.zip
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+
 # =========================
 #      Windows Build
 # =========================
@@ -596,6 +711,9 @@ jobs:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
     runs-on: ${{ matrix.os }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-windows-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -607,6 +725,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Prepare build
         uses: ./.github/actions/prepare-build
@@ -633,6 +753,7 @@ jobs:
             git
             perl
             make
+            zip
           pacboy: >-
             toolchain:p
             cmake:p
@@ -660,6 +781,28 @@ jobs:
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+
+      - name: Build library
+        if: needs.maybe-release.outputs.libs_tag
+        shell: msys2 {0}
+        run: |
+          export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
+          SKIP_VLC=1 scripts/desktop/build-lib-windows.sh
+          dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
+          name=simplex-chat-libs-windows-x86_64
+          mkdir -p release-libs/$name/libs
+          find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/windows-x86_64 -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          cp libsimplex.lib release-libs/$name/libs/
+          (cd release-libs/$name && zip -r ../$name.zip libs)
+
+      - name: Upload library
+        if: needs.maybe-release.outputs.libs_tag
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
+          files: release-libs/*.zip
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v')
@@ -694,110 +837,3 @@ jobs:
           bin_hash: ${{ steps.windows_desktop_build.outputs.package_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
-# =========================
-#   NodeJS libs release
-# =========================
-
-# Downloads Desktop builds, extracts and archives libraries for NodeJS addon.
-# Depends on Linux/MacOS, executes only on release.
-
-# Secrets:
-# -------
-# NODEJS_REPO_TOKEN
-#  Only select repositories: simplex-chat-libs 
-#  Permissions:
-#   * Contents (Read and Write)
-
-  release-nodejs-libs:
-    runs-on: ubuntu-latest
-    needs: [build-linux, build-linux-postgres, build-macos]
-    if: startsWith(github.ref, 'refs/tags/v') && (!cancelled())
-    steps:
-      - name: Checkout current repository
-        uses: actions/checkout@v6
-
-      - name: Install packages for archiving
-        run: sudo apt install -y msitools gcc-mingw-w64
-
-      - name: Download postgres libs artifact
-        if: needs.build-linux-postgres.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: simplex-libs-linux-postgres-x86_64
-          path: ${{ runner.temp }}/postgres-libs
-
-      - name: Build archives
-        run: |
-          INIT_DIR='${{ runner.temp }}/artifacts'
-          RELEASE_DIR='${{ runner.temp }}/release-assets'
-          TAG='${{ github.ref_name }}'
-          URL='https://github.com/${{ github.repository }}/releases/download'
-          PREFIX='${{ github.event.repository.name }}-libs'
-          # Windows-specific
-          FILE_URL='https://raw.githubusercontent.com/${{ github.repository }}/refs/tags/${{ github.ref_name }}'
-
-          # Setup directories
-          mkdir "$INIT_DIR" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # Downlaod desktop release
-          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-ubuntu-22_04-x86_64.deb" -o linux.deb
-          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-macos-aarch64.dmg" -o macos-aarch64.dmg
-          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-macos-x86_64.dmg" -o macos-x86_64.dmg
-          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-windows-x86_64.msi" -o windows-x86_64.msi
-
-          # Linux
-          # -----
-          # Extract libraries
-          dpkg-deb -R linux.deb linux-out/ && cd linux-out/opt/simplex/lib/app/resources
-          # Preprare directory
-          mkdir libs && cp *.so libs/
-          # Archive
-          zip -r "${PREFIX}-linux-x86_64.zip" libs
-          # Back to original dir
-          mv "${PREFIX}-linux-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # MacOS: aarch64
-          # --------------
-          7z x macos-aarch64.dmg -omacos1-out/ && cd macos1-out/SimpleX/SimpleX.app/Contents/app/resources/
-          mkdir libs && cp *.dylib libs/
-          zip -r "${PREFIX}-macos-aarch64.zip" libs
-          mv "${PREFIX}-macos-aarch64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # Macos: x86_64
-          # -------------
-          7z x macos-x86_64.dmg -omacos2-out/ && cd macos2-out/SimpleX/SimpleX.app/Contents/app/resources/
-          mkdir libs && cp *.dylib libs/
-          zip -r "${PREFIX}-macos-x86_64.zip" libs
-          mv "${PREFIX}-macos-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # Windows: x86_64
-          # ---------------
-          msiextract windows-x86_64.msi -C windows-out && cd windows-out/SimpleX/app/resources
-
-          # We need to generate library that exports symbols from Windows dll
-          curl --proto '=https' --tlsv1.2 -sSf -LO "${FILE_URL}/libsimplex.dll.def"
-          x86_64-w64-mingw32-dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
-
-          mkdir libs && cp *.dll *.lib libs/
-          zip -r "${PREFIX}-windows-x86_64.zip" libs
-          mv "${PREFIX}-windows-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # Linux PostgreSQL (only if postgres build succeeded)
-          # -------------------------------------------------
-          POSTGRES_LIBS='${{ runner.temp }}/postgres-libs'
-          if [ -d "$POSTGRES_LIBS" ]; then
-            mkdir -p linux-postgres/libs
-            cp "${POSTGRES_LIBS}"/*.so linux-postgres/libs/
-            cd linux-postgres
-            zip -r "${PREFIX}-linux-x86_64-postgres.zip" libs
-            mv "${PREFIX}-linux-x86_64-postgres.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-          fi
-
-      - name: Create release in libs repo and upload artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ github.ref_name }}
-          files: ${{ runner.temp }}/release-assets/*
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}

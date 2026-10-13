@@ -151,7 +151,7 @@ if [ -n "$LOCAL_DIRS" ]; then
 fi
 
 cd -
-scripts/desktop/prepare-vlc-mac.sh
+[ -n "$SKIP_VLC" ] || scripts/desktop/prepare-vlc-mac.sh
 
 links_dir=apps/multiplatform/build/links
 mkdir -p $links_dir

@@ -255,6 +255,8 @@ actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolea
   return VideoPlayer.getBitmapFromVideo(null, uri, withAlertOnException)
 }
 
+actual suspend fun hasVideoTrack(uri: URI): Boolean = VideoPlayer.hasVideoTrack(uri)
+
 @OptIn(ExperimentalEncodingApi::class)
 actual fun ByteArray.toBase64StringForPassphrase(): String = Base64.encode(this)
 

@@ -92,6 +92,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | `views/chatlist/ChatListView.kt` | PC1, PC28 | High | Main screen — chat list rendering and search |
+| `views/chatlist/GetStakeBanner.kt` | PC1 | Low | Crowdfunding banner and shared banner card chrome |
 | `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3 | Medium | Navigation from chat list item to chat |
 | `views/chatlist/ChatPreviewView.kt` | PC1, PC2, PC3, PC11 | Medium | Chat row preview rendering |
 | `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
@@ -219,6 +220,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/usersettings/SetDeliveryReceiptsView.kt` | PC2 | Low | Delivery receipts toggle |
 | `views/usersettings/RTCServers.kt` | PC17, PC25 | Medium | WebRTC ICE server configuration |
 | `views/usersettings/DeveloperView.kt` | — | Low | Developer/debug settings |
+| `views/usersettings/StorageView.kt` | — | Low | Storage breakdown (developer options) |
 | `views/usersettings/HelpView.kt` | — | Low | Help and support links |
 | `views/usersettings/MarkdownHelpView.kt` | PC4 | Low | Markdown formatting guide |
 | `views/usersettings/VersionInfoView.kt` | — | Low | Version display |
@@ -424,6 +426,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `platform/Videos.desktop.kt` | PC10 | Low | Desktop video utilities |
 | `platform/Notifications.desktop.kt` | PC18 | Low | Desktop notification setup |
 | `platform/Images.desktop.kt` | PC10 | Low | Desktop image processing |
+| `platform/AnimatedImage.desktop.kt` | PC10 | Low | Desktop animated image frame decoding (bounded) |
 | `platform/PlatformTextField.desktop.kt` | PC4 | Low | Desktop text field actual implementation |
 | `platform/Share.desktop.kt` | PC10 | Low | Desktop clipboard/share |
 | `platform/Back.desktop.kt` | PC1 | Low | Desktop back navigation |

@@ -142,6 +142,7 @@ class OpenChatAlertViewController: UIViewController {
     private let profileBadge: LocalBadge?
     private let subtitle: String?
     private let information: String?
+    private let secondaryInformation: Bool
     private let cancelTitle: String
     private let confirmTitle: String?
     private let secondTitle: String?
@@ -156,6 +157,7 @@ class OpenChatAlertViewController: UIViewController {
         profileBadge: LocalBadge? = nil,
         subtitle: String? = nil,
         information: String? = nil,
+        secondaryInformation: Bool = false,
         cancelTitle: String = "Cancel",
         confirmTitle: String? = "Open",
         secondTitle: String? = nil,
@@ -169,6 +171,7 @@ class OpenChatAlertViewController: UIViewController {
         self.profileBadge = profileBadge
         self.subtitle = subtitle
         self.information = information
+        self.secondaryInformation = secondaryInformation
         self.cancelTitle = cancelTitle
         self.confirmTitle = confirmTitle
         self.secondTitle = secondTitle
@@ -248,7 +251,7 @@ class OpenChatAlertViewController: UIViewController {
             let infoLabel = UILabel()
             infoLabel.text = information
             infoLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
-            infoLabel.textColor = .label
+            infoLabel.textColor = secondaryInformation ? .secondaryLabel : .label
             infoLabel.numberOfLines = 3
             infoLabel.textAlignment = .center
             infoLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -426,6 +429,7 @@ func showOpenChatAlert<Content: View>(
     theme: AppTheme,
     subtitle: String? = nil,
     information: String? = nil,
+    secondaryInformation: Bool = false,
     cancelTitle: String = "Cancel",
     confirmTitle: String? = "Open",
     secondTitle: String? = nil,
@@ -446,6 +450,7 @@ func showOpenChatAlert<Content: View>(
             profileBadge: profileBadge,
             subtitle: subtitle,
             information: information,
+            secondaryInformation: secondaryInformation,
             cancelTitle: cancelTitle,
             confirmTitle: confirmTitle,
             secondTitle: secondTitle,

@@ -8,7 +8,7 @@
 
 <img src="images/github-banner.jpg" alt="SimpleX logo" width="100%">
 
-Invest in SimpleX Chat. [Register now](https://simplexchat.typeform.com/crowdfunding).
+Invest in SimpleX Chat. [Learn more on Wefunder](https://wefunder.com/simplex.chat?utm_source=github).
 
 # SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!
 
@@ -179,6 +179,7 @@ SimpleX Chat founder
 - [Privacy and security: technical details and limitations](#privacy-and-security-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Develop a chat bot](#develop-a-chat-bot)
+- [Agents](#agents)
 - [Roadmap](#roadmap)
 - [Disclaimers, Security contact, License](#disclaimers)
 
@@ -219,6 +220,10 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent and important updates:
+
+[Sep 19, 2026. SimpleX Supporter Badges — Send Larger Files That Stay Available Longer, Without Being Identified](./blog/20260919-simplex-supporter-badges.md)
+
+[Aug 20, 2026. Equity Crowdfunding Launched - You Can Get a Stake in SimpleX Chat](./blog/20260819-simplex-chat-crowdfunding.md)
 
 [Jul 22, 2026. SimpleX Public Names — a Name Nobody Can Take From You](./blog/20260722-simplex-public-names.md)
 
@@ -326,6 +331,18 @@ You can create a chat bot or any chat-based service in any language running Simp
 See [our new bot API reference](./bots/README.md). Most of it is automatically generated from core library types, so it stays up to date.
 
 Also see [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
+
+## Agents
+
+- For AI assistants: [simplex.chat/llms.txt](https://simplex.chat/llms.txt), an index of the documentation in Markdown, and [SimpleX for AI agents and developers](https://simplex.chat/llms/agents.md).
+- Every page of simplex.chat is also available as Markdown: replace `.html` with `.md` ([simplex.chat/docs/simplex.md](https://simplex.chat/docs/simplex.md)), or add `.md` to the path ([simplex.chat/why.md](https://simplex.chat/why.md)).
+- Libraries: [Node.js](./packages/simplex-chat-nodejs/) ([npm](https://www.npmjs.com/package/simplex-chat)) and [Python](./packages/simplex-chat-python/) ([PyPI](https://pypi.org/project/simplex-chat/)).
+- [Bot API guide](./bots/README.md) and [API reference](./bots/api/README.md): commands, events and types.
+- Example bots: [support bot](./apps/simplex-support-bot/) and [calculator](./apps/simplex-calculator-bot/) in TypeScript, [support bot light](./apps/simplex-support-bot-light/) in Python, [directory service](./apps/simplex-directory-service/) and [broadcast bot](./apps/simplex-broadcast-bot/) in Haskell.
+- [Terminal client](./docs/CLI.md): installation, building from source and usage.
+- Servers: [SMP](./docs/SERVER.md), [XFTP](./docs/XFTP-SERVER.md) and [chat relay](./docs/CHAT-RELAY.md).
+- Protocols: [SimpleX network](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md), [chat](./docs/protocol/simplex-chat.md), [channels](./docs/protocol/channels-overview.md) and [public names](./docs/protocol/names-overview.md).
+- For coding agents working in this repository: [project structure](./docs/contributing/PROJECT.md) and [coding and building](./docs/contributing/CODE.md).
 
 ## Roadmap
 

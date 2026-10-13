@@ -19,7 +19,7 @@ This document provides a structured mapping between product-level concepts, thei
 
 | # | Concept | Product Docs | Spec Docs | Source Files (Swift) | Source Files (Haskell) |
 |---|---------|-------------|-----------|---------------------|----------------------|
-| 1 | Chat List | [views/chat-list.md](views/chat-list.md), [views/onboarding.md](views/onboarding.md) | [spec/client/chat-list.md](../spec/client/chat-list.md) | `Shared/Views/ChatList/ChatListView.swift` | `Controller.hs` (`APIGetChats`) |
+| 1 | Chat List | [views/chat-list.md](views/chat-list.md), [views/onboarding.md](views/onboarding.md) | [spec/client/chat-list.md](../spec/client/chat-list.md) | `Shared/Views/ChatList/ChatListView.swift`, `Shared/Views/ChatList/GetStakeBanner.swift` | `Controller.hs` (`APIGetChats`) |
 | 2 | Direct Chat | [views/chat.md](views/chat.md), [flows/messaging.md](flows/messaging.md) | [spec/client/chat-view.md](../spec/client/chat-view.md) | `Shared/Views/Chat/ChatView.swift`, `ChatInfoView.swift` | `Types.hs` (`Contact`), `Messages.hs` |
 | 3 | Group Chat | [views/chat.md](views/chat.md), [views/group-info.md](views/group-info.md) | [spec/client/chat-view.md](../spec/client/chat-view.md) | `Shared/Views/Chat/ChatView.swift`, `Group/GroupChatInfoView.swift` | `Types.hs` (`GroupInfo`, `GroupMember`) |
 | 4 | Message Composition | [views/chat.md](views/chat.md) | [spec/client/compose.md](../spec/client/compose.md) | `ComposeMessage/ComposeView.swift`, `SendMessageView.swift` | `Controller.hs` (`APISendMessages`) |

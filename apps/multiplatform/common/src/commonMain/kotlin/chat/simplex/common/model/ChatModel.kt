@@ -18,7 +18,7 @@ import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
 import chat.simplex.common.views.migration.MigrationToState
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -102,6 +102,36 @@ object ChannelRelaysModel {
   }
 }
 
+// The badge of whichever profile it was last loaded for, kept current by the badgeChanged event so
+// that a screen already open shows what the renewal worker did with no command behind it.
+object BadgeModel {
+  val rhId = mutableStateOf<Long?>(null)
+  val userId = mutableStateOf<Long?>(null)
+  val badgeState = mutableStateOf<BadgeState?>(null)
+  val alert = mutableStateOf<BadgeAlert?>(null)
+
+  // alert follows the state: getUserBadgeState derives it on every read, so a badgeChanged is
+  // never staler than the alert it carries - the invariant a new alert kind must keep
+  fun set(rhId: Long?, userId: Long, badgeState: BadgeState?) {
+    this.rhId.value = rhId
+    this.userId.value = userId
+    this.badgeState.value = badgeState
+    alert.value = badgeState?.alert
+  }
+
+  fun setAlert(rhId: Long?, userId: Long, alert: BadgeAlert) {
+    if (isCurrent(rhId, userId)) {
+      this.alert.value = alert
+      badgeState.value = badgeState.value?.copy(alert = alert)
+    }
+  }
+
+  fun isCurrent(rhId: Long?, userId: Long?): Boolean =
+    this.rhId.value == rhId && this.userId.value == userId
+}
+
+enum class ChatListBanner { BadgeExpired, BadgeIssueFailed, BadgePitch, GetStake }
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -171,6 +201,12 @@ object ChatModel {
   // Needed to apply black color to left/right cutout area on Android
   val fullscreenGalleryVisible = mutableStateOf(false)
 
+  // the banner kind the chat list showed this app session: it keeps the slot until restart, so dismissing it never puts
+  // another in its place; only the badge alert shows regardless. Set while rendering, so not a state.
+  var chatListBanner: ChatListBanner? = null
+
+  fun bannerSlotFree(banner: ChatListBanner): Boolean = chatListBanner == null || chatListBanner == banner
+
   // preferences
   val notificationPreviewMode by lazy {
     mutableStateOf(
@@ -202,6 +238,7 @@ object ChatModel {
   val migrationState: MutableState<MigrationToState?> by lazy { mutableStateOf(MigrationToDeviceState.makeMigrationState()) }
 
   var draft = mutableStateOf(null as ComposeState?)
+  // chat id with chat scope, see draftChatId() - group chat and its support chats have the same chat id
   var draftChatId = mutableStateOf(null as String?)
 
   // working with external intents or internal forwarding of chat items
@@ -1078,7 +1115,7 @@ object ChatModel {
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
     val current = currentUser.value ?: return
     val updated = current.copy(
-      profile = newProfile.toLocalProfile(current.profile.profileId),
+      profile = newProfile.toLocalProfile(current.profile.profileId).copy(localBadge = current.profile.localBadge, contactDomainVerified = current.profile.contactDomainVerified),
       fullPreferences = preferences ?: current.fullPreferences
     )
     val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
@@ -1259,6 +1296,12 @@ fun sameChatScope(scope1: GroupChatScope, scope2: GroupChatScope) =
       && scope2 is GroupChatScope.MemberSupport
       && scope1.groupMemberId_ == scope2.groupMemberId_
 
+fun draftChatId(chatId: String?, scope: GroupChatScope?): String? =
+  if (chatId == null || scope == null) chatId
+  else when (scope) {
+    is GroupChatScope.MemberSupport -> "$chatId support:${scope.groupMemberId_ ?: ""}"
+  }
+
 @Serializable
 sealed class GroupChatScopeInfo {
   @Serializable @SerialName("memberSupport") data class MemberSupport(val groupMember_: GroupMember?) : GroupChatScopeInfo()
@@ -1286,6 +1329,7 @@ data class User(
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
   val autoAcceptMemberContacts: Boolean,
+  val autoAcceptGroupInvitations: Boolean,
   val viewPwdHash: UserPwdHash?,
   val uiThemes: ThemeModeOverrides? = null,
   val userChatRelay: Boolean,
@@ -1318,6 +1362,7 @@ data class User(
       sendRcptsContacts = true,
       sendRcptsSmallGroups = false,
       autoAcceptMemberContacts = false,
+      autoAcceptGroupInvitations = false,
       viewPwdHash = null,
       uiThemes = null,
       userChatRelay = false,
@@ -1886,7 +1931,7 @@ data class Contact(
     }
 
   val isContactCard: Boolean get() =
-    (activeConn == null || activeConn.connStatus == ConnStatus.Prepared) && profile.contactLink != null && active && preparedContact == null && contactRequestId == null
+    (activeConn == null || activeConn.connStatus == ConnStatus.Prepared) && profile.contactLink != null && active && preparedContact == null && contactRequestId == null && groupDirectInv == null
 
   val isBot: Boolean get() = profile.peerType == ChatPeerType.Bot
 
@@ -2100,10 +2145,32 @@ data class LocalProfile(
   }
 }
 
-@Serializable
-enum class ChatPeerType {
-  @SerialName("human") Human,
-  @SerialName("bot") Bot
+@Serializable(with = ChatPeerTypeSerializer::class)
+sealed class ChatPeerType {
+  @Serializable @SerialName("human") object Human: ChatPeerType()
+  @Serializable @SerialName("bot") object Bot: ChatPeerType()
+  @Serializable @SerialName("business") object Business: ChatPeerType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatPeerType()
+
+  val text: String
+    get() = when (this) {
+      is Human -> "human"
+      is Bot -> "bot"
+      is Business -> "business"
+      is Unknown -> type
+    }
+}
+
+object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatPeerType", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatPeerType =
+    when (val v = decoder.decodeString()) {
+      "human" -> ChatPeerType.Human
+      "bot" -> ChatPeerType.Bot
+      "business" -> ChatPeerType.Business
+      else -> ChatPeerType.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
@@ -2151,7 +2218,7 @@ enum class BadgeStatus {
 @Serializable
 data class BadgeInfo(
   val badgeType: BadgeType,
-  val badgeExpiry: Instant? = null,
+  val badgeExpiry: Instant,
   val badgeExtra: String = ""
 )
 
@@ -2160,6 +2227,218 @@ data class LocalBadge(
   val badge: BadgeInfo,
   val status: BadgeStatus
 )
+
+// paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
+// which outlives entitlement so the credential's window can cover a renewal.
+@Serializable
+data class BadgeState(
+  val badgePurchaseId: Long,
+  val purchaseKey: String,
+  val badgeType: BadgeType,
+  val shown: Boolean,
+  val monthsLeft: Int,
+  val paidThrough: Instant,
+  val renewsAt: Instant? = null,
+  val willRenew: Boolean,
+  val alert: BadgeAlert? = null,
+  val issueError: BadgeIssueError? = null,
+  val nextWakeAt: Instant? = null
+) {
+  val paidThroughText: String get() = badgeDateText(paidThrough)
+}
+
+@Serializable
+data class BadgeIssueError(
+  val failedSince: Instant,
+  val lastAttemptAt: Instant,
+  val reason: BadgeIssueFailure
+)
+
+@Serializable
+sealed class BadgeIssueFailure {
+  // retryable is the service's own view of transience: it gave retryAfter
+  @Serializable @SerialName("serviceError") data class ServiceError(val code: BadgeServiceErrorCode, val retryable: Boolean) : BadgeIssueFailure()
+  @Serializable @SerialName("serviceTimeout") object ServiceTimeout : BadgeIssueFailure()
+  @Serializable @SerialName("network") data class Network(val agentError: String) : BadgeIssueFailure()
+  @Serializable @SerialName("invalidCredential") object InvalidCredential : BadgeIssueFailure()
+  @Serializable @SerialName("unexpected") data class Unexpected(val message: String) : BadgeIssueFailure()
+
+  val text: String get() = when (this) {
+    is ServiceError -> badgeServiceErrorText(code) ?: String.format(generalGetString(MR.strings.badges_error_service_refused), code.text)
+    is ServiceTimeout -> generalGetString(MR.strings.badges_error_no_response)
+    is Network -> generalGetString(MR.strings.badges_error_unreachable)
+    is InvalidCredential -> generalGetString(MR.strings.badges_error_credential_invalid)
+    is Unexpected -> String.format(generalGetString(MR.strings.badges_error_unexpected), message)
+  }
+
+  // the stored form, for support
+  val tag: String get() = when (this) {
+    is ServiceError -> "serviceError ${if (retryable) "retry" else "final"} ${code.text}"
+    is ServiceTimeout -> "serviceTimeout"
+    is Network -> "network $agentError"
+    is InvalidCredential -> "invalidCredential"
+    is Unexpected -> "unexpected $message"
+  }
+}
+
+@Serializable
+data class StatementEntry(
+  val entryId: String,
+  val changeMonths: Int,
+  val balanceMonths: Int,
+  val balanceStartTs: Instant,
+  val balanceAnchorTs: Instant,
+  val balanceBadgeType: BadgeType,
+  val wasPausedSince: Instant? = null,
+  val createdAt: Instant,
+  val entryType: StatementEntryType
+)
+
+@Serializable
+sealed class StatementEntryType {
+  @Serializable @SerialName("credit") data class Credit(val credit: StatementCreditType): StatementEntryType()
+  @Serializable @SerialName("debit") data class Debit(val debit: StatementDebitType): StatementEntryType()
+
+  val text: String
+    get() = when (this) {
+      is Credit -> credit.text
+      is Debit -> debit.text
+    }
+}
+
+// the service is deployed ahead of clients, so a type this version does not know keeps its tag
+@Serializable(with = StatementCreditTypeSerializer::class)
+sealed class StatementCreditType {
+  @Serializable data class Payment(val invoiceId: String? = null): StatementCreditType()
+  object Code: StatementCreditType()
+  @Serializable data class Charge(val chargeId: String): StatementCreditType()
+  object Support: StatementCreditType()
+  @Serializable data class TransferIn(val fromPurchaseKey: String): StatementCreditType()
+  object Opening: StatementCreditType()
+  data class Unknown(val type: String): StatementCreditType()
+
+  val text: String
+    get() = when (this) {
+      is Payment -> "payment"
+      is Code -> "code"
+      is Charge -> "charge"
+      is Support -> "support"
+      is TransferIn -> "transferIn"
+      is Opening -> "opening"
+      is Unknown -> type
+    }
+}
+
+object StatementCreditTypeSerializer : KSerializer<StatementCreditType> {
+  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("StatementCreditType")
+
+  override fun deserialize(decoder: Decoder): StatementCreditType {
+    require(decoder is JsonDecoder)
+    val json = decoder.decodeJsonElement().jsonObject
+    return when (val type = json["type"]?.jsonPrimitive?.content ?: "") {
+      "payment" -> decoder.json.decodeFromJsonElement<StatementCreditType.Payment>(json)
+      "code" -> StatementCreditType.Code
+      "charge" -> decoder.json.decodeFromJsonElement<StatementCreditType.Charge>(json)
+      "support" -> StatementCreditType.Support
+      "transferIn" -> decoder.json.decodeFromJsonElement<StatementCreditType.TransferIn>(json)
+      "opening" -> StatementCreditType.Opening
+      else -> StatementCreditType.Unknown(type)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: StatementCreditType) {
+    require(encoder is JsonEncoder)
+    encoder.encodeJsonElement(buildJsonObject {
+      put("type", value.text)
+      when (value) {
+        is StatementCreditType.Payment -> value.invoiceId?.let { put("invoiceId", it) }
+        is StatementCreditType.Charge -> put("chargeId", value.chargeId)
+        is StatementCreditType.TransferIn -> put("fromPurchaseKey", value.fromPurchaseKey)
+        is StatementCreditType.Code, is StatementCreditType.Support, is StatementCreditType.Opening, is StatementCreditType.Unknown -> {}
+      }
+    })
+  }
+}
+
+@Serializable(with = StatementDebitTypeSerializer::class)
+sealed class StatementDebitType {
+  object Refund: StatementDebitType()
+  @Serializable data class Upgrade(val toPurchaseKey: String): StatementDebitType()
+  @Serializable data class TransferOut(val toPurchaseKey: String): StatementDebitType()
+  object Support: StatementDebitType()
+  object Badge: StatementDebitType()
+  object Lapse: StatementDebitType()
+  data class Unknown(val type: String): StatementDebitType()
+
+  val text: String
+    get() = when (this) {
+      is Refund -> "refund"
+      is Upgrade -> "upgrade"
+      is TransferOut -> "transferOut"
+      is Support -> "support"
+      is Badge -> "badge"
+      is Lapse -> "lapse"
+      is Unknown -> type
+    }
+}
+
+object StatementDebitTypeSerializer : KSerializer<StatementDebitType> {
+  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("StatementDebitType")
+
+  override fun deserialize(decoder: Decoder): StatementDebitType {
+    require(decoder is JsonDecoder)
+    val json = decoder.decodeJsonElement().jsonObject
+    return when (val type = json["type"]?.jsonPrimitive?.content ?: "") {
+      "refund" -> StatementDebitType.Refund
+      "upgrade" -> decoder.json.decodeFromJsonElement<StatementDebitType.Upgrade>(json)
+      "transferOut" -> decoder.json.decodeFromJsonElement<StatementDebitType.TransferOut>(json)
+      "support" -> StatementDebitType.Support
+      "badge" -> StatementDebitType.Badge
+      "lapse" -> StatementDebitType.Lapse
+      else -> StatementDebitType.Unknown(type)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: StatementDebitType) {
+    require(encoder is JsonEncoder)
+    encoder.encodeJsonElement(buildJsonObject {
+      put("type", value.text)
+      when (value) {
+        is StatementDebitType.Upgrade -> put("toPurchaseKey", value.toPurchaseKey)
+        is StatementDebitType.TransferOut -> put("toPurchaseKey", value.toPurchaseKey)
+        is StatementDebitType.Refund, is StatementDebitType.Support, is StatementDebitType.Badge, is StatementDebitType.Lapse, is StatementDebitType.Unknown -> {}
+      }
+    })
+  }
+}
+
+@Serializable
+data class BadgeAlert(
+  val kind: BadgeAlertKind,
+  val episode: String,
+  val date: Instant,
+  val price: BadgeAlertPrice? = null
+) {
+  val dateText: String get() = badgeDateText(date)
+}
+
+@Serializable
+data class BadgeAlertPrice(val amount: Long, val currency: String)
+
+@Serializable
+enum class BadgeAlertKind {
+  @SerialName("renewalApproaching") RenewalApproaching,
+  @SerialName("paymentIssue") PaymentIssue,
+  @SerialName("subscriptionEnded") SubscriptionEnded,
+  @SerialName("prepaidEnding") PrepaidEnding,
+  @SerialName("supportEnded") SupportEnded,
+  @SerialName("issueFailed") IssueFailed
+}
+
+private fun badgeDateText(date: Instant): String {
+  val ts = date.toLocalDateTime(TimeZone.currentSystemDefault())
+  return ts.toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
+}
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
 @Serializable
@@ -3276,6 +3555,7 @@ data class ChatItem (
         is RcvGroupEvent.MemberCreatedContact -> false
         is RcvGroupEvent.MemberProfileUpdated -> false
         is RcvGroupEvent.NewMemberPendingReview -> true
+        is RcvGroupEvent.MsgBadSignature -> false
       }
       is CIContent.SndGroupEventContent -> false
       is CIContent.RcvConnEventContent -> false
@@ -3894,13 +4174,15 @@ enum class MsgDirection {
 sealed class CIForwardedFrom {
   @Serializable @SerialName("unknown") object Unknown: CIForwardedFrom()
   @Serializable @SerialName("contact") class Contact(override val chatName: String, val msgDir: MsgDirection, val contactId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
-  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
+  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null, val memberId: String? = null, val sharedMsgId_: String? = null, val groupType: GroupType? = null): CIForwardedFrom()
+  @Serializable @SerialName("groupLink") class GroupLink(override val chatName: String, val msgDir: MsgDirection, val groupLink: String, val publicGroupId: String, val memberId: String? = null, val sharedMsgId: String, val groupType: GroupType? = null): CIForwardedFrom()
 
   open val chatName: String
     get() = when (this) {
         Unknown -> ""
         is Contact -> chatName
         is Group -> chatName
+        is GroupLink -> chatName
       }
 
   val chatTypeApiIdMsgId: Triple<ChatType, Long, Long?>?
@@ -3908,18 +4190,15 @@ sealed class CIForwardedFrom {
       Unknown -> null
       is Contact -> if (contactId != null) Triple(ChatType.Direct, contactId, chatItemId) else null
       is Group -> if (groupId != null) Triple(ChatType.Group, groupId, chatItemId) else null
+      is GroupLink -> null
     }
 
+  val sourceGroupLink: String?
+    get() = if (this is GroupLink) groupLink else null
+
   fun text(chatType: ChatType): String =
-    if (chatType == ChatType.Local) {
-      if (chatName.isEmpty()) {
-        generalGetString(MR.strings.saved_description)
-      } else {
-        generalGetString(MR.strings.saved_from_description).format(chatName)
-      }
-    } else {
-      generalGetString(MR.strings.forwarded_description)
-    }
+    if (chatType == ChatType.Local) generalGetString(MR.strings.saved_description)
+    else generalGetString(MR.strings.forwarded_description)
 }
 
 @Serializable
@@ -4215,6 +4494,13 @@ enum class MREmojiChar(val value: String) {
   @SerialName("✅") Check("✅");
 }
 
+// set by the core when the file is above the size the sender's badge allows; badgeStatus is null when no proof was sent
+@Serializable
+data class FileProhibited(
+  val maxSize: Long,
+  val badgeStatus: BadgeStatus? = null
+)
+
 @Serializable
 data class CIFile(
   val fileId: Long,
@@ -4222,8 +4508,12 @@ data class CIFile(
   val fileSize: Long,
   val fileSource: CryptoFile? = null,
   val fileStatus: CIFileStatus,
-  val fileProtocol: FileProtocol
+  val fileProtocol: FileProtocol,
+  val fileExpires: Instant? = null,
+  val fileProhibited: FileProhibited? = null
 ) {
+  val expired: Boolean = fileExpires != null && fileExpires < Clock.System.now()
+
   val loaded: Boolean = when (fileStatus) {
     is CIFileStatus.SndStored -> true
     is CIFileStatus.SndTransfer -> true
@@ -4273,7 +4563,7 @@ data class CIFile(
     is CIFileStatus.SndCancelled -> true
     is CIFileStatus.SndError -> true
     is CIFileStatus.SndWarning -> true
-    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvInvitation -> expired
     is CIFileStatus.RcvAccepted -> true
     is CIFileStatus.RcvTransfer -> true
     is CIFileStatus.RcvAborted -> true
@@ -5172,6 +5462,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberCreatedContact") class MemberCreatedContact(): RcvGroupEvent()
   @Serializable @SerialName("memberProfileUpdated") class MemberProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvGroupEvent()
   @Serializable @SerialName("newMemberPendingReview") class NewMemberPendingReview(): RcvGroupEvent()
+  @Serializable @SerialName("msgBadSignature") class MsgBadSignature(): RcvGroupEvent()
 
   val text: String get() = text(isChannel = false)
 
@@ -5196,6 +5487,7 @@ sealed class RcvGroupEvent() {
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
     is NewMemberPendingReview -> generalGetString(MR.strings.rcv_group_event_new_member_pending_review)
+    is MsgBadSignature -> generalGetString(MR.strings.rcv_group_event_msg_bad_signature)
   }
 
   private fun profileUpdatedText(from: Profile, to: Profile): String =

@@ -24,13 +24,13 @@ Simple bot that replies with squares of numbers you send to it:
   const {bot} = await import("simplex-chat")
   // if you are running from this GitHub repo:
   // const {bot} = await import("../dist/index.js")
-  const [chat, _user, _address] = await bot.run({
+  await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
     options: {
       addressSettings: {welcomeMessage: "Send a number, I will square it.",
     },
-    onMessage: async (ci, content) => {
+    onMessage: async (ci, content, chat) => {
       const n = +content.text
       const reply = typeof n === "number" && !isNaN(n)
                     ? `${n} * ${n} = ${n * n}`
@@ -61,6 +61,8 @@ node ./examples/squaring-bot-readme.js
 There is an example with more options in [./examples/squaring-bot.ts](./examples/squaring-bot.ts).
 
 You can run it with: `npx ts-node ./examples/squaring-bot.ts`
+
+A larger example, with a business address and commands as keys: [SimpleX Calculator](../../apps/simplex-calculator-bot/).
 
 ## PostgreSQL backend
 

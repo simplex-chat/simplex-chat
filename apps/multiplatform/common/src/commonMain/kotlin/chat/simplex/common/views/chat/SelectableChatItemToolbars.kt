@@ -17,7 +17,7 @@ import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.*
 import dev.icerock.moko.resources.compose.stringResource
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable

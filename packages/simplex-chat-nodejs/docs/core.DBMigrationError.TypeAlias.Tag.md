@@ -6,6 +6,6 @@
 
 # Type Alias: Tag
 
-> **Tag** = `"invalidConfirmation"` \| `"errorNotADatabase"` \| `"errorMigration"` \| `"errorSQL"`
+> **Tag** = `"invalidConfirmation"` \| `"invalidQueueSize"` \| `"errorNotADatabase"` \| `"errorMigration"` \| `"errorSQL"`
 
-Defined in: [src/core.ts:129](../src/core.ts#L129)
+Defined in: [src/core.ts:133](../src/core.ts#L133)

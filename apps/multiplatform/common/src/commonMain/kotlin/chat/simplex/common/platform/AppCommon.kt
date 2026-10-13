@@ -1,10 +1,12 @@
 package chat.simplex.common.platform
 
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DefaultTheme
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.util.*
 
 enum class AppPlatform {
@@ -29,6 +31,9 @@ else
   BuildConfigCommon.DESKTOP_VERSION_NAME to BuildConfigCommon.DESKTOP_VERSION_CODE
 
 val databaseBackend: String = if (appPlatform == AppPlatform.ANDROID) "sqlite" else BuildConfigCommon.DATABASE_BACKEND
+
+// Country of the Google Play account, only set in the google flavor of the Android app
+val androidPlayStoreCountry: MutableState<String?> = mutableStateOf(null)
 
 class FifoQueue<E>(private var capacity: Int) : LinkedList<E>() {
   override fun add(element: E): Boolean {

@@ -745,8 +745,17 @@ const DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="h
 
 const IMAGE_PLACEHOLDER_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`;
 
+// image/jpg is not a registered MIME type, but SimpleX apps and core use it for JPEG images.
+const DATA_IMAGE_PREFIXES = [
+  'data:image/jpg;base64,',
+  'data:image/jpeg;base64,',
+  'data:image/png;base64,',
+  'data:image/gif;base64,',
+  'data:image/webp;base64,',
+];
+
 function isDataImage(src) {
-  return typeof src === 'string' && src.startsWith('data:image/');
+  return typeof src === 'string' && DATA_IMAGE_PREFIXES.some(prefix => src.startsWith(prefix));
 }
 
 function tailSvg() {

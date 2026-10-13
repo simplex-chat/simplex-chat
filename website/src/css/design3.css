@@ -434,6 +434,16 @@ section.cover div.content p {
     max-width: calc(var(--sec-vwu) * 53);
 }
 
+section.cover div.content p.invest {
+    font-weight: 300;
+}
+
+section.cover div.content p.invest a {
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
 .publications-btns {
     position: absolute;
     bottom: 24px;
@@ -960,7 +970,7 @@ main .section-bg {
 @media (max-width: 959px) {
     section.cover div.content {
         gap: calc(var(--sec-vhu) * 2.5);
-        transform: translateY(calc(var(--sec-vhu) * 5));
+        transform: translateY(calc(var(--sec-vhu) * 3));
     }
 
     .publications-btns,
@@ -992,6 +1002,14 @@ main .section-bg {
         font-weight: 400;
         font-size: calc(var(--sec-vwu) * 5.5);
         max-width: calc(var(--sec-vwu) * 93);
+    }
+
+    section.cover div.content p.invest {
+        font-weight: 400;
+    }
+
+    section.cover div.content p.invest a {
+        font-weight: 600;
     }
 
     /* --- MAIN SECTIONS --- */

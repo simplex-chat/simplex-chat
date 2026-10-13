@@ -46,7 +46,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.google.accompanist.permissions.*
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -132,7 +132,7 @@ actual fun ActiveCallView() {
   }
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
-      Log.d(TAG, "received from WebRTCView: $apiMsg")
+      Log.d(TAG, "received from WebRTCView: ${apiMsg.resp.javaClass.simpleName}")
       val call = chatModel.activeCall.value
       if (call != null) {
         val callState = call.androidCallState as ActiveCallState
@@ -711,7 +711,7 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
         .collect {
           while (callCommand.isNotEmpty()) {
             val cmd = callCommand.removeFirstOrNull()
-            Log.d(TAG, "WebRTCView LaunchedEffect executing $cmd")
+            Log.d(TAG, "WebRTCView LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
             if (cmd != null) {
               processCommand(wv, cmd)
             }
@@ -785,7 +785,7 @@ class WebRTCInterface(private val onResponse: (WVAPIMessage) -> Unit) {
       // onResponse(message)
       onResponse(json.decodeFromString(message))
     } catch (e: Exception) {
-      Log.e(TAG, "failed parsing WebView message: $message")
+      Log.e(TAG, "failed parsing WebView message")
     }
   }
 }

@@ -101,7 +101,7 @@ build() {
   sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/multiplatform/android/src/main/AndroidManifest.xml"
   sed -i.bak 's/jniLibs.useLegacyPackaging =.*/jniLibs.useLegacyPackaging = true/' "$folder/apps/multiplatform/android/build.gradle.kts"
   sed -i.bak '/android {/a lint {abortOnError = false}' "$folder/apps/multiplatform/android/build.gradle.kts"
-  sed -i.bak '/tasks/Q' "$folder/apps/multiplatform/android/build.gradle.kts"
+  sed -i.bak '/^tasks {/Q' "$folder/apps/multiplatform/android/build.gradle.kts"
   sed -i.bak "s/android.version_code=.*/android.version_code=${vercode}/" "$folder/apps/multiplatform/gradle.properties"
 
   for arch in $arches; do
@@ -119,7 +119,7 @@ build() {
     arch_map "$arch"
 
     android_tmp_folder="${tmp}/android-${arch}"
-    android_apk_output="${folder}/apps/multiplatform/android/build/outputs/apk/release/android-${android_arch}-release-unsigned.apk"
+    android_apk_output="${folder}/apps/multiplatform/android/build/outputs/apk/foss/release/android-foss-${android_arch}-release-unsigned.apk"
     android_apk_output_final="simplex-chat-${android_arch}.apk"
     libs_folder="${folder}/apps/multiplatform/common/src/commonMain/cpp/android/libs"
 
@@ -134,7 +134,7 @@ build() {
 
     # Build only one arch
     sed -i.bak "s/include(.*/include(\"${android_arch}\")/" "$folder/apps/multiplatform/android/build.gradle.kts"
-    gradle -p "$folder/apps/multiplatform/" -Psimplex.assets.dir=../../assets clean :android:assembleRelease
+    gradle -p "$folder/apps/multiplatform/" -Psimplex.assets.dir=../../assets clean :android:assembleFossRelease
 
     mkdir -p "$android_tmp_folder"
     unzip -oqd "$android_tmp_folder" "$android_apk_output"

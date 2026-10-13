@@ -6,6 +6,6 @@
 
 # Type Alias: DBMigrationError
 
-> **DBMigrationError** = [`InvalidConfirmation`](core.DBMigrationError.Interface.InvalidConfirmation.md) \| [`ErrorNotADatabase`](core.DBMigrationError.Interface.ErrorNotADatabase.md) \| [`ErrorMigration`](core.DBMigrationError.Interface.ErrorMigration.md) \| [`ErrorSQL`](core.DBMigrationError.Interface.ErrorSQL.md)
+> **DBMigrationError** = [`InvalidConfirmation`](core.DBMigrationError.Interface.InvalidConfirmation.md) \| [`InvalidQueueSize`](core.DBMigrationError.Interface.InvalidQueueSize.md) \| [`ErrorNotADatabase`](core.DBMigrationError.Interface.ErrorNotADatabase.md) \| [`ErrorMigration`](core.DBMigrationError.Interface.ErrorMigration.md) \| [`ErrorSQL`](core.DBMigrationError.Interface.ErrorSQL.md)
 
-Defined in: [src/core.ts:122](../src/core.ts#L122)
+Defined in: [src/core.ts:125](../src/core.ts#L125)

@@ -15,3 +15,7 @@ Defined in: [src/bot.ts:7](../src/bot.ts#L7)
 ### confirmMigrations?
 
 > `optional` **confirmMigrations?**: [`MigrationConfirmation`](core.Enumeration.MigrationConfirmation.md)
+
+### queueSize?
+
+> `optional` **queueSize?**: `number`
