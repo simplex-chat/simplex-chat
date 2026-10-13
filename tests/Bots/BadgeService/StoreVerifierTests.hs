@@ -31,7 +31,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.X509
-import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (takeDirectory, (</>))
@@ -220,7 +220,7 @@ testAppleVerdict = do
   jws <- signedBy chain $ transactionPayload [] []
   appleVerdict (rootCert chain) jws
     `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD")}
-  appleTransactionId jws `shouldBe` Just "2000000900000001"
+  appleTransactionRef jws `shouldBe` Just "2000000900000001"
 
 testAppleRootNotTrusted :: IO ()
 testAppleRootNotTrusted = do

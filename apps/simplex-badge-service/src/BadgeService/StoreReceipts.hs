@@ -18,7 +18,7 @@ import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, is
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Messaging.Util (catchOwn', tshow)
 import System.Timeout (timeout)
@@ -73,7 +73,7 @@ noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, 
 -- or, from Google, a URL holding the token.
 toStoreReceipt :: StoreVerifier -> ServicePayment -> Maybe (Either StoreRefusal StoreReceipt)
 toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, verifyTimeout} = \case
-  SPApple {jws} -> Just $ case appleTransactionId jws of
+  SPApple {jws} -> Just $ case appleTransactionRef jws of
     Nothing -> Left $ SRInvalid "names no transaction"
     Just ref -> Right $ StoreReceipt (StoreTransactionRef PPApple ref) (maybe unconfigured (\verify -> offline $ verify jws) verifyApple) Nothing
   SPGoogle {productId, token}

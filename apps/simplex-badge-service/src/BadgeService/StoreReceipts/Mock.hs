@@ -10,7 +10,7 @@ import qualified Data.ByteString.Base64.URL as B64U
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.PaymentService (appleTransactionId, googlePurchaseRef)
+import Simplex.Chat.PaymentService (appleTransactionRef, googlePurchaseRef)
 import Simplex.Messaging.Util (eitherToMaybe)
 
 -- | Vouches for any well-formed receipt without verifying anything. Each transaction is named by
@@ -27,7 +27,7 @@ mockApple signed = case T.splitOn "." signed of
     productId <- case JM.lookup "productId" o of
       Just (J.String p) -> Right p
       _ -> Left $ SRInvalid "no productId"
-    transactionRef <- maybe (Left $ SRInvalid "no transactionId") Right $ appleTransactionId signed
+    transactionRef <- maybe (Left $ SRInvalid "no transactionId") Right $ appleTransactionRef signed
     Right $ vouched transactionRef productId
   _ -> Left $ SRInvalid "not three dot-separated parts"
 

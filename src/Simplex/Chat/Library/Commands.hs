@@ -76,7 +76,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
-import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
@@ -5314,7 +5314,7 @@ storeReceiptRefused = \case
 -- | The same reference the service claims a transaction by, read without verifying anything.
 storeTransactionRef :: ServicePayment -> Maybe StoreTransactionRef
 storeTransactionRef = \case
-  SPApple {jws} -> StoreTransactionRef PPApple <$> appleTransactionId jws
+  SPApple {jws} -> StoreTransactionRef PPApple <$> appleTransactionRef jws
   SPGoogle {token} -> Just $ StoreTransactionRef PPGoogle $ googlePurchaseRef token
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing

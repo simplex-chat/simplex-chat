@@ -5,7 +5,7 @@
 module Simplex.Chat.PaymentService
   ( ServiceInvoice (..),
     ServicePayment (..),
-    appleTransactionId,
+    appleTransactionRef,
     googlePurchaseRef,
     module Simplex.Chat.PaymentService.Types,
   ) where
@@ -44,8 +44,8 @@ data ServicePayment
   deriving (Show)
 
 -- | Read without verifying the signature: it names the transaction, and proves nothing about it.
-appleTransactionId :: Text -> Maybe Text
-appleTransactionId signed = case T.splitOn "." signed of
+appleTransactionRef :: Text -> Maybe Text
+appleTransactionRef signed = case T.splitOn "." signed of
   [_, payload, _] -> do
     J.Object o <- J.decodeStrict' =<< eitherToMaybe (B64U.decodeUnpadded $ encodeUtf8 payload)
     J.String txId <- JM.lookup "transactionId" o
