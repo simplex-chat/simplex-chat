@@ -203,7 +203,7 @@ In the flat layout the rail is added before the left column and every start offs
 
 ### Click-to-Dismiss Overlay
 
-When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~472). Clicking it closes start modals and hides the UserPicker.
+When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~467). Clicking it closes start modals and hides the UserPicker.
 
 ### CenterPartOfScreen
 

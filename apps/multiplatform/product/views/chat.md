@@ -131,13 +131,19 @@ Desktop only, enabled by "Flat layout (experimental)" in Developer options while
 
 | Element | Description |
 |---|---|
-| Message rows | Full-width rows without bubbles or tails; sent and received messages are both aligned left with a transparent background |
-| Sender header | Avatar, name, role (above member) and time on the first message of a group; shown again after an event, a date change, a sender or direction change, or a gap of 60 seconds or more |
-| Continuation rows | No avatar or name; the time appears in the left gutter on hover |
-| Avatar click | Received group message: member info; direct or channel message: chat info |
-| Hover background | Light tint over the hovered row |
-| Hover action bar | Top-right of the hovered message: 3 quick reactions, add reaction (full reaction list), reply, forward, and More (opens the regular context menu). Each button follows the same rules as the context menu; deleted, call and error items show only More. Hidden in selection mode |
-| Message time | Not shown inside the message; status, edited and timer icons stay |
+| Message rows | Full-width rows; sent and received messages are both aligned left. Text, media and deleted messages have no bubble, tail or background; group invitations and error items keep their rounded coloured card |
+| Sender header | Avatar, name, role label and time on the first message of a group. The role label is the member role when above Member, or "channel" for channel posts (including an owner posting as the channel). Shown again after an event, a date change, a sender change (including an owner switching between posting as the channel and as themselves), or a gap of 60 seconds or more |
+| Continuation rows | No avatar or name; the time appears small and right-aligned in the left gutter on hover |
+| Avatar click | Received group message: member info; received direct or channel message: chat info. Own messages: none, except a post shown as the channel, which opens chat info |
+| Row background | Light tint over the hovered row; a stronger primary tint on a highlighted message (for example after jumping to a quoted message) |
+| Hover action bar | Inside the top-right of the hovered row, for items with message content only (events, calls, errors, group invitations and moderated items have no bar; marked-deleted messages show only More): 3 quick reactions, add reaction (remaining reactions), reply, forward, and More (opens the regular context menu). Each button follows the same rules as the context menu. Hidden in selection mode and when the pointer leaves the row, unless the reaction picker is open |
+| Message time | Not shown inside the message. Sent messages keep their delivery status; edited, timer and other icons stay. A received message with nothing but the time shows no meta and reserves no space for it |
+| Quotes | A thin bar on the start edge instead of a filled box; the quoted sender in semibold |
+| Forwarded and report headers | No background |
+| Deleted messages | Transparent, 14sp italic text, no time |
+| Reactions | Rounded pills with the count always shown; your own reactions are tinted |
+| Date separators | Date in a pill on a full-width line |
+| Voice messages | Not mirrored for sent messages |
 | Search results | The "go to message" button is always on the right |
 
 The context menu and multi-select work as in the bubble layout. The Appearance bubble preview keeps the bubble look.

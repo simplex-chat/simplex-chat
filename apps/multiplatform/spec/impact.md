@@ -99,11 +99,11 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
 | `views/chatlist/UserPicker.kt` | PC19, PC21, PC32 | Medium | Multi-profile switcher overlay; `switchToUser` shared with the rail |
 | `views/chatlist/DesktopRail.kt` | PC19, PC28, PC32 | Medium | Desktop flat layout rail: user switching, tag filters, settings |
-| `views/chatlist/ShareListView.kt` | PC10 | Low | Share target list |
+| `views/chatlist/ShareListView.kt` | PC10, PC32 | Low | Share target list; `profileSwitchAllowed` shared with the rail |
 | `views/chatlist/ShareListNavLinkView.kt` | PC10 | Low | Share target navigation |
 | `views/chatlist/ChatHelpView.kt` | PC1 | Low | Empty-state help content |
-| `views/chatlist/ContactRequestView.kt` | PC12 | Medium | Incoming contact request row |
-| `views/chatlist/ContactConnectionView.kt` | PC12 | Low | Pending connection row |
+| `views/chatlist/ContactRequestView.kt` | PC12, PC32 | Medium | Incoming contact request row |
+| `views/chatlist/ContactConnectionView.kt` | PC12, PC32 | Low | Pending connection row |
 | `views/chatlist/ServersSummaryView.kt` | PC25 | Low | Server status summary |
 
 ### 1.4 Views — Chat & Messaging
@@ -144,16 +144,16 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chat/item/CIFileView.kt` | PC10 | Medium | File message rendering |
 | `views/chat/item/CIVoiceView.kt` | PC9 | Medium | Voice message rendering and playback |
 | `views/chat/item/EmojiItemView.kt` | PC5 | Low | Emoji reaction display |
-| `views/chat/item/CIMetaView.kt` | PC2, PC3, PC8 | Low | Timestamp, delivery status, timed message indicator |
+| `views/chat/item/CIMetaView.kt` | PC2, PC3, PC8, PC32 | Low | Timestamp, delivery status, timed message indicator |
 | `views/chat/item/CICallItemView.kt` | PC17 | Low | Call event item rendering |
-| `views/chat/item/CIEventView.kt` | PC3, PC14, PC16 | Low | Group event item rendering |
+| `views/chat/item/CIEventView.kt` | PC3, PC14, PC16, PC32 | Low | Group event item rendering |
 | `views/chat/item/CIGroupInvitationView.kt` | PC3, PC14 | Low | Group invitation item rendering |
 | `views/chat/item/CIMemberCreatedContactView.kt` | PC3, PC12 | Low | Member-created contact event |
 | `views/chat/item/CIChatFeatureView.kt` | PC8 | Low | Feature change event rendering |
 | `views/chat/item/CIFeaturePreferenceView.kt` | PC8 | Low | Feature preference change rendering |
 | `views/chat/item/CIRcvDecryptionError.kt` | PC2, PC3 | Low | Decryption error display |
-| `views/chat/item/DeletedItemView.kt` | PC7 | Low | Deleted message placeholder |
-| `views/chat/item/MarkedDeletedItemView.kt` | PC7 | Low | Moderated/marked-deleted placeholder |
+| `views/chat/item/DeletedItemView.kt` | PC7, PC32 | Low | Deleted message placeholder |
+| `views/chat/item/MarkedDeletedItemView.kt` | PC7, PC32 | Low | Moderated/marked-deleted placeholder |
 | `views/chat/item/ImageFullScreenView.kt` | PC10 | Low | Full-screen image viewer |
 | `views/chat/item/CIBrokenComposableView.kt` | — | Low | Fallback for render failures |
 | `views/chat/item/CIInvalidJSONView.kt` | — | Low | Fallback for malformed items |

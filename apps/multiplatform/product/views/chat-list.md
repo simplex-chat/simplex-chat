@@ -63,6 +63,7 @@ Managed by `chatModel.userTags`, `chatModel.presetTags`, and `chatModel.activeCh
 | Favorites | `FAVORITES` | Star | User-favorited chats |
 | Contacts | `CONTACTS` | Person | Direct contacts and contact requests |
 | Groups | `GROUPS` | Group | Group conversations (non-business) |
+| Channels | `CHANNELS` | Updates | Channels |
 | Business | `BUSINESS` | Work | Business chat conversations |
 | Notes | `NOTES` | Folder | Notes to self |
 | Custom tags | `UserTag(ChatTag)` | Label/emoji | User-created tags with custom emoji and name |
@@ -126,18 +127,22 @@ Rail (`DesktopRail`), top to bottom:
 
 | Element | Behavior |
 |---|---|
-| User avatars | Active and non-hidden users, most recently active first; the active user is marked on the left edge, others show an unread badge. Click another user to switch to it; click the active user to open `UserPicker` (address, preferences, remote hosts, other actions) |
-| All | Clears the list filter |
-| Preset lists | Reports, favorites, contacts, groups, business, notes, each shown when it has chats; click toggles the filter |
+| User avatars | Active and non-hidden users, most recently active first; the active user is marked on the left edge, others show an unread badge. Click another user to switch to it (closes `UserPicker` if open); click the active user to open `UserPicker` (address, preferences, remote hosts, other actions) |
+| All | Clears the list filter; highlighted when no filter is active |
+| Preset lists | Reports, favorites, contacts, groups, channels, business, notes, each shown when it has chats; click toggles the filter |
 | User lists | Emoji or label icon with name and unread dot; click toggles the filter; long-press or right-click opens the edit/delete/reorder menu |
 | Add list | Opens `TagListEditor` |
-| Settings | Opens `SettingsView` |
+| Settings | Below a divider at the bottom; opens `SettingsView` |
 
-Avatar clicks are disabled while chat is stopped, unless connected to a remote host. With no users, the rail shows only Settings.
+The active item has a tinted background. Clicking a list, All, Add list or Settings closes any open start-panel screen first.
+
+Profile switching from the rail is blocked while forwarding messages, sharing a chat link or the user address, and while a switch is in progress. Switching to another user is also blocked while chat is stopped, unless connected to a remote host; the active user's avatar still opens `UserPicker`. With no users, the rail shows only Settings.
 
 Chat list changes:
-- The toolbar user avatar button and the tag filter row (`TagsView`) are hidden; the rail replaces them.
-- Chat rows are a single line: small avatar, chat name, unread or mention badge (or muted/favorite icon), and status icon. Last message, draft and timestamp are not shown.
+- The tag filter row (`TagsView`) is hidden and the rail replaces it. The toolbar user avatar button is hidden unless there is no active user and no remote host. With no users while a remote host is connected, the toolbar Settings menu button is hidden too (the rail has Settings).
+- Chat rows are a single line: 28dp avatar (with the inactive icon for inactive contacts and groups), chat name, unread or mention badge (or muted/favorite icon), and status icon. Last message, draft and timestamp are not shown.
+- The chat name is SemiBold when the chat has unread messages and secondary-colored when the chat is muted with no unread mentions.
+- Contact requests and pending connections use the same 28dp image.
 - Rows have smaller vertical padding and no dividers.
 
 ### Empty States
