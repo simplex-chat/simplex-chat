@@ -106,13 +106,12 @@ func unicodeMarker(_ s: Unicode.Scalar) -> String {
 }
 
 func displayedUri(_ uri: String) -> String {
-    let authority = uri.range(of: "://").map { scheme in
-        scheme.upperBound ..< (uri[scheme.upperBound...].firstIndex(where: { "/?#".contains($0) }) ?? uri.endIndex)
-    }
+    let authorityStart = uri.range(of: "://")?.upperBound ?? uri.startIndex
+    let authority = authorityStart ..< (uri[authorityStart...].firstIndex(where: { "/?#".contains($0) }) ?? uri.endIndex)
     var shown = ""
     for i in uri.unicodeScalars.indices {
         let s = uri.unicodeScalars[i]
-        if s.properties.generalCategory == .format || (!s.isASCII && authority?.contains(i) == true) {
+        if s.properties.generalCategory == .format || (!s.isASCII && authority.contains(i)) {
             shown += unicodeMarker(s)
         } else {
             shown.unicodeScalars.append(s)
