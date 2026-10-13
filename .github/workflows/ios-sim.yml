@@ -1,0 +1,161 @@
+name: ios-sim
+
+on:
+  push:
+    branches:
+      - f/ci-ios-sim
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-sim-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GHC_VER: 9.6.3
+  CABAL_VER: 3.10.2.0
+  CORE_PKG: pkg-ios-aarch64-swift-json.zip
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+
+jobs:
+  core:
+    name: core library for the iOS simulator
+    runs-on: macos-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show runner
+        run: |
+          sw_vers
+          sysctl -n hw.ncpu hw.memsize
+          df -h /
+          xcodebuild -version
+
+      - name: Restore core library
+        id: core-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/Downloads/${{ env.CORE_PKG }}
+          key: ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}
+
+      - name: Setup Haskell
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: ${{ env.GHC_VER }}
+          cabal-version: ${{ env.CABAL_VER }}
+
+      - name: Restore cabal store
+        id: cabal-cache
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: ios-sim-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-${{ github.run_id }}
+          restore-keys: |
+            ios-sim-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
+            ios-sim-ghc${{ env.GHC_VER }}-
+            macos-latest-ghc${{ env.GHC_VER }}-
+
+      - name: Install libraries
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        run: brew install openssl@3 libffi gmp
+
+      - name: Build core library
+        id: build
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        run: scripts/ci/ios-sim/build-core.sh ~/Downloads/${{ env.CORE_PKG }}
+
+      - name: Save cabal store
+        if: ${{ !cancelled() && steps.core-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
+
+      - name: Save core library
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Downloads/${{ env.CORE_PKG }}
+          key: ${{ steps.core-cache.outputs.cache-primary-key }}
+
+      - name: Patch core library for the simulator
+        run: scripts/ci/ios-sim/prepare-libs.sh
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-core-aarch64
+          path: ~/Downloads/${{ env.CORE_PKG }}
+          compression-level: 0
+          retention-days: 3
+          if-no-files-found: error
+
+  app:
+    name: app in the iOS simulator
+    needs: core
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show runner
+        run: |
+          sw_vers
+          df -h /
+          xcodebuild -version
+          xcrun simctl list runtimes
+
+      - name: Download core library
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-core-aarch64
+          path: ~/Downloads
+
+      - name: Prepare libraries
+        run: |
+          scripts/ci/ios-sim/prepare-libs.sh
+          scripts/ios/update-pbxproj.sh
+
+      - name: Build app
+        run: |
+          xcodebuild build -quiet \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX (iOS)" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            ARCHS=arm64 \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= \
+            PROVISIONING_PROFILE_SPECIFIER=
+
+      - name: Install AXe
+        run: brew install cameroncooke/axe/axe
+
+      - name: Run smoke test
+        run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
+
+      - name: Upload smoke test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-sim-smoke-test
+          path: ${{ runner.temp }}/smoke-test
+          retention-days: 3
+          if-no-files-found: warn
