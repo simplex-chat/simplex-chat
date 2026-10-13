@@ -18,8 +18,8 @@ enum DirectoryFooter {
 class OnlineSearchModel: ObservableObject {
     @Published private(set) var names: [NameSearchResult] = []
     @Published private(set) var directory: [DirectoryResult] = []
-    @Published private(set) var loading = false
-    @Published private(set) var resolvingNames = false
+    @Published private(set) var loading = false { didSet { updateSpinner() } }
+    @Published private(set) var resolvingNames = false { didSet { updateSpinner() } }
     @Published private(set) var failed = false
     // tells "nothing searched yet" apart from "searched and found nothing"
     @Published private(set) var searched = false
@@ -44,7 +44,6 @@ class OnlineSearchModel: ObservableObject {
         failed = false
         searched = false
         searchedText = ""
-        updateSpinner()
     }
 
     // a way out of the wait, not out of the results: what is already shown stays
@@ -52,7 +51,6 @@ class OnlineSearchModel: ObservableObject {
         generation += 1
         loading = false
         resolvingNames = false
-        updateSpinner()
     }
 
     func search(_ text: String, name: String?) async {
@@ -62,7 +60,6 @@ class OnlineSearchModel: ObservableObject {
         searchedText = text
         if let name {
             resolvingNames = true
-            updateSpinner()
             // captured here: the async let initializer runs later, in the child task, possibly after a reset
             let gen = generation
             async let resolution: Void = resolveNames(name, generation: gen)
@@ -130,7 +127,6 @@ class OnlineSearchModel: ObservableObject {
         }
         guard gen == generation else { return }
         resolvingNames = false
-        updateSpinner()
         names = results
     }
 
@@ -138,7 +134,6 @@ class OnlineSearchModel: ObservableObject {
         let gen = generation
         loading = true
         failed = false
-        updateSpinner()
         let r = await apiSearchDirectory(searchedText, cursor: cursor)
         var page: [DirectoryResult] = []
         if let r {
@@ -152,7 +147,6 @@ class OnlineSearchModel: ObservableObject {
         guard gen == generation else { return }
         loading = false
         searched = true
-        updateSpinner()
         guard let r else {
             failed = true
             return
@@ -232,6 +226,8 @@ struct DirectorySearchRow: View {
             Spacer()
             Text(isChannel ? "Join channel" : "Join group")
                 .foregroundColor(theme.colors.primary)
+                .lineLimit(1)
+                .fixedSize()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())

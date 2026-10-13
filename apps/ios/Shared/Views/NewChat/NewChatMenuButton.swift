@@ -187,6 +187,9 @@ struct NewChatSheet: View {
         .onChange(of: searchText) { _ in
             onlineSearch.reset()
         }
+        .onChange(of: chatModel.currentUser?.userId) { _ in
+            onlineSearch.reset()
+        }
     }
 
     @ViewBuilder private func onlineSearchSections(_ rows: OnlineSearchRows) -> some View {
