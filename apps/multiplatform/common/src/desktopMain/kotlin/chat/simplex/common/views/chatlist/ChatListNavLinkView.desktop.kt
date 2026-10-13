@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.views.helpers.*
 
@@ -34,6 +35,7 @@ actual fun ChatListNavLinkLayout(
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
 ) {
+  val flat = LocalFlatLayout.current
   var modifier = Modifier.fillMaxWidth()
   if (!disabled) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
@@ -45,7 +47,7 @@ actual fun ChatListNavLinkLayout(
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+          .padding(start = 8.dp, top = if (flat) 4.dp else 8.dp, end = 12.dp, bottom = if (flat) 4.dp else 8.dp),
         verticalAlignment = Alignment.Top
       ) {
         chatLinkPreview()
@@ -58,6 +60,7 @@ actual fun ChatListNavLinkLayout(
       }
     }
   }
+  if (flat) return
   if (selectedChat.value || nextChatSelected.value) {
     Divider()
   } else {
