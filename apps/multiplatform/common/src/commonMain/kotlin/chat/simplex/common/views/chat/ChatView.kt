@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.model.*
 import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
@@ -1923,6 +1924,7 @@ fun BoxScope.ChatItemsList(
     itemAtZeroIndexInWholeList: Boolean,
     range: State<IntRange?>,
     showAvatar: Boolean,
+    flatHeader: Boolean,
     cItem: ChatItem,
     itemSeparation: ItemSeparation,
     previousItemSeparationLargeGap: Boolean,
@@ -1964,7 +1966,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp && !LocalFlatLayout.current, swipeOffset = swipeOffset)
         }
       }
 
@@ -2019,9 +2021,19 @@ fun BoxScope.ChatItemsList(
         Box {
           val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
           val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
-          val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
+          val flat = LocalFlatLayout.current
+          val selectionOffset by animateDpAsState(if (selectionVisible && (!sent || flat)) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
-          if (chatInfo is ChatInfo.Group) {
+          if (flat) {
+            ChatItemBox {
+              AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+              }
+              FlatChatItemRow(chatInfo, cItem, flatHeader, hoveredItemId, showMemberInfo, showChatInfo, Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
+                ChatItemViewShortHand(cItem, itemSeparation, range)
+              }
+            }
+          } else if (chatInfo is ChatInfo.Group) {
             if (cItem.chatDir is CIDirection.GroupRcv) {
               if (showAvatar) {
                 Column(
@@ -2423,6 +2435,7 @@ fun BoxScope.ChatItemsList(
           null
         }
         val showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
+        val flatHeader = flatItemHasHeader(item, merged.oldest().nextItem)
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
         val itemSeparation: ItemSeparation
         val prevItemSeparationLargeGap: Boolean
@@ -2436,7 +2449,7 @@ fun BoxScope.ChatItemsList(
           prevItemSeparationLargeGap = false
         }
         CompositionLocalProvider(LocalItemContext provides ItemContext(selectionIndex = index)) {
-          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
+          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, flatHeader, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
             if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
           }
         }
@@ -3769,7 +3782,7 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
   )
 }
 
-private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
+internal fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
   if (nextItem == null) {
     return true
   }
