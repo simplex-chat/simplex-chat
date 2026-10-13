@@ -454,7 +454,7 @@ private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewSt
         UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
       }
     }
-    if (LocalFlatLayout.current) FlatListSurface { StartPart() } else StartPart()
+    if (LocalFlatLayout.current) FlatSurface(flatListColor()) { StartPart() } else StartPart()
   }
   Box(Modifier.padding(start = railWidth).widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
     ModalManager.start.showInView()
@@ -462,7 +462,7 @@ private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewSt
   }
   Row(Modifier.padding(start = railWidth + DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
     Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
-      CenterPartOfScreen()
+      if (LocalFlatLayout.current) FlatSurface(flatChatColor()) { CenterPartOfScreen() } else CenterPartOfScreen()
     }
     if (ModalManager.end.hasModalsOpen()) {
       VerticalDivider()

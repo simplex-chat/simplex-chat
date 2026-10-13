@@ -40,31 +40,43 @@ private val RAIL_ACTIVE_MARK_WIDTH = 4.dp
 private val RAIL_ACTIVE_BACKGROUND_WIDTH = 40.dp
 private val RAIL_ACTIVE_BACKGROUND_HEIGHT = 32.dp
 private val RAIL_UNREAD_DOT_SIZE = 6.dp
-private const val RAIL_ACTIVE_BACKGROUND_ALPHA = 0.12f
+private const val RAIL_ACTIVE_BACKGROUND_ALPHA = 0.1f
 private val RAIL_ITEM_INSET = 6.dp
 private const val RAIL_TILE_CORNER_PERCENT = 30
 private const val RAIL_TILE_CIRCLE_PERCENT = 50
 private const val RAIL_TILE_ALPHA = 0.15f
 private const val RAIL_MARK_ACTIVE_FRACTION = 0.8f
 private const val RAIL_MARK_HOVER_FRACTION = 0.4f
-// background darkening of the rail and the chat list; dark themes need more for a visible step
+// surfaces step from the darkest rail to the lightest chat: light themes darken the rail and the list,
+// dark themes darken the rail and lift the chat, since their background is already near black
 private const val FLAT_RAIL_SHADE_LIGHT = 0.07f
-private const val FLAT_RAIL_SHADE_DARK = 0.4f
 private const val FLAT_LIST_SHADE_LIGHT = 0.035f
-private const val FLAT_LIST_SHADE_DARK = 0.2f
+private const val FLAT_RAIL_SHADE_DARK = 0.5f
+private const val FLAT_CHAT_LIFT_DARK = 0.045f
+// raises placeholder avatar contrast on the shaded surfaces while keeping the theme color
+private const val FLAT_PLACEHOLDER_CONTRAST = 0.15f
 
 @Composable
-fun flatRailColor(): Color = flatShade(if (MaterialTheme.colors.isLight) FLAT_RAIL_SHADE_LIGHT else FLAT_RAIL_SHADE_DARK)
+fun flatRailColor(): Color =
+  MaterialTheme.colors.background.mixWith(Color.Black, 1 - if (MaterialTheme.colors.isLight) FLAT_RAIL_SHADE_LIGHT else FLAT_RAIL_SHADE_DARK)
 
 @Composable
-fun flatListColor(): Color = flatShade(if (MaterialTheme.colors.isLight) FLAT_LIST_SHADE_LIGHT else FLAT_LIST_SHADE_DARK)
+fun flatListColor(): Color =
+  if (MaterialTheme.colors.isLight) MaterialTheme.colors.background.mixWith(Color.Black, 1 - FLAT_LIST_SHADE_LIGHT) else MaterialTheme.colors.background
 
 @Composable
-private fun flatShade(amount: Float): Color = MaterialTheme.colors.background.mixWith(Color.Black, 1 - amount)
+fun flatChatColor(): Color =
+  if (MaterialTheme.colors.isLight) MaterialTheme.colors.background else MaterialTheme.colors.background.mixWith(Color.White, 1 - FLAT_CHAT_LIFT_DARK)
 
 @Composable
-fun FlatListSurface(content: @Composable () -> Unit) {
-  MaterialTheme(colors = MaterialTheme.colors.copy(background = flatListColor()), typography = MaterialTheme.typography, shapes = MaterialTheme.shapes, content = content)
+fun FlatSurface(background: Color, content: @Composable () -> Unit) {
+  val colors = MaterialTheme.colors
+  MaterialTheme(
+    colors = colors.copy(background = background, secondaryVariant = colors.secondaryVariant.mixWith(colors.onBackground, 1 - FLAT_PLACEHOLDER_CONTRAST)),
+    typography = MaterialTheme.typography,
+    shapes = MaterialTheme.shapes,
+    content = content
+  )
 }
 
 // Spec: spec/client/chat-list.md#DesktopRail
@@ -130,7 +142,8 @@ private fun RailUsers(userPickerState: MutableStateFlow<AnimatedViewState>) {
         else -> 0.dp
       }
     )
-    val corner by animateIntAsState(if (user.activeUser || hovered) RAIL_TILE_CORNER_PERCENT else RAIL_TILE_CIRCLE_PERCENT)
+    val baseCorner = remember { appPreferences.profileImageCornerRadius.state }.value.toInt().coerceIn(0, RAIL_TILE_CIRCLE_PERCENT)
+    val corner by animateIntAsState(if (user.activeUser || hovered) minOf(baseCorner, RAIL_TILE_CORNER_PERCENT) else baseCorner)
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
       Box(
         Modifier
@@ -238,7 +251,7 @@ private fun RailItem(
   enabled: Boolean = true,
   onClick: () -> Unit
 ) {
-  val color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+  val color = if (active) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary
   Column(
     Modifier
       .fillMaxWidth()
@@ -252,7 +265,7 @@ private fun RailItem(
     Box(
       Modifier
         .size(RAIL_ACTIVE_BACKGROUND_WIDTH * fontSizeSqrtMultiplier, RAIL_ACTIVE_BACKGROUND_HEIGHT * fontSizeSqrtMultiplier)
-        .background(if (active) MaterialTheme.colors.primary.copy(alpha = RAIL_ACTIVE_BACKGROUND_ALPHA) else Color.Transparent, RoundedCornerShape(DEFAULT_PADDING_HALF)),
+        .background(if (active) MaterialTheme.colors.onBackground.copy(alpha = RAIL_ACTIVE_BACKGROUND_ALPHA) else Color.Transparent, RoundedCornerShape(DEFAULT_PADDING_HALF)),
       contentAlignment = Alignment.Center
     ) {
       if (emoji != null) {

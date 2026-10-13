@@ -30,6 +30,8 @@ object NoIndication : IndicationNodeFactory {
 private val FLAT_ROW_INSET = 6.dp
 private val FLAT_ROW_GAP = 1.dp
 private val FLAT_ROW_CORNER = 6.dp
+// twice the hover tint, so the selected chat stands out from the hovered one
+private const val FLAT_SELECTED_ALPHA = 0.1f
 
 @Composable
 actual fun ChatListNavLinkLayout(
@@ -59,7 +61,7 @@ actual fun ChatListNavLinkLayout(
         chatLinkPreview()
       }
       if (selectedChat.value) {
-        Box(Modifier.matchParentSize().background(MaterialTheme.colors.onBackground.copy(0.05f)))
+        Box(Modifier.matchParentSize().background(MaterialTheme.colors.onBackground.copy(if (flat) FLAT_SELECTED_ALPHA else 0.05f)))
       }
       if (dropdownMenuItems != null) {
         DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)

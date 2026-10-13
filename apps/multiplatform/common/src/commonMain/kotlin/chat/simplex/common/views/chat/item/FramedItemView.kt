@@ -2,6 +2,8 @@ package chat.simplex.common.views.chat.item
 
 import chat.simplex.common.views.chat.group.MemberProfileImage
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -221,23 +223,52 @@ fun FramedItemView(
     }
   }
 
+  fun openQuotedItem(qi: CIQuote) {
+    val itemId = qi.itemId
+    if (itemId != null) {
+      if (ci.isReport && chatsCtx.secondaryContextFilter != null) {
+        scrollToItemId.value = itemId
+      } else {
+        scrollToItem(itemId)
+      }
+    } else {
+      scrollToQuotedItemFromItem(ci.id)
+    }
+  }
+
+  @Composable
+  fun ciReplyAvatar(qi: CIQuote) {
+    when (val dir = qi.chatDir) {
+      is CIDirection.GroupRcv -> MemberProfileImage(FLAT_REPLY_AVATAR_SIZE, dir.groupMember)
+      is CIDirection.GroupSnd -> membership()?.let { MemberProfileImage(FLAT_REPLY_AVATAR_SIZE, it) }
+      is CIDirection.ChannelRcv,
+      is CIDirection.DirectRcv -> ChatInfoImage(chatInfo, FLAT_REPLY_AVATAR_SIZE)
+      is CIDirection.DirectSnd,
+      is CIDirection.LocalSnd,
+      is CIDirection.LocalRcv -> ProfileImage(FLAT_REPLY_AVATAR_SIZE, chatModel.currentUser.value?.image)
+      null -> {}
+    }
+  }
+
   @Composable
   fun ciReplyLine(qi: CIQuote) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val color = if (interactionSource.collectIsHoveredAsState().value) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary
     Row(
-      Modifier.padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING, end = 12.dp),
+      Modifier
+        .padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING, end = 12.dp)
+        .combinedClickable(interactionSource = interactionSource, indication = null, onLongClick = { showMenu.value = true }, onClick = { openQuotedItem(qi) })
+        .onRightClick { showMenu.value = true },
       horizontalArrangement = Arrangement.spacedBy(4.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Icon(painterResource(MR.images.ic_reply), null, Modifier.size(FLAT_REPLY_ICON_SIZE), tint = MaterialTheme.colors.secondary)
-      val quotedDir = qi.chatDir
-      if (quotedDir is CIDirection.GroupRcv) {
-        MemberProfileImage(FLAT_REPLY_AVATAR_SIZE, quotedDir.groupMember)
-      }
+      Icon(painterResource(MR.images.ic_reply), null, Modifier.size(FLAT_REPLY_ICON_SIZE), tint = color)
+      ciReplyAvatar(qi)
       val sender = qi.sender(membership())
       if (sender != null) {
-        Text(sender, fontSize = FLAT_REPLY_FONT_SIZE, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colors.secondary, maxLines = 1)
+        Text(sender, fontSize = FLAT_REPLY_FONT_SIZE, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
       }
-      val replyStyle = TextStyle(fontSize = FLAT_REPLY_FONT_SIZE, color = MaterialTheme.colors.secondary)
+      val replyStyle = TextStyle(fontSize = FLAT_REPLY_FONT_SIZE, color = color)
       Box(Modifier.weight(1f, fill = false)) {
         when {
           qi.text.isNotEmpty() -> ciQuotedMsgTextView(qi, lines = 1, showTimestamp = false, style = replyStyle)
@@ -263,7 +294,7 @@ fun FramedItemView(
 
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
-  Box(Modifier
+  Column(Modifier
     .clipChatItem(ci, tailVisible, revealed = true)
     .background(
       when {
@@ -273,6 +304,9 @@ fun FramedItemView(
       }
     )) {
     var metaColor = MaterialTheme.colors.secondary
+    if (flat && ci.quotedItem != null) {
+      ciReplyLine(ci.quotedItem)
+    }
     Box(contentAlignment = Alignment.BottomEnd) {
       val style = shapeStyle(ci, chatItemTailEnabled(), tailVisible, true)
       val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
@@ -319,27 +353,17 @@ fun FramedItemView(
               FramedItemHeader(stringResource(MR.strings.live), false)
             }
           }
-          if (ci.quotedItem != null) {
+          if (ci.quotedItem != null && !flat) {
             Column(
               Modifier
                 .combinedClickable(
                   onLongClick = { showMenu.value = true },
-                  onClick = {
-                    if (ci.quotedItem.itemId != null) {
-                      if (ci.isReport && chatsCtx.secondaryContextFilter != null) {
-                        scrollToItemId.value = ci.quotedItem.itemId
-                      } else {
-                        scrollToItem(ci.quotedItem.itemId)
-                      }
-                    } else {
-                      scrollToQuotedItemFromItem(ci.id)
-                    }
-                  }
+                  onClick = { openQuotedItem(ci.quotedItem) }
                 )
                 .onRightClick { showMenu.value = true }
             ) {
               Header()
-              if (flat) ciReplyLine(ci.quotedItem) else ciQuoteView(ci.quotedItem)
+              ciQuoteView(ci.quotedItem)
             }
           } else {
             Header()
