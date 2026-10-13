@@ -39,9 +39,10 @@ Defined in [`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/v
 | `MAX_IMAGE_SIZE_AUTO_RCV` | 522,240 | 510 KB | [L119](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L119) | Auto-receive threshold for images (`2 * MAX_IMAGE_SIZE`) |
 | `MAX_VOICE_SIZE_AUTO_RCV` | 522,240 | 510 KB | [L120](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L120) | Auto-receive threshold for voice messages (`2 * MAX_IMAGE_SIZE`) |
 | `MAX_VIDEO_SIZE_AUTO_RCV` | 1,047,552 | 1023 KB | [L121](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L121) | Auto-receive threshold for video |
-| `MAX_VOICE_MILLIS_FOR_SENDING` | 300,000 | 5 min | [L123](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L123) | Maximum voice message duration |
-| `MAX_FILE_SIZE_SMP` | 8,000,000 | ~7.6 MB | [L125](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L125) | Maximum SMP inline file size |
-| `MAX_FILE_SIZE_XFTP` | 1,073,741,824 | 1 GB | [L127](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L127) | Maximum XFTP transfer size |
+| `MAX_MARKDOWN_VIEW_SIZE` | 1,048,576 | 1 MB | [L122](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L122) | Maximum size of a Markdown file shown in the viewer |
+| `MAX_VOICE_MILLIS_FOR_SENDING` | 300,000 | 5 min | [L124](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L124) | Maximum voice message duration |
+| `MAX_FILE_SIZE_SMP` | 8,000,000 | ~7.6 MB | [L126](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L126) | Maximum SMP inline file size |
+| `MAX_FILE_SIZE_XFTP` | 1,073,741,824 | 1 GB | [L128](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L128) | Maximum XFTP transfer size |
 | `MAX_FILE_SIZE_LOCAL` | `Long.MAX_VALUE` | Unlimited | [L129](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L129) | Local file protocol (no size limit) |
 
 The `getMaxFileSize()` function ([`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L442)) selects the limit based on `FileProtocol`:

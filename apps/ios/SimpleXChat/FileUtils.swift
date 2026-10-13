@@ -26,6 +26,8 @@ public let MAX_VOICE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 // Spec: spec/services/files.md#MAX_VIDEO_SIZE_AUTO_RCV
 public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 1_047_552 // 1023KB
 
+public let MAX_MARKDOWN_VIEW_SIZE: Int64 = 1_048_576
+
 // Spec: spec/services/files.md#MAX_FILE_SIZE_XFTP
 public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824 // 1GB
 
