@@ -2,7 +2,7 @@
 
 Branch: `ab/names-registration-primitives-sponsored`, with simplexmq branch `ab/name-registration-primitives-sponsored` (a PR into `names`).
 
-Contracts: ens-contracts PR #35 (`SimplexController`, `SimplexSponsor`, `SimplexResolver`).
+Contracts: ens-contracts `simplex` with PR #35, and branch `ab/sponsor-sign-duration`, which adds the duration to `RegisterName` (`SimplexController`, `SimplexSponsor`, `SimplexResolver`).
 
 ## Contents
 
@@ -48,7 +48,7 @@ Not in this PR:
 1. **Wallet and code (web UI).** The wallet's entropy is 128 random bits. Its key is the BIP-44 key at `m/44'/60'/0'/0/0` of the 12-word BIP-39 phrase with this entropy, so a BIP-44 wallet app can import it from that phrase. The code is `SN-` and 30 Crockford base32 characters: the entropy and the first 22 bits of its SHA-256.
 2. **Commitment (web UI).** The web UI chooses a 32-byte secret and builds the registration: label, TLD, owner (the wallet's address), duration, secret, resolver, and the `simplex.contact` and `simplex.channel` records. Records are `setText` calls on the resolver, `simplex.contact` then `simplex.channel`, links joined with `;`, and no call for a key without links. The commitment is `keccak256(abi.encode(Registration))`, as `SimplexController.makeCommitment` computes it.
 3. **Commit (service).** The web UI sends only the commitment, so the name is not revealed. The service sends `commit(commitment)` to the controller.
-4. **Intent (web UI).** The wallet signs `RegisterName(string label,address owner,address resolver,bytes[] data,uint256 nonce,uint256 deadline)` under the `SimplexSponsor` EIP-712 domain. The nonce is the owner's count of intents the sponsor has used, so it is 0 for the new wallet. The web UI sends the registration, the nonce, the deadline and the signature.
+4. **Intent (web UI).** The wallet signs `RegisterName(string label,address owner,uint256 duration,address resolver,bytes[] data,uint256 nonce,uint256 deadline)` under the `SimplexSponsor` EIP-712 domain. The nonce is the owner's count of intents the sponsor has used, so it is 0 for the new wallet. The web UI sends the registration, the nonce, the deadline and the signature.
 5. **Verify (service).** The service checks that the secret is 32 bytes, the deadline has not passed, and the owner signed the intent.
 6. **Register (service).** At least `minCommitmentAge` after the commit, the service sends `registerWithCredit(registration, nonce, deadline, signature)` to the sponsor. The sponsor checks the signature and the nonce and spends the registrar's allowance, and the controller registers the name to the owner with its records.
 
@@ -87,14 +87,14 @@ simplexmq `tests/CoreTests/EthCryptoTests.hs`: the `RegisterName` digest, the se
 
 Expected values come from independent implementations:
 
-- the commitment and calldata from viem, against the ABIs compiled from PR #35, with the addresses and chain id of the PR's test deployment;
+- the commitment and calldata from viem, against the ABIs compiled from `ab/sponsor-sign-duration`, with the addresses and chain id of its test deployment;
 - the simplexmq digest and signature from viem;
 - name codes from a separate Python implementation.
 
-Checked once against the PR #35 contracts, outside CI:
+Checked once against the contracts, outside CI:
 
-- with the PR's own test fixture, the exact calldata the tests expect registered the name to the owner with both records, and a changed signature byte reverted with `InvalidSignature()`;
-- on a local hardhat node, `sendCommit` and `sendRegister` registered the name over JSON-RPC.
+- with the `ab/sponsor-sign-duration` test fixture, the exact calldata the tests expect registered the name to the owner with both records, and a changed signature byte reverted with `InvalidSignature()`;
+- on a local hardhat node with the PR #35 contracts, `sendCommit` and `sendRegister` registered the name over JSON-RPC.
 
 Run:
 
@@ -106,7 +106,7 @@ $(cabal list-bin -w ghc-9.6.3 test:simplex-chat-test) -m "name codes" -m "badge 
 ## 7. Left to the plumbing PR
 
 - Call `verifyRegisterIntent` before `sendRegister`, so that a secret that is not 32 bytes cannot change what the contract decodes.
-- Check the duration and the price against what was paid. `RegisterName` does not sign the duration, and the registrar's allowance pays for it.
+- Check the signed duration and the price against what was paid. The registrar's allowance pays for the duration the owner signs.
 - Send `commit` only for a paid order. It costs the registrar gas, and the service cannot check a name the commitment hides.
 - Accept only the default resolver, bound the size of the links, and cap the gas limit. The client chooses the resolver and the links, the controller calls that resolver with the records, and the registrar pays for the gas the estimate returns.
 - Validate and lower-case the label. The contract hashes the label as given, and resolution lower-cases it.

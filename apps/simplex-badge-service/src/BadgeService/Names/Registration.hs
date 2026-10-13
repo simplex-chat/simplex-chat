@@ -69,12 +69,13 @@ registerWithCreditCalldata RegisterIntent {riRegistration, riNonce, riDeadline, 
       ]
 
 registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> Word64 -> ByteString
-registerIntentDigest domain r@Registration {rLabel, rOwner, rResolver} nonce deadline =
+registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver} nonce deadline =
   hashTypedData
     domain
-    "RegisterName(string label,address owner,address resolver,bytes[] data,uint256 nonce,uint256 deadline)"
+    "RegisterName(string label,address owner,uint256 duration,address resolver,bytes[] data,uint256 nonce,uint256 deadline)"
     [ VBytes $ encodeUtf8 rLabel,
       VAddress rOwner,
+      VUint $ fromIntegral rDuration,
       VAddress rResolver,
       VArray $ map VBytes $ recordCalls r,
       VUint $ fromIntegral nonce,
