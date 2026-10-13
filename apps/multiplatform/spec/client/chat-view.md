@@ -15,12 +15,13 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt
 7. [ChatInfoView](#7-chatinfoview)
 8. [GroupChatInfoView](#8-groupchatinfoview)
 9. [Source Files](#9-source-files)
+10. [Flat Layout (Desktop)](#10-flat-layout-desktop)
 
 ---
 
 ## Executive Summary
 
-The Chat View is the primary message display and interaction surface in SimpleX Chat. It is built around the `ChatView` composable (line ~96 in `ChatView.kt`), which orchestrates a `ChatLayout` containing a reverse-scrolling `LazyColumn` of `ChatItemView` items and a `ComposeView` for message input. The view supports direct chats, group chats, local notes, and contact connections, with per-chat theming, search/filter, multi-select, and side-panel info modals. Message rendering is delegated to type-specific composables in the `views/chat/item/` package.
+The Chat View is the primary message display and interaction surface in SimpleX Chat. It is built around the `ChatView` composable (line ~99 in `ChatView.kt`), which orchestrates a `ChatLayout` containing a reverse-scrolling `LazyColumn` of `ChatItemView` items and a `ComposeView` for message input. The view supports direct chats, group chats, local notes, and contact connections, with per-chat theming, search/filter, multi-select, and side-panel info modals. Message rendering is delegated to type-specific composables in the `views/chat/item/` package.
 
 ---
 
@@ -36,6 +37,7 @@ ChatView
 |   |   |   |-- DateSeparator
 |   |   |   |-- MemberNameAndRole  (group received messages)
 |   |   |   |-- MemberImage        (group received messages)
+|   |   |   |-- FlatChatItemRow    (desktop flat layout, replaces the two lines above)
 |   |   |   +-- ChatItemView       (message type routing)
 |   |   |-- ChatBannerView         (first item: chat profile banner)
 |   |   +-- FloatingButtons        (scroll-to-bottom, unread counter)
@@ -56,7 +58,7 @@ ChatView
 
 ## 2. ChatView Composable
 
-**Location:** [`ChatView.kt#L97`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L97)
+**Location:** [`ChatView.kt#L99`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L99)
 
 ```kotlin
 fun ChatView(
@@ -84,7 +86,7 @@ fun ChatView(
 
 ### Chat Loading
 
-On chat ID change (via `snapshotFlow` on `chatModel.chatId.value`, line ~162):
+On chat ID change (via `snapshotFlow` on `chatModel.chatId.value`, line ~180):
 
 1. Marks unread chat as read (`markUnreadChatAsRead`)
 2. Clears group members state
@@ -95,7 +97,7 @@ On chat ID change (via `snapshotFlow` on `chatModel.chatId.value`, line ~162):
 
 ### Chat Type Routing
 
-The outer `when (chatInfo)` (line ~229) branches:
+The outer `when (chatInfo)` (line ~272) branches:
 
 | ChatInfo Type | Behavior |
 |---|---|
@@ -107,18 +109,18 @@ The outer `when (chatInfo)` (line ~229) branches:
 
 ## 3. Message List
 
-**Location:** [`ChatView.kt#L1592`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1592) (`ChatItemsList` composable)
+**Location:** [`ChatView.kt#L1751`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1751) (`ChatItemsList` composable)
 
 The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, meaning index 0 is the newest message at the bottom of the screen.
 
 ### Key Behaviors
 
-- **Merged Items:** Messages are grouped via `MergedItems.create()` (line ~1653), which collapses consecutive similar system events into expandable groups. Revealed state is tracked in `revealedItems`.
+- **Merged Items:** Messages are grouped via `MergedItems.create()` (line ~1815), which collapses consecutive similar system events into expandable groups. Revealed state is tracked in `revealedItems`.
 - **Pagination:** `PreloadItems` triggers `loadMessages` with `ChatPagination.Before` (older) or `ChatPagination.Last` (newer) when the user scrolls near list boundaries.
 - **Scroll To Item:** `scrollToItem` lambda supports animated scrolling to a specific item ID, used by search result taps and quoted message navigation.
 - **Unread Marking:** `MarkItemsReadAfterDelay` composable marks newly visible received items as read after a brief delay.
 - **Date Separators:** `DateSeparator` composable renders between messages when the date changes (via `ItemSeparation.date`).
-- **Swipe to Reply:** `SwipeToDismiss` modifier on each item (EndToStart direction, 30dp threshold) sets `ComposeContextItem.QuotedItem`.
+- **Swipe to Reply:** `SwipeToDismiss` modifier on each item (EndToStart direction, 30dp threshold) sets `ComposeContextItem.QuotedItem` via `replyToItem()`.
 - **Selection Mode:** When `selectedChatItems` is non-null, a checkbox overlay appears on each item; a full-width clickable overlay toggles selection.
 
 ### Item Layout (ChatViewListItem)
@@ -127,6 +129,7 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 - **Group received without avatar:** Indented to align with avatar-bearing messages.
 - **Sent messages (group or direct):** Right-aligned with larger start padding.
 - **Direct messages:** Symmetric padding (76dp opposite side).
+- **Flat layout (desktop):** When `LocalFlatLayout.current` is true, all chat types render through `FlatChatItemRow` instead of the branches above (see section 10). The selection checkbox offset applies to sent items too.
 
 ---
 
@@ -134,7 +137,7 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 
 ## 4. ChatItemView
 
-**Location:** [`item/ChatItemView.kt#L66`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L66)
+**Location:** [`item/ChatItemView.kt#L70`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L70)
 
 ```kotlin
 fun ChatItemView(
@@ -169,7 +172,11 @@ The composable routes based on `cItem.content` and `cItem.meta.itemDeleted`:
 
 ### Context Menu
 
-Long-press or right-click opens a dropdown menu with context-sensitive actions (see section 6).
+Long-press or right-click opens a dropdown menu with context-sensitive actions (see section 6). In the flat layout, the hover bar's More button opens the same menu.
+
+### Flat Layout Adjustments
+
+When `LocalFlatLayout.current` is true, `ChatItemView` keeps its content but drops the bubble look: items align to the start regardless of direction, `GoToItemButton` is always on the right, the bubble click has no indication (the row draws the hover background), voice-only items render as received, and [`chatItemTailEnabled()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L1237) returns false so `shapeStyle` never draws a tail. `FramedItemView` uses a transparent background. `ChatItemsList` passes `showTimestamp = false`, so the meta shows status icons without the time.
 
 ---
 
@@ -236,6 +243,22 @@ Context menu actions are built dynamically in `ChatItemView` based on message ty
 | **Save** | Image/video/file with completed download | Saves media to device |
 | **Open** | File with completed download | Opens file with system handler |
 | **Reveal / Hide** | Part of a merged group; expanded or collapsed | Toggles `revealedItems` state |
+
+The React, Reply and Forward conditions are computed by [`itemQuickActions()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L814-L823), which returns [`ItemQuickActions`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L812). All three are false for items without message content, temporary items (`id < 0`) and reports. Otherwise:
+
+| Field | Condition |
+|---|---|
+| `react` | Reactions feature enabled in the chat and `cItem.allowAddReaction` |
+| `reply` | Not deleted, not live, not a local note, `cInfo.sendMsgEnabled` |
+| `forward` | Not deleted, file (if any) allows forwarding, not the live dummy item, not live |
+
+Shared helpers used by both the menu and the flat-layout hover bar:
+
+| Function | Purpose |
+|---|---|
+| [`availableReactions(cItem)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L825-L826) | `MsgReaction.supported` minus the reactions the user already set |
+| [`replyToItem(composeState, cItem, useLinkPreviews)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L828-L834) | Sets `ComposeContextItem.QuotedItem`; replaces the compose state when editing. Also used by swipe to reply |
+| [`MsgReactionsMenu(cInfo, cItem, setReaction, showMenu)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L837-L854) | Scrollable row of available reactions; a tap sets the reaction and closes `showMenu` |
 
 ---
 
@@ -311,6 +334,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `CIVoiceView.kt` | Voice message (waveform + player) |
 | `DeletedItemView.kt` | Deleted message placeholder |
 | `EmojiItemView.kt` | Large emoji-only message |
+| `FlatChatItemView.kt` | Desktop flat layout: sender header rule, `FlatChatItemRow`, `FlatHoverBar` |
 | `FramedItemView.kt` | Message bubble frame (quoted item, text, media) |
 | `ImageFullScreenView.kt` | Fullscreen image gallery |
 | `MarkdownFileView.kt` | Markdown file viewer, formatted or as text |
@@ -343,3 +367,66 @@ Key sections: group profile, group link, member list with roles, group preferenc
 When a relay operator runs `/leave #channel`, the relay sends `x.grp.relay.reject` over the owner-relay direct contact channel. Owner-side handling: the corresponding `GroupRelay.relayStatus` transitions `RSInvited → RSRejected`; the relay's `GroupMember.memberStatus` is set to `MemLeft` so the owner UI renders the rejected relay identically to one that explicitly ran `/leave` (`MemRejected` is reserved for the knocking-admission flow). In `GroupMemberInfoView`, an additional "Status: rejected by relay operator" `InfoRow` appears when `groupRelay?.relayStatus == RelayStatus.RsRejected`. The status is final on the owner side — clearable only by the relay operator running `/group allow #<channel>`, which has no owner-facing event.
 
 The `RelayStatusIndicator` composable in `AddChannelView.kt` renders `RsRejected` with a red dot and "rejected" text, matching the `connFailed`/`removed` rendering.
+
+---
+
+<a id="FlatLayout"></a>
+
+## 10. Flat Layout (Desktop)
+
+**Location:** [`item/FlatChatItemView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt)
+
+Experimental Slack/Discord-like rendering of the message list: full-width rows, avatar and sender name once per group of messages, no bubbles. Enabled by `LocalFlatLayout` (provided by `DesktopScreen`, see [navigation.md](navigation.md#DesktopScreen)), so it applies only on desktop with developer tools and the `desktopFlatLayout` preference on. It covers every chat shown in the center and end columns, including reports and member support chats. The Appearance message-shape preview provides `LocalFlatLayout = false`, so bubble settings stay previewable.
+
+### Functions
+
+| Function | Purpose |
+|---|---|
+| [`flatItemHasHeader(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L39-L45) | Whether a row shows the sender header. `older` is the next older item in the list |
+| [`CIContent.hasFlatSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L47-L81) | True for content that has a sender (messages, deleted/moderated/blocked, calls, errors, group invitations, invalid JSON); false for events, feature and preference changes, E2EE info and the chat banner |
+| [`FlatChatItemRow(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L84-L124) | Full-width hoverable row: a 56dp gutter (scaled by `fontSizeSqrtMultiplier`) with the avatar on header rows or the time on hover for other rows, then a column with the header and the item content |
+| [`FlatHoverBar(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt#L200-L243) | Bordered action bar at the row's top end |
+| [`getItemSeparationLargeGap(chatItem, nextItem)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3785-L3796) | Made `internal` for `flatItemHasHeader`; true when the sender or direction changes or items are 60s or more apart |
+
+### Header Rule
+
+`ChatItemsList` computes `flatHeader = LocalFlatLayout.current && flatItemHasHeader(item, merged.oldest().nextItem)` and passes it through `ChatViewListItem`. A row has a header when its content has a sender and any of these holds:
+
+- it is the oldest loaded item;
+- the older item has no sender (an event);
+- the older item is on a different date;
+- `getItemSeparationLargeGap(item, older)` is true.
+
+The rule does not use `previousItemSeparationLargeGap`, which is false for the oldest loaded item.
+
+### Sender Resolution
+
+| Direction | Name and badge | Role label | Avatar | Avatar click |
+|---|---|---|---|---|
+| `GroupRcv` | Member display name | Member role when above `Member` | `MemberImage` | `showMemberInfo` |
+| `ChannelRcv` | Channel name | `channel_role_label` | `ChatInfoImage` | `showChatInfo` |
+| `GroupSnd` | `groupInfo.membership` (incognito profile when incognito) | Membership role when above `Member` | `MemberImage(membership)` | None |
+| `DirectRcv` | Contact display name | None | `ChatInfoImage` | `showChatInfo` |
+| `DirectSnd`, `LocalSnd`, `LocalRcv` | Current user, or "Incognito" in an incognito chat | None | User profile image or `IncognitoImage` | None |
+
+The header shows the name in semibold, the role, and `cItem.timestampText`.
+
+### Hover Bar
+
+Rendered by `ChatItemView` as an overlay at the top end of the item when the flat layout is on, the item is not a preview or the live dummy item, its content has a sender, selection mode is off, and the item is hovered (`hoveredItemId`) or its reaction picker is open. `FlatChatItemRow` sets `hoveredItemId` from its own hover state.
+
+| Button | Shown when | Action |
+|---|---|---|
+| 3 quick reactions | `itemQuickActions().react` | First 3 of `availableReactions(cItem)`; sets the reaction |
+| Add reaction | `itemQuickActions().react` | Opens `MsgReactionsMenu` in a `DefaultDropdownMenu` |
+| Reply | `itemQuickActions().reply` | `replyToItem()` |
+| Forward | `itemQuickActions().forward` | `forwardItem()` |
+| More | Always | Opens the item's existing context menu (`showMenu`) |
+
+Items without message content (deleted, calls, errors) show only More.
+
+### Selection
+
+The selection checkbox and the full-row selection click overlay are shared with the bubble layout. In the flat layout the row is shifted by the selection offset for sent and received items alike.
+
+[REC] Thread side panel (replies to a message in the end column): needs a core query for items quoting a given message. `getChatItemIDs` (`../../src/Simplex/Chat/Store/Messages.hs`) has no such filter, and `chat_items.quoted_shared_msg_id` has no index.

@@ -200,6 +200,7 @@ Desktop-specific functionality not present on Android.
 | Feature | Description | Key Source (Kotlin) |
 |---------|-------------|---------------------|
 | 3-column layout | Start (chat list) / center (chat) / end (detail) panels | `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (`DesktopScreen`) |
+| Flat layout (experimental) | Developer option: flat message rows with hover actions, profile and list rail, compact chat list | `common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FlatChatItemView.kt`, `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt` |
 | ModalManager.end | Third-column detail panel for settings/info views | `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (`ModalManager`) |
 | App update checker | In-app notification for available updates | `common/src/desktopMain/kotlin/chat/simplex/common/views/helpers/AppUpdater.kt` |
 | Window state persistence | Save/restore window position and dimensions | `common/src/desktopMain/kotlin/chat/simplex/common/StoreWindowState.kt` |

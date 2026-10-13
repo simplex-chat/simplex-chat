@@ -244,6 +244,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/views/chatlist/ChatListNavLinkView.kt | spec/client/chat-list.md | product/views/chat-list.md |
 | common/.../common/views/chatlist/ChatPreviewView.kt | spec/client/chat-list.md | product/views/chat-list.md |
 | common/.../common/views/chatlist/UserPicker.kt | spec/client/chat-list.md | product/views/chat-list.md |
+| common/.../common/views/chatlist/DesktopRail.kt | spec/client/chat-list.md, spec/client/navigation.md | product/views/chat-list.md |
 | common/.../common/views/chatlist/TagListView.kt | spec/client/chat-list.md | product/views/chat-list.md |
 | common/.../common/views/chat/ChatView.kt | spec/client/chat-view.md | product/views/chat.md |
 | common/.../common/views/chat/ComposeView.kt | spec/client/compose.md | product/views/chat.md |
@@ -251,6 +252,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/views/chat/ChatInfoView.kt | spec/client/chat-view.md | product/views/contact-info.md |
 | common/.../common/views/chat/group/ | spec/client/chat-view.md | product/views/group-info.md |
 | common/.../common/views/chat/item/ | spec/client/chat-view.md | product/views/chat.md |
+| common/.../common/views/chat/item/FlatChatItemView.kt | spec/client/chat-view.md | product/views/chat.md |
 | common/.../common/views/call/CallView.kt | spec/services/calls.md | product/views/call.md |
 | common/.../common/views/call/IncomingCallAlertView.kt | spec/services/calls.md | product/views/call.md |
 | common/.../common/views/call/WebRTC.kt | spec/services/calls.md | product/flows/calling.md |

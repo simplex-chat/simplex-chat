@@ -19,6 +19,7 @@ Main screen of the SimpleX Chat Android and Desktop apps. Displays all conversat
 |---|---|
 | Android | Single-column list; toolbar at top or bottom (one-hand UI); FAB for new chat |
 | Desktop | 3-column layout: chat list (left), chat view (center), info/detail panel (right via `ModalManager.end`) |
+| Desktop, flat layout (experimental) | Rail at the far left, then the same 3 columns; chat list rows are compact |
 
 ## Page Sections
 
@@ -117,6 +118,28 @@ Each chat type provides specific dropdown menu items:
 | FAB (new chat button) | Standard mode, search empty, chat running | `FloatingActionButton` at bottom-right, pencil icon, opens `NewChatSheet` |
 | Crowdfunding banner (`GetStakeBanner`) | `crowdfundingAvailable()` and not dismissed | Gradient card above the chats, and below the onboarding cards when there are no conversations; opens `GetStakeView`. The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset |
 
+### Desktop Flat Layout (experimental)
+
+Enabled by "Flat layout (experimental)" in Developer options (desktop only, while developer tools are on).
+
+Rail (`DesktopRail`), top to bottom:
+
+| Element | Behavior |
+|---|---|
+| User avatars | Active and non-hidden users, most recently active first; the active user is marked on the left edge, others show an unread badge. Click another user to switch to it; click the active user to open `UserPicker` (address, preferences, remote hosts, other actions) |
+| All | Clears the list filter |
+| Preset lists | Reports, favorites, contacts, groups, business, notes, each shown when it has chats; click toggles the filter |
+| User lists | Emoji or label icon with name and unread dot; click toggles the filter; long-press or right-click opens the edit/delete/reorder menu |
+| Add list | Opens `TagListEditor` |
+| Settings | Opens `SettingsView` |
+
+Avatar clicks are disabled while chat is stopped, unless connected to a remote host. With no users, the rail shows only Settings.
+
+Chat list changes:
+- The toolbar user avatar button and the tag filter row (`TagsView`) are hidden; the rail replaces them.
+- Chat rows are a single line: small avatar, chat name, unread or mention badge (or muted/favorite icon), and status icon. Last message, draft and timestamp are not shown.
+- Rows have smaller vertical padding and no dividers.
+
 ### Empty States
 
 | State | Display |
@@ -136,3 +159,4 @@ Each chat type provides specific dropdown menu items:
 | `UserPicker.kt` | `views/chatlist/UserPicker.kt` |
 | `TagListView.kt` | `views/chatlist/TagListView.kt` |
 | `GetStakeBanner.kt` | `views/chatlist/GetStakeBanner.kt` |
+| `DesktopRail.kt` | `views/chatlist/DesktopRail.kt` |

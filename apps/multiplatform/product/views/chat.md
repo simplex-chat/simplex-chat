@@ -125,6 +125,23 @@ Shown when `selectedChatItems != null`:
 
 When `timedMessageAllowed` is true, compose bar includes a timer icon for setting message disappear time via `customDisappearingMessageTimePref`.
 
+### Desktop Flat Layout (experimental)
+
+Desktop only, enabled by "Flat layout (experimental)" in Developer options while developer tools are on. Applies to all chats, including reports and member support chats in the end panel.
+
+| Element | Description |
+|---|---|
+| Message rows | Full-width rows without bubbles or tails; sent and received messages are both aligned left with a transparent background |
+| Sender header | Avatar, name, role (above member) and time on the first message of a group; shown again after an event, a date change, a sender or direction change, or a gap of 60 seconds or more |
+| Continuation rows | No avatar or name; the time appears in the left gutter on hover |
+| Avatar click | Received group message: member info; direct or channel message: chat info |
+| Hover background | Light tint over the hovered row |
+| Hover action bar | Top-right of the hovered message: 3 quick reactions, add reaction (full reaction list), reply, forward, and More (opens the regular context menu). Each button follows the same rules as the context menu; deleted, call and error items show only More. Hidden in selection mode |
+| Message time | Not shown inside the message; status, edited and timer icons stay |
+| Search results | The "go to message" button is always on the right |
+
+The context menu and multi-select work as in the bubble layout. The Appearance bubble preview keeps the bubble look.
+
 ## Source Files
 
 | File | Path |
