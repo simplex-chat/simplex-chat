@@ -51,6 +51,11 @@ tap_label() {
   axe tap --label "$1" --wait-timeout "$2" --post-delay 2 --udid "$udid"
 }
 
+# SwiftUI text fields have no accessibility label; an empty field exposes its placeholder as the value
+tap_field() {
+  axe tap --value "$1" --wait-timeout "$2" --post-delay 2 --udid "$udid"
+}
+
 finish() {
   local status=$?
   snap final || true
@@ -78,7 +83,7 @@ snap first-screen
 tap_label "Get started" 10
 
 wait_for "Create profile" 30
-tap_label "Enter profile name..." 10 || echo "warning: name field not found by label, typing into the focused field"
+tap_field "Enter profile name..." 10
 axe type 'citester' --udid "$udid"
 snap profile-name
 tap_label "Create profile" 10
@@ -97,13 +102,14 @@ tap_label "Allow" 20 || echo "no notifications alert to allow"
 
 wait_for "Search or paste SimpleX link" 60
 snap chat-list
-tap_label "Search or paste SimpleX link" 10 || axe tap --value "Search or paste SimpleX link" --post-delay 2 --udid "$udid"
+tap_field "Search or paste SimpleX link" 10
 axe type "$search_text" --udid "$udid"
 sleep 2
 snap search-typed
 
+# the keyboard capitalizes the first letter
 tree=$(ls "$out"/*-search-typed.json)
-if ! grep -qF "$search_text" "$tree"; then
+if ! grep -qiF "$search_text" "$tree"; then
   echo "error: \"$search_text\" is not in the accessibility tree after typing"
   exit 1
 fi
