@@ -487,6 +487,7 @@ CredentialNotVerified:
 - "code_expired"
 - "receipt_invalid"
 - "receipt_used"
+- "test_purchase"
 - "internal"
 
 

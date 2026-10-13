@@ -379,6 +379,14 @@ public enum BadgeIssueFailure: Decodable, Hashable {
         }
     }
 
+    public var purchaseAlertTitle: String {
+        switch self {
+        case .serviceError(.testPurchase, _):
+            NSLocalizedString("Sandbox purchase", comment: "alert title")
+        default: NSLocalizedString("Purchase error", comment: "alert title")
+        }
+    }
+
     // the stored form, for support
     public var tag: String {
         switch self {

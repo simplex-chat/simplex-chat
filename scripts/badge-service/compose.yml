@@ -20,5 +20,7 @@ services:
       - "/etc/simplex-badge-service/badge_service.ini"
     volumes:
       - ./badge_service.ini:/etc/simplex-badge-service/badge_service.ini:ro
+      # - ./AppleRootCA-G3.cer:/etc/simplex-badge-service/AppleRootCA-G3.cer:ro
+      # - ./play-service-account.json:/etc/simplex-badge-service/play-service-account.json:ro
       - ./web:/srv/webapp
     stop_grace_period: 10s

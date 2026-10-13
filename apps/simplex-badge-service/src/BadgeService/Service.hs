@@ -7,6 +7,7 @@
 module BadgeService.Service
   ( ServiceState (..),
     newServiceState,
+    configureStoreVerifier,
     welcomeGetOpts,
     checkIssuerKey,
     badgeService,
@@ -22,7 +23,7 @@ where
 
 import BadgeService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import BadgeService.Codes (issueFailedText, issueOneCode, singleUse)
-import BadgeService.Config (BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import BadgeService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
 import BadgeService.Log (logError, logInfo, logWarn)
@@ -34,6 +35,8 @@ import BadgeService.Store
 import BadgeService.Store.Invoices (seedCatalog, truncateToSecond)
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import BadgeService.StoreReceipts
+import BadgeService.StoreReceipts.Apple (readAppleRoot, verifyAppleTransaction)
+import BadgeService.StoreReceipts.Google (playStoreVerifier)
 import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
@@ -84,8 +87,8 @@ data ServiceState = ServiceState
     storeVerifier :: StoreVerifier
   }
 
--- | No store verifier exists yet, so every store receipt not already credited is answered
--- provider_not_configured, terminal for the request: retrying cannot deploy one.
+-- | With no store verifier, which badge_service.ini configures, every store receipt not already credited
+-- is answered provider_not_configured.
 newServiceState :: IO ServiceState
 newServiceState = do
   serviceCC <- newEmptyTMVarIO
@@ -130,19 +133,37 @@ readConfigOrExit path =
     Left e -> putStrLn (path <> ": " <> e) >> exitFailure
     Right sc -> pure sc
 
-devStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
-devStoreVerifier serviceCfg env
-  | maybe False devAcceptUnverifiedStoreReceipts serviceCfg = do
-      logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
-      pure env {storeVerifier = mockStoreVerifier}
-  | otherwise = pure env
+-- | The config refuses the dev flag beside a real verifier, so only one of them applies.
+configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
+configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case serviceCfg of
+  Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True} -> do
+    logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
+    pure env {storeVerifier = mockStoreVerifier}
+  Just ServiceConfig {appleStore, playStore} -> do
+    apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificate} ->
+      (\root -> verifyAppleTransaction root aBundleId) <$> orExit (readAppleRoot aRootCertificate)
+    google <- forM playStore $ orExit . playStoreVerifier
+    forM_ appleStore $ \AppleStoreConfig {aBundleId} -> logInfo $ "verifying App Store receipts for " <> aBundleId
+    forM_ playStore $ \PlayStoreConfig {gPackageName} -> logInfo $ "verifying Play purchases for " <> gPackageName
+    pure
+      env
+        { storeVerifier =
+            v
+              { verifyApple = maybe (verifyApple v) Just apple,
+                verifyGoogle = maybe (verifyGoogle v) (Just . fst) google,
+                acknowledgeGoogle = maybe (acknowledgeGoogle v) (Just . snd) google
+              }
+        }
+  Nothing -> pure env
+  where
+    orExit = (>>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure)
 
 badgeService :: BadgeServiceOpts -> ChatConfig -> ServiceState -> IO ()
 badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
-  requestEnv <- devStoreVerifier serviceCfg env
+  requestEnv <- configureStoreVerifier serviceCfg env
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
       readEvents cc =
@@ -193,7 +214,7 @@ badgeServiceCLI :: BadgeServiceOpts -> IO ()
 badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
-  env <- newServiceState >>= devStoreVerifier serviceCfg
+  env <- newServiceState >>= configureStoreVerifier serviceCfg
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
           atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
@@ -416,7 +437,7 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
 -- | Every refusal is answered before anything is written, so it leaves the receipt unclaimed; and
 -- nothing is written until the credential is signed.
 purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
-purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, verifyReceipt} =
+purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, verifyReceipt, acknowledgeReceipt} =
   withDB' "getStorePayment" cc (\db -> getStorePaymentCredit db provider providerRef) >>= \case
     Left _ -> pure $ errorResponse BSEInternal
     Right credit
@@ -430,7 +451,7 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
               | transactionRef /= providerRef -> storeRefusalResponse $ SRVerifierFailed "verified a transaction other than the one claimed"
             Right VerifiedStoreTransaction {quantity}
               | quantity /= 1 -> storeRefusalResponse $ SRVerifierFailed $ "verified a quantity of " <> tshow quantity
-            Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse $ SRInvalid "test purchase"
+            Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse SRTestPurchase
             -- another key's credit is told only once the store vouched for the receipt, or it would reveal which transactions were credited
             Right tx -> case credit of
               Uncredited -> newPurchase tx
@@ -446,26 +467,31 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
     -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
     newPurchase VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
-      Just StoreProduct {badgeType, months} -> do
-        now <- badgeNow cc
-        signFirstMonth key cc masterKey badgeType months (SCPayment Nothing) now >>= \case
-          Left resp -> pure resp
-          Right firstMonth -> do
-            paymentId <- randomId cc
-            r <- withDB "writeStorePurchase" cc $ \db ->
-              liftIO (createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType} now) >>= \case
-                -- Credited to another key, or to this one by a request that ran alongside it, while signing.
-                Nothing ->
-                  liftIO (getStorePaymentCredit db provider providerRef >>= creditedResponse db purchaseKey) >>= \case
-                    Left resp -> pure resp
-                    Right () -> logError ("badge service: a payment for " <> providerRef <> " exists but funds no purchase") $> errorResponse BSEInternal
-                Just purchaseId -> liftIO $ firstMonthResponse db purchaseId (Just paymentId) firstMonth
-            pure $ fromRight (errorResponse BSEInternal) r
+      Just StoreProduct {badgeType, months} ->
+        fromMaybe (pure $ Right ()) acknowledgeReceipt >>= \case
+          Left refusal -> storeRefusalResponse refusal
+          Right () -> do
+            now <- badgeNow cc
+            signFirstMonth key cc masterKey badgeType months (SCPayment Nothing) now >>= \case
+              Left resp -> pure resp
+              Right firstMonth -> do
+                paymentId <- randomId cc
+                r <- withDB "writeStorePurchase" cc $ \db ->
+                  liftIO (createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType} now) >>= \case
+                    -- Credited to another key, or to this one by a request that ran alongside it, while signing.
+                    Nothing ->
+                      liftIO (getStorePaymentCredit db provider providerRef >>= creditedResponse db purchaseKey) >>= \case
+                        Left resp -> pure resp
+                        Right () -> logError ("badge service: a payment for " <> providerRef <> " exists but funds no purchase") $> errorResponse BSEInternal
+                    Just purchaseId -> liftIO $ firstMonthResponse db purchaseId (Just paymentId) firstMonth
+                pure $ fromRight (errorResponse BSEInternal) r
 
--- | The client learns only the code: a forged receipt, a refunded purchase and a test one are all receipt_invalid.
+-- | A forged receipt and a refunded one are both receipt_invalid, so the client learns nothing a
+-- forger could iterate on. A test purchase is named, since the device that made it already knows.
 storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
 storeRefusalResponse = \case
   SRInvalid reason -> logInfo ("store receipt refused: " <> reason) $> errorResponse BSEReceiptInvalid
+  SRTestPurchase -> logInfo "store receipt refused: test purchase" $> errorResponse BSETestPurchase
   SRPending -> pure $ errorResponse BSEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
   SRVerifierFailed reason -> logError ("store receipt not verified: " <> reason) $> errorResponse BSEInternal

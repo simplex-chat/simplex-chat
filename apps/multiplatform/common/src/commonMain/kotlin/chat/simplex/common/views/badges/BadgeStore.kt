@@ -443,5 +443,5 @@ private fun compactPrice(product: BadgeProduct): String {
 private fun badgeReceiptRefused(err: ChatError?): Boolean {
   val redeemError = ((err as? ChatError.ChatErrorChat)?.errorType as? ChatErrorType.CEBadgeRedeemError)?.badgeRedeemError
   val code = (redeemError as? BadgeRedeemError.ServiceError)?.serviceError
-  return code is BadgeServiceErrorCode.ReceiptInvalid || code is BadgeServiceErrorCode.ReceiptUsed
+  return code is BadgeServiceErrorCode.ReceiptInvalid || code is BadgeServiceErrorCode.ReceiptUsed || code is BadgeServiceErrorCode.TestPurchase
 }

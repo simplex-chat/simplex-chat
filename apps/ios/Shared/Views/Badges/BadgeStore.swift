@@ -272,7 +272,7 @@ final class BadgeStore: ObservableObject {
     func storePurchaseRefused(_ user: UserRef, _ invoiceId: String, _ refusal: BadgeIssueFailure) async {
         await MainActor.run {
             if active(user) && openStorePurchases(user.userId).contains(where: { $0.invoiceId == invoiceId }) {
-                showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: refusal.purchaseText)
+                showAlert(refusal.purchaseAlertTitle, message: refusal.purchaseText)
             }
         }
         await storePurchaseResolved(user, invoiceId)
@@ -379,7 +379,7 @@ private func storeReceipt(_ verification: VerificationResult<Transaction>) -> Ba
 // a sweep that hands over a receipt refused while the app was not running learns it only from this answer
 private func badgeReceiptRefused(_ error: Error) -> Bool {
     if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError {
-        return code == .receiptInvalid || code == .receiptUsed
+        return code == .receiptInvalid || code == .receiptUsed || code == .testPurchase
     }
     return false
 }

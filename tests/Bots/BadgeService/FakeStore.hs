@@ -72,7 +72,7 @@ newFakeStore = do
         ]
       verifyApple jws
         | jws == appleThrowingJWS = error "fake verifier bug"
-        | otherwise = maybe (Left "not a fake receipt") Right $ lookup jws appleReceipts
+        | otherwise = maybe (Left $ SRInvalid "not a fake receipt") Right $ lookup jws appleReceipts
       verifyGoogle = googleVerdict pendingSettled googleDown
   pure
     FakeStore
@@ -84,7 +84,7 @@ newFakeStore = do
         appleQuantityJWS,
         pendingSettled,
         googleDown,
-        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, verifyTimeout = 500000}
+        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, acknowledgeGoogle = Nothing, verifyTimeout = 500000}
       }
   where
     fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)

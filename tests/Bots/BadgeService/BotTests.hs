@@ -28,7 +28,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, cancel)
-import Control.Concurrent.STM (TQueue, atomically, readTMVar)
+import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue)
 import Control.Monad (forM_, void, when)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
@@ -134,6 +134,7 @@ badgeServiceTests = do
       it "should refuse a receipt another key was credited with" testStoreReceiptUsed
       it "should refuse a receipt the store does not vouch for, with no retry" testStoreReceiptInvalid
       it "should write nothing for a pending purchase, and credit it once when it settles" testStorePending
+      it "should acknowledge a Play purchase before crediting it, and credit nothing when acknowledging fails" testStoreAcknowledgesBeforeCrediting
       it "should refuse a product that grants no badge" testStoreUnknownProduct
       it "should refuse a store purchase that carries an upgrade" testStoreUpgradeRefused
       it "should grant the badge of the product the receipt proves" testStoreBadgeTypeFromProduct
@@ -168,6 +169,7 @@ badgeServiceTests = do
       it "should retry a receipt the service could not verify, and credit it with no trigger at all" testStoreReceiptRetried
       it "should credit a second receipt while an earlier one waits for the store" testStoreReceiptNotBlocked
       it "should answer a refused receipt from the record, sending nothing, and not list it" testStoreRefusalKept
+      it "should refuse a test purchase for good, and answer it from the record" testStoreTestPurchaseRefused
       it "should announce a settlement to an owner that is not active, and print nothing for a hidden one" testStoreSettledOtherProfile
       it "should resolve one new transaction handed over twice at once to one record" testStoreReceiptTwoAtOnce
       it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
@@ -1723,8 +1725,8 @@ testStoreReceiptInvalid ps =
     refused (googlePayment "badge_supporter_01" "not-a-purchase") `shouldReturn` (BSEReceiptInvalid, Nothing)
     refused SPApple {jws = "not.a.jws"} `shouldReturn` (BSEReceiptInvalid, Nothing)
     refused SPApple {jws = unsignedJWS "{\"transactionId\":\"2000000812345699\",\"productId\":\"BADGE_SUPPORTER_01\"}"} `shouldReturn` (BSEReceiptInvalid, Nothing)
-    -- refused by the service, which the store would have vouched for
-    refused SPApple {jws = appleSandboxJWS} `shouldReturn` (BSEReceiptInvalid, Nothing)
+    -- named rather than lumped in with a forgery, since the device that bought it already knows
+    refused SPApple {jws = appleSandboxJWS} `shouldReturn` (BSETestPurchase, Nothing)
     nothingPurchased cc
 
 testStorePending :: HasCallStack => TestParams -> IO ()
@@ -1742,6 +1744,34 @@ testStorePending ps =
     credentialOf again `shouldBe` credentialOf settled
     rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
     storePayments cc `shouldReturn` [("google", Nothing, Nothing, 1)]
+
+testStoreAcknowledgesBeforeCrediting :: HasCallStack => TestParams -> IO ()
+testStoreAcknowledgesBeforeCrediting ps = do
+  acknowledged <- newIORef []
+  acknowledgement <- newIORef $ Right ()
+  let acknowledging store = (fakeVerifier store) {acknowledgeGoogle = Just $ \_ token -> modifyIORef' acknowledged (token :) >> readIORef acknowledgement}
+  withBadgeServiceVerifier ps acknowledging $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    let purchase payment = serviceCmd env purchaseKey $ purchaseCmd masterKey payment
+    unsettled <- purchase $ googlePayment "badge_supporter_01" googlePendingToken
+    fst (refusalOf unsettled) `shouldBe` BSEPaymentPending
+    unpriced <- purchase $ googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
+    refusalOf unpriced `shouldBe` (BSEProductUnavailable, Nothing)
+    readIORef acknowledged `shouldReturn` []
+    writeIORef acknowledgement $ Left $ SRUnreachable "acknowledging: fake store is down"
+    unacknowledged <- purchase supporterPlay
+    refusalOf unacknowledged `shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter
+    writeIORef acknowledgement $ Left $ SRVerifierFailed "acknowledging: the service account lacks the Play Console permission for this call"
+    forbidden <- purchase supporterPlay
+    refusalOf forbidden `shouldBe` (BSEInternal, Nothing)
+    nothingPurchased cc
+    writeIORef acknowledgement $ Right ()
+    purchased <- purchase supporterPlay
+    badgeTypeOf purchased `shouldBe` Just BTSupporter
+    replayed <- purchase supporterPlay
+    credentialOf replayed `shouldBe` credentialOf purchased
+    readIORef acknowledged `shouldReturn` replicate 3 googleSupporterToken
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
 testStoreUnknownProduct :: HasCallStack => TestParams -> IO ()
 testStoreUnknownProduct ps =
@@ -2166,6 +2196,18 @@ testStoreRefusalKept ps = do
       verifications `shouldReturn` 1
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]
 
+testStoreTestPurchaseRefused :: HasCallStack => TestParams -> IO ()
+testStoreTestPurchaseRefused ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsStore = FakeStore {appleSandboxJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      invoiceId <- createInvoice alice 1
+      let purchase = purchaseWithInvoice 1 invoiceId SPApple {jws = appleSandboxJWS}
+      alice ##> purchase
+      alice <### [StartsWith (invoicePurchase "" invoiceId), ConsoleString (refusedLine "" invoiceId "service_error final test_purchase")]
+      heldStoreReceipts (chatController alice) `shouldReturn` 0
+      alice ##> purchase
+      alice <## "cannot get badge: badge service error: test_purchase"
+
 testStoreSettledOtherProfile :: HasCallStack => TestParams -> IO ()
 testStoreSettledOtherProfile ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
@@ -2261,7 +2303,7 @@ testStoreReceiptAfterRestart ps = do
       pure invoiceId
     writeIORef broken False
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      inAnyOrder alice [["subscribed 1 connections on server localhost"], creditedLines "" invoiceId "1: supporter"]
+      expectLinesWithin 60 alice (creditedLines "" invoiceId "1: supporter") ["subscribed 1 connections on server localhost"]
       heldStoreReceipts (chatController alice) `shouldReturn` 0
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
@@ -2329,6 +2371,27 @@ inAnyOrder cc blocks = do
     startsWith l = \case
       start : _ -> start `isPrefixOf` l
       [] -> False
+
+-- | The required lines under one budget in any order, and the tolerated ones only if they come at
+-- all: the agent announces UP for a subscription that was still pending in the session answering it
+-- (simplexmq processSubOk), so "subscribed N connections" may never be printed, and when it is it
+-- races a settlement that arrived in the same batch. getTermLine' would bound each line at 20s.
+expectLinesWithin :: HasCallStack => Int -> TestCC -> [String] -> [String] -> IO ()
+expectLinesWithin seconds cc@TestCC {termQ, printOutput} required tolerated = go (seconds * 10) required
+  where
+    go n outstanding =
+      100000 `timeout` atomically (readTQueue termQ) >>= \case
+        Just line -> do
+          when printOutput $ userName cc >>= \name -> putStrLn $ name <> ": " <> line
+          case break (`isPrefixOf` line) outstanding of
+            (earlier, _ : others) -> go n (earlier <> others)
+            _
+              | any (`isPrefixOf` line) tolerated -> go n outstanding
+              | otherwise -> error $ "unexpected " <> show line <> ", awaiting " <> show outstanding
+        Nothing
+          | null outstanding -> pure ()
+          | n > 0 -> go (n - 1) outstanding
+          | otherwise -> error $ "no line starting one of " <> show outstanding <> " in " <> show seconds <> " seconds"
 
 -- | Counts the Google verifications the service makes, re-arming the one-shot hook each time.
 countGoogleVerifications :: IORef (IO ()) -> IO (IO Int)

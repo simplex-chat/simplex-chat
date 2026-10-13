@@ -855,6 +855,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
     case codeExpired
     case receiptInvalid
     case receiptUsed
+    case testPurchase
     case internalError
     case unknown(String)
 
@@ -876,6 +877,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
         case .codeUsed: "code_used"
         case .codeExpired: "code_expired"
         case .receiptInvalid: "receipt_invalid"
+        case .testPurchase: "test_purchase"
         case .receiptUsed: "receipt_used"
         case .internalError: "internal"
         case let .unknown(s): s
@@ -900,6 +902,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
         case "code_used": self = .codeUsed
         case "code_expired": self = .codeExpired
         case "receipt_invalid": self = .receiptInvalid
+        case "test_purchase": self = .testPurchase
         case "receipt_used": self = .receiptUsed
         case "internal": self = .internalError
         case let s: self = .unknown(s)
@@ -917,6 +920,7 @@ public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
     case .unknownPurchaseKey: NSLocalizedString("The badge service does not recognize this badge.", comment: "alert message")
     case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
     case .receiptInvalid: NSLocalizedString("The store did not confirm this purchase.", comment: "alert message")
+    case .testPurchase: NSLocalizedString("Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app.", comment: "alert message")
     case .receiptUsed: NSLocalizedString("This purchase was already credited to a badge on another device or profile.", comment: "alert message")
     case .paymentPending: NSLocalizedString("The payment has not been confirmed yet.", comment: "alert message")
     case .providerUnavailable: NSLocalizedString("The store could not be reached.", comment: "alert message")
