@@ -1163,6 +1163,7 @@
   <string name="deprecated_options_section">Deprecated options</string>
   <string name="show_internal_errors">Show internal errors</string>
   <string name="show_slow_api_calls">Show slow API calls</string>
+  <string name="desktop_flat_layout">Flat layout (experimental)</string>
   <string name="storage">Storage</string>
   <string name="storage_total">Total</string>
   <string name="shutdown_alert_question">Shutdown?</string>

@@ -427,9 +427,19 @@ fun EndPartOfScreen() {
   ModalManager.end.showInView()
 }
 
+val LocalFlatLayout = staticCompositionLocalOf { false }
+
 // Spec: spec/client/navigation.md#DesktopScreen
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
+  val flatLayout = remember { appPrefs.developerTools.state }.value && remember { appPrefs.desktopFlatLayout.state }.value
+  CompositionLocalProvider(LocalFlatLayout provides flatLayout) {
+    DesktopScreenLayout(userPickerState)
+  }
+}
+
+@Composable
+private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewState>) {
   Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
     StartPartOfScreen(userPickerState)
     tryOrShowError("UserPicker", error = {}) {
