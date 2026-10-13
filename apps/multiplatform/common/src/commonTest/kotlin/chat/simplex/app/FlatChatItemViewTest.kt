@@ -1,6 +1,7 @@
 package chat.simplex.app
 
 import chat.simplex.common.model.*
+import chat.simplex.common.views.chat.item.flatHoverBarVisible
 import chat.simplex.common.views.chat.item.flatItemHasHeader
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -64,6 +65,44 @@ class FlatChatItemViewTest {
     val older = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Instant.fromEpochSeconds(midnight.epochSeconds - 10))
     val item = ChatItem.getSampleData(2, CIDirection.DirectRcv(), Instant.fromEpochSeconds(midnight.epochSeconds + 10))
     assertTrue(flatItemHasHeader(item, older))
+  }
+
+  @Test
+  fun headerShownWhenChannelPostFollowsMemberMessage() {
+    assertTrue(flatItemHasHeader(msg(2, CIDirection.GroupRcv(alice), 10), older = msg(1, CIDirection.ChannelRcv(), 0)))
+    assertTrue(flatItemHasHeader(msg(2, CIDirection.ChannelRcv(), 10), older = msg(1, CIDirection.GroupRcv(alice), 0)))
+    assertFalse(flatItemHasHeader(msg(2, CIDirection.ChannelRcv(), 10), older = msg(1, CIDirection.ChannelRcv(), 0)))
+  }
+
+  @Test
+  fun headerShownWhenOwnerSwitchesBetweenChannelAndOwnName() {
+    val asChannel = msg(1, CIDirection.GroupSnd(), 0).let { it.copy(meta = it.meta.copy(showGroupAsSender = true)) }
+    assertTrue(flatItemHasHeader(msg(2, CIDirection.GroupSnd(), 10), older = asChannel))
+    val asChannelToo = msg(2, CIDirection.GroupSnd(), 10).let { it.copy(meta = it.meta.copy(showGroupAsSender = true)) }
+    assertFalse(flatItemHasHeader(asChannelToo, older = asChannel))
+  }
+
+  @Test
+  fun headerHiddenAfterDeletedMessageFromSameSender() {
+    val deleted = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Instant.fromEpochSeconds(noon.epochSeconds), itemDeleted = CIDeleted.Deleted(null))
+    assertFalse(flatItemHasHeader(msg(2, CIDirection.DirectRcv(), 10), older = deleted))
+  }
+
+  @Test
+  fun hoverBarShownForHoveredMessageOnly() {
+    val message = msg(1, CIDirection.DirectRcv(), 0)
+    assertTrue(flatHoverBarVisible(message, rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
+    assertFalse(flatHoverBarVisible(message, rowHovered = false, reactionPickerOpen = false, canReact = true, selecting = false))
+    assertFalse(flatHoverBarVisible(message, rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = true))
+    assertFalse(flatHoverBarVisible(featureEvent(2, 0), rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
+    assertFalse(flatHoverBarVisible(msg(ChatItem.TEMP_LIVE_CHAT_ITEM_ID, CIDirection.DirectSnd(), 0), rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
+  }
+
+  @Test
+  fun hoverBarStaysOpenForReactionPickerUntilReactionsUnavailable() {
+    val message = msg(1, CIDirection.DirectRcv(), 0)
+    assertTrue(flatHoverBarVisible(message, rowHovered = false, reactionPickerOpen = true, canReact = true, selecting = false))
+    assertFalse(flatHoverBarVisible(message, rowHovered = false, reactionPickerOpen = true, canReact = false, selecting = false))
   }
 
   @Test

@@ -114,14 +114,13 @@ fun ChatItemView(
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
   swipeOffset: Float = 0f,
+  showMenu: MutableState<Boolean> = remember { mutableStateOf(false) },
 ) {
   val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val flat = LocalFlatLayout.current
   val alignment = if (sent && !flat) Alignment.CenterEnd else Alignment.CenterStart
-  val showMenu = remember { mutableStateOf(false) }
-  val showReactionPicker = remember { mutableStateOf(false) }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val onLinkLongClick = { _: String -> showMenu.value = true }
   val live = remember { derivedStateOf { composeState.value.liveMessage != null } }.value
@@ -377,8 +376,8 @@ fun ChatItemView(
                   }
                 }
                 cItem.content.msgContent != null && cItem.id >= 0 && !cItem.isReport -> {
-                  val quickActions = itemQuickActions(cInfo, cItem, live)
                   DefaultDropdownMenu(showMenu) {
+                    val quickActions = itemQuickActions(cInfo, cItem, live)
                     if (quickActions.react) {
                       MsgReactionsMenu(cInfo, cItem, setReaction, showMenu)
                     }
@@ -789,21 +788,6 @@ fun ChatItemView(
       }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
         ChatItemReactions()
-      }
-    }
-    if (flat && !preview && !cItem.isLiveDummy && cItem.content.hasFlatSender && selectedChatItems.value == null && (hoveredItemId.value == cItem.id || showReactionPicker.value)) {
-      Box(Modifier.matchParentSize(), contentAlignment = Alignment.TopEnd) {
-        FlatHoverBar(
-          itemQuickActions(cInfo, cItem, live),
-          cInfo,
-          cItem,
-          setReaction,
-          showReactionPicker,
-          reply = { replyToItem(composeState, cItem, useLinkPreviews) },
-          forward = { forwardItem(cInfo, cItem) },
-          showMenu,
-          Modifier.wrapContentSize(Alignment.TopEnd, unbounded = true)
-        )
       }
     }
   }

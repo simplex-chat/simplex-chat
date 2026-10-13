@@ -26,25 +26,56 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.math.abs
 
 private val FLAT_GUTTER_WIDTH = 56.dp
-private val FLAT_HEADER_TOP_PADDING = 6.dp
+private val FLAT_GUTTER_TIME_END_PADDING = 6.dp
+private val FLAT_HEADER_TOP_PADDING = 8.dp
 // matches the horizontal text padding in CIMarkdownText
-private val FLAT_HEADER_START_PADDING = 12.dp
+val FLAT_TEXT_START_PADDING = 12.dp
+val FLAT_TEXT_VERTICAL_PADDING = 2.dp
 private const val FLAT_HOVER_ALPHA = 0.04f
+private const val FLAT_HIGHLIGHT_ALPHA = 0.12f
 private const val FLAT_BAR_BORDER_ALPHA = 0.12f
-private val FLAT_BAR_BUTTON_SIZE = 30.dp
+private val FLAT_BAR_BUTTON_SIZE = 24.dp
+private val FLAT_BAR_ICON_SIZE = 16.dp
+private val FLAT_BAR_PADDING = 2.dp
+// the hover bar has to fit inside the row: pointer events do not reach a part drawn outside the row bounds
+private val FLAT_ROW_MIN_HEIGHT = FLAT_BAR_BUTTON_SIZE + FLAT_BAR_PADDING * 3
 private const val FLAT_QUICK_REACTIONS = 3
+// same window as getItemSeparation in ChatView.kt
+private const val FLAT_GROUP_SECONDS = 60
 
 fun flatItemHasHeader(item: ChatItem, older: ChatItem?): Boolean =
   item.content.hasFlatSender && (
     older == null
       || !older.content.hasFlatSender
-      || getTimestampDateText(older.meta.itemTs) != getTimestampDateText(item.meta.itemTs)
-      || getItemSeparationLargeGap(item, older)
+      || !sameFlatSender(item, older)
+      || abs(item.meta.createdAt.epochSeconds - older.meta.createdAt.epochSeconds) >= FLAT_GROUP_SECONDS
+      || localDate(item) != localDate(older)
   )
 
-val CIContent.hasFlatSender: Boolean get() = when (this) {
+private fun sameFlatSender(item: ChatItem, older: ChatItem): Boolean {
+  val o = older.chatDir
+  return when (val d = item.chatDir) {
+    is CIDirection.GroupRcv -> o is CIDirection.GroupRcv && o.groupMember.groupMemberId == d.groupMember.groupMemberId
+    is CIDirection.ChannelRcv -> o is CIDirection.ChannelRcv
+    is CIDirection.GroupSnd -> o is CIDirection.GroupSnd && older.meta.showGroupAsSender == item.meta.showGroupAsSender
+    is CIDirection.DirectSnd -> o is CIDirection.DirectSnd
+    is CIDirection.DirectRcv -> o is CIDirection.DirectRcv
+    is CIDirection.LocalSnd -> o is CIDirection.LocalSnd
+    is CIDirection.LocalRcv -> o is CIDirection.LocalRcv
+  }
+}
+
+private fun localDate(item: ChatItem) = item.meta.itemTs.toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+fun flatHoverBarVisible(cItem: ChatItem, rowHovered: Boolean, reactionPickerOpen: Boolean, canReact: Boolean, selecting: Boolean): Boolean =
+  !selecting && cItem.content.msgContent != null && !cItem.isLiveDummy && (rowHovered || (reactionPickerOpen && canReact))
+
+private val CIContent.hasFlatSender: Boolean get() = when (this) {
   is CIContent.SndMsgContent,
   is CIContent.RcvMsgContent,
   is CIContent.SndDeleted,
@@ -85,55 +116,102 @@ fun FlatChatItemRow(
   chatInfo: ChatInfo,
   cItem: ChatItem,
   showHeader: Boolean,
-  hoveredItemId: MutableState<Long?>,
+  highlighted: Boolean,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
-  modifier: Modifier,
+  modifier: Modifier = Modifier,
+  hoverBar: @Composable BoxScope.(rowHovered: Boolean) -> Unit,
   content: @Composable () -> Unit
 ) {
   val interactionSource = remember { MutableInteractionSource() }
   val hovered = interactionSource.collectIsHoveredAsState().value
-  LaunchedEffect(hovered) {
-    if (hovered) {
-      hoveredItemId.value = cItem.id
-    } else if (hoveredItemId.value == cItem.id) {
-      hoveredItemId.value = null
-    }
+  val background = when {
+    highlighted -> MaterialTheme.colors.primary.copy(alpha = FLAT_HIGHLIGHT_ALPHA)
+    hovered -> MaterialTheme.colors.onBackground.copy(alpha = FLAT_HOVER_ALPHA)
+    else -> Color.Transparent
   }
-  Row(
-    modifier
-      .fillMaxWidth()
-      .hoverable(interactionSource)
-      .background(if (hovered) MaterialTheme.colors.onBackground.copy(alpha = FLAT_HOVER_ALPHA) else Color.Transparent)
-      .padding(top = if (showHeader) FLAT_HEADER_TOP_PADDING else 0.dp, end = DEFAULT_PADDING_HALF)
-  ) {
-    Box(Modifier.width(FLAT_GUTTER_WIDTH * fontSizeSqrtMultiplier), contentAlignment = Alignment.TopCenter) {
-      if (showHeader) {
-        FlatSenderImage(chatInfo, cItem.chatDir, showMemberInfo, showChatInfo)
-      } else if (hovered && cItem.content.hasFlatSender) {
-        Text(cItem.timestampText, Modifier.padding(top = 6.dp), fontSize = 11.sp, color = MaterialTheme.colors.secondary, maxLines = 1)
+  Box(modifier.fillMaxWidth().hoverable(interactionSource).background(background)) {
+    Row(
+      Modifier
+        .heightIn(min = FLAT_ROW_MIN_HEIGHT)
+        .padding(top = if (showHeader) FLAT_HEADER_TOP_PADDING else 0.dp, end = DEFAULT_PADDING_HALF)
+    ) {
+      Box(Modifier.width(FLAT_GUTTER_WIDTH * fontSizeSqrtMultiplier)) {
+        if (showHeader) {
+          Box(Modifier.align(Alignment.TopCenter)) {
+            FlatSenderImage(chatInfo, cItem, showMemberInfo, showChatInfo)
+          }
+        } else if (hovered && cItem.content.hasFlatSender) {
+          Text(
+            cItem.timestampText,
+            Modifier.align(Alignment.TopEnd).padding(top = FLAT_TEXT_VERTICAL_PADDING + 3.dp, end = FLAT_GUTTER_TIME_END_PADDING),
+            fontSize = 11.sp,
+            color = MaterialTheme.colors.secondary,
+            maxLines = 1
+          )
+        }
+      }
+      Column(Modifier.weight(1f)) {
+        if (showHeader) {
+          FlatSenderHeader(chatInfo, cItem)
+        }
+        content()
       }
     }
-    Column(Modifier.weight(1f)) {
-      if (showHeader) {
-        FlatSenderHeader(chatInfo, cItem)
-      }
-      content()
-    }
+    hoverBar(hovered)
+  }
+}
+
+@Composable
+fun BoxScope.FlatHoverBarSlot(
+  rowHovered: Boolean,
+  cInfo: ChatInfo,
+  cItem: ChatItem,
+  composeState: MutableState<ComposeState>,
+  useLinkPreviews: Boolean,
+  selecting: Boolean,
+  setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
+  forwardItem: (ChatInfo, ChatItem) -> Unit,
+  showMenu: MutableState<Boolean>
+) {
+  val showReactionPicker = remember { mutableStateOf(false) }
+  if (!rowHovered && !showReactionPicker.value) return
+  val quickActions = itemQuickActions(cInfo, cItem, live = composeState.value.liveMessage != null)
+  if (flatHoverBarVisible(cItem, rowHovered, showReactionPicker.value, quickActions.react, selecting)) {
+    FlatHoverBar(
+      quickActions,
+      cInfo,
+      cItem,
+      setReaction,
+      showReactionPicker,
+      reply = { replyToItem(composeState, cItem, useLinkPreviews) },
+      forward = { forwardItem(cInfo, cItem) },
+      showMenu,
+      Modifier.align(Alignment.TopEnd).padding(end = DEFAULT_PADDING)
+    )
+  } else {
+    showReactionPicker.value = false
   }
 }
 
 private data class FlatSender(val name: String, val badge: LocalBadge?, val role: String?)
 
-private fun flatSender(chatInfo: ChatInfo, dir: CIDirection): FlatSender = when (dir) {
+private fun flatSender(chatInfo: ChatInfo, cItem: ChatItem): FlatSender = when (val dir = cItem.chatDir) {
   is CIDirection.GroupRcv -> memberSender(dir.groupMember, chatInfo.isChannel)
-  is CIDirection.ChannelRcv -> FlatSender(chatInfo.chatViewName, null, generalGetString(MR.strings.channel_role_label))
-  is CIDirection.GroupSnd -> if (chatInfo is ChatInfo.Group) memberSender(chatInfo.groupInfo.membership, chatInfo.isChannel) else userSender(chatInfo)
+  is CIDirection.ChannelRcv -> channelSender(chatInfo)
+  is CIDirection.GroupSnd -> when {
+    cItem.meta.showGroupAsSender -> channelSender(chatInfo)
+    chatInfo is ChatInfo.Group -> memberSender(chatInfo.groupInfo.membership, chatInfo.isChannel)
+    else -> userSender(chatInfo)
+  }
   is CIDirection.DirectRcv -> FlatSender(chatInfo.displayName, chatInfo.nameBadge, null)
   is CIDirection.DirectSnd,
   is CIDirection.LocalSnd,
   is CIDirection.LocalRcv -> userSender(chatInfo)
 }
+
+private fun channelSender(chatInfo: ChatInfo): FlatSender =
+  FlatSender(chatInfo.chatViewName, null, generalGetString(MR.strings.channel_role_label))
 
 private fun memberSender(member: GroupMember, isChannel: Boolean): FlatSender =
   FlatSender(member.displayName, member.nameBadge, if (member.memberRole > GroupMemberRole.Member) member.memberRole.text(isChannel) else null)
@@ -149,8 +227,8 @@ private fun userSender(chatInfo: ChatInfo): FlatSender {
 
 @Composable
 private fun FlatSenderHeader(chatInfo: ChatInfo, cItem: ChatItem) {
-  val sender = flatSender(chatInfo, cItem.chatDir)
-  Row(Modifier.padding(start = FLAT_HEADER_START_PADDING), verticalAlignment = Alignment.CenterVertically) {
+  val sender = flatSender(chatInfo, cItem)
+  Row(Modifier.padding(start = FLAT_TEXT_START_PADDING, bottom = FLAT_TEXT_VERTICAL_PADDING), verticalAlignment = Alignment.CenterVertically) {
     NameWithBadge(
       sender.name,
       sender.badge,
@@ -167,9 +245,9 @@ private fun FlatSenderHeader(chatInfo: ChatInfo, cItem: ChatItem) {
 }
 
 @Composable
-private fun FlatSenderImage(chatInfo: ChatInfo, dir: CIDirection, showMemberInfo: (GroupInfo, GroupMember) -> Unit, showChatInfo: () -> Unit) {
+private fun FlatSenderImage(chatInfo: ChatInfo, cItem: ChatItem, showMemberInfo: (GroupInfo, GroupMember) -> Unit, showChatInfo: () -> Unit) {
   val size = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier
-  when (dir) {
+  when (val dir = cItem.chatDir) {
     is CIDirection.GroupRcv ->
       Box(if (chatInfo is ChatInfo.Group) Modifier.clip(CircleShape).clickable { showMemberInfo(chatInfo.groupInfo, dir.groupMember) } else Modifier) {
         MemberImage(dir.groupMember)
@@ -179,8 +257,11 @@ private fun FlatSenderImage(chatInfo: ChatInfo, dir: CIDirection, showMemberInfo
       Box(Modifier.clip(CircleShape).clickable { showChatInfo() }) {
         ChatInfoImage(chatInfo, size)
       }
-    is CIDirection.GroupSnd ->
-      if (chatInfo is ChatInfo.Group) MemberImage(chatInfo.groupInfo.membership) else UserImage(chatInfo, size)
+    is CIDirection.GroupSnd -> when {
+      cItem.meta.showGroupAsSender -> ChatInfoImage(chatInfo, size)
+      chatInfo is ChatInfo.Group -> MemberImage(chatInfo.groupInfo.membership)
+      else -> UserImage(chatInfo, size)
+    }
     is CIDirection.DirectSnd,
     is CIDirection.LocalSnd,
     is CIDirection.LocalRcv -> UserImage(chatInfo, size)
@@ -206,7 +287,7 @@ fun FlatHoverBar(
   reply: () -> Unit,
   forward: () -> Unit,
   showMenu: MutableState<Boolean>,
-  modifier: Modifier
+  modifier: Modifier = Modifier
 ) {
   Surface(
     modifier,
@@ -214,7 +295,7 @@ fun FlatHoverBar(
     border = BorderStroke(1.dp, MaterialTheme.colors.onBackground.copy(alpha = FLAT_BAR_BORDER_ALPHA)),
     elevation = 2.dp
   ) {
-    Row(Modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.padding(FLAT_BAR_PADDING), verticalAlignment = Alignment.CenterVertically) {
       if (quickActions.react) {
         availableReactions(cItem).take(FLAT_QUICK_REACTIONS).forEach { r ->
           Box(
@@ -245,6 +326,6 @@ fun FlatHoverBar(
 @Composable
 private fun FlatBarButton(icon: ImageResource, description: String, onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(FLAT_BAR_BUTTON_SIZE)) {
-    Icon(painterResource(icon), description, Modifier.size(18.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(icon), description, Modifier.size(FLAT_BAR_ICON_SIZE), tint = MaterialTheme.colors.secondary)
   }
 }

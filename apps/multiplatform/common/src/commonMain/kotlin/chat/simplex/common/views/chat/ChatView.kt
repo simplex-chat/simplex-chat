@@ -1952,7 +1952,7 @@ fun BoxScope.ChatItemsList(
       }
 
       @Composable
-      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f) {
+      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f, showMenu: MutableState<Boolean> = remember { mutableStateOf(false) }) {
         tryOrShowError("${cItem.id}ChatItem", error = {
           CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
         }) {
@@ -1966,7 +1966,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp && !LocalFlatLayout.current, swipeOffset = swipeOffset)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp && !LocalFlatLayout.current, swipeOffset = swipeOffset, showMenu = showMenu)
         }
       }
 
@@ -2029,8 +2029,16 @@ fun BoxScope.ChatItemsList(
               AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                 SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
               }
-              FlatChatItemRow(chatInfo, cItem, flatHeader, hoveredItemId, showMemberInfo, showChatInfo, Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
-                ChatItemViewShortHand(cItem, itemSeparation, range)
+              val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
+              val showMenu = remember { mutableStateOf(false) }
+              FlatChatItemRow(
+                chatInfo, cItem, flatHeader, highlighted.value, showMemberInfo, showChatInfo,
+                Modifier.padding(start = selectionOffset),
+                hoverBar = { rowHovered ->
+                  FlatHoverBarSlot(rowHovered, chatInfo, cItem, composeState, useLinkPreviews, selecting = selectedChatItems.value != null, setReaction, forwardItem, showMenu)
+                }
+              ) {
+                ChatItemViewShortHand(cItem, itemSeparation, range, showMenu = showMenu)
               }
             }
           } else if (chatInfo is ChatInfo.Group) {
@@ -3782,7 +3790,7 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
   )
 }
 
-internal fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
+private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
   if (nextItem == null) {
     return true
   }
