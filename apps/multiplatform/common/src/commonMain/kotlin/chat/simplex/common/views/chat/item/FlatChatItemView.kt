@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
@@ -42,6 +43,8 @@ private val FLAT_HEADER_TOP_PADDING = 8.dp
 // matches the horizontal text padding in CIMarkdownText
 val FLAT_TEXT_START_PADDING = 12.dp
 val FLAT_TEXT_VERTICAL_PADDING = 2.dp
+private val FLAT_ROW_INSET = 4.dp
+private val FLAT_ROW_CORNER = 6.dp
 private const val FLAT_SUBTLE_FILL_ALPHA = 0.04f
 private const val FLAT_HIGHLIGHT_ALPHA = 0.12f
 private const val FLAT_BORDER_ALPHA = 0.12f
@@ -57,6 +60,9 @@ private const val FLAT_GROUP_SECONDS = 60
 val FLAT_META_BOTTOM_PADDING = 1.dp
 private val FLAT_QUOTE_BAR_WIDTH = 3.dp
 val FLAT_DELETED_FONT_SIZE = 14.sp
+val FLAT_REPLY_AVATAR_SIZE = 16.dp
+val FLAT_REPLY_ICON_SIZE = 14.dp
+val FLAT_REPLY_FONT_SIZE = 13.sp
 private const val FLAT_QUOTE_BAR_ALPHA = 0.25f
 private val FLAT_PILL_SHAPE = RoundedCornerShape(50)
 val FLAT_PILL_HORIZONTAL_PADDING = 6.dp
@@ -146,7 +152,7 @@ fun FlatChatItemRow(
     hovered -> MaterialTheme.colors.onBackground.copy(alpha = FLAT_SUBTLE_FILL_ALPHA)
     else -> Color.Transparent
   }
-  Box(modifier.fillMaxWidth().hoverable(interactionSource).background(background)) {
+  Box(modifier.fillMaxWidth().padding(horizontal = FLAT_ROW_INSET).hoverable(interactionSource).background(background, RoundedCornerShape(FLAT_ROW_CORNER))) {
     Row(
       Modifier
         .heightIn(min = if (cItem.content.msgContent != null) FLAT_ROW_MIN_HEIGHT else 0.dp)
@@ -410,3 +416,13 @@ private val SELECTION_CHECKBOX_SIZE = 22.dp
 fun flatSelectionTopPadding(showHeader: Boolean): Dp =
   if (showHeader) FLAT_HEADER_TOP_PADDING + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier - SELECTION_CHECKBOX_SIZE * fontSizeMultiplier) / 2
   else FLAT_TEXT_VERTICAL_PADDING + 1.dp
+
+private val FLAT_COMPOSE_CORNER = 8.dp
+private const val FLAT_COMPOSE_FILL_ALPHA = 0.06f
+
+@Composable
+fun Modifier.flatComposeField(): Modifier =
+  if (!LocalFlatLayout.current) this
+  else padding(horizontal = DEFAULT_PADDING_HALF * 1.5f, vertical = DEFAULT_PADDING_HALF)
+    .clip(RoundedCornerShape(FLAT_COMPOSE_CORNER))
+    .background(MaterialTheme.colors.onBackground.copy(alpha = FLAT_COMPOSE_FILL_ALPHA))

@@ -447,10 +447,14 @@ private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewSt
     DesktopRail(userPickerState, setPerformLA = AppLock::setPerformLA)
   }
   Box(Modifier.padding(start = railWidth).width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-    StartPartOfScreen(userPickerState)
-    tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
+    @Composable
+    fun StartPart() {
+      StartPartOfScreen(userPickerState)
+      tryOrShowError("UserPicker", error = {}) {
+        UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
+      }
     }
+    if (LocalFlatLayout.current) FlatListSurface { StartPart() } else StartPart()
   }
   Box(Modifier.padding(start = railWidth).widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
     ModalManager.start.showInView()
@@ -480,7 +484,9 @@ private fun DesktopScreenLayout(userPickerState: MutableStateFlow<AnimatedViewSt
         })
     )
   }
-  VerticalDivider(Modifier.padding(start = railWidth + DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+  if (!LocalFlatLayout.current) {
+    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+  }
   ModalManager.fullscreen.showInView()
 }
 

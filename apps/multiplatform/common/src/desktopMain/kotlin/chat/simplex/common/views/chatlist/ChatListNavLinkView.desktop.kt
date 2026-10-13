@@ -1,5 +1,7 @@
 package chat.simplex.common.views.chatlist
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.*
@@ -25,6 +27,10 @@ object NoIndication : IndicationNodeFactory {
   override fun equals(other: Any?) = other === this
 }
 
+private val FLAT_ROW_INSET = 6.dp
+private val FLAT_ROW_GAP = 1.dp
+private val FLAT_ROW_CORNER = 6.dp
+
 @Composable
 actual fun ChatListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
@@ -36,7 +42,7 @@ actual fun ChatListNavLinkLayout(
   nextChatSelected: State<Boolean>,
 ) {
   val flat = LocalFlatLayout.current
-  var modifier = Modifier.fillMaxWidth()
+  var modifier = if (flat) Modifier.fillMaxWidth().padding(horizontal = FLAT_ROW_INSET, vertical = FLAT_ROW_GAP).clip(RoundedCornerShape(FLAT_ROW_CORNER)) else Modifier.fillMaxWidth()
   if (!disabled) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
     .onRightClick { showMenu.value = true }

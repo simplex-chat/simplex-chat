@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat.item
 
+import chat.simplex.common.views.chat.group.MemberProfileImage
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -60,14 +61,14 @@ fun FramedItemView(
   }
 
   @Composable
-  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean, stripLink: String? = null, prefix: AnnotatedString? = null) {
+  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean, stripLink: String? = null, prefix: AnnotatedString? = null, style: TextStyle = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)) {
     MarkdownText(
       qi.text,
       qi.formattedText,
       toggleSecrets = true,
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
-      style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
+      style = style,
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null,
       showTimestamp = showTimestamp,
@@ -221,6 +222,35 @@ fun FramedItemView(
   }
 
   @Composable
+  fun ciReplyLine(qi: CIQuote) {
+    Row(
+      Modifier.padding(start = FLAT_TEXT_START_PADDING, top = FLAT_TEXT_VERTICAL_PADDING, end = 12.dp),
+      horizontalArrangement = Arrangement.spacedBy(4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Icon(painterResource(MR.images.ic_reply), null, Modifier.size(FLAT_REPLY_ICON_SIZE), tint = MaterialTheme.colors.secondary)
+      val quotedDir = qi.chatDir
+      if (quotedDir is CIDirection.GroupRcv) {
+        MemberProfileImage(FLAT_REPLY_AVATAR_SIZE, quotedDir.groupMember)
+      }
+      val sender = qi.sender(membership())
+      if (sender != null) {
+        Text(sender, fontSize = FLAT_REPLY_FONT_SIZE, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colors.secondary, maxLines = 1)
+      }
+      val replyStyle = TextStyle(fontSize = FLAT_REPLY_FONT_SIZE, color = MaterialTheme.colors.secondary)
+      Box(Modifier.weight(1f, fill = false)) {
+        when {
+          qi.text.isNotEmpty() -> ciQuotedMsgTextView(qi, lines = 1, showTimestamp = false, style = replyStyle)
+          qi.content is MsgContent.MCImage -> Text(stringResource(MR.strings.image_descr), style = replyStyle, maxLines = 1)
+          qi.content is MsgContent.MCVideo -> Text(stringResource(MR.strings.video_descr), style = replyStyle, maxLines = 1)
+          qi.content is MsgContent.MCVoice -> Text(stringResource(MR.strings.voice_message), style = replyStyle, maxLines = 1)
+          qi.content is MsgContent.MCFile -> Text(stringResource(MR.strings.icon_descr_file), style = replyStyle, maxLines = 1)
+        }
+      }
+    }
+  }
+
+  @Composable
   fun ciFileView(ci: ChatItem, text: String) {
     CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, receiveFile)
     if (text != "" || ci.meta.isLive) {
@@ -309,7 +339,7 @@ fun FramedItemView(
                 .onRightClick { showMenu.value = true }
             ) {
               Header()
-              ciQuoteView(ci.quotedItem)
+              if (flat) ciReplyLine(ci.quotedItem) else ciQuoteView(ci.quotedItem)
             }
           } else {
             Header()

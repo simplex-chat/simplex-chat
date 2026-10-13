@@ -1,6 +1,10 @@
 package chat.simplex.common.views.chatlist
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,7 +26,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ReactionIcon
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
@@ -37,7 +41,31 @@ private val RAIL_ACTIVE_BACKGROUND_WIDTH = 40.dp
 private val RAIL_ACTIVE_BACKGROUND_HEIGHT = 32.dp
 private val RAIL_UNREAD_DOT_SIZE = 6.dp
 private const val RAIL_ACTIVE_BACKGROUND_ALPHA = 0.12f
-private const val RAIL_BACKGROUND_ALPHA = 0.04f
+private val RAIL_ITEM_INSET = 6.dp
+private const val RAIL_TILE_CORNER_PERCENT = 30
+private const val RAIL_TILE_CIRCLE_PERCENT = 50
+private const val RAIL_TILE_ALPHA = 0.15f
+private const val RAIL_MARK_ACTIVE_FRACTION = 0.8f
+private const val RAIL_MARK_HOVER_FRACTION = 0.4f
+// background darkening of the rail and the chat list; dark themes need more for a visible step
+private const val FLAT_RAIL_SHADE_LIGHT = 0.07f
+private const val FLAT_RAIL_SHADE_DARK = 0.4f
+private const val FLAT_LIST_SHADE_LIGHT = 0.035f
+private const val FLAT_LIST_SHADE_DARK = 0.2f
+
+@Composable
+fun flatRailColor(): Color = flatShade(if (MaterialTheme.colors.isLight) FLAT_RAIL_SHADE_LIGHT else FLAT_RAIL_SHADE_DARK)
+
+@Composable
+fun flatListColor(): Color = flatShade(if (MaterialTheme.colors.isLight) FLAT_LIST_SHADE_LIGHT else FLAT_LIST_SHADE_DARK)
+
+@Composable
+private fun flatShade(amount: Float): Color = MaterialTheme.colors.background.mixWith(Color.Black, 1 - amount)
+
+@Composable
+fun FlatListSurface(content: @Composable () -> Unit) {
+  MaterialTheme(colors = MaterialTheme.colors.copy(background = flatListColor()), typography = MaterialTheme.typography, shapes = MaterialTheme.shapes, content = content)
+}
 
 // Spec: spec/client/chat-list.md#DesktopRail
 @Composable
@@ -46,10 +74,9 @@ fun DesktopRail(userPickerState: MutableStateFlow<AnimatedViewState>, setPerform
     Modifier
       .width(DESKTOP_RAIL_WIDTH * fontSizeSqrtMultiplier)
       .fillMaxHeight()
-      .background(MaterialTheme.colors.onBackground.copy(alpha = RAIL_BACKGROUND_ALPHA))
+      .background(flatRailColor())
   ) {
     RailContent(userPickerState, setPerformLA)
-    VerticalDivider()
   }
 }
 
@@ -93,20 +120,30 @@ private fun RailUsers(userPickerState: MutableStateFlow<AnimatedViewState>) {
   val switchEnabled = switchAllowed && (remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote)
   users.forEach { u ->
     val user = u.user
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-      if (user.activeUser) {
-        Box(
-          Modifier
-            .align(Alignment.CenterStart)
-            .size(RAIL_ACTIVE_MARK_WIDTH, RAIL_ITEM_SIZE * fontSizeSqrtMultiplier / 2)
-            .background(MaterialTheme.colors.primary, RoundedCornerShape(topEnd = RAIL_ACTIVE_MARK_WIDTH, bottomEnd = RAIL_ACTIVE_MARK_WIDTH))
-        )
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered = interactionSource.collectIsHoveredAsState().value
+    val tileSize = RAIL_ITEM_SIZE * fontSizeSqrtMultiplier
+    val markHeight by animateDpAsState(
+      when {
+        user.activeUser -> tileSize * RAIL_MARK_ACTIVE_FRACTION
+        hovered -> tileSize * RAIL_MARK_HOVER_FRACTION
+        else -> 0.dp
       }
+    )
+    val corner by animateIntAsState(if (user.activeUser || hovered) RAIL_TILE_CORNER_PERCENT else RAIL_TILE_CIRCLE_PERCENT)
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+      Box(
+        Modifier
+          .align(Alignment.CenterStart)
+          .size(RAIL_ACTIVE_MARK_WIDTH, markHeight)
+          .background(MaterialTheme.colors.primary, RoundedCornerShape(topEnd = RAIL_ACTIVE_MARK_WIDTH, bottomEnd = RAIL_ACTIVE_MARK_WIDTH))
+      )
       Box {
         Box(
           Modifier
-            .clip(CircleShape)
-            .clickable(enabled = if (user.activeUser) switchAllowed else switchEnabled) {
+            .size(tileSize)
+            .clip(RoundedCornerShape(percent = corner))
+            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, enabled = if (user.activeUser) switchAllowed else switchEnabled) {
               if (user.activeUser) {
                 ModalManager.start.closeModals()
                 userPickerState.value = AnimatedViewState.VISIBLE
@@ -116,12 +153,27 @@ private fun RailUsers(userPickerState: MutableStateFlow<AnimatedViewState>) {
               }
             }
         ) {
-          ProfileImage(RAIL_ITEM_SIZE * fontSizeSqrtMultiplier, user.profile.image)
+          RailProfileTile(user)
         }
         if (!user.activeUser && u.unreadCount > 0) {
           userUnreadBadge(u.unreadCount, user.showNtfs, hasPadding = false)
         }
       }
+    }
+  }
+}
+
+@Composable
+private fun RailProfileTile(user: User) {
+  val image = user.profile.image
+  if (image != null) {
+    val bitmap = remember(image) { base64ToBitmap(image) }
+    Image(bitmap, user.displayName, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+  } else {
+    val name = user.displayName
+    val initial = name.take(if (name.firstOrNull()?.isHighSurrogate() == true) 2 else 1).uppercase()
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colors.primary.copy(alpha = RAIL_TILE_ALPHA)), contentAlignment = Alignment.Center) {
+      Text(initial, color = MaterialTheme.colors.primary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     }
   }
 }
@@ -190,6 +242,8 @@ private fun RailItem(
   Column(
     Modifier
       .fillMaxWidth()
+      .padding(horizontal = RAIL_ITEM_INSET)
+      .clip(RoundedCornerShape(DEFAULT_PADDING_HALF))
       .combinedClickable(enabled = enabled, onClick = onClick, onLongClick = onLongClick)
       .onRightClick(onLongClick)
       .padding(vertical = 4.dp),
