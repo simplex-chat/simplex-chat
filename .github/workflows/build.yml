@@ -839,13 +839,17 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
 # =========================
-#   Packages release PR
+#   Packages release
 # =========================
 
 # A new library release updates the Node.js and Python packages in a release PR.
 
-  packages-release-pr:
+  packages:
     needs: [maybe-release, build-linux, build-linux-postgres, build-macos, build-windows]
     if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag }}
-    uses: ./.github/workflows/packages-release-pr.yml
+    # the called workflow can't be granted more than its caller, and its publish job needs these
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/packages.yml
     secrets: inherit

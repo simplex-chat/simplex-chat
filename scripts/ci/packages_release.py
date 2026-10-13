@@ -284,7 +284,7 @@ def current_addon_tag() -> str:
 
 
 def publish_tag(package: str, version: str) -> str:
-    """Tag of the commit a version was published from (packages-publish.yml)."""
+    """Tag of the commit a version was published from (packages.yml)."""
     return f"{package}-v{version}"
 
 
