@@ -448,6 +448,7 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile memberId 
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
+          chatLayout = Nothing,
           groupSummary = GroupSummary {currentMembers = 1, publicMemberCount = publicMemberCount_},
           rosterVersion = rosterVersion0,
           customData = Nothing,
@@ -545,6 +546,7 @@ createGroupInvitation db cxt user@User {userId} inviter peerChatVRange GroupInvi
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
+                  chatLayout = Nothing,
                   groupSummary = GroupSummary {currentMembers = 2, publicMemberCount = Nothing},
                   rosterVersion = Nothing,
                   customData = Nothing,
@@ -3312,7 +3314,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactRequest = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactRequest = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatLayout = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> StoreCxt -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db cxt user contactId = do

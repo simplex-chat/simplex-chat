@@ -1230,6 +1230,8 @@ class ChatItemDeletion(TypedDict):
     deletedChatItem: "AChatItem"
     toChatItem: NotRequired["AChatItem"]
 
+ChatLayout = Literal["classic", "terminal"]
+
 class ChatListQuery_filters(TypedDict):
     type: Literal["filters"]
     favorite: bool
@@ -1521,6 +1523,7 @@ class Contact(TypedDict):
     chatTags: list[int]  # int64
     chatItemTTL: NotRequired[int]  # int64
     uiThemes: NotRequired["UIThemeEntityOverrides"]
+    chatLayout: NotRequired["ChatLayout"]
     chatDeleted: bool
     customData: NotRequired[dict[str, object]]
 
@@ -1950,6 +1953,7 @@ class GroupInfo(TypedDict):
     chatTags: list[int]  # int64
     chatItemTTL: NotRequired[int]  # int64
     uiThemes: NotRequired["UIThemeEntityOverrides"]
+    chatLayout: NotRequired["ChatLayout"]
     customData: NotRequired[dict[str, object]]
     groupSummary: "GroupSummary"
     rosterVersion: NotRequired[int]  # int64

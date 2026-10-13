@@ -1858,6 +1858,15 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> emptyList()
   }
 
+  val chatLayout: ChatLayout get() {
+    val layout = when (this) {
+      is Direct -> contact.chatLayout
+      is Group -> groupInfo.chatLayout
+      else -> null
+    }
+    return if (layout == null || layout is ChatLayout.Unknown) ChatLayout.Classic else layout
+  }
+
   val contactCard: Boolean
     get() = when (this) {
       is Direct -> contact.isContactCard
@@ -1898,6 +1907,7 @@ data class Contact(
   val chatItemTTL: Long?,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayout? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -2186,6 +2196,31 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
       else -> ChatPeerType.Unknown(v)
     }
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
+}
+
+@Serializable(with = ChatLayoutSerializer::class)
+sealed class ChatLayout {
+  @Serializable @SerialName("classic") object Classic: ChatLayout()
+  @Serializable @SerialName("terminal") object Terminal: ChatLayout()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatLayout()
+
+  val text: String
+    get() = when (this) {
+      is Classic -> "classic"
+      is Terminal -> "terminal"
+      is Unknown -> type
+    }
+}
+
+object ChatLayoutSerializer : KSerializer<ChatLayout> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatLayout", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatLayout =
+    when (val v = decoder.decodeString()) {
+      "classic" -> ChatLayout.Classic
+      "terminal" -> ChatLayout.Terminal
+      else -> ChatLayout.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: ChatLayout) = encoder.encodeString(value.text)
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
@@ -2501,6 +2536,7 @@ data class GroupInfo (
   val chatTs: Instant?,
   val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayout? = null,
   val groupSummary: GroupSummary,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,

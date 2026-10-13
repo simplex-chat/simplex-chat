@@ -1763,6 +1763,11 @@ export interface ChatItemDeletion {
   toChatItem?: AChatItem
 }
 
+export enum ChatLayout {
+  Classic = "classic",
+  Terminal = "terminal",
+}
+
 export type ChatListQuery = ChatListQuery.Filters | ChatListQuery.Search
 
 export namespace ChatListQuery {
@@ -2172,6 +2177,7 @@ export interface Contact {
   chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
+  chatLayout?: ChatLayout
   chatDeleted: boolean
   customData?: object
 }
@@ -2791,6 +2797,7 @@ export interface GroupInfo {
   chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
+  chatLayout?: ChatLayout
   customData?: object
   groupSummary: GroupSummary
   rosterVersion?: number // int64

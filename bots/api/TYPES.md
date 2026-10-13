@@ -49,6 +49,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatLayout](#chatlayout)
 - [ChatListQuery](#chatlistquery)
 - [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
@@ -1518,6 +1519,15 @@ Message deletion result.
 
 ---
 
+## ChatLayout
+
+**Enum type**:
+- "classic"
+- "terminal"
+
+
+---
+
 ## ChatListQuery
 
 **Discriminated union type**:
@@ -1906,6 +1916,7 @@ Error:
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- chatLayout: [ChatLayout](#chatlayout)?
 - chatDeleted: bool
 - customData: JSONObject?
 
@@ -2489,6 +2500,7 @@ MemberSupport:
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- chatLayout: [ChatLayout](#chatlayout)?
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
 - rosterVersion: int64?

@@ -927,6 +927,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
             chatTags = [],
             chatItemTTL = Nothing,
             uiThemes = Nothing,
+            chatLayout = Nothing,
             chatDeleted = False,
             customData = Nothing
           }

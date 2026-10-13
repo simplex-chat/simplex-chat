@@ -507,7 +507,7 @@ toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName
       preparedContact = toPreparedContact preparedContactRow
       contactRequest = UserContactRequestRef <$> contactRequestId <*> (unBI <$> rejectionSupported_)
       groupDirectInv = toGroupDirectInvitation groupDirectInvRow
-   in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
+   in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatLayout = Nothing, chatDeleted, customData}
 
 rowToContactDomain :: ContactDomainRow -> Maybe SimplexDomainClaim
 rowToContactDomain (domain_, domainProof_, _) = (`SimplexDomainClaim` domainProof_) . StrJSON <$> domain_
@@ -715,7 +715,7 @@ toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayN
       businessChat = toBusinessChatInfo (toPublicGroupAccess accessRow >>= groupDomainClaim) businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
+      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, chatLayout = Nothing, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
    in (gInfo, groupKeysRow)
 
 toGroupInfo_ :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo

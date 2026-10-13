@@ -256,6 +256,35 @@ extension ChatPeerType: Codable {
     }
 }
 
+public enum ChatLayout: Hashable {
+    case classic
+    case terminal
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .classic: "classic"
+        case .terminal: "terminal"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension ChatLayout: Codable {
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "classic": self = .classic
+        case "terminal": self = .terminal
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
+    }
+}
+
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
 // Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
 public enum BadgeType: Hashable {
@@ -2302,6 +2331,18 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var chatLayout: ChatLayout {
+        let layout: ChatLayout? = switch self {
+        case let .direct(contact): contact.chatLayout
+        case let .group(groupInfo, _): groupInfo.chatLayout
+        default: nil
+        }
+        return switch layout {
+        case .none, .some(.unknown): .classic
+        case let .some(l): l
+        }
+    }
+
     public var chatTags: [Int64]? {
         switch self {
         case let .direct(contact): return contact.chatTags
@@ -2468,6 +2509,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
+    public var chatLayout: ChatLayout?
     public var chatDeleted: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -2871,6 +2913,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     public var preparedGroup: PreparedGroup?
     public var uiThemes: ThemeModeOverrides?
+    public var chatLayout: ChatLayout?
     public var groupSummary: GroupSummary
     public var membersRequireAttention: Int
 
