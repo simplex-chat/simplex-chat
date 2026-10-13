@@ -96,6 +96,7 @@ fun itemSegmentDisplayText(ft: FormattedText, ci: ChatItem, linkMode: SimplexLin
       } else if (mention != null) mentionText(ft.format.memberName)
       else ft.text
     }
+    is Format.Uri -> displayedUri(ft.text)
     is Format.HyperLink -> ft.format.showText ?: ft.text
     is Format.SimplexLink -> {
       val t = ft.format.showText
@@ -283,7 +284,7 @@ fun MarkdownText (
               val s = ft.text
               val link = if (s.startsWith("http://") || s.startsWith("https://")) s else "https://$s"
               withAnnotation(tag = "WEB_URL", annotation = link) {
-                withStyle(ftStyle) { append(ft.text) }
+                withStyle(ftStyle) { append(displayedUri(ft.text)) }
               }
             }
             is Format.HyperLink -> {
