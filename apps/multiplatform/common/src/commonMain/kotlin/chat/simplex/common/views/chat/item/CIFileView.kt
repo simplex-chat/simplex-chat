@@ -239,6 +239,25 @@ fun CIFileView(
 // the core decides whether a received file is above the size the sender's badge allows
 fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
 
+@Composable
+fun OpenWhenReceivedEffect(file: CIFile, inChatList: Boolean, open: () -> Unit) {
+  KeyChangeEffect(file.fileStatus) {
+    when (file.fileStatus) {
+      is CIFileStatus.RcvError, is CIFileStatus.RcvCancelled, is CIFileStatus.RcvAborted -> chatModel.cancelFileToOpen(file, inChatList)
+      else -> if (chatModel.receivedFileToOpen(file, inChatList)) open()
+    }
+  }
+  if (inChatList) {
+    val chatListShown = chatModel.chatListShown()
+    KeyChangeEffect(chatListShown) {
+      if (!chatListShown) chatModel.cancelFileToOpen(file, inChatList)
+    }
+  }
+  DisposableEffect(Unit) {
+    onDispose { chatModel.cancelFileToOpen(file, inChatList) }
+  }
+}
+
 fun showProhibitedFileAlert(file: CIFile, prohibited: FileProhibited) {
   val badgeIssue = when (prohibited.badgeStatus) {
     null, BadgeStatus.Active -> ""

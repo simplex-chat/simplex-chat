@@ -251,6 +251,27 @@ func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
     )
 }
 
+struct OpenWhenReceived: ViewModifier {
+    @EnvironmentObject var m: ChatModel
+    let file: CIFile?
+    let inChatList: Bool
+    let open: (CIFile) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: file?.fileStatus) { _ in
+                guard let file else { return }
+                switch file.fileStatus {
+                case .rcvError, .rcvCancelled, .rcvAborted: m.cancelFileToOpen(file, inChatList: inChatList)
+                default: if m.receivedFileToOpen(file, inChatList: inChatList) { open(file) }
+                }
+            }
+            .onDisappear {
+                if let file { m.cancelFileToOpen(file, inChatList: inChatList) }
+            }
+    }
+}
+
 func saveCryptoFile(_ fileSource: CryptoFile) {
     if let cfArgs = fileSource.cryptoArgs {
         let url = getAppFilePath(fileSource.filePath)

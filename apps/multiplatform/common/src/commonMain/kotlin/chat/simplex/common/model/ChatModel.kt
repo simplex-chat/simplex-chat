@@ -132,6 +132,13 @@ object BadgeModel {
 
 enum class ChatListBanner { BadgeExpired, BadgeIssueFailed, BadgePitch, GetStake }
 
+sealed class FileOpenPlace {
+  data class InChat(val chatId: String): FileOpenPlace()
+  object ChatList: FileOpenPlace()
+}
+
+data class FileToOpen(val fileId: Long, val place: FileOpenPlace)
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -205,7 +212,31 @@ object ChatModel {
   // another in its place; only the badge alert shows regardless. Set while rendering, so not a state.
   var chatListBanner: ChatListBanner? = null
 
+  var fileToOpen: FileToOpen? = null
+
   fun bannerSlotFree(banner: ChatListBanner): Boolean = chatListBanner == null || chatListBanner == banner
+
+  fun openWhenReceived(file: CIFile, inChatList: Boolean) {
+    fileToOpen = fileOpenPlace(inChatList)?.let { FileToOpen(file.fileId, it) }
+  }
+
+  fun receivedFileToOpen(file: CIFile, inChatList: Boolean): Boolean {
+    val f = fileToOpen
+    if (f == null || f.fileId != file.fileId || f.place != fileOpenPlace(inChatList) || !file.loaded) return false
+    fileToOpen = null
+    return f.place != FileOpenPlace.ChatList || chatListShown()
+  }
+
+  fun cancelFileToOpen(file: CIFile, inChatList: Boolean) {
+    val f = fileToOpen
+    if (f != null && f.fileId == file.fileId && (f.place == FileOpenPlace.ChatList) == inChatList) fileToOpen = null
+  }
+
+  private fun fileOpenPlace(inChatList: Boolean): FileOpenPlace? =
+    if (inChatList) FileOpenPlace.ChatList else chatId.value?.let { FileOpenPlace.InChat(it) }
+
+  fun chatListShown(): Boolean =
+    (appPlatform.isDesktop || chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen()
 
   // preferences
   val notificationPreviewMode by lazy {
