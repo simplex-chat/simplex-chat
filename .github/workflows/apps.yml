@@ -1,0 +1,66 @@
+name: apps
+
+on:
+  push:
+    branches:
+      - master
+      - stable
+    paths:
+      - "apps/multiplatform/**"
+      - "apps/ios/**"
+      - "scripts/ci/ios-stub-libs.sh"
+      - ".github/workflows/apps.yml"
+  pull_request:
+    paths:
+      - "apps/multiplatform/**"
+      - "apps/ios/**"
+      - "scripts/ci/ios-stub-libs.sh"
+      - ".github/workflows/apps.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VER: 17
+
+jobs:
+  kotlin:
+    name: "Kotlin (Android, Desktop)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'corretto'
+          java-version: ${{ env.JAVA_VER }}
+          cache: 'gradle'
+
+      - name: Build and test
+        working-directory: apps/multiplatform
+        run: ./gradlew --no-daemon :common:desktopTest :desktop:compileKotlin :android:compileGoogleDebugKotlin :android:testFossDebugUnitTest
+
+  ios:
+    name: "iOS"
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Create stub core libraries
+        run: scripts/ci/ios-stub-libs.sh
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX (iOS)" \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            ARCHS=arm64 \
+            CODE_SIGNING_ALLOWED=NO
