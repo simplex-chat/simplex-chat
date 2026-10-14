@@ -23,9 +23,11 @@ from packages_release import (
     changed_since_publish,
     published_tag,
     dist_tag,
+    npm_published,
     parse_python_version,
     parse_release,
     plan,
+    pypi_published,
     registry_name,
     release_digests,
     render_python_version,
@@ -217,6 +219,45 @@ class BuildPlanTest(unittest.TestCase):
         self.assertEqual(
             build_matrix(["linux-x86_64", "windows-x86_64"]),
             '[{"platform": "linux-x86_64", "os": "ubuntu-22.04"}, {"platform": "windows-x86_64", "os": "windows-latest"}]',
+        )
+
+
+class RegistryUrlTest(unittest.TestCase):
+    def urls(self, env: dict[str, str]) -> list[str]:
+        with (
+            mock.patch.dict("os.environ", env),
+            mock.patch.object(packages_release, "http_json", return_value={}) as get,
+        ):
+            npm_published("simplex-chat", "1.0.0")
+            pypi_published("1.0.0")
+            packages_release.github_release("core-1.0.0.1")
+        return [call.args[0] for call in get.call_args_list]
+
+    def test_empty_variables_use_the_public_registries(self):
+        self.assertEqual(
+            self.urls({"NPM_REGISTRY": "", "NPM_SCOPE": "", "PYPI_URL": "", "PYPI_PROJECT": "", "LIBS_REPOSITORY": ""}),
+            [
+                "https://registry.npmjs.org/simplex-chat/1.0.0",
+                "https://pypi.org/pypi/simplex-chat/1.0.0/json",
+                "https://api.github.com/repos/simplex-chat/simplex-chat-libs/releases/tags/core-1.0.0.1",
+            ],
+        )
+
+    def test_variables_select_test_registries(self):
+        self.assertEqual(
+            self.urls(
+                {
+                    "NPM_SCOPE": "@test",
+                    "PYPI_URL": "https://test.pypi.org",
+                    "PYPI_PROJECT": "sx-test",
+                    "LIBS_REPOSITORY": "a/b-libs",
+                }
+            ),
+            [
+                "https://registry.npmjs.org/@test%2Fsimplex-chat/1.0.0",
+                "https://test.pypi.org/pypi/sx-test/1.0.0/json",
+                "https://api.github.com/repos/a/b-libs/releases/tags/core-1.0.0.1",
+            ],
         )
 
 

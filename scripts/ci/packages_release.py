@@ -377,8 +377,9 @@ def http_json(url: str, headers: dict[str, str] | None = None) -> dict | None:
         raise
 
 
+# Workflows pass unset repository variables as empty strings.
 def npm_published(name: str, version: str) -> bool:
-    registry = os.environ.get("NPM_REGISTRY", "https://registry.npmjs.org")
+    registry = os.environ.get("NPM_REGISTRY") or "https://registry.npmjs.org"
     package = registry_name(name, os.environ.get("NPM_SCOPE")).replace("/", "%2F")
     return http_json(f"{registry}/{package}/{version}") is not None
 
@@ -388,13 +389,13 @@ def python_project() -> str:
 
 
 def pypi_published(version: str) -> bool:
-    index = os.environ.get("PYPI_URL", "https://pypi.org")
+    index = os.environ.get("PYPI_URL") or "https://pypi.org"
     project = os.environ.get("PYPI_PROJECT") or python_project()
     return http_json(f"{index}/pypi/{project}/{version}/json") is not None
 
 
 def github_release(tag: str) -> dict | None:
-    repo = os.environ.get("LIBS_REPOSITORY", "simplex-chat/simplex-chat-libs")
+    repo = os.environ.get("LIBS_REPOSITORY") or "simplex-chat/simplex-chat-libs"
     headers = {"Accept": "application/vnd.github+json"}
     if token := os.environ.get("GH_TOKEN"):
         headers["Authorization"] = f"Bearer {token}"
