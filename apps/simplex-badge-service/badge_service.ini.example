@@ -42,11 +42,12 @@ idle_seconds = 60
 
 ; verifies App Store purchases offline. Omit the whole section and the service answers every App Store
 ; receipt provider_not_configured, which the app retries later.
-; root_certificate is Apple Root CA - G3 as Apple publishes it, in DER:
-; https://www.apple.com/certificateauthority/AppleRootCA-G3.cer
+; root_certificates lists, comma-separated, the roots trusted to sign receipts, each in DER. Today that
+; is Apple Root CA - G3 as Apple publishes it: https://www.apple.com/certificateauthority/AppleRootCA-G3.cer
+; When Apple adds a root, list it beside the old one rather than in its place.
 ;[apple]
 ;bundle_id = chat.simplex.app
-;root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+;root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
 
 ; verifies Play purchases with the Google Play Developer API. Omit the whole section and the service answers
 ; every Play receipt provider_not_configured, which the app retries later.
