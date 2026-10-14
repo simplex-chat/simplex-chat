@@ -121,7 +121,7 @@ enum WCallCommand: Equatable, Encodable, Decodable {
     case start(media: CallMediaType, aesKey: String? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
     case offer(offer: String, iceCandidates: String, media: CallMediaType, aesKey: String? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
     case answer(answer: String, iceCandidates: String)
-    case ice(iceCandidates: String)
+    case ice(iceCandidates: String, session: String? = nil)
     case media(source: CallMediaSource, enable: Bool)
     case end
 
@@ -133,6 +133,7 @@ enum WCallCommand: Equatable, Encodable, Decodable {
         case offer
         case answer
         case iceCandidates
+        case session
         case enable
         case iceServers
         case relay
@@ -176,9 +177,10 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             try container.encode("answer", forKey: .type)
             try container.encode(answer, forKey: .answer)
             try container.encode(iceCandidates, forKey: .iceCandidates)
-        case let .ice(iceCandidates):
+        case let .ice(iceCandidates, session):
             try container.encode("ice", forKey: .type)
             try container.encode(iceCandidates, forKey: .iceCandidates)
+            try container.encodeIfPresent(session, forKey: .session)
         case let .media(source, enable):
             try container.encode("media", forKey: .type)
             try container.encode(source, forKey: .media)
@@ -215,7 +217,8 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             self = .answer(answer: answer, iceCandidates: iceCandidates)
         case "ice":
             let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
-            self = .ice(iceCandidates: iceCandidates)
+            let session = try container.decodeIfPresent(String.self, forKey: CodingKeys.session)
+            self = .ice(iceCandidates: iceCandidates, session: session)
         case "media":
             let source = try container.decode(CallMediaSource.self, forKey: CodingKeys.source)
             let enable = try container.decode(Bool.self, forKey: CodingKeys.enable)
@@ -233,7 +236,7 @@ enum WCallResponse: Equatable, Decodable {
     case capabilities(capabilities: CallCapabilities)
     case offer(offer: String, iceCandidates: String, capabilities: CallCapabilities)
     case answer(answer: String, iceCandidates: String)
-    case ice(iceCandidates: String)
+    case ice(iceCandidates: String, session: String? = nil)
     case connection(state: ConnectionState)
     case connected(connectionInfo: ConnectionInfo)
     case peerMedia(source: CallMediaSource, enabled: Bool)
@@ -248,6 +251,7 @@ enum WCallResponse: Equatable, Decodable {
         case offer
         case answer
         case iceCandidates
+        case session
         case state
         case connectionInfo
         case message
@@ -292,7 +296,8 @@ enum WCallResponse: Equatable, Decodable {
                 self = .answer(answer: answer, iceCandidates: iceCandidates)
             case "ice":
                 let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
-                self = .ice(iceCandidates: iceCandidates)
+                let session = try container.decodeIfPresent(String.self, forKey: CodingKeys.session)
+                self = .ice(iceCandidates: iceCandidates, session: session)
             case "connection":
                 let state = try container.decode(ConnectionState.self, forKey: CodingKeys.state)
                 self = .connection(state: state)
@@ -335,9 +340,10 @@ extension WCallResponse: Encodable {
             try container.encode("answer", forKey: .type)
             try container.encode(answer, forKey: .answer)
             try container.encode(iceCandidates, forKey: .iceCandidates)
-        case let .ice(iceCandidates):
+        case let .ice(iceCandidates, session):
             try container.encode("ice", forKey: .type)
             try container.encode(iceCandidates, forKey: .iceCandidates)
+            try container.encodeIfPresent(session, forKey: .session)
         case let .connection(state):
             try container.encode("connection", forKey: .type)
             try container.encode(state, forKey: .state)

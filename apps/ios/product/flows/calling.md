@@ -103,6 +103,14 @@ All signaling messages are exchanged via E2E encrypted SMP messages (no central 
 5. `CallViewRenderers` manages WebRTC video rendering surfaces.
 6. Call status updates are sent via `apiCallStatus(contact:status:)`.
 
+### 6.1 Reconnection
+
+1. A connected call loses its connection, e.g. when the device switches between Wi-Fi and mobile network.
+2. The call shows "reconnecting…" and plays the connecting sound. Call duration continues, as this state is not reported to the core.
+3. The callee (the party that sent the initial offer) restarts ICE every 10 seconds, sending the new offer via `apiSendCallExtraInfo` with `rtcSession`; the caller answers the same way.
+4. When the connection is restored, the call returns to connected state.
+5. If the connection is not restored in 30 seconds, the call ends. Clients without ICE restart support ignore the restart offer, so the call ends in this case.
+
 ### 7. Audio Routing
 
 1. `CallAudioDeviceManager` handles audio device selection.
@@ -141,7 +149,7 @@ All signaling messages are exchanged via E2E encrypted SMP messages (no central 
 | `RcvCallInvitation` | `SimpleXChat/CallTypes.swift` | Incoming call: user, contact, callType, sharedKey, callUUID, callTs |
 | `WebRTCCallOffer` | `SimpleXChat/CallTypes.swift` | SDP offer with call type and WebRTC session data |
 | `WebRTCSession` | `SimpleXChat/CallTypes.swift` | `rtcSession` (SDP) and `rtcIceCandidates` (serialized) |
-| `WebRTCExtraInfo` | `SimpleXChat/CallTypes.swift` | Additional ICE candidates sent after initial offer/answer |
+| `WebRTCExtraInfo` | `SimpleXChat/CallTypes.swift` | Additional ICE candidates sent after initial offer/answer, and ICE restart offer/answer |
 | `WebRTCCallStatus` | `SimpleXChat/CallTypes.swift` | Call lifecycle states for status reporting |
 | `CallMediaSource` | `SimpleXChat/CallTypes.swift` | `.mic`, `.camera`, `.screenAudio`, `.screenVideo`, `.unknown` |
 | `VideoCamera` | `SimpleXChat/CallTypes.swift` | `.user` (front) or `.environment` (rear) camera |
@@ -152,7 +160,7 @@ All signaling messages are exchanged via E2E encrypted SMP messages (no central 
 |-------|-------|----------|
 | Chat not ready on CallKit answer | App suspended, slow startup | `waitUntilChatStarted` with 30s timeout; `action.fail()` on timeout |
 | Call invitation not found | Race condition between notification and event processing | `justRefreshCallInvitations()` retry |
-| WebRTC peer connection failure | NAT traversal, network issues | Call ends with error status |
+| WebRTC peer connection failure | NAT traversal, network issues | Before connection: call ends with error status; after connection: reconnection with ICE restart, call ends if not reconnected in 30 seconds |
 | CallKit action fail | Internal state mismatch | `action.fail()` called, call cleaned up |
 | No camera/mic permission | User denied permissions | Permission request dialog shown |
 
