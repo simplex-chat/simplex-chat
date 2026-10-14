@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -314,7 +315,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
           SectionItemView({
             AlertManager.shared.hideAlert()
             removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
-          }) {
+          }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "remove")) {
             Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
           }
           SectionItemView({
@@ -852,6 +853,7 @@ fun RemoveMemberButton(useRelays: Boolean = false, isRelay: Boolean = false, onC
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+    uiKey = Ui.MemberInfo.Remove,
   )
 }
 
@@ -923,6 +925,7 @@ private fun RoleSelectionRow(
       selectedRole,
       icon = null,
       enabled = remember { mutableStateOf(true) },
+      uiKey = Ui.MemberInfo.Role,
       onSelected = onSelected
     )
   }

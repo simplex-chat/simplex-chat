@@ -31,6 +31,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chat.group.hostFromRelayLink
@@ -1557,6 +1558,7 @@ fun ComposeView(
           style = MaterialTheme.typography.body2,
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
           disabled = composeState.value.inProgress,
+          uiKey = Ui.Chat.Connect,
           click = { withApi { sendRequest() } }
         )
       }

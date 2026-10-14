@@ -18,6 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.ReadableText
@@ -197,7 +199,7 @@ fun UserProfileLayout(
                 }
               }
             }
-            ProfileNameField(displayName, "", { isValidNewProfileName(it, profile) }, focusRequester)
+            ProfileNameField(displayName, "", { isValidNewProfileName(it, profile) }, focusRequester, uiKey = Ui.Profile.Name)
             if (showFullName(profile)) {
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
@@ -236,7 +238,7 @@ fun UserProfileLayout(
 
             Spacer(Modifier.height(DEFAULT_PADDING))
             val enabled = !dataUnchanged() && canSaveProfile(displayName.value, shortDescr.value, profile)
-            val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }
+            val saveModifier: Modifier = Modifier.ui(Ui.Profile.Save).clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }
             val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(
               stringResource(MR.strings.save_and_notify_contacts),

@@ -1,3 +1,4 @@
+import java.time.Duration
 plugins {
   kotlin("multiplatform")
   id("org.jetbrains.compose")
@@ -147,8 +148,14 @@ kotlin {
       }
     }
     val desktopTest by getting {
+      kotlin.srcDir("src/uiTestShared/kotlin")
+      languageSettings.optIn("androidx.compose.ui.test.ExperimentalTestApi")
+      languageSettings.optIn("androidx.compose.ui.test.InternalTestApi")
+      languageSettings.optIn("androidx.compose.ui.InternalComposeUiApi")
       dependencies {
+        implementation(compose.desktop.uiTestJUnit4)
         implementation(compose.desktop.currentOs)
+        implementation("org.jetbrains.pty4j:pty4j:0.13.13")
       }
     }
   }
@@ -351,3 +358,54 @@ afterEvaluate {
     }
   }
 }
+
+tasks.named<Test>("desktopTest") { exclude("chat/simplex/app/ui/**") }
+
+tasks.register<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest>("desktopUiTest") {
+  targetName = "desktop"
+  onlyIf { System.getenv("SIMPLEX_UITEST_RUNNER") == "1" }
+  val dt = tasks.named<Test>("desktopTest").get()
+  testClassesDirs = dt.testClassesDirs; classpath = dt.classpath
+  include("chat/simplex/app/ui/**")
+  forkEvery = (findProperty("uiForkEvery") as String?)?.toLong() ?: 0
+  maxParallelForks = (findProperty("uiForks") as String?)?.toInt() ?: 1
+  maxHeapSize = "2g"
+  timeout.set(Duration.ofHours(12))
+  filter { isFailOnNoMatchingTests = findProperty("uiAllowEmpty") == null }
+  val runDir = findProperty("uiRunDir") as String?
+  environment.remove("XDG_DATA_HOME"); environment.remove("XDG_CONFIG_HOME")
+  environment("GSETTINGS_BACKEND", "memory")
+  if (runDir != null) environment("XDG_CACHE_HOME", "$runDir/cache")
+  environment.remove("FREETYPE_PROPERTIES")
+  jvmArgs("-Duser.language=en", "-Duser.country=US", "-Duser.timezone=UTC")
+  if (runDir != null) jvmArgs("-Djava.io.tmpdir=$runDir/jvmtmp", "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=$runDir", "-XX:ErrorFile=$runDir/hs_err_pid%p.log")
+  systemProperty("java.awt.headless", "true")
+  systemProperty("skiko.data.path", rootProject.file("build/uitest/skiko").absolutePath)
+  systemProperty("simplex.uitest.env", rootProject.file("build/uitest/env.properties").absolutePath)
+  systemProperty("kotlinx.coroutines.io.parallelism", "256")
+  testLogging { events("passed", "failed", "skipped"); showStandardStreams = true; exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
+  outputs.upToDateWhen { false }
+  val pass = (findProperty("uiPass") as String?) ?: "1"
+  reports.junitXml.outputLocation.set(layout.buildDirectory.dir("test-results/desktopUiTest/pass$pass"))
+  reports.html.outputLocation.set(layout.buildDirectory.dir("reports/tests/desktopUiTest/pass$pass"))
+  binaryResultsDirectory.set(layout.buildDirectory.dir("test-results/desktopUiTest/pass$pass/binary"))
+}
+
+tasks.register("uitestPrepare") {
+  val runtime = configurations.getByName("desktopTestRuntimeClasspath")
+  doLast { runtime.resolve() }
+}
+
+tasks.register("uitestBridgeClasspath") {
+  val dt = tasks.named<Test>("desktopTest").get()
+  dependsOn("desktopTestClasses")
+  doLast {
+    val snapshot = rootProject.file("build/uitest/bridge-classes")
+    snapshot.deleteRecursively()
+    val testDirs = dt.testClassesDirs.files
+    testDirs.forEach { d -> project.copy { from(d); include("chat/simplex/app/ui/harness/**"); into(snapshot) } }
+    val cp = listOf(snapshot) + dt.classpath.files.filter { it !in testDirs }
+    rootProject.file("build/uitest/bridge.classpath").writeText(cp.joinToString(File.pathSeparator))
+  }
+}
+

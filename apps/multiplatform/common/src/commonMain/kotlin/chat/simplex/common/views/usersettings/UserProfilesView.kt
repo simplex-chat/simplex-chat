@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.UserProfilePickerItem
@@ -180,7 +181,7 @@ private fun UserProfilesLayout(
         Divider(Modifier.padding(horizontal = 8.dp))
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
-        SectionItemView(addUser, minHeight = 68.dp) {
+        SectionItemView(addUser, minHeight = 68.dp, uiKey = Ui.Profiles.Add) {
           Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
           Spacer(Modifier.padding(horizontal = 4.dp))
           Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)

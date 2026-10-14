@@ -24,6 +24,8 @@ import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.darkStops
@@ -116,7 +118,7 @@ fun YourNetworkView(chatModel: ChatModel) {
               horizontalAlignment = Alignment.CenterHorizontally
             ) {
               OnboardingActionButton(
-                modifier = Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth(),
+                modifier = Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth().ui(Ui.Onboarding.Continue),
                 labelId = MR.strings.onboarding_network_operators_continue,
                 onboarding = null,
                 onclick = {
@@ -155,7 +157,7 @@ private fun YourNetworkDesktop(
         Spacer(Modifier.fillMaxHeight().weight(1f))
         Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
-            Modifier.widthIn(min = 300.dp),
+            Modifier.widthIn(min = 300.dp).ui(Ui.Onboarding.Continue),
             labelId = MR.strings.onboarding_network_operators_continue,
             onboarding = null,
             onclick = {
@@ -173,6 +175,7 @@ private fun YourNetworkDesktop(
 private fun ConfigureRoutersButton(serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>, onClick: () -> Unit) {
   Box(
     modifier = Modifier
+      .ui(Ui.Onboarding.SetupRouters)
       .clip(CircleShape)
       .clickable { onClick() }
   ) {
@@ -206,6 +209,7 @@ private fun ConfigureNotificationsButton(notificationMode: State<NotificationsMo
   }
   Box(
     modifier = Modifier
+      .ui(Ui.Onboarding.SetupNotifications)
       .clip(CircleShape)
       .clickable { onClick() }
   ) {

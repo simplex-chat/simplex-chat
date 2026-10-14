@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
+import chat.simplex.common.ui.ui
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.chatlist.*
 import androidx.compose.ui.text.*
@@ -267,7 +269,7 @@ private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chat
         SectionItemView({
           AlertManager.shared.hideAlert()
           deleteActiveContactDialog(chat, contact, chatModel, close)
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "deleteContact")) {
           Text(generalGetString(MR.strings.button_delete_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
         }
         // Cancel
@@ -348,7 +350,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
           if (contactDeleteMode.value is ContactDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
             showDeleteContactNotice(contact)
           }
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "deleteAndNotify")) {
           Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
         }
         // Cancel
@@ -836,9 +838,9 @@ fun LocalAliasEditor(
   }
   var updatedValueAtLeastOnce = remember { false }
   val modifier = if (center)
-    Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).widthIn(min = 100.dp)
+    Modifier.ui(Ui.Info.Alias).padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).widthIn(min = 100.dp)
   else
-    Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).fillMaxWidth()
+    Modifier.ui(Ui.Info.Alias).padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).fillMaxWidth()
   Row(Modifier.fillMaxWidth(), horizontalArrangement = if (center) Arrangement.Center else Arrangement.Start) {
     DefaultBasicTextField(
       modifier,
@@ -1215,6 +1217,7 @@ fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit, disabled: Bo
     click = onClick,
     iconColor = MaterialTheme.colors.secondary,
     disabled = disabled,
+    uiKey = Ui.Info.VerifyCode,
   )
 }
 
@@ -1270,6 +1273,7 @@ private fun DeleteContactButton(onClick: () -> Unit) {
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+    uiKey = Ui.Info.DeleteContact,
   )
 }
 
@@ -1281,6 +1285,7 @@ fun ShareAddressButton(onClick: () -> Unit) {
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
+    uiKey = Ui.Address.Share,
   )
 }
 

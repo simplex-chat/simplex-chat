@@ -28,6 +28,9 @@ import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.darkStops
@@ -86,7 +89,7 @@ private fun SimpleXInfoDesktop(chatModel: ChatModel) {
         Spacer(Modifier.fillMaxHeight().weight(1f))
         Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(user, onboardingStage)
-          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), onClick = {
+          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), uiKey = Ui.Onboarding.WhyBuilt, onClick = {
             ModalManager.fullscreen.showModal(forceAnimated = true) { HowItWorks(user, onboardingStage) }
           })
         }
@@ -154,7 +157,7 @@ fun SimpleXInfoLayout(
       if (onboardingStage != null) {
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(user, onboardingStage)
-          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), onClick = {
+          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), uiKey = Ui.Onboarding.WhyBuilt, onClick = {
             ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
           })
         }
@@ -220,13 +223,13 @@ fun OnboardingActionButton(
 }
 
 @Composable
-fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?, icon: Painter? = null) {
+fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?, icon: Painter? = null, uiKey: UiKey? = null) {
   val state = getKeyboardState()
   val enabled = onClick != null
   val topPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else 7.5.dp)
   val bottomPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else 7.5.dp)
   if ((appPlatform.isAndroid && state.value == KeyboardState.Closed) || topPadding > 0.dp) {
-    TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
+    TextButton({ onClick?.invoke() }, Modifier.ui(uiKey).padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
       if (icon != null) {
         Icon(icon, null, tint = MaterialTheme.colors.primary)
         Spacer(Modifier.width(4.dp))
@@ -249,9 +252,11 @@ fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?, icon: 
 fun OnboardingInformationButton(
   text: String,
   onClick: () -> Unit,
+  uiKey: UiKey? = null,
 ) {
   Box(
     modifier = Modifier
+      .ui(uiKey)
       .clip(CircleShape)
       .clickable { onClick() }
   ) {

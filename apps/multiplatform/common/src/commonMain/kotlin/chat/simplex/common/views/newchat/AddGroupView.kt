@@ -18,6 +18,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.AddGroupMembersView
 import chat.simplex.common.views.chatlist.setGroupMembers
@@ -151,13 +152,14 @@ fun AddGroupLayout(
             }
           }
           Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-            ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
+            ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester, uiKey = Ui.NewGroup.Name)
           }
           Spacer(Modifier.height(8.dp))
 
           SettingsActionItem(
             painterResource(MR.images.ic_check),
             stringResource(MR.strings.create_group_button),
+            uiKey = Ui.NewGroup.Create,
             click = {
               createGroup(incognito.value, GroupProfile(
                 displayName = displayName.value.trim(),

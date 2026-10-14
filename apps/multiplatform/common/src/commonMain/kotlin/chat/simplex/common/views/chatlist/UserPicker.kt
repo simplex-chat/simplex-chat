@@ -26,6 +26,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
@@ -209,7 +211,7 @@ fun UserPicker(
           )
         }
       } else if (currentUser != null) {
-        SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+        SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped, uiKey = Ui.UserPicker.User(currentUser.userId)) {
           ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped, badge = currentUser.profile.localBadge)
         }
       }
@@ -231,7 +233,8 @@ fun UserPicker(
                 if (ModalManager.start.isLastModal(modal)) close()
               }
             }
-          }, disabled = stopped
+          }, disabled = stopped,
+          uiKey = Ui.UserPicker.Address
         )
         UserPickerOptionRow(
           painterResource(MR.images.ic_toggle_on),
@@ -321,7 +324,8 @@ fun UserPicker(
                 })
             }
           },
-          disabled = stopped
+          disabled = stopped,
+          uiKey = Ui.UserPicker.Profiles
         )
       }
     }
@@ -408,7 +412,8 @@ private fun GlobalSettingsSection(
         SettingsView(chatModel, setPerformLA, close)
       }
     },
-    padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+    padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF),
+    uiKey = Ui.UserPicker.Settings,
   ) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
@@ -504,8 +509,8 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
 }
 
 @Composable
-fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
-  SectionItemView(click, disabled = disabled, extraPadding = appPlatform.isDesktop) {
+fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false, uiKey: UiKey? = null) {
+  SectionItemView(click, disabled = disabled, extraPadding = appPlatform.isDesktop, uiKey = uiKey) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
     TextIconSpaced()
     Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else Color.Unspecified)

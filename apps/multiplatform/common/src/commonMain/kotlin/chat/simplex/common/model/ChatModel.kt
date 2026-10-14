@@ -846,7 +846,7 @@ object ChatModel {
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
 
       init {
-        withLongRunningApi {
+        withLongRunningApi(idle = false) {
           subject
             .throttleLatest(2000)
             .collect {

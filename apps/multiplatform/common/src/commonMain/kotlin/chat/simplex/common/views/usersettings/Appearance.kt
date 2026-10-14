@@ -32,6 +32,8 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
@@ -238,6 +240,7 @@ object AppearanceScope {
         if (appPlatform.isAndroid) {
           Slider(
             localFontScale.value,
+            modifier = Modifier.ui(Ui.Appearance.FontScale),
             valueRange = 0.75f..1.25f,
             steps = 11,
             onValueChange = {
@@ -255,6 +258,7 @@ object AppearanceScope {
         } else {
           Slider(
             localFontScale.value,
+            modifier = Modifier.ui(Ui.Appearance.FontScale),
             valueRange = 0.7f..1.5f,
             steps = 9,
             onValueChange = {
@@ -1245,6 +1249,7 @@ object AppearanceScope {
       state,
       icon = null,
       enabled = remember { mutableStateOf(true) },
+      uiKey = Ui.Appearance.ColorMode,
       onSelected = onSelected
     )
   }

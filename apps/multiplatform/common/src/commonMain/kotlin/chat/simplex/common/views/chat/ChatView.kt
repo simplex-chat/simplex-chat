@@ -34,6 +34,8 @@ import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.group.*
@@ -1302,7 +1304,7 @@ fun BoxScope.ChatInfoToolbar(
         }
       }
       menuItems.add {
-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
+        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), uiKey = Ui.Chat.BarMenuItem("search"), onClick = {
           showMenu.value = false
           showSearch.value = true
         })
@@ -1332,7 +1334,7 @@ fun BoxScope.ChatInfoToolbar(
         }
       }
       menuItems.add {
-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
+        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), uiKey = Ui.Chat.BarMenuItem("search"), onClick = {
           showMenu.value = false
           showSearch.value = true
         })
@@ -1430,7 +1432,7 @@ fun BoxScope.ChatInfoToolbar(
 
   if (menuItems.isNotEmpty()) {
     barButtons.add {
-      IconButton({ showMenu.value = true }) {
+      IconButton({ showMenu.value = true }, Modifier.ui(Ui.Chat.BarMenu)) {
         Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
     }
@@ -1452,6 +1454,7 @@ fun BoxScope.ChatInfoToolbar(
     navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
+    uiKey = Ui.Chat.Bar,
     showSearch = showSearch.value,
     searchAlwaysVisible = contentFilter.value != null,
     onTop = !oneHandUI.value || !chatBottomBar.value,

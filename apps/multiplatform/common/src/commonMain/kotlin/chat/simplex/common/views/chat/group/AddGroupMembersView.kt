@@ -30,6 +30,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -248,6 +249,7 @@ fun InviteMembersButton(titleId: StringResource, onClick: () -> Unit, disabled: 
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
     disabled = disabled,
+    uiKey = Ui.InviteMembers.Invite,
   )
 }
 
@@ -349,7 +351,8 @@ fun ContactCheckRow(
         else
           removeContact(contact.apiId)
       }
-    } else null
+    } else null,
+    uiKey = Ui.InviteMembers.Contact(contact.contactId)
   ) {
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))

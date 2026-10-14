@@ -3,6 +3,7 @@ package chat.simplex.common.model
 import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.ui.UiIdle
 import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
@@ -857,10 +858,10 @@ object ChatController {
           val msg = recvMsg(ctrl)
           releaseLock = getWakeLock(timeout = 60000)
           if (msg != null) {
-            val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
+            val finishedWithoutTimeout = UiIdle.trackEvent({ "event ${msg.responseType}" }) { withTimeoutOrNull(60_000L) {
               processReceivedMsg(msg)
               messagesChannel.trySend(msg)
-            }
+            } }
             if (finishedWithoutTimeout == null) {
               Log.e(TAG, "Timeout reached while processing received message: " + msg.responseType)
               if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
@@ -988,7 +989,7 @@ object ChatController {
   suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, retryNum: Int = 0, log: Boolean = true): API {
     val ctrl = otherCtrl ?: chatCtrl ?: throw Exception("Controller is not initialized")
 
-    return withContext(Dispatchers.IO) {
+    return UiIdle.track(if (cmd is CC.GetAgentSubsTotal || cmd is CC.GetAgentServersSummary) null else { { "cmd ${cmd.cmdType}" } }) { withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       if (log) {
         chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
@@ -1006,7 +1007,7 @@ object ChatController {
         chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
       }
       r
-    }
+    } }
   }
 
   // Spec: spec/api.md#recvMsg
