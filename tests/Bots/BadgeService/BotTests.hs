@@ -178,6 +178,10 @@ badgeServiceTests = do
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
     it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
+    it "should grant each store charge once, and answer a repeat inside the issued month without asking the store" testSubscriptionChargeGrantedOnce
+    it "should ask the store only once coverage has ended, and at most once an hour, failed checks included" testSubscriptionStoreChecksBounded
+    it "should record and not grant a revoked, other-tier, offer, unstarted or ended charge" testSubscriptionChargeNotGranted
+    it "should answer an unreachable store with the check interval, writing no charge or ledger row" testSubscriptionStoreUnreachable
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -2033,6 +2037,123 @@ testSubscriptionPurchaseNotGrantable ps =
     play (subscriptionCheck SSRenewing $ Just monthly {periodEnd = addUTCTime (-7200) now}) `shouldReturn` (BSEInternal, Nothing)
     nothingPurchased cc
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 0
+
+-- | A monthly Play subscription bought an hour into its first period: its key, that period's start and the statement it was answered.
+subscribedMonthly :: HasCallStack => BadgeServiceEnv -> IO (C.PublicKeyEd25519, UTCTime, [StatementEntry])
+subscribedMonthly env@BadgeServiceEnv {bsStore} = do
+  firstStart <- addUTCTime (-3600) <$> serviceNow env
+  setSubscription bsStore (SubscriptionGoogle googleSubscriptionToken) $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+  (purchaseKey, masterKey) <- newPurchaseKeys
+  purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
+  pure (purchaseKey, firstStart, fst $ statementOf purchased)
+
+-- | The store's charge n months after the first, for the plan given.
+monthlyCharge :: Text -> UTCTime -> Integer -> StoreCharge
+monthlyCharge planId firstStart n = (storeCharge planId (addMonths n firstStart) 1) {chargeRef = "GPA.renewal." <> tshow n}
+
+storeReports :: FakeStore -> SubscriptionCheck -> IO ()
+storeReports store = setSubscription store (SubscriptionGoogle googleSubscriptionToken)
+
+subscriptionCheckedAt :: ChatController -> IO [Maybe UTCTime]
+subscriptionCheckedAt ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    map fromOnly <$> DB.query_ db "SELECT subscription_checked_at FROM sx_badge_service_payments"
+
+testSubscriptionChargeGrantedOnce :: HasCallStack => TestParams -> IO ()
+testSubscriptionChargeGrantedOnce ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
+    (purchaseKey, firstStart, purchased) <- subscribedMonthly env
+    let renewalStart = addMonths 1 firstStart
+        -- the store's period runs past the month granted, so the charge is still current once that month is spent
+        renewal = (monthlyCharge "subscr-badge-supporter-month-02" firstStart 1) {periodEnd = addUTCTime (10 * nominalDay) (addMonths 2 firstStart)}
+    storeReports store $ subscriptionCheck SSRenewing $ Just renewal
+    setClockAt bsClock $ addUTCTime (3 * nominalDay) renewalStart
+    renewed <- assertBalance env purchaseKey (last purchased)
+    map entryTag (fst $ statementOf renewed) `shouldBe` ["charge", "badge"]
+    map createdAtOf (take 1 $ fst $ statementOf renewed) `shouldBe` [renewalStart]
+    subscriptionOf renewed `shouldBe` Just SSRenewing
+    credentialOf renewed `shouldSatisfy` isJust
+    -- inside the issued month a repeat gets the same credential, and the store is not asked
+    checks <- subscriptionChecks store
+    repeated <- assertBalance env purchaseKey (last purchased)
+    credentialOf repeated `shouldBe` credentialOf renewed
+    subscriptionOf repeated `shouldBe` Just SSRenewing
+    subscriptionChecks store `shouldReturn` checks
+    -- the store still reports that charge once the month has run out, and it is not granted again
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    setClockAt bsClock $ addUTCTime (3 * nominalDay) (addMonths 2 firstStart)
+    reported <- assertBalance env purchaseKey (last $ fst $ statementOf renewed)
+    subscriptionChecks store `shouldReturn` (checks + 1)
+    map entryTag (fst $ statementOf reported) `shouldBe` []
+    credentialOf reported `shouldBe` Nothing
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 2
+
+testSubscriptionStoreChecksBounded :: HasCallStack => TestParams -> IO ()
+testSubscriptionStoreChecksBounded ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsStore = store} -> do
+    (purchaseKey, firstStart, purchased) <- subscribedMonthly env
+    let request = assertBalance env purchaseKey (last purchased)
+        ended = addUTCTime (3 * nominalDay) (addMonths 1 firstStart)
+    checks <- subscriptionChecks store
+    setClockAt bsClock $ addUTCTime (10 * nominalDay) firstStart
+    _ <- request
+    subscriptionChecks store `shouldReturn` checks
+    -- once the month has run out the store is asked, and not again within the hour
+    storeReports store $ subscriptionCheck SSBillingRetry Nothing
+    setClockAt bsClock ended
+    waiting <- request
+    subscriptionOf waiting `shouldBe` Just SSBillingRetry
+    credentialOf waiting `shouldBe` Nothing
+    setClockAt bsClock $ addUTCTime 1800 ended
+    subscriptionOf <$> request `shouldReturn` Just SSBillingRetry
+    subscriptionChecks store `shouldReturn` (checks + 1)
+    -- an hour on it is asked again, and a check that fails holds the next one off as long
+    setGoogleDown store True
+    setClockAt bsClock $ addUTCTime 3700 ended
+    refusalOf <$> request `shouldReturn` (BSEProviderUnavailable, Just 3600)
+    setGoogleDown store False
+    setClockAt bsClock $ addUTCTime (3700 + 1800) ended
+    subscriptionOf <$> request `shouldReturn` Just SSBillingRetry
+    subscriptionChecks store `shouldReturn` (checks + 2)
+
+testSubscriptionChargeNotGranted :: HasCallStack => TestParams -> IO ()
+testSubscriptionChargeNotGranted ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
+    (purchaseKey, firstStart, purchased) <- subscribedMonthly env
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    let monthly = "subscr-badge-supporter-month-02"
+        checkedAt i = addUTCTime (3 * nominalDay + fromIntegral (i :: Int) * 3700) (addMonths 1 firstStart)
+        notGranted =
+          [ (monthlyCharge monthly firstStart 1) {revoked = True},
+            monthlyCharge "subscr-badge-legend-month-01" firstStart 2,
+            (monthlyCharge monthly firstStart 3) {offer = True},
+            (monthlyCharge monthly firstStart 4) {periodStart = addUTCTime nominalDay (checkedAt 3), periodEnd = addMonths 1 (addUTCTime nominalDay (checkedAt 3))},
+            (monthlyCharge monthly firstStart 5) {periodStart = firstStart, periodEnd = addMonths 1 firstStart}
+          ]
+    forM_ (zip [0 ..] notGranted) $ \(i, charge) -> do
+      storeReports store $ subscriptionCheck SSRenewing $ Just charge
+      setClockAt bsClock $ checkedAt i
+      answered <- assertBalance env purchaseKey (last purchased)
+      credentialOf answered `shouldBe` Nothing
+      map entryTag (fst $ statementOf answered) `shouldBe` []
+    -- each charge is recorded, and none funds a month
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1 + length notGranted
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+
+testSubscriptionStoreUnreachable :: HasCallStack => TestParams -> IO ()
+testSubscriptionStoreUnreachable ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
+    (purchaseKey, firstStart, purchased) <- subscribedMonthly env
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    let ended = addUTCTime (3 * nominalDay) (addMonths 1 firstStart)
+    storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 1
+    setGoogleDown store True
+    setClockAt bsClock ended
+    refusalOf <$> assertBalance env purchaseKey (last purchased) `shouldReturn` (BSEProviderUnavailable, Just 3600)
+    subscriptionCheckedAt cc >>= (`shouldSatisfy` \case [Just t] -> abs (diffUTCTime t ended) < 60; _ -> False)
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1
 
 testPurchaseBadge :: HasCallStack => TestParams -> IO ()
 testPurchaseBadge ps =

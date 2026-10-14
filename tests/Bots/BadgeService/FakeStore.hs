@@ -95,7 +95,10 @@ newFakeStore = do
       verifyGoogle = googleVerdict pendingSettled googleDown
       checkSubscription ref = do
         modifyIORef' subscriptionCheckCount (+ 1)
-        maybe (Left $ SRUnreachable "the fake store knows no such subscription") Right . M.lookup (subscriptionKey ref) <$> readIORef subscriptions
+        down <- readIORef googleDown
+        case ref of
+          SubscriptionGoogle _ | down -> pure $ Left $ SRUnreachable "fake store is down"
+          _ -> maybe (Left $ SRUnreachable "the fake store knows no such subscription") Right . M.lookup (subscriptionKey ref) <$> readIORef subscriptions
   pure
     FakeStore
       { appleSupporterJWS,

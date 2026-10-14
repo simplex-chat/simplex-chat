@@ -32,6 +32,11 @@ module BadgeService.Store
     appendLedgerPlan,
     createCodePurchase,
     createStorePurchase,
+    PurchaseSubscription (..),
+    getPurchaseSubscription,
+    stampSubscriptionCheck,
+    setSubscriptionState,
+    getSubscriptionCharge,
     insertSubscriptionCharge,
     insertBadgeCode,
     setCodeGroupItem,
@@ -44,7 +49,7 @@ module BadgeService.Store
 where
 
 import BadgeService.Store.Invoices (executeChanging, paymentStatusText)
-import BadgeService.StoreReceipts (StoreCharge (..))
+import BadgeService.StoreReceipts (StoreCharge (..), SubscriptionRef (..))
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -56,7 +61,7 @@ import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
-import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), PaymentProvider, PaymentStatus (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), PaymentProvider (..), PaymentStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -397,6 +402,60 @@ createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid,
         |]
         (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, paymentId, now, now)
       Just <$> insertedRowId db
+
+-- | What a renewal asks the store about, for a purchase a subscription funds.
+data PurchaseSubscription = PurchaseSubscription
+  { paymentId :: Text,
+    provider :: PaymentProvider,
+    subscriptionRef :: SubscriptionRef,
+    storedState :: SubscriptionState,
+    checkedAt :: Maybe UTCTime
+  }
+
+-- | Nothing for a purchase no subscription funds.
+getPurchaseSubscription :: DB.Connection -> Int64 -> IO (Maybe PurchaseSubscription)
+getPurchaseSubscription db purchaseId =
+  maybeFirstRow' Nothing toSubscription $
+    DB.query
+      db
+      [sql|
+        SELECT pay.payment_id, pay.provider, pay.provider_ref, pay.provider_token, pay.subscription_state, pay.subscription_checked_at
+        FROM sx_badge_service_badge_purchases p
+        JOIN sx_badge_service_payments pay ON pay.payment_id = p.payment_id
+        WHERE p.badge_purchase_id = ? AND pay.subscription_state IS NOT NULL
+      |]
+      (Only purchaseId)
+  where
+    toSubscription (paymentId, provider_, providerRef, token_, state_, checkedAt) = do
+      provider <- textDecode provider_
+      subscriptionRef <- case provider of
+        PPApple -> Just $ SubscriptionApple providerRef
+        PPGoogle -> SubscriptionGoogle <$> token_
+        _ -> Nothing
+      storedState <- textDecode state_
+      Just PurchaseSubscription {paymentId, provider, subscriptionRef, storedState, checkedAt}
+
+-- | Taken before the store is asked, so a check that fails or never returns still holds the next one off.
+stampSubscriptionCheck :: DB.Connection -> Text -> UTCTime -> IO ()
+stampSubscriptionCheck db paymentId now =
+  DB.execute db "UPDATE sx_badge_service_payments SET subscription_checked_at = ?, updated_at = ? WHERE payment_id = ?" (now, now, paymentId)
+
+setSubscriptionState :: DB.Connection -> Text -> SubscriptionState -> UTCTime -> IO ()
+setSubscriptionState db paymentId state now =
+  DB.execute db "UPDATE sx_badge_service_payments SET subscription_state = ?, updated_at = ? WHERE payment_id = ?" (textEncode state, now, paymentId)
+
+-- | The id a charge was recorded under, and whether a ledger row grants it.
+getSubscriptionCharge :: DB.Connection -> Text -> Text -> IO (Maybe (Text, Bool))
+getSubscriptionCharge db paymentId chargeRef =
+  maybeFirstRow (\(chargeId, granted) -> (chargeId, (granted :: Int) > 0)) $
+    DB.query
+      db
+      [sql|
+        SELECT c.charge_id, CASE WHEN EXISTS (SELECT 1 FROM sx_badge_service_badge_ledger l WHERE l.charge_id = c.charge_id) THEN 1 ELSE 0 END
+        FROM sx_badge_service_subscription_charges c
+        WHERE c.payment_id = ? AND c.provider_charge_ref = ?
+      |]
+      (paymentId, chargeRef)
 
 -- | A charge the store reports again is recorded once, by its own reference.
 insertSubscriptionCharge :: DB.Connection -> Text -> Text -> StoreCharge -> UTCTime -> IO ()
