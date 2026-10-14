@@ -996,3 +996,25 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
       - a fresh PR #35 deployment under `tld = testing` gets its own resolver instance, with `SNRC_REGISTRY_TESTING`, `SNRC_REGISTRAR_TESTING` and `SNRC_CONTROLLER_TESTING` set to it and `resolver_url` pointing there;
       - or `.testing` itself is redeployed.
     - Open: an owner decision, with Alain.
+32. **Alain's prototype makes the commitment secret random.**
+    - Problem: simplexmq PR #1942's `names-web` draws a random 32-byte secret. This design derives it: `HMAC-SHA256(seed, "simplex.domains commitment " + label)` (section 2).
+    - Why it matters: with a derived secret, the same code and name always give the same commitment, which Get a new invoice and retry reuse, and the owner code alone rebuilds it on another browser. A random secret would have to be stored too, for example inside `sealed`.
+    - Recommended: keep the derived secret. A random one gains nothing here; the prototype has no restore flow.
+    - Open: agree with Alain.
+33. **Alain's prototype sets the intent's deadline to now + 1 hour.**
+    - Problem: `names-web` signs `RegisterName` with `deadline = now + 3600`. This design uses `revealBefore`, the commitment's expiry (section 5, gap 2).
+    - Why it matters: after `revealBefore` the commitment has lapsed, so a later deadline gains nothing and an earlier one only adds failures. One hour is often less than a Bitcoin payment plus the commit takes. Alain's own checklist (PR #7693, §7) adds rules to reject an intent with too little time left and to let the user sign again.
+    - Recommended: keep `revealBefore`, which makes both of those rules unnecessary.
+    - Open: agree with Alain.
+34. **When the owner signs the intent.**
+    - Problem: `names-web` signs the intent at checkout, before the commit. This design signs at the reveal, after the commit (section 5).
+    - Why it matters:
+      - Signing at checkout lets the buyer pay and close the tab; the service then registers alone, which suits slow Bitcoin payments. But the intent carries the name, so the service learns it at checkout.
+      - Signing at the reveal keeps the service to the name's hash until after the commit, as decided on 2026-10-12, and as Alain's checklist asks for payment metadata and logs. But the page must be open, or reopened within 24 hours, after the 60-second wait.
+    - Options: keep signing at the reveal; or sign at checkout with the deadline at the invoice's expiry + `maxCommitmentAge`, not now + 1 hour, so a slow payment does not expire it.
+    - Open: an owner decision.
+35. **One link per key, short links only.**
+    - Problem: this design lets a key hold several links joined with `;` (sections 2 and 11). `names-web` takes one link per key. The app reads a name with `firstNameLink` (`src/Simplex/Chat/Library/Commands.hs`), which takes the first link that parses as a short link of the right type and ignores the rest. Alain's checklist accepts only a contact short link in `simplex.contact` and a channel short link in `simplex.channel`.
+    - Why it matters: extra links do nothing in the app, and a full link never works through a name, while several links per key cost the design editing one link of several, the `;` joining, and the lag rules that keep removed links from coming back (section 11).
+    - Recommended: one short link per key, refusing full links with `invalid_link`.
+    - Open: confirm, then simplify sections 2 and 11, the spec and the plan.
