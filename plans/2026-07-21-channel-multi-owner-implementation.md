@@ -30,7 +30,7 @@ The relay side ships in the same release as promotion. Promotion is refused whil
   - `LSET` (`addSMPQueueLink`, `Client.hs`) and `DEL` (`deleteSMPQueue`) already take an explicit key and queue ID.
 - **`LinkOwnerCreds`**, a new agent type, holds what a non-creator owner needs to write a link:
   - `SMPServer` and `LinkKey`, from the channel link;
-  - `linkRcvId`, from the link data;
+  - `linkRcvId`, from the link data read at the start of each write;
   - the root public key;
   - the owner's member private key, which both signs the user data and authorises the queue commands.
 
@@ -66,12 +66,10 @@ The relay side ships in the same release as promotion. Promotion is refused whil
 
 ## Part 2 — simplex-chat: data model
 
-- **Migration** `M20260721_channel_multi_owner`, for SQLite and Postgres, registered in `Migrations.hs` and the `.cabal`: `groups.link_rcv_id BLOB`.
-  - A promoted owner sets it from the link data when it becomes owner, and clears it when it leaves.
-  - Together with the server and `LinkKey` from the channel link, the group's root public key and the member private key, it makes up `LinkOwnerCreds`.
-- **No other table changes.**
+- **No migration and no table changes.**
   - Owners are member rows with role owner, and their keys are in `member_pub_key`.
   - Departed owners are rows with status `GSMemLeft`, kept for good (Part 6.11).
+  - A promoted owner stores no link credential. Each of its link writes builds `LinkOwnerCreds` from four sources: the server and `LinkKey` from the channel link, the group's root public key, its member private key, and the `linkRcvId` of that write's own read.
 - **Link data.** Chat's `GroupShortLinkData` (`Protocol.hs:1621`) gains three optional fields. simplexmq's `UserContactData` encoding is unchanged.
   - `revokedOwners :: Maybe [MemberId]`: owners that left.
   - `creatorQueueKey :: Maybe CreatorQueueKey {memberId, key}`: the creator's memberId and link-queue recipient public key.
@@ -85,8 +83,8 @@ The relay side ships in the same release as promotion. Promotion is refused whil
 - `LinkOwnerCreds` (simplexmq, Part 1).
 - **`GroupLinkWriter = GLWCreator Connection | GLWOwner LinkOwnerCreds`.** It is resolved once per link write, from the keys:
   - the root private key (`GRKPrivate`) selects the creator's own link connection;
-  - otherwise a stored `link_rcv_id` selects the credentials;
-  - neither means the device is not a link writer.
+  - otherwise, if this device is a current owner, it selects the credentials, with `linkRcvId` from the write's own read;
+  - otherwise the device is not a link writer.
 
   It is never resolved from whether a group link row exists.
 - **`CRGroupRelaysAdded` and `CEvtGroupLinkDataUpdated`** (`Controller.hs:862`, `:1035`) carry `Maybe GroupLink`. It is absent for a promoted owner, which has no group link row.
@@ -122,7 +120,7 @@ The relay side ships in the same release as promotion. Promotion is refused whil
 - **`APILeaveGroup` by an owner of a multi-owner channel** runs the leave (Part 6.6) instead of `deleteGroupLinkIfExists` (`Commands.hs:3246`).
   - It is refused when no other current owner remains.
   - A sole owner keeps today's behaviour.
-- **`APIDeleteChat` by a promoted owner**, in the branch that sends `x.grp.del` (`doSendDel`, `Commands.hs:1394-1400`), also deletes the link queue with `deleteLinkQueueWithCreds`. `deleteGroupLinkIfExists` at `:1400` runs regardless of `doSendDel`, so this `DEL` is not added there.
+- **`APIDeleteChat` by a promoted owner**, in the branch that sends `x.grp.del` (`doSendDel`, `Commands.hs:1394-1400`), also deletes the link queue with `deleteLinkQueueWithCreds`, after reading the link data for its `linkRcvId`. `deleteGroupLinkIfExists` at `:1400` runs regardless of `doSendDel`, so this `DEL` is not added there.
 - **`APICreateGroupLink`, `APIAddGroupShortLink` and `APIDeleteGroupLink` are refused for channels** (`Commands.hs:3349-3384`).
 - **`APIGetUpdatedGroupLinkData`.** Replace the owner branch at `Commands.hs:1968` with the owner reconcile (Part 6.2). For subscribers it also applies the owners chain (Part 6.5).
 - **`APIAddGroupRelays`.** A promoted owner takes the channel link from `publicGroup.groupLink`; the creator takes it from its group link row (`Commands.hs:2790-2793`). Publication goes through Part 6.1.
@@ -137,7 +135,7 @@ The relay side ships in the same release as promotion. Promotion is refused whil
 
 One function, `writeChannelLink`, takes the change: profile, add owner, leave, relays added or removed, or count. All of a device's link writes for a channel run under the group lock.
 
-1. **Read.** The creator reads with `getShortLinkConnReq'` (`Internal.hs:1690-1693`), keeping the raw user-data JSON. A promoted owner reads with `getConnShortLinkForWrite`.
+1. **Read.** The creator reads with `getShortLinkConnReq'` (`Internal.hs:1690-1693`), keeping the raw user-data JSON. A promoted owner reads with `getConnShortLinkForWrite`, which also gives it the `linkRcvId` for this write.
 2. **Build the write** from the read JSON, so fields this version does not know are kept, applying only this change (overview §2):
    - the profile as a whole value;
    - a new owner's entry appended after its signer's entry;
@@ -148,7 +146,7 @@ One function, `writeChannelLink`, takes the change: profile, add owner, leave, r
    - owners this device holds as left go into `revokedOwners`;
    - an owner held as current, missing from the chain and not in `revokedOwners` gets an entry signed by the writer;
    - an entry in `revokedOwners` is dropped once no current entry was signed by it, transitively, except the writer's own entry in its leave write. Keep the chain in signing order, never a memberId sort: `validateLinkOwners` needs each entry signed by root or an earlier entry (`Agent/Protocol.hs:2003-2017`);
-   - the creator writes its own `creatorQueueKey`, from `getConnLinkQueue`; every other writer carries the read one, and every writer carries `publicGroupData` and `linkRcvId`.
+   - the creator writes its own `creatorQueueKey` and `linkRcvId`, from `getConnLinkQueue`; every other writer carries the read ones; every writer carries `publicGroupData`.
 3. **Write** through the resolved `GroupLinkWriter`: the creator uses `setConnShortLink`, a promoted owner uses `setLinkDataWithCreds`.
 4. **Keys.** If the chain changed, send `RKEY` with the set computed from what was written. A promotion sets the keys first instead (Part 6.3). The set (overview §3) is:
    - `creatorQueueKey.key`, unless `creatorQueueKey.memberId` is in `revokedOwners`;
@@ -174,7 +172,7 @@ It runs in `APIGetUpdatedGroupLinkData` for owners, and once after chat start fo
 - **Owners chain.** Apply it as in Part 6.5.
 - **Relays.** Join each listed relay this owner has no relay member for, through `connectToRelayAsync` (`Internal.hs:1606-1616`). Unlike `syncSubscriberRelays` (`Commands.hs:3992-4011`), this deletes nothing, so a relay this owner is still adding is kept.
 - **Count.** The creator publishes its count if it differs (Part 6.10).
-- **Roster.** At chat start only, and only after this device was offline longer than message expiry, send each relay `XGrpRosterRequest` with this owner's complete frontier (Part 6.9 rule 7).
+- **Roster.** At chat start only, and only when the newest item this device received in the channel is older than message expiry, send each relay `XGrpRosterRequest` with this owner's complete frontier (Part 6.9 rule 7).
 
 ### 6.3 Promotion
 
@@ -183,7 +181,7 @@ Under the group lock, synchronously:
 1. **Read and prepare.** Read the link data and build the write with M's entry (Part 6.1 step 2).
    - The creator signs the entry with the root key, as `Commands.hs:2757` does for itself; any other owner signs it with its member key. Both use `mkOwnerAuth` over M's stored key.
    - On the creator's first promotion the write also adds `creatorQueueKey` and `linkRcvId`, both from `getConnLinkQueue`.
-   - Encode, sign and size-check the write now. A write that would not fit in 13,784 bytes (`ShortLink.hs:46`) fails here.
+   - Encode, sign and size-check the write now, for a promoted owner (`setLinkDataWithCreds`, Part 1). A write that would not fit in 13,784 bytes (`ShortLink.hs:46`) fails here. The creator's `setConnShortLink` checks the size only when it sends (`Agent.hs:1236-1270`), so the creator's oversize write fails at step 3, after its `RKEY`.
 2. **Keys.** `RKEY` with the set computed from what was read, plus M's member key, plus the creator's own queue key on its first promotion. The creator uses `setConnLinkRcvKeys`; any other owner uses `setLinkRcvKeysWithCreds`.
 3. **Write** the link data.
 4. **Verify**, and repeat once from step 1 if M's entry is missing. A failure after step 2 fails the command without a revert.
@@ -208,14 +206,15 @@ On M's own device, the commit completes M's promotion as in Part 6.5.
 
 ### 6.5 Owners from link data
 
-`updateGroupFromLinkData` (`Internal.hs:1634-1654`; callers `Commands.hs:1966`, `:4624`, `:4651`) also receives the link's owners, `revokedOwners` and `linkRcvId`, and applies them on every party that reads the link data. The agent has already validated the chain against the root key (`decryptLinkData`, `ShortLink.hs:114-116`).
+`updateGroupFromLinkData` (`Internal.hs:1634-1654`; callers `Commands.hs:1966`, `:4624`, `:4651`) also receives the link's owners and `revokedOwners`, and applies them on every party that reads the link data. The agent has already validated the chain against the root key (`decryptLinkData`, `ShortLink.hs:114-116`).
 
-- **Departed owners.** For each memberId in `revokedOwners`, mark the member left if this device holds it as owner. If it holds no row, create a row of a member that left.
+- **Departed owners.** For each memberId in `revokedOwners`, mark the member left, at whatever role this device holds it: a device that missed the commit holds it at its earlier role. A relay also drops that member's connection, as `xGrpLeave` does (`Subscriber.hs:3815-3818`). If the device holds no row, create a row of a member that left.
 - **New owners.** For each other chain entry whose member this device holds neither as owner nor as left or removed, set that member as owner with `ownerKey`, creating it with a placeholder profile if unknown.
 - **This device's own entry.** If the chain lists this device's own memberId, not in `revokedOwners`, with its own member key, and its membership is current, it becomes owner:
   - set the membership role to owner;
-  - store `linkRcvId` in `link_rcv_id`;
   - create the "you are now an owner" service item.
+
+  It stores nothing else: each of its link writes takes `linkRcvId` from its own read (Part 6.1).
 
   The commit (Part 6.4) does the same on receipt. An entry with any other key is ignored with an alert.
 
@@ -233,8 +232,7 @@ Under the group lock, synchronously:
 6. Erase link credentials and keys:
    - the creator deletes its link connection with `deleteConnectionLocal` and deletes its group link row;
    - the creator replaces `root_priv_key` with `root_pub_key` in one update, so the group keeps its root public key;
-   - every leaver sets `member_priv_key` to NULL;
-   - a promoted owner clears `link_rcv_id`.
+   - every leaver erases `member_priv_key`. A later load of the group generates an unrelated key (`mkGroupInfoKeys`, `Store/Shared.hs:750-755`), so the erased key is gone.
 
 **On receivers.** `xGrpLeave` (`Subscriber.hs:3815-3826`) is unchanged for members and relays. A remaining owner also re-sends its roster blob (Part 6.9 rule 3).
 
@@ -261,23 +259,20 @@ An owner joins a relay through `connectToRelayAsync`, from `xGrpRelayNew` (`Subs
 
 Members and relays keep `applyAtRosterVersion` and the completion gate. The rules from overview §4:
 
-1. **Tie-break.** In `rosterCompletion` (`Subscriber.hs:3572-3578`), when `pendingVer` equals `stored_roster_version`, keep the stored blob unless one of these holds:
-   - the incoming author's memberId is at least the stored author's (from `roster_sending_owner_gm_id`, `getStoredGroupRoster`, `Store/Groups.hs:1615-1630`);
-   - the stored author is no longer a current owner.
-
-   Below or above the stored version, today's gate decides.
+1. **Tie-break.** In `rosterCompletion` (`Subscriber.hs:3572-3578`), when `pendingVer` equals `stored_roster_version`, keep the stored blob unless the incoming author's memberId is at least the stored author's (from `roster_sending_owner_gm_id`, `getStoredGroupRoster`, `Store/Groups.hs:1615-1630`). Below or above the stored version, today's gate decides.
 2. **Concurrency re-send.** When an owner applies another owner's role or removal event whose version equals its gate (in `applyAtRosterVersion`, `Subscriber.hs:3404-3446`), then after the whole received message is processed it re-sends its current roster to every current relay at gate+1, as a blob only. It reserves that version as `broadcastRoster` does (`Internal.hs:2642-2645`) and sends with `sendRoster` (`Internal.hs:2665-2670`) and `buildGroupRoster` over the current roster members.
-3. **Departure re-send.** In `xGrpLeave`, when the leaver was an owner and this device is an owner, re-send the same way, at its gate.
+3. **Departure re-send.** When this device is an owner and applies another owner's departure, it re-sends the same way, at gate+1. The departure comes either from `xGrpLeave` of an owner, or from Part 6.5 marking a held owner left from `revokedOwners`.
 4. **Owners are outside the roster.**
    - `processRosterEntries` (`Subscriber.hs:3610-3630`) skips entries for current owners and for members held as removed or left.
    - `xGrpMemRole` (`Subscriber.hs:3448-3500`), including its own-membership branch (`:3451-3454`), ignores an event whose target is a current owner or a member held as removed or left, and any event that assigns the owner role.
    - `xGrpMemDel` (`Subscriber.hs:3731-3795`), including its own-membership branch, ignores an event whose target is a current owner.
 5. **Own versions advance the frontier.** `broadcastRoster` and the rule-2 re-send set the complete frontier to the reserved version when it is the next one (`setCompleteRosterVersion`, as `Subscriber.hs:3419-3421` does on receipt).
-6. **In sync before sending.** An owner sends a blob (own change, rule 2, rule 3) only when its complete frontier equals its gate. Otherwise:
-   - it sends `XGrpRosterRequest` to a relay, and `APIMembersRole` and `APIRemoveMembers` of roster members are refused with "roster syncing" until a served blob completes;
-   - rule 3 runs then;
-   - in `xGrpMsgForward` (`Subscriber.hs:4009-4027`), an owner processes an `XGrpRoster` whose author it holds as left, verified against that author's kept key, instead of ignoring it. Completion still rejects a version below its gate.
-7. **Absence request.** At chat start, after being offline longer than message expiry, an owner sends `XGrpRosterRequest` with its complete frontier to each relay. Relays already answer members this way (`xGrpRosterRequest`, `Subscriber.hs:3679-3685`).
+6. **In sync before sending.** An owner sends a blob (own change, rule 2, rule 3) only when its complete frontier equals its gate. While it is out of sync:
+   - it sends `XGrpRosterRequest` with its complete frontier to every current relay, and again with each role change it makes;
+   - `broadcastRoster` reserves the version and sends the events without the blob;
+   - rules 2 and 3 wait until it is back in sync;
+   - in `xGrpMsgForward` (`Subscriber.hs:4009-4027`), it processes an `XGrpRoster` whose author it holds as left, verified against that author's kept key, instead of ignoring it. Completion still rejects a version below its gate.
+7. **Absence request.** At chat start, when the newest item an owner received in the channel is older than message expiry, it sends `XGrpRosterRequest` with its complete frontier to each relay. Relays already answer members this way (`xGrpRosterRequest`, `Subscriber.hs:3679-3685`).
 
 ### 6.10 Count, and a relay's own leave
 
@@ -360,17 +355,19 @@ Under `describe "channels"` (`tests/ChatTests/Groups.hs`), with relays from `cha
   - Two owners add relays at the same moment: both relays end published after the verify.
 - **Concurrent roles.**
   - Two owners change roles of different members at one version: after the gate+1 re-send, every relay serves the same blob holding both, every member applies both, and a joiner gets both.
-  - An owner with a gap whose blob author has left applies the served blob before its next role change, so a removal made just before the leave stays on relays.
+  - An owner with a gap whose blob author has left asks every relay, applies the served blob, and only then sends a blob, so a removal made just before the leave stays on relays.
+  - A relay withholds a delta from an out-of-sync owner, and no relay holds a newer blob. The owner still demotes an admin: the event reaches every relay and member, and no blob is sent.
 - **Lost commit.** A promoter is stopped after its link write and before sending the commit, by a test hook. A member and a relay set M as owner from the link data (on open, and in the 15-minute check), and M becomes owner from its own entry and writes the link.
+- **Stale single-owner write.** A single-owner link write queued before the creator's first promotion lands after it. M's writes fail until the creator's next write, which restores M's entry, `creatorQueueKey` and `linkRcvId`. Then M writes, and so does an owner M promotes after the creator leaves.
 - **Departed owners.**
   - A relay replays an old `x.grp.owner.add` for an owner that left, to a member that knew the leave, to one that never knew M, and to a later joiner: all ignore it once they have read the link data.
   - An intro of a departed owner leaves it left.
-  - A relay that withholds the leave: the member marks the owner left on its next channel open.
+  - A relay that withholds the leave: the member marks the owner left on its next channel open. So does a member that held the departed owner as a subscriber, because it missed the commit.
 - **Leave.**
   - The last owner's leave is refused.
   - The creator's leave sends no `DEL`, and the link still resolves.
   - A leave stopped after step 2 and repeated continues at step 4.
-  - After any leave, the leaver's `member_priv_key` is NULL.
+  - After any leave, the leaver's stored member key no longer matches its chain entry's key.
 
 The concurrent cases use forced interleaving (`deliveryWorkerDelay`, a test hook between read and write). simplexmq tests are listed in Part 1.
 
