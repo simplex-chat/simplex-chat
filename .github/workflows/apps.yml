@@ -43,8 +43,14 @@ jobs:
 
       - name: Build and test
         working-directory: apps/multiplatform
-        # cmakeBuildAndCopy links the JNI library against libsimplex, which this workflow does not build
-        run: ./gradlew --no-daemon :common:desktopTest :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy :android:compileGoogleDebugKotlin :android:testFossDebugUnitTest
+        # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
+        # cmakeBuildAndCopy links the JNI library against libsimplex, which this workflow does not build.
+        run: |
+          ./gradlew --no-daemon --max-workers=1 \
+            :common:desktopTest \
+            :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy \
+            :android:compileGoogleDebugKotlin \
+            :android:testFossDebugUnitTest
 
   ios:
     name: "iOS"
