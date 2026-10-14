@@ -235,8 +235,9 @@ CEvtDuplicateGroupMessage       JSON type duplicateGroupMessage
   user :: User
   member :: GroupMember         -- the member whose connection delivered the copy
 ```
-Emission, `Library/Internal.hs`, before the present handling of the duplicate:
+Emission, `Library/Internal.hs`, before the present handling of the duplicate, only when the chat is started with `main=off` (the NSE and the share extension):
 ```
+isMainApp :2976                 subscriptionMode is SMSubscribe; startChatController sets SMOnlyCreate for main=off (Library/Commands.hs:235)
 saveGroupRcvMsg :2925           direct copy; member: the member of the connection; every SEDuplicateGroupMessage
                                 x.grp.mem.con to the forwarding member when the stored copy was forwarded, as now (:2940-2944)
 saveGroupFwdRcvMsg :2959        channel; member: the forwarding relay; Nothing is returned, as now
@@ -246,24 +247,33 @@ Consumers:
 ```
 terminal view       View.hs:471: no output, as CEvtNtfMessage (:547)
 API docs            bots/src/API/Docs/Events.hs:205: in undocumentedEvents, as CEvtUnknownMemberCreated
-iOS app             not decoded: APIResult.invalid, logged (Shared/Model/SimpleXAPI.swift:2510), as unknownMemberCreated
-Android, desktop    not decoded: CR.Response (model/SimpleXAPI.kt:6680), logged (:3599-3600), as unknownMemberCreated
+apps, CLI, bots     not emitted: started with main=on
 NSE                 decoded: case duplicateGroupMessage (SimpleX NSE/NSEAPITypes.swift:91)
 ```
-Swift `CIMeta` (`apps/ios/SimpleXChat/ChatTypes.swift:4244`): `forwardedByMember: Int64?`, after `editable`, as in core `CIMeta` (`Messages.hs:525`); omitted in JSON for Nothing.
+Swift types, `apps/ios/SimpleXChat/ChatTypes.swift`:
+```
+CIMeta.forwardedByMember :4253     Int64?, after editable, as in core CIMeta (Messages.hs:525); omitted in JSON for Nothing
+groupMemberEntityId :3447          (groupId, groupMemberId) -> "#<groupId> @<groupMemberId>"; used by GroupMember.id (:3258) and the NSE
+CIDirection.groupMemberId :4224    groupMemberId of the member of groupRcv; nil for other directions
+```
 
 NSE, `apps/ios/SimpleX NSE/NotificationService.swift`:
 ```
-receivedMsgNtf (:1016-1030)
-  newChatItems              key of a group item with forwardedByMember: "#<groupId> @<forwardedByMember>",
-                              the id of the connection entity of the forwarding member (ChatTypes.swift:3258, :3624-3632); other items as now
+receivedMsgNtf (:1035-1039)
+  newChatItems              key of a group item: groupMemberEntityId of the group and of the member whose connection delivered the item:
+                              forwardedByMember, otherwise chatDir.groupMemberId; the id of the connection entity (ChatTypes.swift:3624-3632)
+                            other items, and channelRcv without forwardedByMember: chatInfo.id, as now
   duplicateGroupMessage     key: member.id; notification: .noNtf
-processReceivedNtf (:565-579), the best attempt of the entity is read from notificationEntities[id]:
-  .noNtf                    replaces .connectionEvent, the default of the connection, only
-  other values              as now: replace a best attempt that is not a call; a call is replaced by a call only
+processReceivedNtf (:586-588): the best attempt of the entity is read from notificationEntities[id] and replaced when ntf.replaces(bestAttempt)
+NSENotificationData.replaces (:77-85), new notification, best attempt:
+  .noNtf, .connectionEvent  true: the default of the connection
+  .noNtf, other             false
+  .callInvitation, any      true
+  other, .callInvitation    false
+  other, other              true
 ```
-- `.noNtf` is used: `.connectionEvent` is created only as the default (`defaultBestAttemptNtf`, `:1196-1216`). A received item, a contact event and a call are never replaced by `.noNtf`.
-- The best attempt is read from `notificationEntities[id]`: `processDroppedNotifications` (`:504-519`) passes the entity copied before its notifications are processed.
+- `.noNtf` is used: `.connectionEvent` is created only as the default (`defaultBestAttemptNtf`, `:1208-1229`). A received item, a contact event and a call are never replaced by `.noNtf`.
+- The best attempt is read from `notificationEntities[id]`: `processDroppedNotifications` (`:514-529`) passes the entity copied before its notifications are processed.
 
 Results:
 ```
@@ -272,15 +282,21 @@ forwarded post, MFMentions    the text for a mention or a reply; empty content o
 duplicate copy                empty content, unless an item of the same push notification is shown
 mention, then other item      the mention is shown; before this patch, .noNtf of the other item replaced it
 ```
-Tests, `tests/ChatTests/Groups.hs`; helper `duplicateMessageEventsCfg` next to `lastJobNotification`: `testCfg` with an `eventHook` (`Controller.hs:257`) that records the member names of `CEvtDuplicateGroupMessage`. Copies are sent through the agent of the sender by `agentSendBody`, as in `testGroupMsgForwardOwnMembershipRejected` (`:5666`), so that the order of copies is fixed:
+Tests, `tests/ChatTests/Groups.hs`; helpers next to `lastJobNotification`:
+```
+duplicateMessageEventsCfg    testCfg with an eventHook (Controller.hs:257) that records the member names of CEvtDuplicateGroupMessage
+setMainAppOff cc             subscriptionMode of cc set to SMOnlyCreate, as by /_start main=off; called after the group is created
+```
+Copies are sent through the agent of the sender by `agentSendBody`, as in `testGroupMsgForwardOwnMembershipRejected` (`:5666`), so that the order of copies is fixed:
 ```
 group message forwarding (:191)
   testGroupMsgForwardDuplicateEvent    createGroup3; bob's message is received by cath directly; alice's agent sends a forwarded copy
-                                         (Library/Internal.hs:2960-2969): cath "duplicate group message, group id: 1"; event member alice
-  testGroupMsgDirectDuplicateEvent     alice's agent sends a forwarded copy, then bob's agent the direct copy
+                                         (Library/Internal.hs:2960-2969): cath "duplicate group message, group id: 1"; no event
+                                       setMainAppOff cath; alice's agent sends the copy again: the same line; event member alice
+  testGroupMsgDirectDuplicateEvent     alice's agent sends a forwarded copy; setMainAppOff cath; bob's agent sends the direct copy
                                          (Library/Internal.hs:2939-2946): cath "duplicate group message, group id: 1"; event member bob
 relay delivery, single relay (:283)
-  testChannelDuplicateEvent            createChannel1Relay; alice posts; bob's agent sends a second forwarded copy
+  testChannelDuplicateEvent            createChannel1Relay; alice posts; setMainAppOff cath; bob's agent sends a second forwarded copy
                                          (Library/Internal.hs:2959): event member bob; cath without output
 ```
 - The NSE and the Swift types are not compiled on this machine. Manual checks on iOS: a post in a channel with 2 relays, with MFAll and with MFMentions; a forwarded message in a group; a mention followed by an ordinary message in one push notification.
@@ -289,16 +305,21 @@ relay delivery, single relay (:283)
 ```
 core functions    msgHasNotification :: VerifiedMsg e -> Bool
                   createMsgDeliveryJob, new parameter notification
+                  isMainApp :: CM Bool
 core types        MessageDeliveryJob.notification
 core events       CEvtDuplicateGroupMessage, JSON type duplicateGroupMessage
 storage           delivery_jobs.notification
                   migration M20261012_delivery_job_notification
 iOS               CIMeta.forwardedByMember
+                  groupMemberEntityId
+                  CIDirection.groupMemberId
                   NSEChatEvent.duplicateGroupMessage
+                  NSENotificationData.replaces
 test helpers      agentSendBody
                   lastSndMsgFlags
                   lastJobNotification
                   duplicateMessageEventsCfg
+                  setMainAppOff
 ```
 - `eventHasNotification :: ChatMsgEvent e -> Bool` of `2026-10-13-message-priority.md` is accepted by one change: `msgHasNotification` is computed as `eventHasNotification` of the event of the message. Its three uses, the job column and `hasNotification XGrpLeave_` in `leaveChannelRelay` are unchanged.
 - With that change a forwarded `x.msg.update` that raises priority is flagged. The line of the priority plan, section 4, "delivery jobs of relays and forwarding hosts, MsgFlags False for every message" is replaced by this plan.

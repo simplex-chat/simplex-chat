@@ -73,6 +73,16 @@ public enum NSENotificationData {
         default: nil
         }
     }
+
+    func replaces(_ bestAttempt: NSENotificationData) -> Bool {
+        switch (self, bestAttempt) {
+        case (.noNtf, .connectionEvent): true
+        case (.noNtf, _): false
+        case (.callInvitation, _): true
+        case (_, .callInvitation): false
+        default: true
+        }
+    }
 }
 
 // Once the last thread in the process completes processing chat controller is suspended, and the database is closed, to avoid
@@ -573,13 +583,7 @@ class NotificationService: UNNotificationServiceExtension {
             // A better logic could be to check whether we have a call in the best attempt while processing .msgInfo marker above.
             // If the best attempt is a call, and its marker is received, and the call is recent (e.g., the last 30 seconds), it would deliver at once,
             // instead of requesting further messages.
-            let bestAttempt = notificationEntities[id]?.msgBestAttemptNtf ?? ntfEntity.msgBestAttemptNtf
-            let replaceBestAttempt = switch (ntf, bestAttempt) {
-            case (.noNtf, .connectionEvent): true
-            case (.noNtf, _): false
-            default: bestAttempt.callInvitation == nil || ntf.callInvitation != nil
-            }
-            if replaceBestAttempt {
+            if let bestAttempt = notificationEntities[id]?.msgBestAttemptNtf, ntf.replaces(bestAttempt) {
                 notificationEntities[id]?.msgBestAttemptNtf = ntf
             }
             return false
@@ -1028,10 +1032,8 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
                 cItem = autoReceiveFile(file) ?? cItem
             }
             let ntf: NSENotificationData = (cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
-            let chatIdOrMemberId = if case let .group(groupInfo, _) = cInfo, let forwardedByMember = cItem.meta.forwardedByMember {
-                "#\(groupInfo.groupId) @\(forwardedByMember)"
-            } else if case let .groupRcv(groupMember) = chatItem.chatItem.chatDir {
-                groupMember.id
+            let chatIdOrMemberId = if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
+                groupMemberEntityId(groupInfo.groupId, memberId)
             } else {
                 chatItem.chatInfo.id
             }

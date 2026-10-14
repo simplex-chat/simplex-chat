@@ -2938,7 +2938,7 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
     withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
       `catchAllErrors` \e -> case e of
         ChatErrorStore (SEDuplicateGroupMessage _ _ _ forwardedByGroupMemberId_) -> do
-          toView $ CEvtDuplicateGroupMessage user am'
+          unlessM isMainApp $ toView $ CEvtDuplicateGroupMessage user am'
           forM_ forwardedByGroupMemberId_ $ \forwardedByGroupMemberId -> do
             cxt <- chatStoreCxt
             fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
@@ -2958,7 +2958,7 @@ saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMemb
   withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId) >>= \case
     Right msg -> pure $ Just msg
     Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId} -> do
-      toView $ CEvtDuplicateGroupMessage user forwardingMember
+      unlessM isMainApp $ toView $ CEvtDuplicateGroupMessage user forwardingMember
       if
         | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected
         | otherwise -> case (authorGroupMemberId, forwardedByGroupMemberId) of
@@ -2972,6 +2972,9 @@ saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMemb
               throwError $ ChatErrorStore e
             _ -> throwError $ ChatErrorStore e
     Left e -> throwError $ ChatErrorStore e
+
+isMainApp :: CM Bool
+isMainApp = (SMSubscribe ==) <$> chatReadVar subscriptionMode
 
 saveSndChatItem :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> CM (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing Nothing False

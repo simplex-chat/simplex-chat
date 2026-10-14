@@ -18,7 +18,7 @@ import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKe
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO)
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
@@ -32,7 +32,7 @@ import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
@@ -5935,7 +5935,12 @@ testGroupMsgForwardDuplicateEvent ps = do
         connId <- relayConnIdToMember alice "cath"
         ts <- getCurrentTime
         let chatMsg = ChatMessage chatInitialVRange (Just sharedMsgId) (XMsgNew $ mcSimple $ MCText "hi there")
-        agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
+            sendForwardedCopy = agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
+        sendForwardedCopy
+        cath <##. "duplicate group message, group id: 1"
+        readTVarIO dups `shouldReturn` []
+        setMainAppOff cath
+        sendForwardedCopy
         cath <##. "duplicate group message, group id: 1"
         readTVarIO dups `shouldReturn` ["alice"]
 
@@ -5955,6 +5960,7 @@ testGroupMsgDirectDuplicateEvent ps = do
         agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
         cath <# "#team bob> hi there [>>]"
 
+        setMainAppOff cath
         agentSendBody bob bobConnId $ chatMsgToBody chatMsg
         cath <##. "duplicate group message, group id: 1"
         readTVarIO dups `shouldReturn` ["bob"]
@@ -9647,6 +9653,7 @@ testChannelDuplicateEvent ps = do
             connId <- relayConnIdToMember bob "cath"
             ts <- getCurrentTime
             let chatMsg = ChatMessage chatInitialVRange (Just sharedMsgId) (XMsgNew $ mcSimple $ MCText "hi")
+            setMainAppOff cath
             agentSendBody bob connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward FwdChannel ts) (VMUnsigned chatMsg)]
             readTVarIO dups `shouldEventuallyReturn` ["bob"]
 
@@ -13338,6 +13345,9 @@ duplicateMessageEventsCfg = do
           _ -> pure ()
         pure evt
   pure (dups, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
+
+setMainAppOff :: TestCC -> IO ()
+setMainAppOff cc = atomically $ writeTVar (subscriptionMode $ chatController cc) SMOnlyCreate
 
 itemSharedMsgId :: TestCC -> IO SharedMsgId
 itemSharedMsgId cc = do
