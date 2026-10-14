@@ -212,11 +212,11 @@
 
 <script>{% include "utm.js" %}</script>
 
-{% if not noAnalytics %}
+{% if not noEvents %}
 <script type="module">
 import { init, track } from '/js/page.js';
-{% include "analytics.js" %}
-init(analytics);
+{% include "events.js" %}
+init(pageEvents);
 </script>
 {% endif %}
 

@@ -2,7 +2,7 @@
 layout: layouts/token.html
 title: "SimpleX Community Credits"
 permalink: "/credits/index.html"
-noAnalytics: true
+noEvents: true
 ---
 
 # SimpleX Crowdfunding to Build Community Credits: Strategy & Vision

@@ -1358,8 +1358,8 @@ templateEngineOverride: njk
     </script>
     <script type="module">
         import { init, track } from '/js/page.js'
-        {% include "analytics.js" %}
-        init(analytics)
+        {% include "events.js" %}
+        init(pageEvents)
         var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf[data-section]'))
         var seen = {}
         var current = 'hero'

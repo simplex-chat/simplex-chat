@@ -9,10 +9,10 @@ destinationURI: "https://wefunder.com/simplex.chat"
         <meta charset="UTF-8">
         <script type="module">
             {% include "node_modules/@plausible-analytics/tracker/plausible.js" %}
-            {% include "analytics.js" %}
+            {% include "events.js" %}
             try {
-                analytics.autoCapturePageviews = false;
-                init(analytics);
+                pageEvents.autoCapturePageviews = false;
+                init(pageEvents);
                 track('pageview');
             } finally {
                 location.replace('{{ destinationURI }}' + location.search);
