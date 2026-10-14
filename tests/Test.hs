@@ -9,6 +9,7 @@ import Bots.BadgeService.CatalogTests
 import Bots.BadgeService.ConfigTests
 import Bots.BadgeService.GroupIntegrationTests
 import Bots.BadgeService.GroupTests
+import Bots.BadgeService.NameRegistrationTests
 import Bots.BadgeService.StripeTests
 import Bots.BadgeService.WaitersTests
 import Bots.BadgeService.WebTests
@@ -84,6 +85,7 @@ main = do
         badgeWaitersTests
         badgeBTCPayTests
         badgeStripeTests
+        badgeNameRegistrationTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests

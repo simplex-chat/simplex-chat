@@ -11,6 +11,8 @@ module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter)
 import Control.Concurrent.STM (atomically)
+import Control.Monad (forM_)
+import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString.Char8 (ByteString)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -34,6 +36,7 @@ import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, ba
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
+import Simplex.Messaging.Crypto.BIP39 (unEntropy)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (BrokerErrorType (..), ErrorType (AUTH), NetworkError (..))
 import Simplex.Messaging.Util (tshow)
@@ -59,6 +62,9 @@ badgeTests = do
     it "reads a code as typed - any case, separators, ambiguous characters" testCodeNormalisation
     it "rejects a code whose check character does not match" testCodeCheckCharacter
     it "hashes the canonical form, whatever was typed" testCodeHash
+  describe "name codes" $ do
+    it "encodes the entropy and its checksum" testNameCodeVectors
+    it "rejects a name code with a wrong character" testNameCodeChecksum
   describe "ledger transitions" $ do
     it "issues a twelve month code one month at a time, and no thirteenth" testTwelveMonths
     it "lapses only the elapsed months after a gap, leaving paidThrough unchanged" testLapseAfterGap
@@ -328,6 +334,25 @@ testCodeHash = do
   code <- randomBadgeCode drg
   Just typed <- pure $ parseBadgeCode $ T.toLower $ formatBadgeCode code
   badgeCodeHash typed `shouldBe` badgeCodeHash code
+
+testNameCodeVectors :: IO ()
+testNameCodeVectors =
+  forM_ nameCodeVectors $ \(entropy, formatted) -> do
+    let code = parseNameCode formatted
+    formatNameCode <$> code `shouldBe` Just formatted
+    convertToBase Base16 . unEntropy . nameCodeEntropy <$> code `shouldBe` Just entropy
+
+testNameCodeChecksum :: IO ()
+testNameCodeChecksum =
+  formatNameCode <$> parseNameCode "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV" `shouldBe` Nothing
+
+-- entropy and its name code, computed by a separate Python implementation of the format
+nameCodeVectors :: [(ByteString, T.Text)]
+nameCodeVectors =
+  [ ("00000000000000000000000000000000", "SN-00000-00000-00000-00000-00000-0VME2"),
+    ("ffffffffffffffffffffffffffffffff", "SN-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-XDCD9"),
+    ("9e885d952ad362caeb4efe34a8e91bd2", "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BT")
+  ]
 
 -- Ledger transitions, against plans/2026-07-30-supporter-badges-v3-ux.md §3
 
