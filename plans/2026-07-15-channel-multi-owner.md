@@ -69,7 +69,7 @@ Every write in a multi-owner channel, by any owner, runs under the group lock, i
 - **A relay change** that the re-read misses has to be repeated by hand. Until then, a relay missing from the published list deactivates itself at its next 15-minute check, and deletes its connections to the channel a day later (`checkRelayServedGroups`, `checkRelayInactiveGroups`, `Commands.hs:6001-6026`; `relayInactiveTTL`, `Chat.hs:135`).
 - **A removed relay that a concurrent write keeps listed** stays listed for good, because nothing records the removal. Joiners and subscribers fail to connect to it, since its link no longer accepts them, and connect through the other relays.
 - **A profile edit** has to be repeated by hand. Members who applied the lost edit's `XGrpInfo` show it until they next open the channel and read the link data (`updateGroupFromLinkData`, `Internal.hs:1634-1654`).
-- **A single-owner write the creator queued just before its first promotion** (the agent sends it later, `setGroupLinkDataAsync`) can land after the promotion and drop the new owner's entry, `creatorQueueKey` and `linkRcvId`. The new owner cannot write the link until the creator's next write puts them back. The creator keeps its own access: that write does not change the queue's keys.
+- **A single-owner write the creator queued just before its first promotion** (the agent sends it later, `setGroupLinkDataAsync`) can land after the promotion and drop the new owner's entry, `creatorQueueKey` and `linkRcvId`. The new owner cannot write the link until the creator's next write puts them back; the creator's leave is such a write (§7). Until then, joiners do not take the new owner from the chain, so they treat it as a subscriber, as older members do. The creator keeps its own access: that write does not change the queue's keys.
 
 **Reconcile.** An owner reads the link data when it opens the channel, and when its chat starts in a multi-owner channel. The apps' owner branch of the link-data refresh, and the core's (`Commands.hs:1968`, `ChatView.swift:764-779` and its Kotlin counterpart), are replaced by this reconcile. From the read it:
 
@@ -119,18 +119,20 @@ Members and relays keep this protocol unchanged. With several owners, two owners
 2. **Concurrency re-send.** An owner that applies another owner's role or removal event at a version equal to its own gate re-sends its current blob to relays at its gate plus one, as a blob without events. It does this once, after it has processed the whole received message.
    - The blob that won rule 1 may have reverted one of the two changes on relays. The re-sent blob is built after the owner applied both, and its higher version replaces any blob at the old version, whatever its author.
    - Members already hold both changes. Their next event reads as a gap, so they fetch the served blob once (`Subscriber.hs:3438-3446`).
-3. **Departure re-send.** When an owner applies another owner's departure, it re-sends its current blob to relays at its gate plus one, as rule 2 does. A departure is applied either from the departed owner's `x.grp.leave` or from `revokedOwners` in a link-data read. Joiners verify a served blob against its author's key and ignore a departed author (`Subscriber.hs:3506`, `:4019-4020`). The higher version replaces the departed author's blob on every relay.
+3. **Departure re-send.** When an owner applies another owner's departure, it re-sends its current blob to relays at its gate plus one, as rule 2 does. It does the same when it applies a served blob whose author has left (rule 6). A departure is applied either from the departed owner's `x.grp.leave` or from `revokedOwners` in a link-data read.
+   - A departure read from the link data can arrive before the departed owner's last messages, which this device then drops (`Subscriber.hs:4019-4020`), so its gate can stay below the relays'. The owner therefore also asks every current relay for the roster (rule 6), and re-sends again once the served blob is applied.
+   - Joiners verify a served blob against its author's key and ignore a departed author (`Subscriber.hs:3506`, `:4019-4020`). The re-send's higher version replaces the departed author's blob on every relay.
 4. **Owners are outside the roster.**
    - Applying a roster skips members who are current owners, and members held as removed or left. Otherwise a blob made while a new owner was an admin would set it back to admin, and a stale blob would bring back a removed member.
    - An `x.grp.mem.role` or `x.grp.mem.del` whose target is a current owner (this device's own membership included) is ignored, and so is an `x.grp.mem.role` that assigns the owner role. `APIMembersRole` and `APIRemoveMembers` refuse owner targets.
    - A current owner has the owner role and is neither left nor removed.
-5. **An owner's own versions advance its complete frontier.** That covers its changes and its blob-only re-sends (rule 2). Today only received events advance the frontier (`Subscriber.hs:3413-3421`), so every own change would leave an owner a false gap.
+5. **An owner's own versions advance its complete frontier.** That covers its changes and its blob-only re-sends (rules 2 and 3). Today only received events advance the frontier (`Subscriber.hs:3413-3421`), so every own change would leave an owner a false gap.
 6. **An owner sends a blob only when it is in sync.** It sends a blob, for its own change or for rules 2 and 3, only when its complete frontier equals its gate. While it is out of sync:
    - it sends `XGrpRosterRequest` to every current relay, and again with each role change it makes;
    - its role and removal events go out without a blob, so they cannot overwrite relays with a stale view;
    - rules 2 and 3 wait until it is back in sync;
    - it applies a served blob even when the blob's author has left. It verifies the blob with the key it kept for that author, at a version not below its gate. Content from a departed author is otherwise ignored (`Subscriber.hs:4019-4020`), and without this exception an owner could not get back in sync after the blob's author left.
-7. **An owner back after a long absence requests the roster.** When its chat starts and the newest item it received in the channel is older than message expiry (21 days by default), each owner sends each relay `XGrpRosterRequest` with its complete frontier, as members do on a gap. It then holds the current gate before it changes roles.
+7. **An owner back after a long absence requests the roster.** When its chat starts and the newest item it received in the channel is older than message expiry (21 days by default), or there is none, each owner sends each relay `XGrpRosterRequest` with its complete frontier, as members do on a gap. It then holds the current gate before it changes roles.
 
 **What this gives up.**
 
@@ -140,8 +142,12 @@ Members and relays keep this protocol unchanged. With several owners, two owners
 
   When the dropped change is a demotion that some relays had applied, another owner's later blob, made without it, reverts it on those relays. Rule 4 still keeps a removed member removed. A dropped role change is fixed by repeating it. A dropped removal cannot be repeated: the author's member list already shows the member removed.
 - **Two owners changing the same member at the same version.** Members keep whichever event they received last, while relays and joiners keep the value in the higher author's blob.
-- **An owner that cannot get back in sync.** If no relay stores a blob at its gate (the last author's blob send failed, and that author has left), the owner stays out of sync. Its role changes still reach relays and members as events. Joiners, and members that fetch the roster on a gap, get the last blob without them until an owner that is in sync sends one.
-- **The last changes before a leave.** A role change made seconds before an owner leaves can reach a device after the leave, and devices ignore content from a departed author (`Subscriber.hs:4019-4020`). A relay can also forward an owner's events out of order (`Store/Delivery.hs:178-202`, `Delivery.hs:115-120`); this exists in single-owner channels too (§11). The remaining owners' blob re-send (rule 3) carries the change to relays only if they applied it.
+- **An owner that cannot get back in sync.** An owner stays out of sync in two cases:
+  - No relay stores a blob at its gate (the last author's blob send failed, and that author has left).
+  - It makes a role change before the blob it asked for arrives. The change reserves a version above that blob, so the blob is then refused (`Subscriber.hs:3574-3575`), and relays do not serve it again (`:3685`).
+
+  It stays out of sync until an owner that is in sync sends a blob. A sole remaining owner stays out of sync for good. Its role changes still reach relays and members as events. Joiners, and members that fetch the roster on a gap, get the last blob without them, and a member it demoted shows at its earlier role to them. Relays applied the demotion, so they do not forward that member's actions.
+- **The last changes before a leave.** A role change made seconds before an owner leaves can reach a device after the leave, and devices ignore content from a departed author (`Subscriber.hs:4019-4020`). A relay can also forward an owner's events out of order (`Store/Delivery.hs:178-202`, `Delivery.hs:115-120`); this exists in single-owner channels too (§11). A device that reads the link data before it receives a departed owner's last messages drops them as well, posts included. The remaining owners' blob re-send (rule 3) carries the change to relays only if they applied it, or once they apply the served blob. Until then, a remaining owner's own role changes can fall below the relays' gate and be dropped.
 
 These outcomes need two honest owners acting within seconds, or an owner acting right after a long absence. A relay can add nothing beyond delaying or reordering one owner's events, as today.
 
@@ -222,7 +228,7 @@ It cannot see, verify or promote a silent subscriber who joined earlier (§11).
 
 **Leave.** Any owner can leave while the link data it reads shows another current owner, that is another chain entry not in `revokedOwners`. The core refuses the last owner. Steps (synchronous):
 
-1. Read the link data and check that another current owner exists.
+1. Read the link data, merge it as every write does (§2), and check that the result shows another current owner. The merge re-adds a current owner missing from the chain.
 2. Write the link data with its own memberId added to `revokedOwners`, keeping its own entry (§2).
 3. Re-read, and repeat once if the entry is missing.
 4. `RKEY` with the set computed from what was written, which no longer includes its key.
@@ -232,7 +238,7 @@ It cannot see, verify or promote a silent subscriber who joined earlier (§11).
    - the creator erases its root private key, keeping the root public key;
    - every leaver erases its member private key. A later load of the group generates an unrelated key, so the erased one is gone.
 
-**Repeating a leave.** A crash between the steps leaves the leave half done. The user repeats it. A repeated leave that finds its memberId already in `revokedOwners` continues at step 4, and an `AUTH` error at step 4 counts as done. Until then, the device keeps its key, and devices that have not read the link data since still treat it as owner.
+**Repeating a leave.** A crash or a failed step leaves the leave half done. The user repeats it, and the app keeps offering Leave, because this device's own membership stays current: applying `revokedOwners` never changes it (below). A repeated leave that finds its memberId already in `revokedOwners` continues at step 4, and an `AUTH` error at step 4 counts as done. Until then, the device keeps its key, and devices that have not read the link data since still treat it as owner.
 
 **Why no `DEL`.** Today `APILeaveGroup` deletes the link connection with `DEL` on the shared queue (`deleteGroupLinkIfExists`, `Commands.hs:3246`, `Internal.hs:1739-1748`). After step 4 the creator's key is normally no longer authorised, but a concurrent `RKEY` by another owner can authorise it again (§3), so the deletion is local.
 
@@ -242,7 +248,7 @@ It cannot see, verify or promote a silent subscriber who joined earlier (§11).
 
 - **Owner and privileged rows are never deleted.** Item expiry, Clear chat and removed-member cleanup leave alone every member row with the owner role or a roster role (`getGroupMembersForExpiration`, `Store/Groups.hs:1357-1373`, used at `Commands.hs:1429-1430` and `:6078-6079`; `getRemovedMembersToCleanup`, `Store/Groups.hs:1375-1382`). Today these delete left and removed members that have no chat items.
 - **An intro never changes the status of a member held as left or removed.** Today an intro sets any existing channel member current (`xGrpMemIntro`, `Subscriber.hs:3314-3322`, `updatePreparedChannelMember`, `Store/Groups.hs:3608-3623`).
-- **Every link-data read applies `revokedOwners`.** Every member row whose memberId is listed is marked left, whatever role this device holds it at, because a device that missed the commit holds the owner at its earlier role. A relay also drops that member's connection, as `xGrpLeave` does. For memberIds it holds no row for, it creates rows of members that left. This happens on members when they open the channel, on owners in reconcile, and on relays at invitation and in their 15-minute check (§6).
+- **Every link-data read applies `revokedOwners`.** Every member row whose memberId is listed is marked left, whatever role this device holds it at, because a device that missed the commit holds the owner at its earlier role. This device's own membership is the exception: a listed membership means a half-done leave. A relay also drops that member's connection, as `xGrpLeave` does. For memberIds it holds no row for, it creates rows of members that left. This happens on members when they open the channel, on owners in reconcile, and on relays at invitation and in their 15-minute check (§6).
 
 A departed owner's later content is then ignored everywhere (`Subscriber.hs:4019-4020`), as are a replay of its old `x.grp.owner.add` and an intro that would revive it. A device that has not read the link data since the leave, and whose relays withheld the leave, keeps treating the departed owner as current until its next read.
 
@@ -250,7 +256,7 @@ A departed owner's later content is then ignored everywhere (`Subscriber.hs:4019
 
 **Two last owners leaving at once.** Each can read the other as current and verify its own write before the other's write lands. Both leave, and the channel ends with no owner.
 
-**Destroying the channel** stays any current owner's action through `APIDeleteChat`, which sends `x.grp.del` (`Commands.hs:1384-1400`). The creator deletes the link queue through its link connection, as today. A promoted owner deletes it with `DEL` using its link credentials, and only when it sends `x.grp.del`. `deleteGroupLinkIfExists` runs whether or not `x.grp.del` was sent, so it never sends this `DEL`.
+**Destroying the channel** stays any current owner's action through `APIDeleteChat`, which sends `x.grp.del` (`Commands.hs:1384-1400`). The creator deletes the link queue through its link connection, as today. A promoted owner deletes it with `DEL` using its link credentials, and only when it sends `x.grp.del`. `deleteGroupLinkIfExists` runs whether or not `x.grp.del` was sent, so it never sends this `DEL`. A creator whose membership is no longer a current owner, for example after a leave that stopped before step 6, deletes its link connection locally when it deletes the chat, never with `DEL`.
 
 **Group-link commands.** `APICreateGroupLink`, `APIAddGroupShortLink` and `APIDeleteGroupLink` are refused for channels (`Commands.hs:3349-3384`):
 
@@ -278,7 +284,7 @@ A departed owner's later content is then ignored everywhere (`Subscriber.hs:4019
 
 - **A relay addition can stay unpublished.** This happens in two ways:
   - The background link write after the relay's acknowledgement is not retried if it fails. The relay has already moved to `RSAcknowledgedRoster`, which nothing publishes again (`xGrpRosterAck`, `Subscriber.hs:3658-3672`), so only removing and re-adding the relay recovers it.
-  - If another owner's role change advanced the adding owner's roster version before the relay acknowledged, the acknowledgement no longer matches and only warns (`Subscriber.hs:3660-3667`). The relay stays unpublished until the owner's next role change.
+  - If another owner's role change advanced the adding owner's roster version before the relay acknowledged, the acknowledgement no longer matches and only warns (`Subscriber.hs:3660-3667`). The relay stays unpublished until the owner next sends a blob (§4).
 - **Inviting a relay that already serves the channel.** A promoted owner cannot tell which configured relay already serves the channel, because relay links are per channel. If it invites such a relay, that relay creates a second group for the channel.
 
 ## 9. Security and privacy
@@ -290,7 +296,7 @@ A departed owner's later content is then ignored everywhere (`Subscriber.hs:4019
   - A departed owner erased its keys (§7).
   - A departed owner that kept a copy of its member key, or the creator a copy of its root key, while still an owner can still act with it:
     - with the link's SMP server's help, it can serve forged link data to readers, including new owner entries that every party then applies (§6);
-    - through one relay, it can serve a roster blob signed before its departure, which an out-of-sync owner applies and re-sends (§4 rule 6).
+    - through a colluding relay, it can serve a roster blob it signs with the kept key, at any version, which an out-of-sync owner applies and re-sends (§4 rule 6). A colluding relay alone can replay a blob the departed owner signed before leaving.
 
     Such an owner was already able to do anything an owner can.
 - **The link server sees a promoted owner's network address** when it writes. Recipient commands are not proxied (`Server.hs:2205-2211`), so the owner's device connects directly to the server the creator chose.
