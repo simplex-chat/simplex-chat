@@ -115,7 +115,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/Downloads/${{ env.BACKEND_PKG }}
-          key: ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}
+          key: ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}
 
       - name: Setup Haskell
         id: haskell
