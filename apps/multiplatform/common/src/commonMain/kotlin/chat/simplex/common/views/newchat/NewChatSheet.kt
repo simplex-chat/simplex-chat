@@ -138,6 +138,7 @@ private fun ModalData.NewChatSheetLayout(
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
+  val onlineSearch = remember { OnlineSearchModel() }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
   val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.CONTACT_WITH_REQUEST, ContactType.REQUEST, ContactType.RECENT) }
   val contactTypes by remember(searchText.value.text.isEmpty()) {
@@ -176,6 +177,69 @@ private fun ModalData.NewChatSheetLayout(
     searchText = searchText.value.text,
     contactChats = allChats
   )
+  val rows = onlineSearch.rows(shownChatIds = filteredContactChats.map { it.id }.toSet())
+  val showsEmptyState = !onlineSearch.searching && rows.isEmpty
+  KeyChangeEffect(searchText.value.text) {
+    onlineSearch.reset()
+  }
+  KeyChangeEffect(chatModel.currentUser.value?.userId) {
+    onlineSearch.reset()
+  }
+
+  @Composable
+  fun OnlineSearchHeader(title: String) {
+    SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+    SectionView(title, headerBottomPadding = DEFAULT_PADDING_HALF) {}
+  }
+
+  fun LazyListScope.onlineSearchSections(rows: OnlineSearchRows) {
+    if (rows.names.isNotEmpty()) {
+      item { OnlineSearchHeader(stringResource(MR.strings.online_search_names)) }
+      items(rows.names, key = { it.id }) { result ->
+        val view = LocalMultiplatformView()
+        NameSearchRow(
+          result,
+          Modifier.clickable {
+            hideKeyboard(view)
+            withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = close, cleanup = null) }
+          }
+        )
+      }
+    }
+    if (rows.directory.isNotEmpty() || rows.footer != null) {
+      item { OnlineSearchHeader(stringResource(MR.strings.online_search_directory)) }
+      items(rows.directory, key = { it.id }) { result ->
+        val view = LocalMultiplatformView()
+        DirectorySearchRow(
+          result.entry,
+          Modifier.clickable {
+            hideKeyboard(view)
+            withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = close, cleanup = null) }
+          }
+        )
+      }
+      when (rows.footer) {
+        DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
+        DirectoryFooter.ShowMore -> item { DirectoryShowMoreRow(onlineSearch) }
+        null -> {}
+      }
+    }
+  }
+
+  fun searchTrimmed(): String = searchText.value.text.trim()
+
+  fun runDirectorySearch() {
+    val text = searchTrimmed()
+    if (text.isEmpty() || searchShowingSimplexLink.value) return
+    confirmDirectorySearch { withApi { onlineSearch.searchDirectory(text) } }
+  }
+
+  fun runOnlineSearch() {
+    val text = searchTrimmed()
+    if (text.isEmpty() || searchShowingSimplexLink.value) return
+    val name = connectNameCandidate.value
+    confirmDirectorySearch { withApi { onlineSearch.search(text, name) } }
+  }
 
   val sectionModifier = Modifier.fillMaxWidth()
   val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
@@ -259,13 +323,15 @@ private fun ModalData.NewChatSheetLayout(
 
   @Composable
   fun NoFilteredContactsItem() {
-    if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
-      Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          Text(
-            generalGetString(MR.strings.no_filtered_contacts),
-            color = MaterialTheme.colors.secondary
-          )
+    if (showsEmptyState) {
+      if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
+        Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Text(
+              generalGetString(MR.strings.no_filtered_contacts),
+              color = MaterialTheme.colors.secondary
+            )
+          }
         }
       }
     }
@@ -316,10 +382,16 @@ private fun ModalData.NewChatSheetLayout(
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
               connectNameCandidate = connectNameCandidate,
               close = close,
+              onSearch = ::runOnlineSearch,
             )
-            connectNameCandidate.value?.let { candidate ->
+            val candidate = connectNameCandidate.value
+            if (candidate != null && onlineSearch.names.isEmpty()) {
               Divider()
               ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+            }
+            if (searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value) {
+              Divider()
+              SearchInDirectoryRow(onSearch = ::runDirectorySearch)
             }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
@@ -346,6 +418,7 @@ private fun ModalData.NewChatSheetLayout(
         }
         ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
       }
+      onlineSearchSections(rows)
       if (appPlatform.isAndroid) {
         item {
           Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
@@ -407,10 +480,16 @@ private fun ModalData.NewChatSheetLayout(
             searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
             connectNameCandidate = connectNameCandidate,
             close = close,
+            onSearch = ::runOnlineSearch,
           )
-          connectNameCandidate.value?.let { candidate ->
+          val candidate = connectNameCandidate.value
+          if (candidate != null && onlineSearch.names.isEmpty()) {
             Divider()
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+          }
+          if (searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value) {
+            Divider()
+            SearchInDirectoryRow(onSearch = ::runDirectorySearch)
           }
           Divider()
         }
@@ -435,6 +514,7 @@ private fun ModalData.NewChatSheetLayout(
         }
         ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
       }
+      onlineSearchSections(rows)
       if (appPlatform.isAndroid) {
         item {
           Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -480,6 +560,7 @@ private fun ContactsSearchBar(
   searchChatFilteredBySimplexLink: MutableState<Set<String>>,
   connectNameCandidate: MutableState<String?>,
   close: () -> Unit,
+  onSearch: (() -> Unit)? = null,
 ) {
   var focused by remember { mutableStateOf(false) }
 
@@ -499,6 +580,7 @@ private fun ContactsSearchBar(
       trailingContent = null,
       // the clear button must line up with the filter icon it replaces, so no reduction here
       reducedCloseButtonPadding = 0.dp,
+      onSearch = onSearch,
     ) {
       searchText.value = searchText.value.copy(it)
     }
