@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Drives the app in the simulator SIM_UDID with AXe, for the scripted cases and for an agent on the runner.
+# Screenshots and accessibility trees go to UI_OUT.
+#
+#   ui tap <label> [secs]        tap the element with this exact accessibility label, waiting up to secs (10) for it
+#   ui tap-value <text> [secs]   tap the element with this exact value: text fields have no label, only their placeholder or text
+#   ui type <text>               type into the focused field (US keyboard characters only)
+#   ui wait <text> [secs]        wait up to secs (30) until a label or value contains the text (case-sensitive)
+#   ui shot <name>               save UI_OUT/NN-<name>.png and .json, and print the tree
+#   ui tree                      print the tree, one element per line: type, label, value, top-left corner and size in points
+
+set -euo pipefail
+
+: "${SIM_UDID:?SIM_UDID must be the simulator UDID}"
+
+compact_tree() {
+  jq -r '.. | objects | select(.AXLabel or .AXValue)
+    | "\(.type) \(.AXLabel | tojson) value=\(.AXValue | tojson) at \(.frame.x // 0 | round),\(.frame.y // 0 | round) size \(.frame.width // 0 | round)x\(.frame.height // 0 | round)"'
+}
+
+tree() {
+  axe describe-ui --udid "$SIM_UDID" | compact_tree
+}
+
+wait_for() {
+  local text=$1 secs=${2:-30}
+  local deadline=$((SECONDS + secs)) t
+  until t=$(tree 2> /dev/null) && grep -qF -- "$text" <<< "$t"; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: \"$text\" not shown after $secs s"
+      return 1
+    fi
+    sleep 2
+  done
+}
+
+shot() {
+  : "${UI_OUT:?UI_OUT must be the output directory}"
+  mkdir -p "$UI_OUT"
+  local n f
+  n=$(find "$UI_OUT" -maxdepth 1 -name '*.png' | wc -l)
+  f=$(printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1")
+  xcrun simctl io "$SIM_UDID" screenshot "$f.png" > /dev/null
+  axe describe-ui --udid "$SIM_UDID" > "$f.json"
+  echo "::group::accessibility tree: $1"
+  compact_tree < "$f.json"
+  echo "::endgroup::"
+}
+
+case "${1:-}" in
+  tap) axe tap --label "$2" --wait-timeout "${3:-10}" --post-delay 2 --udid "$SIM_UDID" ;;
+  tap-value) axe tap --value "$2" --wait-timeout "${3:-10}" --post-delay 2 --udid "$SIM_UDID" ;;
+  type) axe type "$2" --udid "$SIM_UDID" ;;
+  wait) wait_for "$2" "${3:-30}" ;;
+  shot) shot "$2" ;;
+  tree) tree ;;
+  *)
+    sed -n '3,12s/^# \{0,1\}//p' "$0"
+    exit 1
+    ;;
+esac
