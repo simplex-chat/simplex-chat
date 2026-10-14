@@ -513,6 +513,16 @@
   <string name="contact_should_accept">contact should accept…</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
+  <string name="search_in_directory">Search in Directory</string>
+  <string name="search_in_directory_question">Search in Directory?</string>
+  <string name="search_in_directory_alert_desc">The text in the search field will be sent to SimpleX Directory to find public groups and channels. If it is a SimpleX name, it will also be sent to your server that resolves names.\n\nNo contact is created and your profile is not sent.</string>
+  <string name="search_and_dont_show_again">Search and don\'t show again</string>
+  <string name="directory_search_n_members">%1$d members</string>
+  <string name="directory_search_show_more">Show more</string>
+  <string name="directory_search_failed_retry">Search failed, tap to retry</string>
+  <string name="searching_directory">Searching directory…</string>
+  <string name="online_search_names">Names</string>
+  <string name="online_search_directory">Directory</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
