@@ -36,11 +36,15 @@ CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
 ALTER TABLE badge_purchases ADD COLUMN badge_store_receipt_id BIGINT REFERENCES badge_store_receipts;
 
 CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(badge_store_receipt_id);
+
+ALTER TABLE badge_purchases ADD COLUMN subscription_status TEXT;
 |]
 
 down_m20260925_badge_store_receipts :: Text
 down_m20260925_badge_store_receipts =
   [r|
+ALTER TABLE badge_purchases DROP COLUMN subscription_status;
+
 DROP INDEX idx_badge_purchases_store_receipt;
 
 ALTER TABLE badge_purchases DROP COLUMN badge_store_receipt_id;

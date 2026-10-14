@@ -13,6 +13,7 @@ module Simplex.Chat.Store.Badges
     PurchaseKind (..),
     getUserBadgePurchase,
     getBadgePurchase,
+    setBadgeSubscriptionStatus,
     userHasBadge,
     setBadgeAlertAcked,
     setBadgeIssueError,
@@ -54,7 +55,7 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), OpenStorePurchase (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeSubscription (..), OpenStorePurchase (..), SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (StoreError, insertedRowId)
@@ -397,7 +398,7 @@ data UserBadgePurchase = UserBadgePurchase
 
 -- | A subscription's months come from store charges, so reaching paidThrough does not end it: the
 -- service says when it has. Derived from the replica, which holds a charge credit exactly for a subscription.
-data PurchaseKind = PKPrepaid | PKSubscription
+data PurchaseKind = PKPrepaid | PKSubscription BadgeSubscription
   deriving (Eq)
 
 -- | Newest, not the one shown_badge_id points at - retirement clears that, and the support ended
@@ -428,17 +429,18 @@ getBadgePurchase db purchaseId =
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
                p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
                p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at,
-               (CASE WHEN EXISTS (
-                  SELECT 1 FROM badge_ledger l
-                  WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
-                ) THEN 1 ELSE 0 END)
+               (SELECT l.change_months FROM badge_ledger l
+                WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
+                ORDER BY l.entry_id DESC
+                LIMIT 1),
+               p.subscription_status
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
       |]
       (Only purchaseId)
   where
-    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt, BI charged)) =
+    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt, planMonths_, status)) =
       UserBadgePurchase
         { badgePurchaseId,
           purchaseKey,
@@ -450,8 +452,12 @@ getBadgePurchase db purchaseId =
           alertSnoozeUntil,
           issueError = BadgeIssueError <$> failedSince_ <*> lastAttemptAt_ <*> reason_,
           nextWakeAt,
-          purchaseKind = if charged then PKSubscription else PKPrepaid
+          purchaseKind = maybe PKPrepaid (\planMonths -> PKSubscription BadgeSubscription {planMonths, status}) planMonths_
         }
+
+setBadgeSubscriptionStatus :: DB.Connection -> Int64 -> SubscriptionState -> IO ()
+setBadgeSubscriptionStatus db badgePurchaseId state =
+  DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
 
 -- | Whether a badge is on the profile now: set when a redemption stores one, cleared when it is
 -- retired. Read as the id rather than as a comparison, which in Postgres would be a boolean.

@@ -43,7 +43,7 @@ import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
-import Data.List (isPrefixOf, stripPrefix)
+import Data.List (isInfixOf, isPrefixOf, stripPrefix)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
@@ -196,6 +196,8 @@ badgeServiceTests = do
     it "should keep asking at zero months, and present the renewed credential when the old one expires" testSubscriptionRenews
     it "should keep the badge and ask again a day later while the store has not charged, then issue from the period start" testSubscriptionAwaitsCharge
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
+    it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
+    it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
     it "should resolve an Apple renewal to the subscription's record, and credit a held record that adopted it" testAppleRenewalResolvesToPurchase
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
     it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
@@ -2283,8 +2285,8 @@ testSubscriptionAwaitsCharge ps =
       storeReports store $ subscriptionCheck SSBillingRetry Nothing
       checks <- subscriptionChecks store
       setClockAt bsClock requestAt
-      alice ##> "/_app activate"
-      alice <## "ok"
+      alice `send` "/_app activate"
+      alice <### ["/_app activate", "ok", Predicate (", subscription billingRetry" `isInfixOf`)]
       -- nothing issued and no failure: the badge stays, and the next request is a day on
       waitWakeFrom (chatController alice) (addUTCTime (nominalDay - 60) requestAt)
       subscriptionChecks store `shouldReturn` checks + 1
@@ -2327,6 +2329,49 @@ testSubscriptionEnds ps =
       alice <## "ok"
       threadDelay 2000000
       subscriptionChecks store `shouldReturn` checks
+
+subscriptionStatuses :: ChatController -> IO [Maybe Text]
+subscriptionStatuses ChatController {chatStore} =
+  withTransaction chatStore $ \db -> map fromOnly <$> DB.query_ db "SELECT subscription_status FROM badge_purchases"
+
+testSubscriptionStateKept :: HasCallStack => TestParams -> IO ()
+testSubscriptionStateKept ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "renewing"]
+      alice ##> "/_badge state 1"
+      alice <### [Predicate (\l -> "1: supporter, 0 months left" `isPrefixOf` l && ", subscription renewing" `isInfixOf` l)]
+      -- the request asserts coverage that has ended, so the service asks the store for its answer
+      storeReports store $ subscriptionCheck SSBillingRetry Nothing
+      setClockAt bsClock $ fst $ renewalMoments rows
+      alice `send` "/_app activate"
+      alice <### ["/_app activate", "ok", Predicate (", subscription billingRetry" `isInfixOf`)]
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "billingRetry"]
+
+-- | The service answers a request made while coverage runs from the state it stored, which for an annual plan is up to a year old.
+testAnnualStateNotFromStoredAnswer :: HasCallStack => TestParams -> IO ()
+testAnnualStateNotFromStoredAnswer ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc@ChatController {chatStore}, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      storeReports store $ subscriptionCheck SSCancelled $ Just $ storeCharge "subscr-badge-supporter-year-01" firstStart 12
+      alice ##> ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+      waitWakeArmed (chatController alice)
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) rows `shouldBe` [(12, 12, Just "charge"), (-1, 11, Just "badge")]
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "cancelled"]
+      withTransaction chatStore $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET subscription_state = 'renewing'"
+      checks <- subscriptionChecks store
+      setClockAt bsClock $ fst $ renewalMoments rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      _ <- waitLedgerRows (chatController alice) 3
+      alice <### [Predicate (\l -> "1: supporter, 10 months left" `isPrefixOf` l && ", subscription cancelled" `isInfixOf` l)]
+      subscriptionChecks store `shouldReturn` checks
+      subscriptionPayments cc `shouldReturn` [("google", googlePurchaseRef googleSubscriptionToken, Just "renewing", Just googleSubscriptionToken)]
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "cancelled"]
 
 setStoreReceiptDue :: ChatController -> UTCTime -> IO ()
 setStoreReceiptDue ChatController {chatStore} t =

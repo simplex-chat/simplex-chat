@@ -30,6 +30,7 @@ module Simplex.Chat.Badges.Types
     BadgeIssuance (..),
     BadgeAlert (..),
     BadgeAlertPrice (..),
+    BadgeSubscription (..),
     BadgeState (..),
     OpenStorePurchase (..),
   ) where
@@ -290,9 +291,17 @@ data BadgeState = BadgeState
     willRenew :: Bool,
     alert :: Maybe BadgeAlert,
     issueError :: Maybe BadgeIssueError,
-    nextWakeAt :: Maybe UTCTime
+    nextWakeAt :: Maybe UTCTime,
+    subscription :: Maybe BadgeSubscription
   }
   deriving (Show)
+
+-- | A store subscription funding the purchase: the latest charge's plan, and the store's state as last observed.
+data BadgeSubscription = BadgeSubscription
+  { planMonths :: Int,
+    status :: Maybe SubscriptionState
+  }
+  deriving (Eq, Show)
 
 -- | One of a profile's store purchases that no receipt has reached yet, or whose receipt is held until
 -- the service credits it; transactionRef is set once a receipt arrived. Neither reference is a secret:
@@ -409,6 +418,10 @@ instance ToJSON SubscriptionState where
 instance FromJSON SubscriptionState where
   parseJSON = textParseJSON "SubscriptionState"
 
+instance FromField SubscriptionState where fromField = fromTextField_ textDecode
+
+instance ToField SubscriptionState where toField = toField . textEncode
+
 instance StrEncoding BadgeIssueFailure where
   strEncode = \case
     BIFServiceError {code, retryable} -> "service_error " <> (if retryable then "retry " else "final ") <> encodeUtf8 (textEncode code)
@@ -457,6 +470,8 @@ $(JQ.deriveJSON defaultJSON ''BadgeAlert)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BIF") ''BadgeIssueFailure)
 
 $(JQ.deriveJSON defaultJSON ''BadgeIssueError)
+
+$(JQ.deriveJSON defaultJSON ''BadgeSubscription)
 
 $(JQ.deriveJSON defaultJSON ''BadgeState)
 

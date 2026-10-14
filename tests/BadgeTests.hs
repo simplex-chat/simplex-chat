@@ -35,12 +35,14 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
-import Simplex.Chat.Badges.Types (BadgeIssueFailure (..))
+import Simplex.Chat.Badges.Types (BadgeIssueFailure (..), BadgeSubscription (..))
+import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, storeTransactionRef)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, storeTransactionRef)
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
+import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
@@ -109,6 +111,8 @@ badgeTests = do
     it "badgeCredential carries a subscription's state, and reads one it does not know as unknown" testCredentialSubscriptionJSON
     it "error response matches the schema" testErrorResponseJSON
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
+  describe "badge state" $ do
+    it "carries a subscription's plan and last seen state, renewing only when it was seen renewing, and bounds a state it does not know" testBadgeSubscriptionJSON
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
@@ -1072,6 +1076,31 @@ testCredentialSubscriptionJSON = do
   let resp = BSPBadgeCredential {credential = Nothing, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Just SSRenewing}
   J.toJSON resp `shouldBe` response (Just "renewing")
   roundTrips resp
+
+testBadgeSubscriptionJSON :: IO ()
+testBadgeSubscriptionJSON = do
+  drg <- C.newRandom
+  (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  let badgeState subscription =
+        BT.BadgeState {badgePurchaseId = 1, purchaseKey = k, badgeType = BTSupporter, shown = BoolDef True, monthsLeft = 0, paidThrough = futureTime, renewsAt = Nothing, willRenew = False, alert = Nothing, issueError = Nothing, nextWakeAt = Nothing, subscription}
+      subscriptionField v = case J.toJSON v of
+        J.Object o -> KM.lookup "subscription" o
+        _ -> Nothing
+  subscriptionField (badgeState Nothing) `shouldBe` Nothing
+  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 12, status = Just SSCancelled})
+    `shouldBe` Just (J.object ["planMonths" J..= (12 :: Int), "status" J..= ("cancelled" :: T.Text)])
+  -- not yet observed: the field is left out rather than sent as null
+  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 1, status = Nothing})
+    `shouldBe` Just (J.object ["planMonths" J..= (1 :: Int)])
+  let renewal status = badgeRenewal futureTime $ Just BadgeSubscription {planMonths = 1, status}
+  renewal (Just SSRenewing) `shouldBe` (Just futureTime, True)
+  mapM_ (\s -> renewal s `shouldBe` (Nothing, False)) [Nothing, Just SSCancelled, Just SSBillingRetry, Just SSEnded, Just (SSUnknown "renewing soon")]
+  badgeRenewal futureTime Nothing `shouldBe` (Nothing, False)
+  boundedSubscriptionState SSBillingRetry `shouldBe` SSBillingRetry
+  boundedSubscriptionState (SSUnknown "onHold") `shouldBe` SSUnknown "onHold"
+  boundedSubscriptionState (SSUnknown "Visit evil.example.com!\ESC[2J") `shouldBe` SSUnknown "Visitevilexamplecom2J"
+  boundedSubscriptionState (SSUnknown (T.replicate 100 "a")) `shouldBe` SSUnknown (T.replicate 32 "a")
+  boundedSubscriptionState (SSUnknown "") `shouldBe` SSUnknown "unknown"
 
 testErrorResponseJSON :: IO ()
 testErrorResponseJSON = do

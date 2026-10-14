@@ -46,7 +46,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
 import Simplex.Chat.Badges.Service (StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..), OpenStorePurchase (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -1845,7 +1845,7 @@ viewContactBadge = maybe [] $ \lb ->
 viewUserBadgeState :: Maybe BadgeState -> [StyledString]
 viewUserBadgeState = maybe [] viewBadge
   where
-    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, alert, issueError, nextWakeAt} =
+    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, alert, issueError, nextWakeAt, subscription} =
       plain
         ( tshow badgePurchaseId
             <> ": "
@@ -1854,10 +1854,12 @@ viewUserBadgeState = maybe [] viewBadge
             <> tshow monthsLeft
             <> " months left, paid through "
             <> day paidThrough
+            <> maybe "" viewSubscription subscription
             <> maybe "" ((", next check " <>) . dayTime) nextWakeAt
         )
         : maybe [] viewBadgeIssueError issueError
           <> maybe [] viewBadgeAlert alert
+    viewSubscription BadgeSubscription {status} = ", subscription" <> maybe "" ((" " <>) . textEncode) status
 
 viewBadgeIssueError :: BadgeIssueError -> [StyledString]
 viewBadgeIssueError BadgeIssueError {failedSince, lastAttemptAt, reason} =
