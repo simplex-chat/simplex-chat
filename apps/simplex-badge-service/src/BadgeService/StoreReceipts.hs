@@ -55,7 +55,7 @@ data StoreVerifier = StoreVerifier
     verifyApple :: Maybe (Text -> Either StoreRefusal VerifiedStoreTransaction),
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token
     acknowledgeGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
-    -- microseconds; requests are answered one at a time, so a verifier that does not finish holds up every other one
+    -- microseconds; a lane answers one request at a time, so a verifier that does not finish holds up the rest of its lane
     verifyTimeout :: Int
   }
 
