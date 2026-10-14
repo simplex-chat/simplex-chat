@@ -57,6 +57,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
               m.controller.appPrefs.terminalAlwaysVisible.set(false)
             }
           }
+          SettingsPreferenceItem(painterResource(MR.images.ic_forum), stringResource(MR.strings.desktop_flat_layout), appPreferences.desktopFlatLayout)
         }
         SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)

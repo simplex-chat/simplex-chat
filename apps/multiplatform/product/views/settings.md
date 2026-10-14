@@ -142,6 +142,7 @@ Platform-specific section (expect/actual composable):
 | Storage (developer options) | Opens `StorageView`: size of each top-level entry in the app's data, config and temp folders |
 | Chat console | Opens `ChatConsoleView` terminal |
 | Terminal always visible (Desktop) | Keep terminal window open |
+| Flat layout (experimental, Desktop) | Developer option `desktopFlatLayout`: flat message rows, hover action bar, profile and list rail, compact chat list; see [chat.md](chat.md) and [chat-list.md](chat-list.md) |
 | Install terminal app | Link to CLI app on GitHub |
 | Reset all hints | Reset dismissed hint/card preferences |
 | App version | Version string with build info; taps open `VersionInfoView` |

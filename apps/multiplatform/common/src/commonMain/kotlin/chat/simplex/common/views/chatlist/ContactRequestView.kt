@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.getTimestampText
@@ -21,7 +22,7 @@ import chat.simplex.res.*
 @Composable
 fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
   Row {
-    ChatInfoImage(contactRequest, size = 72.dp * fontSizeSqrtMultiplier)
+    ChatInfoImage(contactRequest, size = (if (LocalFlatLayout.current) COMPACT_CHAT_IMAGE_SIZE else 72.dp) * fontSizeSqrtMultiplier)
     Column(
       modifier = Modifier
         .padding(start = 8.dp, end = 8.sp.toDp())

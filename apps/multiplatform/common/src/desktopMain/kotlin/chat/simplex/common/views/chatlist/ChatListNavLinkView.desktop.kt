@@ -3,14 +3,17 @@ package chat.simplex.common.views.chatlist
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.views.helpers.*
 
@@ -24,6 +27,12 @@ object NoIndication : IndicationNodeFactory {
   override fun equals(other: Any?) = other === this
 }
 
+private val FLAT_LIST_ROW_INSET = 6.dp
+private val FLAT_LIST_ROW_GAP = 1.dp
+private val FLAT_LIST_ROW_CORNER = 6.dp
+// stronger than the hover tint, so the selected chat stands out from the hovered one
+private const val FLAT_SELECTED_ALPHA = 0.1f
+
 @Composable
 actual fun ChatListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
@@ -34,7 +43,8 @@ actual fun ChatListNavLinkLayout(
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
 ) {
-  var modifier = Modifier.fillMaxWidth()
+  val flat = LocalFlatLayout.current
+  var modifier = if (flat) Modifier.fillMaxWidth().padding(horizontal = FLAT_LIST_ROW_INSET, vertical = FLAT_LIST_ROW_GAP).clip(RoundedCornerShape(FLAT_LIST_ROW_CORNER)) else Modifier.fillMaxWidth()
   if (!disabled) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
     .onRightClick { showMenu.value = true }
@@ -45,19 +55,20 @@ actual fun ChatListNavLinkLayout(
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+          .padding(start = 8.dp, top = if (flat) 4.dp else 8.dp, end = 12.dp, bottom = if (flat) 4.dp else 8.dp),
         verticalAlignment = Alignment.Top
       ) {
         chatLinkPreview()
       }
       if (selectedChat.value) {
-        Box(Modifier.matchParentSize().background(MaterialTheme.colors.onBackground.copy(0.05f)))
+        Box(Modifier.matchParentSize().background(MaterialTheme.colors.onBackground.copy(if (flat) FLAT_SELECTED_ALPHA else 0.05f)))
       }
       if (dropdownMenuItems != null) {
         DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)
       }
     }
   }
+  if (flat) return
   if (selectedChat.value || nextChatSelected.value) {
     Divider()
   } else {
