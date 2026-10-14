@@ -36,6 +36,8 @@ import chat.simplex.common.R
 import chat.simplex.common.helpers.toURI
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -96,7 +98,7 @@ actual fun PlatformTextField(
   }
 
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-  AndroidView(modifier = Modifier, factory = { context ->
+  AndroidView(modifier = Modifier.ui(Ui.Chat.Message), factory = { context ->
     val editText = @SuppressLint("AppCompatCustomView") object: EditText(context) {
       override fun setOnReceiveContentListener(
         mimeTypes: Array<out String>?,

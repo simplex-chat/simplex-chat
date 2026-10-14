@@ -20,6 +20,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatItem
@@ -462,7 +464,7 @@ private fun SendMsgButton(
   val interactionSource = remember { MutableInteractionSource() }
   val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
-    modifier = Modifier.requiredSize(36.dp)
+    modifier = Modifier.ui(Ui.Chat.Send).requiredSize(36.dp)
       .combinedClickable(
         onClick = {
           if (sendToConnect != null) {

@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
@@ -79,6 +81,7 @@ private fun VerifyCodeLayout(
       SelectionContainer(Modifier.padding(vertical = DEFAULT_PADDING_HALF, horizontal = DEFAULT_PADDING_HALF)) {
         Text(
           splitCode,
+          Modifier.ui(Ui.VerifyCode.Code),
           fontFamily = FontFamily.Monospace,
           fontSize = 18.sp,
           maxLines = 20
@@ -114,7 +117,7 @@ private fun VerifyCodeLayout(
             }
           }
         }
-        SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user)) {
+        SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user), uiKey = Ui.VerifyCode.Mark) {
           withApi {
             val verified = verifyCode(connectionCode)
             if (!verified) {

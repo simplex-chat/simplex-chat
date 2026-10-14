@@ -13,6 +13,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.views.chat.item.isHeartEmoji
@@ -55,6 +57,7 @@ private fun SingleEmojiInput(
     },
     singleLine = true,
     modifier = Modifier
+      .ui(Ui.TagEditor.Emoji)
       .padding(4.dp)
       .size(width = TextFieldDefaults.MinHeight.value.sp.toDp(), height = TextFieldDefaults.MinHeight),
     textStyle = LocalTextStyle.current.copy(fontFamily = EmojiFont, textAlign = TextAlign.Center),

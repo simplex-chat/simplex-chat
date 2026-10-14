@@ -16,7 +16,7 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
 
   fun newError(error: T, offerRestart: Boolean) {
     timer.cancel()
-    timer = withLongRunningApi(slow = 130_000) {
+    timer = withLongRunningApi(slow = 130_000, idle = false) {
       val delayBeforeNext = (lastShownTimestamp + interval) - System.currentTimeMillis()
       if ((lastShownOfferRestart || !offerRestart) && delayBeforeNext >= 0) {
         delay(delayBeforeNext)

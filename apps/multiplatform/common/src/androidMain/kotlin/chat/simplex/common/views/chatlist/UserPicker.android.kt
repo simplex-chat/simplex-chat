@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.User
 import chat.simplex.common.model.UserInfo
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.CancellationException
@@ -78,6 +80,7 @@ fun UserPickerUserBox(
   Row(
     modifier = modifier
       .userPickerBoxModifier()
+      .ui(Ui.UserPicker.User(userInfo.user.userId))
       .clickable (
         onClick = { onClick(userInfo.user) },
         enabled = !stopped
@@ -144,6 +147,7 @@ actual fun PlatformUserPicker(modifier: Modifier, pickerState: MutableStateFlow<
     Box(
       Modifier
         .fillMaxSize()
+        .ui(if (pickerIsVisible) Ui.UserPicker.Sheet else null)
         .then(clickableModifier)
         .drawBehind {
           val pos = calculatePosition(dismissState)

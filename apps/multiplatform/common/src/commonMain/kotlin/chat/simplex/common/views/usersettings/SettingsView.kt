@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.BadgesView
 import chat.simplex.common.views.database.DatabaseView
@@ -99,9 +101,9 @@ fun SettingsLayout(
     AppBarTitle(stringResource(MR.strings.your_settings))
 
     SectionView {
-      SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it) })
+      SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it) }, uiKey = Ui.Settings.Appearance)
       SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.your_privacy), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
-      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal) })
+      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal) }, uiKey = Ui.Settings.Help)
       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
     }
@@ -157,7 +159,7 @@ fun HelpAndSupportView(
 
     SectionView(stringResource(MR.strings.settings_section_title_help)) {
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
-      SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped, uiKey = Ui.Help.WhatsNew)
       SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
     }
     SectionDividerSpaced()
@@ -381,8 +383,8 @@ fun AppVersionItem(showVersion: () -> Unit) {
 }
 
 @Composable
-fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false) {
-  SectionItemView(click, disabled = disabled, extraPadding = extraPadding) {
+fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false, uiKey: UiKey? = null) {
+  SectionItemView(click, disabled = disabled, extraPadding = extraPadding, uiKey = uiKey) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
     TextIconSpaced(extraPadding)
     Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
@@ -426,10 +428,11 @@ fun SettingsPreferenceItem(
   pref: SharedPreference<Boolean>,
   iconColor: Color = MaterialTheme.colors.secondary,
   enabled: Boolean = true,
+  uiKey: UiKey? = null,
   onChange: ((Boolean) -> Unit)? = null,
 ) {
   SettingsActionItemWithContent(icon, text, iconColor = iconColor,) {
-    SharedPreferenceToggle(pref, enabled, onChange)
+    SharedPreferenceToggle(pref, enabled, uiKey, onChange)
   }
 }
 

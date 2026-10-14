@@ -24,6 +24,8 @@ import chat.simplex.common.model.CloseBehavior
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.trayIsAvailable
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -134,6 +136,7 @@ fun DensityScaleSection() {
       Spacer(Modifier.width(15.dp))
       Slider(
         localDensityScale.value,
+        modifier = Modifier.ui(Ui.Appearance.Zoom),
         valueRange = 1f..2f,
         steps = 11,
         onValueChange = {

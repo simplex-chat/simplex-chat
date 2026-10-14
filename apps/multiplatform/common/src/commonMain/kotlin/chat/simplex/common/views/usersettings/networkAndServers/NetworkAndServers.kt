@@ -38,6 +38,8 @@ import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.model.ChatController.setUserServers
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
@@ -839,7 +841,7 @@ fun SimpleConditionsView(
     }
     Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
       OnboardingActionButton(
-        modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+        modifier = (if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp)).ui(Ui.Onboarding.ConditionsAccept),
         labelId = MR.strings.onboarding_conditions_accept,
         onboarding = null,
         onclick = onAccept
