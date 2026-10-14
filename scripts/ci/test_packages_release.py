@@ -20,8 +20,7 @@ from packages_release import (
     bump_npm_version,
     bump_python_version,
     changed_since,
-    changed_since_publish,
-    published_tag,
+    changed_since_version,
     dist_tag,
     npm_published,
     parse_python_version,
@@ -282,7 +281,7 @@ class ChangedSincePublishTest(unittest.TestCase):
 
     def changed(self):
         with mock.patch.object(packages_release, "ROOT", self.repo):
-            return changed_since_publish("pkg", "1", "pkg", "pkg/version.txt", "^version =")
+            return changed_since_version("pkg", "pkg/version.txt", "^version =")
 
     def test_compares_with_the_commit_that_set_the_version(self):
         self.assertFalse(self.changed())
@@ -290,21 +289,12 @@ class ChangedSincePublishTest(unittest.TestCase):
         self.commit("change")
         self.assertTrue(self.changed())
 
-    def test_compares_with_the_published_commit(self):
+    def test_new_version_resets_the_comparison(self):
         self.write("pkg/src.txt", "b")
         self.commit("change")
-        self.git("tag", "pkg-v1")
+        self.write("pkg/version.txt", 'version = "2"\n')
+        self.commit("set version 2")
         self.assertFalse(self.changed())
-        self.write("pkg/src.txt", "c")
-        self.commit("change after publish")
-        self.assertTrue(self.changed())
-
-    def test_publish_tag_marks_the_version_published(self):
-        with mock.patch.object(packages_release, "ROOT", self.repo):
-            self.assertIsNone(published_tag("pkg", "1"))
-            self.git("tag", "pkg-v1")
-            self.assertEqual(published_tag("pkg", "1"), "refs/tags/pkg-v1")
-            self.assertIsNone(published_tag("pkg", "2"))
 
     def test_changed_since_looks_only_at_the_sources(self):
         base = subprocess.run(

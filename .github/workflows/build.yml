@@ -868,7 +868,7 @@ jobs:
     if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag }}
     # the called workflow can't be granted more than its caller, and its publish job needs these
     permissions:
-      contents: write
+      contents: read
       id-token: write
     uses: ./.github/workflows/packages.yml
     with:
@@ -882,7 +882,7 @@ jobs:
     # build-linux uploads the library before its chat tests run
     if: ${{ !cancelled() && needs.maybe-release.outputs.core_changed }}
     permissions:
-      contents: write
+      contents: read
       id-token: write
     uses: ./.github/workflows/packages.yml
     with:

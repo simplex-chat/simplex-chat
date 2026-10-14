@@ -2,7 +2,7 @@ name: packages
 
 # Releases simplex-chat (npm, PyPI) and @simplex-chat/types (npm) from master and stable:
 # 1. A missing Node.js add-on release (nodejs-addon-<hash of its sources>) is built and uploaded to simplex-chat-libs.
-# 2. Versions that are not published yet are published, and tagged <package>-v<version> on their commit.
+# 2. Versions that are not published yet are published.
 #    npm prerelease versions get dist-tag beta, others latest.
 # 3. The release PR packages-release/<branch> pins new library and add-on releases with their SHA-256
 #    and bumps the versions of changed packages. Merging it publishes them (step 2).
@@ -208,15 +208,13 @@ jobs:
     if: needs.addon.outputs.release_branch && contains(github.workflow_ref, '/.github/workflows/packages.yml@')
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       id-token: write
     env:
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: Versions to publish
         id: plan
@@ -253,22 +251,17 @@ jobs:
         if: steps.plan.outputs.types_version
         working-directory: packages/simplex-chat-client/types/typescript
         env:
-          VERSION: ${{ steps.plan.outputs.types_version }}
           DIST_TAG: ${{ steps.plan.outputs.types_dist_tag }}
         run: |
           npm install --no-audit --no-fund
           npm publish --provenance --access public --tag "$DIST_TAG"
-          git tag "types-v$VERSION" && git push origin "types-v$VERSION"
 
       - name: Publish simplex-chat (npm)
         if: steps.plan.outputs.nodejs_version
         working-directory: packages/simplex-chat-nodejs
         env:
-          VERSION: ${{ steps.plan.outputs.nodejs_version }}
           DIST_TAG: ${{ steps.plan.outputs.nodejs_dist_tag }}
-        run: |
-          npm publish --provenance --access public --tag "$DIST_TAG"
-          git tag "nodejs-v$VERSION" && git push origin "nodejs-v$VERSION"
+        run: npm publish --provenance --access public --tag "$DIST_TAG"
 
       - name: Build and test simplex-chat (PyPI)
         if: steps.plan.outputs.python_version
@@ -286,15 +279,8 @@ jobs:
           repository-url: ${{ vars.PYPI_UPLOAD_URL || 'https://upload.pypi.org/legacy/' }}
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-      - name: Tag the published PyPI version
-        if: steps.plan.outputs.python_version
-        env:
-          VERSION: ${{ steps.plan.outputs.python_version }}
-        run: git tag "python-v$VERSION" && git push origin "python-v$VERSION"
-
   release:
-    # After publish, for its version tags. A failed publish leaves its versions unbumped.
-    needs: [addon, build, publish]
+    needs: [addon, build]
     # A merged release PR changes only versions and pins.
     if: >-
       !cancelled() && needs.addon.outputs.release_branch && needs.build.result != 'failure'
