@@ -51,8 +51,6 @@ idle_seconds = 60
 ;[google]
 ;package_name = chat.simplex.app
 ;service_account_file = /etc/simplex-badge-service/play-service-account.json
-; seconds one call to Play may take before the purchase is answered as unreachable; 1-30
-;verify_timeout_seconds = 10
 
 ; index is the one clients verify against; private_key is from `simplex-chat badge keygen`.
 ; To rotate, change both together, once clients trust the new index.

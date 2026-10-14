@@ -56,7 +56,7 @@ data StoreVerifier = StoreVerifier
     verifyApple :: Maybe (Text -> Either StoreRefusal VerifiedStoreTransaction),
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token
     acknowledgeGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
-    -- microseconds for each Play call; a lane answers one request at a time, so a call that does not finish holds up the rest of its lane
+    -- microseconds; a lane answers one request at a time, so a verifier that does not finish holds up the rest of its lane
     verifyTimeout :: Int
   }
 
@@ -68,10 +68,7 @@ data StoreReceipt = StoreReceipt
   }
 
 noStoreVerifier :: StoreVerifier
-noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, verifyTimeout = defaultVerifyTimeout}
-
-defaultVerifyTimeout :: Int
-defaultVerifyTimeout = 10000000
+noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, verifyTimeout = 10000000}
 
 -- | Nothing for a payment no store made. Exceptions are not logged, since they can quote the receipt
 -- or, from Google, a URL holding the token.
@@ -98,7 +95,7 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
     unconfigured = pure $ Left SRNotConfigured
     -- nothing was fetched, so a throw or an overrun is this service's failure or a shape it does not know, never an outage
     offline verdict =
-      (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout defaultVerifyTimeout (forced verdict))
+      (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))
         `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
     online what call =
       (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout verifyTimeout (call >>= forced))

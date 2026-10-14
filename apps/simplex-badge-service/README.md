@@ -244,8 +244,6 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   for an access token, so keep the file readable by this service alone.
   Play purchases are verified on a lane of their own, so a slow or unreachable Play delays only
   other Play purchases, not code redemptions, renewals or App Store purchases.
-  `verify_timeout_seconds` is how long one call to Play may take before the purchase is answered
-  `provider_unavailable` (1 to 30, default 10).
 
 Which answers are terminal for a purchase and which leave it to be presented again is listed per
 store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).

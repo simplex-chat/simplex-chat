@@ -152,8 +152,7 @@ configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case se
             v
               { verifyApple = maybe (verifyApple v) Just apple,
                 verifyGoogle = maybe (verifyGoogle v) (Just . fst) google,
-                acknowledgeGoogle = maybe (acknowledgeGoogle v) (Just . snd) google,
-                verifyTimeout = maybe (verifyTimeout v) ((* 1000000) . gVerifyTimeoutSeconds) playStore
+                acknowledgeGoogle = maybe (acknowledgeGoogle v) (Just . snd) google
               }
         }
   Nothing -> pure env

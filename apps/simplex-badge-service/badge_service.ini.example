@@ -57,8 +57,6 @@ idle_seconds = 60
 ;[google]
 ;package_name = chat.simplex.app
 ;service_account_file = /etc/simplex-badge-service/play-service-account.json
-; seconds one call to Play may take before the purchase is answered as unreachable; 1-30
-;verify_timeout_seconds = 10
 
 ; the key this service signs credentials with. index is the index clients verify against, so
 ; private_key has to be one whose public half already ships in the apps at that index: a fresh

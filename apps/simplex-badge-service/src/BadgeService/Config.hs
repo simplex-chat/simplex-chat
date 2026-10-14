@@ -103,8 +103,7 @@ data PlayStoreConfig = PlayStoreConfig
   { gPackageName :: Text,
     gServiceAccountFile :: FilePath,
     gApiHost :: Text,
-    gTokenUrl :: Text,
-    gVerifyTimeoutSeconds :: Int
+    gTokenUrl :: Text
   }
   deriving (Eq, Show)
 
@@ -153,18 +152,10 @@ defaultPlayApiHost = "https://androidpublisher.googleapis.com"
 defaultPlayTokenUrl :: Text
 defaultPlayTokenUrl = "https://oauth2.googleapis.com/token"
 
-defaultVerifyTimeoutSeconds :: Int
-defaultVerifyTimeoutSeconds = 10
-
 -- | At most one day, so a card order expires long before the poller stops checking it at 72 hours.
 minSessionMinutes, maxSessionMinutes :: Int
 minSessionMinutes = 1
 maxSessionMinutes = 1440
-
--- | At most the client's 30-second deadline for a request, since a Play call allowed longer could only answer a request the client has abandoned.
-minVerifyTimeoutSeconds, maxVerifyTimeoutSeconds :: Int
-minVerifyTimeoutSeconds = 1
-maxVerifyTimeoutSeconds = 30
 
 -- | An http host would carry the API key in the clear on every call.
 requireHttps :: Text -> Either String Text
@@ -200,7 +191,7 @@ knownSettings =
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("apple", ["bundle_id", "root_certificate"]),
-    ("google", ["package_name", "service_account_file", "verify_timeout_seconds"]),
+    ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts"]),
     ("issuer", ["index", "private_key"])
@@ -352,15 +343,9 @@ parseConfig ini = do
       | otherwise = do
           gPackageName <- required "google" "package_name"
           gServiceAccountFile <- T.unpack <$> required "google" "service_account_file"
-          gVerifyTimeoutSeconds <- verifyTimeoutSeconds
-          pure (Just PlayStoreConfig {gPackageName, gServiceAccountFile, gApiHost = defaultPlayApiHost, gTokenUrl = defaultPlayTokenUrl, gVerifyTimeoutSeconds})
+          pure (Just PlayStoreConfig {gPackageName, gServiceAccountFile, gApiHost = defaultPlayApiHost, gTokenUrl = defaultPlayTokenUrl})
     sessionMinutes = do
       v <- num "stripe" "session_minutes" defaultSessionMinutes
       if v >= minSessionMinutes && v <= maxSessionMinutes
         then Right v
         else Left ("stripe.session_minutes must be between " <> show minSessionMinutes <> " and " <> show maxSessionMinutes <> " minutes")
-    verifyTimeoutSeconds = do
-      v <- num "google" "verify_timeout_seconds" defaultVerifyTimeoutSeconds
-      if v >= minVerifyTimeoutSeconds && v <= maxVerifyTimeoutSeconds
-        then Right v
-        else Left ("google.verify_timeout_seconds must be between " <> show minVerifyTimeoutSeconds <> " and " <> show maxVerifyTimeoutSeconds <> " seconds")

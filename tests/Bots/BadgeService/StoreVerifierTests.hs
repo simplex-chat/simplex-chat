@@ -74,7 +74,6 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "reads a purchase once to verify and acknowledge it, and acknowledges only what that read found unacknowledged" testPlayReadsPurchaseOnce
     it "reports an acknowledgement Play refuses or does not answer" testPlayAcknowledgementFails
     it "acknowledges through the verifier a [google] section configures" testPlayConfiguredAcknowledges
-    it "bounds Play calls by the verify_timeout_seconds a [google] section configures" testPlayConfiguredTimeout
 
 -- * App Store
 
@@ -573,12 +572,4 @@ testPlayConfiguredAcknowledges = withFakePlay $ \fake@FakePlay {fpConfig} -> do
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
   acknowledgement storeVerifier SPGoogle {productId = "badge_supporter_01", token = testToken} `shouldReturn` Just (Right ())
   readTVarIO (fpAcknowledged fake) `shouldReturn` [testToken]
-
-testPlayConfiguredTimeout :: IO ()
-testPlayConfiguredTimeout = withFakePlay $ \FakePlay {fpConfig = PlayStoreConfig {gServiceAccountFile}} -> do
-  let ini = takeDirectory gServiceAccountFile </> "badge_service.ini"
-  writeFile ini $ "[listener]\nstatic_dir = /srv/badges\n[google]\npackage_name = chat.simplex.app\nservice_account_file = " <> gServiceAccountFile <> "\nverify_timeout_seconds = 1\n"
-  Right cfg <- readServiceConfig ini
-  ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg)
-  verifyTimeout storeVerifier `shouldBe` 1000000
 
