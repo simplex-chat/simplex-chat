@@ -201,11 +201,9 @@ profile overflow batches    unflagged
 ```
 
 ## 6. Tests
-`tests/MessageBatching.hs`, in `batchingTests` (`:45`):
-- `testMsgHasNotification`: True for `x.msg.new` and `x.grp.del`, False for `x.msg.update` and `x.grp.mem.del`; the same for `VMUnsigned` and `VMSigned`.
-
 `tests/ChatTests/Groups.hs`, helpers next to `relayConnIdToMember` (`:13140`):
 ```
+agentSendBody cc connId body   body sent to the connection by the agent of cc, MsgFlags False; a failure is a test failure
 lastSndMsgFlags cc connId n    msg_flags, "T" or "F", of the last n sent rows of type A_MSG ("M") of agent table messages for the connection, in sending order; withCCAgentTransaction (tests/ChatTests/Utils.hs:675)
 lastJobNotification cc         notification of the last row of delivery_jobs; withCCTransaction
 ```
@@ -218,9 +216,9 @@ group message forwarding (:191)
 relay delivery, single relay (:283)
   testChannels1RelayDeliverNotification     createChannel1Relay (:9523); alice posts: bob to cath, dan and eve "T", job True; cath adds a reaction: bob to dan and eve "F", job False
 deliver member profiles via relay (:295)
-  testChannelOverflowProfileNotification    the scenario of testChannelLargeProfileFits (:9956) with an image of 10000 characters and a message of 7000 characters, so that the profile is sent in an overflow batch: bob to dan, the last two rows: "F" for the overflow profile batch, "T" for the message
+  testChannelOverflowProfileNotification    the scenario of testChannelLargeProfileFits (:9956) with an image of 10000 characters and a message of 7000 characters, so that the profile is sent in an overflow batch: bob to dan, the rows added by the message: "F" for the overflow profile batch, "T" for the message
 ```
-- One sender and one message give one job; the job of `testChannelMultipleLargeProfiles` is created from two tasks only when both are read by the task worker together (`deliveryWorkerDelay`), so it is unused for this check.
+- One sender and one message give one job.
 Assertions added to present tests, on `delivery_jobs` only (the connections and their agent rows are deleted after the job, `Library/Subscriber.hs:4328`):
 ```
 testGroupMsgForwardGroupDeletion (:6135)    alice: job True, x.grp.del
@@ -231,17 +229,15 @@ testChannelRelayLeave (:11220)              bob: job False, x.grp.leave
 Present tests of delivery jobs, unchanged: "group message forwarding" (`:191-206`), "group scoped messages" (`:255-264`), "relay delivery" (`:282-292`), "deliver member profiles via relay" (`:295-301`), `testRelayBatchAllLarge` and `testRelayBatchSingletonOverflow` (`tests/MessageBatching.hs:164, 186`).
 
 ## 7. iOS notification of a forwarded message and of a duplicate copy
-Second patch. Event, `Controller.hs:1048`, next to `CEvtUnknownMemberAnnounced`:
+Event, `Controller.hs:1048`, next to `CEvtUnknownMemberAnnounced`:
 ```
 CEvtDuplicateGroupMessage       JSON type duplicateGroupMessage
   user :: User
-  groupInfo :: GroupInfo
   member :: GroupMember         -- the member whose connection delivered the copy
 ```
 Emission, `Library/Internal.hs`, before the present handling of the duplicate:
 ```
 saveGroupRcvMsg :2925           direct copy; member: the member of the connection; every SEDuplicateGroupMessage
-                                new parameter GroupInfo in place of GroupId; the caller Library/Subscriber.hs:1072 passes gInfo'
                                 x.grp.mem.con to the forwarding member when the stored copy was forwarded, as now (:2940-2944)
 saveGroupFwdRcvMsg :2959        channel; member: the forwarding relay; Nothing is returned, as now
                    :2960-2969   group; member: the forwarding host; x.grp.mem.con and the error, as now
@@ -276,7 +272,7 @@ forwarded post, MFMentions    the text for a mention or a reply; empty content o
 duplicate copy                empty content, unless an item of the same push notification is shown
 mention, then other item      the mention is shown; before this patch, .noNtf of the other item replaced it
 ```
-Tests, `tests/ChatTests/Groups.hs`; helper `duplicateMessageEventsCfg` next to `lastJobNotification`: `testCfg` with an `eventHook` (`Controller.hs:257`) that records the member names of `CEvtDuplicateGroupMessage`. Copies are sent through the agent of the sender, as in `testGroupMsgForwardOwnMembershipRejected` (`:5666`), so that the order of copies is fixed:
+Tests, `tests/ChatTests/Groups.hs`; helper `duplicateMessageEventsCfg` next to `lastJobNotification`: `testCfg` with an `eventHook` (`Controller.hs:257`) that records the member names of `CEvtDuplicateGroupMessage`. Copies are sent through the agent of the sender by `agentSendBody`, as in `testGroupMsgForwardOwnMembershipRejected` (`:5666`), so that the order of copies is fixed:
 ```
 group message forwarding (:191)
   testGroupMsgForwardDuplicateEvent    createGroup3; bob's message is received by cath directly; alice's agent sends a forwarded copy
@@ -293,14 +289,14 @@ relay delivery, single relay (:283)
 ```
 core functions    msgHasNotification :: VerifiedMsg e -> Bool
                   createMsgDeliveryJob, new parameter notification
-                  saveGroupRcvMsg, GroupInfo in place of GroupId
 core types        MessageDeliveryJob.notification
 core events       CEvtDuplicateGroupMessage, JSON type duplicateGroupMessage
 storage           delivery_jobs.notification
                   migration M20261012_delivery_job_notification
 iOS               CIMeta.forwardedByMember
                   NSEChatEvent.duplicateGroupMessage
-test helpers      lastSndMsgFlags
+test helpers      agentSendBody
+                  lastSndMsgFlags
                   lastJobNotification
                   duplicateMessageEventsCfg
 ```

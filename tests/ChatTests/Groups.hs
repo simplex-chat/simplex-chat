@@ -5934,11 +5934,8 @@ testGroupMsgForwardDuplicateEvent ps = do
         bobMemId <- memberIdByName cath "bob"
         connId <- relayConnIdToMember alice "cath"
         ts <- getCurrentTime
-        let ChatController {smpAgent = aliceAgent} = chatController alice
-            chatMsg = ChatMessage chatInitialVRange (Just sharedMsgId) (XMsgNew $ mcSimple $ MCText "hi there")
-            body = encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
-        sent <- runExceptT $ sendMessages aliceAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
-        either (fail . show) (const $ pure ()) sent
+        let chatMsg = ChatMessage chatInitialVRange (Just sharedMsgId) (XMsgNew $ mcSimple $ MCText "hi there")
+        agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
         cath <##. "duplicate group message, group id: 1"
         readTVarIO dups `shouldReturn` ["alice"]
 
@@ -5954,16 +5951,11 @@ testGroupMsgDirectDuplicateEvent ps = do
         aliceConnId <- relayConnIdToMember alice "cath"
         bobConnId <- relayConnIdToMember bob "cath"
         ts <- getCurrentTime
-        let ChatController {smpAgent = aliceAgent} = chatController alice
-            ChatController {smpAgent = bobAgent} = chatController bob
-            chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "duplicate_msg1") (XMsgNew $ mcSimple $ MCText "hi there")
-            fwdBody = encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
-        sentFwd <- runExceptT $ sendMessages aliceAgent [(aliceConnId, PQEncOff, MsgFlags False, vrValue fwdBody)]
-        either (fail . show) (const $ pure ()) sentFwd
+        let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "duplicate_msg1") (XMsgNew $ mcSimple $ MCText "hi there")
+        agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
         cath <# "#team bob> hi there [>>]"
 
-        sent <- runExceptT $ sendMessages bobAgent [(bobConnId, PQEncOff, MsgFlags False, vrValue $ chatMsgToBody chatMsg)]
-        either (fail . show) (const $ pure ()) sent
+        agentSendBody bob bobConnId $ chatMsgToBody chatMsg
         cath <##. "duplicate group message, group id: 1"
         readTVarIO dups `shouldReturn` ["bob"]
 
@@ -9654,11 +9646,8 @@ testChannelDuplicateEvent ps = do
             sharedMsgId <- itemSharedMsgId cath
             connId <- relayConnIdToMember bob "cath"
             ts <- getCurrentTime
-            let ChatController {smpAgent = bobAgent} = chatController bob
-                chatMsg = ChatMessage chatInitialVRange (Just sharedMsgId) (XMsgNew $ mcSimple $ MCText "hi")
-                body = encodeBinaryBatch [encodeFwdElement (GrpMsgForward FwdChannel ts) (VMUnsigned chatMsg)]
-            sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
-            either (fail . show) (const $ pure ()) sent
+            let chatMsg = ChatMessage chatInitialVRange (Just sharedMsgId) (XMsgNew $ mcSimple $ MCText "hi")
+            agentSendBody bob connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward FwdChannel ts) (VMUnsigned chatMsg)]
             readTVarIO dups `shouldEventuallyReturn` ["bob"]
 
 createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
@@ -10138,6 +10127,7 @@ testChannelOverflowProfileNotification ps =
               longText = replicate 7000 'x'
           withCCTransaction bob $ \db ->
             DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (bigImage, "cath" :: T.Text)
+          sentBefore <- length <$> lastSndMsgFlags bob danConnId 100
 
           cath #> ("#team " <> longText)
           bob <# ("#team cath> " <> longText)
@@ -10145,7 +10135,7 @@ testChannelOverflowProfileNotification ps =
           dan <### [EndsWith "updated to cath"]
           dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# ("#team cath> " <> longText <> " [>>]")
-          lastSndMsgFlags bob danConnId 2 `shouldReturn` ["F", "T"]
+          drop sentBefore <$> lastSndMsgFlags bob danConnId 100 `shouldReturn` ["F", "T"]
 
 testChannelMultipleLargeProfiles :: HasCallStack => TestParams -> IO ()
 testChannelMultipleLargeProfiles ps =
@@ -13319,6 +13309,11 @@ relayConnIdToMember cc name = do
     (Only connId : _) -> pure connId
     _ -> fail $ "no relay connection to member " <> T.unpack name
 
+agentSendBody :: TestCC -> ByteString -> ByteString -> IO ()
+agentSendBody cc connId body = do
+  let ChatController {smpAgent} = chatController cc
+  runExceptT (sendMessages smpAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]) >>= either (fail . show) (const $ pure ())
+
 lastSndMsgFlags :: TestCC -> ByteString -> Int -> IO [T.Text]
 lastSndMsgFlags cc connId n = do
   rows <- withCCAgentTransaction cc $ \db ->
@@ -13339,7 +13334,7 @@ duplicateMessageEventsCfg = do
   dups <- newTVarIO []
   let hook _ evt = do
         case evt of
-          Right (CEvtDuplicateGroupMessage _ _ GroupMember {localDisplayName}) -> atomically $ modifyTVar' dups (<> [localDisplayName])
+          Right (CEvtDuplicateGroupMessage _ GroupMember {localDisplayName}) -> atomically $ modifyTVar' dups (<> [localDisplayName])
           _ -> pure ()
         pure evt
   pure (dups, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})

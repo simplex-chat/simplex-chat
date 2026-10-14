@@ -2922,8 +2922,8 @@ saveDirectRcvMSG conn@Connection {connId} agentMsgMeta chatMsg@ChatMessage {chat
   msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
   pure (conn', msg)
 
-saveGroupRcvMsg :: forall e. MsgEncodingI e => User -> GroupInfo -> GroupMember -> Connection -> MsgMeta -> VerifiedMsg e -> CM (GroupMember, Connection, RcvMessage)
-saveGroupRcvMsg user gInfo@GroupInfo {groupId} authorMember conn@Connection {connId} agentMsgMeta verifiedMsg = do
+saveGroupRcvMsg :: forall e. MsgEncodingI e => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> VerifiedMsg e -> CM (GroupMember, Connection, RcvMessage)
+saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta verifiedMsg = do
   let ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = verifiedChatMsg verifiedMsg
   -- binary messages (file chunks) carry only the initial-version sentinel, not the sender's range;
   -- applying it would downgrade the member's negotiated version and suppress version-gated delivery
@@ -2938,7 +2938,7 @@ saveGroupRcvMsg user gInfo@GroupInfo {groupId} authorMember conn@Connection {con
     withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
       `catchAllErrors` \e -> case e of
         ChatErrorStore (SEDuplicateGroupMessage _ _ _ forwardedByGroupMemberId_) -> do
-          toView $ CEvtDuplicateGroupMessage user gInfo am'
+          toView $ CEvtDuplicateGroupMessage user am'
           forM_ forwardedByGroupMemberId_ $ \forwardedByGroupMemberId -> do
             cxt <- chatStoreCxt
             fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
@@ -2958,7 +2958,7 @@ saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMemb
   withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId) >>= \case
     Right msg -> pure $ Just msg
     Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId} -> do
-      toView $ CEvtDuplicateGroupMessage user gInfo forwardingMember
+      toView $ CEvtDuplicateGroupMessage user forwardingMember
       if
         | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected
         | otherwise -> case (authorGroupMemberId, forwardedByGroupMemberId) of

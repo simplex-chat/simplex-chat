@@ -1039,7 +1039,7 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
         } else {
             return nil
         }
-    case let .duplicateGroupMessage(_, _, member):
+    case let .duplicateGroupMessage(_, member):
         return (member.id, .noNtf)
     case let .rcvFileSndCancelled(_, aChatItem, _):
         cleanupFile(aChatItem)
