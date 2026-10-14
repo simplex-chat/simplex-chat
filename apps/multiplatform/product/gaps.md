@@ -13,6 +13,9 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
+8. [Online Search: Groups Joined Through Another Link Still Appear as Directory Results](#gap-08-online-search-groups-joined-through-another-link-still-appear-as-directory-results)
+9. [Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address](#gap-09-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address)
+10. [Online Search: New Chat Does Not Narrow Contacts by Name While Typing](#gap-10-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing)
 
 ---
 
@@ -289,3 +292,80 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 - GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.
+
+---
+
+## GAP-08: Online Search: Groups Joined Through Another Link Still Appear as Directory Results
+
+**Severity:** Low
+**Category:** UI / UX
+**Platforms:** Android, Desktop
+
+### Description
+
+A directory entry is matched to a local chat by a store-only lookup of its link (`apiConnectPlan` with `PlanResolveMode.PRMNever`, then `planLocalChatId`). A regular group's entry carries the directory's own group link (short link only), so a group the user joined through a different link, through the directory's full link, or by invitation is not found and is shown again in the Directory part. Tapping it goes through `planAndConnect`, which handles the known group.
+
+### Affected Locations
+
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel.request`, `OnlineSearchModel.rows`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `planLocalChatId`
+- See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+
+### Impact
+
+A group the user is already in can appear as a directory result with "Join group". Joining is not repeated: the connection plan opens the known group.
+
+### Recommendation
+
+Have the directory send a stable group identifier the core can match locally, or let the core match a directory short link against groups joined through the corresponding full link.
+
+---
+
+## GAP-09: Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address
+
+**Severity:** Low
+**Category:** Privacy / UX
+**Platforms:** Android, Desktop
+
+### Description
+
+Resolving a SimpleX name with `PlanResolveMode.PRMUnknown` also loads the resolved address's link data from the SMP server that hosts it. The search text itself is not sent there, and the first-search alert ("Search in Directory?") names only SimpleX Directory and the name-resolving server.
+
+### Affected Locations
+
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `showDirectorySearchAlert`, `OnlineSearchModel.resolveNames`
+- `common/src/commonMain/moko-resources/base/strings.xml` -- `search_in_directory_alert_desc`
+- See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+
+### Impact
+
+The alert under-describes which servers learn of a name search: the server hosting the resolved address sees a link data request.
+
+### Recommendation
+
+Decide whether the alert copy should also say that the address a name points to is loaded.
+
+---
+
+## GAP-10: Online Search: New Chat Does Not Narrow Contacts by Name While Typing
+
+**Severity:** Low
+**Category:** UI / UX
+**Platforms:** Android, Desktop
+
+### Description
+
+The chat list resolves a typed SimpleX name locally on each keystroke (debounced, `PlanResolveMode.PRMNever`) to narrow the list to the matching chat; the New chat sheet does not (its `ContactsSearchBar` resolves a name only when the "Connect to …" row is tapped). A known contact whose display name does not contain the typed name is therefore not in "Your contacts" and appears as a Names result instead; tapping it opens the existing chat.
+
+### Affected Locations
+
+- `common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt` -- `ContactsSearchBar` typing collector, `NewChatSheetLayout` online search
+- See [spec/client/navigation.md](../spec/client/navigation.md#10-new-chat-online-search)
+
+### Impact
+
+A contact the user already has can show up as an online Names result rather than in the contacts list.
+
+### Recommendation
+
+Reuse the chat list's local name resolution in `ContactsSearchBar` if this proves confusing.

@@ -451,6 +451,14 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `oneHandUI` | `Boolean` | `true` | One-hand mode |
 | `chatBottomBar` | `Boolean` | `true` | Bottom bar in chat |
 
+#### Hints
+
+Preferences listed in [`hintPreferences`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L279-L297) are restored to their defaults by "Reset all hints" (`resetHintPreferences()` in `views/usersettings/SettingsView.kt`).
+
+| Key | Type | Default | Purpose |
+|---|---|---|---|
+| [`directorySearchAlertShown`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L196) (`"DirectorySearchAlertShown"`) | `Boolean` | `false` | The user chose "Search and don't show again" in the online search alert; in `hintPreferences` (see [Chat List, Online Search](client/chat-list.md#11-online-search)) |
+
 #### Remote Access (lines 238-243)
 
 | Key | Type | Default | Purpose |

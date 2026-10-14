@@ -15,10 +15,12 @@
    - 2.9 [Chat Tags](#29-chat-tags)
    - 2.10 [Server Operators](#210-server-operators)
    - 2.11 [Archive](#211-archive)
+   - 2.12 [Service Requests](#212-service-requests)
 3. [Response Types](#3-response-types)
 4. [Event Types](#4-event-types)
 5. [Error Types](#5-error-types)
 6. [Source Files](#6-source-files)
+7. [Directory Search and Connection Plans](#7-directory-search-and-connection-plans)
 
 ---
 
@@ -180,7 +182,7 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | `apiAddContact` | `rh: Long?, incognito: Boolean` | Create a one-time invitation link for a new contact | [L1444](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1444) |
 | `apiSetConnectionIncognito` | `rh: Long?, connId: Long, incognito: Boolean` | Toggle incognito on a pending connection | [L1455](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1455) |
 | `apiChangeConnectionUser` | `rh: Long?, connId: Long, userId: Long` | Change the user profile on a pending connection | [L1464](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1464) |
-| `apiConnectPlan` | `rh: Long?, connLink: String, inProgress: MutableState<Boolean>` | Analyze a connection link before connecting | [L1474](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1474) |
+| `apiConnectPlan` | `rh: Long?, connLink: String, resolveMode: PlanResolveMode = PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>, onFailure: ConnectPlanFailure = Alert` | Analyze a connection link (or resolve a SimpleX name) before connecting; returns `ConnectionPlanResult?`. Failure handling: see [section 7](#7-directory-search-and-connection-plans) | [L1654](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1654-L1668) |
 | `apiConnect` | `rh: Long?, incognito: Boolean, connLink: CreatedConnLink` | Connect via an invitation or address link | [L1482](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1482) |
 | `apiPrepareContact` | `rh, connLink, contactShortLinkData` | Prepare a contact chat from a short link (before connecting) | [L1546](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1546) |
 | `apiPrepareGroup` | `rh, connLink, groupShortLinkData` | Prepare a group chat from a short link (before connecting) | [L1555](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1555) |
@@ -288,6 +290,12 @@ class ArchiveConfig(
 )
 ```
 
+### 2.12 Service Requests
+
+| Command | Parameters | Description | Line |
+|---------|-----------|-------------|------|
+| `apiSearchDirectory` | `rh: Long?, text: String, cursor: JsonObject?` | Sends [`CC.APISendServiceRequest`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4069) (`userId, target, timeoutSec: Double?, request: JsonObject`; `/_service_request`) to SimpleX Directory and waits up to the timeout for its response, `CRServiceResponse`; see [section 7](#7-directory-search-and-connection-plans) | [L1645](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1645-L1652) |
+
 ---
 
 <a id="API"></a>
@@ -322,6 +330,7 @@ The `CR` sealed class ([SimpleXAPI.kt#L6114](../common/src/commonMain/kotlin/cha
 | Remote ctrl | `RemoteCtrlList`, `RemoteCtrlFound`, `RemoteCtrlConnected`, `RemoteCtrlStopped` | L6264-L6269 |
 | Encryption | `ContactPQAllowed`, `ContactPQEnabled` | L6271-L6272 |
 | Misc | `CmdOk`, `ArchiveExported`, `ArchiveImported`, `AppSettingsR`, `VersionInfo` | L6274-L6283 |
+| Service | `CRServiceResponse` (`user, responseData: JsonObject`): a service's response to `APISendServiceRequest`, left undecoded for the caller | [L6791](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6791) |
 | Fallback | `Response` (unknown type + raw JSON), `Invalid` (unparseable) | L6282-L6283 |
 
 Each `CR` subclass is annotated with `@Serializable @SerialName("jsonTag")` for polymorphic JSON deserialization.
@@ -432,5 +441,20 @@ sealed class ArchiveError {
 | Cryptor.kt | Platform-expect encryption interface | `common/src/commonMain/kotlin/chat/simplex/common/platform/Cryptor.kt` |
 | Cryptor.android.kt | Android: AndroidKeyStore AES-GCM encryption | `common/src/androidMain/kotlin/chat/simplex/common/platform/Cryptor.android.kt` |
 | Cryptor.desktop.kt | Desktop: placeholder (no-op) encryption | `common/src/desktopMain/kotlin/chat/simplex/common/platform/Cryptor.desktop.kt` |
+| DirectorySearch.kt | Directory request and response, online search result types | `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` |
+
+---
+
+## 7. Directory Search and Connection Plans
+
+`ChatController` functions in [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt) used by the online search (see [Chat List, Online Search](client/chat-list.md#11-online-search)):
+
+| Function | Description | Line |
+|----------|-------------|------|
+| `apiSearchDirectory(rh, text, cursor)` | Sends `CC.APISendServiceRequest` to [`DIRECTORY_SERVICE_LINK`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L16) with [`DIRECTORY_SEARCH_TIMEOUT_SEC`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L19) and the request built by [`directorySearchRequest`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L70-L74); returns [`parseDirectorySearchResponse`](../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L78-L87)`(responseData)`, or null on any error (logged with `responseType` and `details`). Blocks for up to the timeout; uses plain `sendCmd`, so a timeout gives a retry row rather than the alert `sendCmdWithRetry` would show | [L1645](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1645-L1652) |
+| `apiConnectPlan(rh, connLink, resolveMode, linkOwnerSig, inProgress, onFailure)` | Plans a connection; returns `ConnectionPlanResult?`. `NotResolvedLocally` (a `PRMNever` lookup that matched nothing) returns null silently; any other failure is handled by `onFailure` | [L1654](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1654-L1668) |
+| `ConnectPlanFailure` | `Alert` (default, every existing caller): `apiConnectResponseAlert`, only while `inProgress.value` is true, as before; `Log`: a debug log only, used by the online search so name resolution and per-entry lookups never raise alerts | [L7522](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7522) |
+
+A service response is carried as a kotlinx `JsonObject` (any JSON), so the API layer does not depend on a service's own types; `parseDirectorySearchResponse` reads its fields and decodes each entry with `json.decodeFromJsonElement`.
 
 All paths are relative to `apps/multiplatform/`.

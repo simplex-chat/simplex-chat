@@ -41,6 +41,7 @@
 | PC29 | User Address |
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
+| PC32 | Online Search (Directory and Names) |
 
 ---
 
@@ -52,13 +53,14 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `App.kt` | PC1 through PC31 | High | Root composable — navigation scaffold for all features |
+| `App.kt` | PC1 through PC32 | High | Root composable — navigation scaffold for all features |
 | `AppLock.kt` | PC22 | Medium | App lock state and authorization lifecycle |
-| `model/ChatModel.kt` | PC1 through PC31 | High | Central state object — every feature reads or writes here |
-| `model/SimpleXAPI.kt` | PC1 through PC31 | High | FFI bridge to Haskell core — all commands and responses |
+| `model/ChatModel.kt` | PC1 through PC32 | High | Central state object — every feature reads or writes here |
+| `model/SimpleXAPI.kt` | PC1 through PC32 | High | FFI bridge to Haskell core — all commands and responses |
+| `model/DirectorySearch.kt` | PC32 | High | Directory response parsing and link-type validation of untrusted entries; online result types |
 | `model/CryptoFile.kt` | PC10, PC23 | Medium | Encrypted file read/write helpers |
-| `platform/Core.kt` | PC1 through PC31 | High | Native FFI declarations (`chatMigrateInit`, `chatSendCmd`, etc.) — all API traffic |
-| `platform/AppCommon.kt` | PC1 through PC31 | Medium | Shared app initialization logic |
+| `platform/Core.kt` | PC1 through PC32 | High | Native FFI declarations (`chatMigrateInit`, `chatSendCmd`, etc.) — all API traffic |
+| `platform/AppCommon.kt` | PC1 through PC32 | Medium | Shared app initialization logic |
 | `platform/Files.kt` | PC10, PC23, PC26 | Medium | File path resolution, temp dirs, encryption utilities |
 | `platform/NtfManager.kt` | PC18 | High | Notification manager expect declarations |
 | `platform/Notifications.kt` | PC18 | Medium | Notification channel and permission abstractions |
@@ -68,7 +70,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `platform/Cryptor.kt` | PC23 | Medium | Keystore encryption expect declarations |
 | `platform/Share.kt` | PC10, PC12 | Low | Share sheet abstractions |
 | `platform/Images.kt` | PC10, PC19 | Low | Image processing utilities |
-| `platform/Platform.kt` | PC1 through PC31 | Low | Platform detection and capability flags |
+| `platform/Platform.kt` | PC1 through PC32 | Low | Platform detection and capability flags |
 | `platform/PlatformTextField.kt` | PC4 | Low | Native text input expect declarations |
 | `platform/Back.kt` | PC1 | Low | Back navigation handling |
 | `platform/UI.kt` | PC24 | Low | UI density and locale helpers |
@@ -91,8 +93,9 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chatlist/ChatListView.kt` | PC1, PC28 | High | Main screen — chat list rendering and search |
+| `views/chatlist/ChatListView.kt` | PC1, PC28, PC32 | High | Main screen — chat list rendering and search; online search triggers, result parts and the onboarding search |
 | `views/chatlist/GetStakeBanner.kt` | PC1 | Low | Crowdfunding banner and shared banner card chrome |
+| `views/chatlist/DirectorySearchView.kt` | PC1, PC32 | Medium | Online search model (generation, spinner, de-duplication), result rows, consent alert |
 | `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3 | Medium | Navigation from chat list item to chat |
 | `views/chatlist/ChatPreviewView.kt` | PC1, PC2, PC3, PC11 | Medium | Chat row preview rendering |
 | `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
@@ -190,7 +193,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | `views/newchat/NewChatView.kt` | PC12, PC29 | High | New connection creation — onramp for all contacts |
-| `views/newchat/NewChatSheet.kt` | PC12 | Medium | Bottom sheet with connection options |
+| `views/newchat/NewChatSheet.kt` | PC12, PC32 | Medium | Bottom sheet with connection options, contacts list and online search sections; search bar shared with archived contacts |
 | `views/newchat/ConnectPlan.kt` | PC12, PC15 | Medium | Link parsing and connection plan resolution |
 | `views/newchat/AddGroupView.kt` | PC3, PC14 | Medium | New group creation flow |
 | `views/newchat/AddChannelView.kt` | PC31 | Medium | Public channel creation, channel link card, `RelayStatusIndicator` |
@@ -270,9 +273,9 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/helpers/AlertManager.kt` | PC1 through PC31 | Medium | Modal alert system used across all features |
-| `views/helpers/ModalView.kt` | PC1 through PC31 | Medium | Modal navigation stack |
-| `views/helpers/Utils.kt` | PC1 through PC31 | Low | Shared formatting, clipboard, and utility functions |
+| `views/helpers/AlertManager.kt` | PC1 through PC32 | Medium | Modal alert system used across all features |
+| `views/helpers/ModalView.kt` | PC1 through PC32 | Medium | Modal navigation stack |
+| `views/helpers/Utils.kt` | PC1 through PC32 | Low | Shared formatting, clipboard, and utility functions |
 | `views/helpers/DatabaseUtils.kt` | PC23 | Medium | Keystore passphrase and database helpers |
 | `views/helpers/LinkPreviews.kt` | PC11 | Medium | Link preview fetching and rendering |
 | `views/helpers/LocalAuthentication.kt` | PC22 | Medium | Biometric/passcode authentication expect |
@@ -282,7 +285,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/helpers/ChooseAttachmentView.kt` | PC10 | Low | Attachment picker |
 | `views/helpers/GetImageView.kt` | PC10, PC19 | Low | Image capture and crop |
 | `views/helpers/TextEditor.kt` | PC4 | Low | Rich text editor helpers |
-| `views/helpers/SearchTextField.kt` | PC1 | Low | Search bar composable |
+| `views/helpers/SearchTextField.kt` | PC1, PC32 | Low | Search bar composable; optional Search key handler (`onSearch`: Android IME action, desktop Enter) |
 | `views/helpers/CustomTimePicker.kt` | PC8 | Low | Time picker for timed messages |
 | `views/helpers/DragAndDrop.kt` | PC10 | Low | Drag-and-drop file handling |
 | `views/helpers/ProcessedErrors.kt` | — | Low | Error aggregation |
@@ -325,8 +328,8 @@ Path prefix: `android/src/main/java/chat/simplex/app/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `SimplexApp.kt` | PC1 through PC31 | High | Application class — initializes core, preferences, and notification channels |
-| `MainActivity.kt` | PC1 through PC31 | High | Single-activity host — intent handling, lifecycle, deep links |
+| `SimplexApp.kt` | PC1 through PC32 | High | Application class — initializes core, preferences, and notification channels |
+| `MainActivity.kt` | PC1 through PC32 | High | Single-activity host — intent handling, lifecycle, deep links |
 | `SimplexService.kt` | PC18 | High | Foreground service — keeps message receiver alive |
 | `CallService.kt` | PC17 | Medium | Foreground service for active calls |
 | `MessagesFetcherWorker.kt` | PC18 | Medium | WorkManager periodic message fetch |
@@ -340,7 +343,7 @@ Path prefix: `common/src/androidMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `platform/AppCommon.android.kt` | PC1 through PC31 | Medium | Android app initialization actual declarations |
+| `platform/AppCommon.android.kt` | PC1 through PC32 | Medium | Android app initialization actual declarations |
 | `platform/SimplexService.android.kt` | PC18 | Medium | Android foreground service actual implementation |
 | `platform/Files.android.kt` | PC10, PC23, PC26 | Medium | Android file paths and content-URI resolution |
 | `platform/Cryptor.android.kt` | PC23 | Medium | Android Keystore encryption actual implementation |
@@ -406,7 +409,7 @@ Path prefix: `desktop/src/jvmMain/kotlin/chat/simplex/desktop/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `Main.kt` | PC1 through PC31 | High | JVM entry point — Haskell init, migrations, app launch |
+| `Main.kt` | PC1 through PC32 | High | JVM entry point — Haskell init, migrations, app launch |
 
 ### 3.2 Desktop Platform Implementations (desktopMain)
 
@@ -417,7 +420,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `DesktopApp.kt` | PC1, PC2, PC3 | High | Desktop Compose window — window lifecycle, crash recovery |
 | `StoreWindowState.kt` | — | Low | Window position/size persistence |
 | `model/NtfManager.desktop.kt` | PC18 | Medium | Desktop system tray notification display |
-| `platform/AppCommon.desktop.kt` | PC1 through PC31 | Medium | Desktop app initialization actual declarations |
+| `platform/AppCommon.desktop.kt` | PC1 through PC32 | Medium | Desktop app initialization actual declarations |
 | `platform/SimplexService.desktop.kt` | PC18 | Low | Desktop background receiver (no foreground service) |
 | `platform/Files.desktop.kt` | PC10, PC23, PC26 | Medium | Desktop file path resolution |
 | `platform/Cryptor.desktop.kt` | PC23 | Medium | Desktop keystore encryption actual implementation |
@@ -480,13 +483,13 @@ The Haskell core is compiled as a shared native library (`libsimplex.so` / `libs
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `src/Simplex/Chat.hs` | PC1 through PC31 | High | Main chat module — top-level orchestration |
-| `src/Simplex/Chat/Controller.hs` | PC1 through PC31 | High | Command processor — all API commands dispatched here |
-| `src/Simplex/Chat/Types.hs` | PC1 through PC31 | High | Core data types shared across all features |
-| `src/Simplex/Chat/Core.hs` | PC1 through PC31 | High | Chat engine lifecycle (start, stop, subscribe) |
-| `src/Simplex/Chat/Library/Commands.hs` | PC1 through PC31 | High | API command handler implementations |
-| `src/Simplex/Chat/Library/Internal.hs` | PC1 through PC31 | High | Internal helpers for command processing |
-| `src/Simplex/Chat/Library/Subscriber.hs` | PC1 through PC31 | High | Event subscriber — incoming message routing |
+| `src/Simplex/Chat.hs` | PC1 through PC32 | High | Main chat module — top-level orchestration |
+| `src/Simplex/Chat/Controller.hs` | PC1 through PC32 | High | Command processor — all API commands dispatched here |
+| `src/Simplex/Chat/Types.hs` | PC1 through PC32 | High | Core data types shared across all features |
+| `src/Simplex/Chat/Core.hs` | PC1 through PC32 | High | Chat engine lifecycle (start, stop, subscribe) |
+| `src/Simplex/Chat/Library/Commands.hs` | PC1 through PC32 | High | API command handler implementations |
+| `src/Simplex/Chat/Library/Internal.hs` | PC1 through PC32 | High | Internal helpers for command processing |
+| `src/Simplex/Chat/Library/Subscriber.hs` | PC1 through PC32 | High | Event subscriber — incoming message routing |
 | `src/Simplex/Chat/Protocol.hs` | PC2, PC3, PC4, PC5, PC6, PC7 | High | Chat-level message protocol (x-events) |
 | `src/Simplex/Chat/Messages.hs` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9 | High | Message types and content |
 | `src/Simplex/Chat/Messages/CIContent.hs` | PC4, PC5, PC6, PC7, PC8, PC9, PC11 | Medium | Chat item content variants |
@@ -496,8 +499,8 @@ The Haskell core is compiled as a shared native library (`libsimplex.so` / `libs
 | `src/Simplex/Chat/Files.hs` | PC10 | Medium | File transfer orchestration |
 | `src/Simplex/Chat/Delivery.hs` | PC2, PC3 | Medium | Message delivery engine |
 | `src/Simplex/Chat/Markdown.hs` | PC4 | Low | Markdown parsing for message formatting |
-| `src/Simplex/Chat/Store.hs` | PC1 through PC31 | High | Database store interface |
-| `src/Simplex/Chat/Store/Shared.hs` | PC1 through PC31 | Medium | Shared store utilities |
+| `src/Simplex/Chat/Store.hs` | PC1 through PC32 | High | Database store interface |
+| `src/Simplex/Chat/Store/Shared.hs` | PC1 through PC32 | Medium | Shared store utilities |
 | `src/Simplex/Chat/Store/Messages.hs` | PC4, PC5, PC6, PC7, PC8 | High | Message persistence |
 | `src/Simplex/Chat/Store/Groups.hs` | PC3, PC14, PC15, PC16, PC30 | High | Group persistence |
 | `src/Simplex/Chat/Store/Direct.hs` | PC2, PC12, PC13 | High | Contact persistence |
@@ -526,11 +529,11 @@ The Haskell core is compiled as a shared native library (`libsimplex.so` / `libs
 | `src/Simplex/Chat/Operators/Presets.hs` | PC25 | Low | Preset server operators |
 | `src/Simplex/Chat/Operators/Conditions.hs` | PC25 | Low | Operator usage conditions |
 | `src/Simplex/Chat/AppSettings.hs` | PC25 | Low | App settings sync types |
-| `src/Simplex/Chat/Mobile.hs` | PC1 through PC31 | High | C FFI exports — JNI bridge target |
+| `src/Simplex/Chat/Mobile.hs` | PC1 through PC32 | High | C FFI exports — JNI bridge target |
 | `src/Simplex/Chat/Mobile/File.hs` | PC10 | Medium | Mobile file read/write FFI |
-| `src/Simplex/Chat/Mobile/Shared.hs` | PC1 through PC31 | Medium | Shared FFI helpers |
+| `src/Simplex/Chat/Mobile/Shared.hs` | PC1 through PC32 | Medium | Shared FFI helpers |
 | `src/Simplex/Chat/Mobile/WebRTC.hs` | PC17 | Low | WebRTC FFI helpers |
-| `src/Simplex/Chat/View.hs` | PC1 through PC31 | Low | Terminal view rendering (not used by mobile/desktop UI) |
+| `src/Simplex/Chat/View.hs` | PC1 through PC32 | Low | Terminal view rendering (not used by mobile/desktop UI) |
 | `src/Simplex/Chat/Stats.hs` | PC25 | Low | Server statistics tracking |
 | `src/Simplex/Chat/Util.hs` | — | Low | General Haskell utilities |
 | `src/Simplex/Chat/Styled.hs` | — | Low | Terminal styled text (not used by mobile/desktop UI) |

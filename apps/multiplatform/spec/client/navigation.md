@@ -15,6 +15,7 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (470 lines)
 7. [Authentication Gate](#7-authentication-gate)
 8. [Onboarding Flow](#8-onboarding-flow)
 9. [Source Files](#9-source-files)
+10. [New Chat Online Search](#10-new-chat-online-search)
 
 ---
 
@@ -376,3 +377,31 @@ The stage value is stored in `appPrefs.onboardingStage` and persisted across app
 | `views/SplashView.kt` | Splash / loading screen |
 | `views/call/CallView.kt` | In-call fullscreen view (ActiveCallView) |
 | `views/localauth/PasswordEntry.kt` | Column divider utility (contains VerticalDivider) |
+| `views/newchat/NewChatSheet.kt` | New chat sheet: action buttons, contacts list, online search sections; Archived contacts (`DeletedContactsView`) |
+
+---
+
+<a id="NewChatOnlineSearch"></a>
+
+## 10. New Chat Online Search
+
+**Location:** [`NewChatSheetLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L110-L535)
+
+`NewChatSheetLayout` offers the chat list's online search (see [Chat List, Online Search](chat-list.md#11-online-search)) with its own [`OnlineSearchModel`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L141) (`remember`), reset from a `KeyChangeEffect` on `searchText.value.text` and another on `chatModel.currentUser.value?.userId` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L182-L187)). A profile switch also closes all modals on Kotlin, so the sheet is disposed anyway. The sheet's `DisposableEffect` `onDispose` ([`NewChatSheet`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L42-L48)) calls `cancelConnectProgress()`, which cancels a search still in flight. The model is also dropped while a modal opened from the sheet covers it (`ModalManager` composes only the top modal) and on an Android rotation.
+
+| Element | Where | Behavior |
+|---------|-------|----------|
+| Search key | [`ContactsSearchBar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L555-L657) with `onSearch` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L563)), passed to `SearchTextField` | the keyboard's Search action (Android) or Enter (desktop) runs [`runOnlineSearch()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L237-L242): `search(text, name = connectNameCandidate.value)` |
+| "Connect to …" row | the sticky header, below the field, in both `OneHandLazyColumn` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L387-L391)) and `NonOneHandLazyColumn` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L485-L489)) | shown for a name candidate until name results arrive (`candidate != null && onlineSearch.names.isEmpty()`) |
+| "Search in Directory" row | after the "Connect to …" row, behind a `Divider` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L392-L395), [source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L490-L493)) | shown for non-empty, non-link text; runs [`runDirectorySearch()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L231-L235): `searchDirectory(text)` |
+| Names and Directory sections | after `itemsIndexed(filteredContactChats)` in both columns, [`onlineSearchSections(rows)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L195-L227) | each part starts with an [`OnlineSearchHeader`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L189-L193) item styled as "Your contacts" (`SectionDividerSpaced` then the `SectionView` title, not upper-cased); rows are `items` keyed by `id`; the Directory part ends with the retry or "Show more" row; rows tap `hideKeyboard(view)` then `withBGApi { planAndConnect(rhId, …, close = close, cleanup = null) }`, which closes the sheet once connected |
+
+Both triggers do nothing for empty text or a pasted link ([`searchTrimmed()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L229), `searchShowingSimplexLink`) and go through `confirmDirectorySearch`, launching the model with `withApi`. `onlineSearchSections`, `OnlineSearchHeader`, `searchTrimmed`, `runDirectorySearch` and `runOnlineSearch` are local functions of `NewChatSheetLayout`. In the reversed one-hand column a header item renders below its rows, as the contacts header does.
+
+**De-duplication against the contacts list.** `filteredContactChats` (the contacts the list shows, computed in the layout's scope) gives the shown ids: `rows = onlineSearch.rows(shownChatIds = filteredContactChats.map { it.id }.toSet())` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L180)), so no extra helper is needed.
+
+**Empty state.** `showsEmptyState = !onlineSearch.searching && rows.isEmpty` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L181)); [`NoFilteredContactsItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L324-L338) shows "No filtered contacts" only when it holds. Kotlin has no "No contacts" state.
+
+**Archived contacts.** [`DeletedContactsView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L750-L864) passes no `onSearch` to `ContactsSearchBar`: its field keeps the Search IME label (every `SearchTextField` uses `ImeAction.Search`), the key does nothing, and it shows no online rows; its empty state is unchanged.
+
+[GAP] New chat does not resolve a typed name locally while typing (the `ContactsSearchBar` collector resolves a name only when its "Connect to …" row is tapped), so a known contact whose name does not contain the typed text is not in "Your contacts" and appears as a Names row; tapping it opens the existing chat. See [GAP-10](../../product/gaps.md#gap-10-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing).
