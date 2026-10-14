@@ -193,6 +193,7 @@ class AppPreferences {
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
+  val directorySearchAlertShown = mkBoolPreference(SHARED_PREFS_DIRECTORY_SEARCH_ALERT_SHOWN, false)
   val supporterBannerShown = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_SHOWN, false)
   val supporterBannerTapped = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_TAPPED, false)
   val getStakeBannerTapped = mkBoolPreference(SHARED_PREFS_GET_STAKE_BANNER_TAPPED, false)
@@ -279,6 +280,7 @@ class AppPreferences {
     hintPref(laNoticeShown, false),
     hintPref(oneHandUICardShown, false),
     hintPref(addressCreationCardShown, false),
+    hintPref(directorySearchAlertShown, false),
     hintPref(supporterBannerShown, false),
     hintPref(supporterBannerTapped, false),
     hintPref(getStakeBannerTapped, false),
@@ -474,6 +476,7 @@ class AppPreferences {
     private const val SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE = "ShowHiddenProfilesNotice"
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
+    private const val SHARED_PREFS_DIRECTORY_SEARCH_ALERT_SHOWN = "DirectorySearchAlertShown"
     private const val SHARED_PREFS_SUPPORTER_BANNER_SHOWN = "SupporterBannerShown"
     private const val SHARED_PREFS_SUPPORTER_BANNER_TAPPED = "SupporterBannerTapped"
     private const val SHARED_PREFS_GET_STAKE_BANNER_TAPPED = "GetStakeBannerTapped"
@@ -1637,24 +1640,29 @@ object ChatController {
     return null
   }
 
-  // Blocks for up to the timeout, so call it from withLongRunningApi, not withBGApi. Plain sendCmd
+  // Blocks for up to the timeout, unlike most API calls here. Plain sendCmd
   // on purpose: a timeout shows a retry row in the results, not the alert sendCmdWithRetry would pop.
   suspend fun apiSearchDirectory(rh: Long?, text: String, cursor: JsonObject?): DirectorySearchResults? {
     val userId = kotlin.runCatching { currentUserId("apiSearchDirectory") }.getOrElse { return null }
     val req = directorySearchRequest(text, cursor)
     val r = sendCmd(rh, CC.APISendServiceRequest(userId, DIRECTORY_SERVICE_LINK, DIRECTORY_SEARCH_TIMEOUT_SEC, req))
     if (r is API.Result && r.res is CR.CRServiceResponse) return parseDirectorySearchResponse(r.res.responseData)
-    Log.e(TAG, "apiSearchDirectory error: $r")
+    Log.e(TAG, "apiSearchDirectory error: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun apiConnectPlan(rh: Long?, connLink: String, resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): ConnectionPlanResult? {
+  suspend fun apiConnectPlan(rh: Long?, connLink: String, resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>, onFailure: ConnectPlanFailure = ConnectPlanFailure.Alert): ConnectionPlanResult? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, resolveMode, linkOwnerSig), inProgress = inProgress)
     if (r is API.Result && r.res is CR.CRConnectionPlan) return ConnectionPlanResult(r.res.connLink, r.res.planSimplexName, r.res.otherSimplexName, r.res.connectionPlan)
     // a PRMNever (typing) search that matches nothing locally is not an error to surface
     if (r is API.Error && r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.NotResolvedLocally) return null
-    if (inProgress.value && r != null) apiConnectResponseAlert(r)
+    if (r != null) {
+      when (onFailure) {
+        ConnectPlanFailure.Alert -> if (inProgress.value) apiConnectResponseAlert(r)
+        ConnectPlanFailure.Log -> Log.d(TAG, "apiConnectPlan: ${r.responseType} ${r.details}")
+      }
+    }
     return null
   }
 
@@ -7510,6 +7518,8 @@ enum class PlanResolveMode {
     PRMNever -> "never"
   }
 }
+
+enum class ConnectPlanFailure { Alert, Log }
 
 @Serializable
 sealed class ConnectionPlan {
