@@ -198,6 +198,7 @@ badgeServiceTests = do
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
+    it "should keep the device store's view of a credited subscription, except renewing over billing retry, and nothing for any other transaction" testSubscriptionStateFromStore
     it "should resolve an Apple renewal to the subscription's record, and credit a held record that adopted it" testAppleRenewalResolvesToPurchase
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
     it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
@@ -2372,6 +2373,42 @@ testAnnualStateNotFromStoredAnswer ps =
       subscriptionChecks store `shouldReturn` checks
       subscriptionPayments cc `shouldReturn` [("google", googlePurchaseRef googleSubscriptionToken, Just "renewing", Just googleSubscriptionToken)]
       subscriptionStatuses (chatController alice) `shouldReturn` [Just "cancelled"]
+
+testSubscriptionStateFromStore :: HasCallStack => TestParams -> IO ()
+testSubscriptionStateFromStore ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let report state payment = alice ##> ("/_badge subscription " <> state <> " " <> paymentArg payment)
+      report "cancelled" subscriptionPlay
+      alice <### ["ok", Predicate (", subscription cancelled" `isInfixOf`)]
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "cancelled"]
+      report "cancelled" subscriptionPlay
+      alice <## "ok"
+      -- Play lists a subscription in its grace period as renewing, which does not replace the service's billing retry
+      storeReports store $ subscriptionCheck SSBillingRetry Nothing
+      setClockAt bsClock $ fst $ renewalMoments rows
+      alice `send` "/_app activate"
+      alice <### ["/_app activate", "ok", Predicate (", subscription billingRetry" `isInfixOf`)]
+      checks <- subscriptionChecks store
+      report "renewing" subscriptionPlay
+      alice <## "ok"
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "billingRetry"]
+      -- a held transaction, here a one-time purchase handed over while the badge is shown, and an unknown one change nothing
+      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+      alice <##. "1: supporter"
+      alice <##. openPurchase ""
+      report "cancelled" supporterPlay
+      alice <## "ok"
+      report "cancelled" $ googlePayment "subscr_badge_supporter_01" "fake-play-token-unknown.AO-J1Os2q5djX0pRm6"
+      alice <## "ok"
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "billingRetry"]
+      report "cancelled" SPApple {jws = "not.a-jws"}
+      alice <## "cannot get badge: invalid store receipt"
+      report "paused" subscriptionPlay
+      alice <##. "bad chat command: "
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "billingRetry"]
+      subscriptionChecks store `shouldReturn` checks
 
 setStoreReceiptDue :: ChatController -> UTCTime -> IO ()
 setStoreReceiptDue ChatController {chatStore} t =

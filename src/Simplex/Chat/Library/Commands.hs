@@ -3582,6 +3582,7 @@ processChatCommand cxt nm = \case
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
   APIPurchaseBadge userId echoedInvoiceId payment -> withUserId userId $ \user -> handOverStoreReceipt user echoedInvoiceId payment
+  APISetBadgeSubscriptionStatus status payment -> recordStoreSubscriptionStatus status payment >> ok_
   APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
     void requireBadgeService
     refuseWhileBadgeHeld user
@@ -5303,6 +5304,30 @@ handOverStoreReceipt presentingUser echoedInvoiceId payment = do
     RSRefused {refusal = Just BIFServiceError {code}} -> throwRedeemError $ BREServiceError code
     RSRefused {} -> throwChatError $ CEInternalError "store purchase refused for no recorded reason"
 
+-- | Renewing does not replace billing retry or ended: Play lists a subscription in its grace period as renewing,
+-- and the service's answer clears billing retry once the store charges.
+recordStoreSubscriptionStatus :: SubscriptionState -> ServicePayment -> CM ()
+recordStoreSubscriptionStatus reported payment = do
+  txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
+  changedOwner_ <- withStore' $ \db ->
+    getReceiptRecord db txRef >>= \case
+      Just BadgeReceiptRecord {ownerId, status = RSCredited {badgePurchaseId}} ->
+        getBadgePurchase db badgePurchaseId >>= \case
+          Just UserBadgePurchase {purchaseKind = PKSubscription BadgeSubscription {status}}
+            | replaces status -> Just ownerId <$ setBadgeSubscriptionStatus db badgePurchaseId reported
+          _ -> pure Nothing
+      _ -> pure Nothing
+  forM_ changedOwner_ $ \ownerId -> do
+    owner <- withStore (`getUser` ownerId)
+    toView . CEvtBadgeChanged owner =<< getUserBadgeState owner
+    lift $ startBadgeWork owner
+  where
+    replaces = \case
+      Just stored | stored == reported -> False
+      Just SSBillingRetry -> reported /= SSRenewing
+      Just SSEnded -> reported /= SSRenewing
+      _ -> True
+
 -- | The receipt will never be credited to its key; any other refusal may pass on a retry.
 storeReceiptRefused :: BadgeServiceErrorCode -> Bool
 storeReceiptRefused = \case
@@ -6352,6 +6377,7 @@ chatCommandP =
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
       "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <*> optional (" invoice=" *> (safeDecodeUtf8 <$> A.takeTill (== ' '))) <* A.space <*> jsonP),
+      "/_badge subscription " *> (APISetBadgeSubscriptionStatus <$> subscriptionStateP <* A.space <*> jsonP),
       "/_badge invoice " *> (APICreateBadgeInvoice <$> A.decimal),
       "/_badge state " *> (APIGetBadgeState <$> A.decimal),
       "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
@@ -6778,6 +6804,13 @@ chatCommandP =
     badgeAlertKindP = do
       t <- A.takeTill (== ' ')
       maybe (fail "bad badge alert kind") pure $ textDecode $ safeDecodeUtf8 t
+    subscriptionStateP =
+      A.takeTill (== ' ') >>= \case
+        "renewing" -> pure SSRenewing
+        "cancelled" -> pure SSCancelled
+        "billingRetry" -> pure SSBillingRetry
+        "ended" -> pure SSEnded
+        _ -> fail "bad subscription state"
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP

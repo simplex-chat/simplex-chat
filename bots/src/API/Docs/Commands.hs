@@ -430,6 +430,7 @@ undocumentedCommands =
     "APISendCallOffer",
     "APISendServiceRequest",
     "APISetAppFilePaths",
+    "APISetBadgeSubscriptionStatus",
     "APISetChatItemTTL",
     "APISetChatSettings",
     "APISetChatTags",

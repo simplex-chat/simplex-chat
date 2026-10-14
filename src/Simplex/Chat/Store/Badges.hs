@@ -24,6 +24,7 @@ module Simplex.Chat.Store.Badges
     BadgeReceiptRecord (..),
     BadgeReceiptStatus (..),
     holdStoreReceipt,
+    getReceiptRecord,
     createBadgeStoreReceipt,
     getOpenStorePurchases,
     getNextHeldStoreReceipt,

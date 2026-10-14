@@ -85,7 +85,7 @@ import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyM
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
 import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeIssueFailure, BadgeState (..), OpenStorePurchase (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeIssueFailure, BadgeState (..), OpenStorePurchase (..), SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -666,6 +666,7 @@ data ChatCommand
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
   | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
+  | APISetBadgeSubscriptionStatus {status :: SubscriptionState, payment :: ServicePayment} -- the device store's view of a credited subscription, which changes only what is shown and alerted
   | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
   | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
