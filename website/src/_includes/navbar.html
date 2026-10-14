@@ -212,6 +212,14 @@
 
 <script>{% include "utm.js" %}</script>
 
+{% if not noAnalytics %}
+<script type="module">
+import { init, track } from '/js/page.js';
+{% include "analytics.js" %}
+init(analytics);
+</script>
+{% endif %}
+
 <script>
 // switch theme
 const sunIcon = document.querySelector('.sun');
