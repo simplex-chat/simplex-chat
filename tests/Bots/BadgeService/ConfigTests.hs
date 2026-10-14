@@ -53,8 +53,9 @@ badgeConfigTests = describe "badge service config" $ do
   it "reads accept_unverified_store_receipts = off" testDevUnverifiedReceiptsOff
   it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
   it "configures no store verifier when [apple] and [google] are absent" testStoresAbsent
-  it "reads [apple] and [google], defaulting Google's endpoints" testStoresRead
+  it "reads [apple] and [google], defaulting Google's endpoints and verify timeout" testStoresRead
   it "refuses an incomplete [apple] or [google], naming the key" testStoresIncomplete
+  it "bounds google verify_timeout_seconds to 1-30" testGoogleVerifyTimeoutRange
   it "refuses accept_unverified_store_receipts beside a real store verifier" testDevUnverifiedBesideVerifier
   groupConfigTests
 
@@ -405,7 +406,8 @@ testStoresRead = withIni (fullIni <> appleIni <> googleIni) $ \p -> do
         { gPackageName = "chat.simplex.app",
           gServiceAccountFile = "/etc/badges/play.json",
           gApiHost = "https://androidpublisher.googleapis.com",
-          gTokenUrl = "https://oauth2.googleapis.com/token"
+          gTokenUrl = "https://oauth2.googleapis.com/token",
+          gVerifyTimeoutSeconds = 10
         }
 
 testStoresIncomplete :: IO ()
@@ -419,6 +421,28 @@ testStoresIncomplete = do
       withIni (fullIni <> section) readServiceConfig >>= \case
         Left e -> e `shouldContain` key
         Right _ -> expectationFailure ("an incomplete section must fail at boot, naming " <> key)
+
+testGoogleVerifyTimeoutRange :: IO ()
+testGoogleVerifyTimeoutRange = do
+  refuses "verify_timeout_seconds = -5\n"
+  refuses "verify_timeout_seconds = 0\n"
+  refuses "verify_timeout_seconds = 31\n"
+  refuses "verify_timeout_seconds = 60\n"
+  accepts "verify_timeout_seconds = 1\n" 1
+  accepts "verify_timeout_seconds = 30\n" 30
+  where
+    refuses value =
+      withIni (fullIni <> googleIni <> value) $ \p -> do
+        r <- readServiceConfig p
+        case r of
+          Left e -> e `shouldContain` "verify_timeout_seconds"
+          Right _ -> expectationFailure ("google." <> T.unpack (T.strip value) <> " is outside 1-30 and must fail")
+    accepts value expected =
+      withIni (fullIni <> googleIni <> value) $ \p -> do
+        r <- readServiceConfig p
+        case r of
+          Right cfg -> fmap gVerifyTimeoutSeconds (playStore cfg) `shouldBe` Just expected
+          Left e -> expectationFailure ("google." <> T.unpack (T.strip value) <> " is inside 1-30 and must parse, but: " <> e)
 
 testDevUnverifiedBesideVerifier :: IO ()
 testDevUnverifiedBesideVerifier =

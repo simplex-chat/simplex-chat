@@ -78,7 +78,7 @@ withFakePlay action = do
     let accountFile = d </> "service-account.json"
         fake base =
           FakePlay
-            { fpConfig = PlayStoreConfig {gPackageName = fakePackageName, gServiceAccountFile = accountFile, gApiHost = base, gTokenUrl = base <> "/token"},
+            { fpConfig = PlayStoreConfig {gPackageName = fakePackageName, gServiceAccountFile = accountFile, gApiHost = base, gTokenUrl = base <> "/token", gVerifyTimeoutSeconds = 10},
               fpAnswers,
               fpTokenRefusal,
               fpTokenSeconds,
