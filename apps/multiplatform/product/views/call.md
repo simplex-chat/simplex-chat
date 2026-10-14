@@ -71,8 +71,8 @@ Sound: `SoundPlayer.start()` plays ringtone while banner is visible (unless call
 | 1. Capabilities | `WCallResponse.Capabilities` | Local capabilities reported; `apiSendCallInvitation()` called |
 | 2. Offer | `WCallResponse.Offer` | SDP offer + ICE candidates sent via `apiSendCallOffer()` |
 | 3. Answer | `WCallResponse.Answer` | SDP answer + ICE candidates sent via `apiSendCallAnswer()` |
-| 4. ICE | `WCallResponse.Ice` | Additional ICE candidates exchanged via `apiSendCallExtraInfo()` |
-| 5. Connection | `WCallResponse.Connection` | WebRTC connection state changes; `CallState.Connected` set on success |
+| 4. ICE | `WCallResponse.Ice` | Additional ICE candidates, and ICE restart offer/answer in `session`, exchanged via `apiSendCallExtraInfo()` |
+| 5. Connection | `WCallResponse.Connection` | WebRTC connection state changes; `CallState.Connected` set on success, `CallState.Reconnecting` when a connected call loses connection |
 | 6. Connected | `WCallResponse.Connected` | Connection info (relay/direct) stored in `call.connectionInfo` |
 | 7. PeerMedia | `WCallResponse.PeerMedia` | Remote party media source changes (mic, camera, screen) |
 | 8. Media control | `WCallCommand.Media` | Toggle local media sources (mic, camera, screen audio/video) |
@@ -90,14 +90,15 @@ Sound: `SoundPlayer.start()` plays ringtone while banner is visible (unless call
 | `OfferReceived` | Callee received SDP offer |
 | `AnswerReceived` | Caller received SDP answer |
 | `Negotiated` | ICE negotiation complete |
-| `Connected` | WebRTC media flowing; `connectedAt` timestamp set |
+| `Connected` | WebRTC media flowing; `connectedAt` timestamp set on the first connection |
+| `Reconnecting` | Connection lost; "reconnecting…" shown while ICE restarts, call ends after 30 seconds without connection |
 | `Ended` | Call terminated |
 
 ### Call Sounds
 
 | Sound | Trigger |
 |---|---|
-| Connecting sound | `CallSoundsPlayer.startConnectingCallSound()` after invitation sent |
+| Connecting sound | `CallSoundsPlayer.startConnectingCallSound()` after invitation sent, and while reconnecting |
 | In-call sound | `CallSoundsPlayer.startInCallSound()` when delivery receipt received |
 | Ringtone | `SoundPlayer.start()` for incoming calls |
 | End vibration | `CallSoundsPlayer.vibrate()` on call end (if was connected) |

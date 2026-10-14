@@ -225,7 +225,7 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | `apiRejectCall` | `rh: Long?, contact: Contact` | Reject an incoming call | [L1854](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1854) |
 | `apiSendCallOffer` | `rh, contact, rtcSession, rtcIceCandidates, media, capabilities` | Send a WebRTC call offer | [L1859](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1859) |
 | `apiSendCallAnswer` | `rh: Long?, contact: Contact, rtcSession: String, rtcIceCandidates: String` | Send a WebRTC call answer | [L1866](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1866) |
-| `apiSendCallExtraInfo` | `rh: Long?, contact: Contact, rtcIceCandidates: String` | Send additional ICE candidates during a call | [L1872](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1872) |
+| `apiSendCallExtraInfo` | `rh: Long?, contact: Contact, rtcSession: String?, rtcIceCandidates: String` | Send additional ICE candidates or ICE restart offer/answer during a call | [L2156](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2156) |
 | `apiEndCall` | `rh: Long?, contact: Contact` | End an active call | [L1878](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1878) |
 | `apiCallStatus` | `rh: Long?, contact: Contact, status: WebRTCCallStatus` | Report call status updates to the core | [L1883](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1883) |
 

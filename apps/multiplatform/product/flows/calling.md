@@ -99,6 +99,7 @@ Both platforms share a common signaling flow through the Haskell core API.
 ```
 Outgoing: WaitCapabilities -> InvitationSent -> OfferSent -> AnswerReceived -> Negotiated -> Connected -> Ended
 Incoming: InvitationAccepted -> OfferReceived -> Negotiated -> Connected -> Ended
+Reconnection: Connected -> Reconnecting -> Connected | Ended
 ```
 
 | State | Description |
@@ -111,7 +112,16 @@ Incoming: InvitationAccepted -> OfferReceived -> Negotiated -> Connected -> Ende
 | `AnswerReceived` | Caller received SDP answer |
 | `Negotiated` | ICE negotiation complete |
 | `Connected` | Media flowing |
+| `Reconnecting` | Connection lost, waiting for ICE restart |
 | `Ended` | Call terminated |
+
+### 3.1 Reconnection
+
+1. A connected call loses its WebRTC connection, e.g. when the device switches between Wi-Fi and mobile network.
+2. The WebRTC engine reports `"reconnecting"` connection state; the app shows "reconnecting…" and plays the connecting sound. This state is not reported to the core, and `connectedAt` is kept, so call duration continues.
+3. The callee's WebRTC engine (the party that sent the initial offer) restarts ICE every 10 seconds, sending the new offer in `WCallResponse.Ice` with `session` via `apiSendCallExtraInfo`. The caller answers the same way.
+4. When the connection is restored, the call returns to `Connected` and the sound stops.
+5. If the connection is not restored in 30 seconds, the call ends as disconnected. Clients without ICE restart support ignore the restart offer, so the call ends in this case.
 
 ---
 
@@ -184,7 +194,7 @@ Incoming: InvitationAccepted -> OfferReceived -> Negotiated -> Connected -> Ende
 | `apiRejectCall(rh, contact)` | Reject incoming call |
 | `apiSendCallOffer(rh, contact, rtcSession, rtcIceCandidates, media, capabilities)` | Send SDP offer |
 | `apiSendCallAnswer(rh, contact, rtcSession, rtcIceCandidates)` | Send SDP answer |
-| `apiSendCallExtraInfo(rh, contact, rtcIceCandidates)` | Send additional ICE candidates |
+| `apiSendCallExtraInfo(rh, contact, rtcSession, rtcIceCandidates)` | Send additional ICE candidates, or ICE restart offer/answer |
 | `apiEndCall(rh, contact)` | End active call |
 | `apiCallStatus(rh, contact, status)` | Report WebRTC connection status |
 

@@ -142,6 +142,7 @@ interface WCallAnswer extends IWCallCommand, IWCallResponse {
 interface WCallIceCandidates extends IWCallCommand, IWCallResponse {
   type: "ice"
   iceCandidates: string // JSON strings for RTCIceCandidateInit[]
+  session?: string // JSON string for RTCSessionDescriptionInit of ICE restart offer or answer
 }
 
 interface WCEnableMedia extends IWCallCommand {
@@ -281,6 +282,7 @@ interface Call {
   // controls whether transceiver's track was replaced already or set initially (in video call)
   cameraTrackWasSetBefore: boolean
   peerHasOldVersion: boolean
+  receiveRestartSession: (session: string, iceCandidates: RTCIceCandidateInit[]) => Promise<void>
 }
 
 interface NotConnectedCall {
@@ -307,6 +309,7 @@ let activeCall: Call | undefined
 let notConnectedCall: NotConnectedCall | undefined
 let answerTimeout = 30_000
 let reconnectTimeout = 30_000
+let iceRestartInterval = 10_000
 var useWorker = false
 var isDesktop = false
 var localizedState = ""
@@ -358,7 +361,8 @@ const processCommand = (function () {
     return {
       peerConnectionConfig: {
         iceServers: iceServers ?? defaultIceServers,
-        iceCandidatePoolSize: 10,
+        // Chrome gathers no candidates on ICE restart when candidates pool is used
+        iceCandidatePoolSize: 0,
         encodedInsertableStreams,
         iceTransportPolicy: relay ? "relay" : "all",
         // needed for Android WebView >= 69 && <= 72 where default was "plan-b" which is incompatible with transceivers
@@ -487,11 +491,13 @@ const processCommand = (function () {
       layout: notConnectedCall?.layout ?? LayoutType.Default,
       cameraTrackWasSetBefore: localStream.getVideoTracks().length > 0,
       peerHasOldVersion: false,
+      receiveRestartSession,
     }
     localOrPeerMediaSourcesChanged(call)
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
     let reconnectingTimeout: number | undefined
+    let iceRestartTimeout: number | undefined
     let wasConnected = false
     if (pc.connectionState) {
       pc.addEventListener("connectionstatechange", connectionStateChange)
@@ -522,6 +528,7 @@ const processCommand = (function () {
         } else if (state == "disconnected" || state == "failed") {
           if (reconnectingTimeout !== undefined) return
           reconnectingTimeout = setTimeout(() => connectionHandler(true), reconnectTimeout)
+          if (isIceRestarter()) restartIce()
           state = "reconnecting"
         } else if (state == "connecting" || state == "new") {
           return
@@ -540,7 +547,7 @@ const processCommand = (function () {
       })
       if (state == "disconnected" || state == "failed") {
         clearConnectionTimeout()
-        clearTimeout(reconnectingTimeout)
+        clearReconnecting()
         if (pc.connectionState) {
           pc.removeEventListener("connectionstatechange", connectionStateChange)
         } else {
@@ -552,9 +559,7 @@ const processCommand = (function () {
         endCall()
       } else if (state == "connected") {
         clearConnectionTimeout()
-        clearTimeout(reconnectingTimeout)
-        reconnectingTimeout = undefined
-        if (wasConnected) return
+        clearReconnecting()
         wasConnected = true
         const stats = (await pc.getStats()) as Map<string, any>
         for (const stat of stats.values()) {
@@ -580,6 +585,51 @@ const processCommand = (function () {
       if (connectionTimeout) {
         clearTimeout(connectionTimeout)
         connectionTimeout = undefined
+      }
+    }
+
+    function clearReconnecting() {
+      clearTimeout(reconnectingTimeout)
+      reconnectingTimeout = undefined
+      clearTimeout(iceRestartTimeout)
+      iceRestartTimeout = undefined
+    }
+
+    // Only the party that sent the initial offer restarts ICE, so that restart offers never collide
+    function isIceRestarter(): boolean {
+      return pc.localDescription?.type == "offer"
+    }
+
+    async function restartIce() {
+      if (activeCall !== call || reconnectingTimeout === undefined) return
+      iceRestartTimeout = setTimeout(restartIce, iceRestartInterval)
+      // the previous restart offer is not answered yet
+      if (pc.signalingState != "stable") return
+      try {
+        const iceCandidates = getIceCandidates(pc, config)
+        const offer = await pc.createOffer({iceRestart: true})
+        await pc.setLocalDescription(offer)
+        sendMessageToNative({resp: {type: "ice", session: serialize(offer), iceCandidates: await iceCandidates}})
+      } catch (e) {
+        console.log("ICE restart error", e)
+      }
+    }
+
+    async function receiveRestartSession(session: string, iceCandidates: RTCIceCandidateInit[]) {
+      const desc: RTCSessionDescriptionInit = parse(session)
+      const remoteDesc = new RTCSessionDescription(!webView69Or70() ? desc : adaptSdpToOldWebView(desc))
+      if (desc.type == "offer" && !isIceRestarter()) {
+        await pc.setRemoteDescription(remoteDesc)
+        const localIceCandidates = getIceCandidates(pc, config)
+        const answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        addIceCandidates(pc, iceCandidates)
+        sendMessageToNative({resp: {type: "ice", session: serialize(answer), iceCandidates: await localIceCandidates}})
+      } else if (desc.type == "answer" && pc.signalingState == "have-local-offer") {
+        await pc.setRemoteDescription(remoteDesc)
+        addIceCandidates(pc, iceCandidates)
+      } else {
+        throw new Error(`unexpected ICE restart ${desc.type} in ${pc.signalingState} state`)
       }
     }
   }
@@ -747,7 +797,10 @@ const processCommand = (function () {
           break
         case "ice":
           const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
-          if (pc) {
+          if (activeCall && command.session) {
+            await activeCall.receiveRestartSession(command.session, remoteIceCandidates)
+            resp = {type: "ok"}
+          } else if (pc) {
             addIceCandidates(pc, remoteIceCandidates)
             resp = {type: "ok"}
           } else {

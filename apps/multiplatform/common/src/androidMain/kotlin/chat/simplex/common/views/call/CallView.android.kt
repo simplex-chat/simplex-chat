@@ -168,7 +168,7 @@ actual fun ActiveCallView() {
             CallSoundsPlayer.stop()
           }
           is WCallResponse.Ice -> withBGApi {
-            chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
+            chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.session, r.iceCandidates)
           }
           is WCallResponse.Connection ->
             // the call is restored and NOT sent to the core
