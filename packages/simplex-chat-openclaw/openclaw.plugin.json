@@ -1,0 +1,33 @@
+{
+  "id": "simplex",
+  "name": "SimpleX",
+  "description": "SimpleX Chat channel: end-to-end encrypted direct messages over the SimpleX network.",
+  "categories": ["channels"],
+  "channels": ["simplex"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "channelConfigs": {
+    "simplex": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "name": { "type": "string" },
+          "dmPolicy": { "type": "string", "enum": ["pairing", "allowlist", "open", "disabled"] },
+          "allowFrom": {
+            "type": "array",
+            "items": { "type": ["string", "number"] }
+          }
+        }
+      },
+      "uiHints": {
+        "name": { "label": "Bot display name" },
+        "allowFrom": { "label": "Allowed SimpleX contact ids" }
+      }
+    }
+  }
+}
