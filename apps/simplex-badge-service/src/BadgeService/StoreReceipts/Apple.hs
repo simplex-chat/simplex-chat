@@ -25,6 +25,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.Foldable (toList)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -36,10 +37,10 @@ import Data.X509.Validation (SignatureFailure (..), SignatureVerification (..), 
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 
-verifyAppleTransaction :: SignedCertificate -> Text -> Text -> Either StoreRefusal VerifiedStoreTransaction
-verifyAppleTransaction root ourBundleId jws = case T.splitOn "." jws of
+verifyAppleTransaction :: NonEmpty SignedCertificate -> Text -> Text -> Either StoreRefusal VerifiedStoreTransaction
+verifyAppleTransaction roots ourBundleId jws = case T.splitOn "." jws of
   [header, payload, signature] -> do
-    leaf <- signingChain root =<< certificateChain header
+    leaf <- signingChain roots =<< certificateChain header
     sig <- jwsSignature signature
     key <- leafKey leaf
     unless (ECDSA.verify SHA256 key sig (encodeUtf8 $ header <> "." <> payload)) $
@@ -65,14 +66,14 @@ certificateChain header = do
       J.String c | Right bs <- B64.decode (encodeUtf8 c) -> Right bs
       _ -> refused "an x5c certificate is not base64"
 
--- | The root in the chain is ignored: trust comes from the configured one alone.
-signingChain :: SignedCertificate -> [ByteString] -> Either StoreRefusal SignedCertificate
-signingChain root = \case
+-- | The root in the chain is ignored: trust comes from the configured ones alone.
+signingChain :: NonEmpty SignedCertificate -> [ByteString] -> Either StoreRefusal SignedCertificate
+signingChain roots = \case
   [leafDer, intermediateDer, _] -> do
     leaf <- certificate leafDer
     intermediate <- certificate intermediateDer
-    -- the configured root may be stale or wrong as likely as the receipt forged, so this retries rather than refuses
-    unless (signedBy root intermediate) $ failed "the intermediate is not signed by the configured root"
+    -- a root may be missing or wrong as likely as the receipt forged, so this retries rather than refuses
+    unless (any (`signedBy` intermediate) roots) $ failed "the intermediate is not signed by a configured root"
     case verifySignedSignature leaf (certPubKey $ getCertificate intermediate) of
       SignaturePass -> Right ()
       SignatureFailed SignatureInvalid -> refused "the leaf is not signed by the intermediate"
@@ -84,7 +85,6 @@ signingChain root = \case
   _ -> failed "x5c is not leaf, intermediate and root"
   where
     certificate = either (const $ failed "an x5c certificate does not decode") Right . decodeSignedCertificate
-    signedBy issuer cert = verifySignedSignature cert (certPubKey $ getCertificate issuer) == SignaturePass
     marked oid cert = case certExtensions (getCertificate cert) of
       Extensions (Just exts) -> any ((== oid) . extRawOID) exts
       Extensions Nothing -> False
@@ -175,8 +175,15 @@ refused = Left . SRInvalid
 failed :: Text -> Either StoreRefusal a
 failed = Left . SRVerifierFailed . ("apple verifier: " <>)
 
+signedBy :: SignedCertificate -> SignedCertificate -> Bool
+signedBy issuer cert = verifySignedSignature cert (certPubKey $ getCertificate issuer) == SignaturePass
+
 readAppleRoot :: FilePath -> IO (Either String SignedCertificate)
 readAppleRoot path =
   try (B.readFile path) >>= \case
     Left (_ :: IOException) -> pure $ Left $ path <> ": could not be read"
-    Right der -> pure $ either (const $ Left $ path <> ": is not a DER certificate") Right $ decodeSignedCertificate der
+    Right der -> pure $ either (const $ Left $ path <> ": is not a DER certificate") checkRoot $ decodeSignedCertificate der
+  where
+    checkRoot root
+      | signedBy root root = Right root
+      | otherwise = Left $ path <> ": is not a self-signed root certificate"

@@ -37,11 +37,12 @@ waiting_seconds = 3
 idle_seconds = 60
 
 ; optional; without it every App Store receipt is answered provider_not_configured, which the app retries later.
-; root_certificate is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer, in DER;
-; uncomment its mount in compose.yml.
+; root_certificates lists, comma-separated, the roots trusted to sign receipts, each in DER and mounted
+; in compose.yml. Today that is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer.
+; When Apple adds a root, list it beside the old one rather than in its place.
 ;[apple]
 ;bundle_id = chat.simplex.app
-;root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+;root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
 
 ; optional; without it every Play receipt is answered provider_not_configured, which the app retries later.
 ; service_account_file is the JSON key of a service account with the Play Console permissions "View

@@ -141,8 +141,8 @@ configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case se
     logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
     pure env {storeVerifier = mockStoreVerifier}
   Just ServiceConfig {appleStore, playStore} -> do
-    apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificate} ->
-      (\root -> verifyAppleTransaction root aBundleId) <$> orExit (readAppleRoot aRootCertificate)
+    apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificates} ->
+      (\roots -> verifyAppleTransaction roots aBundleId) <$> mapM (orExit . readAppleRoot) aRootCertificates
     google <- forM playStore $ orExit . playStoreVerifier
     forM_ appleStore $ \AppleStoreConfig {aBundleId} -> logInfo $ "verifying App Store receipts for " <> aBundleId
     forM_ playStore $ \PlayStoreConfig {gPackageName} -> logInfo $ "verifying Play purchases for " <> gPackageName

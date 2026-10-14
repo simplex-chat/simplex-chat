@@ -28,6 +28,8 @@ import Control.Monad (mfilter, when)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -95,7 +97,7 @@ data PollConfig = PollConfig {pWaitingSeconds :: Int, pIdleSeconds :: Int}
 
 data AppleStoreConfig = AppleStoreConfig
   { aBundleId :: Text,
-    aRootCertificate :: FilePath
+    aRootCertificates :: NonEmpty FilePath
   }
   deriving (Eq, Show)
 
@@ -190,7 +192,7 @@ knownSettings =
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
-    ("apple", ["bundle_id", "root_certificate"]),
+    ("apple", ["bundle_id", "root_certificates"]),
     ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts"]),
@@ -336,8 +338,12 @@ parseConfig ini = do
       | not (hasSection "apple") = Right Nothing
       | otherwise = do
           aBundleId <- required "apple" "bundle_id"
-          aRootCertificate <- T.unpack <$> required "apple" "root_certificate"
-          pure (Just AppleStoreConfig {aBundleId, aRootCertificate})
+          aRootCertificates <- rootCertificates
+          pure (Just AppleStoreConfig {aBundleId, aRootCertificates})
+    rootCertificates = do
+      v <- required "apple" "root_certificates"
+      maybe (Left "apple.root_certificates must list at least one file") Right $
+        L.nonEmpty $ map T.unpack $ filter (not . T.null) $ map T.strip $ T.splitOn "," v
     googleSection
       | not (hasSection "google") = Right Nothing
       | otherwise = do
