@@ -4242,6 +4242,7 @@ public struct CIMeta: Decodable, Hashable {
     public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
+    public var forwardedByMember: Int64?
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
 

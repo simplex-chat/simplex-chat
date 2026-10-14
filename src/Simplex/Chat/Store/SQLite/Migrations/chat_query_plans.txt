@@ -774,7 +774,7 @@ Query:
             SELECT
               delivery_job_id,
               worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-              sender_group_member_ids, body, cursor_group_member_id
+              sender_group_member_ids, body, notification, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           
@@ -5058,8 +5058,8 @@ Query:
       INSERT INTO delivery_jobs (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        sender_group_member_ids, body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?)
+        sender_group_member_ids, body, notification, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -7837,6 +7837,10 @@ SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
+
+Query: SELECT notification FROM delivery_jobs ORDER BY delivery_job_id DESC LIMIT 1
+Plan:
+SCAN delivery_jobs
 
 Query: SELECT purchase_key FROM badge_code_redemptions
 Plan:

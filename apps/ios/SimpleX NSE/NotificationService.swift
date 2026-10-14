@@ -573,9 +573,15 @@ class NotificationService: UNNotificationServiceExtension {
             // A better logic could be to check whether we have a call in the best attempt while processing .msgInfo marker above.
             // If the best attempt is a call, and its marker is received, and the call is recent (e.g., the last 30 seconds), it would deliver at once,
             // instead of requesting further messages.
-            if ntfEntity.msgBestAttemptNtf.callInvitation == nil || ntf.callInvitation != nil {
+            let bestAttempt = notificationEntities[id]?.msgBestAttemptNtf ?? ntfEntity.msgBestAttemptNtf
+            let replaceBestAttempt = switch (ntf, bestAttempt) {
+            case (.noNtf, .connectionEvent): true
+            case (.noNtf, _): false
+            default: bestAttempt.callInvitation == nil || ntf.callInvitation != nil
+            }
+            if replaceBestAttempt {
                 notificationEntities[id]?.msgBestAttemptNtf = ntf
-            } // otherwise keep call as best attempt
+            }
             return false
         } else {
             // We should not get to this branch, as notifications are not delivered for muted users.
@@ -1022,7 +1028,9 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
                 cItem = autoReceiveFile(file) ?? cItem
             }
             let ntf: NSENotificationData = (cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
-            let chatIdOrMemberId = if case let .groupRcv(groupMember) = chatItem.chatItem.chatDir {
+            let chatIdOrMemberId = if case let .group(groupInfo, _) = cInfo, let forwardedByMember = cItem.meta.forwardedByMember {
+                "#\(groupInfo.groupId) @\(forwardedByMember)"
+            } else if case let .groupRcv(groupMember) = chatItem.chatItem.chatDir {
                 groupMember.id
             } else {
                 chatItem.chatInfo.id
@@ -1031,6 +1039,8 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
         } else {
             return nil
         }
+    case let .duplicateGroupMessage(_, _, member):
+        return (member.id, .noNtf)
     case let .rcvFileSndCancelled(_, aChatItem, _):
         cleanupFile(aChatItem)
         return nil

@@ -6,6 +6,7 @@
 
 module MessageBatching (batchingTests) where
 
+import Control.Concurrent.STM (atomically)
 import Crypto.Number.Serialize (os2ip)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -13,6 +14,7 @@ import Data.ByteString.Internal (c2w)
 import Data.Either (partitionEithers)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict as M
 import Data.String (IsString (..))
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -27,18 +29,26 @@ import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages (SndMessage (..))
 import Simplex.Chat.Protocol
-  ( ChatMessage (ChatMessage),
-    ChatMsgEvent (XMsgNew),
+  ( ChatBinding (CBGroup),
+    ChatMessage (ChatMessage),
+    ChatMsgEvent (XGrpDel, XGrpMemDel, XMsgNew, XMsgUpdate),
     FwdSender (FwdChannel),
     GrpMsgForward (GrpMsgForward),
+    KeyRef (KRMember),
     MsgContent (MCText),
-    VerifiedMsg (VMUnsigned),
+    MsgSigning (..),
+    VerifiedMsg (VMSigned, VMUnsigned),
+    chatMsgToBody,
     fwdMemberName,
     maxBatchElementCount,
     maxEncodedMsgLength,
     mcSimple,
+    msgHasNotification,
+    signChatMsgBody,
   )
-import Simplex.Chat.Types (SharedMsgId (..), chatInitialVRange)
+import Simplex.Chat.Types (MemberId (..), SharedMsgId (..), chatInitialVRange)
+import Simplex.Chat.Types.Shared (MsgSigStatus (..))
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding (Large (..), smpEncodeList)
 import Test.Hspec
 
@@ -51,6 +61,7 @@ batchingTests = describe "message batching tests" $ do
   it "does not create a relay delivery body when every task is oversized" testRelayBatchAllLarge
   it "classifies a task that fits raw but not as a framed singleton as large" testRelayBatchSingletonOverflow
   it "shortens forwarded member names" testFwdMemberName
+  it "sets notification flag of forwarded message by its event" testMsgHasNotification
 
 instance IsString SndMessage where
   fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing}
@@ -196,6 +207,18 @@ testFwdMemberName :: IO ()
 testFwdMemberName = do
   fwdMemberName "sixteen_chars_ab" `shouldBe` "sixteen_chars_ab"
   fwdMemberName "seventeen_chars_a" `shouldBe` "seventeen_chars_…"
+
+testMsgHasNotification :: IO ()
+testMsgHasNotification = do
+  (_, privKey) <- atomically . C.generateKeyPair =<< C.newRandom
+  let signing = MsgSigning {bindingTag = CBGroup, bindingData = "", keyRef = KRMember, privKey}
+      notifications evt =
+        let msg = ChatMessage chatInitialVRange Nothing evt
+         in (msgHasNotification $ VMUnsigned msg, msgHasNotification $ VMSigned MSSVerified (signChatMsgBody signing $ chatMsgToBody msg) msg)
+  notifications (XMsgNew $ mcSimple $ MCText "hello") `shouldBe` (True, True)
+  notifications XGrpDel `shouldBe` (True, True)
+  notifications (XMsgUpdate (SharedMsgId "1") (MCText "hello") M.empty Nothing Nothing Nothing Nothing) `shouldBe` (False, False)
+  notifications (XGrpMemDel (MemberId "1") False Nothing) `shouldBe` (False, False)
 
 runBatcherTest :: BatchMode -> Int -> [SndMessage] -> [ChatError] -> [ByteString] -> Spec
 runBatcherTest mode maxLen msgs expectedErrors expectedBatches =

@@ -93,7 +93,7 @@ item key          NSE:1025-1029    the member of the item, its author, for group
 forwarded item    NSE:173-187      the keys are different: the notification of the item is added to droppedNotifications, outside the entity of the notified connection
 shown             NSE:1196-1216    the default of the connection: MFAll: title "#<group> <relay>:", text "message received" (apps/ios/SimpleXChat/Notifications.swift:102); MFMentions: empty content
 ```
-- With the flag alone the push notification is sent, and the message is received by the core of the NSE: the item is created. The shown notification is the default one. The NSE change of open question 4 is required for a notification with the message text.
+- With the flag alone the push notification is sent, and the message is received by the core of the NSE: the item is created. The shown notification is the default one. The NSE change of section 7 is required for a notification with the message text.
 
 Regular groups, the same message sent to a member by its author and by the host:
 ```
@@ -196,6 +196,7 @@ notifications               one for each flagged SMP message to a queue with not
                             one job is one flagged SMP message for a recipient, for all its events
 channel                     a post is sent by each relay to each member (Library/Internal.hs:2843-2845; Store/Delivery.hs:352)
                             with N members and R relays up to N × R notifications are sent for a post; one item is created (Library/Internal.hs:2958-2959)
+                            shown on iOS: one notification for a post; a duplicate copy is shown with empty content (section 7)
 profile overflow batches    unflagged
 ```
 
@@ -217,8 +218,9 @@ group message forwarding (:191)
 relay delivery, single relay (:283)
   testChannels1RelayDeliverNotification     createChannel1Relay (:9523); alice posts: bob to cath, dan and eve "T", job True; cath adds a reaction: bob to dan and eve "F", job False
 deliver member profiles via relay (:295)
-  testChannelOverflowProfileNotification    the scenario of testChannelMultipleLargeProfiles (:9982): bob to eve, the last two rows: "F" for the overflow profile batch, "T" for profiles with messages
+  testChannelOverflowProfileNotification    the scenario of testChannelLargeProfileFits (:9956) with an image of 10000 characters and a message of 7000 characters, so that the profile is sent in an overflow batch: bob to dan, the last two rows: "F" for the overflow profile batch, "T" for the message
 ```
+- One sender and one message give one job; the job of `testChannelMultipleLargeProfiles` is created from two tasks only when both are read by the task worker together (`deliveryWorkerDelay`), so it is unused for this check.
 Assertions added to present tests, on `delivery_jobs` only (the connections and their agent rows are deleted after the job, `Library/Subscriber.hs:4328`):
 ```
 testGroupMsgForwardGroupDeletion (:6135)    alice: job True, x.grp.del
@@ -228,15 +230,79 @@ testChannelRelayLeave (:11220)              bob: job False, x.grp.leave
 ```
 Present tests of delivery jobs, unchanged: "group message forwarding" (`:191-206`), "group scoped messages" (`:255-264`), "relay delivery" (`:282-292`), "deliver member profiles via relay" (`:295-301`), `testRelayBatchAllLarge` and `testRelayBatchSingletonOverflow` (`tests/MessageBatching.hs:164, 186`).
 
+## 7. iOS notification of a forwarded message and of a duplicate copy
+Second patch. Event, `Controller.hs:1048`, next to `CEvtUnknownMemberAnnounced`:
+```
+CEvtDuplicateGroupMessage       JSON type duplicateGroupMessage
+  user :: User
+  groupInfo :: GroupInfo
+  member :: GroupMember         -- the member whose connection delivered the copy
+```
+Emission, `Library/Internal.hs`, before the present handling of the duplicate:
+```
+saveGroupRcvMsg :2925           direct copy; member: the member of the connection; every SEDuplicateGroupMessage
+                                new parameter GroupInfo in place of GroupId; the caller Library/Subscriber.hs:1072 passes gInfo'
+                                x.grp.mem.con to the forwarding member when the stored copy was forwarded, as now (:2940-2944)
+saveGroupFwdRcvMsg :2959        channel; member: the forwarding relay; Nothing is returned, as now
+                   :2960-2969   group; member: the forwarding host; x.grp.mem.con and the error, as now
+```
+Consumers:
+```
+terminal view       View.hs:471: no output, as CEvtNtfMessage (:547)
+API docs            bots/src/API/Docs/Events.hs:205: in undocumentedEvents, as CEvtUnknownMemberCreated
+iOS app             not decoded: APIResult.invalid, logged (Shared/Model/SimpleXAPI.swift:2510), as unknownMemberCreated
+Android, desktop    not decoded: CR.Response (model/SimpleXAPI.kt:6680), logged (:3599-3600), as unknownMemberCreated
+NSE                 decoded: case duplicateGroupMessage (SimpleX NSE/NSEAPITypes.swift:91)
+```
+Swift `CIMeta` (`apps/ios/SimpleXChat/ChatTypes.swift:4244`): `forwardedByMember: Int64?`, after `editable`, as in core `CIMeta` (`Messages.hs:525`); omitted in JSON for Nothing.
+
+NSE, `apps/ios/SimpleX NSE/NotificationService.swift`:
+```
+receivedMsgNtf (:1016-1030)
+  newChatItems              key of a group item with forwardedByMember: "#<groupId> @<forwardedByMember>",
+                              the id of the connection entity of the forwarding member (ChatTypes.swift:3258, :3624-3632); other items as now
+  duplicateGroupMessage     key: member.id; notification: .noNtf
+processReceivedNtf (:565-579), the best attempt of the entity is read from notificationEntities[id]:
+  .noNtf                    replaces .connectionEvent, the default of the connection, only
+  other values              as now: replace a best attempt that is not a call; a call is replaced by a call only
+```
+- `.noNtf` is used: `.connectionEvent` is created only as the default (`defaultBestAttemptNtf`, `:1196-1216`). A received item, a contact event and a call are never replaced by `.noNtf`.
+- The best attempt is read from `notificationEntities[id]`: `processDroppedNotifications` (`:504-519`) passes the entity copied before its notifications are processed.
+
+Results:
+```
+forwarded post, MFAll         the text of the post (createMessageReceivedNtf, apps/ios/SimpleXChat/Notifications.swift:66)
+forwarded post, MFMentions    the text for a mention or a reply; empty content otherwise
+duplicate copy                empty content, unless an item of the same push notification is shown
+mention, then other item      the mention is shown; before this patch, .noNtf of the other item replaced it
+```
+Tests, `tests/ChatTests/Groups.hs`; helper `duplicateMessageEventsCfg` next to `lastJobNotification`: `testCfg` with an `eventHook` (`Controller.hs:257`) that records the member names of `CEvtDuplicateGroupMessage`. Copies are sent through the agent of the sender, as in `testGroupMsgForwardOwnMembershipRejected` (`:5666`), so that the order of copies is fixed:
+```
+group message forwarding (:191)
+  testGroupMsgForwardDuplicateEvent    createGroup3; bob's message is received by cath directly; alice's agent sends a forwarded copy
+                                         (Library/Internal.hs:2960-2969): cath "duplicate group message, group id: 1"; event member alice
+  testGroupMsgDirectDuplicateEvent     alice's agent sends a forwarded copy, then bob's agent the direct copy
+                                         (Library/Internal.hs:2939-2946): cath "duplicate group message, group id: 1"; event member bob
+relay delivery, single relay (:283)
+  testChannelDuplicateEvent            createChannel1Relay; alice posts; bob's agent sends a second forwarded copy
+                                         (Library/Internal.hs:2959): event member bob; cath without output
+```
+- The NSE and the Swift types are not compiled on this machine. Manual checks on iOS: a post in a channel with 2 relays, with MFAll and with MFMentions; a forwarded message in a group; a mention followed by an ordinary message in one push notification.
+
 ## Interfaces
 ```
 core functions    msgHasNotification :: VerifiedMsg e -> Bool
                   createMsgDeliveryJob, new parameter notification
+                  saveGroupRcvMsg, GroupInfo in place of GroupId
 core types        MessageDeliveryJob.notification
+core events       CEvtDuplicateGroupMessage, JSON type duplicateGroupMessage
 storage           delivery_jobs.notification
                   migration M20261012_delivery_job_notification
+iOS               CIMeta.forwardedByMember
+                  NSEChatEvent.duplicateGroupMessage
 test helpers      lastSndMsgFlags
                   lastJobNotification
+                  duplicateMessageEventsCfg
 ```
 - `eventHasNotification :: ChatMsgEvent e -> Bool` of `2026-10-13-message-priority.md` is accepted by one change: `msgHasNotification` is computed as `eventHasNotification` of the event of the message. Its three uses, the job column and `hasNotification XGrpLeave_` in `leaveChannelRelay` are unchanged.
 - With that change a forwarded `x.msg.update` that raises priority is flagged. The line of the priority plan, section 4, "delivery jobs of relays and forwarding hosts, MsgFlags False for every message" is replaced by this plan.
@@ -245,5 +311,3 @@ test helpers      lastSndMsgFlags
 1. History and the welcome message (`sendHistory`), flagged until commit `93831a0f2` (2026-07-17) and unflagged since: apply the rule? Recommended: unchanged, sent without the flag.
 2. The job flag as a column, or computed by the job worker from the decoded body, without a migration? Recommended: the column, computed where the events of the tasks are read.
 3. Release order with `ep/llm-ux`. Recommended: this correction first, with date `20261012` in the migration name; otherwise a date after the last released migration.
-4. iOS, for a notification with the message text: `CIMeta.forwardedByMember` (`Messages.hs:525`) decoded in Swift, and `"#<groupId> @<forwardedByMember>"` as the key of a forwarded item in `receivedMsgNtf` (`NSE:1025`). Recommended: a separate patch in the same release.
-5. A channel with R relays: R push notifications for a post on each device; the NSE shows the default notification for a duplicate copy. Recommended: accepted in this correction; an empty notification for a duplicate in the patch of question 4.

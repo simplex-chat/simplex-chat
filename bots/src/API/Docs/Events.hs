@@ -203,6 +203,7 @@ undocumentedEvents =
     "CEvtContactRequestRejected",
     "CEvtContactSwitch",
     "CEvtCustomChatEvent",
+    "CEvtDuplicateGroupMessage",
     "CEvtGroupMemberRatchetSync",
     "CEvtGroupMemberSwitch",
     "CEvtServiceSubStatus",
