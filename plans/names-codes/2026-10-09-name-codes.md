@@ -302,7 +302,7 @@ The worker's phases, what happens in each, and the page that shows it:
 - **The reveal** gives the service the name, the links and the owner's signed intent.
   - It is accepted in `committed` while `label` is null.
   - Once `label` is set, an identical repeat answers 200, in that or any later phase. A different body is `bad_request`.
-  - The intent is EIP-712 `RegisterName(string label,address owner,address resolver,bytes[] data,uint256 nonce,uint256 deadline)` under the `SimplexSponsor` domain, signed with the owner code's key.
+  - The intent is EIP-712 `RegisterName(string label,address owner,uint256 duration,address resolver,bytes[] data,uint256 nonce,uint256 deadline)` under the `SimplexSponsor` domain, signed with the owner code's key.
   - `nonce` is `SimplexSponsor.nonces(owner)`, which is 0 for a new owner code.
   - `deadline` is the view's `revealBefore`, when the commitment lapses anyway.
 
@@ -317,7 +317,7 @@ The worker's phases, what happens in each, and the page that shows it:
   - `nonce == SimplexSponsor.nonces(owner)`, read from the chain.
 
   Any failed check answers `bad_request`. A page that built the order itself never meets it.
-  - The intent does not sign the duration. So the service sets it from what was paid.
+  - The intent signs the duration (contracts PR #36). So the service checks that it is what was paid: 2 years, or the prepaid code's years, at 365 days a year.
   - The page must be open after the wait. Reopening the link within 24 hours (`maxCommitmentAge` in PR #35's deploy) finishes the reveal. In this browser the page uses storage. In another browser it uses the code (N7b).
   - A commitment not revealed within the controller's `maxCommitmentAge` lapses to `failed`.
 - **All phases.** `unpaid` (its invoice not settled while open) → `queued` (paid, or prepaid code reserved) → the rows above.
@@ -737,7 +737,7 @@ These points are not decided yet.
      - the service's table, not the text, decides what a code covers. So the app cannot check one offline.
 5. **Coordination with Alain's branch.**
    - Its `NameCode` becomes `NameOwnerCode` under the `NameCode` sum type (§7).
-   - Its `RegisterName` intent carries PR #35's nonce since `965046fe1`, and the service checks it against `SimplexSponsor.nonces(owner)`. But simplexmq's `EIP712` test vector on its branch still hashes the type without the nonce, under a `SimpleX`/`2` domain. It needs updating.
+   - Its `RegisterName` intent carries PR #35's nonce since `965046fe1`, and the duration since `f85d53e91` (simplex-chat PR #7693, for ens-contracts PR #36). The service checks the nonce against `SimplexSponsor.nonces(owner)`. simplexmq's `EIP712` test vector (PR #1941) is a generic one, still the old type under a `SimpleX`/`2` domain; the live intent is checked against viem in `NameRegistrationTests`.
    - The StoreService rename moves its `BadgeService/Names/` modules.
 6. **The investor amount** on the investor card, $500+ as on simplex.domains today, is a placeholder.
 7. **The library's releases.** The names webapp pins a published `@simplex-chat/store`. A library change that names needs is published before the submodule bumps its pin.

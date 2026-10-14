@@ -1,4 +1,4 @@
-// Deploys PR #35's .simplex stack to a running anvil for the store service to use,
+// Deploys PR #36's .simplex stack to a running anvil for the store service to use,
 // wired as fixtures/namesV2.ts wires it, with the commitment ages and label cap of deploy/simplex/00 and 02.
 import { writeFileSync } from 'node:fs'
 import hre from 'hardhat'

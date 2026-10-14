@@ -49,7 +49,7 @@ async function revertName(call: Promise<unknown>): Promise<string> {
 const mined = async (hash: `0x${string}`) =>
   expect((await publicClient.waitForTransactionReceipt({ hash })).status).toBe('success')
 
-describe('local deployment of PR #35 for the store service', () => {
+describe('local deployment of PR #36 for the store service', () => {
   it('is wired as the service config says', async () => {
     expect(await publicClient.getChainId()).toBe(deployment.chainId)
     expect(getAddress(await controller.read.sponsor())).toBe(deployment.sponsor)
@@ -83,7 +83,7 @@ describe('local deployment of PR #35 for the store service', () => {
       owner.signTypedData({
         domain: { name: 'SimplexSponsor', version: '1', chainId: deployment.chainId, verifyingContract: deployment.sponsor },
         types: eip712Types, primaryType: 'RegisterName',
-        message: { label: r.label, owner: r.owner, resolver: r.resolver, data: r.data, nonce, deadline },
+        message: { label: r.label, owner: r.owner, duration: r.duration, resolver: r.resolver, data: r.data, nonce, deadline },
       })
     const nonce = await sponsor.read.nonces([owner.address])
     const signature = await sign(reg, nonce)

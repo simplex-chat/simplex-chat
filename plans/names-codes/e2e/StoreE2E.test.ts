@@ -1,5 +1,6 @@
-// The simplex.domains store flow against PR #35, in process: owner code and wallet, commit, the owner's
-// intent, registerWithCredit by the registrar, record edits, restore from the code, and redeeming.
+// The simplex.domains store flow against PR #36 (PR #35 plus the signed duration), in process: owner code
+// and wallet, commit, the owner's intent, registerWithCredit by the registrar, record edits, restore from
+// the code, and redeeming.
 import { createCipheriv, createDecipheriv, createHash, createHmac, pbkdf2Sync, randomBytes } from 'node:crypto'
 import hre from 'hardhat'
 import {
@@ -114,7 +115,7 @@ function unseal(seed: Uint8Array, sealed: string): Sealed {
   return JSON.parse(Buffer.concat([decipher.update(raw.subarray(GCM_IV, raw.length - GCM_TAG)), decipher.final()]).toString())
 }
 
-describe('simplex.domains store, end to end on PR #35', () => {
+describe('simplex.domains store, end to end on PR #36', () => {
   it('owner code round-trips, and the abandon…about vector gives #7475 account 0', () => {
     const entropy = randomBytes(ENTROPY_BYTES)
     const code = formatOwnerCode(entropy)
@@ -180,7 +181,7 @@ describe('simplex.domains store, end to end on PR #35', () => {
       domain: { name: 'SimplexSponsor', version: '1', chainId, verifyingContract: f.sponsor.address },
       types: eip712Types,
       primaryType: 'RegisterName',
-      message: { label, owner: wallet.account.address, resolver, data, nonce, deadline },
+      message: { label, owner: wallet.account.address, duration: reg.duration, resolver, data, nonce, deadline },
     })
 
     // service: registerWithCredit, dry-run first, from the registrar key; no ETH value
@@ -188,6 +189,10 @@ describe('simplex.domains store, end to end on PR #35', () => {
     const listPrice = await f.controller.read.rentPriceUSD([label, reg.duration])
     // the sponsored path works while public sales are closed
     expect(await f.controller.read.publicSalesOpen()).toBe(false)
+    // the intent signs the duration, so the service cannot register a longer term than the owner signed
+    await expect(
+      f.sponsor.simulate.registerWithCredit([{ ...reg, duration: 3n * YEAR }, nonce, deadline, signature], { account: registrar.address }),
+    ).rejects.toThrow(/InvalidSignature/)
     await f.sponsor.simulate.registerWithCredit([reg, nonce, deadline, signature], { account: registrar.address })
     await f.sponsor.write.registerWithCredit([reg, nonce, deadline, signature], { account: registrar })
 
@@ -208,7 +213,7 @@ describe('simplex.domains store, end to end on PR #35', () => {
       domain: { name: 'SimplexSponsor', version: '1', chainId, verifyingContract: f.sponsor.address },
       types: eip712Types,
       primaryType: 'RegisterName',
-      message: { label, owner: other.address, resolver, data: [], nonce: 0n, deadline },
+      message: { label, owner: other.address, duration: reg2.duration, resolver, data: [], nonce: 0n, deadline },
     })
     await expect(
       f.sponsor.simulate.registerWithCredit([reg2, 0n, deadline, sig2], { account: registrar.address }),
@@ -219,7 +224,7 @@ describe('simplex.domains store, end to end on PR #35', () => {
       domain: { name: 'SimplexSponsor', version: '1', chainId, verifyingContract: f.sponsor.address },
       types: eip712Types,
       primaryType: 'RegisterName',
-      message: { label, owner: other.address, resolver, data: [], nonce: 0n, deadline: past },
+      message: { label, owner: other.address, duration: reg2.duration, resolver, data: [], nonce: 0n, deadline: past },
     })
     await expect(
       f.sponsor.simulate.registerWithCredit([reg2, 0n, past, expiredSig], { account: registrar.address }),
@@ -329,7 +334,7 @@ describe('simplex.domains store, end to end on PR #35', () => {
     const signature = await b.account.signTypedData({
       domain: { name: 'SimplexSponsor', version: '1', chainId: view.chainId, verifyingContract: view.sponsor },
       types: eip712Types, primaryType: 'RegisterName',
-      message: { label: reg.label, owner: reg.owner, resolver: view.resolver, data: reg.data, nonce: view.intentNonce, deadline: view.revealBefore },
+      message: { label: reg.label, owner: reg.owner, duration: reg.duration, resolver: view.resolver, data: reg.data, nonce: view.intentNonce, deadline: view.revealBefore },
     })
     await f.sponsor.write.registerWithCredit([reg, view.intentNonce, view.revealBefore, signature], { account: registrar })
     const node = namehash('lighthouse.simplex')
@@ -357,7 +362,7 @@ describe('simplex.domains store, end to end on PR #35', () => {
       o.w.signTypedData({
         domain: { name: 'SimplexSponsor', version: '1', chainId, verifyingContract: f.sponsor.address },
         types: eip712Types, primaryType: 'RegisterName',
-        message: { label: o.reg.label, owner: o.w.address, resolver, data: [], nonce: 0n, deadline },
+        message: { label: o.reg.label, owner: o.w.address, duration: o.reg.duration, resolver, data: [], nonce: 0n, deadline },
       })
 
     // `older` is committed a second before `younger`, so younger's last second is older's revealBefore
@@ -397,7 +402,7 @@ describe('simplex.domains store, end to end on PR #35', () => {
     const sig = await w.signTypedData({
       domain: { name: 'SimplexSponsor', version: '1', chainId: await publicClient.getChainId(), verifyingContract: f.sponsor.address },
       types: eip712Types, primaryType: 'RegisterName',
-      message: { label: reg.label, owner: w.address, resolver, data: [], nonce: 0n, deadline },
+      message: { label: reg.label, owner: w.address, duration: reg.duration, resolver, data: [], nonce: 0n, deadline },
     })
     await connection.networkHelpers.time.increase(60)
     await expect(f.sponsor.simulate.registerWithCredit([reg, 0n, deadline, sig], { account: registrar.address })).rejects.toThrow(/SignatureExpired/)

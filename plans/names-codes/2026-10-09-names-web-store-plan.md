@@ -187,7 +187,7 @@ This stage renames the badge service to StoreService without changing behavior. 
 This stage puts the two kinds of code and the label rule in core, on top of Alain's primitives.
 
 It builds on `origin/ab/names-registration-primitives-sponsored`. That branch already has the owner code, the `Registration` encoding, the commitment, the `RegisterName` intent and the chain client.
-- Its intent has carried PR #35's nonce since `965046fe1`: `riNonce`, `registerWithCredit((…),uint256,uint256,bytes)`, and the `RegisterName(…,uint256 nonce,uint256 deadline)` typehash.
+- Its intent has carried PR #35's nonce since `965046fe1`: `riNonce`, `registerWithCredit((…),uint256,uint256,bytes)`, and the `RegisterName(…,uint256 nonce,uint256 deadline)` typehash. Since `f85d53e91` (simplex-chat PR #7693) it also signs `uint256 duration`, matching ens-contracts PR #36 (`ab/sponsor-sign-duration`, `23892cc`), which builds on the merged PR #35.
 - The service still checks the nonce against `SimplexSponsor.nonces(owner)` itself.
 
 - **`src/Simplex/Chat/Badges/Code.hs`:** one sum type for the two kinds of `SN` code, so a code's meaning is in its type:
@@ -360,7 +360,7 @@ An order carries the name's hash, the owner address, the commitment and `sealed`
   - Once `label` is set, an identical repeat answers `200`, in that or any later phase. A different body is `bad_request`.
   - The body:
     - `records`: the links chosen at checkout, `{contact: [...], channel: [...]}`, empty when none;
-    - `signature`: the owner's EIP-712 `RegisterName(string label,address owner,address resolver,bytes[] data,uint256 nonce,uint256 deadline)` signature, under the `SimplexSponsor` domain;
+    - `signature`: the owner's EIP-712 `RegisterName(string label,address owner,uint256 duration,address resolver,bytes[] data,uint256 nonce,uint256 deadline)` signature, under the `SimplexSponsor` domain;
     - `nonce`: `SimplexSponsor.nonces(owner)`, which the registration view carries as `intentNonce`. It is 0 for a new owner code;
     - `deadline`: the view's `revealBefore`. The controller refuses the commitment from then on, so a later deadline gains nothing.
   - The checks:
@@ -372,7 +372,7 @@ An order carries the name's hash, the owner address, the commitment and `sealed`
     6. A low-s check of its own, since `recoverPublicKey` accepts high s and the sponsor's `SignatureChecker` rejects it. The signature is read as exactly 65 bytes `r ‖ s ‖ v`, with `v` 27 or 28, as OpenZeppelin requires. The recovery id is `v − 27`.
     7. `nonce == SimplexSponsor.nonces(owner)`, read from the chain.
   - A failed check is `bad_request`, and the registration stays `committed`.
-  - The intent does not sign the duration, so the service sets it from what was paid.
+  - The intent signs the duration (contracts PR #36), so the service checks that the signed duration is what was paid: 2 years, or the prepaid code's years, at 365 days a year.
 
 #### Finding an order and editing links
 
@@ -839,7 +839,7 @@ What each stage waits for, and what to agree with others first.
     - stage 2 (on Alain's branch, whose owner code uses simplexmq's BIP-39 from #1843, and whose `Registration` encoding uses its EIP-712);
     - stage 3's relay, reveal intent check, and signed `find`, `/name` and `/code`;
     - stage 4.
-  - Neither this branch's pin, `e24d537e`, nor master's, `cba13823`, has them.
+  - Neither this branch's pin, `e24d537e`, nor master's, `cba13823`, has them. PR #7693 pins simplexmq `3bd48320` (simplexmq PR #1941 into `names`), which has the EIP-712, `recoverAddress` and transaction modules.
   - A paid order waits in `queued` until stage 4 lands.
 - **Codes differ from #7530 §6/§9:** the `SN7-` format without years in the text, their own table, none sold on the web, and the service's table rather than the text deciding what a code covers. So the app cannot check one offline. Agree with #7530 before stage 2.
 - **With Alain:** agree the `NameCode` sum type (his `NameCode` becomes `NameOwnerCode`), land his primitives branch with a pinned simplexmq, and do the StoreService rename after it, since the rename moves his `BadgeService/Names/` modules.

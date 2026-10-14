@@ -324,7 +324,7 @@ sequenceDiagram
   participant S as Service
   participant E as Ethereum node
   W->>W: wait until revealAfter
-  W->>W: sign RegisterName(label, owner, resolver, data, nonce, deadline)
+  W->>W: sign RegisterName(label, owner, duration, resolver, data, nonce, deadline)
   W->>S: POST /api/registration/:id/reveal (label, secret, records, nonce, deadline, signature)
   S->>S: rebuild the commitment, verifyRegisterIntent
   S->>E: SimplexSponsor.nonces(owner)
@@ -849,7 +849,7 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
       - `riNonce`;
       - the `registerWithCredit((…),uint256,uint256,bytes)` selector;
       - the `RegisterName(…,uint256 nonce,uint256 deadline)` typehash.
-      - These match PR #35 at `0f882c0`.
+      - These match PR #35 at `0f882c0`. Since `f85d53e91` (simplex-chat PR #7693) the typehash also has `uint256 duration`, matching ens-contracts PR #36 (`23892cc`).
     - Left for the service: check the nonce against `SimplexSponsor.nonces(owner)` at the reveal (section 5).
 15. **Contract details the flow must respect.**
     - Problem: PR #35 sets these rules, each exercised by `e2e/StoreE2E.test.ts`:
