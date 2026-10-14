@@ -43,7 +43,8 @@ jobs:
 
       - name: Build and test
         working-directory: apps/multiplatform
-        run: ./gradlew --no-daemon :common:desktopTest :desktop:compileKotlin :android:compileGoogleDebugKotlin :android:testFossDebugUnitTest
+        # cmakeBuildAndCopy links the JNI library against libsimplex, which this workflow does not build
+        run: ./gradlew --no-daemon :common:desktopTest :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy :android:compileGoogleDebugKotlin :android:testFossDebugUnitTest
 
   ios:
     name: "iOS"
