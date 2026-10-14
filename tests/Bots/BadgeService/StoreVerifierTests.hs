@@ -25,8 +25,10 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Lazy as LB
+import Data.Either (isRight)
 import Data.Hourglass (Date (..), DateTime (..), Month (..), TimeOfDay (..))
 import Data.List (isInfixOf)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
@@ -42,6 +44,7 @@ badgeStoreVerifierTests :: Spec
 badgeStoreVerifierTests = describe "badge store verifiers" $ do
   describe "App Store signed transactions" $ do
     it "vouches for a transaction a chain to the trusted root signed, naming the transaction it was claimed by" testAppleVerdict
+    it "verifies a transaction under any of the trusted roots" testAppleAnyTrustedRoot
     it "fails, rather than refuses, an intermediate the trusted root did not sign, since the root may be misconfigured" testAppleRootNotTrusted
     it "refuses a leaf the intermediate did not sign, though the intermediate is genuine" testAppleForgedLeaf
     it "fails, rather than refuses, a leaf signature the library cannot check" testAppleLeafUncheckable
@@ -55,7 +58,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "fails, rather than refuses, a payload Apple signed in a shape it does not know" testAppleUnknownShape
     it "fails, rather than refuses, a leaf holding a key it cannot read" testAppleLeafKey
     it "records the price in the currency's minor units, or not at all" testApplePrice
-    it "reads the trusted root from a DER file, and reports one it cannot read" testReadAppleRoot
+    it "reads the trusted root from a DER file, and reports one it cannot read or that is not a root" testReadAppleRoot
     it "has nothing to acknowledge" testAppleNoAcknowledgement
   describe "Google Play purchases" $ do
     it "vouches for a purchased token, asking Play about that token in this app" testPlayPurchased
@@ -107,7 +110,10 @@ ourBundleId :: Text
 ourBundleId = "chat.simplex.app"
 
 appleVerdict :: SignedCertificate -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
-appleVerdict root jws = seamVerdict noStoreVerifier {verifyApple = Just (verifyAppleTransaction root ourBundleId)} SPApple {jws}
+appleVerdict root = appleVerdictUnder (root :| [])
+
+appleVerdictUnder :: NonEmpty SignedCertificate -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
+appleVerdictUnder roots jws = seamVerdict noStoreVerifier {verifyApple = Just (verifyAppleTransaction roots ourBundleId)} SPApple {jws}
 
 data TestChain = TestChain
   { rootCert :: SignedCertificate,
@@ -221,6 +227,14 @@ testAppleVerdict = do
   appleVerdict (rootCert chain) jws
     `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD")}
   appleTransactionId jws `shouldBe` Just "2000000900000001"
+
+testAppleAnyTrustedRoot :: IO ()
+testAppleAnyTrustedRoot = do
+  old <- trustedChain
+  new <- newChain otherRootName [intermediateMarker] [receiptLeafMarker]
+  forM_ [old, new] $ \chain -> do
+    jws <- signedBy chain $ transactionPayload [] []
+    fmap transactionRef <$> appleVerdictUnder (rootCert old :| [rootCert new]) jws `shouldReturn` Right "2000000900000001"
 
 testAppleRootNotTrusted :: IO ()
 testAppleRootNotTrusted = do
@@ -344,7 +358,8 @@ testApplePrice = do
 
 testReadAppleRoot :: IO ()
 testReadAppleRoot = do
-  TestChain {rootCert} <- trustedChain
+  TestChain {rootCert, intermediateCert} <- trustedChain
+  readAppleRoot ("apps" </> "simplex-badge-service" </> "test-fixtures" </> "apple" </> "AppleRootCA-G3.cer") >>= (`shouldSatisfy` isRight)
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "apple-root" $ \d -> do
     B.writeFile (d </> "root.cer") (encodeSignedObject rootCert)
@@ -352,6 +367,8 @@ testReadAppleRoot = do
     B.writeFile (d </> "root.pem") "-----BEGIN CERTIFICATE-----\n"
     readAppleRoot (d </> "root.pem") >>= (`shouldSatisfy` either ("not a DER certificate" `isInfixOf`) (const False))
     readAppleRoot (d </> "absent.cer") >>= (`shouldSatisfy` either ("could not be read" `isInfixOf`) (const False))
+    B.writeFile (d </> "intermediate.cer") (encodeSignedObject intermediateCert)
+    readAppleRoot (d </> "intermediate.cer") >>= (`shouldSatisfy` either ("not a self-signed root certificate" `isInfixOf`) (const False))
 
 testAppleNoAcknowledgement :: IO ()
 testAppleNoAcknowledgement = do
@@ -359,7 +376,7 @@ testAppleNoAcknowledgement = do
   jws <- signedBy chain $ transactionPayload [] []
   withFakePlay $ \fake -> do
     verifier <- playVerifier fake
-    acknowledgement verifier {verifyApple = Just (verifyAppleTransaction (rootCert chain) ourBundleId)} SPApple {jws} `shouldReturn` Nothing
+    acknowledgement verifier {verifyApple = Just (verifyAppleTransaction (rootCert chain :| []) ourBundleId)} SPApple {jws} `shouldReturn` Nothing
 
 -- * Google Play
 
