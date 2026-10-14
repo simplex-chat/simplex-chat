@@ -87,7 +87,8 @@ create_directory() {
 }
 
 start_directory() {
-  nohup "$bin/simplex-directory-service" -d "$work/directory" --super-users "2:$admin" < /dev/null > "$work/directory.log" 2>&1 &
+  # -y: the service adds its own tables to the database the CLI created, and would otherwise ask on stdin
+  nohup "$bin/simplex-directory-service" -d "$work/directory" -y --super-users "2:$admin" < /dev/null > "$work/directory.log" 2>&1 &
   echo $! > "$work/directory.pid"
   sleep 5
   if ! kill -0 "$(cat "$work/directory.pid")" 2> /dev/null; then
