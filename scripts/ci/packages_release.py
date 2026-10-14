@@ -6,21 +6,27 @@ changes        print whether the changes since a commit touch the chat core and 
 build-plan     print the platforms to build the add-on on and whether to run the package tests
 prepare        update pins and versions for a release PR
 publish-plan   print the package versions that are not published yet
+record         record releases and published versions in releases.toml of simplex-chat-libs
 test-names     rename the packages to NPM_SCOPE and PYPI_PROJECT (test repositories)
 """
 
 from __future__ import annotations
 
 import argparse
+import base64
+import copy
 import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+import tomllib
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
+from typing import Any
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,6 +58,9 @@ ADDON_PLATFORMS = list(ADDON_RUNNERS)
 CORE_TEST_PLATFORM = "linux-x86_64"
 ADDON_ASSETS = [f"simplex-chat-nodejs-{platform}.node" for platform in ADDON_PLATFORMS]
 SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
+RELEASES_FILE = "releases.toml"
+RECORD_ATTEMPTS = 5
+TOML_BARE_KEY = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 # Pure functions
@@ -285,6 +294,47 @@ def build_matrix(platforms: list[str]) -> str:
     return json.dumps([{"platform": platform, "os": ADDON_RUNNERS[platform]} for platform in platforms])
 
 
+def recorded_commit(releases: dict, key: str, version: str) -> str | None:
+    """The simplex-chat commit recorded for a version; key is "core", "npm/<name>" or "pypi/<name>"."""
+    table = releases
+    for part in key.split("/", 1):
+        table = table.get(part, {})
+    commit = table.get(version)
+    return commit if isinstance(commit, str) else None
+
+
+def add_releases(releases: dict, entries: list[tuple[str, str]], commit: str) -> dict:
+    """A recorded version keeps its first commit: re-running a release does not rewrite history."""
+    result = copy.deepcopy(releases)
+    for key, version in entries:
+        table = result
+        for part in key.split("/", 1):
+            table = table.setdefault(part, {})
+        table.setdefault(version, commit)
+    return result
+
+
+def render_releases(releases: dict) -> str:
+    def toml_key(key: str) -> str:
+        return key if TOML_BARE_KEY.match(key) else json.dumps(key)
+
+    sections: list[str] = []
+
+    # in the order of recording: entries are only added, so that order is chronological
+    def walk(path: list[str], table: dict) -> None:
+        values = [(k, v) for k, v in table.items() if isinstance(v, str)]
+        if values:
+            lines = [f"[{'.'.join(toml_key(part) for part in path)}]"]
+            lines += [f"{toml_key(version)} = {json.dumps(commit)}" for version, commit in values]
+            sections.append("\n".join(lines) + "\n")
+        for name, child in table.items():
+            if isinstance(child, dict):
+                walk([*path, name], child)
+
+    walk([], releases)
+    return "\n".join(sections)
+
+
 # Repository and registry access
 
 
@@ -345,16 +395,35 @@ def print_build_plan(args: argparse.Namespace) -> None:
     print(f"test={'true' if result.test else ''}")
 
 
-def changed_since_version(directory: str, version_file: str, version_pattern: str) -> bool:
-    """Shipped files changed since the commit that set the current version."""
-    base = git("log", "-1", "--format=%H", "-G", version_pattern, "--", version_file)
-    diff = subprocess.run(["git", "diff", "--quiet", base, "HEAD", "--", directory, f":!{directory}/tests"], cwd=ROOT)
-    return diff.returncode != 0
+def package_state(
+    key: str,
+    version: str,
+    directory: str,
+    version_file: str,
+    version_pattern: str,
+    releases: dict,
+    registry_published: Callable[[], bool],
+) -> Package:
+    """A recorded version is published from its recorded commit; the registry is asked about other versions,
+    which are compared with the commit that set them."""
+    recorded = recorded_commit(releases, key, version)
+    base = (
+        recorded
+        if recorded and commit_exists(recorded)
+        else git("log", "-1", "--format=%H", "-G", version_pattern, "--", version_file)
+    )
+    changed = changed_since(base, [directory, f":!{directory}/tests"])
+    return Package(version, changed, recorded is not None or registry_published())
 
 
-def http_json(url: str, headers: dict[str, str] | None = None) -> dict | None:
-    """The JSON at `url`, or None for 404."""
-    request = urllib.request.Request(url, headers={"User-Agent": "simplex-chat-release", **(headers or {})})
+def http_json(url: str, headers: dict[str, str] | None = None, method: str = "GET", body: dict | None = None) -> Any:
+    """The JSON response, or None for 404."""
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "simplex-chat-release", **(headers or {})},
+        method=method,
+        data=json.dumps(body).encode() if body is not None else None,
+    )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             return json.load(response)
@@ -381,18 +450,76 @@ def pypi_published(version: str) -> bool:
     return http_json(f"{index}/pypi/{project}/{version}/json") is not None
 
 
-def github_release(tag: str) -> dict | None:
+def libs_api(path: str, method: str = "GET", body: dict | None = None) -> Any:
+    """GitHub API of the simplex-chat-libs repository."""
     repo = os.environ.get("LIBS_REPOSITORY") or "simplex-chat/simplex-chat-libs"
     headers = {"Accept": "application/vnd.github+json"}
     if token := os.environ.get("GH_TOKEN"):
         headers["Authorization"] = f"Bearer {token}"
-    return http_json(f"https://api.github.com/repos/{repo}/releases/tags/{tag}", headers)
+    return http_json(f"https://api.github.com/repos/{repo}/{path}", headers, method, body)
 
 
-def npm_package(key: str, directory: str) -> Package:
+def github_release(tag: str) -> dict | None:
+    return libs_api(f"releases/tags/{tag}")
+
+
+def read_releases() -> tuple[dict, str | None]:
+    """The releases and the blob of the file, which a change must name."""
+    file = libs_api(f"contents/{RELEASES_FILE}")
+    if file is None:
+        return {}, None
+    return tomllib.loads(base64.b64decode(file["content"]).decode()), file["sha"]
+
+
+def record_releases(entries: list[tuple[str, str]], commit: str) -> str:
+    """Adds the entries in one commit of simplex-chat-libs and returns that commit."""
+    message = ", ".join(f"{key} {version}" for key, version in entries)
+    attempt = 1
+    while True:
+        releases, blob = read_releases()
+        updated = add_releases(releases, entries, commit)
+        if blob and updated == releases:
+            return libs_api(f"commits?path={RELEASES_FILE}&per_page=1")[0]["sha"]
+        body = {
+            "message": message,
+            "content": base64.b64encode(render_releases(updated).encode()).decode(),
+            "committer": {"name": "SimpleX Chat", "email": "build@simplex.chat"},
+            **({"sha": blob} if blob else {}),
+        }
+        try:
+            return libs_api(f"contents/{RELEASES_FILE}", "PUT", body)["commit"]["sha"]
+        except urllib.error.HTTPError as e:
+            # 409 and 422: another writer changed or created the file since it was read
+            if e.code not in (409, 422) or attempt == RECORD_ATTEMPTS:
+                raise
+            attempt += 1
+
+
+def commit_exists(commit: str) -> bool:
+    found = subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=ROOT, capture_output=True)
+    return found.returncode == 0
+
+
+def npm_key(directory: str) -> str:
+    return f"npm/{read_json(f'{directory}/package.json')['name']}"
+
+
+def pypi_key() -> str:
+    return f"pypi/{python_project()}"
+
+
+def npm_package(directory: str, releases: dict) -> Package:
     package = read_json(f"{directory}/package.json")
-    changed = changed_since_version(directory, f"{directory}/package.json", '"version":')
-    return Package(package["version"], changed, npm_published(package["name"], package["version"]))
+    name, version = package["name"], package["version"]
+    return package_state(
+        npm_key(directory),
+        version,
+        directory,
+        f"{directory}/package.json",
+        '"version":',
+        releases,
+        lambda: npm_published(name, version),
+    )
 
 
 def prepare(args: argparse.Namespace) -> None:
@@ -400,7 +527,7 @@ def prepare(args: argparse.Namespace) -> None:
     libs_tag = f"core-{cabal_version}"
     addon = current_addon_tag()
     python_version, python_pins = parse_python_version(read_text(PYTHON_VERSION_FILE))
-    python_changed = changed_since_version(PYTHON_DIR, PYTHON_VERSION_FILE, "^__version__ =")
+    releases, _ = read_releases()
     result = plan(
         State(
             libs_tag=libs_tag,
@@ -409,9 +536,17 @@ def prepare(args: argparse.Namespace) -> None:
             addon_digests=release_digests(github_release(addon), ADDON_ASSETS),
             nodejs_pins=parse_release(read_text(RELEASE_FILE)),
             python_pins=python_pins,
-            types=npm_package("types", TYPES_DIR),
-            nodejs=npm_package("nodejs", NODEJS_DIR),
-            python=Package(python_version, python_changed, pypi_published(python_version)),
+            types=npm_package(TYPES_DIR, releases),
+            nodejs=npm_package(NODEJS_DIR, releases),
+            python=package_state(
+                pypi_key(),
+                python_version,
+                PYTHON_DIR,
+                PYTHON_VERSION_FILE,
+                "^__version__ =",
+                releases,
+                lambda: pypi_published(python_version),
+            ),
             types_version=args.types_version,
             nodejs_version=args.nodejs_version,
             python_version=args.python_version,
@@ -440,6 +575,19 @@ def publish_plan() -> None:
         print(f"{key}_dist_tag={dist_tag(package['version'])}")
     version, _ = parse_python_version(read_text(PYTHON_VERSION_FILE))
     print(f"python_version={'' if pypi_published(version) else version}")
+
+
+def record(args: argparse.Namespace) -> None:
+    versions = [
+        ("core", args.core),
+        (npm_key(TYPES_DIR), args.types),
+        (npm_key(NODEJS_DIR), args.nodejs),
+        (pypi_key(), args.python),
+    ]
+    entries = [(key, version) for key, version in versions if version]
+    if not entries:
+        sys.exit("nothing to record")
+    print(record_releases(entries, args.commit))
 
 
 def test_names() -> None:
@@ -491,6 +639,10 @@ def main(argv: list[str]) -> None:
         prepare_parser.add_argument(f"--{package}-version", help="this version instead of a bump when needed")
     prepare_parser.add_argument("--summary", help="file for the PR title and body")
     commands.add_parser("publish-plan")
+    record_parser = commands.add_parser("record")
+    record_parser.add_argument("--commit", required=True, help="the simplex-chat commit released or published from")
+    for name in ["core", "types", "nodejs", "python"]:
+        record_parser.add_argument(f"--{name}", default="", help=f"{name} version, recorded when not empty")
     commands.add_parser("test-names")
     args = parser.parse_args(argv)
     if args.command == "addon-tag":
@@ -503,6 +655,8 @@ def main(argv: list[str]) -> None:
         prepare(args)
     elif args.command == "publish-plan":
         publish_plan()
+    elif args.command == "record":
+        record(args)
     else:
         test_names()
 
