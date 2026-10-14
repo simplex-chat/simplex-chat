@@ -63,7 +63,7 @@ import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), OpenStorePurchase (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
-import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
+import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -5549,18 +5549,26 @@ updateUserBadge userId emitted now = do
   user <- withStore $ \db -> getUser db userId
   withStore' (`getUserBadgePurchase` user) >>= \case
     Nothing -> pure Nothing
-    Just p@UserBadgePurchase {badgePurchaseId} ->
+    Just p@UserBadgePurchase {badgePurchaseId, purchaseKind} ->
       withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= \case
         Nothing -> pure Nothing
         Just balance -> do
-          -- retirement needs no service and an unbounded retry would not return before it
-          retired <- retireExpiredBadge user p now balance
+          -- No months come after a prepaid purchase's paidThrough, so it is retired before asking, as
+          -- retirement needs no service and an unbounded retry would not return before it. A
+          -- subscription's come from the store, so it is retired only once the service says it ended.
+          retiredBefore <- case purchaseKind of
+            PKPrepaid -> retireExpiredBadge user p now balance
+            PKSubscription -> pure False
           latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
-          let requestDue = not retired && badgeRequestDue now (shownBadgeCredential user p) latest balance
-          (balance', serviceAt) <-
+          let requestDue = not retiredBefore && badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance
+          (balance', subscription_, serviceAt) <-
             if requestDue
-              then either ((balance,) . Just) (,Nothing) <$> requestBadgeIssue userId p now
-              else pure (balance, Nothing)
+              then either (\at -> (balance, Nothing, Just at)) (\(b, s) -> (b, s, Nothing)) <$> requestBadgeIssue userId p now
+              else pure (balance, Nothing, Nothing)
+          retired <-
+            if subscription_ == Just SSEnded
+              then retireExpiredBadge user p now balance'
+              else pure retiredBefore
           -- presenting broadcasts the record it is handed, and the request above can block for the
           -- whole service timeout, so this read belongs after it and not at the top of the pass
           user' <- withStore $ \db -> getUser db userId
@@ -5589,8 +5597,9 @@ updateUserBadge userId emitted now = do
 -- while topping up cannot credit months without issuing.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
 derivedBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
-derivedBadgeAlert now p shownCred b
-  | endsAt <= now = Just $ alertOf BASupportEnded endsAt
+derivedBadgeAlert now p@UserBadgePurchase {purchaseKind, shown} shownCred b
+  -- a subscription still shown past paidThrough is waiting for its store to charge, not ended
+  | endsAt <= now && not (purchaseKind == PKSubscription && shown) = Just $ alertOf BASupportEnded endsAt
   | otherwise = (\BadgeIssueError {failedSince} -> alertOf BAIssueFailed failedSince) <$> shownIssueError now p shownCred
   where
     endsAt = L.paidThrough b
@@ -5685,9 +5694,10 @@ credentialExpiry (BadgeCredential _ _ _ BadgeInfo {badgeExpiry}) = badgeExpiry
 
 -- | Timed off the shown credential, not the period end: renewing around its shared expiry is what
 -- joins the anonymity set. Latest still equal to shown means this month has not been asked for.
-badgeRequestDue :: UTCTime -> Maybe BadgeCredential -> Maybe BadgeCredential -> StatementEntry -> Bool
-badgeRequestDue now shownCred latestCred balance =
-  balanceMonths balance > 0 && latestCred == shownCred && maybe False lapsingSoon shownCred
+-- A subscription is asked about at zero months too: its next month comes from a store charge.
+badgeRequestDue :: UTCTime -> PurchaseKind -> Maybe BadgeCredential -> Maybe BadgeCredential -> StatementEntry -> Bool
+badgeRequestDue now purchaseKind shownCred latestCred balance =
+  (balanceMonths balance > 0 || purchaseKind == PKSubscription) && latestCred == shownCred && maybe False lapsingSoon shownCred
   where
     lapsingSoon cred = credentialExpiry cred <= badgeRequestLead `addUTCTime` now
 
@@ -5747,7 +5757,7 @@ badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 -- carries when to try again, since a service error is answered rather than thrown. Any request that
 -- ends without a credential the ledger still owes is recorded on the purchase as a failed renewal;
 -- nothing else records one.
-requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime StatementEntry)
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime (StatementEntry, Maybe SubscriptionState))
 requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
@@ -5763,7 +5773,7 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
       sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
         `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
     case J.fromJSON (J.Object respData) of
-      J.Success BSPBadgeCredential {credential = sentCred_, statement} -> do
+      J.Success BSPBadgeCredential {credential = sentCred_, statement, subscription} -> do
         verifiedCred_ <- verifyIssuedCredential masterKey sentCred_
         g <- asks random
         -- read again: now was taken before a lock wait and an untimed request, and the check reads
@@ -5776,10 +5786,11 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
         case (sentCred_, verifiedCred_, applied) of
           (Just _, Nothing, _) -> recordFailure BIFInvalidCredential
           (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
-          -- no credential is the service saying the months ran out, which its statement then shows
-          (Nothing, _, _) | maybe False ((> 0) . balanceMonths) balance_ -> recordUnexpected "badge service issued no credential"
+          -- no credential is the service saying nothing is owed - the months ran out, or a subscription
+          -- waits for its store to charge - which its statement then shows
+          (Nothing, _, _) | maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
           _ -> pure ()
-        maybe (throwCmdError "badge ledger has no balance") (pure . Right) balance_
+        maybe (throwCmdError "badge ledger has no balance") (pure . Right . (,subscription)) balance_
       J.Success BSPError {code, retryAfter} -> do
         eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
         recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}

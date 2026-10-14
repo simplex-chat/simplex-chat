@@ -10,6 +10,7 @@ module Simplex.Chat.Store.Badges
   ( BadgeStash (..),
     BadgeStashRef (..),
     UserBadgePurchase (..),
+    PurchaseKind (..),
     getUserBadgePurchase,
     getBadgePurchase,
     userHasBadge,
@@ -390,8 +391,14 @@ data UserBadgePurchase = UserBadgePurchase
     alertAcked :: Maybe (BadgeAlertKind, Text),
     alertSnoozeUntil :: Maybe UTCTime,
     issueError :: Maybe BadgeIssueError,
-    nextWakeAt :: Maybe UTCTime
+    nextWakeAt :: Maybe UTCTime,
+    purchaseKind :: PurchaseKind
   }
+
+-- | A subscription's months come from store charges, so reaching paidThrough does not end it: the
+-- service says when it has. Derived from the replica, which holds a charge credit exactly for a subscription.
+data PurchaseKind = PKPrepaid | PKSubscription
+  deriving (Eq)
 
 -- | Newest, not the one shown_badge_id points at - retirement clears that, and the support ended
 -- alert is recomputed from this purchase after the badge stops being shown.
@@ -420,14 +427,18 @@ getBadgePurchase db purchaseId =
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
                p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
-               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at,
+               (CASE WHEN EXISTS (
+                  SELECT 1 FROM badge_ledger l
+                  WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
+                ) THEN 1 ELSE 0 END)
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
       |]
       (Only purchaseId)
   where
-    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt)) =
+    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt, BI charged)) =
       UserBadgePurchase
         { badgePurchaseId,
           purchaseKey,
@@ -438,7 +449,8 @@ getBadgePurchase db purchaseId =
           alertAcked = (,) <$> ackedKind_ <*> ackedEpisode_,
           alertSnoozeUntil,
           issueError = BadgeIssueError <$> failedSince_ <*> lastAttemptAt_ <*> reason_,
-          nextWakeAt
+          nextWakeAt,
+          purchaseKind = if charged then PKSubscription else PKPrepaid
         }
 
 -- | Whether a badge is on the profile now: set when a redemption stores one, cleared when it is

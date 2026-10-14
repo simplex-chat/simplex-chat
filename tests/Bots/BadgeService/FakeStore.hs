@@ -53,8 +53,9 @@ data FakeStore = FakeStore
     appleThrowingJWS :: Text,
     appleMisnamedJWS :: Text,
     appleQuantityJWS :: Text,
-    -- a renewal of the subscription appleSubscriptionOriginalId names, and the same from Apple's Sandbox
+    -- two transactions of the subscription appleSubscriptionOriginalId names, and one from Apple's Sandbox
     appleSubscriptionJWS :: Text,
+    appleRenewalSubscriptionJWS :: Text,
     appleSandboxSubscriptionJWS :: Text,
     pendingSettled :: IORef Bool,
     googleDown :: IORef Bool,
@@ -73,6 +74,7 @@ newFakeStore = do
       appleMisnamedJWS = unsignedJWS "{\"transactionId\":\"2000000812345698\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleQuantityJWS = unsignedJWS "{\"transactionId\":\"2000000812345697\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleSubscriptionJWS = subscriptionJWS "2000000812345681"
+      appleRenewalSubscriptionJWS = subscriptionJWS "2000000812345683"
       appleSandboxSubscriptionJWS = subscriptionJWS "2000000812345682"
   pendingSettled <- newIORef False
   googleDown <- newIORef False
@@ -87,6 +89,7 @@ newFakeStore = do
           (appleQuantityJWS, (appleTransaction "2000000812345697" "BADGE_SUPPORTER_01" False 1400) {quantity = 2}),
           -- vouched by the ref the claim reads, the subscription's original id
           (appleSubscriptionJWS, appleSubscription appleSubscriptionJWS False),
+          (appleRenewalSubscriptionJWS, appleSubscription appleRenewalSubscriptionJWS False),
           (appleSandboxSubscriptionJWS, appleSubscription appleSandboxSubscriptionJWS True)
         ]
       verifyApple jws
@@ -108,6 +111,7 @@ newFakeStore = do
         appleMisnamedJWS,
         appleQuantityJWS,
         appleSubscriptionJWS,
+        appleRenewalSubscriptionJWS,
         appleSandboxSubscriptionJWS,
         pendingSettled,
         googleDown,
