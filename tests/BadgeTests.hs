@@ -18,6 +18,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Exception (SomeAsyncException, SomeException, catch, fromException, throwIO)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
+import qualified Data.ByteString.Lazy as LB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -38,7 +39,7 @@ import Simplex.Chat.Badges.Types (BadgeIssueFailure (..))
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
 import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, storeTransactionRef)
-import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
@@ -90,6 +91,7 @@ badgeTests = do
     it "leaves an entry ahead of the clock unjudged, and rejects one behind the entry it follows" testChecksTimestamps
     it "leaves an entry type it cannot derive unchecked, its months still checked" testChecksUnknownType
     it "rejects an entry it cannot rebuild whose coverage or months contradict the ledger" testChecksUncheckedInvariants
+    it "accepts every row a store charge adds, on each path a subscription renews by" testChargeRowsVerify
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
     it "backs off to the cap" testRetryBackoff
@@ -109,6 +111,7 @@ badgeTests = do
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
+    it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
@@ -658,6 +661,94 @@ testChecksUncheckedInvariants = do
   verdicts start (Just issued) [owing] `shouldBe` [Just False]
   bMonths owing `shouldBe` bMonths issued - 3
 
+-- the service's step for a charge it grants: the planner's rows, then the issue at now
+charged :: UTCTime -> UTCTime -> Int -> StatementEntry -> [StatementEntry]
+charged periodStart now months tip = rows <> maybeToList (issue now $ finalBalance tip rows)
+  where
+    rows = chargeEntries periodStart now months "ch1" ("", "", "") tip
+
+rowKind :: StatementEntry -> T.Text
+rowKind StatementEntry {entryType} = case entryType of
+  SECredit c -> creditTypeTag c
+  SEDebit d -> debitTypeTag d
+
+rowAt :: StatementEntry -> UTCTime
+rowAt StatementEntry {createdAt} = createdAt
+
+bAnchor :: StatementEntry -> UTCTime
+bAnchor StatementEntry {balanceAnchorTs} = balanceAnchorTs
+
+-- the client checks a statement from the first row the service wrote, as a new purchase receives it
+allVerify :: HasCallStack => [StatementEntry] -> Expectation
+allVerify rows = verdicts (rowAt $ last rows) Nothing rows `shouldBe` map (const $ Just True) rows
+
+-- A grant dated to the store's period start is checked by re-running it at that start, after rows
+-- written earlier and before the lapses and issue written at the request: each path a subscription
+-- renews by must keep both the dates in order and the recompute exact.
+testChargeRowsVerify :: IO ()
+testChargeRowsVerify = do
+  let p0 = at 2026 3 10
+      days n = addUTCTime (n * nominalDay)
+      firstCharge = charged p0 (addUTCTime 600 p0) 1 (newBalance p0)
+      afterFirst = finalBalance (newBalance p0) firstCharge
+  -- a first charge, granted onto the seed the service starts a purchase from
+  map rowKind firstCharge `shouldBe` ["charge", "badge"]
+  allVerify firstCharge
+  -- monthly renewals, each charged at the store's period start and asked about some days after it
+  let renew (tip, rows) (k, late) =
+        let periodStart = addMonths k p0
+            new = charged periodStart (days late periodStart) 1 tip
+         in (finalBalance tip new, rows <> new)
+      (_, monthly) = foldl renew (afterFirst, firstCharge) [(1, 3), (2, 6), (3, 1)]
+  map rowKind monthly `shouldBe` concat (replicate 4 ["charge", "badge"])
+  allVerify monthly
+  -- a period start equal to the balance start continues the run on its anchor
+  let sameStart = charged (bStart afterFirst) (days 4 $ bStart afterFirst) 1 afterFirst
+  map rowKind sameStart `shouldBe` ["charge", "badge"]
+  map bAnchor (take 1 sameStart) `shouldBe` [p0]
+  allVerify (firstCharge <> sameStart)
+  -- and a store clock a minute either side of it still verifies, whichever branch the grant takes
+  mapM_
+    ( \offset -> do
+        let rows = charged (addUTCTime offset $ bStart afterFirst) (days 4 $ bStart afterFirst) 1 afterFirst
+        map rowKind rows `shouldBe` ["charge", "badge"]
+        allVerify (firstCharge <> rows)
+    )
+    [-60, 60]
+  -- a renewal after billing retry: the store's new period starts when the charge recovered, and the
+  -- run restarts there, so coverage follows the store's new renewal date
+  let recoveredAt = days 9 (addMonths 1 p0)
+      recovered = charged recoveredAt (days 1 recoveredAt) 1 afterFirst
+  map rowKind recovered `shouldBe` ["charge", "badge"]
+  map bStart (take 1 recovered) `shouldBe` [recoveredAt]
+  map paidThrough (take 1 recovered) `shouldBe` [addMonths 1 recoveredAt]
+  allVerify (firstCharge <> recovered)
+  -- annual: the first month issued at purchase, then one at each month's start
+  let annualFirst = charged p0 p0 12 (newBalance p0)
+      annualTip = finalBalance (newBalance p0) annualFirst
+      yearEnd = addMonths 12 p0
+      monthsIssued n = take n (issueAll annualTip)
+      -- the device was offline for the year's last month, which is still unissued at the renewal
+      tenMore = monthsIssued 10
+      monthLeft = finalBalance annualTip tenMore
+      renewedAnnual = charged yearEnd (days 3 yearEnd) 12 monthLeft
+  bMonths monthLeft `shouldBe` 1
+  map rowKind renewedAnnual `shouldBe` ["lapse", "charge", "badge"]
+  allVerify (annualFirst <> tenMore <> renewedAnnual)
+  -- the same, with the store's year starting an hour before the ledger's: that month has not run out
+  -- at the period start, so it is carried and lapses after the grant
+  let earlyAnnual = charged (addUTCTime (-3600) yearEnd) (days 3 yearEnd) 12 monthLeft
+  map rowKind earlyAnnual `shouldBe` ["charge", "lapse", "badge"]
+  allVerify (annualFirst <> tenMore <> earlyAnnual)
+  -- away from month nine until 45 days past the year end, while the renewal failed and recovered
+  -- inside the store's grace period, which keeps the original period start
+  let eightMore = monthsIssued 8
+      awayTip = finalBalance annualTip eightMore
+      graced = charged yearEnd (days 45 yearEnd) 12 awayTip
+  bMonths awayTip `shouldBe` 3
+  map rowKind graced `shouldBe` ["lapse", "charge", "lapse", "badge"]
+  allVerify (annualFirst <> eightMore <> graced)
+
 -- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
 -- left running can be days - long enough for a funded badge to lapse.
 testRetryClassification :: IO ()
@@ -873,6 +964,19 @@ testStoreTransactionRef = do
   google `shouldSatisfy` maybe False (\(StoreTransactionRef provider ref) -> provider == PPGoogle && ref /= "play-token")
   google `shouldBe` storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
   storeTransactionRef SPInvoice {invoiceId = InvoiceId "inv"} `shouldBe` Nothing
+
+-- every renewal of a subscription is a new transaction with a new id, and must still find the purchase its first charge made
+testAppleTransactionRef :: IO ()
+testAppleTransactionRef = do
+  let jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
+      part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      ids = ["transactionId" J..= ("2000000900000002" :: T.Text), "originalTransactionId" J..= ("2000000900000001" :: T.Text)]
+      ofType t = ("type" J..= (t :: T.Text)) : ids
+  appleTransactionRef (jws $ ofType "Auto-Renewable Subscription") `shouldBe` Just "2000000900000001"
+  appleTransactionRef (jws $ ofType "Consumable") `shouldBe` Just "2000000900000002"
+  appleTransactionRef (jws ids) `shouldBe` Just "2000000900000002"
+  -- a subscription is never claimed by its own transaction id, which the next renewal would not share
+  appleTransactionRef (jws $ take 2 (ofType "Auto-Renewable Subscription")) `shouldBe` Nothing
 
 testShownServiceRequest :: IO ()
 testShownServiceRequest = do

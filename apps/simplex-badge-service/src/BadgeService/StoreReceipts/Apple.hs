@@ -33,6 +33,7 @@ import Data.Word (Word32)
 import Data.X509
 import Data.X509.EC (unserializePoint)
 import Data.X509.Validation (SignatureFailure (..), SignatureVerification (..), verifySignedSignature)
+import Simplex.Chat.PaymentService (applePayloadRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 
@@ -105,7 +106,7 @@ jwsSignature s = case B64U.decodeUnpadded (encodeUtf8 s) of
   _ -> refused "the signature is not 64 base64url bytes"
 
 data AppleTransaction = AppleTransaction
-  { transactionId :: Text,
+  { transactionRef :: Text,
     productId :: Text,
     bundleId :: Text,
     environment :: Text,
@@ -117,7 +118,8 @@ data AppleTransaction = AppleTransaction
 
 appleTransactionP :: J.Object -> JT.Parser AppleTransaction
 appleTransactionP o = do
-  transactionId <- o J..: "transactionId"
+  -- the same function names the claim, so the transaction vouched for is the one claimed
+  transactionRef <- maybe (fail "names no transaction") pure $ applePayloadRef o
   productId <- o J..: "productId"
   bundleId <- o J..: "bundleId"
   environment <- o J..: "environment"
@@ -125,10 +127,10 @@ appleTransactionP o = do
   revoked <- isJust <$> (o J..:? "revocationDate" :: JT.Parser (Maybe J.Value))
   price <- o J..:? "price"
   currency <- o J..:? "currency"
-  pure AppleTransaction {transactionId, productId, bundleId, environment, quantity, revoked, price, currency}
+  pure AppleTransaction {transactionRef, productId, bundleId, environment, quantity, revoked, price, currency}
 
 transaction :: Text -> AppleTransaction -> Either StoreRefusal VerifiedStoreTransaction
-transaction ourBundleId AppleTransaction {transactionId, productId, bundleId, environment, quantity, revoked, price, currency}
+transaction ourBundleId AppleTransaction {transactionRef, productId, bundleId, environment, quantity, revoked, price, currency}
   -- the configured bundle id may be the wrong one, and refusing for good would destroy every genuine purchase
   | bundleId /= ourBundleId = failed "another app's bundle id, or ours misconfigured"
   | revoked = refused "refunded or revoked"
@@ -139,7 +141,7 @@ transaction ourBundleId AppleTransaction {transactionId, productId, bundleId, en
         _ -> failed "an environment this verifier does not know"
       Right
         VerifiedStoreTransaction
-          { transactionRef = transactionId,
+          { transactionRef,
             productId,
             quantity,
             testPurchase,

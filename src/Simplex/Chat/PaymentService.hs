@@ -6,6 +6,7 @@ module Simplex.Chat.PaymentService
   ( ServiceInvoice (..),
     ServicePayment (..),
     appleTransactionRef,
+    applePayloadRef,
     googlePurchaseRef,
     module Simplex.Chat.PaymentService.Types,
   ) where
@@ -48,9 +49,19 @@ appleTransactionRef :: Text -> Maybe Text
 appleTransactionRef signed = case T.splitOn "." signed of
   [_, payload, _] -> do
     J.Object o <- J.decodeStrict' =<< eitherToMaybe (B64U.decodeUnpadded $ encodeUtf8 payload)
-    J.String txId <- JM.lookup "transactionId" o
-    pure txId
+    applePayloadRef o
   _ -> Nothing
+
+-- | A subscription is named by its original transaction id, which every renewal keeps, so all its
+-- charges claim one purchase; any other transaction by its own id.
+applePayloadRef :: J.Object -> Maybe Text
+applePayloadRef o = case JM.lookup "type" o of
+  Just (J.String "Auto-Renewable Subscription") -> field "originalTransactionId"
+  _ -> field "transactionId"
+  where
+    field k = case JM.lookup k o of
+      Just (J.String t) -> Just t
+      _ -> Nothing
 
 -- | A purchase token is a bearer secret, so a purchase is named by its hash.
 googlePurchaseRef :: Text -> Text

@@ -27,7 +27,7 @@ import System.Timeout (timeout)
 -- TODO [badges] PaymentFunding's PFApple and PFGoogle sketch the same thing and have no producer;
 -- delete them, or build them out and reconcile.
 data VerifiedStoreTransaction = VerifiedStoreTransaction
-  { transactionRef :: Text, -- from what was verified: Apple's transactionId, googlePurchaseRef of the token asked about
+  { transactionRef :: Text, -- from what was verified: applePayloadRef of Apple's payload, googlePurchaseRef of the token asked about
     productId :: Text,
     quantity :: Int, -- as the store reported it; the service refuses any but 1, as the apps never buy more
     -- costs the buyer nothing: Apple's Sandbox, which a public TestFlight build buys in, and Google's license testers

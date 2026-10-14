@@ -42,6 +42,7 @@ badgeStoreVerifierTests :: Spec
 badgeStoreVerifierTests = describe "badge store verifiers" $ do
   describe "App Store signed transactions" $ do
     it "vouches for a transaction a chain to the trusted root signed, naming the transaction it was claimed by" testAppleVerdict
+    it "vouches for a subscription renewal by its original transaction id, the ref it is claimed by" testAppleRenewalVerdict
     it "fails, rather than refuses, an intermediate the trusted root did not sign, since the root may be misconfigured" testAppleRootNotTrusted
     it "refuses a leaf the intermediate did not sign, though the intermediate is genuine" testAppleForgedLeaf
     it "fails, rather than refuses, a leaf signature the library cannot check" testAppleLeafUncheckable
@@ -221,6 +222,18 @@ testAppleVerdict = do
   appleVerdict (rootCert chain) jws
     `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD")}
   appleTransactionRef jws `shouldBe` Just "2000000900000001"
+
+-- the service answers internal when the verified ref is not the claimed one, so a renewal must be vouched for by the claim's own ref
+testAppleRenewalVerdict :: IO ()
+testAppleRenewalVerdict = do
+  chain <- trustedChain
+  jws <- signedBy chain $ transactionPayload [("transactionId", "2000000900000002"), ("type", "Auto-Renewable Subscription"), ("productId", "SUBSCR_BADGE_SUPPORTER_MONTH_01")] []
+  r <- appleVerdict (rootCert chain) jws
+  fmap transactionRef r `shouldBe` Right "2000000900000001"
+  appleTransactionRef jws `shouldBe` Just "2000000900000001"
+  -- an auto-renewable transaction without its original id names no subscription
+  noOriginal <- signedBy chain $ transactionPayload [("type", "Auto-Renewable Subscription")] ["originalTransactionId"]
+  outcome <$> appleVerdict (rootCert chain) noOriginal `shouldReturn` Invalid
 
 testAppleRootNotTrusted :: IO ()
 testAppleRootNotTrusted = do

@@ -8,6 +8,7 @@ module Simplex.Chat.Badges.Ledger
     lapseEntry,
     grantEntry,
     issueEntry,
+    chargeEntries,
     paidThrough,
     balanceChecked,
     addMonths,
@@ -19,7 +20,7 @@ module Simplex.Chat.Badges.Ledger
   )
 where
 
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text)
 import Data.Time.Calendar (addDays, addGregorianMonthsClip, toGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
@@ -114,6 +115,17 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
             balanceStartTs = monthAfter e 1,
             entryType = SEDebit SDBadge
           }
+
+-- | A store charge's rows, dated to its billing period start so coverage follows the store's periods:
+-- a lapse to the period start, the grant, and a lapse to now; the caller issues at now. createdAt stays
+-- non-decreasing as long as the period does not start before the tip was written.
+chargeEntries :: UTCTime -> UTCTime -> Int -> Text -> (Text, Text, Text) -> StatementEntry -> [StatementEntry]
+chargeEntries periodStart now months chargeId (lapseBeforeId, grantId, lapseSinceId) tip =
+  maybeToList lapsedBefore <> [granted] <> maybeToList lapsedSince
+  where
+    lapsedBefore = lapseEntry periodStart lapseBeforeId tip
+    granted = grantEntry periodStart grantId months (SCCharge chargeId) $ fromMaybe tip lapsedBefore
+    lapsedSince = lapseEntry now lapseSinceId granted
 
 -- Generous because postdating only writes off a month by crossing a month boundary, which takes
 -- days, while a device clock a few minutes slow would otherwise leave every row unverified.

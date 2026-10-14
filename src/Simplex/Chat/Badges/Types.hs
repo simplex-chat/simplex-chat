@@ -286,8 +286,8 @@ data BadgeState = BadgeState
 
 -- | One of a profile's store purchases that no receipt has reached yet, or whose receipt is held until
 -- the service credits it; transactionRef is set once a receipt arrived. Neither reference is a secret:
--- Apple's is the transaction id, Google's is a hash of the token. creditError is set only while the
--- held receipt's last attempt failed in a way that cannot clear on its own.
+-- Apple's is the transaction id, or a subscription's original one; Google's is a hash of the token.
+-- creditError is set only while the held receipt's last attempt failed in a way that cannot clear on its own.
 data OpenStorePurchase = OpenStorePurchase
   { invoiceId :: Maybe Text,
     transactionRef :: Maybe Text,
