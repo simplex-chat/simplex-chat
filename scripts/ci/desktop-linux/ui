@@ -1,0 +1,176 @@
+#!/bin/bash
+
+# Drives the desktop app on a virtual X display, for the scripted cases and for an agent on the runner.
+# Compose for Desktop has no accessibility tree on Linux, so text is found on screenshots by OCR (tesseract);
+# coordinates are screen pixels, as in the screenshots. Screenshots, the text read from them and
+# a log of every command (steps.log) go to UI_OUT; the app's data stays in UI_STATE between starts.
+#
+#   ui start <app dir>            start Xvfb, openbox and <app dir>/bin/simplex, and wait for its window
+#   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.txt, and print the text on screen
+#   ui text                       print the text on screen, one phrase per line after its centre x,y
+#   ui wait <text> [secs]         wait up to secs (30) until the text is on screen (case and punctuation ignored)
+#   ui click <x> <y>              click at x,y
+#   ui click-text <text> [secs]   wait up to secs (20) for the text and click its centre
+#   ui type <text>                type into the focused field
+#   ui key <key>...               press keys named as in xdotool (Return, Escape, ctrl+a)
+#   ui stop                       stop the app, openbox and Xvfb
+
+set -euo pipefail
+
+: "${UI_OUT:?UI_OUT must be the output directory}"
+export DISPLAY=${UI_DISPLAY:-:99}
+state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
+here=$(cd "$(dirname "$0")" && pwd)
+mkdir -p "$UI_OUT" "$state/ocr"
+
+log() {
+  echo "$(date -u +%H:%M:%S) $*" | tee -a "$UI_OUT/steps.log"
+}
+
+running() {
+  [ -f "$state/$1.pid" ] && kill -0 "$(cat "$state/$1.pid")" 2> /dev/null
+}
+
+stop_process() {
+  local name=$1 secs=$2 pid
+  if ! running "$name"; then
+    rm -f "$state/$name.pid"
+    return
+  fi
+  pid=$(cat "$state/$name.pid")
+  kill "$pid" 2> /dev/null || true
+  for _ in $(seq "$secs"); do
+    kill -0 "$pid" 2> /dev/null || break
+    sleep 1
+  done
+  kill -9 "$pid" 2> /dev/null || true
+  rm -f "$state/$name.pid"
+}
+
+start() {
+  local app_dir
+  app_dir=$(cd "$1" && pwd)
+  if running app; then
+    echo "error: the app is already running"
+    return 1
+  fi
+  stop_process openbox 2
+  stop_process xvfb 2
+
+  setsid Xvfb "$DISPLAY" -screen 0 1440x900x24 -nolisten tcp < /dev/null > "$UI_OUT/xvfb.log" 2>&1 &
+  echo $! > "$state/xvfb.pid"
+  for _ in $(seq 20); do
+    xdotool getdisplaygeometry > /dev/null 2>&1 && break
+    sleep 0.5
+  done
+  xdotool getdisplaygeometry
+
+  setsid openbox --sm-disable < /dev/null > "$UI_OUT/openbox.log" 2>&1 &
+  echo $! > "$state/openbox.pid"
+
+  mkdir -p "$state/data" "$state/config" "$state/tmp"
+  XDG_DATA_HOME="$state/data" \
+    XDG_CONFIG_HOME="$state/config" \
+    JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$state/tmp -Dskiko.renderApi=SOFTWARE" \
+    LD_LIBRARY_PATH="$app_dir/lib/app/resources" \
+    setsid "$app_dir/bin/simplex" < /dev/null >> "$UI_OUT/app.log" 2>&1 &
+  echo $! > "$state/app.pid"
+
+  if ! timeout 120 xdotool search --sync --onlyvisible --name '^SimpleX$' > "$state/window"; then
+    echo "error: no app window after 120 s"
+    return 1
+  fi
+  xdotool getwindowgeometry "$(head -n 1 "$state/window")"
+}
+
+# ocr <png> lines | ocr <png> find <text>: OCR of the enlarged grayscale image and of its negative, for light text on coloured buttons
+ocr() {
+  local png=$1
+  shift
+  convert "$png" -colorspace Gray -resize 200% "$state/ocr/pos.png"
+  convert "$state/ocr/pos.png" -negate "$state/ocr/neg.png"
+  tesseract "$state/ocr/pos.png" "$state/ocr/pos" --psm 11 tsv > /dev/null 2>&1
+  tesseract "$state/ocr/neg.png" "$state/ocr/neg" --psm 11 tsv > /dev/null 2>&1
+  python3 "$here/screen-text.py" 2 "$@" "$state/ocr/pos.tsv" "$state/ocr/neg.tsv"
+}
+
+screen_ocr() {
+  import -window root "$state/ocr/screen.png"
+  ocr "$state/ocr/screen.png" "$@"
+}
+
+# prints "x y" of the text once it is on screen
+wait_for() {
+  local text=$1 deadline=$((SECONDS + $2))
+  until screen_ocr find "$text"; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+shot() {
+  local n f
+  n=$(find "$UI_OUT" -maxdepth 1 -name '[0-9][0-9]-*.png' | wc -l)
+  f=$(printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1")
+  import -window root "$f.png"
+  ocr "$f.png" lines > "$f.txt"
+  echo "::group::text on screen: $(basename "$f")"
+  cat "$f.txt"
+  echo "::endgroup::"
+  log "shot $(basename "$f").png"
+}
+
+click() {
+  xdotool mousemove --sync "$1" "$2" click 1
+  sleep 1
+}
+
+case "${1:-}" in
+  start)
+    log "start $2"
+    start "$2"
+    ;;
+  shot) shot "$2" ;;
+  text) screen_ocr lines ;;
+  wait)
+    secs=${3:-30}
+    if ! pos=$(wait_for "$2" "$secs"); then
+      log "wait \"$2\": not on screen after $secs s"
+      exit 1
+    fi
+    log "wait \"$2\": at ${pos/ /,}"
+    ;;
+  click)
+    click "$2" "$3"
+    log "click $2,$3"
+    ;;
+  click-text)
+    secs=${3:-20}
+    if ! pos=$(wait_for "$2" "$secs"); then
+      log "click-text \"$2\": not on screen after $secs s"
+      exit 1
+    fi
+    read -r x y <<< "$pos"
+    click "$x" "$y"
+    log "click-text \"$2\" at $x,$y"
+    ;;
+  type)
+    xdotool type --delay 50 -- "$2"
+    log "type \"$2\""
+    ;;
+  key)
+    shift
+    xdotool key --delay 100 -- "$@"
+    log "key $*"
+    ;;
+  stop)
+    stop_process app 10
+    stop_process openbox 2
+    stop_process xvfb 2
+    log "stop"
+    ;;
+  *)
+    sed -n '3,16s/^# \{0,1\}//p' "$0"
+    exit 1
+    ;;
+esac

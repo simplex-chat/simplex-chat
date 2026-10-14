@@ -1,0 +1,186 @@
+name: desktop-linux
+
+on:
+  push:
+    branches:
+      - f/ci-desktop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GHC_VER: 9.6.3
+  CABAL_VER: 3.10.2.0
+  JAVA_VER: 17
+  CORE_PKG: desktop-core-linux-x86_64.tar.gz
+
+jobs:
+  core:
+    name: core library for Linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Restore core library
+        id: core-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/core/${{ env.CORE_PKG }}
+          key: desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/ci/desktop-linux/build-core.sh') }}
+
+      - name: Setup Haskell
+        id: haskell
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: ${{ env.GHC_VER }}
+          cabal-version: ${{ env.CABAL_VER }}
+
+      - name: Restore cabal store
+        id: cabal-cache
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v5
+        with:
+          path: |
+            ${{ steps.haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: desktop-linux-core-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-${{ github.run_id }}
+          restore-keys: |
+            desktop-linux-core-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
+            desktop-linux-core-store-ghc${{ env.GHC_VER }}-
+
+      - name: Install libraries
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev patchelf
+
+      - name: Build core library
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        run: scripts/ci/desktop-linux/build-core.sh ~/core/${{ env.CORE_PKG }}
+
+      - name: Save cabal store
+        if: ${{ !cancelled() && steps.core-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            ${{ steps.haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
+
+      - name: Save core library
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ~/core/${{ env.CORE_PKG }}
+          key: ${{ steps.core-cache.outputs.cache-primary-key }}
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-core-linux-x86_64
+          path: ~/core/${{ env.CORE_PKG }}
+          compression-level: 0
+          retention-days: 3
+          if-no-files-found: error
+
+  app:
+    name: desktop app under Xvfb
+    needs: core
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" || true
+
+      - name: Download core library
+        uses: actions/download-artifact@v7
+        with:
+          name: desktop-core-linux-x86_64
+          path: ~/core
+
+      - name: Install core library
+        run: scripts/ci/desktop-linux/install-core.sh ~/core/${{ env.CORE_PKG }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+          cache: gradle
+
+      - name: Build app
+        id: build
+        working-directory: apps/multiplatform
+        run: |
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :desktop:createDistributable
+          app=release/main/app/simplex
+          ls -la "$app/bin" "$app/lib/app/resources"
+          du -sh "$app"
+          LD_LIBRARY_PATH="$app/lib/app/resources" ldd "$app/lib/app/resources/libapp-lib.so"
+
+      - name: Run desktop tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: apps/multiplatform
+        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :common:desktopTest
+
+      - name: Report desktop tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: scripts/ci/desktop-linux/test-summary.py apps/multiplatform/common/build/test-results/desktopTest
+
+      - name: Install UI tools
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr
+          tesseract --version
+          xdotool version
+
+      - name: Run smoke test
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/smoke-test"
+
+      - name: Upload smoke test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-smoke-test
+          path: ${{ runner.temp }}/smoke-test
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Upload desktop test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-test-report
+          path: |
+            apps/multiplatform/common/build/reports/tests/desktopTest
+            apps/multiplatform/common/build/test-results/desktopTest
+          retention-days: 3
+          if-no-files-found: warn
