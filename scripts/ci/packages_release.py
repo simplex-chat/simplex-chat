@@ -568,13 +568,18 @@ def prepare(args: argparse.Namespace) -> None:
 
 
 def publish_plan() -> None:
+    """A recorded version is published: npm and PyPI list a new version minutes after it is published."""
+    releases, _ = read_releases()
     for key, directory in [("types", TYPES_DIR), ("nodejs", NODEJS_DIR)]:
         package = read_json(f"{directory}/package.json")
-        pending = not npm_published(package["name"], package["version"])
-        print(f"{key}_version={package['version'] if pending else ''}")
+        published = recorded_commit(releases, npm_key(directory), package["version"]) or npm_published(
+            package["name"], package["version"]
+        )
+        print(f"{key}_version={'' if published else package['version']}")
         print(f"{key}_dist_tag={dist_tag(package['version'])}")
     version, _ = parse_python_version(read_text(PYTHON_VERSION_FILE))
-    print(f"python_version={'' if pypi_published(version) else version}")
+    published = recorded_commit(releases, pypi_key(), version) or pypi_published(version)
+    print(f"python_version={'' if published else version}")
 
 
 def record(args: argparse.Namespace) -> None:

@@ -223,6 +223,9 @@ jobs:
 
       - name: Versions to publish
         id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
         run: python3 scripts/ci/packages_release.py publish-plan >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js

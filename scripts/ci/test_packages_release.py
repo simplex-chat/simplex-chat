@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import email.message
 import io
 import subprocess
@@ -13,6 +14,9 @@ from unittest import mock
 import packages_release
 from packages_release import (
     ADDON_ASSETS,
+    NODEJS_DIR,
+    PYTHON_VERSION_FILE,
+    TYPES_DIR,
     ADDON_PLATFORMS,
     BuildPlan,
     LIBS_ASSETS,
@@ -27,6 +31,7 @@ from packages_release import (
     changed_since,
     add_releases,
     package_state,
+    publish_plan,
     record_releases,
     recorded_commit,
     render_releases,
@@ -309,7 +314,9 @@ class RecordReleasesTest(unittest.TestCase):
         return {"content": base64.b64encode(render_releases(releases).encode()).decode(), "sha": blob}
 
     def conflict(self):
-        return urllib.error.HTTPError("url", 409, "Conflict", email.message.Message(), io.BytesIO())
+        error = urllib.error.HTTPError("url", 409, "Conflict", email.message.Message(), io.BytesIO())
+        self.addCleanup(error.close)
+        return error
 
     def test_creates_the_file_and_returns_the_commit(self):
         calls = []
@@ -398,6 +405,34 @@ class PackageStateTest(unittest.TestCase):
     def test_unrecorded_version_asks_the_registry(self):
         self.assertFalse(self.state(registry_published=False).published)
         self.assertTrue(self.state(registry_published=True).published)
+
+    def test_publish_plan_skips_recorded_versions_before_the_registries_list_them(self):
+        self.write(f"{TYPES_DIR}/package.json", '{"name": "@simplex-chat/types", "version": "0.1.0"}')
+        self.write(f"{NODEJS_DIR}/package.json", '{"name": "simplex-chat", "version": "1.0.0-beta.1.1"}')
+        self.write(PYTHON_VERSION_FILE, render_python_version("1.0.0b1.post1", Pins("core-1", {})))
+        self.write("pyproject.toml", "")
+        self.commit("packages")
+        releases = {"npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}}, "pypi": {"simplex-chat": {"1.0.0b1.post1": "c"}}}
+        output = io.StringIO()
+        with (
+            mock.patch.object(packages_release, "ROOT", self.repo),
+            mock.patch.object(packages_release, "read_releases", return_value=(releases, "blob")),
+            mock.patch.object(packages_release, "python_project", return_value="simplex-chat"),
+            mock.patch.object(packages_release, "npm_published", return_value=False),
+            mock.patch.object(packages_release, "pypi_published", return_value=False),
+            contextlib.redirect_stdout(output),
+        ):
+            publish_plan()
+        self.assertEqual(
+            output.getvalue().splitlines(),
+            [
+                "types_version=0.1.0",
+                "types_dist_tag=latest",
+                "nodejs_version=",
+                "nodejs_dist_tag=beta",
+                "python_version=",
+            ],
+        )
 
     def test_unknown_recorded_commit_falls_back_to_the_version_commit(self):
         self.write("pkg/src.txt", "b")
