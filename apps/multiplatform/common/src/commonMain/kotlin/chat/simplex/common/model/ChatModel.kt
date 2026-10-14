@@ -661,6 +661,7 @@ object ChatModel {
 
     suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
       var itemAdded = false
+      var lastItemId: Long? = null
       // update chat list
       if (cInfo.groupChatScope() == null) {
         val i = getChatIndex(rhId, cInfo.id)
@@ -668,6 +669,7 @@ object ChatModel {
         if (i >= 0) {
           chat = chats[i]
           val pItem = chat.chatItems.lastOrNull()
+          lastItemId = pItem?.id
           if (pItem?.id == cItem.id) {
             chats[i] = chat.copy(chatItems = arrayListOf(cItem))
             if (pItem.isRcvNew && !cItem.isRcvNew) {
@@ -697,7 +699,8 @@ object ChatModel {
               cItem
             }
             items[itemIndex] = ci
-          } else {
+          } else if (cItem.id > maxOf(lastItemId ?: 0, items.maxOfOrNull { it.id } ?: 0)) {
+            // an update of an earlier item that is not loaded is not added, it is shown when loaded
             addToChatItems(cItem)
             itemAdded = true
           }
