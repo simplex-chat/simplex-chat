@@ -220,6 +220,9 @@ missing a key, an unreadable root certificate or service account key, or either 
 [apple]
 bundle_id = chat.simplex.app
 root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+api_key_id = 2X9R4HXF34
+api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
+api_private_key_file = /etc/simplex-badge-service/AuthKey_2X9R4HXF34.p8
 
 [google]
 package_name = chat.simplex.app
@@ -232,6 +235,16 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   an error rather than refused, since `bundle_id` or `root_certificate` may be the wrong one; check
   both when those errors appear, unless the purchase was made in Xcode's StoreKit testing, which
   the App Store does not sign, so no root verifies it.
+- With `api_key_id`, `api_issuer_id` and `api_private_key_file`, `[apple]` also verifies
+  subscriptions: it asks the App Store Server API for a subscription's status, with a token signed
+  by the in-app purchase key App Store Connect issued (the `.p8` file, its key id and the
+  account's issuer id), and checks what Apple signed in the answer against the same root. Without
+  them, one-time purchases verify as before and every subscription is answered
+  `provider_not_configured`. The three are set together or not at all. `api_host` defaults to the
+  production host, `https://api.storekit.itunes.apple.com`, which answers nothing about a Sandbox
+  transaction; a test deployment sets `https://api.storekit-sandbox.itunes.apple.com`. A 401 or 403
+  from Apple, the key refused, is answered `internal` and logged. Keep the key file readable by this
+  service alone.
 - `[google]` asks the Google Play Developer API about each purchase, and acknowledges it before
   crediting it, as the service account whose JSON key `service_account_file` holds. The account
   needs both Play Console permissions Google's

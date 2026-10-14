@@ -11,6 +11,8 @@ module Bots.BadgeService.FakePlay
     answerTokenRequests,
     grantTokensFor,
     fakePackageName,
+    der,
+    pem,
   )
 where
 
@@ -33,6 +35,7 @@ import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
+import Data.Word (Word8)
 import Network.HTTP.Types (Status, badRequest400, hAuthorization, hContentType, methodGet, methodPost, mkStatus, notFound404, ok200, parseSimpleQuery, unauthorized401)
 import Network.Wai (Application, Response, pathInfo, requestHeaders, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
@@ -95,8 +98,7 @@ withFakePlay action = do
 
 -- | The PKCS#8 PEM Google puts in a service account key, so the service's own parser reads it.
 pkcs8Pem :: RSA.PrivateKey -> B.ByteString
-pkcs8Pem k =
-  "-----BEGIN PRIVATE KEY-----\n" <> B8.unlines (chunks $ B64.encode pkcs8) <> "-----END PRIVATE KEY-----\n"
+pkcs8Pem k = pem "PRIVATE KEY" pkcs8
   where
     RSA.PublicKey {RSA.public_n, RSA.public_e} = RSA.private_pub k
     pkcs8 = der 0x30 $ derInteger 0 <> der 0x30 (rsaEncryption <> "\x05\x00") <> der 0x04 pkcs1
@@ -105,10 +107,17 @@ pkcs8Pem k =
     derInteger n = der 0x02 $ case i2osp n of
       bs | B.null bs || B.head bs >= 0x80 -> B.cons 0 bs
       bs -> bs
-    der tag content = B.pack (tag : derLength (B.length content)) <> content
+
+der :: Word8 -> B.ByteString -> B.ByteString
+der tag content = B.pack (tag : derLength (B.length content)) <> content
+  where
     derLength n
       | n < 0x80 = [fromIntegral n]
       | otherwise = let bs = B.unpack (i2osp $ toInteger n) in 0x80 + fromIntegral (length bs) : bs
+
+pem :: B.ByteString -> B.ByteString -> B.ByteString
+pem label content = "-----BEGIN " <> label <> "-----\n" <> B8.unlines (chunks $ B64.encode content) <> "-----END " <> label <> "-----\n"
+  where
     chunks bs
       | B.null bs = []
       | otherwise = let (line, rest) = B.splitAt 64 bs in line : chunks rest

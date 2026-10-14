@@ -35,7 +35,7 @@ import BadgeService.Store
 import BadgeService.Store.Invoices (seedCatalog, truncateToSecond)
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import BadgeService.StoreReceipts
-import BadgeService.StoreReceipts.Apple (readAppleRoot, verifyAppleTransaction)
+import BadgeService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot, verifyAppleTransaction)
 import BadgeService.StoreReceipts.Google (playStoreVerifier)
 import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import BadgeService.Waiters (Waiters, newWaiters)
@@ -140,23 +140,30 @@ configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case se
     logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
     pure env {storeVerifier = mockStoreVerifier}
   Just ServiceConfig {appleStore, playStore} -> do
-    apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificate} ->
-      (\root -> verifyAppleTransaction root aBundleId) <$> orExit (readAppleRoot aRootCertificate)
+    apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificate, aServerApi} -> do
+      root <- orExit (readAppleRoot aRootCertificate)
+      appleSubscriptions <- forM aServerApi $ orExit . appleSubscriptionChecker root aBundleId
+      pure (verifyAppleTransaction root aBundleId, appleSubscriptions)
     google <- forM playStore $ orExit . playStoreVerifier
-    forM_ appleStore $ \AppleStoreConfig {aBundleId} -> logInfo $ "verifying App Store receipts for " <> aBundleId
+    forM_ appleStore $ \AppleStoreConfig {aBundleId, aServerApi} ->
+      logInfo $ "verifying App Store receipts for " <> aBundleId <> maybe ", but not its subscriptions: [apple] sets no API key" (const "") aServerApi
     forM_ playStore $ \PlayStoreConfig {gPackageName} -> logInfo $ "verifying Play purchases for " <> gPackageName
     pure
       env
         { storeVerifier =
             v
-              { verifyApple = maybe (verifyApple v) Just apple,
+              { verifyApple = maybe (verifyApple v) (Just . fst) apple,
                 verifyGoogle = maybe (verifyGoogle v) (Just . fst) google,
-                acknowledgeGoogle = maybe (acknowledgeGoogle v) (Just . snd) google
+                acknowledgeGoogle = maybe (acknowledgeGoogle v) (Just . snd) google,
+                checkSubscription = maybe (checkSubscription v) (Just . appleOnly) (snd =<< apple)
               }
         }
   Nothing -> pure env
   where
     orExit = (>>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure)
+    appleOnly checkApple = \case
+      SubscriptionApple originalId -> checkApple originalId
+      SubscriptionGoogle _ -> pure $ Left SRNotConfigured
 
 badgeService :: BadgeServiceOpts -> ChatConfig -> ServiceState -> IO ()
 badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
@@ -483,7 +490,6 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
     purchaseSubscription credit =
       checkStoreSubscription verifier subscriptionRef >>= \case
         Left refusal -> storeRefusalResponse refusal
-        Right SubscriptionCheck {testSubscription = True} -> storeRefusalResponse SRTestPurchase
         Right checked -> case credit of
           Uncredited -> newSubscription checked
           _ -> answerCredit credit

@@ -2,6 +2,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module BadgeService.StoreReceipts
   ( VerifiedStoreTransaction (..),
@@ -11,18 +13,24 @@ module BadgeService.StoreReceipts
     SubscriptionRef (..),
     SubscriptionCheck (..),
     StoreCharge (..),
+    StoreVerifierFailure (..),
     noStoreVerifier,
     toStoreReceipt,
     checkStoreSubscription,
+    storeRequest,
   )
 where
 
-import Control.Exception (evaluate)
+import Control.Exception (Exception, catch, evaluate, try)
+import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, isDigit, isPrint, isSpace)
+import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
+import Network.HTTP.Client (HttpException (..), Manager, Request, Response (..), brReadSome, parseRequest, withResponse)
+import Network.HTTP.Types (Status (..))
 import Simplex.Chat.Badges.Service (SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..), StoreTransactionRef (..))
@@ -141,15 +149,47 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
         `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
     online = askStore verifyTimeout
 
--- | Both stores are asked online about a subscription, so a throw or an overrun is no verdict.
+-- | Both stores are asked online about a subscription, so a throw or an overrun is no verdict. A test
+-- purchase is refused here, for a first purchase and a renewal alike.
 checkStoreSubscription :: StoreVerifier -> SubscriptionRef -> IO (Either StoreRefusal SubscriptionCheck)
-checkStoreSubscription StoreVerifier {checkSubscription, verifyTimeout} ref =
-  maybe (pure $ Left SRNotConfigured) (\check -> askStore verifyTimeout "subscription check" $ check ref) checkSubscription
+checkStoreSubscription StoreVerifier {checkSubscription, verifyTimeout} ref = case checkSubscription of
+  Nothing -> pure $ Left SRNotConfigured
+  Just check -> (>>= notTest) <$> askStore verifyTimeout "subscription check" (check ref)
+  where
+    notTest = \case
+      SubscriptionCheck {testSubscription = True} -> Left SRTestPurchase
+      checked -> Right checked
+
+-- | Thrown by a verifier that cannot place what the store signed: its own failure, never the store's answer or silence.
+newtype StoreVerifierFailure = StoreVerifierFailure Text
+  deriving (Show)
+
+instance Exception StoreVerifierFailure
 
 askStore :: Int -> Text -> IO (Either StoreRefusal a) -> IO (Either StoreRefusal a)
 askStore limit what call =
-  (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout limit (call >>= forced))
+  (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout limit ((call >>= forced) `catch` verifierFailed))
     `catchOwn'` \_ -> pure $ Left $ SRUnreachable $ what <> " threw"
+  where
+    verifierFailed (StoreVerifierFailure reason) = pure $ Left $ SRVerifierFailed reason
+
+-- | A request to a store: its status and a body of at most a mebibyte. http-client's exceptions show
+-- the request, whose URL can hold a purchase token, so only their kind is kept.
+storeRequest :: Manager -> Text -> (Request -> Request) -> Text -> IO (Either StoreRefusal (Int, LB.ByteString))
+storeRequest manager store prepare url =
+  try (parseRequest (T.unpack url) >>= \req -> withResponse (prepare req) manager readBody) >>= \case
+    Left (e :: HttpException) -> pure $ Left $ SRUnreachable $ "request to " <> store <> " failed: " <> failureKind e
+    Right (code, body)
+      | LB.length body > maxStoreBytes -> pure $ Left $ SRVerifierFailed $ store <> " answered HTTP " <> tshow code <> " with over " <> tshow maxStoreBytes <> " bytes"
+      | otherwise -> pure $ Right (code, body)
+  where
+    readBody resp = (statusCode (responseStatus resp),) <$> brReadSome (responseBody resp) (fromIntegral maxStoreBytes + 1)
+    failureKind = \case
+      HttpExceptionRequest _ content -> T.pack $ takeWhile (/= ' ') $ show content
+      InvalidUrlException _ _ -> "InvalidUrlException"
+
+maxStoreBytes :: Int64
+maxStoreBytes = 1024 * 1024
 
 -- | A verdict holding a thunk that throws would otherwise throw later, outside the handlers.
 forced :: Either StoreRefusal a -> IO (Either StoreRefusal a)

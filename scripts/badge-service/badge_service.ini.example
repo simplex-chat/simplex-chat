@@ -39,9 +39,15 @@ idle_seconds = 60
 ; optional; without it every App Store receipt is answered provider_not_configured, which the app retries later.
 ; root_certificate is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer, in DER;
 ; uncomment its mount in compose.yml.
+; the api_ keys, set together, verify subscriptions with the in-app purchase key App Store Connect
+; issues; without them every App Store subscription is answered provider_not_configured. Mount the .p8
+; like the root certificate; it must be readable by the service's user alone. api_host defaults to production.
 ;[apple]
 ;bundle_id = chat.simplex.app
 ;root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+;api_key_id = 2X9R4HXF34
+;api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
+;api_private_key_file = /etc/simplex-badge-service/AuthKey_2X9R4HXF34.p8
 
 ; optional; without it every Play receipt is answered provider_not_configured, which the app retries later.
 ; service_account_file is the JSON key of a service account with the Play Console permissions "View

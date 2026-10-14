@@ -12,10 +12,13 @@
 module Bots.BadgeService.BotTests where
 
 import BadgeService.Codes (issueOneCode)
-import BadgeService.Config (BadgeIssuerKey (..), readServiceConfig)
+import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Group (GroupEvent)
+import BadgeService.StoreReceipts.Apple (appleSubscriptionChecker, verifyAppleTransaction)
 import Bots.BadgeService.ConfigTests (withIssuer)
+import Bots.BadgeService.FakeAppStore (FakeAppStore (..), withFakeAppStore)
 import Bots.BadgeService.FakeStore
+import Bots.BadgeService.StoreVerifierTests (TestChain (..), ourBundleId, signedBy, subscriptionPayload, transactionPayload, trustedChain)
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store (IssuedCode (..), getBadgeCode)
@@ -28,7 +31,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, cancel)
-import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue)
+import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue, readTVarIO)
 import Control.Monad (forM_, void, when)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
@@ -72,7 +75,10 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Data.X509 (encodeSignedObject)
+import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
+import UnliftIO.Temporary (withTempDirectory)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 #else
@@ -186,6 +192,8 @@ badgeServiceTests = do
     it "should keep the badge and ask again a day later while the store has not charged, then issue from the period start" testSubscriptionAwaitsCharge
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should resolve an Apple renewal to the subscription's record, and credit a held record that adopted it" testAppleRenewalResolvesToPurchase
+    it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
+    it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -2298,6 +2306,41 @@ testAppleRenewalResolvesToPurchase ps =
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) <$> ledgerRows (chatController alice) "badge_ledger" `shouldReturn` [(1, 1, Just "charge"), (-1, 0, Just "badge")]
+
+-- | Apple's production host answers 404 for a Sandbox transaction, so the offline check refuses it first.
+testAppleSandboxSubscriptionNotAsked :: HasCallStack => TestParams -> IO ()
+testAppleSandboxSubscriptionNotAsked ps = do
+  chain <- trustedChain
+  withFakeAppStore ourBundleId $ \fake -> do
+    Right check <- appleSubscriptionChecker (rootCert chain) ourBundleId (fasApi fake)
+    let checkApple = \case
+          SubscriptionApple originalId -> check originalId
+          SubscriptionGoogle _ -> pure $ Left SRNotConfigured
+        verifier = noStoreVerifier {verifyApple = Just (verifyAppleTransaction (rootCert chain) ourBundleId), checkSubscription = Just checkApple}
+    withBadgeServiceVerifier ps (const verifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
+      jws <- signedBy chain $ subscriptionPayload [("environment", "Sandbox")] []
+      (purchaseKey, masterKey) <- newPurchaseKeys
+      refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws}) `shouldReturn` (BSETestPurchase, Nothing)
+      readTVarIO (fasTokens fake) `shouldReturn` []
+      nothingPurchased cc
+
+testAppleSubscriptionWithoutApiKey :: HasCallStack => TestParams -> IO ()
+testAppleSubscriptionWithoutApiKey ps = do
+  chain <- trustedChain
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "apple-no-api-key" $ \d -> do
+    B.writeFile (d </> "root.cer") (encodeSignedObject $ rootCert chain)
+    writeFile (d </> "badge_service.ini") "[listener]\nstatic_dir = /srv/badges\n"
+    Right cfg <- readServiceConfig (d </> "badge_service.ini")
+    let apple = AppleStoreConfig {aBundleId = ourBundleId, aRootCertificate = d </> "root.cer", aServerApi = Nothing}
+    ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = Just apple})
+    withBadgeServiceVerifier ps (const storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
+      (purchaseKey, masterKey) <- newPurchaseKeys
+      subscription <- signedBy chain $ subscriptionPayload [] []
+      refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = subscription}) `shouldReturn` (BSEProviderNotConfigured, Nothing)
+      nothingPurchased cc
+      oneTime <- signedBy chain $ transactionPayload [] []
+      badgeTypeOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = oneTime}) `shouldReturn` Just BTSupporter
 
 testPurchaseBadge :: HasCallStack => TestParams -> IO ()
 testPurchaseBadge ps =

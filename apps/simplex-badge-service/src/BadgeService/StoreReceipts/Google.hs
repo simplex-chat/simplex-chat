@@ -7,7 +7,7 @@
 module BadgeService.StoreReceipts.Google (playStoreVerifier) where
 
 import BadgeService.Config (PlayStoreConfig (..))
-import BadgeService.StoreReceipts (StoreRefusal (..), VerifiedStoreTransaction (..))
+import BadgeService.StoreReceipts (StoreRefusal (..), VerifiedStoreTransaction (..), storeRequest)
 import Control.Concurrent.STM
 import Control.Exception (IOException, try)
 import Crypto.Hash.Algorithms (SHA256 (..))
@@ -29,18 +29,9 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.X509 (PrivKey (..))
 import Data.X509.Memory (readKeyFileFromMemory)
-import Network.HTTP.Client
-  ( HttpException (..),
-    Manager,
-    Request (..),
-    RequestBody (..),
-    Response (..),
-    brReadSome,
-    parseRequest,
-    withResponse,
-  )
+import Network.HTTP.Client (Manager, Request (..), RequestBody (..))
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (Status (..), hAuthorization, hContentType, methodPost, renderSimpleQuery)
+import Network.HTTP.Types (hAuthorization, hContentType, methodPost, renderSimpleQuery)
 import Simplex.Chat.PaymentService (googlePurchaseRef)
 import Simplex.Messaging.Util (tshow)
 
@@ -216,18 +207,4 @@ signedAssertion ServiceAccount {clientEmail, privateKey} audience now =
     segment = B64U.encodeUnpadded . LB.toStrict . J.encode
 
 playRequest :: PlayEnv -> (Request -> Request) -> Text -> IO (Either StoreRefusal (Int, LB.ByteString))
-playRequest PlayEnv {manager} prepare url =
-  try (parseRequest (T.unpack url) >>= \req -> withResponse (prepare req) manager readBody) >>= \case
-    -- http-client's exceptions show the request, whose URL can hold the purchase token, so only the kind is kept
-    Left (e :: HttpException) -> pure $ Left $ SRUnreachable $ "request to Google failed: " <> failureKind e
-    Right (code, body)
-      | LB.length body > maxPlayBytes -> pure $ Left $ SRVerifierFailed $ "Google answered HTTP " <> tshow code <> " with over " <> tshow maxPlayBytes <> " bytes"
-      | otherwise -> pure $ Right (code, body)
-  where
-    readBody resp = (statusCode (responseStatus resp),) <$> brReadSome (responseBody resp) (fromIntegral maxPlayBytes + 1)
-    failureKind = \case
-      HttpExceptionRequest _ content -> T.pack $ takeWhile (/= ' ') $ show content
-      InvalidUrlException _ _ -> "InvalidUrlException"
-
-maxPlayBytes :: Int64
-maxPlayBytes = 1024 * 1024
+playRequest PlayEnv {manager} = storeRequest manager "Google"

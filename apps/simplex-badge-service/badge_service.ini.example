@@ -44,9 +44,17 @@ idle_seconds = 60
 ; receipt provider_not_configured, which the app retries later.
 ; root_certificate is Apple Root CA - G3 as Apple publishes it, in DER:
 ; https://www.apple.com/certificateauthority/AppleRootCA-G3.cer
+; The api_ keys verify subscriptions through the App Store Server API, with the in-app purchase key
+; App Store Connect issues: its .p8 file, its key id and the account's issuer id, set together. Without
+; them every App Store subscription is answered provider_not_configured. api_host defaults to production;
+; a test deployment sets https://api.storekit-sandbox.itunes.apple.com. Keep the key file readable by this service alone.
 ;[apple]
 ;bundle_id = chat.simplex.app
 ;root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+;api_key_id = 2X9R4HXF34
+;api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
+;api_private_key_file = /etc/simplex-badge-service/AuthKey_2X9R4HXF34.p8
+;api_host = https://api.storekit.itunes.apple.com
 
 ; verifies Play purchases with the Google Play Developer API. Omit the whole section and the service answers
 ; every Play receipt provider_not_configured, which the app retries later.
