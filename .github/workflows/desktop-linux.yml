@@ -184,3 +184,36 @@ jobs:
             apps/multiplatform/common/build/test-results/desktopTest
           retention-days: 3
           if-no-files-found: warn
+
+  release:
+    name: released app under Xvfb
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Download released app
+        run: scripts/ci/desktop-linux/release-app.sh "$RUNNER_TEMP/release"
+
+      - name: Install UI tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr
+          tesseract --version
+          xdotool version
+
+      - name: Run smoke test
+        run: scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/release/app/opt/simplex" "$RUNNER_TEMP/smoke-test"
+
+      - name: Upload smoke test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-release-smoke-test
+          path: ${{ runner.temp }}/smoke-test
+          retention-days: 3
+          if-no-files-found: warn
