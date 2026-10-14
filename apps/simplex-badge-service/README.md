@@ -213,13 +213,14 @@ two included, answers `method_not_allowed`.
 
 Each store is verified only when its section is present; without one, every receipt from that store
 is answered `provider_not_configured` and the app keeps the purchase to present again. A section
-missing a key, an unreadable root certificate or service account key, or either section beside
+missing a key, a root certificate that cannot be read or is not a root, an unreadable service
+account key, or either section beside
 `[dev] accept_unverified_store_receipts = on`, stops the service at startup.
 
 ```ini
 [apple]
 bundle_id = chat.simplex.app
-root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
 api_key_id = 2X9R4HXF34
 api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
 api_private_key_file = /etc/simplex-badge-service/AuthKey_2X9R4HXF34.p8
@@ -229,16 +230,20 @@ package_name = chat.simplex.app
 service_account_file = /etc/simplex-badge-service/play-service-account.json
 ```
 
-- `[apple]` verifies the signed transaction offline, against Apple Root CA - G3 in DER as Apple
-  publishes it at <https://www.apple.com/certificateauthority/AppleRootCA-G3.cer>. A transaction
-  for another bundle id, or a chain this root does not verify, is answered `internal` and logged as
-  an error rather than refused, since `bundle_id` or `root_certificate` may be the wrong one; check
-  both when those errors appear, unless the purchase was made in Xcode's StoreKit testing, which
-  the App Store does not sign, so no root verifies it.
+- `[apple]` verifies the signed transaction offline, against the roots `root_certificates` lists,
+  comma-separated, each in DER. Today that is Apple Root CA - G3 as Apple publishes it at
+  <https://www.apple.com/certificateauthority/AppleRootCA-G3.cer>. Each must be self-signed.
+  Verification reads no validity period, so an expired root keeps verifying. A transaction for
+  another bundle id, or an intermediate no listed root signed, is answered `internal` and logged as
+  an error rather than refused, since `bundle_id` may be wrong or a root missing; check both when those errors appear, unless the purchase was made in Xcode's
+  StoreKit testing, which the App Store does not sign, so no root verifies it. When Apple signs
+  under a new root, list it beside the old one rather than in its place: a purchase signed under the
+  old root still verifies, and one answered `internal` meanwhile is credited when the app presents
+  it again.
 - With `api_key_id`, `api_issuer_id` and `api_private_key_file`, `[apple]` also verifies
   subscriptions: it asks the App Store Server API for a subscription's status, with a token signed
   by the in-app purchase key App Store Connect issued (the `.p8` file, its key id and the
-  account's issuer id), and checks what Apple signed in the answer against the same root. Without
+  account's issuer id), and checks what Apple signed in the answer against the same roots. Without
   them, one-time purchases verify as before and every subscription is answered
   `provider_not_configured`. The three are set together or not at all. `api_host` defaults to the
   production host, `https://api.storekit.itunes.apple.com`, which answers nothing about a Sandbox
@@ -255,6 +260,9 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   error naming the acknowledgement, and the app presents it again once the permission is granted,
   which must be within three days, before Play refunds it. The key signs in
   for an access token, so keep the file readable by this service alone.
+  Play purchases are verified on a lane of their own, so a slow or unreachable Play delays only
+  other Play purchases, not code redemptions or App Store purchases. A subscription's renewal check
+  still asks its store from the main lane, at most once an hour per subscription.
 
 Which answers are terminal for a purchase and which leave it to be presented again is listed per
 store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).

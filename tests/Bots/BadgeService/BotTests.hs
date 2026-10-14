@@ -30,7 +30,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue, readTVarIO)
 import Control.Monad (forM_, void, when)
@@ -44,6 +44,7 @@ import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (isPrefixOf, stripPrefix)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
 import Data.String (fromString)
@@ -182,6 +183,8 @@ badgeServiceTests = do
       it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
       it "should keep a receipt whose attempt throws" testStoreReceiptAttemptThrows
       it "should credit a held receipt after the app restarts" testStoreReceiptAfterRestart
+    describe "the Play lane" $ do
+      it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
     it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
@@ -2360,11 +2363,11 @@ testAppleSandboxSubscriptionNotAsked :: HasCallStack => TestParams -> IO ()
 testAppleSandboxSubscriptionNotAsked ps = do
   chain <- trustedChain
   withFakeAppStore ourBundleId $ \fake -> do
-    Right check <- appleSubscriptionChecker (rootCert chain) ourBundleId (fasApi fake)
+    Right check <- appleSubscriptionChecker (rootCert chain :| []) ourBundleId (fasApi fake)
     let checkApple = \case
           SubscriptionApple originalId -> check originalId
           SubscriptionGoogle _ -> pure $ Left SRNotConfigured
-        verifier = noStoreVerifier {verifyApple = Just (verifyAppleTransaction (rootCert chain) ourBundleId), checkSubscription = Just checkApple}
+        verifier = noStoreVerifier {verifyApple = Just (verifyAppleTransaction (rootCert chain :| []) ourBundleId), checkSubscription = Just checkApple}
     withBadgeServiceVerifier ps (const verifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
       jws <- signedBy chain $ subscriptionPayload [("environment", "Sandbox")] []
       (purchaseKey, masterKey) <- newPurchaseKeys
@@ -2380,7 +2383,7 @@ testAppleSubscriptionWithoutApiKey ps = do
     B.writeFile (d </> "root.cer") (encodeSignedObject $ rootCert chain)
     writeFile (d </> "badge_service.ini") "[listener]\nstatic_dir = /srv/badges\n"
     Right cfg <- readServiceConfig (d </> "badge_service.ini")
-    let apple = AppleStoreConfig {aBundleId = ourBundleId, aRootCertificate = d </> "root.cer", aServerApi = Nothing}
+    let apple = AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = (d </> "root.cer") :| [], aServerApi = Nothing}
     ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = Just apple})
     withBadgeServiceVerifier ps (const storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
       (purchaseKey, masterKey) <- newPurchaseKeys
@@ -2824,6 +2827,40 @@ testStoreReceiptAfterRestart ps = do
     withTestChatCfg ps cfg "alice" $ \alice -> do
       expectLinesWithin 60 alice (creditedLines "" invoiceId "1: supporter") ["subscribed 1 connections on server localhost"]
       heldStoreReceipts (chatController alice) `shouldReturn` 0
+
+testPlayHoldsNoOtherRequest :: HasCallStack => TestParams -> IO ()
+testPlayHoldsNoOtherRequest ps = do
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  hook <- newIORef $ putMVar entered () >> takeMVar release
+  -- past the 20s line wait, so a request queued behind the held call cannot be answered in time
+  let holding store = (googleVerifierWithHook hook store) {verifyTimeout = 60000000}
+  withBadgeServiceVerifier ps holding $ \BadgeServiceEnv {bsClientCfg, bsAddress, bsController = cc, bsStore = FakeStore {appleSupporterJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+        withNewTestChatCfg ps bsClientCfg "cath" cathProfile $ \cath -> do
+          alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+          storePurchaseOpen alice ""
+          timeout 30000000 (takeMVar entered) `shouldReturn` Just ()
+          code <- issueCode cc BTSupporter 1
+          bob ##> ("/_redeem_badge_code 1 " <> codeArg code)
+          bob <## "badge redeemed"
+          bob <## "supporter badge - active"
+          bob <##. "expires "
+          cath ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
+          cath <### [StartsWith (openPurchase ""), StartsWith "1: supporter"]
+          g <- C.newRandom
+          (upgradeKey, upgradePriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+          (fromPurchaseKey, fromPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+          masterKey <- generateMasterKey g
+          now <- getCurrentTime
+          let upgrade = BadgeUpgrade {fromPurchaseKey, receipt = "receipt", receiptSignature = C.sign' fromPriv "receipt", balance = BadgeBalance {lastEntry = emptyEntry now BTSupporter}}
+              upgradeReq = LB.unpack $ J.encode $ requestObject upgradeKey BSCPurchaseBadge {masterKey, payment = supporterPlay, upgrade = Just upgrade}
+          bob ##> ("/_service_request 1 " <> bsAddress <> " sign_key=" <> B.unpack (strEncode $ C.StoredPrivateKey upgradePriv) <> " " <> upgradeReq)
+          bob <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
+          putMVar release ()
+          expectLinesWithin 60 alice ["1: supporter"] []
+          rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 3
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
 createInvoice cc userId = do

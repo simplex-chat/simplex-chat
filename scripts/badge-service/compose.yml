@@ -19,8 +19,11 @@ services:
       - "--service-config"
       - "/etc/simplex-badge-service/badge_service.ini"
     volumes:
-      - ./badge_service.ini:/etc/simplex-badge-service/badge_service.ini:ro
-      # - ./AppleRootCA-G3.cer:/etc/simplex-badge-service/AppleRootCA-G3.cer:ro
-      # - ./play-service-account.json:/etc/simplex-badge-service/play-service-account.json:ro
+      - type: bind
+        source: ./config
+        target: /etc/simplex-badge-service
+        read_only: true
+        bind:
+          create_host_path: false
       - ./web:/srv/webapp
     stop_grace_period: 10s

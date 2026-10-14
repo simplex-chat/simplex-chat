@@ -53,7 +53,8 @@ data FakePlay = FakePlay
     fpTokenSeconds :: TVar Int,
     fpGrantedTokens :: TVar [B.ByteString],
     fpPurchasePaths :: TVar [[Text]],
-    fpAcknowledgeRefusal :: TVar (Maybe Int),
+    -- what the acknowledge endpoint answers instead of acknowledging
+    fpAcknowledgeRefusal :: TVar (Maybe PlayAnswer),
     fpAcknowledged :: TVar [Text],
     -- the product id and the token
     fpSubscriptionAcknowledged :: TVar [(Text, Text)]
@@ -135,7 +136,7 @@ answerTokenRequests FakePlay {fpTokenRefusal} = atomically . writeTVar fpTokenRe
 grantTokensFor :: FakePlay -> Int -> IO ()
 grantTokensFor FakePlay {fpTokenSeconds} = atomically . writeTVar fpTokenSeconds
 
-answerAcknowledgements :: FakePlay -> Maybe Int -> IO ()
+answerAcknowledgements :: FakePlay -> Maybe PlayAnswer -> IO ()
 answerAcknowledgements FakePlay {fpAcknowledgeRefusal} = atomically . writeTVar fpAcknowledgeRefusal
 
 fakeApp :: RSA.PublicKey -> FakePlay -> Application
@@ -163,7 +164,7 @@ fakeApp key FakePlay {fpConfig = PlayStoreConfig {gTokenUrl}, fpAnswers, fpToken
         _ -> respond $ status unauthorized401
     acknowledge record =
       readTVarIO fpAcknowledgeRefusal >>= \case
-        Just code -> respond $ status (mkStatus code "Refused")
+        Just answer -> answerWith answer
         Nothing -> do
           atomically (record :: STM ())
           respond $ responseLBS ok200 [] ""
@@ -188,11 +189,13 @@ fakeApp key FakePlay {fpConfig = PlayStoreConfig {gTokenUrl}, fpAnswers, fpToken
       _ -> False
     purchase token =
       M.lookup token <$> readTVarIO fpAnswers >>= \case
-        Just (PlayRecord v) -> respond $ json ok200 v
-        Just (PlayBody b) -> respond $ responseLBS ok200 [(hContentType, "application/json")] b
-        Just (PlayStatus code) -> respond $ status (mkStatus code "Answer")
-        Just PlayHang -> forever $ threadDelay 1000000
+        Just answer -> answerWith answer
         Nothing -> respond $ status notFound404
+    answerWith = \case
+      PlayRecord v -> respond $ json ok200 v
+      PlayBody b -> respond $ responseLBS ok200 [(hContentType, "application/json")] b
+      PlayStatus code -> respond $ status (mkStatus code "Answer")
+      PlayHang -> forever $ threadDelay 1000000
 
 json :: Status -> J.Value -> Response
 json st = responseLBS st [(hContentType, "application/json")] . J.encode

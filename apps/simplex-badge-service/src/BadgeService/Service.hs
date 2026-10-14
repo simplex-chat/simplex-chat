@@ -66,6 +66,7 @@ import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
+import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.PaymentService.Types (PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
@@ -140,10 +141,10 @@ configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case se
     logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
     pure env {storeVerifier = mockStoreVerifier}
   Just ServiceConfig {appleStore, playStore} -> do
-    apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificate, aServerApi} -> do
-      root <- orExit (readAppleRoot aRootCertificate)
-      appleSubscriptions <- forM aServerApi $ orExit . appleSubscriptionChecker root aBundleId
-      pure (verifyAppleTransaction root aBundleId, appleSubscriptions)
+    apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificates, aServerApi} -> do
+      roots <- mapM (orExit . readAppleRoot) aRootCertificates
+      appleSubscriptions <- forM aServerApi $ orExit . appleSubscriptionChecker roots aBundleId
+      pure (verifyAppleTransaction roots aBundleId, appleSubscriptions)
     google <- forM playStore $ orExit . playStoreVerifier
     forM_ appleStore $ \AppleStoreConfig {aBundleId, aServerApi} ->
       logInfo $ "verifying App Store receipts for " <> aBundleId <> maybe ", but not its subscriptions: [apple] sets no API key" (const "") aServerApi
@@ -298,9 +299,22 @@ issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} =
 processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
 processQueuedRequests key trackerQ_ env = do
   cc <- atomically $ readTMVar $ serviceCC env
-  forever $ do
-    (u, reqId, sigKey, reqData) <- atomically $ readTQueue $ serviceRequestQ env
-    survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ handleServiceRequest key (storeVerifier env) cc trackerQ_ u reqId sigKey reqData
+  -- a Play hand-over can wait two verifyTimeouts on Play, so it waits on a lane of its own
+  playQ <- newTQueueIO
+  let answer (u, reqId, sigKey, reqData) = handleServiceRequest key (storeVerifier env) cc trackerQ_ u reqId sigKey reqData
+      route req@(_, _, _, reqData)
+        | presentsPlayReceipt reqData = atomically $ writeTQueue playQ req
+        | otherwise = answer req
+      lane q act = forever $ do
+        req@(_, reqId, _, _) <- atomically $ readTQueue q
+        survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ act req
+  raceAny_ [lane (serviceRequestQ env) route, lane playQ answer]
+
+-- | Only what creates a purchase leaves the main lane: an append to an existing ledger is guarded by nothing but that lane being serial.
+presentsPlayReceipt :: J.Object -> Bool
+presentsPlayReceipt reqData = case J.fromJSON (J.Object reqData) of
+  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> True
+  _ -> False
 
 -- | Cancellation is rethrown, since that is how the race stops this thread. The
 -- exception itself is not logged: it can quote the request, which carries codes and store receipts.
@@ -477,12 +491,12 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
         Right (Left resp) -> resp
         _ -> errorResponse BSEInternal
     -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
-    newPurchase VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
+    newPurchase tx@VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       -- an Apple subscription, whose JWS was verified offline
       Just StoreSubscription -> purchaseSubscription Uncredited
       Just StoreOneTime {badgeType, months} ->
-        acknowledged acknowledgeReceipt $ do
+        acknowledged (($ tx) <$> acknowledgeReceipt) $ do
           now <- badgeNow cc
           signFirstMonth key cc masterKey badgeType months (SCPayment Nothing) now >>= \case
             Left resp -> pure resp

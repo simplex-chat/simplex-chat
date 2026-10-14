@@ -39,8 +39,10 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Lazy as LB
+import Data.Either (isRight)
 import Data.Hourglass (Date (..), DateTime (..), Month (..), TimeOfDay (..))
 import Data.List (isInfixOf, nub)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
@@ -61,6 +63,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
   describe "App Store signed transactions" $ do
     it "vouches for a transaction a chain to the trusted root signed, naming the transaction it was claimed by" testAppleVerdict
     it "vouches for a subscription renewal by its original transaction id, the ref it is claimed by" testAppleRenewalVerdict
+    it "verifies a transaction under any of the trusted roots" testAppleAnyTrustedRoot
     it "fails, rather than refuses, an intermediate the trusted root did not sign, since the root may be misconfigured" testAppleRootNotTrusted
     it "refuses a leaf the intermediate did not sign, though the intermediate is genuine" testAppleForgedLeaf
     it "fails, rather than refuses, a leaf signature the library cannot check" testAppleLeafUncheckable
@@ -74,7 +77,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "fails, rather than refuses, a payload Apple signed in a shape it does not know" testAppleUnknownShape
     it "fails, rather than refuses, a leaf holding a key it cannot read" testAppleLeafKey
     it "records the price in the currency's minor units, or not at all" testApplePrice
-    it "reads the trusted root from a DER file, and reports one it cannot read" testReadAppleRoot
+    it "reads the trusted root from a DER file, and reports one it cannot read or that is not a root" testReadAppleRoot
     it "has nothing to acknowledge" testAppleNoAcknowledgement
   describe "App Store subscriptions" $ do
     it "maps each status, renewing or cancelled by autoRenewStatus, and the charge to the latest transaction, with one token reused" testAppleSubscriptionStatuses
@@ -98,6 +101,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "asks for a new access token once the one it holds is about to expire" testPlayTokenExpires
     it "sends no token that is only dots, and describes a token outside the grammar without quoting it" testPlayTokensNotSent
     it "acknowledges a purchase, unless it is acknowledged or consumed already" testPlayAcknowledges
+    it "reads a purchase once to verify and acknowledge it, and acknowledges only what that read found unacknowledged" testPlayReadsPurchaseOnce
     it "reports an acknowledgement Play refuses or does not answer" testPlayAcknowledgementFails
     it "acknowledges through the verifier a [google] section configures" testPlayConfiguredAcknowledges
   describe "Google Play subscriptions" $ do
@@ -144,7 +148,10 @@ ourBundleId :: Text
 ourBundleId = "chat.simplex.app"
 
 appleVerdict :: SignedCertificate -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
-appleVerdict root jws = seamVerdict noStoreVerifier {verifyApple = Just (verifyAppleTransaction root ourBundleId)} SPApple {jws}
+appleVerdict root = appleVerdictUnder (root :| [])
+
+appleVerdictUnder :: NonEmpty SignedCertificate -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
+appleVerdictUnder roots jws = seamVerdict noStoreVerifier {verifyApple = Just (verifyAppleTransaction roots ourBundleId)} SPApple {jws}
 
 data TestChain = TestChain
   { rootCert :: SignedCertificate,
@@ -255,7 +262,7 @@ testAppleVerdict = do
   chain <- trustedChain
   jws <- signedBy chain $ transactionPayload [] []
   appleVerdict (rootCert chain) jws
-    `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD")}
+    `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD"), alreadyAcknowledged = False}
   appleTransactionRef jws `shouldBe` Just "2000000900000001"
 
 -- the service answers internal when the verified ref is not the claimed one, so a renewal must be vouched for by the claim's own ref
@@ -269,6 +276,14 @@ testAppleRenewalVerdict = do
   -- an auto-renewable transaction without its original id names no subscription
   noOriginal <- signedBy chain $ transactionPayload [("type", "Auto-Renewable Subscription")] ["originalTransactionId"]
   outcome <$> appleVerdict (rootCert chain) noOriginal `shouldReturn` Invalid
+
+testAppleAnyTrustedRoot :: IO ()
+testAppleAnyTrustedRoot = do
+  old <- trustedChain
+  new <- newChain otherRootName [intermediateMarker] [receiptLeafMarker]
+  forM_ [old, new] $ \chain -> do
+    jws <- signedBy chain $ transactionPayload [] []
+    fmap transactionRef <$> appleVerdictUnder (rootCert old :| [rootCert new]) jws `shouldReturn` Right "2000000900000001"
 
 testAppleRootNotTrusted :: IO ()
 testAppleRootNotTrusted = do
@@ -392,7 +407,8 @@ testApplePrice = do
 
 testReadAppleRoot :: IO ()
 testReadAppleRoot = do
-  TestChain {rootCert} <- trustedChain
+  TestChain {rootCert, intermediateCert} <- trustedChain
+  readAppleRoot ("apps" </> "simplex-badge-service" </> "test-fixtures" </> "apple" </> "AppleRootCA-G3.cer") >>= (`shouldSatisfy` isRight)
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "apple-root" $ \d -> do
     B.writeFile (d </> "root.cer") (encodeSignedObject rootCert)
@@ -400,6 +416,8 @@ testReadAppleRoot = do
     B.writeFile (d </> "root.pem") "-----BEGIN CERTIFICATE-----\n"
     readAppleRoot (d </> "root.pem") >>= (`shouldSatisfy` either ("not a DER certificate" `isInfixOf`) (const False))
     readAppleRoot (d </> "absent.cer") >>= (`shouldSatisfy` either ("could not be read" `isInfixOf`) (const False))
+    B.writeFile (d </> "intermediate.cer") (encodeSignedObject intermediateCert)
+    readAppleRoot (d </> "intermediate.cer") >>= (`shouldSatisfy` either ("not a self-signed root certificate" `isInfixOf`) (const False))
 
 testAppleNoAcknowledgement :: IO ()
 testAppleNoAcknowledgement = do
@@ -407,7 +425,7 @@ testAppleNoAcknowledgement = do
   jws <- signedBy chain $ transactionPayload [] []
   withFakePlay $ \fake -> do
     verifier <- playVerifier fake
-    acknowledgement verifier {verifyApple = Just (verifyAppleTransaction (rootCert chain) ourBundleId)} SPApple {jws} `shouldReturn` Nothing
+    acknowledgement verifier {verifyApple = Just (verifyAppleTransaction (rootCert chain :| []) ourBundleId)} SPApple {jws} `shouldReturn` Nothing
 
 -- * App Store subscriptions
 
@@ -467,7 +485,7 @@ withAppleChecker chain action = withFakeAppStore ourBundleId $ \fake -> do
 
 appleChecker :: TestChain -> AppleServerApi -> IO (SubscriptionRef -> IO (Either StoreRefusal SubscriptionCheck))
 appleChecker chain serverApi =
-  appleSubscriptionChecker (rootCert chain) ourBundleId serverApi >>= \case
+  appleSubscriptionChecker (rootCert chain :| []) ourBundleId serverApi >>= \case
     Right check -> pure $ \case
       SubscriptionApple originalId -> check originalId
       SubscriptionGoogle _ -> pure $ Left SRNotConfigured
@@ -585,10 +603,10 @@ testAppleSubscriptionKey = do
     otherKey <- appleChecker chain api {aPrivateKeyFile = otherKeyFile}
     outcome <$> otherKey (SubscriptionApple subscriptionId) `shouldReturn` Failed
     readTVarIO (fasTokens fake) `shouldReturn` []
-    appleSubscriptionChecker (rootCert chain) ourBundleId api {aPrivateKeyFile = takeDirectory aPrivateKeyFile </> "absent.p8"}
+    appleSubscriptionChecker (rootCert chain :| []) ourBundleId api {aPrivateKeyFile = takeDirectory aPrivateKeyFile </> "absent.p8"}
       >>= either (`shouldContain` "could not be read") (const $ expectationFailure "an absent key file must fail at boot")
     B.writeFile otherKeyFile "-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----\n"
-    appleSubscriptionChecker (rootCert chain) ourBundleId api {aPrivateKeyFile = otherKeyFile}
+    appleSubscriptionChecker (rootCert chain :| []) ourBundleId api {aPrivateKeyFile = otherKeyFile}
       >>= either (`shouldContain` "P-256") (const $ expectationFailure "a file holding no key must fail at boot")
 
 -- | Without the API key [apple] verifies one-time purchases as before, and no subscription.
@@ -599,7 +617,7 @@ testAppleConfiguredSubscriptions = do
     let dir = takeDirectory (aPrivateKeyFile fasApi)
         rootFile = dir </> "root.cer"
         ini = dir </> "badge_service.ini"
-        apple serverApi = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificate = rootFile, aServerApi = serverApi}
+        apple serverApi = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = rootFile :| [], aServerApi = serverApi}
     B.writeFile rootFile (encodeSignedObject $ rootCert chain)
     writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
     Right cfg <- readServiceConfig ini
@@ -630,14 +648,17 @@ playVerifier fake =
     Left e -> expectationFailure e >> undefined
 
 acknowledgement :: StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
-acknowledgement = acknowledgementBy acknowledgeReceipt
+acknowledgement = acknowledgementBy $ \StoreReceipt {verifyReceipt, acknowledgeReceipt} ->
+  verifyReceipt >>= \case
+    Right tx -> traverse ($ tx) acknowledgeReceipt
+    Left refusal -> expectationFailure ("not verified: " <> show refusal) >> undefined
 
 subscriptionAcknowledgement :: StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
-subscriptionAcknowledgement = acknowledgementBy acknowledgeSubscription
+subscriptionAcknowledgement = acknowledgementBy $ \StoreReceipt {acknowledgeSubscription} -> sequence acknowledgeSubscription
 
-acknowledgementBy :: (StoreReceipt -> Maybe (IO (Either StoreRefusal ()))) -> StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
+acknowledgementBy :: (StoreReceipt -> IO (Maybe (Either StoreRefusal ()))) -> StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
 acknowledgementBy acknowledge verifier payment = case toStoreReceipt verifier payment of
-  Just (Right receipt) -> sequence $ acknowledge receipt
+  Just (Right receipt) -> acknowledge receipt
   _ -> expectationFailure "not a store receipt" >> undefined
 
 playVerdict :: StoreVerifier -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
@@ -672,7 +693,7 @@ testPlayPurchased = withFakePlay $ \fake -> do
   verifier <- playVerifier fake
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
   playVerdict verifier testToken
-    `shouldReturn` Right VerifiedStoreTransaction {transactionRef = googlePurchaseRef testToken, productId = "badge_supporter_01", quantity = 1, testPurchase = False, paid = Nothing}
+    `shouldReturn` Right VerifiedStoreTransaction {transactionRef = googlePurchaseRef testToken, productId = "badge_supporter_01", quantity = 1, testPurchase = False, paid = Nothing, alreadyAcknowledged = False}
   readTVarIO (fpPurchasePaths fake)
     `shouldReturn` [["androidpublisher", "v3", "applications", fakePackageName, "purchases", "products", "badge_supporter_01", "tokens", testToken]]
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 [("quantity", J.toJSON (2 :: Int)), ("productId", "badge_supporter_01")]
@@ -796,6 +817,18 @@ testPlayAcknowledges = withFakePlay $ \fake -> do
     acknowledging `shouldReturn` Just (Right ())
   readTVarIO (fpAcknowledged fake) `shouldReturn` [testToken]
 
+testPlayReadsPurchaseOnce :: IO ()
+testPlayReadsPurchaseOnce = do
+  requestsFor [] `shouldReturn` (1, [testToken])
+  forM_ ["acknowledgementState", "consumptionState"] $ \state ->
+    requestsFor [(state, J.toJSON (1 :: Int))] `shouldReturn` (1, [])
+  where
+    requestsFor fields = withFakePlay $ \fake -> do
+      verifier <- playVerifier fake
+      answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 fields
+      acknowledgement verifier SPGoogle {productId = "badge_supporter_01", token = testToken} `shouldReturn` Just (Right ())
+      (,) <$> (length <$> readTVarIO (fpPurchasePaths fake)) <*> readTVarIO (fpAcknowledged fake)
+
 testPlayAcknowledgementFails :: IO ()
 testPlayAcknowledgementFails = withFakePlay $ \fake -> do
   verifier <- playVerifier fake
@@ -805,12 +838,11 @@ testPlayAcknowledgementFails = withFakePlay $ \fake -> do
         maybe "" reason r `shouldSatisfy` ("acknowledging: " `T.isPrefixOf`)
         maybe "" reason r `shouldNotSatisfy` (testToken `T.isInfixOf`)
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
-  answerAcknowledgements fake $ Just 403
+  answerAcknowledgements fake $ Just $ PlayStatus 403
   acknowledgedAs Failed
-  answerAcknowledgements fake $ Just 503
+  answerAcknowledgements fake $ Just $ PlayStatus 503
   acknowledgedAs Unreachable
-  answerAcknowledgements fake Nothing
-  answerPurchase fake testToken PlayHang
+  answerAcknowledgements fake $ Just PlayHang
   acknowledgedAs Unreachable
   readTVarIO (fpAcknowledged fake) `shouldReturn` []
 
@@ -986,9 +1018,9 @@ testPlaySubscriptionAcknowledgementFails = withFakePlay $ \fake -> do
         maybe "" reason r `shouldSatisfy` ("acknowledging: " `T.isPrefixOf`)
         maybe "" reason r `shouldNotSatisfy` (subscriptionToken `T.isInfixOf`)
   answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]
-  answerAcknowledgements fake $ Just 403
+  answerAcknowledgements fake $ Just $ PlayStatus 403
   acknowledgedAs Failed
-  answerAcknowledgements fake $ Just 503
+  answerAcknowledgements fake $ Just $ PlayStatus 503
   acknowledgedAs Unreachable
   answerAcknowledgements fake Nothing
   answerPurchase fake subscriptionToken PlayHang
@@ -1003,7 +1035,7 @@ testPlayConfiguredSubscriptions = do
     let dir = takeDirectory (gServiceAccountFile fpConfig)
         rootFile = dir </> "root.cer"
         ini = dir </> "badge_service.ini"
-        apple = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificate = rootFile, aServerApi = Just fasApi}
+        apple = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = rootFile :| [], aServerApi = Just fasApi}
         configured c = (\ServiceState {storeVerifier} -> storeVerifier) <$> (newServiceState >>= configureStoreVerifier (Just c))
         outcomes v = (,) <$> (outcome <$> checkStoreSubscription v (SubscriptionGoogle subscriptionToken)) <*> (outcome <$> checkStoreSubscription v (SubscriptionApple subscriptionId))
         acknowledging v = subscriptionAcknowledgement v SPGoogle {productId = subscriptionProductId, token = subscriptionToken}

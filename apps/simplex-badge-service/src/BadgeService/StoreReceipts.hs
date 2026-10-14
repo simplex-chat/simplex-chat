@@ -46,7 +46,8 @@ data VerifiedStoreTransaction = VerifiedStoreTransaction
     quantity :: Int, -- as the store reported it; the service refuses any but 1, as the apps never buy more
     -- costs the buyer nothing: Apple's Sandbox, which a public TestFlight build buys in, and Google's license testers
     testPurchase :: Bool,
-    paid :: Maybe (CurrencyAmount, Text) -- in minor units; Google's purchase record carries no price
+    paid :: Maybe (CurrencyAmount, Text), -- in minor units; Google's purchase record carries no price
+    alreadyAcknowledged :: Bool -- Play's record says acknowledged or consumed; other stores have nothing to acknowledge
   }
   deriving (Eq, Show)
 
@@ -71,7 +72,7 @@ data StoreVerifier = StoreVerifier
     acknowledgeGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
     acknowledgeGoogleSubscription :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
     checkSubscription :: Maybe (SubscriptionRef -> IO (Either StoreRefusal SubscriptionCheck)),
-    -- microseconds; requests are answered one at a time, so a verifier that does not finish holds up every other one
+    -- microseconds; a lane answers one request at a time, so a verifier that does not finish holds up the rest of its lane
     verifyTimeout :: Int
   }
 
@@ -81,7 +82,7 @@ data StoreReceipt = StoreReceipt
     receiptProductId :: Maybe Text, -- named by a Play receipt; Apple's is known only once its JWS is verified
     subscriptionRef :: SubscriptionRef,
     verifyReceipt :: IO (Either StoreRefusal VerifiedStoreTransaction),
-    acknowledgeReceipt :: Maybe (IO (Either StoreRefusal ())),
+    acknowledgeReceipt :: Maybe (VerifiedStoreTransaction -> IO (Either StoreRefusal ())),
     acknowledgeSubscription :: Maybe (IO (Either StoreRefusal ()))
   }
 
@@ -140,7 +141,7 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, ackn
                 receiptProductId = Just productId,
                 subscriptionRef = SubscriptionGoogle token,
                 verifyReceipt = maybe unconfigured (\verify -> online "google verifier" $ verify productId token) verifyGoogle,
-                acknowledgeReceipt = (\acknowledge -> online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle,
+                acknowledgeReceipt = (\acknowledge VerifiedStoreTransaction {alreadyAcknowledged} -> if alreadyAcknowledged then pure (Right ()) else online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle,
                 acknowledgeSubscription = (\acknowledge -> online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogleSubscription
               }
   SPInvoice {} -> Nothing

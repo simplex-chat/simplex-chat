@@ -33,6 +33,7 @@ import Data.Foldable (toList)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -52,17 +53,17 @@ import Simplex.Chat.PaymentService (applePayloadRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Simplex.Messaging.Util (catchOwn', eitherToMaybe, tshow)
 
-verifyAppleTransaction :: SignedCertificate -> Text -> Text -> Either StoreRefusal VerifiedStoreTransaction
-verifyAppleTransaction root ourBundleId jws = do
-  o <- verifiedPayload root jws
+verifyAppleTransaction :: NonEmpty SignedCertificate -> Text -> Text -> Either StoreRefusal VerifiedStoreTransaction
+verifyAppleTransaction roots ourBundleId jws = do
+  o <- verifiedPayload roots jws
   tx <- either (const $ failed "the payload Apple signed is not a transaction") Right $ JT.parseEither appleTransactionP o
   transaction ourBundleId tx
 
--- | The payload of a JWS that a chain to the configured root signed.
-verifiedPayload :: SignedCertificate -> Text -> Either StoreRefusal J.Object
-verifiedPayload root jws = case T.splitOn "." jws of
+-- | The payload of a JWS that a chain to a configured root signed.
+verifiedPayload :: NonEmpty SignedCertificate -> Text -> Either StoreRefusal J.Object
+verifiedPayload roots jws = case T.splitOn "." jws of
   [header, payload, signature] -> do
-    leaf <- signingChain root =<< certificateChain header
+    leaf <- signingChain roots =<< certificateChain header
     sig <- jwsSignature signature
     key <- leafKey leaf
     unless (ECDSA.verify SHA256 key sig (encodeUtf8 $ header <> "." <> payload)) $
@@ -85,14 +86,14 @@ certificateChain header = do
       J.String c | Right bs <- B64.decode (encodeUtf8 c) -> Right bs
       _ -> refused "an x5c certificate is not base64"
 
--- | The root in the chain is ignored: trust comes from the configured one alone.
-signingChain :: SignedCertificate -> [ByteString] -> Either StoreRefusal SignedCertificate
-signingChain root = \case
+-- | The root in the chain is ignored: trust comes from the configured ones alone.
+signingChain :: NonEmpty SignedCertificate -> [ByteString] -> Either StoreRefusal SignedCertificate
+signingChain roots = \case
   [leafDer, intermediateDer, _] -> do
     leaf <- certificate leafDer
     intermediate <- certificate intermediateDer
-    -- the configured root may be stale or wrong as likely as the receipt forged, so this retries rather than refuses
-    unless (signedBy root intermediate) $ failed "the intermediate is not signed by the configured root"
+    -- a root may be missing or wrong as likely as the receipt forged, so this retries rather than refuses
+    unless (any (`signedBy` intermediate) roots) $ failed "the intermediate is not signed by a configured root"
     case verifySignedSignature leaf (certPubKey $ getCertificate intermediate) of
       SignaturePass -> Right ()
       SignatureFailed SignatureInvalid -> refused "the leaf is not signed by the intermediate"
@@ -104,7 +105,6 @@ signingChain root = \case
   _ -> failed "x5c is not leaf, intermediate and root"
   where
     certificate = either (const $ failed "an x5c certificate does not decode") Right . decodeSignedCertificate
-    signedBy issuer cert = verifySignedSignature cert (certPubKey $ getCertificate issuer) == SignaturePass
     marked oid cert = case certExtensions (getCertificate cert) of
       Extensions (Just exts) -> any ((== oid) . extRawOID) exts
       Extensions Nothing -> False
@@ -164,7 +164,8 @@ transaction ourBundleId AppleTransaction {transactionRef, productId, bundleId, e
             productId,
             quantity,
             testPurchase,
-            paid = paidOf price currency
+            paid = paidOf price currency,
+            alreadyAcknowledged = False
           }
 
 -- | Apple's price is in milliunits of the currency, whatever its minor unit.
@@ -195,14 +196,21 @@ refused = Left . SRInvalid
 failed :: Text -> Either StoreRefusal a
 failed = Left . SRVerifierFailed . ("apple verifier: " <>)
 
+signedBy :: SignedCertificate -> SignedCertificate -> Bool
+signedBy issuer cert = verifySignedSignature cert (certPubKey $ getCertificate issuer) == SignaturePass
+
 readAppleRoot :: FilePath -> IO (Either String SignedCertificate)
 readAppleRoot path =
   try (B.readFile path) >>= \case
     Left (_ :: IOException) -> pure $ Left $ path <> ": could not be read"
-    Right der -> pure $ either (const $ Left $ path <> ": is not a DER certificate") Right $ decodeSignedCertificate der
+    Right der -> pure $ either (const $ Left $ path <> ": is not a DER certificate") checkRoot $ decodeSignedCertificate der
+  where
+    checkRoot root
+      | signedBy root root = Right root
+      | otherwise = Left $ path <> ": is not a self-signed root certificate"
 
 data AppleApi = AppleApi
-  { root :: SignedCertificate,
+  { roots :: NonEmpty SignedCertificate,
     ourBundleId :: Text,
     serverApi :: AppleServerApi,
     privateKey :: ECDSA.PrivateKey,
@@ -212,14 +220,14 @@ data AppleApi = AppleApi
 
 -- | Asks the App Store Server API about a subscription by its original transaction id. The key is read
 -- here, at boot, as the Play service account is.
-appleSubscriptionChecker :: SignedCertificate -> Text -> AppleServerApi -> IO (Either String (Text -> IO (Either StoreRefusal SubscriptionCheck)))
-appleSubscriptionChecker root ourBundleId serverApi@AppleServerApi {aPrivateKeyFile} =
+appleSubscriptionChecker :: NonEmpty SignedCertificate -> Text -> AppleServerApi -> IO (Either String (Text -> IO (Either StoreRefusal SubscriptionCheck)))
+appleSubscriptionChecker roots ourBundleId serverApi@AppleServerApi {aPrivateKeyFile} =
   readApiKey aPrivateKeyFile >>= \case
     Left e -> pure $ Left e
     Right privateKey -> do
       manager <- newTlsManager
       apiToken <- newTVarIO Nothing
-      pure $ Right $ subscriptionStatus AppleApi {root, ourBundleId, serverApi, privateKey, manager, apiToken}
+      pure $ Right $ subscriptionStatus AppleApi {roots, ourBundleId, serverApi, privateKey, manager, apiToken}
 
 readApiKey :: FilePath -> IO (Either String ECDSA.PrivateKey)
 readApiKey path =
@@ -284,16 +292,16 @@ signedApiToken AppleApi {privateKey, ourBundleId, serverApi = AppleServerApi {aK
         ]
     segment = B64U.encodeUnpadded . LB.toStrict . J.encode
 
--- | Everything Apple signed in the answer is checked against the configured root like a receipt, but a
+-- | Everything Apple signed in the answer is checked against the configured roots like a receipt, but a
 -- body that fails it is this service's failure: Apple answered, and no client presented it.
 statusVerdict :: AppleApi -> Text -> LB.ByteString -> Either StoreRefusal SubscriptionCheck
-statusVerdict AppleApi {root, ourBundleId} originalId body = do
+statusVerdict AppleApi {roots, ourBundleId} originalId body = do
   StatusResponse items <- either (const $ failed "could not read Apple's subscription status") Right $ J.eitherDecode' body
   LastTransaction {status, signedTransactionInfo, signedRenewalInfo} <-
     maybe (failed "Apple's answer names no such subscription") Right $ find (\LastTransaction {lastOriginalId} -> lastOriginalId == originalId) items
   SubscriptionTransaction {transactionId, txOriginalId, productId, bundleId, environment, purchaseDate, expiresDate, revoked, offer, familyShared, price, currency} <-
-    signedBy signedTransactionInfo subscriptionTransactionP
-  RenewalInfo {renewalOriginalId, autoRenewStatus} <- signedBy signedRenewalInfo renewalInfoP
+    verifiedItem signedTransactionInfo subscriptionTransactionP
+  RenewalInfo {renewalOriginalId, autoRenewStatus} <- verifiedItem signedRenewalInfo renewalInfoP
   when (bundleId /= ourBundleId) $ failed "another app's bundle id, or ours misconfigured"
   when (txOriginalId /= originalId || renewalOriginalId /= originalId) $ failed "Apple answered about another subscription"
   when familyShared $ refused "family-shared"
@@ -326,8 +334,8 @@ statusVerdict AppleApi {root, ourBundleId} originalId body = do
               }
       }
   where
-    signedBy jws p = do
-      o <- either (Left . asVerifierFailure) Right $ verifiedPayload root jws
+    verifiedItem jws p = do
+      o <- either (Left . asVerifierFailure) Right $ verifiedPayload roots jws
       either (const $ failed "the payload Apple signed is not a subscription transaction or renewal info") Right $ JT.parseEither p o
     asVerifierFailure = \case
       SRInvalid reason -> SRVerifierFailed $ "apple verifier: " <> reason

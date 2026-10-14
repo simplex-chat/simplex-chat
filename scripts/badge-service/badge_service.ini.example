@@ -37,14 +37,15 @@ waiting_seconds = 3
 idle_seconds = 60
 
 ; optional; without it every App Store receipt is answered provider_not_configured, which the app retries later.
-; root_certificate is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer, in DER;
-; uncomment its mount in compose.yml.
+; root_certificates lists, comma-separated, the roots trusted to sign receipts, each in DER and placed
+; in config/. Today that is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer.
+; When Apple adds a root, list it beside the old one rather than in its place.
 ; the api_ keys, set together, verify subscriptions with the in-app purchase key App Store Connect
-; issues; without them every App Store subscription is answered provider_not_configured. Mount the .p8
-; like the root certificate; it must be readable by the service's user alone. api_host defaults to production.
+; issues; without them every App Store subscription is answered provider_not_configured. Place the .p8
+; in config/; it must be readable by the service's user alone. api_host defaults to production.
 ;[apple]
 ;bundle_id = chat.simplex.app
-;root_certificate = /etc/simplex-badge-service/AppleRootCA-G3.cer
+;root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
 ;api_key_id = 2X9R4HXF34
 ;api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
 ;api_private_key_file = /etc/simplex-badge-service/AuthKey_2X9R4HXF34.p8
@@ -53,7 +54,7 @@ idle_seconds = 60
 ; service_account_file is the JSON key of a service account with the Play Console permissions "View
 ; financial data, orders, and cancellation survey responses" and "Manage orders and subscriptions", to
 ; read and acknowledge purchases. Without the second, a purchase the app has not already acknowledged
-; itself is answered internal until the permission is granted. Uncomment its mount in compose.yml; the file must be readable by the service's user alone.
+; itself is answered internal until the permission is granted. Place it in config/; the file must be readable by the service's user alone.
 ;[google]
 ;package_name = chat.simplex.app
 ;service_account_file = /etc/simplex-badge-service/play-service-account.json

@@ -9,6 +9,7 @@ import Control.Monad (forM_)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.Ini (readIniFile)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Simplex.Messaging.Encoding.String (strDecode)
@@ -389,7 +390,7 @@ withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
 withDev keys act = withIni (fullIni <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act
 
 appleIni, googleIni :: T.Text
-appleIni = "[apple]\nbundle_id = chat.simplex.app\nroot_certificate = /etc/badges/AppleRootCA-G3.cer\n"
+appleIni = "[apple]\nbundle_id = chat.simplex.app\nroot_certificates = /etc/badges/AppleRootCA-G3.cer ,/etc/badges/AppleRootCA-G4.cer,\n"
 googleIni = "[google]\npackage_name = chat.simplex.app\nservice_account_file = /etc/badges/play.json\n"
 
 testStoresAbsent :: IO ()
@@ -401,7 +402,7 @@ testStoresAbsent = withIni fullIni $ \p -> do
 testStoresRead :: IO ()
 testStoresRead = withIni (fullIni <> appleIni <> googleIni) $ \p -> do
   Right cfg <- readServiceConfig p
-  appleStore cfg `shouldBe` Just AppleStoreConfig {aBundleId = "chat.simplex.app", aRootCertificate = "/etc/badges/AppleRootCA-G3.cer", aServerApi = Nothing}
+  appleStore cfg `shouldBe` Just AppleStoreConfig {aBundleId = "chat.simplex.app", aRootCertificates = "/etc/badges/AppleRootCA-G3.cer" :| ["/etc/badges/AppleRootCA-G4.cer"], aServerApi = Nothing}
   playStore cfg
     `shouldBe` Just
       PlayStoreConfig
@@ -414,7 +415,7 @@ testStoresRead = withIni (fullIni <> appleIni <> googleIni) $ \p -> do
 testStoresIncomplete :: IO ()
 testStoresIncomplete = do
   refused (T.replace "bundle_id = chat.simplex.app\n" "" appleIni) "apple.bundle_id"
-  refused (T.replace "root_certificate = /etc/badges/AppleRootCA-G3.cer\n" "" appleIni) "apple.root_certificate"
+  refused (T.replace "root_certificates = /etc/badges/AppleRootCA-G3.cer ,/etc/badges/AppleRootCA-G4.cer,\n" "" appleIni) "apple.root_certificates"
   refused (T.replace "package_name = chat.simplex.app\n" "" googleIni) "google.package_name"
   refused (T.replace "service_account_file = /etc/badges/play.json\n" "" googleIni) "google.service_account_file"
   where
