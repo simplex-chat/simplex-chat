@@ -28,10 +28,10 @@ SimpleX Chat navigation is a platform-adaptive system implemented in `App.kt`. T
 ## 1. Overview
 
 ```
-AppScreen (line 46)
+AppScreen (line 48)
 +-- SimpleXTheme
     +-- Surface
-        +-- MainScreen (line 82)
+        +-- MainScreen (line 85)
             |-- [Migration in progress]     -> DefaultProgressView
             |-- [Database opening]          -> DefaultProgressView
             |-- [Database error]            -> DatabaseErrorView
@@ -40,11 +40,11 @@ AppScreen (line 46)
             |-- [Onboarding complete]
             |   |-- [Android]
             |   |   +-- AndroidWrapInCallLayout
-            |   |       +-- AndroidScreen (line 293)
+            |   |       +-- AndroidScreen (line 313)
             |   |           |-- StartPartOfScreen (ChatListView)
             |   |           +-- ChatView (slide-in panel)
             |   +-- [Desktop]
-            |       +-- DesktopScreen (line 406)
+            |       +-- DesktopScreen (line 429)
             |           |-- StartPartOfScreen + UserPicker (left column)
             |           |-- ModalManager.start (overlay on left)
             |           |-- CenterPartOfScreen / ChatView (center column)
@@ -60,7 +60,7 @@ AppScreen (line 46)
 
 ## 2. AppScreen Composable
 
-**Location:** [`App.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L47)
+**Location:** [`App.kt#L48`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L48)
 
 ```kotlin
 @Composable
@@ -80,7 +80,7 @@ fun AppScreen()
 
 ## 3. MainScreen
 
-**Location:** [`App.kt#L84`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L84)
+**Location:** [`App.kt#L85`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L85)
 
 ```kotlin
 @Composable
@@ -101,7 +101,7 @@ fun MainScreen()
 | 6 | `onboarding == OnboardingComplete` | Platform-specific main screen |
 | 7 | Other onboarding stages | `AnimatedContent` with stage-specific views |
 
-### Onboarding Complete Branch (line ~156)
+### Onboarding Complete Branch (line ~157)
 
 When onboarding is complete:
 
@@ -127,7 +127,7 @@ When onboarding is complete:
 
 ## 4. Android Layout
 
-**Location:** [`App.kt#L296`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L296)
+**Location:** [`App.kt#L313`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L313)
 
 ```kotlin
 @Composable
@@ -158,7 +158,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ### Call Layout Wrapper
 
-`AndroidWrapInCallLayout` (line ~279) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
+`AndroidWrapInCallLayout` (line ~298) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
 
 ---
 
@@ -166,7 +166,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ## 5. Desktop Layout
 
-**Location:** [`App.kt#L410`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L410)
+**Location:** [`App.kt#L429`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L429)
 
 ```kotlin
 @Composable
@@ -189,11 +189,11 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>)
 
 ### Click-to-Dismiss Overlay
 
-When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~428). Clicking it closes start modals and hides the UserPicker.
+When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~451). Clicking it closes start modals and hides the UserPicker.
 
 ### CenterPartOfScreen
 
-**Location:** [`App.kt#L373`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L373)
+**Location:** [`App.kt#L390`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L390)
 
 - When `chatId` is null and no center modals: shows "No selected chat" placeholder.
 - When `chatId` is null and center modals open: shows `ModalManager.center`.
@@ -202,7 +202,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 ### StartPartOfScreen
 
-**Location:** [`App.kt#L352`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L352)
+**Location:** [`App.kt#L369`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L369)
 
 Routes between:
 - `SetDeliveryReceiptsView` (if `chatModel.setDeliveryReceipts` is true)
@@ -213,7 +213,7 @@ Routes between:
 
 ## 6. ModalManager
 
-**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 92)
+**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 97)
 
 ```kotlin
 class ModalManager(private val placement: ModalPlacement?)
@@ -294,7 +294,7 @@ object AppLock {
 
 ### Authentication Flow
 
-1. **MainScreen** checks `unauthorized` (derived: `userAuthorized.value != true`) at line ~135.
+1. **MainScreen** checks `unauthorized` (derived: `userAuthorized.value != true`) at line ~138.
 2. If unauthorized, including during an active call:
    - Launches `AppLock.runAuthenticate()` which triggers platform-specific biometric/passcode prompt.
    - On Android with system auth finishing during activity destruction, authentication is skipped.
@@ -303,7 +303,7 @@ object AppLock {
 
 ### Lock Delay
 
-The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~270) to prevent unnecessary re-auth. A call counts as activity: `recheckAuthState()` is a no-op while `showCallView` is true, and `CallManager.endCall()` resets `enteredBackground`, so the delay is counted from the end of the call. When a call is accepted from a notification or from the Android lock screen, `recheckAuthState()` is called before `acceptIncomingCall()`, so an expired delay still locks the app.
+The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~265) to prevent unnecessary re-auth. A call counts as activity: `recheckAuthState()` is a no-op while `showCallView` is true, and `CallManager.endCall()` resets `enteredBackground`, so the delay is counted from the end of the call. When a call is accepted from a notification or from the Android lock screen, `recheckAuthState()` is called before `acceptIncomingCall()`, so an expired delay still locks the app.
 
 ### Lock Modes
 
@@ -312,7 +312,7 @@ The `laLockDelay` preference controls how long after backgrounding the app requi
 
 ### First-Time Lock Notice
 
-`showLANotice` (line ~33 in `AppLock.kt`) prompts users to enable SimpleX Lock when they have more than 3 chats, have not yet been shown the notice, and have not enabled lock. On Android, it offers a choice between system auth and passcode.
+`showLANotice` (line ~34 in `AppLock.kt`) prompts users to enable SimpleX Lock when they have more than 3 chats, have not yet been shown the notice, and have not enabled lock. On Android, it offers a choice between system auth and passcode.
 
 ---
 
