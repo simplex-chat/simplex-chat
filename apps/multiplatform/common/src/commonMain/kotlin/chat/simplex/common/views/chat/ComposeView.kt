@@ -319,22 +319,23 @@ private fun isVideoUri(uri: URI): Boolean {
 
 private fun isWebmUri(uri: URI): Boolean = getFileName(uri)?.lowercase()?.endsWith(".webm") == true
 
+fun attachmentSizeAllowed(maxFileSize: Long, getSize: () -> Long?): Boolean {
+  val fileSize = try { getSize() } catch (e: CancellationException) { throw e } catch (e: Exception) { null }
+  if (fileSize != null && fileSize >= 0 && fileSize > maxFileSize) {
+    AlertManager.shared.showAlertMsg(
+      generalGetString(MR.strings.large_file),
+      String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+    )
+    return false
+  }
+  return true
+}
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
-  if (uri != null) {
-    val maxFileSize = value.maxFileSize
-    val fileSize = getFileSize(uri)
-    if (fileSize != null && fileSize <= maxFileSize) {
-      val fileName = getFileName(uri)
-      if (fileName != null) {
-        value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.FilePreview(fileName, uri))
-      }
-    } else if (fileSize != null) {
-      AlertManager.shared.showAlertMsg(
-        generalGetString(MR.strings.large_file),
-        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
-      )
-    } else {
-      showWrongUriAlert()
+  if (uri != null && attachmentSizeAllowed(value.maxFileSize) { getFileSize(uri) }) {
+    val fileName = getFileName(uri)
+    if (fileName != null) {
+      value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.FilePreview(fileName, uri))
     }
   }
 }
@@ -344,6 +345,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
   val content = ArrayList<UploadContent>()
   val imagesPreview = ArrayList<String>()
   uris.forEach { uri ->
+    if (!attachmentSizeAllowed(maxFileSize) { getFileSize(uri) }) return@forEach
     var bitmap: ImageBitmap?
     val uploadContent: UploadContent? = when {
       isImage(uri) -> {
@@ -353,17 +355,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
         bitmap = getBitmapFromUri(uri, withAlertOnException = !AlertManager.shared.hasAlertsShown())
         if (isAnimImage(uri, drawable)) {
           // It's a gif or webp
-          val fileSize = getFileSize(uri)
-          if (fileSize != null && fileSize <= maxFileSize) {
-            UploadContent.AnimatedImage(uri)
-          } else {
-            bitmap = null
-            AlertManager.shared.showAlertMsg(
-              generalGetString(MR.strings.large_file),
-              String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
-            )
-            null
-          }
+          UploadContent.AnimatedImage(uri)
         } else if (bitmap != null) {
           UploadContent.SimpleImage(uri)
         } else {
@@ -867,7 +859,7 @@ fun ComposeView(
                 if (remoteHost == null) saveImage(it.uri)
                 else desktopSaveImageInTmp(it.uri)
               is UploadContent.AnimatedImage ->
-                if (remoteHost == null) saveAnimImage(it.uri)
+                if (remoteHost == null) saveAnimImage(it.uri, cs.maxFileSize)
                 else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video ->
                 if (remoteHost == null) saveFileFromUri(it.uri, cs.maxFileSize, hiddenFileNamePrefix = "video")

@@ -217,7 +217,7 @@ fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
   }
 }
 
-fun saveAnimImage(uri: URI): CryptoFile? {
+fun saveAnimImage(uri: URI, maxBytes: Long): CryptoFile? {
   return try {
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val filename = getFileName(uri)?.lowercase()
@@ -232,15 +232,18 @@ fun saveAnimImage(uri: URI): CryptoFile? {
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
       try {
-        val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readBytes() ?: return null)
+        // TODO: streaming encryption would avoid the memory and single-array limits of accepted large images.
+        val bytes = uri.inputStream()?.use { readInputStreamBounded(it, maxBytes) } ?: return null
+        val args = writeCryptoFile(destFile.absolutePath, bytes)
         CryptoFile(destFileName, args)
       } catch (e: Exception) {
+        destFile.delete()
         Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
         AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
         null
       }
     } else {
-      Files.copy(uri.inputStream(), destFile.toPath())
+      uri.inputStream()?.use { copyInputStreamToFile(it, destFile, maxBytes) } ?: return null
       CryptoFile.plain(destFileName)
     }
   } catch (e: Exception) {
@@ -259,9 +262,9 @@ fun saveFileFromUri(
 ): CryptoFile? {
   return try {
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
-    val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
-    return if (inputStream != null && fileToSave != null) {
+    val inputStream = uri.inputStream()
+    return if (inputStream != null && fileToSave != null) inputStream.use {
       val destFileName = if (hiddenFileNamePrefix == null) {
         uniqueCombine(fileToSave, File(getAppFilePath("")))
       } else {
@@ -290,6 +293,7 @@ fun saveFileFromUri(
         CryptoFile.plain(destFileName)
       }
     } else {
+      inputStream?.close()
       Log.e(TAG, "Util.kt saveFileFromUri null inputStream")
       if (withAlertOnException) showWrongUriAlert()
 
@@ -317,19 +321,30 @@ class FileTooLargeException(maxBytes: Long) : IOException("file exceeds $maxByte
 fun copyInputStreamToFile(inputStream: InputStream, destFile: File, maxBytes: Long) {
   try {
     destFile.outputStream().use { output ->
-      val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-      var copied = 0L
-      while (true) {
-        val read = inputStream.read(buffer)
-        if (read < 0) break
-        if (copied > maxBytes - read) throw FileTooLargeException(maxBytes)
-        output.write(buffer, 0, read)
-        copied += read
-      }
+      copyInputStreamBounded(inputStream, output, maxBytes)
     }
   } catch (e: Throwable) {
     destFile.delete()
     throw e
+  }
+}
+
+fun readInputStreamBounded(inputStream: InputStream, maxBytes: Long): ByteArray =
+  ByteArrayOutputStream().use { output ->
+    copyInputStreamBounded(inputStream, output, maxBytes)
+    output.toByteArray()
+  }
+
+private fun copyInputStreamBounded(inputStream: InputStream, output: OutputStream, maxBytes: Long) {
+  require(maxBytes >= 0)
+  val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+  var copied = 0L
+  while (true) {
+    val read = inputStream.read(buffer)
+    if (read < 0) break
+    if (copied > maxBytes - read) throw FileTooLargeException(maxBytes)
+    output.write(buffer, 0, read)
+    copied += read
   }
 }
 
