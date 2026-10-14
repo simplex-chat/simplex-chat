@@ -237,7 +237,15 @@ fun UserPicker(
         stringResource(MR.strings.chat_preferences),
         click = if (stopped) null else ({
           showCustomModal { m, close ->
-            PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
+            val user = m.currentUser.value
+            if (user != null) {
+              PreferencesView(m, user, close)
+            } else {
+              val modal = this
+              LaunchedEffect(modal, ModalManager.start.modalCount.value) {
+                if (ModalManager.start.isLastModal(modal)) close()
+              }
+            }
           }()
         }),
         disabled = stopped

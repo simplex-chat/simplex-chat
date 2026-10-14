@@ -29,7 +29,7 @@ Overlay panel triggered from `ChatListView` toolbar:
 | Active user profile | `ProfilePreview` of current user (Desktop: single row; Android: full user list) |
 | User list | `UserPickerUsersSection` with all visible non-hidden profiles; tap to switch, long-press disabled |
 | SimpleX address | Row to open `UserAddressView` (create or view address); with no active profile the screen closes itself (if another screen covers it, when the user goes back to it) |
-| Chat preferences | Row to open `PreferencesView` |
+| Chat preferences | Row to open `PreferencesView`; with no active profile the screen closes itself (if another screen covers it, when the user goes back to it) |
 | Chat profiles | Row to open `UserProfilesView` (or `CreateProfile` when no users exist on Desktop) |
 | Use from desktop/mobile | Android: "Use from desktop" (`ConnectDesktopView`); Desktop: "Link a mobile" / "Linked mobiles" (`ConnectMobileView`) |
 | Settings | Row to open `SettingsView` with `ColorModeSwitcher` trailing |

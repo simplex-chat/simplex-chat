@@ -13,7 +13,6 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
-8. [UI: Chat Preferences Leaves an Invisible Modal Without a Profile](#gap-08-ui-chat-preferences-leaves-an-invisible-modal-without-a-profile)
 
 ---
 
@@ -290,30 +289,3 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 - GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.
-
----
-
-## GAP-08: UI: Chat Preferences Leaves an Invisible Modal Without a Profile
-
-**Severity:** Low
-**Category:** UI / UX
-**Platform:** Desktop
-
-### Description
-
-The "Chat preferences" row of the user picker opens `PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)`. With no active user, the modal content returns early. The modal stays on `ModalManager.start` with nothing drawn and no back button.
-
-This happens when the row is clicked with no active user, for example on a desktop with no profile and no connected mobile. It also happens when the user becomes null while the preferences screen is open, for example when the mobile disconnects on a desktop with no profile of its own.
-
-### Affected Locations
-
-- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt:240`
-- `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt:231` (`ChatPreferencesItem`) has the same pattern but is not called anywhere.
-
-### Impact
-
-Clicking the row hides the picker and shows nothing. The leftover modal stays until something closes the left-panel modals, such as a click on the centre panel. If a profile is created first, it reappears as the preferences screen.
-
-### Recommendation
-
-Close the modal when there is no active user, as the "SimpleX address" row does (`ModalManager.start.isLastModal` and `close`), or hide both rows when there is no active user.
