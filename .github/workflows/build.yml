@@ -80,12 +80,22 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       libs_tag: ${{ steps.libs_commit.outputs.tag }}
+      core_changed: ${{ steps.core.outputs.core }}
     steps:
       - name: Clone project
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
         uses: actions/checkout@v3
         with:
           fetch-depth: 2
+
+      - name: Check chat core change
+        id: core
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch -q --depth=1 origin "$BASE"
+          python3 scripts/ci/packages_release.py changes "$BASE" | grep '^core=' >> "$GITHUB_OUTPUT"
 
       - name: Build changelog
         id: build_changelog
@@ -300,8 +310,9 @@ jobs:
           done
           strip /out/simplex-chat
 
+      # Also for pull requests that change the chat core, for the package tests (packages-pr).
       - name: Build library
-        if: needs.maybe-release.outputs.libs_tag && matrix.libs
+        if: matrix.libs && (needs.maybe-release.outputs.libs_tag || (needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64'))
         shell: docker exec -t builder sh -eu {0}
         run: |
           SKIP_VLC=1 scripts/desktop/build-lib-linux.sh
@@ -309,6 +320,14 @@ jobs:
           mkdir -p release-libs/$name/libs
           find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
           (cd release-libs/$name && zip -r ../$name.zip libs)
+
+      - name: Upload library artifact
+        if: matrix.libs && needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: simplex-chat-libs-linux-${{ matrix.arch }}
+          path: release-libs/simplex-chat-libs-linux-${{ matrix.arch }}.zip
+          if-no-files-found: error
 
       - name: Upload library
         if: needs.maybe-release.outputs.libs_tag && matrix.libs
@@ -837,3 +856,34 @@ jobs:
           bin_hash: ${{ steps.windows_desktop_build.outputs.package_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+# =========================
+#   Packages release
+# =========================
+
+# A new library release is tested with the Node.js and Python packages and updates them in a release PR.
+
+  packages:
+    needs: [maybe-release, build-linux, build-linux-postgres, build-macos, build-windows]
+    if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag }}
+    # the called workflow can't be granted more than its caller, and its publish job needs these
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/packages.yml
+    with:
+      libs_release: ${{ needs.maybe-release.outputs.libs_tag }}
+    secrets: inherit
+
+# A pull request that changes the chat core is tested with the Node.js and Python packages.
+
+  packages-pr:
+    needs: [maybe-release, build-linux]
+    # build-linux uploads the library before its chat tests run
+    if: ${{ !cancelled() && needs.maybe-release.outputs.core_changed }}
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/packages.yml
+    with:
+      libs_artifact: true

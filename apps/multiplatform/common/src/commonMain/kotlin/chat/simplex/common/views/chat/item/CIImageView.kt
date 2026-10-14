@@ -173,6 +173,15 @@ fun CIImageView(
     return null
   }
 
+  val view = LocalMultiplatformView()
+  if (file != null) {
+    OpenWhenReceivedEffect(file, smallView) {
+      hideKeyboard(view)
+      ModalManager.fullscreen.showCustomModal(animated = false) { close ->
+        ImageFullScreenView(imageProvider, close)
+      }
+    }
+  }
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
       .then(
@@ -222,6 +231,7 @@ fun CIImageView(
               if (file.fileProhibited != null) {
                 showProhibitedFileAlert(file, file.fileProhibited)
               } else {
+                chatModel.openWhenReceived(file, smallView)
                 receiveFile(file.fileId)
               }
             file.fileStatus is CIFileStatus.RcvAccepted ->

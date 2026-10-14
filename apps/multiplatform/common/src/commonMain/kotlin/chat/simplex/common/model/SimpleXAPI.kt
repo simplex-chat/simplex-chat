@@ -34,6 +34,7 @@ import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
+import chat.simplex.common.views.newchat.showNameWarningAlert
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.defaultConditionsLink
@@ -142,6 +143,7 @@ class AppPreferences {
   val appearanceBarsBlurRadius = mkIntPreference(SHARED_PREFS_APPEARANCE_BARS_BLUR_RADIUS, if (deviceSupportsBlur) 50 else 0)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
+  val markdownFileTextView = mkBoolPreference(SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
@@ -429,6 +431,7 @@ class AppPreferences {
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
+    private const val SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW = "MarkdownFileTextView"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
@@ -1687,6 +1690,8 @@ object ChatController {
             generalGetString(MR.strings.simplex_name_no_valid_link),
             generalGetString(MR.strings.simplex_name_no_valid_link_desc).format(domain)
           )
+        } else if (r.err.errorType.simplexDomainError is SimplexDomainError.NameWarning) {
+          showNameWarningAlert(r.rhId, r.err.errorType.simplexDomain, r.err.errorType.simplexDomainError.nameWarning, own = false, openExistingChat = null, cleanup = null)
         } else {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_unconfirmed),
@@ -2982,6 +2987,25 @@ object ChatController {
           val cInfo = ChatInfo.Direct(r.toContact)
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateChatInfo(rhId, cInfo)
+          }
+        }
+      }
+      is CR.NameMoved -> {
+        if (active(r.user)) {
+          withContext(Dispatchers.Main) {
+            fun chatInfo(id: String) = chatModel.chatsContext.chats.value.firstOrNull { it.remoteHostId == rhId && it.id == id }?.chatInfo
+            r.contactIds.forEach { contactId ->
+              val cInfo = chatInfo("@$contactId")
+              if (cInfo is ChatInfo.Direct) {
+                chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Direct(cInfo.contact.copy(profile = cInfo.contact.profile.copy(contactDomainVerified = DomainVerification.Moved))))
+              }
+            }
+            r.groupIds.forEach { groupId ->
+              val cInfo = chatInfo("#$groupId")
+              if (cInfo is ChatInfo.Group) {
+                chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Group(cInfo.groupInfo.copy(groupDomainVerified = DomainVerification.Moved), groupChatScope = null))
+              }
+            }
           }
         }
       }
@@ -6794,6 +6818,7 @@ sealed class CR {
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef, val contactRequest: UserContactRequest, val contact_: Contact?): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
+  @Serializable @SerialName("nameMoved") class NameMoved(val user: UserRef, val contactIds: List<Long>, val groupIds: List<Long>): CR()
   @Serializable @SerialName("groupMemberUpdated") class GroupMemberUpdated(val user: UserRef, val groupInfo: GroupInfo, val fromMember: GroupMember, val toMember: GroupMember): CR()
   @Serializable @SerialName("subscriptionStatus") class SubscriptionStatusEvt(val subscriptionStatus: SubscriptionStatus, val connections: List<String>): CR()
   @Serializable @SerialName("chatInfoUpdated") class ChatInfoUpdated(val user: UserRef, val chatInfo: ChatInfo): CR()
@@ -6996,6 +7021,7 @@ sealed class CR {
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
     is ContactUpdated -> "contactUpdated"
+    is NameMoved -> "nameMoved"
     is GroupMemberUpdated -> "groupMemberUpdated"
     is SubscriptionStatusEvt -> "subscriptionStatus"
     is ChatInfoUpdated -> "chatInfoUpdated"
@@ -7188,6 +7214,7 @@ sealed class CR {
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\ncontact_: ${json.encodeToString(contact_)}")
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
+    is NameMoved -> withUser(user, "contactIds: $contactIds\ngroupIds: $groupIds")
     is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
     is SubscriptionStatusEvt -> "subscriptionStatus $subscriptionStatus\nconnections: $connections"
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
@@ -7370,6 +7397,7 @@ sealed class OwnerVerification {
 sealed class SimplexDomainError {
   @Serializable @SerialName("noValidLink") object NoValidLink : SimplexDomainError()
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
+  @Serializable @SerialName("nameWarning") class NameWarning(val nameWarning: chat.simplex.common.model.NameWarning) : SimplexDomainError()
 }
 
 @Serializable
@@ -7493,11 +7521,51 @@ enum class PlanResolveMode {
 
 @Serializable
 sealed class ConnectionPlan {
+  open val nameChange: NameChange? get() = null
+  val localChats: List<ChatInfo> get() = listOfNotNull(planChat, knownChat)
+  val planChat: ChatInfo? get() = when (this) {
+    is ContactAddress -> when (val p = contactAddressPlan) {
+      is ContactAddressPlan.ConnectingProhibit -> ChatInfo.Direct(p.contact)
+      is ContactAddressPlan.Known -> ChatInfo.Direct(p.contact)
+      is ContactAddressPlan.ContactViaAddress -> ChatInfo.Direct(p.contact)
+      else -> null
+    }
+    is GroupLink -> when (val p = groupLinkPlan) {
+      is GroupLinkPlan.OwnLink -> p.groupInfo
+      is GroupLinkPlan.Known -> p.groupInfo
+      is GroupLinkPlan.ConnectingProhibit -> p.groupInfo_
+      else -> null
+    }?.let { ChatInfo.Group(it, groupChatScope = null) }
+    else -> null
+  }
+  val knownChat: ChatInfo? get() = (nameChange as? NameChange.Moved)?.knownChat
+  val isOwnLink: Boolean get() = when (this) {
+    is ContactAddress -> contactAddressPlan is ContactAddressPlan.OwnLink
+    is GroupLink -> groupLinkPlan is GroupLinkPlan.OwnLink
+    else -> false
+  }
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
-  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan): ConnectionPlan()
+  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, override val nameChange: NameChange? = null): ConnectionPlan()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, override val nameChange: NameChange? = null): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
 }
+
+@Serializable
+sealed class NameChange {
+  @Serializable @SerialName("lapsed") class Lapsed(val nameWarning: NameWarning): NameChange()
+  @Serializable @SerialName("moved") class Moved(val knownChat: ChatInfo): NameChange()
+}
+
+@Serializable
+sealed class NameWarning {
+  @Serializable @SerialName("expired") class Expired(val expiredAt: Instant, val graceUntil: Instant? = null): NameWarning()
+  @Serializable @SerialName("available") class Available(val price: NamePrice): NameWarning()
+  @Serializable @SerialName("reservedForCommunity") object ReservedForCommunity: NameWarning()
+  @Serializable @SerialName("notRegistered") object NotRegistered: NameWarning()
+}
+
+@Serializable
+data class NamePrice(val amount: Long, val years: Int)
 
 @Serializable
 sealed class InvitationLinkPlan {
