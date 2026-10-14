@@ -11,15 +11,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
+import chat.simplex.common.platform.MAX_IMAGE_DIMENSION
 import chat.simplex.common.platform.VideoPlayer
 import chat.simplex.common.platform.androidAppContext
 import chat.simplex.res.MR
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
-import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
-import coil.size.Size
+import coil.size.Scale
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import dev.icerock.moko.resources.compose.stringResource
@@ -30,7 +30,7 @@ actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap:
   // after end of composition here a GIF from the first instance will be paused automatically which isn't what I want
   Image(
     rememberAsyncImagePainter(
-      ImageRequest.Builder(LocalContext.current).data(data = data).size(Size.ORIGINAL).build(),
+      ImageRequest.Builder(LocalContext.current).data(data = data).size(MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION).scale(Scale.FIT).build(),
       placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
       imageLoader = imageLoader
     ),
@@ -69,8 +69,6 @@ private val imageLoader = ImageLoader.Builder(androidAppContext)
   .components {
     if (Build.VERSION.SDK_INT >= 28) {
       add(ImageDecoderDecoder.Factory())
-    } else {
-      add(GifDecoder.Factory())
     }
   }
   .build()

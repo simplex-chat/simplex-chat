@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <provider
+      android:name="chat.simplex.common.platform.TestImageProvider"
+      android:authorities="chat.simplex.common.test.imageprovider"
+      android:exported="true" />
+  </application>
+</manifest>
