@@ -79,6 +79,7 @@ fun ComposeContextProfilePickerView(
 
   fun changeProfile(newUser: User) {
     withApi {
+      var chatMoved = false
       if (chat.chatInfo is ChatInfo.Direct) {
         val updatedContact = chatModel.controller.apiChangePreparedContactUser(rhId, chat.chatInfo.contact.contactId, newUser.userId)
         if (updatedContact != null) {
@@ -86,6 +87,7 @@ fun ComposeContextProfilePickerView(
           chatModel.controller.appPrefs.incognito.set(false)
           listExpanded.value = false
           chatModel.chatsContext.updateContact(rhId, updatedContact)
+          chatMoved = true
         }
       } else if (chat.chatInfo is ChatInfo.Group) {
         val updatedGroup = chatModel.controller.apiChangePreparedGroupUser(rhId, chat.chatInfo.groupInfo.groupId, newUser.userId)
@@ -94,8 +96,10 @@ fun ComposeContextProfilePickerView(
           chatModel.controller.appPrefs.incognito.set(false)
           listExpanded.value = false
           chatModel.chatsContext.updateGroup(rhId, updatedGroup)
+          chatMoved = true
         }
       }
+      if (!chatMoved) return@withApi
       chatModel.controller.changeActiveUser_(
         rhId = newUser.remoteHostId,
         toUserId = newUser.userId,
