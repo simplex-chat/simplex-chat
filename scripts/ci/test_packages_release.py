@@ -1,4 +1,10 @@
+import base64
+import contextlib
+import email.message
+import io
 import subprocess
+import tomllib
+import urllib.error
 import tempfile
 import unittest
 from dataclasses import replace
@@ -8,6 +14,9 @@ from unittest import mock
 import packages_release
 from packages_release import (
     ADDON_ASSETS,
+    NODEJS_DIR,
+    PYTHON_VERSION_FILE,
+    TYPES_DIR,
     ADDON_PLATFORMS,
     BuildPlan,
     LIBS_ASSETS,
@@ -20,12 +29,18 @@ from packages_release import (
     bump_npm_version,
     bump_python_version,
     changed_since,
-    changed_since_publish,
-    published_tag,
+    add_releases,
+    package_state,
+    publish_plan,
+    record_releases,
+    recorded_commit,
+    render_releases,
     dist_tag,
+    npm_published,
     parse_python_version,
     parse_release,
     plan,
+    pypi_published,
     registry_name,
     release_digests,
     render_python_version,
@@ -220,7 +235,132 @@ class BuildPlanTest(unittest.TestCase):
         )
 
 
-class ChangedSincePublishTest(unittest.TestCase):
+class RegistryUrlTest(unittest.TestCase):
+    def urls(self, env: dict[str, str]) -> list[str]:
+        with (
+            mock.patch.dict("os.environ", env),
+            mock.patch.object(packages_release, "http_json", return_value={}) as get,
+        ):
+            npm_published("simplex-chat", "1.0.0")
+            pypi_published("1.0.0")
+            packages_release.github_release("core-1.0.0.1")
+        return [call.args[0] for call in get.call_args_list]
+
+    def test_empty_variables_use_the_public_registries(self):
+        self.assertEqual(
+            self.urls({"NPM_REGISTRY": "", "NPM_SCOPE": "", "PYPI_URL": "", "PYPI_PROJECT": "", "LIBS_REPOSITORY": ""}),
+            [
+                "https://registry.npmjs.org/simplex-chat/1.0.0",
+                "https://pypi.org/pypi/simplex-chat/1.0.0/json",
+                "https://api.github.com/repos/simplex-chat/simplex-chat-libs/releases/tags/core-1.0.0.1",
+            ],
+        )
+
+    def test_variables_select_test_registries(self):
+        self.assertEqual(
+            self.urls(
+                {
+                    "NPM_SCOPE": "@test",
+                    "PYPI_URL": "https://test.pypi.org",
+                    "PYPI_PROJECT": "sx-test",
+                    "LIBS_REPOSITORY": "a/b-libs",
+                }
+            ),
+            [
+                "https://registry.npmjs.org/@test%2Fsimplex-chat/1.0.0",
+                "https://test.pypi.org/pypi/sx-test/1.0.0/json",
+                "https://api.github.com/repos/a/b-libs/releases/tags/core-1.0.0.1",
+            ],
+        )
+
+
+class ReleasesFileTest(unittest.TestCase):
+    RELEASES = {
+        "core": {"7.1.0.11": "c1"},
+        "npm": {"simplex-chat": {"7.1.0-beta.6.3": "n1"}, "@simplex-chat/types": {"0.12.2": "t1"}},
+        "pypi": {"simplex-chat": {"7.1.0b6": "p1"}},
+    }
+
+    def test_renders_toml_that_reads_back(self):
+        text = render_releases(self.RELEASES)
+        self.assertEqual(tomllib.loads(text), self.RELEASES)
+        self.assertIn('[core]\n"7.1.0.11" = "c1"\n', text)
+        self.assertIn('[npm."@simplex-chat/types"]\n', text)
+        self.assertIn("[npm.simplex-chat]\n", text)
+
+    def test_keeps_the_order_of_recording(self):
+        releases = {"npm": {"simplex-chat": {"7.1.0-beta.6.9": "a"}}}
+        updated = add_releases(releases, [("npm/simplex-chat", "7.1.0-beta.6.10"), ("core", "7.1.0.15")], "b")
+        self.assertEqual(
+            render_releases(updated),
+            '[npm.simplex-chat]\n"7.1.0-beta.6.9" = "a"\n"7.1.0-beta.6.10" = "b"\n\n[core]\n"7.1.0.15" = "b"\n',
+        )
+
+    def test_finds_the_recorded_commit(self):
+        self.assertEqual(recorded_commit(self.RELEASES, "npm/@simplex-chat/types", "0.12.2"), "t1")
+        self.assertEqual(recorded_commit(self.RELEASES, "core", "7.1.0.11"), "c1")
+        self.assertIsNone(recorded_commit(self.RELEASES, "npm/simplex-chat", "7.1.0-beta.6.4"))
+        self.assertIsNone(recorded_commit({}, "pypi/simplex-chat", "7.1.0b6"))
+
+    def test_adds_entries_and_keeps_recorded_commits(self):
+        updated = add_releases(self.RELEASES, [("npm/simplex-chat", "7.1.0-beta.6.4"), ("core", "7.1.0.11")], "x")
+        self.assertEqual(updated["npm"]["simplex-chat"], {"7.1.0-beta.6.3": "n1", "7.1.0-beta.6.4": "x"})
+        self.assertEqual(updated["core"], {"7.1.0.11": "c1"})
+        self.assertEqual(self.RELEASES["npm"]["simplex-chat"], {"7.1.0-beta.6.3": "n1"})
+
+
+class RecordReleasesTest(unittest.TestCase):
+    def file(self, releases, blob):
+        return {"content": base64.b64encode(render_releases(releases).encode()).decode(), "sha": blob}
+
+    def conflict(self):
+        error = urllib.error.HTTPError("url", 409, "Conflict", email.message.Message(), io.BytesIO())
+        self.addCleanup(error.close)
+        return error
+
+    def test_creates_the_file_and_returns_the_commit(self):
+        calls = []
+
+        def api(path, method="GET", body=None):
+            calls.append((path, method, body))
+            return None if method == "GET" else {"commit": {"sha": "libs1"}}
+
+        with mock.patch.object(packages_release, "libs_api", api):
+            self.assertEqual(record_releases([("core", "7.1.0.12")], "sx1"), "libs1")
+        _, method, body = calls[1]
+        self.assertEqual((method, body["message"], "sha" in body), ("PUT", "core 7.1.0.12", False))
+        self.assertEqual(tomllib.loads(base64.b64decode(body["content"]).decode()), {"core": {"7.1.0.12": "sx1"}})
+
+    def test_retries_when_another_writer_changed_the_file(self):
+        reads = iter([self.file({"core": {"1": "a"}}, "blob1"), self.file({"core": {"1": "a", "2": "b"}}, "blob2")])
+        puts = []
+
+        def api(path, method="GET", body=None):
+            if method == "GET":
+                return next(reads)
+            puts.append(body)
+            if len(puts) == 1:
+                raise self.conflict()
+            return {"commit": {"sha": "libs2"}}
+
+        with mock.patch.object(packages_release, "libs_api", api):
+            self.assertEqual(record_releases([("npm/simplex-chat", "3")], "sx3"), "libs2")
+        self.assertEqual([body["sha"] for body in puts], ["blob1", "blob2"])
+        self.assertEqual(
+            tomllib.loads(base64.b64decode(puts[1]["content"]).decode()),
+            {"core": {"1": "a", "2": "b"}, "npm": {"simplex-chat": {"3": "sx3"}}},
+        )
+
+    def test_recorded_entries_return_the_last_commit_of_the_file(self):
+        def api(path, method="GET", body=None):
+            self.assertEqual(method, "GET")
+            return [{"sha": "libs0"}] if path.startswith("commits") else self.file({"core": {"1": "a"}}, "blob1")
+
+        with mock.patch.object(packages_release, "libs_api", api):
+            self.assertEqual(record_releases([("core", "1")], "other"), "libs0")
+
+
+class PackageStateTest(unittest.TestCase):
     def setUp(self):
         self.repo = Path(tempfile.mkdtemp())
         self.git("init", "-q")
@@ -239,9 +379,66 @@ class ChangedSincePublishTest(unittest.TestCase):
         self.git("add", "-A")
         self.git("commit", "-q", "-m", message)
 
-    def changed(self):
+    def state(self, releases=None, registry_published=False):
         with mock.patch.object(packages_release, "ROOT", self.repo):
-            return changed_since_publish("pkg", "1", "pkg", "pkg/version.txt", "^version =")
+            return package_state(
+                "npm/pkg", "1", "pkg", "pkg/version.txt", "^version =", releases or {}, lambda: registry_published
+            )
+
+    def changed(self):
+        return self.state().changed
+
+    def head(self):
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=self.repo, capture_output=True, text=True
+        ).stdout.strip()
+
+    def test_recorded_version_is_published_and_compared_with_its_commit(self):
+        self.write("pkg/src.txt", "b")
+        self.commit("change published with version 1")
+        releases = {"npm": {"pkg": {"1": self.head()}}}
+        self.assertEqual(self.state(releases), Package("1", changed=False, published=True))
+        self.write("pkg/src.txt", "c")
+        self.commit("change after the publish")
+        self.assertEqual(self.state(releases), Package("1", changed=True, published=True))
+
+    def test_unrecorded_version_asks_the_registry(self):
+        self.assertFalse(self.state(registry_published=False).published)
+        self.assertTrue(self.state(registry_published=True).published)
+
+    def test_publish_plan_skips_recorded_versions_before_the_registries_list_them(self):
+        self.write(f"{TYPES_DIR}/package.json", '{"name": "@simplex-chat/types", "version": "0.1.0"}')
+        self.write(f"{NODEJS_DIR}/package.json", '{"name": "simplex-chat", "version": "1.0.0-beta.1.1"}')
+        self.write(PYTHON_VERSION_FILE, render_python_version("1.0.0b1.post1", Pins("core-1", {})))
+        self.write("pyproject.toml", "")
+        self.commit("packages")
+        releases = {"npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}}, "pypi": {"simplex-chat": {"1.0.0b1.post1": "c"}}}
+        output = io.StringIO()
+        with (
+            mock.patch.object(packages_release, "ROOT", self.repo),
+            mock.patch.object(packages_release, "read_releases", return_value=(releases, "blob")),
+            mock.patch.object(packages_release, "python_project", return_value="simplex-chat"),
+            mock.patch.object(packages_release, "npm_published", return_value=False),
+            mock.patch.object(packages_release, "pypi_published", return_value=False),
+            contextlib.redirect_stdout(output),
+        ):
+            publish_plan()
+        self.assertEqual(
+            output.getvalue().splitlines(),
+            [
+                "types_version=0.1.0",
+                "types_dist_tag=latest",
+                "nodejs_version=",
+                "nodejs_dist_tag=beta",
+                "python_version=",
+            ],
+        )
+
+    def test_unknown_recorded_commit_falls_back_to_the_version_commit(self):
+        self.write("pkg/src.txt", "b")
+        self.commit("change")
+        state = self.state({"npm": {"pkg": {"1": "0" * 40}}})
+        self.assertEqual(state, Package("1", changed=True, published=True))
 
     def test_compares_with_the_commit_that_set_the_version(self):
         self.assertFalse(self.changed())
@@ -249,21 +446,12 @@ class ChangedSincePublishTest(unittest.TestCase):
         self.commit("change")
         self.assertTrue(self.changed())
 
-    def test_compares_with_the_published_commit(self):
+    def test_new_version_resets_the_comparison(self):
         self.write("pkg/src.txt", "b")
         self.commit("change")
-        self.git("tag", "pkg-v1")
+        self.write("pkg/version.txt", 'version = "2"\n')
+        self.commit("set version 2")
         self.assertFalse(self.changed())
-        self.write("pkg/src.txt", "c")
-        self.commit("change after publish")
-        self.assertTrue(self.changed())
-
-    def test_publish_tag_marks_the_version_published(self):
-        with mock.patch.object(packages_release, "ROOT", self.repo):
-            self.assertIsNone(published_tag("pkg", "1"))
-            self.git("tag", "pkg-v1")
-            self.assertEqual(published_tag("pkg", "1"), "refs/tags/pkg-v1")
-            self.assertIsNone(published_tag("pkg", "2"))
 
     def test_changed_since_looks_only_at_the_sources(self):
         base = subprocess.run(

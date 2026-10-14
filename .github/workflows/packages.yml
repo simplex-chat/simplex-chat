@@ -2,7 +2,7 @@ name: packages
 
 # Releases simplex-chat (npm, PyPI) and @simplex-chat/types (npm) from master and stable:
 # 1. A missing Node.js add-on release (nodejs-addon-<hash of its sources>) is built and uploaded to simplex-chat-libs.
-# 2. Versions that are not published yet are published, and tagged <package>-v<version> on their commit.
+# 2. Versions that are not published yet are published, and recorded in releases.toml of simplex-chat-libs.
 #    npm prerelease versions get dist-tag beta, others latest.
 # 3. The release PR packages-release/<branch> pins new library and add-on releases with their SHA-256
 #    and bumps the versions of changed packages. Merging it publishes them (step 2).
@@ -208,18 +208,24 @@ jobs:
     if: needs.addon.outputs.release_branch && contains(github.workflow_ref, '/.github/workflows/packages.yml@')
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       id-token: write
+    # set by a publish step after it succeeds, so a failed publish still reports the earlier ones
+    outputs:
+      types: ${{ steps.types.outputs.version }}
+      nodejs: ${{ steps.nodejs.outputs.version }}
+      python: ${{ steps.python.outputs.version }}
     env:
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: Versions to publish
         id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
         run: python3 scripts/ci/packages_release.py publish-plan >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
@@ -250,6 +256,7 @@ jobs:
         run: python3 scripts/ci/packages_release.py test-names
 
       - name: Publish @simplex-chat/types
+        id: types
         if: steps.plan.outputs.types_version
         working-directory: packages/simplex-chat-client/types/typescript
         env:
@@ -258,9 +265,10 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm publish --provenance --access public --tag "$DIST_TAG"
-          git tag "types-v$VERSION" && git push origin "types-v$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Publish simplex-chat (npm)
+        id: nodejs
         if: steps.plan.outputs.nodejs_version
         working-directory: packages/simplex-chat-nodejs
         env:
@@ -268,7 +276,7 @@ jobs:
           DIST_TAG: ${{ steps.plan.outputs.nodejs_dist_tag }}
         run: |
           npm publish --provenance --access public --tag "$DIST_TAG"
-          git tag "nodejs-v$VERSION" && git push origin "nodejs-v$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build and test simplex-chat (PyPI)
         if: steps.plan.outputs.python_version
@@ -286,15 +294,35 @@ jobs:
           repository-url: ${{ vars.PYPI_UPLOAD_URL || 'https://upload.pypi.org/legacy/' }}
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-      - name: Tag the published PyPI version
+      - name: Report the published PyPI version
+        id: python
         if: steps.plan.outputs.python_version
         env:
           VERSION: ${{ steps.plan.outputs.python_version }}
-        run: git tag "python-v$VERSION" && git push origin "python-v$VERSION"
+        run: echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  # The only job here that writes to simplex-chat-libs; publish runs npm and pip installs without its token.
+  record:
+    needs: publish
+    if: ${{ !cancelled() && (needs.publish.outputs.types || needs.publish.outputs.nodejs || needs.publish.outputs.python) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Record published versions
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          TYPES: ${{ needs.publish.outputs.types }}
+          NODEJS: ${{ needs.publish.outputs.nodejs }}
+          PYTHON: ${{ needs.publish.outputs.python }}
+        run: |
+          python3 scripts/ci/packages_release.py record --commit "$GITHUB_SHA" \
+            --types "$TYPES" --nodejs "$NODEJS" --python "$PYTHON"
 
   release:
-    # After publish, for its version tags. A failed publish leaves its versions unbumped.
-    needs: [addon, build, publish]
+    needs: [addon, build]
     # A merged release PR changes only versions and pins.
     if: >-
       !cancelled() && needs.addon.outputs.release_branch && needs.build.result != 'failure'

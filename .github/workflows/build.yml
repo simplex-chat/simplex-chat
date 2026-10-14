@@ -132,35 +132,26 @@ jobs:
             echo "version=$version" >> $GITHUB_OUTPUT
           fi
 
-      - name: Clone libs repo
-        if: steps.check_version.outputs.version
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.repository }}-libs
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
-          path: libs-repo
-
-      - name: Commit and tag libs release
+      - name: Record libs release
         id: libs_commit
         if: steps.check_version.outputs.version
-        working-directory: libs-repo
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          VERSION: ${{ steps.check_version.outputs.version }}
         run: |
-          tag=core-${{ steps.check_version.outputs.version }}
-          printf 'version: %s\ncommit: %s\n' "${{ steps.check_version.outputs.version }}" "${{ github.sha }}" > core-release
-          git config user.name "SimpleX Chat"
-          git config user.email "build@simplex.chat"
-          git add core-release
-          git commit -m "$tag"
-          git tag "$tag"
-          git push --atomic origin HEAD "$tag"
-          echo "tag=$tag" >> $GITHUB_OUTPUT
+          commit=$(python3 scripts/ci/packages_release.py record --core "$VERSION" --commit "$GITHUB_SHA")
+          echo "tag=core-$VERSION" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
+      # creates the tag on the commit that recorded the release
       - name: Create libs release
         if: steps.check_version.outputs.version
         uses: softprops/action-gh-release@v2
         with:
           repository: ${{ github.repository }}-libs
           tag_name: ${{ steps.libs_commit.outputs.tag }}
+          target_commitish: ${{ steps.libs_commit.outputs.commit }}
           token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
 # =========================
@@ -868,7 +859,7 @@ jobs:
     if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag }}
     # the called workflow can't be granted more than its caller, and its publish job needs these
     permissions:
-      contents: write
+      contents: read
       id-token: write
     uses: ./.github/workflows/packages.yml
     with:
@@ -882,7 +873,7 @@ jobs:
     # build-linux uploads the library before its chat tests run
     if: ${{ !cancelled() && needs.maybe-release.outputs.core_changed }}
     permissions:
-      contents: write
+      contents: read
       id-token: write
     uses: ./.github/workflows/packages.yml
     with:
