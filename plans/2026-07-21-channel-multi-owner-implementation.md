@@ -120,7 +120,7 @@ The relay side ships in the same release as promotion. Promotion is refused whil
 - **`APILeaveGroup` by an owner of a multi-owner channel** runs the leave (Part 6.6) instead of `deleteGroupLinkIfExists` (`Commands.hs:3246`).
   - It is refused when no other current owner remains.
   - A sole owner keeps today's behaviour.
-- **`APIDeleteChat` by a promoted owner**, in the branch that sends `x.grp.del` (`doSendDel`, `Commands.hs:1394-1400`), also deletes the link queue with `deleteLinkQueueWithCreds`, after reading the link data for its `linkRcvId`. `deleteGroupLinkIfExists` at `:1400` runs regardless of `doSendDel`, so this `DEL` is not added there. When this device created the channel and its membership is no longer a current owner (a leave stopped before step 6), `APIDeleteChat` deletes the link connection with `deleteConnectionLocal` instead of `deleteGroupLinkIfExists`. The key may still be authorised (overview §3), so it never sends `DEL`.
+- **`APIDeleteChat` by a promoted owner**, in the branch that sends `x.grp.del` (`doSendDel`, `Commands.hs:1394-1400`), also deletes the link queue with `deleteLinkQueueWithCreds`, after reading the link data for its `linkRcvId`. `deleteGroupLinkIfExists` at `:1400` runs regardless of `doSendDel`, so this `DEL` is not added there. When this device created the channel and its membership is no longer a current owner (a leave stopped after step 5), `APIDeleteChat` deletes the link connection with `deleteConnectionLocal` instead of `deleteGroupLinkIfExists`. The key may still be authorised (overview §3), so it never sends `DEL`.
 - **`APICreateGroupLink`, `APIAddGroupShortLink` and `APIDeleteGroupLink` are refused for channels** (`Commands.hs:3349-3384`).
 - **`APIGetUpdatedGroupLinkData`.** Replace the owner branch at `Commands.hs:1968` with the owner reconcile (Part 6.2). For subscribers it also applies the owners chain (Part 6.5).
 - **`APIAddGroupRelays`.** A promoted owner takes the channel link from `publicGroup.groupLink`; the creator takes it from its group link row (`Commands.hs:2790-2793`). Publication goes through Part 6.1.
@@ -265,7 +265,7 @@ Members and relays keep `applyAtRosterVersion` and the completion gate. The rule
    - it applies another owner's departure, either from `xGrpLeave` of an owner, or from Part 6.5 marking a held owner left from `revokedOwners`;
    - it applies a served blob whose author it holds as left (rule 6).
 
-   A departure from a link-data read can come before the departed owner's last forwarded messages, which `xGrpMsgForward` then drops (`Subscriber.hs:4019-4020`). So on that path the owner also sends `XGrpRosterRequest` with its complete frontier to every current relay.
+   A departure from a link-data read can come before the departed owner's last forwarded messages, which `xGrpMsgForward` then drops (`Subscriber.hs:4019-4020`). So on that path the owner first sends `XGrpRosterRequest` with its complete frontier to every current relay, before its own re-send. The request then carries the frontier from before that re-send.
 4. **Owners are outside the roster.**
    - `processRosterEntries` (`Subscriber.hs:3610-3630`) skips entries for current owners and for members held as removed or left.
    - `xGrpMemRole` (`Subscriber.hs:3448-3500`), including its own-membership branch (`:3451-3454`), ignores an event whose target is a current owner or a member held as removed or left, and any event that assigns the owner role.
@@ -274,8 +274,9 @@ Members and relays keep `applyAtRosterVersion` and the completion gate. The rule
 6. **In sync before sending.** An owner sends a blob (own change, rule 2, rule 3) only when its complete frontier equals its gate. While it is out of sync:
    - it sends `XGrpRosterRequest` with its complete frontier to every current relay, and again with each role change it makes;
    - `broadcastRoster` reserves the version and sends the events without the blob;
-   - rules 2 and 3 wait until it is back in sync;
-   - in `xGrpMsgForward` (`Subscriber.hs:4009-4027`), it processes an `XGrpRoster` whose author it holds as left, verified against that author's kept key, instead of ignoring it. Completion still rejects a version below its gate.
+   - rules 2 and 3 wait until it is back in sync.
+
+   Every owner, in sync or not, processes in `xGrpMsgForward` (`Subscriber.hs:4009-4027`) an `XGrpRoster` whose author it holds as left, verified against that author's kept key, instead of ignoring it. Completion still rejects a version below its gate. This is how an owner catches up both when it is out of sync and after a departure read from link data (rule 3).
 7. **Absence request.** At chat start, when the newest item an owner received in the channel is older than message expiry, or there is none, it sends `XGrpRosterRequest` with its complete frontier to each relay. Relays already answer members this way (`xGrpRosterRequest`, `Subscriber.hs:3679-3685`).
 
 ### 6.10 Count, and a relay's own leave
@@ -370,7 +371,7 @@ Under `describe "channels"` (`tests/ChatTests/Groups.hs`), with relays from `cha
 - **Leave.**
   - The last owner's leave is refused.
   - The creator's leave sends no `DEL`, and the link still resolves.
-  - A leave stopped after step 2 and repeated continues at step 4. A reconcile before the repeat leaves the leaver's own membership current. A creator that deletes the chat after its leave stopped before step 6 sends no `DEL`.
+  - A leave stopped after step 2 and repeated continues at step 4. A reconcile before the repeat leaves the leaver's own membership current. A creator that deletes the chat after its leave stopped after step 5 sends no `DEL`.
   - The creator changes roles while M is offline, then leaves. M reads the link data before its backlog: it asks every relay, applies the creator's served blob, and re-sends, and a later joiner gets a roster it can verify.
   - After any leave, the leaver's stored member key no longer matches its chain entry's key.
 
