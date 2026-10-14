@@ -1502,7 +1502,21 @@
     </script>
     <script type="module">
         import { init, track } from '/js/page.js'
-        init({ domain: 'simplex.chat', endpoint: 'https://api.simplex.chat/api/event', logging: false })
+        var pageEvents = {
+    domain: 'simplex.chat',
+    endpoint: 'https://api.simplex.chat/api/event',
+    logging: false,
+    outboundLinks: true,
+    transformRequest: function (event) {
+        if (window !== window.top || location.hostname.endsWith('.onion')) return null;
+        if (location.pathname.startsWith('/directory')) event.u = event.u.split('#')[0];
+        // remove hash from outbound links
+        if (event.p && event.p.url) event.p.url = event.p.url.split('#')[0];
+        return event;
+    }
+};
+
+        init(pageEvents)
         var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf[data-section]'))
         var seen = {}
         var current = 'hero'
@@ -1525,13 +1539,6 @@
         })
         var bar = document.querySelector('#cf-cta-invest')
         if (bar) bar.addEventListener('click', function () { track('Invest', { props: { place: 'bar', section: current } }) })
-        var exits = [['#navbar .logo', 'home', 'logo'], ['.cf-fine-links a[href="/"]', 'home', 'footer'], ['.cf-fine-links a[href="/privacy"]', 'privacy', 'footer'],
-            ['.cf-simplex-link', 'chat', 'request'], ['.cf-deck-link', 'deck', 'request'], ['.cf-modal-footnote a', 'source', 'ai-threat']]
-        exits.forEach(function (x) {
-            document.querySelectorAll(x[0]).forEach(function (el) {
-                el.addEventListener('click', function () { track('Exit', { props: { to: x[1], place: x[2] } }) })
-            })
-        })
         document.addEventListener('mc:result', function (e) { track('Subscribed', { props: { status: e.detail.status } }) })
         window.addEventListener('hashchange', function () {
             var id = location.hash.slice(1)
