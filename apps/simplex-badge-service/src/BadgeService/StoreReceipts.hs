@@ -32,7 +32,8 @@ data VerifiedStoreTransaction = VerifiedStoreTransaction
     quantity :: Int, -- as the store reported it; the service refuses any but 1, as the apps never buy more
     -- costs the buyer nothing: Apple's Sandbox, which a public TestFlight build buys in, and Google's license testers
     testPurchase :: Bool,
-    paid :: Maybe (CurrencyAmount, Text) -- in minor units; Google's purchase record carries no price
+    paid :: Maybe (CurrencyAmount, Text), -- in minor units; Google's purchase record carries no price
+    alreadyAcknowledged :: Bool -- Play's record says acknowledged or consumed; other stores have nothing to acknowledge
   }
   deriving (Eq, Show)
 
@@ -63,7 +64,7 @@ data StoreVerifier = StoreVerifier
 data StoreReceipt = StoreReceipt
   { txRef :: StoreTransactionRef,
     verifyReceipt :: IO (Either StoreRefusal VerifiedStoreTransaction),
-    acknowledgeReceipt :: Maybe (IO (Either StoreRefusal ()))
+    acknowledgeReceipt :: Maybe (VerifiedStoreTransaction -> IO (Either StoreRefusal ()))
   }
 
 noStoreVerifier :: StoreVerifier
@@ -87,7 +88,7 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
           StoreReceipt
             (StoreTransactionRef PPGoogle (googlePurchaseRef token))
             (maybe unconfigured (\verify -> online "google verifier" $ verify productId token) verifyGoogle)
-            ((\acknowledge -> online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle)
+            ((\acknowledge VerifiedStoreTransaction {alreadyAcknowledged} -> if alreadyAcknowledged then pure (Right ()) else online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle)
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
   where

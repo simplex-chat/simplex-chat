@@ -479,10 +479,10 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
         Right (Left resp) -> resp
         _ -> errorResponse BSEInternal
     -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
-    newPurchase VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
+    newPurchase tx@VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       Just StoreProduct {badgeType, months} ->
-        fromMaybe (pure $ Right ()) acknowledgeReceipt >>= \case
+        maybe (pure $ Right ()) ($ tx) acknowledgeReceipt >>= \case
           Left refusal -> storeRefusalResponse refusal
           Right () -> do
             now <- badgeNow cc

@@ -143,7 +143,8 @@ transaction ourBundleId AppleTransaction {transactionId, productId, bundleId, en
             productId,
             quantity,
             testPurchase,
-            paid = paidOf price currency
+            paid = paidOf price currency,
+            alreadyAcknowledged = False
           }
 
 -- | Apple's price is in milliunits of the currency, whatever its minor unit.
