@@ -45,6 +45,7 @@ data class DirectorySearchEntry(
   val id: String get() = link
 
   // untrusted input: only group and channel links are kept, as the core fetches an invitation link even in a store-only plan
+  // @Transient: the decoder always runs this check, and a "link" key in the JSON cannot replace it
   @Transient
   val link: String = run {
     val link = groupLink.connShortLink ?: groupLink.connFullLink

@@ -28,6 +28,7 @@ import kotlinx.serialization.json.JsonObject
 enum class DirectoryFooter { Retry, ShowMore }
 
 // Online results are not chats and are never saved: they live as long as the search text does.
+// main thread only, as iOS's @MainActor: callers launch with withApi, and the generation checks rely on it
 class OnlineSearchModel {
   var names by mutableStateOf<List<NameSearchResult>>(emptyList())
     private set
