@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.helpers.*
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.res.*
@@ -43,7 +44,8 @@ fun BoxScope.SelectedItemsCounterToolbar(selectedItems: MutableState<Set<Long>?>
       onTitleClick = null,
       onTop = onTop,
       onSearchValueChanged = {},
-      buttons = if (selectAll != null) { { SelectAllButton(selectAll) } } else {{}}
+      buttons = if (selectAll != null) { { SelectAllButton(selectAll) } } else {{}},
+      uiKey = Ui.Chat.Selection
     )
   }
 }

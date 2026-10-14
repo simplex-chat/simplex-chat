@@ -28,6 +28,8 @@ import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.darkStops
@@ -104,6 +106,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
                   fontWeight = FontWeight.Medium,
                   color = MaterialTheme.colors.primary,
                   modifier = Modifier
+                    .ui(Ui.Onboarding.ConditionsLink)
                     .clickable(
                       interactionSource = remember { MutableInteractionSource() },
                       indication = null
@@ -150,6 +153,7 @@ private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Lo
               fontWeight = FontWeight.Medium,
               color = MaterialTheme.colors.primary,
               modifier = Modifier
+                .ui(Ui.Onboarding.ConditionsLink)
                 .clickable(
                   interactionSource = remember { MutableInteractionSource() },
                   indication = null
@@ -197,7 +201,8 @@ fun ModalData.ChooseServerOperators(
         Column(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingInformationButton(
             stringResource(MR.strings.how_it_helps_privacy),
-            onClick = { ModalManager.fullscreen.showModal { ChooseServerOperatorsInfoView() } }
+            onClick = { ModalManager.fullscreen.showModal { ChooseServerOperatorsInfoView() } },
+            uiKey = Ui.Onboarding.HowItHelps
           )
         }
 
@@ -240,6 +245,7 @@ private fun OperatorCheckView(serverOperator: ServerOperator, selectedOperatorId
       selectedOperatorIds.value += serverOperator.operatorId
     }
   },
+    modifier = Modifier.ui(Ui.Onboarding.Operator(serverOperator.operatorId)),
     border = BorderStroke(1.dp, color = if (checked) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),
     shape = RoundedCornerShape(18.dp)
   ) {
@@ -280,7 +286,7 @@ private fun CircleCheckbox(checked: Boolean) {
 @Composable
 private fun SetOperatorsButton(enabled: Boolean, close: () -> Unit) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    modifier = (if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp)).ui(Ui.Onboarding.OperatorsOk),
     labelId = MR.strings.ok,
     onboarding = null,
     enabled = enabled,
@@ -316,7 +322,7 @@ private fun AcceptConditionsButton(
   selectedOperatorIds: State<Set<Long>>
 ) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    modifier = (if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp)).ui(Ui.Onboarding.Accept),
     labelId = MR.strings.onboarding_conditions_accept,
     onboarding = null,
     enabled = enabled,

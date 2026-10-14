@@ -32,6 +32,8 @@ import chat.simplex.common.model.ChatController.apiSetChatTags
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.clearActiveChatFilterIfNeeded
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.ReactionIcon
@@ -110,6 +112,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
 
             Row(
               Modifier
+                .ui(Ui.TagList.Tag(tag.chatTagId))
                 .fillMaxWidth()
                 .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
                 .clickable(
@@ -261,7 +264,7 @@ fun ModalData.TagListEditor(
         trimmedName.value.isEmpty() ||
         isDuplicateEmojiOrName.value
 
-    SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled) {
+    SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled, uiKey = Ui.TagEditor.Save) {
       Text(
         generalGetString(if (chat != null) MR.strings.add_to_list else MR.strings.save_list),
         color = if (disabled) colors.secondary else colors.primary
@@ -311,7 +314,8 @@ private fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bo
       deleteTagDialog(rhId, tag, saving)
       showMenu.value = false
     },
-    color = Color.Red
+    color = Color.Red,
+    uiKey = Ui.ChatList.UserTagMenu(tag.chatTagId, "delete")
   )
 }
 
@@ -332,7 +336,8 @@ private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bool
         )
       }
     },
-    color = MenuTextColor
+    color = MenuTextColor,
+    uiKey = Ui.ChatList.UserTagMenu(tag.chatTagId, "edit")
   )
 }
 
@@ -370,6 +375,7 @@ fun TagListNameTextField(name: MutableState<String>, showError: State<Boolean>) 
     onValueChange = { name.value = it },
     interactionSource = interactionSource,
     modifier = Modifier
+      .ui(Ui.TagEditor.Name)
       .fillMaxWidth()
       .indicatorLine(true, showError.value, interactionSource, colors)
       .heightIn(min = TextFieldDefaults.MinHeight)
@@ -483,7 +489,7 @@ private fun deleteTagDialog(rhId: Long?, tag: ChatTag, saving: MutableState<Bool
       SectionItemView({
         AlertManager.shared.hideAlert()
         deleteTag(rhId, tag, saving)
-      }) {
+      }, uiKey = Ui.Alert.Confirm(Ui.AlertSource.Shared)) {
         Text(
           generalGetString(MR.strings.confirm_verb),
           Modifier.fillMaxWidth(),

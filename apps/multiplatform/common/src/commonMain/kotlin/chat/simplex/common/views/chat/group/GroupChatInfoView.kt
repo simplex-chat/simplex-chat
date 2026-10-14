@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -794,7 +795,8 @@ fun ModalData.GroupChatInfoLayout(
             },
             longClick = { showMenu.value = true },
             minHeight = 54.dp,
-            padding = PaddingValues(horizontal = DEFAULT_PADDING)
+            padding = PaddingValues(horizontal = DEFAULT_PADDING),
+            uiKey = Ui.GroupInfo.Member(member.groupMemberId)
           ) {
             Box(contentAlignment = Alignment.CenterStart) {
               androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {

@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.text.font.FontWeight
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SelectableCard
@@ -204,9 +206,11 @@ fun SectionItemView(
     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
     PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+  uiKey: UiKey? = null,
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
+    .ui(uiKey)
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
@@ -227,9 +231,10 @@ fun SectionItemViewWithoutMinPadding(
     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding)
   else
     PaddingValues(horizontal = itemHPadding),
+  uiKey: UiKey? = null,
   content: (@Composable RowScope.() -> Unit)
 ) {
-  SectionItemView(click, minHeight, disabled, extraPadding, padding, content)
+  SectionItemView(click, minHeight, disabled, extraPadding, padding, uiKey = uiKey, content = content)
 }
 
 @Composable
@@ -243,9 +248,11 @@ fun SectionItemViewLongClickable(
     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
     PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+  uiKey: UiKey? = null,
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
+    .ui(uiKey)
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(

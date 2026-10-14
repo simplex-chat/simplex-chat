@@ -47,6 +47,7 @@ import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsPreferenceItem
@@ -346,7 +347,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
         generalGetString(MR.strings.servers_info_subscriptions_total),
         numOrDash(totals.subs.total)
       )
-      SettingsPreferenceItem(null, stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage)
+      SettingsPreferenceItem(null, stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage, uiKey = Ui.ServersSummary.ShowPercentage)
     }
   }
 }

@@ -21,7 +21,7 @@ android {
         versionCode = (extra["android.version_code"] as String).toInt()
         versionName = extra["android.version_name"] as String
 
-        testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -93,6 +93,7 @@ android {
         jniLibs.useLegacyPackaging = rootProject.extra["compression.level"] as Int != 0
     }
     android.sourceSets["main"].assets.setSrcDirs(listOf("../common/src/commonMain/resources/assets"))
+    android.sourceSets["androidTest"].java.srcDir("../common/src/uiTestShared/kotlin")
     val isRelease = gradle.startParameter.taskNames.find { it.lowercase().contains("release") } != null
     val isBundle = gradle.startParameter.taskNames.find { it.lowercase().contains("bundle") } != null
     // Comma separated list of languages that will be included in the apk
@@ -187,8 +188,11 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    androidTestImplementation("androidx.test:core:1.6.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose_version")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.6.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.8.2")
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.4")
 }
 

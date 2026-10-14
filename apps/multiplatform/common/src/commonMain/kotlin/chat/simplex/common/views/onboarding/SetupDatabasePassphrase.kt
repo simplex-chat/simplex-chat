@@ -17,6 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
@@ -140,6 +142,7 @@ private fun SetupDatabasePassphraseLayout(
             newKey,
             generalGetString(MR.strings.new_passphrase),
             modifier = Modifier
+              .ui(Ui.Onboarding.NewPassphrase)
               .padding(horizontal = DEFAULT_PADDING)
               .focusRequester(focusRequester)
               .onPreviewKeyEvent {
@@ -160,6 +163,7 @@ private fun SetupDatabasePassphraseLayout(
             confirmNewKey,
             generalGetString(MR.strings.confirm_new_passphrase),
             modifier = Modifier
+              .ui(Ui.Onboarding.ConfirmPassphrase)
               .padding(horizontal = DEFAULT_PADDING)
               .onPreviewKeyEvent {
                 if (!disabled && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
@@ -193,7 +197,7 @@ private fun SetupDatabasePassphraseLayout(
 @Composable
 private fun SetPassphraseButton(disabled: Boolean, onClick: () -> Unit) {
   OnboardingActionButton(
-    if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    (if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp)).ui(Ui.Onboarding.SetPassphrase),
     labelId = MR.strings.set_database_passphrase,
     onboarding = null,
     onclick = onClick,
@@ -203,7 +207,7 @@ private fun SetPassphraseButton(disabled: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun SkipButton(disabled: Boolean, onClick: () -> Unit) {
-  TextButtonBelowOnboardingButton(stringResource(MR.strings.use_random_passphrase), onClick = if (disabled) null else onClick)
+  TextButtonBelowOnboardingButton(stringResource(MR.strings.use_random_passphrase), onClick = if (disabled) null else onClick, uiKey = Ui.Onboarding.RandomPassphrase)
 }
 
 @Composable

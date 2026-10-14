@@ -168,7 +168,7 @@ fun setupUpdateChecker() = withLongRunningApi {
 }
 
 private fun createUpdateJob() {
-  updateCheckerJob = withLongRunningApi {
+  updateCheckerJob = withLongRunningApi(idle = false) {
     delay(24 * 60 * 60 * 1000)
     checkForUpdate()
     createUpdateJob()

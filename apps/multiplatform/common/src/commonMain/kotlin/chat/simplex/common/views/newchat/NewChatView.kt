@@ -36,6 +36,9 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
@@ -231,12 +234,14 @@ private fun ProfilePickerOption(
   onSelected: () -> Unit,
   image: @Composable () -> Unit,
   onInfo: (() -> Unit)? = null,
-  badge: LocalBadge? = null
+  badge: LocalBadge? = null,
+  uiKey: UiKey? = null
 ) {
   Row(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
+      .ui(uiKey)
       .clickable(enabled = !disabled, onClick = onSelected)
       .padding(horizontal = DEFAULT_PADDING, vertical = 4.dp),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -401,6 +406,7 @@ fun ActiveProfilePicker(
         IncognitoOptionImage()
       },
       onInfo = { ModalManager.start.showModal { IncognitoView() } },
+      uiKey = Ui.Link.ProfileIncognito
     )
   }
 
@@ -529,6 +535,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
           start = 16.dp,
           end = 16.dp
         ),
+        uiKey = Ui.Link.ShareProfile,
         click = {
           ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
             val search = rememberSaveable { mutableStateOf("") }
@@ -716,7 +723,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
 fun LinkTextView(link: String, share: Boolean) {
   val clipboard = LocalClipboardManager.current
   Row(Modifier.fillMaxWidth().heightIn(min = DEFAULT_MIN_SECTION_ITEM_HEIGHT).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
-    Box(Modifier.weight(1f).clickable {
+    Box(Modifier.weight(1f).ui(Ui.Link.Text).clickable {
       chatModel.markShowingInvitationUsed()
       clipboard.shareText(link)
     }) {

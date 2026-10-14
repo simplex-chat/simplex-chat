@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.UiIdle
 import chat.simplex.common.ui.theme.ThemeModeOverrides
 import chat.simplex.common.ui.theme.ThemeOverrides
 import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
@@ -35,18 +36,25 @@ private val singleThreadDispatcher = Executors.newSingleThreadExecutor().asCorou
 
 fun withApi(action: suspend CoroutineScope.() -> Unit): Job =
   Exception().let {
-    CoroutineScope(Dispatchers.Main).launch(block = { wrapWithLogging(action, it) })
+    CoroutineScope(Dispatchers.Main).launch(block = { wrapWithLogging(action, it) }).trackedBy("withApi")
   }
 
 fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
   Exception().let {
-    CoroutineScope(singleThreadDispatcher).launch(block = { wrapWithLogging(action, it) })
+    CoroutineScope(singleThreadDispatcher).launch(block = { wrapWithLogging(action, it) }).trackedBy("withBGApi")
   }
 
-fun withLongRunningApi(slow: Long = Long.MAX_VALUE, action: suspend CoroutineScope.() -> Unit): Job =
+fun withLongRunningApi(slow: Long = Long.MAX_VALUE, idle: Boolean = true, action: suspend CoroutineScope.() -> Unit): Job =
   Exception().let {
-    CoroutineScope(Dispatchers.Default).launch(block = { wrapWithLogging(action, it, slow = slow) })
+    val job = CoroutineScope(Dispatchers.Default).launch(block = { wrapWithLogging(action, it, slow = slow) })
+    if (idle) job.trackedBy("withLongRunningApi") else job
   }
+
+private fun Job.trackedBy(what: String): Job {
+  val id = UiIdle.start { what }
+  if (id != 0L) invokeOnCompletion { UiIdle.finish(id) }
+  return this
+}
 
 private suspend fun wrapWithLogging(action: suspend CoroutineScope.() -> Unit, exception: java.lang.Exception, slow: Long = 20_000) = coroutineScope {
   val start = System.currentTimeMillis()
