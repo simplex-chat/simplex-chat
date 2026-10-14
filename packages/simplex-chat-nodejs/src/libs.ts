@@ -111,7 +111,7 @@ export async function resolveAddonPath(
 
 export function installLibs(url: string, sha256: string, target: string, lib: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
   return inTempDir(target, async tmp => {
-    console.error(`Downloading libsimplex from ${url} ...`)
+    process.stderr.write(`Downloading libsimplex from ${url} ...\n`)
     const zipPath = path.join(tmp, "libs.zip")
     await download(url, zipPath, timeoutMs)
     await verifySha256(zipPath, sha256, url)
@@ -124,7 +124,7 @@ export function installLibs(url: string, sha256: string, target: string, lib: st
 
 export function installAddon(url: string, sha256: string, target: string, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<void> {
   return inTempDir(target, async tmp => {
-    console.error(`Downloading the Node.js add-on from ${url} ...`)
+    process.stderr.write(`Downloading the Node.js add-on from ${url} ...\n`)
     const file = path.join(tmp, path.basename(target))
     await download(url, file, timeoutMs)
     await verifySha256(file, sha256, url)
