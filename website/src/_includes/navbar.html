@@ -212,6 +212,14 @@
 
 <script>{% include "utm.js" %}</script>
 
+{% if not noEvents %}
+<script type="module">
+import { init, track } from '/js/page.js';
+{% include "events.js" %}
+init(pageEvents);
+</script>
+{% endif %}
+
 <script>
 // switch theme
 const sunIcon = document.querySelector('.sun');
