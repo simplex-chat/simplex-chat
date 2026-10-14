@@ -32,6 +32,7 @@ You are unlikely to ever need to use this module directly.
 
 ## Type Aliases
 
+- [Backend](core.TypeAlias.Backend.md)
 - [DBMigrationError](core.TypeAlias.DBMigrationError.md)
 - [MigrationError](core.TypeAlias.MigrationError.md)
 - [MTRError](core.TypeAlias.MTRError.md)
@@ -46,3 +47,4 @@ You are unlikely to ever need to use this module directly.
 - [chatRecvMsgWait](core.Function.chatRecvMsgWait.md)
 - [chatSendCmd](core.Function.chatSendCmd.md)
 - [chatWriteFile](core.Function.chatWriteFile.md)
+- [loadLibrary](core.Function.loadLibrary.md)
