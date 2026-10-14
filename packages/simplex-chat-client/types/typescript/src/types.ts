@@ -25,6 +25,7 @@ export interface AddRelayResult {
 export interface AddressSettings {
   businessAddress: boolean
   autoAccept?: AutoAccept
+  chatLayout?: ChatLayout
   autoReply?: MsgContent
 }
 
@@ -2178,6 +2179,7 @@ export interface Contact {
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   chatLayout?: ChatLayout
+  chatLayoutOverride?: ChatLayout
   chatDeleted: boolean
   customData?: object
 }
@@ -2237,6 +2239,7 @@ export interface ContactShortLinkData {
   profile: Profile
   message?: MsgContent
   business: boolean
+  chatLayout?: ChatLayout
   localBadge?: LocalBadge
 }
 
@@ -2798,6 +2801,7 @@ export interface GroupInfo {
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   chatLayout?: ChatLayout
+  chatLayoutOverride?: ChatLayout
   customData?: object
   groupSummary: GroupSummary
   rosterVersion?: number // int64
@@ -2988,6 +2992,7 @@ export interface GroupProfile {
   publicGroup?: PublicGroupProfile
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
+  chatLayout?: ChatLayout
 }
 
 export interface GroupRelay {

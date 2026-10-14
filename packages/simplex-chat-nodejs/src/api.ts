@@ -412,9 +412,10 @@ export class ChatApi {
    * Set bot address settings.
    * Network usage: interactive.
    */
-  async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress}: BotAddressSettings): Promise<void> {
+  async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress}: BotAddressSettings, storedSettings?: T.AddressSettings): Promise<void> {
     const autoReply = welcomeMessage || defaultBotAddressSettings.welcomeMessage
     const settings: T.AddressSettings = {
+      ...storedSettings,
       autoAccept: (autoAccept === undefined ? defaultBotAddressSettings.autoAccept : autoAccept) ? {acceptIncognito: false} : undefined,
       autoReply: typeof autoReply === "string" ? {type: "text", text: autoReply} : autoReply,
       businessAddress: businessAddress || defaultBotAddressSettings.businessAddress || false

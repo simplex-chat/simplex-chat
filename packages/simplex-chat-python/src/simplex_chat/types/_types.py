@@ -23,6 +23,7 @@ class AddRelayResult(TypedDict):
 class AddressSettings(TypedDict):
     businessAddress: bool
     autoAccept: NotRequired["AutoAccept"]
+    chatLayout: NotRequired["ChatLayout"]
     autoReply: NotRequired["MsgContent"]
 
 class AgentCryptoError_DECRYPT_AES(TypedDict):
@@ -1524,6 +1525,7 @@ class Contact(TypedDict):
     chatItemTTL: NotRequired[int]  # int64
     uiThemes: NotRequired["UIThemeEntityOverrides"]
     chatLayout: NotRequired["ChatLayout"]
+    chatLayoutOverride: NotRequired["ChatLayout"]
     chatDeleted: bool
     customData: NotRequired[dict[str, object]]
 
@@ -1565,6 +1567,7 @@ class ContactShortLinkData(TypedDict):
     profile: "Profile"
     message: NotRequired["MsgContent"]
     business: bool
+    chatLayout: NotRequired["ChatLayout"]
     localBadge: NotRequired["LocalBadge"]
 
 ContactStatus = Literal["active", "deleted", "deletedByUser", "rejected"]
@@ -1954,6 +1957,7 @@ class GroupInfo(TypedDict):
     chatItemTTL: NotRequired[int]  # int64
     uiThemes: NotRequired["UIThemeEntityOverrides"]
     chatLayout: NotRequired["ChatLayout"]
+    chatLayoutOverride: NotRequired["ChatLayout"]
     customData: NotRequired[dict[str, object]]
     groupSummary: "GroupSummary"
     rosterVersion: NotRequired[int]  # int64
@@ -2086,6 +2090,7 @@ class GroupProfile(TypedDict):
     publicGroup: NotRequired["PublicGroupProfile"]
     groupPreferences: NotRequired["GroupPreferences"]
     memberAdmission: NotRequired["GroupMemberAdmission"]
+    chatLayout: NotRequired["ChatLayout"]
 
 class GroupRelay(TypedDict):
     groupRelayId: int  # int64

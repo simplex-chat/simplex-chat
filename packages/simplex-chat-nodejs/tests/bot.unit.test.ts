@@ -127,4 +127,20 @@ describe("run", () => {
     await runBot("calc.simplex", {updateAddress: false})
     expect(chat.apiSetUserDomain).not.toHaveBeenCalled()
   })
+
+  it("passes the stored address settings when updating the address", async () => {
+    const chat = fakeChat()
+    await runBot(undefined, {addressSettings: {welcomeMessage: "hello"}})
+    expect(chat.apiSetAddressSettings).toHaveBeenCalledWith(1, expect.anything(), address.addressSettings)
+  })
+})
+
+describe("apiSetAddressSettings", () => {
+  it("keeps the stored settings that are not bot address settings", async () => {
+    const sendChatCmd = jest.fn().mockResolvedValue({type: "userContactLinkUpdated"})
+    const stored = {businessAddress: true, autoReply: {type: "text", text: "old"}, chatLayout: "terminal"} as unknown as T.AddressSettings
+    await api.ChatApi.prototype.apiSetAddressSettings.call({sendChatCmd} as unknown as api.ChatApi, 1, {autoAccept: true}, stored)
+    const cmd: string = sendChatCmd.mock.calls[0][0]
+    expect(JSON.parse(cmd.slice(cmd.indexOf("{")))).toEqual({businessAddress: false, autoAccept: {acceptIncognito: false}, chatLayout: "terminal"})
+  })
 })

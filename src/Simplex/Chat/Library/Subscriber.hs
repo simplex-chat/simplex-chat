@@ -1497,7 +1497,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             -- ##### Contact requests (regular and business contacts) #####
             Nothing -> do
               let UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, addressSettings} = ucl
-                  AddressSettings {autoAccept} = addressSettings
+                  AddressSettings {autoAccept, chatLayout} = addressSettings
                   isSimplexTeam = sameConnReqContact connReq adminContactReq
               gVar <- asks random
               withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange (Just reqHeader) p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported) >>= \case
@@ -1540,7 +1540,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         ct' <- acceptContactRequestAsync user uclId ct ucr incognitoProfile
                         toView $ CEvtAcceptingContactRequest user ct'
                   Just (REBusinessChat g@(GIK gInfo _) clientMember) -> do
-                    (_gInfo', _clientMember') <- acceptBusinessJoinRequestAsync user uclId g clientMember ucr
+                    (_gInfo', _clientMember') <- acceptBusinessJoinRequestAsync user uclId chatLayout g clientMember ucr
                     let cd = CDGroupRcv gInfo Nothing clientMember
                     void $ case prevUcr_ of
                       Just UserContactRequest {requestSharedMsgId = prevSharedMsgId_} ->

@@ -1499,6 +1499,13 @@ object ChatController {
     return false
   }
 
+  suspend fun apiSetChatLayout(rh: Long?, type: ChatType, id: Long, layout: ChatLayout?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetChatLayout(type, id, layout))
+    if (r.result is CR.CmdOk) return true
+    Log.e(TAG, "apiSetChatLayout bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
   suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo): Boolean =
     sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
 
@@ -4029,6 +4036,7 @@ sealed class CC {
   class ReconnectServer(val userId: Long, val server: String): CC()
   class ReconnectAllServers: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
+  class ApiSetChatLayout(val type: ChatType, val id: Long, val layout: ChatLayout?): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class ApiGetUpdatedGroupLinkData(val groupId: Long): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -4244,6 +4252,7 @@ sealed class CC {
     is ReconnectServer -> "/reconnect $userId $server"
     is ReconnectAllServers -> "/reconnect"
     is APISetChatSettings -> "/_settings ${chatRef(type, id, scope = null)} ${json.encodeToString(chatSettings)}"
+    is ApiSetChatLayout -> "/_layout ${chatRef(type, id, scope = null)} ${layout?.text ?: "default"}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is ApiGetUpdatedGroupLinkData -> "/_get group link data #$groupId"
     is APIContactInfo -> "/_info @$contactId"
@@ -4439,6 +4448,7 @@ sealed class CC {
     is ReconnectServer -> "reconnectServer"
     is ReconnectAllServers -> "reconnectAllServers"
     is APISetChatSettings -> "apiSetChatSettings"
+    is ApiSetChatLayout -> "apiSetChatLayout"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is ApiGetUpdatedGroupLinkData -> "apiGetUpdatedGroupLinkData"
     is APIContactInfo -> "apiContactInfo"
@@ -7690,7 +7700,8 @@ data class UserContactLinkRec(
 data class AddressSettings(
   val businessAddress: Boolean,
   val autoAccept: AutoAccept?,
-  val autoReply: MsgContent?
+  val autoReply: MsgContent?,
+  val chatLayout: ChatLayout? = null
 )
 
 @Serializable

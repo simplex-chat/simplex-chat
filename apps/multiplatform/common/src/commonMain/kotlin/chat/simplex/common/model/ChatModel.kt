@@ -1859,12 +1859,12 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   val chatLayout: ChatLayout get() {
-    val layout = when (this) {
-      is Direct -> contact.chatLayout
-      is Group -> groupInfo.chatLayout
-      else -> null
+    val layouts = when (this) {
+      is Direct -> listOf(contact.chatLayoutOverride, contact.chatLayout)
+      is Group -> listOf(groupInfo.chatLayoutOverride, groupInfo.chatLayout)
+      else -> emptyList()
     }
-    return if (layout == null || layout is ChatLayout.Unknown) ChatLayout.Classic else layout
+    return layouts.firstOrNull { it != null && it !is ChatLayout.Unknown } ?: ChatLayout.Classic
   }
 
   val contactCard: Boolean
@@ -1908,6 +1908,7 @@ data class Contact(
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
   val chatLayout: ChatLayout? = null,
+  val chatLayoutOverride: ChatLayout? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -2537,6 +2538,7 @@ data class GroupInfo (
   val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
   val chatLayout: ChatLayout? = null,
+  val chatLayoutOverride: ChatLayout? = null,
   val groupSummary: GroupSummary,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,
@@ -2705,7 +2707,8 @@ data class GroupProfile (
   val publicGroup: PublicGroupProfile? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
-  val memberAdmission: GroupMemberAdmission? = null
+  val memberAdmission: GroupMemberAdmission? = null,
+  val chatLayout: ChatLayout? = null
 ): NamedChat {
   val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
 
@@ -2744,6 +2747,7 @@ data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
   val business: Boolean,
+  val chatLayout: ChatLayout? = null,
   // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
   val localBadge: LocalBadge? = null
 )

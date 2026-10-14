@@ -455,6 +455,7 @@ data ChatCommand
   | APISetConnectionAlias {connectionId :: Int64, localAlias :: LocalAlias}
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
+  | APISetChatLayout ChatRef (Maybe ChatLayout)
   | APISetGroupCustomData {groupId :: GroupId, customData :: Maybe CustomData}
   | APISetContactCustomData {contactId :: ContactId, customData :: Maybe CustomData}
   | APIGetNtfToken
@@ -673,6 +674,7 @@ data ChatCommand
   | SetGroupFeature AGroupFeatureNoRole GroupName GroupFeatureEnabled
   | SetGroupFeatureRole AGroupFeatureRole GroupName GroupFeatureEnabled (Maybe GroupMemberRole)
   | SetGroupMemberAdmissionReview GroupName (Maybe MemberCriteria)
+  | SetGroupChatLayout GroupName (Maybe ChatLayout)
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)

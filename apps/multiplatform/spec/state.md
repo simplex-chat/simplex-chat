@@ -300,6 +300,8 @@ data class ChatStats(
 | `ChatInfo.ContactConnection` | `"contactConnection"` | `contactConnection: PendingContactConnection` |
 | `ChatInfo.InvalidJSON` | `"invalidJSON"` | `json: String` |
 
+[`ChatInfo.chatLayout`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1861) is `chatLayoutOverride` of the contact or group, else its `chatLayout`, else `ChatLayout.Classic`; `ChatLayout.Unknown` values count as absent. `chatLayoutOverride` is set by [`setChatLayout()`](../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L1007).
+
 ### RelayStatus (Channels)
 
 `RelayStatus` is an `enum class` at [`ChatModel.kt line 2288`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L2288) modelling a relay's lifecycle for a channel on the owner's side. Serialized as a lowercase string via `@SerialName`.

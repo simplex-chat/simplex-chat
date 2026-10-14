@@ -372,6 +372,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 | `displayName` | `String` | Contact/group name |
 | `image` | `String?` | Profile image (base64) |
 | `chatSettings` | `ChatSettings?` | Notification/favorite settings |
+| `chatLayout` | `ChatLayout` | `chatLayoutOverride` of the contact or group, else its `chatLayout`, else `.classic`; `.unknown` values count as absent |
 | `chatTags` | `[Int64]?` | Assigned tag IDs |
 
 ### Relay-Related Data Model (Channels)

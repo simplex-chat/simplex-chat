@@ -269,6 +269,7 @@ This file is generated automatically.
 **Record type**:
 - businessAddress: bool
 - autoAccept: [AutoAccept](#autoaccept)?
+- chatLayout: [ChatLayout](#chatlayout)?
 - autoReply: [MsgContent](#msgcontent)?
 
 
@@ -1917,6 +1918,7 @@ Error:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatLayout: [ChatLayout](#chatlayout)?
+- chatLayoutOverride: [ChatLayout](#chatlayout)?
 - chatDeleted: bool
 - customData: JSONObject?
 
@@ -1959,6 +1961,7 @@ ContactViaAddress:
 - profile: [Profile](#profile)
 - message: [MsgContent](#msgcontent)?
 - business: bool
+- chatLayout: [ChatLayout](#chatlayout)?
 - localBadge: [LocalBadge](#localbadge)?
 
 
@@ -2501,6 +2504,7 @@ MemberSupport:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatLayout: [ChatLayout](#chatlayout)?
+- chatLayoutOverride: [ChatLayout](#chatlayout)?
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
 - rosterVersion: int64?
@@ -2715,6 +2719,7 @@ UpdateRequired:
 - publicGroup: [PublicGroupProfile](#publicgroupprofile)?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---

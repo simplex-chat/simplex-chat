@@ -2332,15 +2332,18 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public var chatLayout: ChatLayout {
-        let layout: ChatLayout? = switch self {
-        case let .direct(contact): contact.chatLayout
-        case let .group(groupInfo, _): groupInfo.chatLayout
-        default: nil
+        let layouts: [ChatLayout?] = switch self {
+        case let .direct(contact): [contact.chatLayoutOverride, contact.chatLayout]
+        case let .group(groupInfo, _): [groupInfo.chatLayoutOverride, groupInfo.chatLayout]
+        default: []
         }
-        return switch layout {
-        case .none, .some(.unknown): .classic
-        case let .some(l): l
+        for layout in layouts {
+            switch layout {
+            case .none, .some(.unknown): continue
+            case let .some(l): return l
+            }
         }
+        return .classic
     }
 
     public var chatTags: [Int64]? {
@@ -2510,6 +2513,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
     public var chatLayout: ChatLayout?
+    public var chatLayoutOverride: ChatLayout?
     public var chatDeleted: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -2914,6 +2918,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var preparedGroup: PreparedGroup?
     public var uiThemes: ThemeModeOverrides?
     public var chatLayout: ChatLayout?
+    public var chatLayoutOverride: ChatLayout?
     public var groupSummary: GroupSummary
     public var membersRequireAttention: Int
 
@@ -3083,6 +3088,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var publicGroup: PublicGroupProfile?
     public var groupPreferences: GroupPreferences?
     public var memberAdmission: GroupMemberAdmission?
+    public var chatLayout: ChatLayout?
     public var localAlias: String { "" }
 
     public var memberAdmission_: GroupMemberAdmission {
@@ -3130,6 +3136,7 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: MsgContent?
     public var business: Bool
+    public var chatLayout: ChatLayout?
     // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
     public var localBadge: LocalBadge?
 }

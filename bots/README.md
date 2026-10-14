@@ -84,6 +84,12 @@ A useful scenario would be when bot is used to accept requests to bot's business
 
 Business chat is a special group chat under the hood, but the connected customer sees business avatar, and all users that bot would add to the group later see customer' avatar. This chat will inherits preferences from the bot profile, so if you want to allow customers to send files, you need to allow them in the bot. And if bot has any commands configured, they will also be available to customers in the menu.
 
+### Chat layout
+
+Bot can choose the layout of the chats that users create by connecting to its address: `classic` or `terminal`. To do that, set `chatLayout` property in the address settings with [APISetAddressSettings](./api/COMMANDS.md#apisetaddresssettings) or with `/auto_accept on [business] layout=terminal` CLI command. For a business address this layout is used for business chats.
+
+For groups, set `chatLayout` property in the group profile with [APIUpdateGroupProfile](./api/COMMANDS.md#apiupdategroupprofile) or with `/set layout #<group> classic|terminal|default` CLI command. This layout is used by the members who join the group after it is set.
+
 ## How to create a bot
 
 [SimpleX Chat CLI](../docs/CLI.md) can be run as a local WebSockets server on any port:

@@ -582,6 +582,7 @@ struct AddressSettingsState: Equatable {
     var autoAccept = false
     var autoAcceptIncognito = false
     var autoReply = ""
+    var chatLayout: ChatLayout?
 
     init() {}
 
@@ -590,13 +591,15 @@ struct AddressSettingsState: Equatable {
         self.autoAccept = settings.autoAccept != nil
         self.autoAcceptIncognito = settings.autoAccept?.acceptIncognito == true
         self.autoReply = settings.autoReply?.text ?? ""
+        self.chatLayout = settings.chatLayout
     }
 
     var addressSettings: AddressSettings {
         AddressSettings(
             businessAddress: self.businessAddress,
             autoAccept: self.autoAccept ? AutoAccept(acceptIncognito: self.autoAcceptIncognito) : nil,
-            autoReply: self.autoReply.isEmpty ? nil : MsgContent.text(self.autoReply)
+            autoReply: self.autoReply.isEmpty ? nil : MsgContent.text(self.autoReply),
+            chatLayout: self.chatLayout
         )
     }
 }

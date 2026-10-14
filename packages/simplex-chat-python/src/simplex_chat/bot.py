@@ -96,6 +96,7 @@ class Bot(Client):
         update_profile: bool = True,
         auto_accept: bool = True,
         business_address: bool = False,
+        chat_layout: T.ChatLayout | None = None,
         allow_files: bool = False,
         log_contacts: bool = True,
         log_network: bool = False,
@@ -115,6 +116,7 @@ class Bot(Client):
         self._update_address = update_address
         self._auto_accept = auto_accept
         self._business_address = business_address
+        self._chat_layout = chat_layout
         self._allow_files = allow_files
 
     # ------------------------------------------------------------------ #
@@ -153,6 +155,8 @@ class Bot(Client):
             desired: T.AddressSettings = {"businessAddress": self._business_address}
             if self._auto_accept:
                 desired["autoAccept"] = {"acceptIncognito": False}
+            if self._chat_layout is not None:
+                desired["chatLayout"] = self._chat_layout
             if self._welcome is not None:
                 desired["autoReply"] = (
                     {"type": "text", "text": self._welcome}
