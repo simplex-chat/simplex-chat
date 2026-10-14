@@ -13,7 +13,8 @@ import ChatTests.DBUtils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
-import Control.Monad (join, unless, when)
+import Control.Exception (onException)
+import Control.Monad (forM_, join, unless, when)
 import Control.Monad.Except (runExceptT)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
@@ -47,6 +48,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
 import System.Environment (lookupEnv)
+import System.FilePath (takeFileName)
 import System.Info (os)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
@@ -373,6 +375,17 @@ getChats f cc res = do
 
 send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
+
+withDiagnosticsOnFailure :: [(TestCC, String)] -> IO a -> IO a
+withDiagnosticsOnFailure ccs action = action `onException` mapM_ (uncurry printDiagnostics) ccs
+
+printDiagnostics :: TestCC -> String -> IO ()
+printDiagnostics cc@TestCC {ccParams = TestParams {tmpPath}} contact = do
+  name <- userName cc
+  forM_ ["/qi @" <> contact, "/get subs details", "/debug locks"] $ \cmd -> do
+    cc `send` cmd
+    let printLines = timeout 3000000 (atomically $ readTQueue $ termQ cc) >>= mapM_ (\s -> putStrLn (takeFileName tmpPath <> " " <> name <> " diagnostics: " <> s) >> printLines)
+    printLines
 
 (<##) :: HasCallStack => TestCC -> String -> Expectation
 cc <## line = do

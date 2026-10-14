@@ -110,7 +110,7 @@ chatDirectTests = do
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
 #if !defined(dbPostgres)
-    it "start/stop/export/import chat" testMaintenanceMode
+    it "start/stop/export/import chat" $ withTestOutput testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
 #endif
@@ -1502,7 +1502,7 @@ testMaintenanceMode ps = do
       alice #> "@bob hi again"
       bob <# "alice> hi again"
       bob #> "@alice hello"
-      alice <# "bob> hello"
+      withDiagnosticsOnFailure [(alice, "bob"), (bob, "alice")] $ alice <# "bob> hello"
       -- export / delete / import
       alice ##> "/_stop"
       alice <## "chat stopped"
