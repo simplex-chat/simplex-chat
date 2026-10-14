@@ -11,6 +11,9 @@ module Bots.BadgeService.StoreVerifierTests
     subscriptionPayload,
     transactionPayload,
     ourBundleId,
+    purchaseRecord,
+    subscriptionRecord,
+    lineItem,
   )
 where
 
@@ -18,7 +21,7 @@ import BadgeService.Config (AppleServerApi (..), AppleStoreConfig (..), PlayStor
 import BadgeService.Service (ServiceState (..), configureStoreVerifier, newServiceState)
 import BadgeService.StoreReceipts
 import BadgeService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot, verifyAppleTransaction)
-import BadgeService.StoreReceipts.Google (playStoreVerifier)
+import BadgeService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
 import Bots.BadgeService.FakeAppStore
 import Bots.BadgeService.FakePlay
 import Control.Concurrent.STM (readTVarIO)
@@ -41,7 +44,8 @@ import Data.List (isInfixOf, nub)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..))
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.X509
 import Simplex.Chat.Badges.Service (SubscriptionState (..))
@@ -96,6 +100,16 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "acknowledges a purchase, unless it is acknowledged or consumed already" testPlayAcknowledges
     it "reports an acknowledgement Play refuses or does not answer" testPlayAcknowledgementFails
     it "acknowledges through the verifier a [google] section configures" testPlayConfiguredAcknowledges
+  describe "Google Play subscriptions" $ do
+    it "maps each state, renewing or cancelled by autoRenewEnabled, asking Play by the token alone" testPlaySubscriptionStates
+    it "answers a pending subscription as pending, and a license tester's as a test purchase" testPlaySubscriptionPendingOrTest
+    it "reads the charge from the line item, its period starting the plan's length before it ends" testPlaySubscriptionCharge
+    it "flags a charge in a free trial or an introductory price, and not one bought on an offer now at its base price" testPlaySubscriptionOffer
+    it "fails on a record it cannot read, an unknown state, or a charge without its period or plan" testPlaySubscriptionUnreadable
+    it "fails on 401 and 403, and is unreachable on 404, 429, 5xx and no answer" testPlaySubscriptionHttp
+    it "acknowledges a subscription once, through the subscriptions endpoint, unless Play reports it acknowledged" testPlaySubscriptionAcknowledges
+    it "reports a subscription acknowledgement Play refuses or does not answer" testPlaySubscriptionAcknowledgementFails
+    it "checks Play subscriptions only where [google] is configured, beside the App Store's" testPlayConfiguredSubscriptions
 
 -- * App Store
 
@@ -602,12 +616,28 @@ testAppleConfiguredSubscriptions = do
 playVerifier :: FakePlay -> IO StoreVerifier
 playVerifier fake =
   playStoreVerifier (fpConfig fake) >>= \case
-    Right (verify, acknowledge) -> pure noStoreVerifier {verifyGoogle = Just verify, acknowledgeGoogle = Just acknowledge, verifyTimeout = 2000000}
+    Right PlayVerifier {verifyPlayPurchase, acknowledgePlayPurchase, checkPlaySubscription, acknowledgePlaySubscription} ->
+      pure
+        noStoreVerifier
+          { verifyGoogle = Just verifyPlayPurchase,
+            acknowledgeGoogle = Just acknowledgePlayPurchase,
+            acknowledgeGoogleSubscription = Just acknowledgePlaySubscription,
+            checkSubscription = Just $ \case
+              SubscriptionGoogle token -> checkPlaySubscription token
+              SubscriptionApple _ -> pure $ Left SRNotConfigured,
+            verifyTimeout = 2000000
+          }
     Left e -> expectationFailure e >> undefined
 
 acknowledgement :: StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
-acknowledgement verifier payment = case toStoreReceipt verifier payment of
-  Just (Right StoreReceipt {acknowledgeReceipt}) -> sequence acknowledgeReceipt
+acknowledgement = acknowledgementBy acknowledgeReceipt
+
+subscriptionAcknowledgement :: StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
+subscriptionAcknowledgement = acknowledgementBy acknowledgeSubscription
+
+acknowledgementBy :: (StoreReceipt -> Maybe (IO (Either StoreRefusal ()))) -> StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
+acknowledgementBy acknowledge verifier payment = case toStoreReceipt verifier payment of
+  Just (Right receipt) -> sequence $ acknowledge receipt
   _ -> expectationFailure "not a store receipt" >> undefined
 
 playVerdict :: StoreVerifier -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
@@ -793,4 +823,202 @@ testPlayConfiguredAcknowledges = withFakePlay $ \fake@FakePlay {fpConfig} -> do
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
   acknowledgement storeVerifier SPGoogle {productId = "badge_supporter_01", token = testToken} `shouldReturn` Just (Right ())
   readTVarIO (fpAcknowledged fake) `shouldReturn` [testToken]
+
+-- * Google Play subscriptions
+
+subscriptionToken :: Text
+subscriptionToken = "fake-play-subscription-token.AO-J1Oz9x2kqE7wYt4"
+
+subscriptionProductId :: Text
+subscriptionProductId = "subscr_badge_supporter_01"
+
+-- | purchases.subscriptionsv2 as Play answers it, unacknowledged.
+subscriptionRecord :: Text -> [(J.Key, J.Value)] -> [J.Value] -> J.Value
+subscriptionRecord state overrides items =
+  J.Object $
+    KM.fromList overrides
+      `KM.union` KM.fromList
+        [ ("kind", "androidpublisher#subscriptionPurchaseV2"),
+          ("regionCode", "US"),
+          ("startTime", "2026-09-14T10:00:00.123456789Z"),
+          ("subscriptionState", J.String state),
+          ("latestOrderId", "GPA.3312-4521-8899-01234..1"),
+          ("acknowledgementState", "ACKNOWLEDGEMENT_STATE_PENDING"),
+          ("lineItems", J.toJSON items)
+        ]
+
+-- | A monthly supporter plan's line item, renewing at the base price.
+lineItem :: [(J.Key, J.Value)] -> [J.Key] -> J.Value
+lineItem overrides removed =
+  J.Object $ foldr KM.delete (KM.fromList overrides `KM.union` base) removed
+  where
+    base =
+      KM.fromList
+        [ ("productId", J.String subscriptionProductId),
+          ("expiryTime", "2026-11-14T10:00:00.123456789Z"),
+          ("autoRenewingPlan", J.object ["autoRenewEnabled" J..= True]),
+          ("offerDetails", J.object ["basePlanId" J..= ("subscr-badge-supporter-month-02" :: Text)]),
+          ("latestSuccessfulOrderId", "GPA.3312-4521-8899-01234..1"),
+          ("offerPhase", J.object ["basePrice" J..= J.object []])
+        ]
+
+basePlan :: Text -> (J.Key, J.Value)
+basePlan planId = ("offerDetails", J.object ["basePlanId" J..= planId])
+
+answerSubscription :: FakePlay -> J.Value -> IO ()
+answerSubscription fake = answerPurchase fake subscriptionToken . PlayRecord
+
+-- | Through the same runner as a purchase and a renewal; every reason reaches the service's log, which must never hold the token.
+playCheck :: StoreVerifier -> IO (Either StoreRefusal SubscriptionCheck)
+playCheck verifier = do
+  r <- checkStoreSubscription verifier (SubscriptionGoogle subscriptionToken)
+  reason r `shouldNotSatisfy` (subscriptionToken `T.isInfixOf`)
+  pure r
+
+testPlaySubscriptionStates :: IO ()
+testPlaySubscriptionStates = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let stateFor state autoRenew = do
+        answerSubscription fake $ subscriptionRecord state [] [lineItem [("autoRenewingPlan", J.object ["autoRenewEnabled" J..= autoRenew])] []]
+        stateOf <$> playCheck verifier
+  stateFor "SUBSCRIPTION_STATE_ACTIVE" True `shouldReturn` Right SSRenewing
+  stateFor "SUBSCRIPTION_STATE_ACTIVE" False `shouldReturn` Right SSCancelled
+  stateFor "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" True `shouldReturn` Right SSBillingRetry
+  stateFor "SUBSCRIPTION_STATE_ON_HOLD" True `shouldReturn` Right SSBillingRetry
+  stateFor "SUBSCRIPTION_STATE_CANCELED" False `shouldReturn` Right SSCancelled
+  stateFor "SUBSCRIPTION_STATE_EXPIRED" False `shouldReturn` Right SSEnded
+  stateFor "SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED" False `shouldReturn` Right SSEnded
+  -- a plan that does not renew itself, as a prepaid one
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] ["autoRenewingPlan"]]
+  stateOf <$> playCheck verifier `shouldReturn` Right SSCancelled
+  paths <- readTVarIO (fpPurchasePaths fake)
+  length paths `shouldBe` 8
+  nub paths `shouldBe` [["androidpublisher", "v3", "applications", fakePackageName, "purchases", "subscriptionsv2", "tokens", subscriptionToken]]
+
+testPlaySubscriptionPendingOrTest :: IO ()
+testPlaySubscriptionPendingOrTest = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_PENDING" [] [lineItem [] []]
+  outcome <$> playCheck verifier `shouldReturn` Pending
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [("testPurchase", J.object [])] [lineItem [] []]
+  outcome <$> playCheck verifier `shouldReturn` TestPurchase
+
+testPlaySubscriptionCharge :: IO ()
+testPlaySubscriptionCharge = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let chargeFor item = answerSubscription fake (subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [item]) >> (chargeOf <$> playCheck verifier)
+      at y m d = UTCTime (fromGregorian y m d)
+  chargeFor (lineItem [] [])
+    `shouldReturn` Right (Just ("GPA.3312-4521-8899-01234..1", "subscr-badge-supporter-month-02", at 2026 10 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
+  chargeFor (lineItem [basePlan "subscr-badge-legend-year-01", ("expiryTime", "2027-10-14T10:00:00Z")] [])
+    `shouldReturn` Right (Just ("GPA.3312-4521-8899-01234..1", "subscr-badge-legend-year-01", at 2026 10 14 36000, at 2027 10 14 36000, Nothing, False, False))
+  -- a plan this service does not sell has no length, so its charge is given no period, and is never granted
+  chargeFor (lineItem [basePlan "subscr-badge-supporter-month-99"] [])
+    `shouldReturn` Right (Just ("GPA.3312-4521-8899-01234..1", "subscr-badge-supporter-month-99", at 2026 11 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
+  chargeFor (lineItem [] ["latestSuccessfulOrderId"]) `shouldReturn` Right Nothing
+
+testPlaySubscriptionOffer :: IO ()
+testPlaySubscriptionOffer = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let offerFor item = do
+        answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [item]
+        fmap (fmap (\(_, _, _, _, _, _, offer) -> offer)) . chargeOf <$> playCheck verifier
+      offerIn phase = offerFor $ lineItem [offerDetails, ("offerPhase", J.object [phase J..= J.object []])] []
+      offerDetails = ("offerDetails", J.object ["basePlanId" J..= ("subscr-badge-supporter-month-02" :: Text), "offerId" J..= ("intro-3-months" :: Text)])
+  offerIn "freeTrial" `shouldReturn` Right (Just True)
+  offerIn "introductoryPrice" `shouldReturn` Right (Just True)
+  -- offerDetails names the offer it was bought with for its whole life, so a full-price renewal still carries it
+  offerIn "basePrice" `shouldReturn` Right (Just False)
+  offerIn "prorationPeriod" `shouldReturn` Right (Just False)
+  offerFor (lineItem [] ["offerPhase"]) `shouldReturn` Right (Just False)
+
+testPlaySubscriptionUnreadable :: IO ()
+testPlaySubscriptionUnreadable = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  forM_
+    [ PlayBody "<html>not json</html>",
+      PlayRecord $ J.object ["lineItems" J..= [lineItem [] []]],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] [], lineItem [] []],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] ["expiryTime"]],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] ["offerDetails"]],
+      PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [("expiryTime", "next month")] []],
+      PlayBody $ J.encode (subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]) <> LB.replicate (1024 * 1024) 32
+    ]
+    $ \answer -> do
+      answerPurchase fake subscriptionToken answer
+      outcome <$> playCheck verifier `shouldReturn` Failed
+  -- a state Play may yet add is this service's to learn, and its name is not logged
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_PAUSED_FOREVER" [] [lineItem [] []]
+  r <- playCheck verifier
+  outcome r `shouldBe` Failed
+  reason r `shouldNotSatisfy` ("PAUSED_FOREVER" `T.isInfixOf`)
+
+testPlaySubscriptionHttp :: IO ()
+testPlaySubscriptionHttp = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let answeredWith answer = answerPurchase fake subscriptionToken answer >> (outcome <$> playCheck verifier)
+  answeredWith (PlayStatus 401) `shouldReturn` Failed
+  answeredWith (PlayStatus 403) `shouldReturn` Failed
+  forM_ [400, 404, 410, 429, 500, 503] $ \code -> answeredWith (PlayStatus code) `shouldReturn` Unreachable
+  answerPurchase fake subscriptionToken PlayHang
+  r <- playCheck verifier
+  (outcome r, reason r) `shouldBe` (Unreachable, "subscription check timed out")
+
+testPlaySubscriptionAcknowledges :: IO ()
+testPlaySubscriptionAcknowledges = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let acknowledging = subscriptionAcknowledgement verifier SPGoogle {productId = subscriptionProductId, token = subscriptionToken}
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]
+  acknowledging `shouldReturn` Just (Right ())
+  readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` [(subscriptionProductId, subscriptionToken)]
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [("acknowledgementState", "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED")] [lineItem [] []]
+  acknowledging `shouldReturn` Just (Right ())
+  readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` [(subscriptionProductId, subscriptionToken)]
+  readTVarIO (fpAcknowledged fake) `shouldReturn` []
+
+testPlaySubscriptionAcknowledgementFails :: IO ()
+testPlaySubscriptionAcknowledgementFails = withFakePlay $ \fake -> do
+  verifier <- playVerifier fake
+  let acknowledgedAs expected = do
+        r <- subscriptionAcknowledgement verifier SPGoogle {productId = subscriptionProductId, token = subscriptionToken}
+        outcome <$> r `shouldBe` Just expected
+        maybe "" reason r `shouldSatisfy` ("acknowledging: " `T.isPrefixOf`)
+        maybe "" reason r `shouldNotSatisfy` (subscriptionToken `T.isInfixOf`)
+  answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]
+  answerAcknowledgements fake $ Just 403
+  acknowledgedAs Failed
+  answerAcknowledgements fake $ Just 503
+  acknowledgedAs Unreachable
+  answerAcknowledgements fake Nothing
+  answerPurchase fake subscriptionToken PlayHang
+  acknowledgedAs Unreachable
+  readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` []
+
+-- | Without [google] a Play subscription is not configured, whether or not [apple] checks the App Store's.
+testPlayConfiguredSubscriptions :: IO ()
+testPlayConfiguredSubscriptions = do
+  chain <- trustedChain
+  withFakePlay $ \play@FakePlay {fpConfig} -> withFakeAppStore ourBundleId $ \appStore@FakeAppStore {fasApi} -> do
+    let dir = takeDirectory (gServiceAccountFile fpConfig)
+        rootFile = dir </> "root.cer"
+        ini = dir </> "badge_service.ini"
+        apple = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificate = rootFile, aServerApi = Just fasApi}
+        configured c = (\ServiceState {storeVerifier} -> storeVerifier) <$> (newServiceState >>= configureStoreVerifier (Just c))
+        outcomes v = (,) <$> (outcome <$> checkStoreSubscription v (SubscriptionGoogle subscriptionToken)) <*> (outcome <$> checkStoreSubscription v (SubscriptionApple subscriptionId))
+        acknowledging v = subscriptionAcknowledgement v SPGoogle {productId = subscriptionProductId, token = subscriptionToken}
+    B.writeFile rootFile (encodeSignedObject $ rootCert chain)
+    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    Right cfg <- readServiceConfig ini
+    both <- configured cfg {appleStore = apple, playStore = Just fpConfig}
+    playOnly <- configured cfg {playStore = Just fpConfig}
+    appleOnly <- configured cfg {appleStore = apple}
+    answerSubscription play $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] []]
+    serveStatus appStore chain 1 (subscriptionPayload [] []) (renewalPayload [])
+    outcomes both `shouldReturn` (Verdict, Verdict)
+    outcomes playOnly `shouldReturn` (Verdict, NotConfigured)
+    outcomes appleOnly `shouldReturn` (NotConfigured, Verdict)
+    acknowledging appleOnly `shouldReturn` Nothing
+    acknowledging playOnly `shouldReturn` Just (Right ())
+    readTVarIO (fpSubscriptionAcknowledged play) `shouldReturn` [(subscriptionProductId, subscriptionToken)]
 

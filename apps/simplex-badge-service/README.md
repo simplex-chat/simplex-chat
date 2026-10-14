@@ -245,9 +245,9 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   transaction; a test deployment sets `https://api.storekit-sandbox.itunes.apple.com`. A 401 or 403
   from Apple, the key refused, is answered `internal` and logged. Keep the key file readable by this
   service alone.
-- `[google]` asks the Google Play Developer API about each purchase, and acknowledges it before
-  crediting it, as the service account whose JSON key `service_account_file` holds. The account
-  needs both Play Console permissions Google's
+- `[google]` asks the Google Play Developer API about each purchase and subscription, and
+  acknowledges it before crediting it, as the service account whose JSON key
+  `service_account_file` holds. The account needs both Play Console permissions Google's
   [getting started](https://developers.google.com/android-publisher/getting_started) lists for its
   billing APIs: "View financial data, orders, and cancellation survey responses" to read a
   purchase, and "Manage orders and subscriptions" to acknowledge it. Without the second, a Play

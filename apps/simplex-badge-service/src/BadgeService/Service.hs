@@ -36,7 +36,7 @@ import BadgeService.Store.Invoices (seedCatalog, truncateToSecond)
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import BadgeService.StoreReceipts
 import BadgeService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot, verifyAppleTransaction)
-import BadgeService.StoreReceipts.Google (playStoreVerifier)
+import BadgeService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
 import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
@@ -153,17 +153,20 @@ configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case se
         { storeVerifier =
             v
               { verifyApple = maybe (verifyApple v) (Just . fst) apple,
-                verifyGoogle = maybe (verifyGoogle v) (Just . fst) google,
-                acknowledgeGoogle = maybe (acknowledgeGoogle v) (Just . snd) google,
-                checkSubscription = maybe (checkSubscription v) (Just . appleOnly) (snd =<< apple)
+                verifyGoogle = maybe (verifyGoogle v) (Just . verifyPlayPurchase) google,
+                acknowledgeGoogle = maybe (acknowledgeGoogle v) (Just . acknowledgePlayPurchase) google,
+                acknowledgeGoogleSubscription = maybe (acknowledgeGoogleSubscription v) (Just . acknowledgePlaySubscription) google,
+                checkSubscription = case (snd =<< apple, checkPlaySubscription <$> google) of
+                  (Nothing, Nothing) -> checkSubscription v
+                  (checkApple_, checkGoogle_) -> Just $ \case
+                    SubscriptionApple originalId -> maybe notConfigured ($ originalId) checkApple_
+                    SubscriptionGoogle token -> maybe notConfigured ($ token) checkGoogle_
               }
         }
   Nothing -> pure env
   where
     orExit = (>>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure)
-    appleOnly checkApple = \case
-      SubscriptionApple originalId -> checkApple originalId
-      SubscriptionGoogle _ -> pure $ Left SRNotConfigured
+    notConfigured = pure $ Left SRNotConfigured
 
 badgeService :: BadgeServiceOpts -> ChatConfig -> ServiceState -> IO ()
 badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
@@ -444,7 +447,7 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
 -- | Every refusal is answered before anything is written, so it leaves the receipt unclaimed; and
 -- nothing is written until the credential is signed.
 purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> StoreVerifier -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
-purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, receiptProductId, subscriptionRef, verifyReceipt, acknowledgeReceipt} =
+purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, receiptProductId, subscriptionRef, verifyReceipt, acknowledgeReceipt, acknowledgeSubscription} =
   withDB' "getStorePayment" cc (\db -> getStorePaymentCredit db provider providerRef) >>= \case
     Left _ -> pure $ errorResponse BSEInternal
     Right credit
@@ -479,7 +482,7 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
       -- an Apple subscription, whose JWS was verified offline
       Just StoreSubscription -> purchaseSubscription Uncredited
       Just StoreOneTime {badgeType, months} ->
-        acknowledged $ do
+        acknowledged acknowledgeReceipt $ do
           now <- badgeNow cc
           signFirstMonth key cc masterKey badgeType months (SCPayment Nothing) now >>= \case
             Left resp -> pure resp
@@ -498,7 +501,7 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
       case grantableCharge provider Nothing now checked of
         Left notGranted -> firstChargeNotGranted provider notGranted
         Right (charge@StoreCharge {periodStart, chargePaid = paid}, (badgeType, months)) ->
-          acknowledged $ do
+          acknowledged acknowledgeSubscription $ do
             chargeId <- randomId cc
             entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
             let seed = emptyEntry periodStart badgeType
@@ -512,8 +515,8 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
     providerToken = case subscriptionRef of
       SubscriptionGoogle token -> Just token
       SubscriptionApple _ -> Nothing
-    acknowledged crediting =
-      fromMaybe (pure $ Right ()) acknowledgeReceipt >>= \case
+    acknowledged acknowledge_ crediting =
+      fromMaybe (pure $ Right ()) acknowledge_ >>= \case
         Left refusal -> storeRefusalResponse refusal
         Right () -> crediting
     claimPurchase now purchaseFor writeCredit = do
@@ -548,17 +551,17 @@ grantableCharge provider tier now SubscriptionCheck {subscriptionState, latestCh
   | subscriptionState == SSEnded = Left NGEnded
   | otherwise = case latestCharge of
       Nothing -> Left NGNoCharge
-      Just charge@StoreCharge {planId, periodStart, periodEnd, revoked, offer}
-        | periodEnd <= periodStart -> Left NGMalformedPeriod
-        | revoked -> Left NGRevoked
-        | offer -> Left NGOffer
-        | otherwise -> case storePlan provider planId of
-            Nothing -> Left NGUnknownPlan
-            Just plan@(badgeType, _)
-              | maybe False (/= badgeType) tier -> Left NGOtherTier
-              | now < periodStart -> Left NGNotStarted
-              | now >= periodEnd -> Left NGPeriodOver
-              | otherwise -> Right (charge, plan)
+      -- the plan first: Play derives a period from the plan's length, so a plan it does not know has none
+      Just charge@StoreCharge {planId, periodStart, periodEnd, revoked, offer} -> case storePlan provider planId of
+        Nothing -> Left NGUnknownPlan
+        Just plan@(badgeType, _)
+          | periodEnd <= periodStart -> Left NGMalformedPeriod
+          | revoked -> Left NGRevoked
+          | offer -> Left NGOffer
+          | maybe False (/= badgeType) tier -> Left NGOtherTier
+          | now < periodStart -> Left NGNotStarted
+          | now >= periodEnd -> Left NGPeriodOver
+          | otherwise -> Right (charge, plan)
 
 -- | No payment row exists yet to bound the store checks by, so the retryAfter of each answer is what bounds them.
 firstChargeNotGranted :: PaymentProvider -> NotGranted -> IO BadgeServiceResponse

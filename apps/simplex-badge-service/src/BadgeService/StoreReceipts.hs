@@ -69,6 +69,7 @@ data StoreVerifier = StoreVerifier
     verifyApple :: Maybe (Text -> Either StoreRefusal VerifiedStoreTransaction),
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token
     acknowledgeGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
+    acknowledgeGoogleSubscription :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
     checkSubscription :: Maybe (SubscriptionRef -> IO (Either StoreRefusal SubscriptionCheck)),
     -- microseconds; requests are answered one at a time, so a verifier that does not finish holds up every other one
     verifyTimeout :: Int
@@ -80,7 +81,8 @@ data StoreReceipt = StoreReceipt
     receiptProductId :: Maybe Text, -- named by a Play receipt; Apple's is known only once its JWS is verified
     subscriptionRef :: SubscriptionRef,
     verifyReceipt :: IO (Either StoreRefusal VerifiedStoreTransaction),
-    acknowledgeReceipt :: Maybe (IO (Either StoreRefusal ()))
+    acknowledgeReceipt :: Maybe (IO (Either StoreRefusal ())),
+    acknowledgeSubscription :: Maybe (IO (Either StoreRefusal ()))
   }
 
 -- | What a store is asked about a subscription by: Apple's original transaction id, or Play's token.
@@ -106,12 +108,12 @@ data StoreCharge = StoreCharge
   deriving (Show)
 
 noStoreVerifier :: StoreVerifier
-noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, checkSubscription = Nothing, verifyTimeout = 10000000}
+noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 10000000}
 
 -- | Nothing for a payment no store made. Exceptions are not logged, since they can quote the receipt
 -- or, from Google, a URL holding the token.
 toStoreReceipt :: StoreVerifier -> ServicePayment -> Maybe (Either StoreRefusal StoreReceipt)
-toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, verifyTimeout} = \case
+toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, acknowledgeGoogleSubscription, verifyTimeout} = \case
   SPApple {jws} -> Just $ case appleTransactionRef jws of
     Nothing -> Left $ SRInvalid "names no transaction"
     Just ref ->
@@ -121,7 +123,8 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
             receiptProductId = Nothing,
             subscriptionRef = SubscriptionApple ref,
             verifyReceipt = maybe unconfigured (\verify -> offline $ verify jws) verifyApple,
-            acknowledgeReceipt = Nothing
+            acknowledgeReceipt = Nothing,
+            acknowledgeSubscription = Nothing
           }
   SPGoogle {productId, token}
     -- the claim is the token's hash, so neither string may name any purchase but the one it claims,
@@ -137,7 +140,8 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
                 receiptProductId = Just productId,
                 subscriptionRef = SubscriptionGoogle token,
                 verifyReceipt = maybe unconfigured (\verify -> online "google verifier" $ verify productId token) verifyGoogle,
-                acknowledgeReceipt = (\acknowledge -> online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle
+                acknowledgeReceipt = (\acknowledge -> online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle,
+                acknowledgeSubscription = (\acknowledge -> online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogleSubscription
               }
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing

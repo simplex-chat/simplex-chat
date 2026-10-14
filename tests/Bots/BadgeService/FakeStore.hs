@@ -117,7 +117,7 @@ newFakeStore = do
         googleDown,
         subscriptions,
         subscriptionCheckCount,
-        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, acknowledgeGoogle = Nothing, checkSubscription = Just checkSubscription, verifyTimeout = 500000}
+        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Just checkSubscription, verifyTimeout = 500000}
       }
   where
     fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)

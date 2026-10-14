@@ -12,13 +12,14 @@
 module Bots.BadgeService.BotTests where
 
 import BadgeService.Codes (issueOneCode)
-import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Group (GroupEvent)
 import BadgeService.StoreReceipts.Apple (appleSubscriptionChecker, verifyAppleTransaction)
 import Bots.BadgeService.ConfigTests (withIssuer)
 import Bots.BadgeService.FakeAppStore (FakeAppStore (..), withFakeAppStore)
+import Bots.BadgeService.FakePlay (FakePlay (..), PlayAnswer (..), answerPurchase, withFakePlay)
 import Bots.BadgeService.FakeStore
-import Bots.BadgeService.StoreVerifierTests (TestChain (..), ourBundleId, signedBy, subscriptionPayload, transactionPayload, trustedChain)
+import Bots.BadgeService.StoreVerifierTests (TestChain (..), lineItem, ourBundleId, purchaseRecord, signedBy, subscriptionPayload, subscriptionRecord, transactionPayload, trustedChain)
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store (IssuedCode (..), getBadgeCode)
@@ -77,7 +78,7 @@ import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Data.X509 (encodeSignedObject)
 import System.Directory (createDirectoryIfMissing)
-import System.FilePath ((</>))
+import System.FilePath (takeDirectory, (</>))
 import UnliftIO.Temporary (withTempDirectory)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -194,6 +195,8 @@ badgeServiceTests = do
     it "should resolve an Apple renewal to the subscription's record, and credit a held record that adopted it" testAppleRenewalResolvesToPurchase
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
     it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
+    it "should acknowledge a Play subscription as a subscription before crediting it, and credit nothing when acknowledging fails" testPlaySubscriptionAcknowledgedBeforeCrediting
+    it "should credit a Play subscription Play reports, beside a one-time purchase, and answer provider_not_configured without [google]" testPlaySubscriptionThroughPlay
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -2341,6 +2344,69 @@ testAppleSubscriptionWithoutApiKey ps = do
       nothingPurchased cc
       oneTime <- signedBy chain $ transactionPayload [] []
       badgeTypeOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = oneTime}) `shouldReturn` Just BTSupporter
+
+testPlaySubscriptionAcknowledgedBeforeCrediting :: HasCallStack => TestParams -> IO ()
+testPlaySubscriptionAcknowledgedBeforeCrediting ps = do
+  oneTimeAcknowledged <- newIORef []
+  acknowledged <- newIORef []
+  acknowledgement <- newIORef $ Left $ SRUnreachable "acknowledging: fake store is down"
+  let acknowledging store =
+        (fakeVerifier store)
+          { acknowledgeGoogle = Just $ \_ token -> modifyIORef' oneTimeAcknowledged (token :) >> pure (Right ()),
+            acknowledgeGoogleSubscription = Just $ \productId token -> modifyIORef' acknowledged ((productId, token) :) >> readIORef acknowledgement
+          }
+  withBadgeServiceVerifier ps acknowledging $ \env@BadgeServiceEnv {bsController = cc, bsStore} -> do
+    now <- serviceNow env
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    let purchase = serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
+        chargedFrom start = setSubscription bsStore (SubscriptionGoogle googleSubscriptionToken) $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" start 1
+    -- only a charge about to be credited is acknowledged
+    chargedFrom $ addUTCTime 3600 now
+    fst . refusalOf <$> purchase `shouldReturn` BSEPaymentPending
+    readIORef acknowledged `shouldReturn` []
+    chargedFrom $ addUTCTime (-3600) now
+    refusalOf <$> purchase >>= (`shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter)
+    writeIORef acknowledgement $ Left $ SRVerifierFailed "acknowledging: the service account lacks the Play Console permission for this call"
+    refusalOf <$> purchase `shouldReturn` (BSEInternal, Nothing)
+    nothingPurchased cc
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 0
+    writeIORef acknowledgement $ Right ()
+    purchased <- purchase
+    subscriptionOf purchased `shouldBe` Just SSRenewing
+    replayed <- purchase
+    credentialOf replayed `shouldBe` credentialOf purchased
+    readIORef acknowledged `shouldReturn` replicate 3 ("subscr_badge_supporter_01", googleSubscriptionToken)
+    readIORef oneTimeAcknowledged `shouldReturn` []
+
+-- | The service as deployed with [google], against a Play that answers as its documentation says.
+testPlaySubscriptionThroughPlay :: HasCallStack => TestParams -> IO ()
+testPlaySubscriptionThroughPlay ps =
+  withFakePlay $ \fake@FakePlay {fpConfig} -> do
+    let ini = takeDirectory (gServiceAccountFile fpConfig) </> "badge_service.ini"
+    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    Right cfg <- readServiceConfig ini
+    ServiceState {storeVerifier = withoutPlay} <- newServiceState >>= configureStoreVerifier (Just cfg)
+    ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {playStore = Just fpConfig})
+    withBadgeServiceVerifier ps (const storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
+      periodEnd <- addMonths 1 . addUTCTime (-3600) <$> serviceNow env
+      answerPurchase fake googleSubscriptionToken $ PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [("expiryTime", J.toJSON periodEnd)] []]
+      (purchaseKey, masterKey) <- newPurchaseKeys
+      refusalOf <$> serviceCmd env {bsVerifier = withoutPlay} purchaseKey (purchaseCmd masterKey subscriptionPlay) `shouldReturn` (BSEProviderNotConfigured, Nothing)
+      nothingPurchased cc
+      readTVarIO (fpPurchasePaths fake) `shouldReturn` []
+      purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
+      map entryTag (fst $ statementOf purchased) `shouldBe` ["charge", "badge"]
+      -- Play reports no period start, so the month is granted the plan's length before the period ends
+      map createdAtOf (take 1 $ fst $ statementOf purchased) `shouldBe` [addMonths (-1) periodEnd]
+      badgeTypeOf purchased `shouldBe` Just BTSupporter
+      subscriptionOf purchased `shouldBe` Just SSRenewing
+      subscriptionPayments cc `shouldReturn` [("google", googlePurchaseRef googleSubscriptionToken, Just "renewing", Just googleSubscriptionToken)]
+      readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` [("subscr_badge_supporter_01", googleSubscriptionToken)]
+      answerPurchase fake googleSupporterToken $ PlayRecord $ purchaseRecord 0 []
+      (oneTimeKey, oneTimeMasterKey) <- newPurchaseKeys
+      badgeTypeOf <$> serviceCmd env oneTimeKey (purchaseCmd oneTimeMasterKey supporterPlay) `shouldReturn` Just BTSupporter
+      readTVarIO (fpAcknowledged fake) `shouldReturn` [googleSupporterToken]
+      readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` [("subscr_badge_supporter_01", googleSubscriptionToken)]
 
 testPurchaseBadge :: HasCallStack => TestParams -> IO ()
 testPurchaseBadge ps =

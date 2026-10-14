@@ -1,19 +1,23 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
-module BadgeService.StoreReceipts.Google (playStoreVerifier) where
+module BadgeService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier) where
 
+import BadgeService.Catalog (storePlan)
 import BadgeService.Config (PlayStoreConfig (..))
-import BadgeService.StoreReceipts (StoreRefusal (..), VerifiedStoreTransaction (..), storeRequest)
+import BadgeService.StoreReceipts (StoreCharge (..), StoreRefusal (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), storeRequest)
 import Control.Concurrent.STM
 import Control.Exception (IOException, try)
+import Control.Monad (forM)
 import Crypto.Hash.Algorithms (SHA256 (..))
 import qualified Crypto.PubKey.RSA as RSA
 import qualified Crypto.PubKey.RSA.PKCS15 as RSA
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (bimap)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -21,7 +25,7 @@ import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -32,7 +36,10 @@ import Data.X509.Memory (readKeyFileFromMemory)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..))
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (hAuthorization, hContentType, methodPost, renderSimpleQuery)
+import Simplex.Chat.Badges.Ledger (addMonths)
+import Simplex.Chat.Badges.Service (SubscriptionState (..))
 import Simplex.Chat.PaymentService (googlePurchaseRef)
+import Simplex.Chat.PaymentService.Types (PaymentProvider (..))
 import Simplex.Messaging.Util (tshow)
 
 data ServiceAccount = ServiceAccount {clientEmail :: Text, privateKey :: RSA.PrivateKey}
@@ -44,7 +51,15 @@ data PlayEnv = PlayEnv
     accessToken :: TVar (Maybe (ByteString, UTCTime))
   }
 
-playStoreVerifier :: PlayStoreConfig -> IO (Either String (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction), Text -> Text -> IO (Either StoreRefusal ())))
+-- | Each call takes the product id and the token, but the subscription check: subscriptionsv2 reads by token alone.
+data PlayVerifier = PlayVerifier
+  { verifyPlayPurchase :: Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction),
+    acknowledgePlayPurchase :: Text -> Text -> IO (Either StoreRefusal ()),
+    checkPlaySubscription :: Text -> IO (Either StoreRefusal SubscriptionCheck),
+    acknowledgePlaySubscription :: Text -> Text -> IO (Either StoreRefusal ())
+  }
+
+playStoreVerifier :: PlayStoreConfig -> IO (Either String PlayVerifier)
 playStoreVerifier config@PlayStoreConfig {gServiceAccountFile} =
   readServiceAccount gServiceAccountFile >>= \case
     Left e -> pure $ Left e
@@ -52,7 +67,14 @@ playStoreVerifier config@PlayStoreConfig {gServiceAccountFile} =
       manager <- newTlsManager
       accessToken <- newTVarIO Nothing
       let env = PlayEnv {config, account, manager, accessToken}
-      pure $ Right (verifyPurchase env, acknowledgePurchase env)
+      pure $
+        Right
+          PlayVerifier
+            { verifyPlayPurchase = verifyPurchase env,
+              acknowledgePlayPurchase = acknowledgePurchase env,
+              checkPlaySubscription = checkSubscription env,
+              acknowledgePlaySubscription = acknowledgeSubscription env
+            }
 
 readServiceAccount :: FilePath -> IO (Either String ServiceAccount)
 readServiceAccount path =
@@ -80,11 +102,20 @@ acknowledgePurchase env productId token =
     Left refusal -> pure $ Left $ acknowledging refusal
     Right ProductPurchase {alreadyAcknowledged = True} -> pure $ Right ()
     Right _ -> bimap acknowledging (const ()) <$> playCall env (\req -> req {method = methodPost}) (purchaseUrl env productId token <> ":acknowledge")
-  where
-    acknowledging = \case
-      SRUnreachable reason -> SRUnreachable $ "acknowledging: " <> reason
-      SRVerifierFailed reason -> SRVerifierFailed $ "acknowledging: " <> reason
-      refusal -> refusal
+
+-- | As a one-time purchase is: once, before it is credited, so Play's three-day refund never hits a credited one.
+acknowledgeSubscription :: PlayEnv -> Text -> Text -> IO (Either StoreRefusal ())
+acknowledgeSubscription env productId token =
+  readSubscription env token >>= \case
+    Left refusal -> pure $ Left $ acknowledging refusal
+    Right SubscriptionPurchase {subscriptionAcknowledged = True} -> pure $ Right ()
+    Right _ -> bimap acknowledging (const ()) <$> playCall env (\req -> req {method = methodPost}) (playUrl env ["purchases/subscriptions", productId, "tokens", token <> ":acknowledge"])
+
+acknowledging :: StoreRefusal -> StoreRefusal
+acknowledging = \case
+  SRUnreachable reason -> SRUnreachable $ "acknowledging: " <> reason
+  SRVerifierFailed reason -> SRVerifierFailed $ "acknowledging: " <> reason
+  refusal -> refusal
 
 readPurchase :: PlayEnv -> Text -> Text -> IO (Either StoreRefusal ProductPurchase)
 readPurchase env productId token = (>>= decoded) <$> playCall env id (purchaseUrl env productId token)
@@ -92,8 +123,79 @@ readPurchase env productId token = (>>= decoded) <$> playCall env id (purchaseUr
     decoded = either (const $ Left $ SRVerifierFailed "could not read Play's purchase record") Right . J.eitherDecode'
 
 purchaseUrl :: PlayEnv -> Text -> Text -> Text
-purchaseUrl PlayEnv {config = PlayStoreConfig {gApiHost, gPackageName}} productId token =
-  T.intercalate "/" [gApiHost, "androidpublisher/v3/applications", gPackageName, "purchases/products", productId, "tokens", token]
+purchaseUrl env productId token = playUrl env ["purchases/products", productId, "tokens", token]
+
+playUrl :: PlayEnv -> [Text] -> Text
+playUrl PlayEnv {config = PlayStoreConfig {gApiHost, gPackageName}} path =
+  T.intercalate "/" $ [gApiHost, "androidpublisher/v3/applications", gPackageName] <> path
+
+checkSubscription :: PlayEnv -> Text -> IO (Either StoreRefusal SubscriptionCheck)
+checkSubscription env token = (>>= subscriptionVerdict) <$> readSubscription env token
+
+readSubscription :: PlayEnv -> Text -> IO (Either StoreRefusal SubscriptionPurchase)
+readSubscription env token = (>>= decoded) <$> playCall env id (playUrl env ["purchases/subscriptionsv2/tokens", token])
+  where
+    decoded = either (const $ Left $ SRVerifierFailed "could not read Play's subscription record") Right . J.eitherDecode'
+
+-- | Play reports no current period start, so it is the period end less the plan's length; a plan this
+-- service does not sell has no length, and its charge, which is never granted, is given no period.
+-- Revoking an order shows only as the subscription ending, so a Play charge is never revoked.
+subscriptionVerdict :: SubscriptionPurchase -> Either StoreRefusal SubscriptionCheck
+subscriptionVerdict SubscriptionPurchase {subscriptionStateName, testSubscription, lineItems}
+  | subscriptionStateName == "SUBSCRIPTION_STATE_PENDING" = Left SRPending
+  | otherwise = do
+      LineItem {expiryTime, autoRenewEnabled, basePlanId, latestSuccessfulOrderId, inOffer} <- case lineItems of
+        [item] -> Right item
+        _ -> Left $ SRVerifierFailed "Play answered a subscription without exactly one line item"
+      subscriptionState <- case subscriptionStateName of
+        "SUBSCRIPTION_STATE_ACTIVE" -> Right $ if autoRenewEnabled then SSRenewing else SSCancelled
+        "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" -> Right SSBillingRetry
+        "SUBSCRIPTION_STATE_ON_HOLD" -> Right SSBillingRetry
+        "SUBSCRIPTION_STATE_CANCELED" -> Right SSCancelled
+        "SUBSCRIPTION_STATE_EXPIRED" -> Right SSEnded
+        "SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED" -> Right SSEnded
+        _ -> Left $ SRVerifierFailed "a subscriptionState this service does not know"
+      latestCharge <- forM latestSuccessfulOrderId $ \chargeRef -> case (expiryTime, basePlanId) of
+        (Just periodEnd, Just planId) ->
+          let periodStart = maybe periodEnd (\(_, months) -> addMonths (negate $ toInteger months) periodEnd) (storePlan PPGoogle planId)
+           in Right StoreCharge {chargeRef, planId, periodStart, periodEnd, chargePaid = Nothing, revoked = False, offer = inOffer}
+        _ -> Left $ SRVerifierFailed "Play answered a charge without its expiryTime or base plan"
+      pure SubscriptionCheck {subscriptionState, testSubscription, latestCharge}
+
+data SubscriptionPurchase = SubscriptionPurchase
+  { subscriptionStateName :: Text,
+    subscriptionAcknowledged :: Bool,
+    testSubscription :: Bool,
+    lineItems :: [LineItem]
+  }
+
+instance J.FromJSON SubscriptionPurchase where
+  parseJSON = J.withObject "SubscriptionPurchaseV2" $ \o -> do
+    subscriptionStateName <- o J..: "subscriptionState"
+    subscriptionAcknowledged <- (== Just ("ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED" :: Text)) <$> o J..:? "acknowledgementState"
+    testPurchase :: Maybe J.Value <- o J..:? "testPurchase"
+    let testSubscription = isJust testPurchase
+    lineItems <- o J..:? "lineItems" J..!= []
+    pure SubscriptionPurchase {subscriptionStateName, subscriptionAcknowledged, testSubscription, lineItems}
+
+data LineItem = LineItem
+  { expiryTime :: Maybe UTCTime,
+    autoRenewEnabled :: Bool,
+    basePlanId :: Maybe Text,
+    latestSuccessfulOrderId :: Maybe Text,
+    -- from the current phase: offerDetails names the offer it was bought with for its whole life
+    inOffer :: Bool
+  }
+
+instance J.FromJSON LineItem where
+  parseJSON = J.withObject "SubscriptionPurchaseLineItem" $ \o -> do
+    expiryTime <- o J..:? "expiryTime"
+    autoRenewEnabled <- maybe (pure False) (\p -> p J..:? "autoRenewEnabled" J..!= False) =<< o J..:? "autoRenewingPlan"
+    basePlanId <- maybe (pure Nothing) (J..:? "basePlanId") =<< o J..:? "offerDetails"
+    latestSuccessfulOrderId <- o J..:? "latestSuccessfulOrderId"
+    phase :: Maybe J.Object <- o J..:? "offerPhase"
+    let inOffer = maybe False (\p -> KM.member "freeTrial" p || KM.member "introductoryPrice" p) phase
+    pure LineItem {expiryTime, autoRenewEnabled, basePlanId, latestSuccessfulOrderId, inOffer}
 
 playCall :: PlayEnv -> (Request -> Request) -> Text -> IO (Either StoreRefusal LB.ByteString)
 playCall env@PlayEnv {accessToken} prepare url =

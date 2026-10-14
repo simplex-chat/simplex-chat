@@ -54,7 +54,9 @@ data FakePlay = FakePlay
     fpGrantedTokens :: TVar [B.ByteString],
     fpPurchasePaths :: TVar [[Text]],
     fpAcknowledgeRefusal :: TVar (Maybe Int),
-    fpAcknowledged :: TVar [Text]
+    fpAcknowledged :: TVar [Text],
+    -- the product id and the token
+    fpSubscriptionAcknowledged :: TVar [(Text, Text)]
   }
 
 fakePackageName :: Text
@@ -75,6 +77,7 @@ withFakePlay action = do
   fpPurchasePaths <- newTVarIO []
   fpAcknowledgeRefusal <- newTVarIO Nothing
   fpAcknowledged <- newTVarIO []
+  fpSubscriptionAcknowledged <- newTVarIO []
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "fake-play" $ \d -> do
     let accountFile = d </> "service-account.json"
@@ -87,7 +90,8 @@ withFakePlay action = do
               fpGrantedTokens,
               fpPurchasePaths,
               fpAcknowledgeRefusal,
-              fpAcknowledged
+              fpAcknowledged,
+              fpSubscriptionAcknowledged
             }
     LB.writeFile accountFile $ J.encode $ J.object ["client_email" J..= fakeClientEmail, "private_key" J..= decodeUtf8 (pkcs8Pem privateKey)]
     Warp.testWithApplication (pure $ \req respond -> fakeApp key (fake $ origin req) req respond) $ \prt ->
@@ -135,14 +139,21 @@ answerAcknowledgements :: FakePlay -> Maybe Int -> IO ()
 answerAcknowledgements FakePlay {fpAcknowledgeRefusal} = atomically . writeTVar fpAcknowledgeRefusal
 
 fakeApp :: RSA.PublicKey -> FakePlay -> Application
-fakeApp key FakePlay {fpConfig = PlayStoreConfig {gTokenUrl}, fpAnswers, fpTokenRefusal, fpTokenSeconds, fpGrantedTokens, fpPurchasePaths, fpAcknowledgeRefusal, fpAcknowledged} req respond =
+fakeApp key FakePlay {fpConfig = PlayStoreConfig {gTokenUrl}, fpAnswers, fpTokenRefusal, fpTokenSeconds, fpGrantedTokens, fpPurchasePaths, fpAcknowledgeRefusal, fpAcknowledged, fpSubscriptionAcknowledged} req respond =
   case (requestMethod req, pathInfo req) of
     (m, ["token"]) | m == methodPost -> strictRequestBody req >>= grant
     (m, path@["androidpublisher", "v3", "applications", pkg, "purchases", "products", _, "tokens", token])
       | m == methodGet && pkg == fakePackageName -> authorized $ do
           atomically $ modifyTVar' fpPurchasePaths (<> [path])
           purchase token
-      | m == methodPost && pkg == fakePackageName, Just acknowledgedToken <- T.stripSuffix ":acknowledge" token -> authorized $ acknowledge acknowledgedToken
+      | m == methodPost && pkg == fakePackageName, Just acknowledgedToken <- T.stripSuffix ":acknowledge" token -> authorized $ acknowledge $ modifyTVar' fpAcknowledged (<> [acknowledgedToken])
+    (m, path@["androidpublisher", "v3", "applications", pkg, "purchases", "subscriptionsv2", "tokens", token])
+      | m == methodGet && pkg == fakePackageName -> authorized $ do
+          atomically $ modifyTVar' fpPurchasePaths (<> [path])
+          purchase token
+    (m, ["androidpublisher", "v3", "applications", pkg, "purchases", "subscriptions", productId, "tokens", token])
+      | m == methodPost && pkg == fakePackageName, Just acknowledgedToken <- T.stripSuffix ":acknowledge" token ->
+          authorized $ acknowledge $ modifyTVar' fpSubscriptionAcknowledged (<> [(productId, acknowledgedToken)])
     _ -> respond $ status notFound404
   where
     authorized act = do
@@ -150,11 +161,11 @@ fakeApp key FakePlay {fpConfig = PlayStoreConfig {gTokenUrl}, fpAnswers, fpToken
       case lookup hAuthorization (requestHeaders req) of
         Just auth | Just bearer <- B.stripPrefix "Bearer " auth, take 1 (reverse granted) == [bearer] -> act
         _ -> respond $ status unauthorized401
-    acknowledge token =
+    acknowledge record =
       readTVarIO fpAcknowledgeRefusal >>= \case
         Just code -> respond $ status (mkStatus code "Refused")
         Nothing -> do
-          atomically $ modifyTVar' fpAcknowledged (<> [token])
+          atomically (record :: STM ())
           respond $ responseLBS ok200 [] ""
     grant body =
       readTVarIO fpTokenRefusal >>= \case
