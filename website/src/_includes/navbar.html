@@ -126,7 +126,7 @@
 
     <div class="right-links">
         {% if ('/crowdfunding/' not in page.url) %}
-            <a class="box-btn token md:hidden" href="/crowdfunding/">
+            <a class="box-btn token md:hidden" href="https://wefunder.com/simplex.chat?utm_source={{ 'home' if active_home else 'website' }}" target="_blank" rel="noopener">
                 {{ 'invest' | i18n({}, lang) }}
             </a>
         {% endif %}

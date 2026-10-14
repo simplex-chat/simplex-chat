@@ -8,9 +8,11 @@
 
                 <div class="flex flex-col items-center lg:items-start lg:flex-row gap-[150px] lg:gap-[350px]">
                     <div class="flex flex-col items-center lg:items-start">
-                        <a href="/{{ '' if lang == 'en' else lang ~ '/' }}why"
+                        <a href="https://wefunder.com/simplex.chat?utm_source={{ 'home' if active_home else 'website' }}"
+                            target="_blank"
                             class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
-                            {{ "why-footer-link" | i18n({}, lang ) | safe }}
+                            {{ "index-token-cta-cf" | i18n({}, lang ) | safe }}
+                            <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                         </a>
                         <a href="/about/"
                             class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
@@ -23,12 +25,6 @@
                         <a href="/jobs/"
                             class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
                             {{ "jobs" | i18n({}, lang ) | safe }}
-                        </a>
-                        <a href="https://github.com/simplex-chat/simplex-chat#please-support-us-with-your-donations"
-                            target="_blank"
-                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
-                            {{ "donate" | i18n({}, lang ) | safe }}
-                            <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                         </a>
                     </div>
                     <div class="flex flex-col items-center lg:items-start">
