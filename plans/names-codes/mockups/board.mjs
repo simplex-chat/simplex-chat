@@ -1,11 +1,6 @@
 #!/usr/bin/env node
 // Renders every frame of layout.mjs to ../screens/<tag>.jpg and composes ../names-flow.svg around them.
-// Names frames render domains.js on simplex.domains' fonts and logos (a checkout of that repo, beside this
-// one or at $SIMPLEX_DOMAINS); the badges landing renders on the compiled badges webapp. Needs `npm run build`
-// in apps/simplex-badge-service/web first, and Playwright with Chromium, which is deliberately not a
-// dependency of the webapp:
-//   npm install --prefix /tmp/pw playwright && npx --prefix /tmp/pw playwright install chromium
-//   PLAYWRIGHT=/tmp/pw/node_modules/playwright/index.mjs node plans/names-codes/mockups/board.mjs
+// Run from the repo root: PLAYWRIGHT=<playwright>/index.mjs node plans/names-codes/mockups/board.mjs
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
@@ -17,11 +12,12 @@ const OUT = join(HERE, "..");
 const SCREENS_DIR = join(OUT, "screens");
 const DIST = join(HERE, "../../../apps/simplex-badge-service/web/dist/assets");
 const DOMAINS = process.env.SIMPLEX_DOMAINS ?? join(HERE, "../../../../simplex.domains");
-// frames drawn by screens.js on the badges webapp; every other frame is the names store's, from domains.js
+// frames drawn by screens.js: the badges landing, the app and the operator; every other frame is from domains.js.
+// Listed here because screens.js imports the badges build, which loads only in the page.
 const OTHER_FRAMES = new Set(["B0", "A1", "A2", "OP1", "OP2"]);
 // A made-up origin: module scripts do not load from file://, and intercepting requests needs no server.
 const ORIGIN = "http://mockups.local";
-// JPEG, not PNG: the page's background wash makes a PNG about four times larger, and the board embeds one per frame.
+// JPEG, not PNG: the page's background wash makes a PNG about twice as large, and the board embeds one per frame.
 const JPEG_QUALITY = 85;
 const CONTENT_TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ttf": "font/ttf" };
 
@@ -34,6 +30,7 @@ const KINDS = {
 };
 
 const COLORS = { blue: "#0053D0", orange: "#E8871E", grey: "#9AA0A6" };
+const HALO = `stroke="#ffffff" stroke-width="8" stroke-linejoin="round" paint-order="stroke"`;
 const FONT = "Manrope, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 const MARGIN = 60;
 const DESKTOP_BAR = 26;
@@ -44,21 +41,24 @@ const ROW_HEAD = 104;
 const LANE_STEP = 7;
 const LANES = 7;
 
-const NAMES_PAGE = (id, theme) => `<!doctype html><html lang="en"><head><meta charset="utf-8">
+// an order page belongs to no tab
+const tabOf = (url = "") => (url.includes("#/names") ? "names" : /\?(order|registration)=/.test(url) ? null : "search");
+
+const NAMES_PAGE = (id, theme, tab) => `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="domains.css"></head><body>
 <script type="module">
 import { render } from "./domains.js";
-try { render(${JSON.stringify(id)}, ${theme ? JSON.stringify(theme) : "undefined"}); document.body.dataset.ready = "1"; }
+try { render(${JSON.stringify(id)}, ${theme ? JSON.stringify(theme) : "undefined"}, ${JSON.stringify(tab)}); document.body.dataset.ready = "1"; }
 catch (e) { document.body.dataset.error = String(e && e.stack || e); }
 </script></body></html>`;
 
-const PAGE = (id, theme) => `<!doctype html><html lang="en"><head><meta charset="utf-8">
+const PAGE = (id) => `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="assets/styles.css"><link rel="stylesheet" href="mockups.css"></head>
 <body><div id="chrome"></div><main id="app"></main><footer id="contact"><a href="#">simplex.chat/contact</a></footer>
 <script type="module">
 import { render } from "./screens.js";
-try { render(${JSON.stringify(id)}, ${theme ? JSON.stringify(theme) : "undefined"}); document.body.dataset.ready = "1"; }
+try { render(${JSON.stringify(id)}); document.body.dataset.ready = "1"; }
 catch (e) { document.body.dataset.error = String(e && e.stack || e); }
 </script></body></html>`;
 
@@ -98,7 +98,7 @@ async function renderAll(frames) {
           await page.route(`${ORIGIN}/**`, (route) => {
             const path = new URL(route.request().url()).pathname;
             const id = f.screen ?? f.tag;
-            const body = path === "/page.html" ? (OTHER_FRAMES.has(id) ? PAGE : NAMES_PAGE)(id, f.theme) : readFileOr(join(site, path));
+            const body = path === "/page.html" ? (OTHER_FRAMES.has(id) ? PAGE(id) : NAMES_PAGE(id, f.theme, tabOf(f.url))) : readFileOr(join(site, path));
             if (body === undefined) return route.fulfill({ status: 404, body: "" });
             return route.fulfill({ status: 200, contentType: CONTENT_TYPES[extname(path)] ?? "application/octet-stream", body });
           });
@@ -108,8 +108,8 @@ async function renderAll(frames) {
           if (error) throw new Error(`board: ${f.tag} failed to render: ${error}`);
           await page.evaluate(() => document.fonts.ready);
           const file = join(SCREENS_DIR, `${f.tag}.jpg`);
-          // animations frozen, or the waiting dot's pulse changes the bytes on every run
-          const shot = { path: file, type: "jpeg", quality: JPEG_QUALITY, animations: "disabled", caret: "hide" };
+          // The bytes vary between runs at the scaled footer logo, which Chromium rasterizes in one of two ways.
+          const shot = { path: file, type: "jpeg", quality: JPEG_QUALITY, caret: "hide" };
           if (kind.element) await page.locator("#shot").screenshot(shot);
           else await page.screenshot({ ...shot, fullPage: true });
           f.jpeg = readFileSync(file);
@@ -295,13 +295,14 @@ function compose(frames) {
   out.push(text(MARGIN, 58, TITLE, 34, `font-weight="700" fill="#ffffff"`));
   out.push(text(MARGIN, 90, SUBTITLE, 15, `fill="#B9BEC7"`));
   CORNER.forEach((line, i) => out.push(text(width - MARGIN, 52 + i * 20, line, 12, `text-anchor="end" fill="#8A8F98"`)));
-  for (const { section, y } of parts.sections) {
-    out.push(`<line x1="${MARGIN}" y1="${y}" x2="${width - MARGIN}" y2="${y}" stroke="#E5E7EB"/>`);
-    out.push(text(MARGIN, y + 40, section.title, 26, `font-weight="700" fill="#111827"`));
-    out.push(text(MARGIN + section.title.length * 14 + 28, y + 40, section.note, 14, `fill="#6B7280"`));
-  }
-  for (const { row, top } of parts.rows) out.push(text(MARGIN, top + 6, row.label, 14, `font-weight="700" fill="#8A8F98"`));
+  for (const { y } of parts.sections) out.push(`<line x1="${MARGIN}" y1="${y}" x2="${width - MARGIN}" y2="${y}" stroke="#E5E7EB"/>`);
   out.push(arrows(frames, byTag));
+  // headings go over the arrows that run down past them
+  for (const { section, y } of parts.sections) {
+    out.push(text(MARGIN, y + 40, section.title, 26, `font-weight="700" fill="#111827" ${HALO}`));
+    out.push(text(MARGIN + section.title.length * 14 + 28, y + 40, section.note, 14, `fill="#6B7280" ${HALO}`));
+  }
+  for (const { row, top } of parts.rows) out.push(text(MARGIN, top + 6, row.label, 14, `font-weight="700" fill="#8A8F98" ${HALO}`));
   for (const f of frames) out.push(drawFrame(f), drawCaption(f));
   out.push(arrowLabels(frames));
   out.push(`<line x1="${MARGIN}" y1="${notesTop}" x2="${width - MARGIN}" y2="${notesTop}" stroke="#E5E7EB"/>`);

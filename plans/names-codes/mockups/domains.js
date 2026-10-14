@@ -1,10 +1,10 @@
 // The names store's screens in simplex.domains' look: prototypes for the names app in that repo.
-// Its logic (API client, payments, storage) comes from the shared package; only these views are its own.
+// The names app takes its API client, payments, storage, code parsing and QR encoder from @simplex-chat/store; its crypto (wallet.ts, names.ts), QR drawing and views are its own.
 import { methodMark } from "./assets/icons.js";
 import { qrSvg } from "./assets/qr.js";
 import {
-  APP_OWNER_SHORT, APPLIED, APPLIED_YEARS, BAKERY, CODE_UNTIL, COMMIT_TX, NAME_INVEST, ORDER_ID, OWNER_SHORT,
-  PHRASE, REGISTER_TX, UNTIL, dollars, nameCode, priceOf,
+  APP_OWNER_SHORT, APPLIED, APPLIED_SHORT, APPLIED_YEARS, BAKERY, CODE_UNTIL, CODE_UNTIL_SHORT, COMMIT_TX, NAME, NAME_INVEST, ORDER_ID, OWNER_SHORT,
+  OWNER_CODE, REGISTER_TX, UNTIL, UNTIL_SHORT, dollars, prepaidCode, priceOf,
 } from "./fixtures.js";
 
 function el(tag, attrs = {}, ...kids) {
@@ -46,8 +46,13 @@ function icon(name) {
 }
 
 const METHODS = { card: ["Card", "Processed by Stripe"], btc: ["Bitcoin", "On-chain"], xmr: ["Monero", "Private by default"] };
-const CRYPTO = { address: "bc1q8n4xqs0v2kr7w5mxj9d3tlh6c0yzpe2a7kqfuv", amount: "0.00312" };
-const UNTIL_SHORT = UNTIL.replace("October", "Oct");
+const CRYPTO = { address: "bc1q8n4xqs0v2kr7w5mxj9d3tlh6c0yzpe2a7kqfuv", amount: "0.00312", partial: "0.00150" };
+const CRYPTO_REMAINING = (Number(CRYPTO.amount) - Number(CRYPTO.partial)).toFixed(5);
+// what the order screens' name costs
+const PAID = dollars(priceOf(NAME), true);
+const SHORT_REF = ORDER_ID.slice(0, 8) + "…";
+const INVEST_LINE = `Invest ${NAME_INVEST}+ in SimpleX Chat and get a free SimpleX name.`;
+const paidTotal = () => el("div", { class: "total" }, el("span", { class: "label" }, "Total"), el("b", {}, PAID));
 
 const btn = (text, cls = "", ...extra) => el("button", { class: `btn ${cls}`.trim(), type: "button" }, text, ...extra);
 const disabled = (node) => { node.setAttribute("disabled", ""); return node; };
@@ -55,8 +60,6 @@ const link = (text) => el("a", { href: "#" }, text);
 const chip = (text, cls = "", dot = false) => el("span", { class: `chip ${cls}`.trim() }, dot ? el("span", { class: "dot" }) : null, text);
 const alertBox = (tone, ic, title, text) => el("div", { class: `alert ${tone}` }, icon(ic), el("div", {}, title ? el("b", {}, title) : null, text));
 const nameTitle = (label, cls = "name") => el("div", { class: cls }, label, el("span", {}, ".simplex"));
-
-// ---------------------------------------------------------------- the page around every screen
 
 function brand() {
   return el("a", { class: "brand", href: "#" },
@@ -83,8 +86,6 @@ function footer() {
     el("div", { class: "pays" }, "We accept", ...["card", "btc", "xmr"].map((m) => methodMark(m)))));
 }
 
-// ---------------------------------------------------------------- search
-
 function searchBox(label, { bad = false, off = false } = {}) {
   const go = btn("Search", "lg", icon("arrow"));
   return el("div", { class: "search" + (bad ? " bad" : "") },
@@ -109,10 +110,10 @@ function bento() {
   return el("section", { class: "section" }, el("div", { class: "wrap" },
     el("div", { class: "section-head" }, el("h2", { class: "display" }, "How it works")),
     el("div", { class: "bento" },
-      step("1", "Search", "Any name of 6 letters or more: a–z, 0–9 and hyphens. The search sends only its hash."),
+      step("1", "Search", "Any name of 6 letters or more: a–z, 0–9 and single hyphens between them. The search sends only its hash and length."),
       step("2", "Pay", "One price for 2 years, shown with the name.",
         el("div", { class: "pays" }, ...["card", "btc", "xmr"].map((m) => el("span", {}, methodMark(m), METHODS[m][0])))),
-      step("3", "It's yours", "Registered to a wallet made in your browser. Its 12-word phrase is the only key."),
+      step("3", "It's yours", "Registered to a wallet made in your browser. Its name code is the only key, and moves the name to your app."),
       el("article", { class: "tile wide" },
         el("h3", {}, "One name, wherever people find you"),
         el("p", {}, "Point it at your contact address and your channel. People type the name in SimpleX and connect."),
@@ -122,7 +123,7 @@ function bento() {
           el("div", { class: "who" }, el("b", {}, "Alice's Bakery"), el("span", {}, "Contact address · Channel")))),
       el("article", { class: "tile invest" },
         el("h3", {}, "Investors get a name free"),
-        el("p", {}, `Invest ${NAME_INVEST}+ in SimpleX Chat and get a free SimpleX name.`),
+        el("p", {}, INVEST_LINE),
         el("div", { class: "links" }, link("Wefunder ↗"), link("Check your code"))))));
 }
 
@@ -140,17 +141,17 @@ function availableResult(label, { coded = false, credit = false } = {}) {
     nameTitle(label),
     el("div", { class: "meta" }, chip("Available", "ok", true), chip(`${label.length} letters`),
       chip(coded ? `${APPLIED_YEARS} years` : "2 years"), coded ? chip("Code applied", "brand") : null, credit ? chip("Covered by your payment", "brand") : null),
-    coded ? el("div", { class: "covered" }, "Covered by your code", el("span", { class: "mono" }, `${APPLIED.slice(0, 9)}…`), "·", link("Remove")) : null);
+    coded ? el("div", { class: "covered" }, "Covered by your code", el("span", { class: "mono nowrap" }, APPLIED_SHORT), "·", link("Remove")) : null);
   const priceBox = coded
     ? el("div", { class: "price" }, el("b", {}, el("s", {}, dollars(price)), "$0"), el("span", {}, `for ${APPLIED_YEARS} years`))
     : el("div", { class: "price" }, el("b", {}, dollars(price)), el("span", {}, "for 2 years"));
-  const label2 = coded ? "Register with code" : credit ? "Register with your payment" : "Register";
-  return el("div", { class: "result" }, what, priceBox, btn(label2, "", icon("arrow")));
+  const action = coded ? "Register with code" : credit ? "Register with your payment" : "Register";
+  return el("div", { class: "result" }, what, priceBox, btn(action, "", icon("arrow")));
 }
 
 function takenResult(label, chipNode, below) {
   return el("div", { class: "result stack" },
-    el("div", { class: "top" }, el("div", { class: "what" }, nameTitle(label), el("div", { class: "meta" }, chipNode))),
+    el("div", { class: "result-top" }, el("div", { class: "what" }, nameTitle(label), el("div", { class: "meta" }, chipNode))),
     el("div", { class: "below" }, ...below));
 }
 
@@ -159,34 +160,32 @@ function searchScreen(state) {
   const under = (...kids) => el("div", { class: "under-search" }, ...kids);
   switch (state) {
     case "empty": return [hero(""), bento()];
-    case "typed": return [hero("dynamis", { after: [hint] }), bento()];
-    case "short": return [hero("alice", { box: { bad: true }, after: [el("p", { class: "rule" }, icon("alert"), "5 letters. A name has 6 letters or more: a–z, 0–9 and hyphens inside it.")] }), bento()];
-    case "chars": return [hero("my_name", { box: { bad: true }, after: [el("p", { class: "rule" }, icon("alert"), "Use only a–z, 0–9 and hyphens inside the name, not two at places 3 and 4.")] }), bento()];
-    case "available": return [hero("dynamis", { after: [availableResult("dynamis")] }), bento()];
-    case "coded": return [hero("dynamis", { after: [availableResult("dynamis", { coded: true })] }), bento()];
+    case "typed": return [hero(NAME, { after: [hint] }), bento()];
+    case "short": return [hero("alice", { box: { bad: true }, after: [el("p", { class: "rule" }, icon("alert"), "5 letters. A name has 6 letters or more: a–z, 0–9 and single hyphens between them.")] }), bento()];
+    case "chars": return [hero("my_name", { box: { bad: true }, after: [el("p", { class: "rule" }, icon("alert"), "Use only a–z, 0–9 and single hyphens between them.")] }), bento()];
+    case "available": return [hero(NAME, { after: [availableResult(NAME)] }), bento()];
+    case "coded": return [hero(NAME, { after: [availableResult(NAME, { coded: true })] }), bento()];
     case "taken": return [hero("bakery", { after: [takenResult("bakery", chip("Taken", "bad", true),
       [el("span", { class: "label" }, "Used by"), el("div", { class: "entities" }, ...BAKERY.map((e) => entity(e)))])] }), bento()];
     case "unlinked": return [hero("harbour", { after: [takenResult("harbour", chip("Taken", "bad", true),
-      [el("p", { class: "note" }, "Registered, and not pointing at any address or channel yet.")])] }), bento()];
+      [el("p", { class: "note" }, "Registered, and not pointing at any address or channel that we know of yet.")])] }), bento()];
     case "reserved": return [hero("support", { after: [takenResult("support", chip("Reserved", "warn", true),
       [el("p", { class: "note" }, "Reserved names are not sold here. If it is yours to use, contact the SimpleX team."),
         el("div", { style: "margin-top: 12px" }, btn("Contact the SimpleX team", "quiet"))])] }), bento()];
-    case "unchecked": return [hero("dynamis", { after: [under(alertBox("warn", "alert", "This name could not be checked", "The name service did not answer. Try again in a moment."))] }), bento()];
-    case "limited": return [hero("dynamis", { box: { off: true }, after: [under(alertBox("warn", "clock", "Try again in 42 seconds", "Too many names were searched from here. Searching is paused until then."))] }), bento()];
+    case "unchecked": return [hero(NAME, { after: [under(alertBox("warn", "alert", "This name could not be checked", "The name service did not answer. Try again in a moment."))] }), bento()];
+    case "limited": return [hero(NAME, { box: { off: true }, after: [under(alertBox("warn", "clock", "Try again in 42 seconds", "Too many names were searched from here. Searching is paused until then."))] }), bento()];
     case "credit": return [hero("dynamos", {
-      banner: el("div", { class: "banner" }, icon("wallet"), el("span", {}, el("b", {}, "Your payment is kept: $200.00. "), "Choose another name of up to $200; it is registered with what you paid.")),
+      banner: el("div", { class: "banner" }, icon("wallet"), el("span", {}, el("b", {}, `Your payment is kept: ${PAID}. `), `Choose another name of up to ${PAID}; it is registered with what you paid.`)),
       after: [availableResult("dynamos", { credit: true })] })];
-    case "fromApp": return [hero("dynamis", {
+    case "fromApp": return [hero(NAME, {
       banner: el("div", { class: "banner" }, icon("phone"), el("span", {}, el("b", {}, "Opened from SimpleX. "), `The name is registered to your app's wallet, ${APP_OWNER_SHORT}.`)),
-      after: [availableResult("dynamis")] })];
+      after: [availableResult(NAME)] })];
     default: throw new Error(`domains: no search state ${state}`);
   }
 }
 
-// ---------------------------------------------------------------- the code popup
-
 function codeModal(state) {
-  const codes = { valid: APPLIED, used: nameCode(6, 202), invalid: "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X", adding: nameCode(6, 505) };
+  const codes = { valid: APPLIED, used: prepaidCode(6, 202), invalid: "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X", adding: prepaidCode(6, 505) };
   const verdicts = {
     valid: el("div", { class: "verdict ok" }, icon("check"), el("div", {}, el("b", {}, "Unused"), el("span", {}, `Covers names of 6 or more letters, for ${APPLIED_YEARS} years.`))),
     adding: el("div", { class: "verdict ok" }, icon("check"), el("div", {}, el("b", {}, "Unused"), el("span", {}, "Covers names of 6 or more letters, for 2 years."))),
@@ -196,17 +195,16 @@ function codeModal(state) {
   const ok = state === "valid" || state === "adding";
   const action = btn(state === "adding" ? "Add to your codes" : "Use this code", "block");
   return el("div", { class: "modal-overlay" }, el("div", { class: "modal", role: "dialog" },
-    el("div", { class: "modal-head" }, el("h3", {}, state === "adding" ? "Check a code" : "Check your code"), el("a", { class: "icon-btn", href: "#", "aria-label": "Close" }, icon("x"))),
+    el("div", { class: "modal-head" }, el("h3", {}, state === "adding" ? "Add a code" : "Check your code"), el("a", { class: "icon-btn", href: "#", "aria-label": "Close" }, icon("x"))),
     el("p", { class: "sec-note" }, "A code from SimpleX, for example for investors. Nothing is spent until a name is registered with it."),
     el("div", { class: `input code-input ${ok ? "ok" : "bad"}` }, icon("key"), el("input", { type: "text", value: codes[state], "aria-label": "Code", spellcheck: "false" })),
     verdicts[state],
     ok ? action : disabled(action)));
 }
 
-// ---------------------------------------------------------------- checkout
-
-function crumbs(at) {
-  const names = ["Search", "Details", "Recovery phrase", "Payment", "Registration"];
+// opened from the app there is no owner code to save; a prepaid code leaves nothing to pay
+function crumbs(at, { fromApp = false, prepaid = false } = {}) {
+  const names = ["Search", "Details", fromApp ? null : "Name code", prepaid ? null : "Payment", "Registration"].filter(Boolean);
   const out = [];
   names.forEach((n, i) => {
     if (i) out.push(el("span", { class: "crumb-sep" }));
@@ -215,9 +213,9 @@ function crumbs(at) {
   return el("div", { class: "crumbs" }, ...out);
 }
 
-function pageHead(at, title, lead) {
+function pageHead(at, title, lead, steps = {}) {
   return el("section", { class: "page-head" }, el("div", { class: "wrap" },
-    at === null ? null : crumbs(at), el("h1", { class: "display" }, ...[title].flat()), lead ? el("p", { class: "lead" }, lead) : null));
+    at === null ? null : crumbs(at, steps), el("h1", { class: "display" }, title), lead ? el("p", { class: "lead" }, lead) : null));
 }
 
 function orderCard(label, rows, ...rest) {
@@ -239,7 +237,7 @@ function method(m, { on = false, off = false } = {}) {
 }
 
 function miniInvest() {
-  return el("div", { class: "mini-invest" }, `Invest ${NAME_INVEST}+ in SimpleX Chat and get a free SimpleX name.`, el("br"), link("Learn more on Wefunder ↗"));
+  return el("div", { class: "mini-invest" }, INVEST_LINE, el("br"), link("Learn more on Wefunder ↗"));
 }
 
 // opts: selected, unavailable, openOrder, noStorage, links ("open"), code ("covering" | "entry" | "short"), fromApp
@@ -252,7 +250,7 @@ function checkoutScreen(opts = {}) {
     opts.links === "open"
       ? [el("div", { class: "input ok" }, icon("link"), el("input", { type: "text", value: BAKERY[0].link }), el("span", { class: "kind" }, "Address")),
         el("div", { style: "margin: 10px 0" }, entity(BAKERY[0], false))]
-      : el("div", { class: "input" }, icon("link"), el("input", { type: "text", placeholder: "Paste your contact address" }), el("span", { class: "kind" }, "Address")),
+      : el("div", { class: "input" }, icon("link"), el("input", { type: "text", placeholder: "Paste your address" }), el("span", { class: "kind" }, "Address")),
     el("div", { class: "input" }, icon("link"), el("input", { type: "text", placeholder: "Paste your channel link" }), el("span", { class: "kind" }, "Channel")));
   let paySec;
   if (covered) {
@@ -260,63 +258,67 @@ function checkoutScreen(opts = {}) {
       el("div", { class: "covered-box" }, icon("check"), el("div", {}, "Paid with your code", el("p", {}, `Registered for ${APPLIED_YEARS} years, with nothing to pay.`))));
   } else if (opts.openOrder) {
     paySec = el("div", { class: "panel-sec" }, el("div", { class: "sec-title" }, el("h3", {}, "Payment method")),
-      alertBox("info", "info", "You have an order waiting to be confirmed", "A second order would be a second charge, so this one cannot start yet. Open the order; when its invoice expires, a new one can start there."),
+      alertBox("info", "info", "You have an order waiting to be confirmed", "A second order would be a second charge, so this one cannot start yet. When that payment is confirmed or expires, you can start a new one here."),
       el("div", { style: "margin-top: 14px" }, btn("Open the waiting order", "quiet")));
   } else {
     paySec = el("div", { class: "panel-sec" }, el("div", { class: "sec-title" }, el("h3", {}, "Payment method")),
       opts.unavailable ? el("div", { style: "margin-bottom: 14px" }, alertBox("warn", "alert", `${METHODS[opts.unavailable][0]} is temporarily unavailable`, "Try another method, or come back later.")) : null,
-      el("p", { class: "sec-note" }, "You pay on the next pages, after writing down your recovery phrase."),
+      el("p", { class: "sec-note" }, opts.fromApp ? "You pay on the next page." : "You pay on the next pages, after saving your name code."),
       el("div", { class: "methods" }, ...["card", "btc", "xmr"].map((m) => method(m, { on: m === selected, off: m === opts.unavailable }))));
   }
-  const storage = opts.noStorage ? el("div", { class: "panel-sec" }, alertBox("warn", "alert", "This browser will not keep your recovery phrase", "The next step shows it: your written copy will be the only one.")) : null;
+  const storage = opts.noStorage ? el("div", { class: "panel-sec" }, alertBox("warn", "alert", "This browser will not keep your name code", "The next step shows it: your saved copy will be the only one.")) : null;
   const main = el("div", { class: "panel" }, storage, linksSec, paySec);
 
   const term = covered ? `${APPLIED_YEARS} years` : "2 years";
-  const until = covered ? CODE_UNTIL.replace("October", "Oct").slice(2) : "Oct 2028";
-  const rows = [["Term", term], ["Registered until", covered ? "Oct 2033" : until]];
-  rows.push(covered ? ["Code", APPLIED.slice(0, 9) + "…"] : ["Paying with", METHODS[selected === opts.unavailable ? "xmr" : selected][0]]);
-  const price = priceOf("dynamis");
+  const until = covered ? CODE_UNTIL_SHORT : UNTIL_SHORT;
+  const rows = [["Term", term], ["Registered until", `about ${until}`]];
+  if (opts.code !== "entry" && !opts.openOrder) rows.push(covered ? ["Code", APPLIED_SHORT] : ["Paying with", METHODS[selected][0]]);
   const total = el("div", { class: "total" }, el("span", { class: "label" }, "Total"),
-    el("b", {}, covered ? el("s", {}, dollars(price, true)) : null, covered ? "$0.00" : dollars(price, true)));
+    el("b", {}, covered ? el("s", {}, PAID) : null, covered ? "$0.00" : PAID));
   const go = btn("Continue", "lg block", icon("arrow"));
-  let codeBlock = null;
+  let codeEntry = null;
   if (opts.code === "entry" || opts.code === "short") {
     const ok = opts.code === "entry";
-    codeBlock = el("div", { class: "code-entry" },
+    codeEntry = el("div", { class: "code-entry" },
       el("span", { class: "label" }, "Your code"),
-      el("div", { class: `input code-input ${ok ? "ok" : "bad"}`, style: "margin-top: 8px" }, icon("key"), el("input", { type: "text", value: ok ? APPLIED : nameCode(8, 404) })),
-      el("div", { class: `line ${ok ? "ok" : "bad"}` }, icon(ok ? "check" : "x"), ok ? `Covers names of 6 or more letters, for ${APPLIED_YEARS} years.` : "This code covers names of 8 or more letters; dynamis has 7."));
+      el("div", { class: `input code-input ${ok ? "ok" : "bad"}`, style: "margin-top: 8px" }, icon("key"), el("input", { type: "text", value: ok ? APPLIED : prepaidCode(8, 404) })),
+      el("div", { class: `line ${ok ? "ok" : "bad"}` }, icon(ok ? "check" : "x"), ok ? `Covers names of 6 or more letters, for ${APPLIED_YEARS} years.` : `This code covers names of 8 or more letters; ${NAME} has ${NAME.length}.`));
   }
-  const showCodeLink = !opts.fromApp && !codeBlock && !covered;
-  const side = orderCard("dynamis", rows,
-    codeBlock,
-    opts.code === "short" ? el("div", { class: "total" }, el("span", { class: "label" }, "Total"), el("b", {}, dollars(price, true))) : total,
+  const showCodeLink = !opts.fromApp && !codeEntry && !covered && !opts.openOrder;
+  const side = orderCard(NAME, rows,
+    codeEntry,
+    total,
     opts.openOrder ? disabled(go) : go,
     showCodeLink ? el("div", { class: "sub-links" }, link("I have a code")) : null,
-    el("p", { class: "fine" }, icon("shield"), opts.fromApp ? `Registered to your app's wallet, ${APP_OWNER_SHORT}.` : "Registered to a wallet made in this browser; nobody else holds its key."),
+    el("p", { class: "fine" }, icon("shield"), opts.fromApp ? el("span", {}, "Registered to your app's wallet, ", el("span", { class: "nowrap" }, APP_OWNER_SHORT), ".") : "Registered to a wallet made in this browser; nobody else holds its key."),
     opts.fromApp ? null : miniInvest());
-  return [pageHead(1, "Check your order"), twoCols(main, side)];
+  return [pageHead(1, "Check your order", null, { fromApp: opts.fromApp, prepaid: covered }), twoCols(main, side)];
 }
 
-function phraseScreen() {
-  return [pageHead(2, "Write down your recovery phrase", "It will own dynamis.simplex. If this browser loses it, nothing else can recover the name."),
+function codeBlock() {
+  return [el("div", { class: "code-display" }, OWNER_CODE),
+    el("div", { class: "code-actions" }, btn("Copy code", "quiet", icon("copy")))];
+}
+
+function codeScreen() {
+  return [pageHead(2, "Save your name code", `It will own ${NAME}.simplex. If you lose it, nothing else can recover the name.`),
     twoCols(
       el("div", { class: "panel" }, el("div", { class: "panel-sec" },
-        el("div", { class: "sec-title" }, el("h3", {}, "12 words, in order")),
-        el("ol", { class: "phrase" }, ...PHRASE.map((w, i) => el("li", {}, el("i", {}, String(i + 1)), el("b", {}, w)))),
-        el("div", { class: "phrase-actions" }, btn("Copy phrase", "quiet", icon("copy"))),
-        el("label", { class: "check" }, el("span", { class: "box" }), "I have written it down"))),
-      orderCard("dynamis", [["Term", "2 years"], ["Paying with", "Bitcoin"]],
-        el("div", { class: "total" }, el("span", { class: "label" }, "Total"), el("b", {}, "$200.00")),
+        el("div", { class: "sec-title" }, el("h3", {}, "Your name code")),
+        el("p", { class: "sec-note" }, "Copy it somewhere safe or write it down. You redeem it in the app later."),
+        ...codeBlock(),
+        el("label", { class: "check" }, el("span", { class: "box" }), "I have saved my code"))),
+      orderCard(NAME, [["Term", "2 years"], ["Registered until", `about ${UNTIL_SHORT}`], ["Paying with", "Bitcoin"]],
+        paidTotal(),
         disabled(btn("Continue to payment", "lg block", icon("arrow"))),
         el("div", { class: "why" },
-          el("div", {}, icon("key"), "The phrase owns the name once registered."),
-          el("div", {}, icon("shield"), "It never leaves this browser; nobody else has a copy."),
+          el("div", {}, icon("key"), "The code owns the name once registered."),
+          el("div", {}, icon("shield"), "The service never sees it; nobody else has a copy."),
           el("div", {}, icon("refresh"), "It also finishes the order on another browser, if this one loses it."))))];
 }
 
 function priceChanged() {
-  return status("warn", "alert", "The price changed", "dynamis.simplex costs $250.00 now; it changed while you were deciding. Nothing was charged.", [btn("Search again")]);
+  return status("warn", "alert", "The price changed", `${NAME}.simplex costs ${dollars(25000, true)} now; it changed while you were deciding. Nothing was charged.`, [btn("Search again")]);
 }
 
 function rateLimited() {
@@ -324,10 +326,8 @@ function rateLimited() {
 }
 
 function invoiceFailure() {
-  return status("bad", "alert", "That did not go through", "The order was not created, and nothing was charged. If this happens again, get in touch.", [btn("Try again"), btn("Back", "quiet")]);
+  return status("bad", "alert", "That did not go through", "Nothing was charged. If this happens again, get in touch.", [btn("Try again"), btn("Back", "quiet")]);
 }
-
-// ---------------------------------------------------------------- paying
 
 function copyField(label, value, copy = true) {
   return el("div", { class: "copy-field" }, el("span", { class: "label" }, label),
@@ -335,18 +335,18 @@ function copyField(label, value, copy = true) {
 }
 
 function cryptoScreen({ partial = false } = {}) {
-  const due = partial ? "0.00162" : CRYPTO.amount;
+  const due = partial ? CRYPTO_REMAINING : CRYPTO.amount;
   const main = el("div", { class: "panel" }, el("div", { class: "panel-sec" },
-    partial ? el("div", { style: "margin-bottom: 18px" }, alertBox("warn", "alert", "Part of the amount has arrived", "0.00150 of 0.00312 BTC is seen. Send the remaining 0.00162 BTC to the same address.")) : null,
+    partial ? el("div", { style: "margin-bottom: 18px" }, alertBox("warn", "alert", "Part of the amount has arrived", `${CRYPTO.partial} of ${CRYPTO.amount} BTC is seen. Send the remaining ${CRYPTO_REMAINING} BTC to the same address.`)) : null,
     el("div", { class: "pay-head" },
-      el("div", {}, el("span", { class: "label" }, partial ? "Send the rest" : "Send"), el("div", { class: "amount" }, `${due} BTC`), el("div", { class: "usd" }, "$200.00 in total")),
+      el("div", {}, el("span", { class: "label" }, partial ? "Send the rest" : "Send"), el("div", { class: "amount" }, `${due} BTC`), el("div", { class: "usd" }, `${PAID} in total`)),
       chip(partial ? "Rate held 45:59" : "Rate held 59:59", "brand")),
     el("div", { class: "pay-body" },
       el("div", { class: "qr" }, qrSvg(`bitcoin:${CRYPTO.address}?amount=${due}`, "Bitcoin payment")),
       el("div", {}, copyField("Amount", `${due} BTC`), copyField("Bitcoin address", CRYPTO.address), copyField("Reference", ORDER_ID, false))),
     el("div", { class: "waiting" }, el("span", { class: "live" }, partial ? "Waiting for the rest of the payment" : "Waiting for the payment"), link("Cancel this invoice"))));
   return [pageHead(3, "Pay with Bitcoin", "Bookmark this page: the address and the countdown live on its link."),
-    twoCols(main, orderCard("dynamis", [["Term", "2 years"], ["Paying with", "Bitcoin"]], el("div", { class: "total" }, el("span", { class: "label" }, "Total"), el("b", {}, "$200.00"))))];
+    twoCols(main, orderCard(NAME, [["Term", "2 years"], ["Paying with", "Bitcoin"]], paidTotal()))];
 }
 
 function confirmingScreen(card) {
@@ -356,10 +356,10 @@ function confirmingScreen(card) {
       el("div", { class: "amount", style: "font-size: 34px" }, card ? "Waiting for Stripe to confirm" : "Waiting for 1 confirmation"))),
     el("p", { class: "sec-note", style: "margin-top: 12px" }, card
       ? "Stripe usually confirms within a minute. Registration starts by itself; this page moves on."
-      : "0.00312 BTC arrived. Registration starts once it confirms; this page moves on by itself."),
-    el("div", { class: "meter" }, el("i", { style: "width: 35%" })),
+      : `${CRYPTO.amount} BTC arrived. Registration starts once it confirms; this page moves on by itself.`),
+    el("div", { class: "meter" }, el("i")),
     el("div", { class: "waiting" }, el("span", { class: "live" }, "Confirming"), el("span", { class: "mono", style: "font-size: 13px; color: var(--ink-3)" }, ORDER_ID))));
-  return [pageHead(3, card ? "Paying by card" : "Payment received"), twoCols(main, orderCard("dynamis", [["Term", "2 years"], ["Paying with", card ? "Card" : "Bitcoin"]], el("div", { class: "total" }, el("span", { class: "label" }, "Total"), el("b", {}, "$200.00"))))];
+  return [pageHead(3, card ? "Paying by card" : "Payment received"), twoCols(main, orderCard(NAME, [["Term", "2 years"], ["Paying with", card ? "Card" : "Bitcoin"]], paidTotal()))];
 }
 
 function cardScreen() {
@@ -371,8 +371,8 @@ function cardScreen() {
       f("Card number", "1234 1234 1234 1234"),
       el("div", { class: "two" }, f("Expiry", "MM / YY"), f("CVC", "CVC")),
       f("Country", "Portugal")),
-    el("div", { style: "margin-top: 18px" }, btn("Pay $200.00", "lg block"))));
-  return [pageHead(3, "Pay by card"), twoCols(main, orderCard("dynamis", [["Term", "2 years"], ["Paying with", "Card"]], el("div", { class: "total" }, el("span", { class: "label" }, "Total"), el("b", {}, "$200.00"))))];
+    el("div", { style: "margin-top: 18px" }, btn(`Pay ${PAID}`, "lg block"))));
+  return [pageHead(3, "Pay by card"), twoCols(main, orderCard(NAME, [["Term", "2 years"], ["Paying with", "Card"]], paidTotal()))];
 }
 
 // a single outcome, centred, as the badge store's endings are
@@ -386,8 +386,6 @@ function status(tone, ic, title, text, actions = [], { reference = false, extra 
     reference ? el("div", { class: "ref" }, el("span", {}, "Reference"), el("span", { class: "mono" }, ORDER_ID)) : null))];
 }
 
-// ---------------------------------------------------------------- registration
-
 function track(states) {
   const stage = (st, n, title, text) => el("div", { class: `stage ${st}` }, el("span", { class: "node" }, st === "done" ? "✓" : st === "failed" ? "✕" : n), el("b", {}, title), el("span", {}, text));
   return el("div", { class: "track" },
@@ -398,12 +396,9 @@ function track(states) {
 
 function txRows(states, owner = OWNER_SHORT) {
   const tx = (k, v, c) => el("div", { class: "tx" }, el("span", { class: "k" }, k), v, c);
-  const commit = states[0] === "done" ? [el("a", { class: "v", href: "#" }, `${COMMIT_TX} ↗`), chip("Confirmed", "ok")]
-    : states[0] === "failed" ? [el("span", { class: "v" }, "—"), chip("Not taken", "bad")]
-    : [el("a", { class: "v", href: "#" }, `${COMMIT_TX} ↗`), chip("Sent", "brand")];
+  const commit = [el("a", { class: "v", href: "#" }, `${COMMIT_TX} ↗`), states[0] === "done" ? chip("Confirmed", "ok") : chip("Sent", "brand")];
   const register = states[2] === "done" ? [el("a", { class: "v", href: "#" }, `${REGISTER_TX} ↗`), chip("Confirmed", "ok")]
     : states[2] === "active" ? [el("a", { class: "v", href: "#" }, `${REGISTER_TX} ↗`), chip("Sent", "brand")]
-    : states[2] === "failed" ? [el("span", { class: "v" }, "—"), chip("Not sent", "bad")]
     : [el("span", { class: "v" }, "—"), chip("After the wait")];
   return el("div", { class: "panel-sec txs" }, tx("Commit", ...commit), tx("Register", ...register), tx("Owner", el("span", { class: "v" }, owner), null));
 }
@@ -413,123 +408,118 @@ function registeringScreen(states) {
   const box = [
     el("div", { class: "countdown" }, el("b", {}, icon("clock")), el("p", {}, "Waiting for the commit to be mined. The wait starts once it is.")),
     el("div", { class: "countdown" }, el("b", {}, "0:42"), el("p", {}, "The contract makes every registration wait a minute after its commit, so nobody can take a name they saw being registered.")),
-    el("div", { class: "countdown" }, el("b", {}, icon("clock")), el("p", {}, "The register transaction is being mined; the name is yours 3 blocks after it.")),
+    el("div", { class: "countdown" }, el("b", {}, icon("clock")), el("p", {}, "The register transaction is being mined; the name is yours once it is, and final 3 blocks later.")),
   ][active];
-  return [pageHead(4, ["Registering ", el("span", { class: "grad" }, "dynamis.simplex")], "About two minutes. Keep this page open: after the wait it sends the name to finish."),
+  return [pageHead(4, ["Registering ", el("span", { class: "grad" }, `${NAME}.simplex`)], "About two minutes. Keep this page open: after the wait it sends the name to finish."),
     twoCols(el("div", { class: "panel" }, el("div", { class: "panel-sec" }, track(states), box), txRows(states)),
-      orderCard("dynamis", [["Paid", "$200.00 · Bitcoin"], ["Term", "2 years"], ["Reference", ORDER_ID.slice(0, 8) + "…"]]))];
+      orderCard(NAME, [["Paid", `${PAID} · Bitcoin`], ["Term", "2 years"], ["Reference", SHORT_REF]]))];
 }
 
-function celebrate(label, lead, ic = "check") {
+function celebrate(label, lead) {
   return el("section", { class: "celebrate" }, el("div", { class: "wrap" },
-    el("div", { class: "tick" }, icon(ic)),
+    el("div", { class: "tick" }, icon("check")),
     el("h1", { class: "display" }, el("span", { class: "grad" }, `${label}.simplex`), el("br"), "is yours"),
     el("p", { class: "lead" }, lead)));
 }
 
-function registeredScreen({ saved = true, years = 2 } = {}) {
-  const until = years === 2 ? UNTIL : CODE_UNTIL;
+function registeredScreen({ saved = true, years = 2, until = UNTIL } = {}) {
   const next = (ic, title, text, action) => el("div", { class: "item" }, el("span", { class: "ic" }, icon(ic)), el("div", {}, el("b", {}, title), el("p", {}, text), action));
-  return [celebrate("dynamis", `Registered for ${years} years, until ${until}, to ${OWNER_SHORT}, a wallet made in this browser.`),
+  return [celebrate(NAME, `Registered for ${years} years, until ${until}, to ${OWNER_SHORT}, a wallet made in this browser.`),
     twoCols(
       el("div", { class: "panel" }, el("div", { class: "panel-sec" },
-        el("div", { class: "sec-title" }, el("h3", {}, "Your recovery phrase")),
-        el("p", { class: "sec-note" }, "The same 12 words you wrote down before paying. They own the name."),
-        el("ol", { class: "phrase" }, ...PHRASE.map((w, i) => el("li", {}, el("i", {}, String(i + 1)), el("b", {}, w)))),
-        el("div", { class: "phrase-actions" }, btn("Copy phrase", "quiet", icon("copy"))),
+        el("div", { class: "sec-title" }, el("h3", {}, "Your name code")),
+        el("p", { class: "sec-note" }, "The same code you saved at checkout. It owns the name."),
+        ...codeBlock(),
+        el("p", { class: "sec-note", style: "margin: 12px 0 0" }, link("Show it as 12 words, for another wallet")),
         saved
-          ? alertBox("warn", "shield", null, "Whoever has these words controls the name. Nobody else has a copy, not even us.")
-          : alertBox("bad", "alert", "This phrase could not be saved in this browser", "The copy you wrote down before paying is the only one."))),
+          ? alertBox("warn", "shield", null, "Whoever has this code controls the name. Nobody else has a copy, not even us.")
+          : alertBox("bad", "alert", "This code could not be saved in this browser", "The copy you saved before paying is the only one."))),
       el("aside", { class: "panel summary" },
         el("span", { class: "label" }, "Next steps"),
         el("div", { class: "next", style: "margin-top: 12px" },
-          next("phone", "Import it in the app", "Scan the phrase with SimpleX to use the name there.",
-            el("div", { class: "qr", style: "margin-top: 10px" }, qrSvg(PHRASE.join(" "), "recovery phrase"))),
+          next("phone", "Redeem it in the app", "Scan or enter the code in SimpleX: the name moves to the app's wallet.",
+            el("div", { class: "qr", style: "margin-top: 10px" }, qrSvg(OWNER_CODE, "name code"))),
           next("link", "Point it at your address", "Link your contact address or channel.", link("Edit links")),
-          next("key", "Keep the phrase safe", "Store the written copy offline.", null))))];
+          next("key", "Keep the code safe", "Until you redeem it, it is the only key to the name.", null))))];
 }
 
 function registeredToApp() {
-  return [celebrate("dynamis", `Registered until ${UNTIL} to your app's wallet, ${APP_OWNER_SHORT}.`),
+  return [celebrate(NAME, `Registered until ${UNTIL} to your app's wallet, ${APP_OWNER_SHORT}.`),
     el("div", { class: "wrap", style: "max-width: 760px" }, el("div", { class: "panel" },
       el("div", { class: "panel-sec" }, track(["done", "done", "done"])), txRows(["done", "done", "done"], APP_OWNER_SHORT),
       el("div", { class: "panel-sec" }, btn("Back to SimpleX", "lg block", icon("arrow")))))];
 }
 
 function notOnThisDevice() {
-  return status("info", "key", "The recovery phrase is not in this browser",
-    `This order registers dynamis.simplex to ${OWNER_SHORT}. Its phrase was made in the browser it was bought in. Enter the 12 words you wrote down before paying to carry on here.`,
-    [btn("Enter your recovery phrase", "", icon("arrow"))], { reference: true });
+  return status("info", "key", "The name code is not in this browser",
+    ["This order registers a name to ", el("span", { class: "nowrap" }, OWNER_SHORT), ". Its code was made in the browser it was bought in. Enter the code you saved before paying to carry on here."],
+    [btn("Enter your name code", "", icon("arrow"))], { reference: true });
 }
 
 function restoreScreen() {
-  return [pageHead(null, "Restore with your recovery phrase", "The 12 words stay in this browser. The service sees only a signature from the name's key."),
+  return [pageHead(null, "Restore with a name code", "The code stays in this browser. The service sees only a signature from the name's key."),
     twoCols(
       el("div", { class: "panel" }, el("div", { class: "panel-sec" },
-        el("span", { class: "label" }, "Recovery phrase"),
-        el("div", { class: "textarea", style: "margin-top: 8px" }, PHRASE.join(" ")),
-        el("span", { class: "label", style: "display: block; margin-top: 18px" }, "Name"),
-        el("div", { class: "input", style: "margin-top: 8px" }, el("input", { type: "text", value: "dynamis" }), el("span", { class: "kind" }, ".simplex")),
+        el("span", { class: "label" }, "Name code"),
+        el("div", { class: "input code-input", style: "margin-top: 8px" }, icon("key"), el("input", { type: "text", value: OWNER_CODE })),
         el("div", { style: "margin-top: 20px" }, btn("Restore", "lg block", icon("arrow"))))),
       el("aside", { class: "panel summary" },
         el("span", { class: "label" }, "How it works"),
         el("div", { class: "why" },
-          el("div", {}, icon("wallet"), "The page rebuilds the name's key and the order's secret from the words."),
-          el("div", {}, icon("shield"), "It signs a request with that key, so knowing the address alone finds nothing."),
+          el("div", {}, icon("wallet"), "The page rebuilds the name's key and the order's secret from the code."),
+          el("div", {}, icon("shield"), "It signs a request with that key and finds the code's orders; knowing the address alone finds nothing."),
           el("div", {}, icon("refresh"), "If the registration waits for this browser, it carries on from here."))))];
 }
 
 function takenMeanwhile() {
-  return [pageHead(4, "Someone registered it first", "dynamis.simplex was registered just before ours. Your payment is kept."),
+  return [pageHead(4, "Someone registered it first", `${NAME}.simplex was registered just before ours. Your payment is kept.`),
     twoCols(el("div", { class: "panel" },
       el("div", { class: "panel-sec" }, track(["done", "done", "failed"]),
-        el("p", { class: "sec-note", style: "margin: 18px 0 0" }, "The register transaction was never sent: its dry run found the name no longer free."),
+        el("p", { class: "sec-note", style: "margin: 18px 0 0" }, "Another registration of this name went through first, so ours could not."),
         el("div", { class: "options" },
-          el("div", { class: "option" }, el("b", {}, "Choose another name"), el("p", {}, "Any name of up to $200, registered to the same wallet, so your phrase owns it."), btn("Choose another name", "block")),
-          el("div", { class: "option" }, el("b", {}, "Take a code instead"), el("p", {}, "A code for names of 7 or more letters, for 2 years, to use here or in the app."), btn("Take a code", "quiet block"))))),
-      orderCard("dynamis", [["Paid", "$200.00 · Bitcoin"], ["Kept", "$200.00"], ["Reference", ORDER_ID.slice(0, 8) + "…"]]))];
+          el("div", { class: "option" }, el("b", {}, "Choose another name"), el("p", {}, `Any name of up to ${PAID}, registered to the same wallet, so your code owns it.`), btn("Choose another name", "block")),
+          el("div", { class: "option" }, el("b", {}, "Take a code instead"), el("p", {}, `A code for names of ${NAME.length} or more letters, for 2 years, to use here or in the app.`), btn("Take a code", "quiet block"))))),
+      orderCard(NAME, [["Paid", `${PAID} · Bitcoin`], ["Kept", PAID], ["Reference", SHORT_REF]]))];
 }
 
 function takenCode() {
-  const code = nameCode(7, 909);
-  return status("ok", "key", "Here is a code instead", "For names of 7 or more letters, for 2 years: what dynamis.simplex was paid for.",
+  const code = prepaidCode(7, 909);
+  return status("ok", "key", "Here is a code instead", `For names of ${NAME.length} or more letters, for 2 years: what ${NAME}.simplex was paid for.`,
     [btn("Copy code", "", icon("copy")), btn("Search another name", "quiet")],
     { extra: [el("div", { class: "code-display" }, code),
-      el("div", { style: "display: flex; justify-content: center; margin-top: 16px" }, el("div", { class: "qr" }, qrSvg(code, "name code"))),
+      el("div", { style: "display: flex; justify-content: center; margin-top: 16px" }, el("div", { class: "qr" }, qrSvg(code, "code"))),
       el("div", { style: "text-align: left" }, alertBox("info", "info", "Keep a copy of this code", "The service keeps only its hash; this browser keeps the code, under Your names."))] });
 }
 
 function failedAfterPaying() {
-  return [pageHead(4, "Paid, not registered", "Your payment is kept and dynamis.simplex is still free. Trying again charges nothing."),
+  return [pageHead(4, "Paid, not registered", "Your payment is kept. Trying again charges nothing."),
     twoCols(el("div", { class: "panel" },
       el("div", { class: "panel-sec" }, track(["failed", "", ""]),
         el("div", { style: "margin-top: 22px" }, alertBox("bad", "alert", "The blockchain did not take the commit", "The service's own retries gave up.")),
         el("div", { style: "margin-top: 18px" }, btn("Try again", "lg", icon("refresh"))))),
-      orderCard("dynamis", [["Paid", "$200.00 · Bitcoin"], ["Charged again", "Never"], ["Reference", ORDER_ID.slice(0, 8) + "…"]]))];
+      orderCard(NAME, [["Paid", `${PAID} · Bitcoin`], ["Charged again", "Never"], ["Reference", SHORT_REF]]))];
 }
-
-// ---------------------------------------------------------------- history
 
 function historyScreen() {
   const row = (mark, title, sub, statusChip, ...acts) => el("div", { class: "row-item" },
     el("span", { class: "mark" }, mark), el("div", { class: "main" }, el("b", {}, title), el("div", { class: "sub" }, sub)), statusChip, el("div", { class: "acts" }, ...acts));
   const small = (text, ic) => el("a", { class: "small-btn", href: "#" }, ic ? icon(ic) : null, text);
-  return [pageHead(null, "Your names", "Every name and code here is in this browser, and nowhere else."),
+  return [pageHead(null, "Your names", "This list is kept only in this browser."),
     el("div", { class: "wrap" },
-      el("div", { class: "toolbar", style: "margin: 0 0 18px" }, el("a", { class: "btn quiet", href: "#" }, icon("key"), "Check a code"), el("a", { class: "btn quiet", href: "#" }, icon("refresh"), "Restore with a phrase")),
+      el("div", { class: "toolbar" }, el("a", { class: "btn quiet", href: "#" }, icon("key"), "Add a code"), el("a", { class: "btn quiet", href: "#" }, icon("refresh"), "Restore with a name code")),
       el("div", { class: "panel" },
         el("div", { class: "list-title" }, el("h3", {}, "Names")),
-        row("D", "dynamis.simplex", `Until ${UNTIL_SHORT} · points at Alice's Bakery · $200.00 Bitcoin`, chip("Registered", "ok", true), small("Show phrase", "key"), small("Edit links", "link")),
-        row("N", "nebula.simplex", "Committed, waiting for the minute to pass · $400.00 Monero", chip("Registering", "brand", true), small("Open")),
+        row("D", `${NAME}.simplex`, `Until ${UNTIL_SHORT} · points at Alice's Bakery · ${PAID} Bitcoin`, chip("Registered", "ok", true), small("Show code", "key"), small("Edit links", "link")),
+        row("N", "nebula.simplex", `Committed, waiting for the minute to pass · ${dollars(priceOf("nebula"), true)} Monero`, chip("Registering", "brand", true), small("Open")),
         row("O", "orbital.simplex", "Nothing was charged · 28 Sep 2026", chip("Invoice expired", "bad"), small("Open"))),
       el("div", { class: "panel", style: "margin-top: 16px" },
         el("div", { class: "list-title" }, el("h3", {}, "Codes")),
-        row("≡", nameCode(6, 303), "Names of 6 or more letters, for 7 years · added 9 Oct 2026", chip("Unused", "ok", true), small("Use"), small("Copy", "copy"))),
+        row("≡", prepaidCode(6, 303), "Names of 6 or more letters, for 5 years · added 9 Oct 2026", chip("Unused", "ok", true), small("Use"), small("Copy", "copy"))),
       el("a", { class: "danger-link", href: "#" }, "Forget everything in this browser"))];
 }
 
 function editLinksScreen() {
-  return [pageHead(null, ["Edit links for ", el("span", { class: "grad" }, "dynamis.simplex")]),
+  return [pageHead(null, ["Edit links for ", el("span", { class: "grad" }, `${NAME}.simplex`)]),
     twoCols(
       el("div", { class: "panel" }, el("div", { class: "panel-sec" },
         el("span", { class: "label" }, "Contact address"),
@@ -541,12 +531,10 @@ function editLinksScreen() {
       el("aside", { class: "panel summary" },
         el("span", { class: "label" }, "Saving"),
         el("div", { class: "why" },
-          el("div", {}, icon("key"), "This browser signs the change with the name's key, which only it has."),
+          el("div", {}, icon("key"), "This browser signs the change with the name's key, from your name code."),
           el("div", {}, icon("shield"), "SimpleX sends it and pays the fee.")),
         el("div", { style: "margin-top: 20px" }, btn("Save links", "lg block"))))];
 }
-
-// ---------------------------------------------------------------- the table
 
 // A screen is a list of page sections; a popup is appended over the page.
 const SCREENS = {
@@ -567,7 +555,7 @@ const SCREENS = {
   K5: () => [...searchScreen("available"), codeModal("used")],
   K6: () => [...searchScreen("available"), codeModal("invalid")],
   K7: () => checkoutScreen({ code: "short" }),
-  K8: () => registeredScreen({ years: APPLIED_YEARS }),
+  K8: () => registeredScreen({ years: APPLIED_YEARS, until: CODE_UNTIL }),
   N3: () => checkoutScreen(),
   N3a: () => checkoutScreen({ selected: "xmr", unavailable: "btc" }),
   N3b: () => priceChanged(),
@@ -576,12 +564,12 @@ const SCREENS = {
   N3e: () => checkoutScreen({ openOrder: true }),
   N3f: () => checkoutScreen({ noStorage: true }),
   N3g: () => checkoutScreen({ links: "open" }),
-  N3h: () => phraseScreen(),
+  N3h: () => codeScreen(),
   N4: () => cryptoScreen(),
   N4a: () => cryptoScreen({ partial: true }),
   N4b: () => status("info", "x", "Invoice cancelled", "This invoice was cancelled and nothing was received.", [btn("Get a new invoice")], { reference: true }),
   N4c: () => status("info", "clock", "This invoice expired", "Nothing was received before its rate window closed.", [btn("Get a new invoice")], { reference: true }),
-  N4d: () => status("warn", "alert", "This invoice expired", "0.00150 BTC arrived, which is not the full amount. The rate window has closed; quote the reference below and we will sort it out.", [btn("Get a new invoice", "quiet")], { reference: true }),
+  N4d: () => status("warn", "alert", "This invoice expired", `${CRYPTO.partial} BTC arrived, which is not the full amount. The rate window has closed; quote the reference below and we will sort it out.`, [btn("Get a new invoice", "quiet")], { reference: true }),
   N5: () => confirmingScreen(false),
   N6: () => registeringScreen(["active", "", ""]),
   N6a: () => registeringScreen(["done", "active", ""]),
@@ -607,12 +595,14 @@ const SCREENS = {
   L3: () => registeredToApp(),
 };
 
-const NAMES_TAB = new Set(["N7", "N7a", "K8", "N12", "N12a", "N12b", "N7c", "N8b"]);
-
-export function render(id, theme) {
+export function render(id, theme, tab) {
   const build = SCREENS[id];
   if (build === undefined) throw new Error(`domains: no screen ${id}`);
   const dark = theme === "dark";
   if (dark) document.documentElement.classList.add("dark");
-  document.body.replaceChildren(header(NAMES_TAB.has(id) ? "names" : "search", dark), ...build(), footer());
+  const parts = build();
+  // a popup covers the whole document, so it sits in the body, not in the page
+  const overlays = parts.filter((p) => p.classList?.contains("modal-overlay"));
+  const page = parts.filter((p) => !overlays.includes(p));
+  document.body.replaceChildren(header(tab, dark), el("main", { class: "page" }, ...page), footer(), ...overlays);
 }

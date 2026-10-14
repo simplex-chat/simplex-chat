@@ -2,16 +2,14 @@
    the badges landing's link to simplex.domains, and the app and operator frames, which never ship.
    The names screens have their own stylesheet, domains.css. */
 
-/* the badges landing's link to simplex.domains, under its button */
-.check-code { margin: 10px 0 0; font-size: .9375rem; }
-.check-code .link { font-size: inherit; font-weight: 600; }
-
-/* ---------------------------------------------- the board only, never shipped */
+/* the badges landing's link to simplex.domains, under the investor link */
+.names-link { margin: 10px 0 0; font-size: .9375rem; }
+.names-link .link { font-size: inherit; font-weight: 600; }
 
 body.plain { display: block; padding: 0; min-height: 0; background: #ffffff; background-image: none; }
 #shot { display: inline-block; }
 
-/* the app, drawn in its iOS idiom as the canvases draw it */
+/* the app, drawn in its iOS idiom */
 .app-screen {
   width: 390px;
   min-height: 720px;
