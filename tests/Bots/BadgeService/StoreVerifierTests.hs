@@ -74,6 +74,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "asks for a new access token once the one it holds is about to expire" testPlayTokenExpires
     it "sends no token that is only dots, and describes a token outside the grammar without quoting it" testPlayTokensNotSent
     it "acknowledges a purchase, unless it is acknowledged or consumed already" testPlayAcknowledges
+    it "reads a purchase once to verify and acknowledge it, and acknowledges only what that read found unacknowledged" testPlayReadsPurchaseOnce
     it "reports an acknowledgement Play refuses or does not answer" testPlayAcknowledgementFails
     it "acknowledges through the verifier a [google] section configures" testPlayConfiguredAcknowledges
 
@@ -225,7 +226,7 @@ testAppleVerdict = do
   chain <- trustedChain
   jws <- signedBy chain $ transactionPayload [] []
   appleVerdict (rootCert chain) jws
-    `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD")}
+    `shouldReturn` Right VerifiedStoreTransaction {transactionRef = "2000000900000001", productId = "BADGE_SUPPORTER_01", quantity = 1, testPurchase = False, paid = Just (CurrencyAmount 700, "USD"), alreadyAcknowledged = False}
   appleTransactionId jws `shouldBe` Just "2000000900000001"
 
 testAppleAnyTrustedRoot :: IO ()
@@ -388,7 +389,10 @@ playVerifier fake =
 
 acknowledgement :: StoreVerifier -> ServicePayment -> IO (Maybe (Either StoreRefusal ()))
 acknowledgement verifier payment = case toStoreReceipt verifier payment of
-  Just (Right StoreReceipt {acknowledgeReceipt}) -> sequence acknowledgeReceipt
+  Just (Right StoreReceipt {verifyReceipt, acknowledgeReceipt}) ->
+    verifyReceipt >>= \case
+      Right tx -> traverse ($ tx) acknowledgeReceipt
+      Left refusal -> expectationFailure ("not verified: " <> show refusal) >> undefined
   _ -> expectationFailure "not a store receipt" >> undefined
 
 playVerdict :: StoreVerifier -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
@@ -423,7 +427,7 @@ testPlayPurchased = withFakePlay $ \fake -> do
   verifier <- playVerifier fake
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
   playVerdict verifier testToken
-    `shouldReturn` Right VerifiedStoreTransaction {transactionRef = googlePurchaseRef testToken, productId = "badge_supporter_01", quantity = 1, testPurchase = False, paid = Nothing}
+    `shouldReturn` Right VerifiedStoreTransaction {transactionRef = googlePurchaseRef testToken, productId = "badge_supporter_01", quantity = 1, testPurchase = False, paid = Nothing, alreadyAcknowledged = False}
   readTVarIO (fpPurchasePaths fake)
     `shouldReturn` [["androidpublisher", "v3", "applications", fakePackageName, "purchases", "products", "badge_supporter_01", "tokens", testToken]]
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 [("quantity", J.toJSON (2 :: Int)), ("productId", "badge_supporter_01")]
@@ -547,6 +551,18 @@ testPlayAcknowledges = withFakePlay $ \fake -> do
     acknowledging `shouldReturn` Just (Right ())
   readTVarIO (fpAcknowledged fake) `shouldReturn` [testToken]
 
+testPlayReadsPurchaseOnce :: IO ()
+testPlayReadsPurchaseOnce = do
+  requestsFor [] `shouldReturn` (1, [testToken])
+  forM_ ["acknowledgementState", "consumptionState"] $ \state ->
+    requestsFor [(state, J.toJSON (1 :: Int))] `shouldReturn` (1, [])
+  where
+    requestsFor fields = withFakePlay $ \fake -> do
+      verifier <- playVerifier fake
+      answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 fields
+      acknowledgement verifier SPGoogle {productId = "badge_supporter_01", token = testToken} `shouldReturn` Just (Right ())
+      (,) <$> (length <$> readTVarIO (fpPurchasePaths fake)) <*> readTVarIO (fpAcknowledged fake)
+
 testPlayAcknowledgementFails :: IO ()
 testPlayAcknowledgementFails = withFakePlay $ \fake -> do
   verifier <- playVerifier fake
@@ -556,12 +572,11 @@ testPlayAcknowledgementFails = withFakePlay $ \fake -> do
         maybe "" reason r `shouldSatisfy` ("acknowledging: " `T.isPrefixOf`)
         maybe "" reason r `shouldNotSatisfy` (testToken `T.isInfixOf`)
   answerPurchase fake testToken $ PlayRecord $ purchaseRecord 0 []
-  answerAcknowledgements fake $ Just 403
+  answerAcknowledgements fake $ Just $ PlayStatus 403
   acknowledgedAs Failed
-  answerAcknowledgements fake $ Just 503
+  answerAcknowledgements fake $ Just $ PlayStatus 503
   acknowledgedAs Unreachable
-  answerAcknowledgements fake Nothing
-  answerPurchase fake testToken PlayHang
+  answerAcknowledgements fake $ Just PlayHang
   acknowledgedAs Unreachable
   readTVarIO (fpAcknowledged fake) `shouldReturn` []
 

@@ -26,7 +26,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue)
 import Control.Monad (forM_, void, when)
@@ -175,6 +175,8 @@ badgeServiceTests = do
       it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
       it "should keep a receipt whose attempt throws" testStoreReceiptAttemptThrows
       it "should credit a held receipt after the app restarts" testStoreReceiptAfterRestart
+    describe "the Play lane" $ do
+      it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -2305,6 +2307,40 @@ testStoreReceiptAfterRestart ps = do
     withTestChatCfg ps cfg "alice" $ \alice -> do
       expectLinesWithin 60 alice (creditedLines "" invoiceId "1: supporter") ["subscribed 1 connections on server localhost"]
       heldStoreReceipts (chatController alice) `shouldReturn` 0
+
+testPlayHoldsNoOtherRequest :: HasCallStack => TestParams -> IO ()
+testPlayHoldsNoOtherRequest ps = do
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  hook <- newIORef $ putMVar entered () >> takeMVar release
+  -- past the 20s line wait, so a request queued behind the held call cannot be answered in time
+  let holding store = (googleVerifierWithHook hook store) {verifyTimeout = 60000000}
+  withBadgeServiceVerifier ps holding $ \BadgeServiceEnv {bsClientCfg, bsAddress, bsController = cc, bsStore = FakeStore {appleSupporterJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+        withNewTestChatCfg ps bsClientCfg "cath" cathProfile $ \cath -> do
+          alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+          storePurchaseOpen alice ""
+          timeout 30000000 (takeMVar entered) `shouldReturn` Just ()
+          code <- issueCode cc BTSupporter 1
+          bob ##> ("/_redeem_badge_code 1 " <> codeArg code)
+          bob <## "badge redeemed"
+          bob <## "supporter badge - active"
+          bob <##. "expires "
+          cath ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
+          cath <### [StartsWith (openPurchase ""), StartsWith "1: supporter"]
+          g <- C.newRandom
+          (upgradeKey, upgradePriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+          (fromPurchaseKey, fromPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+          masterKey <- generateMasterKey g
+          now <- getCurrentTime
+          let upgrade = BadgeUpgrade {fromPurchaseKey, receipt = "receipt", receiptSignature = C.sign' fromPriv "receipt", balance = BadgeBalance {lastEntry = emptyEntry now BTSupporter}}
+              upgradeReq = LB.unpack $ J.encode $ requestObject upgradeKey BSCPurchaseBadge {masterKey, payment = supporterPlay, upgrade = Just upgrade}
+          bob ##> ("/_service_request 1 " <> bsAddress <> " sign_key=" <> B.unpack (strEncode $ C.StoredPrivateKey upgradePriv) <> " " <> upgradeReq)
+          bob <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
+          putMVar release ()
+          expectLinesWithin 60 alice ["1: supporter"] []
+          rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 3
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
 createInvoice cc userId = do
