@@ -176,7 +176,7 @@ async function createOrUpdateAddress(bot: api.ChatApi, user: T.User, opts: Requi
   if (!equal(util.botAddressSettings(address), addressSettings)) {
     if (opts.updateAddress) {
       console.log("Bot address settings changed, updating...")
-      await bot.apiSetAddressSettings(userId, addressSettings, address.addressSettings)
+      await bot.apiSetAddressSettings(userId, addressSettings)
     } else {
       console.log("Bot address settings changed")
     }

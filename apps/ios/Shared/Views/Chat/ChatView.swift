@@ -3266,10 +3266,12 @@ func setChatLayout(_ chat: Chat, layout: ChatLayout?) {
             await MainActor.run {
                 switch chat.chatInfo {
                 case var .direct(contact):
-                    contact.chatLayoutOverride = layout
+                    contact.userChatLayout = layout
+                    contact.activeChatLayout = layout ?? contact.defaultChatLayout
                     ChatModel.shared.updateContact(contact)
                 case var .group(groupInfo, _):
-                    groupInfo.chatLayoutOverride = layout
+                    groupInfo.userChatLayout = layout
+                    groupInfo.activeChatLayout = layout ?? groupInfo.defaultChatLayout
                     ChatModel.shared.updateGroup(groupInfo)
                 default: ()
                 }

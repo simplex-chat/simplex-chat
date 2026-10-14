@@ -300,7 +300,7 @@ data class ChatStats(
 | `ChatInfo.ContactConnection` | `"contactConnection"` | `contactConnection: PendingContactConnection` |
 | `ChatInfo.InvalidJSON` | `"invalidJSON"` | `json: String` |
 
-[`ChatInfo.chatLayout`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1861) is `chatLayoutOverride` of the contact or group, else its `chatLayout`, else `ChatLayout.Classic`; `ChatLayout.Unknown` values count as absent. `chatLayoutOverride` is set by [`setChatLayout()`](../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L1007).
+[`ChatInfo.activeChatLayout`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1872) is `activeChatLayout` of the contact or group, computed by the core: `userChatLayout`, else `defaultChatLayout` (the chat's `chatLayout`, else `User.chatLayout`, else the global value set with `apiSetGlobalChatLayout`, else `ChatLayout.Classic`); `ChatLayout.Classic` for other chats. `userChatLayout` is set by [`setChatLayout()`](../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L1007).
 
 ### RelayStatus (Channels)
 

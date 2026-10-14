@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatLayout
 import chat.simplex.common.model.yaml
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -235,6 +236,7 @@ fun ModalData.ChatWallpaperEditor(
   theme: ThemeModeOverride,
   applyToMode: DefaultThemeMode?,
   globalThemeUsed: MutableState<Boolean>,
+  layoutSection: @Composable () -> Unit,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
   ColumnWithScrollBar {
@@ -248,6 +250,10 @@ fun ModalData.ChatWallpaperEditor(
     }
 
     AppBarTitle(stringResource(MR.strings.settings_section_title_chat_theme))
+
+    layoutSection()
+
+    SectionDividerSpaced()
 
     val onTypeCopyFromSameTheme: (WallpaperType?) -> Boolean = { type ->
       if (type is WallpaperType.Image && chatModel.remoteHostId() != null) {
@@ -523,6 +529,14 @@ private fun SetDefaultThemeButton(onClick: () -> Unit) {
     Text(stringResource(MR.strings.chat_theme_set_default_theme), color = MaterialTheme.colors.primary)
   }
 }
+
+fun chatLayoutName(layout: ChatLayout): String = when (layout) {
+  is ChatLayout.Classic -> generalGetString(MR.strings.chat_layout_classic)
+  is ChatLayout.Terminal -> generalGetString(MR.strings.chat_layout_terminal)
+  is ChatLayout.Unknown -> layout.type
+}
+
+fun otherChatLayout(layout: ChatLayout): ChatLayout = if (layout == ChatLayout.Terminal) ChatLayout.Classic else ChatLayout.Terminal
 
 @Composable
 private fun AdvancedSettingsButton(onClick: () -> Unit) {

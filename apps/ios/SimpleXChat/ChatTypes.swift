@@ -45,6 +45,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var autoAcceptGroupInvitations: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
+    public var chatLayout: ChatLayout?
     public var userChatRelay: Bool
 
     public var id: Int64 { userId }
@@ -270,13 +271,21 @@ public enum ChatLayout: Hashable {
     }
 }
 
-extension ChatLayout: Codable {
-    public init(from decoder: Decoder) throws {
-        switch try decoder.singleValueContainer().decode(String.self) {
+extension ChatLayout: RawRepresentable {
+    public init(rawValue: String) {
+        switch rawValue {
         case "classic": self = .classic
         case "terminal": self = .terminal
-        case let s: self = .unknown(s)
+        default: self = .unknown(rawValue)
         }
+    }
+
+    public var rawValue: String { text }
+}
+
+extension ChatLayout: Codable {
+    public init(from decoder: Decoder) throws {
+        self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -2331,19 +2340,12 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    public var chatLayout: ChatLayout {
-        let layouts: [ChatLayout?] = switch self {
-        case let .direct(contact): [contact.chatLayoutOverride, contact.chatLayout]
-        case let .group(groupInfo, _): [groupInfo.chatLayoutOverride, groupInfo.chatLayout]
-        default: []
+    public var activeChatLayout: ChatLayout {
+        switch self {
+        case let .direct(contact): contact.activeChatLayout
+        case let .group(groupInfo, _): groupInfo.activeChatLayout
+        default: .classic
         }
-        for layout in layouts {
-            switch layout {
-            case .none, .some(.unknown): continue
-            case let .some(l): return l
-            }
-        }
-        return .classic
     }
 
     public var chatTags: [Int64]? {
@@ -2513,7 +2515,9 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
     public var chatLayout: ChatLayout?
-    public var chatLayoutOverride: ChatLayout?
+    public var userChatLayout: ChatLayout?
+    public var defaultChatLayout: ChatLayout = .classic
+    public var activeChatLayout: ChatLayout = .classic
     public var chatDeleted: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -2918,7 +2922,9 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var preparedGroup: PreparedGroup?
     public var uiThemes: ThemeModeOverrides?
     public var chatLayout: ChatLayout?
-    public var chatLayoutOverride: ChatLayout?
+    public var userChatLayout: ChatLayout?
+    public var defaultChatLayout: ChatLayout = .classic
+    public var activeChatLayout: ChatLayout = .classic
     public var groupSummary: GroupSummary
     public var membersRequireAttention: Int
 

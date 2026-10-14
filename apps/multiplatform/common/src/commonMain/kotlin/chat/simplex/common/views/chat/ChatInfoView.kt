@@ -82,8 +82,9 @@ fun ChatInfoView(
       currentUser,
       sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
-        val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
-        updateChatSettings(chat.remoteHostId, chat.chatInfo, chatSettings, chatModel)
+        val chatInfo = chatModel.getChat(chat.id)?.chatInfo ?: chat.chatInfo
+        val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+        updateChatSettings(chat.remoteHostId, chatInfo, chatSettings, chatModel)
         sendReceipts.value = sendRcpts
       },
       chatItemTTL = chatItemTTL,
@@ -917,7 +918,7 @@ fun MuteButton(
     disabled = disabled,
     disabledLook = disabled,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNtfMode, chatModel, enableNtfs)
+      toggleNotifications(chat.remoteHostId, chatModel.getChat(chat.id)?.chatInfo ?: chat.chatInfo, nextNtfMode, chatModel, enableNtfs)
     }
   )
 }
@@ -1298,9 +1299,38 @@ fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
     initialTheme,
     applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
     globalThemeUsed = globalThemeUsed,
+    layoutSection = { ChatLayoutSection(chat.remoteHostId, chatModel.getChat(chat.id)?.chatInfo ?: chat.chatInfo) },
     save = { applyToMode, newTheme ->
       save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
     })
+}
+
+@Composable
+private fun ChatLayoutSection(rhId: Long?, chatInfo: ChatInfo) {
+  val layouts = when (chatInfo) {
+    is ChatInfo.Direct -> Triple(chatInfo.contact.chatLayout, chatInfo.contact.userChatLayout, chatInfo.contact.defaultChatLayout)
+    is ChatInfo.Group -> Triple(chatInfo.groupInfo.chatLayout, chatInfo.groupInfo.userChatLayout, chatInfo.groupInfo.defaultChatLayout)
+    else -> null
+  } ?: return
+  val (chatLayout, userChatLayout, defaultChatLayout) = layouts
+  val otherLayout = otherChatLayout(defaultChatLayout)
+  val defaultSuffix = generalGetString(if (chatLayout == defaultChatLayout) MR.strings.chat_layout_chat_suffix else MR.strings.chat_layout_default_suffix)
+  val values = listOf(
+    null to "${chatLayoutName(defaultChatLayout)} $defaultSuffix",
+    otherLayout to chatLayoutName(otherLayout)
+  )
+  val selection = remember(userChatLayout, otherLayout) { mutableStateOf(if (userChatLayout == otherLayout) otherLayout else null) }
+  SectionView {
+    ExposedDropDownSettingRow(
+      generalGetString(MR.strings.chat_layout),
+      values,
+      selection,
+      onSelected = { layout ->
+        selection.value = layout
+        setChatLayout(rhId, chatInfo, layout, chatModel)
+      }
+    )
+  }
 }
 
 suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, chat: Chat) {

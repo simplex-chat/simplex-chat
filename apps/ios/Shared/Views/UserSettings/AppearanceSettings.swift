@@ -81,6 +81,8 @@ struct AppearanceSettings: View {
                 Section {
                     ThemeDestinationPicker(themeUserDestination: $themeUserDestination, themeUserDest: themeUserDestination?.0, customizeThemeIsOpen: $customizeThemeIsOpen)
 
+                    ChatLayoutPicker(userId: themeUserDestination?.0)
+
                     WallpaperPresetSelector(
                         selectedWallpaper: theme.wallpaper.type,
                         currentColors: currentColors,
@@ -869,6 +871,71 @@ struct ThemeDestinationPicker: View {
                     themeUserDestination = nil
                     themeUserDest = nil
                 }
+        }
+    }
+}
+
+struct ChatLayoutPicker: View {
+    @EnvironmentObject var m: ChatModel
+    var userId: Int64?
+    @State private var globalLayout: ChatLayout = chatLayoutGroupDefault.get()
+
+    var body: some View {
+        if let userId {
+            let otherLayout = otherChatLayout(globalLayout)
+            Picker("Chat layout", selection: Binding(
+                get: { m.currentUser?.chatLayout == otherLayout ? otherLayout : nil },
+                set: { setUserChatLayout(userId, $0) }
+            )) {
+                Text(globalLayout.displayName + " " + NSLocalizedString("(default)", comment: "chat layout")).tag(nil as ChatLayout?)
+                Text(otherLayout.displayName).tag(otherLayout as ChatLayout?)
+            }
+            .frame(height: 36)
+        } else {
+            Picker("Chat layout", selection: Binding(
+                get: { globalLayout },
+                set: { setGlobalChatLayout($0) }
+            )) {
+                ForEach([ChatLayout.classic, ChatLayout.terminal], id: \.self) { layout in
+                    Text(layout.displayName).tag(layout)
+                }
+            }
+            .frame(height: 36)
+        }
+    }
+
+    private func setGlobalChatLayout(_ layout: ChatLayout) {
+        globalLayout = layout
+        chatLayoutGroupDefault.set(layout)
+        do {
+            try apiSetGlobalChatLayout(layout)
+            Task { await reloadChats() }
+        } catch {
+            logger.error("apiSetGlobalChatLayout error: \(responseError(error))")
+        }
+    }
+
+    private func setUserChatLayout(_ userId: Int64, _ layout: ChatLayout?) {
+        Task {
+            do {
+                try await apiSetUserChatLayout(userId: userId, layout: layout)
+                await MainActor.run { m.updateCurrentUserChatLayout(layout) }
+                await reloadChats()
+            } catch {
+                logger.error("apiSetUserChatLayout error: \(responseError(error))")
+            }
+        }
+    }
+
+    private func reloadChats() async {
+        do {
+            let chats = try await apiGetChatsAsync()
+            await MainActor.run { m.updateChats(chats) }
+            if let id = m.chatId, let chat = m.getChat(id) {
+                await loadChat(chat: chat, im: ItemsModel.shared, clearItems: false)
+            }
+        } catch {
+            logger.error("apiGetChats error: \(responseError(error))")
         }
     }
 }

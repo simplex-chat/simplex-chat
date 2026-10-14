@@ -115,6 +115,8 @@ enum ChatCommand: ChatCmdProtocol {
     case reconnectServer(userId: Int64, smpServer: String)
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetChatLayout(type: ChatType, id: Int64, layout: ChatLayout?)
+    case apiSetUserChatLayout(userId: Int64, layout: ChatLayout?)
+    case apiSetGlobalChatLayout(layout: ChatLayout)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
     case apiGetUpdatedGroupLinkData(groupId: Int64)
     case apiContactInfo(contactId: Int64)
@@ -332,6 +334,8 @@ enum ChatCommand: ChatCmdProtocol {
             case let .reconnectServer(userId, smpServer): return "/reconnect \(userId) \(smpServer)"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id, scope: nil)) \(encodeJSON(chatSettings))"
             case let .apiSetChatLayout(type, id, layout): return "/_layout \(ref(type, id, scope: nil)) \(layout?.text ?? "default")"
+            case let .apiSetUserChatLayout(userId, layout): return "/_layout user \(userId) \(layout?.text ?? "default")"
+            case let .apiSetGlobalChatLayout(layout): return "/_layout global \(layout.text)"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
             case let .apiGetUpdatedGroupLinkData(groupId): return "/_get group link data #\(groupId)"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
@@ -540,6 +544,8 @@ enum ChatCommand: ChatCmdProtocol {
             case .reconnectServer: return "reconnectServer"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiSetChatLayout: return "apiSetChatLayout"
+            case .apiSetUserChatLayout: return "apiSetUserChatLayout"
+            case .apiSetGlobalChatLayout: return "apiSetGlobalChatLayout"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
             case .apiGetUpdatedGroupLinkData: return "apiGetUpdatedGroupLinkData"
             case .apiContactInfo: return "apiContactInfo"
@@ -2263,6 +2269,7 @@ struct AppSettings: Codable, Equatable {
     var uiThemes: [ThemeOverrides]? = nil
     var oneHandUI: Bool? = nil
     var chatBottomBar: Bool? = nil
+    var uiChatLayout: ChatLayout? = nil
 
     func prepareForExport() -> AppSettings {
         var empty = AppSettings()
@@ -2299,6 +2306,7 @@ struct AppSettings: Codable, Equatable {
         if uiThemes != def.uiThemes { empty.uiThemes = uiThemes }
         if oneHandUI != def.oneHandUI { empty.oneHandUI = oneHandUI }
         if chatBottomBar != def.chatBottomBar { empty.chatBottomBar = chatBottomBar }
+        if uiChatLayout != def.uiChatLayout { empty.uiChatLayout = uiChatLayout }
         return empty
     }
 
@@ -2335,7 +2343,8 @@ struct AppSettings: Codable, Equatable {
             uiCurrentThemeIds: nil as [String: String]?,
             uiThemes: nil as [ThemeOverrides]?,
             oneHandUI: true,
-            chatBottomBar: true
+            chatBottomBar: true,
+            uiChatLayout: .classic
         )
     }
 }

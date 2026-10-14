@@ -393,6 +393,10 @@ func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     try sendCommandOkRespSync(.apiSetEncryptLocalFiles(enable: enable))
 }
 
+func apiSetGlobalChatLayout(_ layout: ChatLayout) throws {
+    try sendCommandOkRespSync(.apiSetGlobalChatLayout(layout: layout))
+}
+
 func apiSaveAppSettings(settings: AppSettings) throws {
     try sendCommandOkRespSync(.apiSaveSettings(settings: settings))
 }
@@ -917,6 +921,10 @@ func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) a
 
 func apiSetChatLayout(type: ChatType, id: Int64, layout: ChatLayout?) async throws {
     try await sendCommandOkResp(.apiSetChatLayout(type: type, id: id, layout: layout))
+}
+
+func apiSetUserChatLayout(userId: Int64, layout: ChatLayout?) async throws {
+    try await sendCommandOkResp(.apiSetUserChatLayout(userId: userId, layout: layout))
 }
 
 func apiSetMemberSettings(_ groupId: Int64, _ groupMemberId: Int64, _ memberSettings: GroupMemberSettings) async throws {
@@ -2290,6 +2298,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
             logger.error("Error while importing app settings: \(error)")
         }
     }
+    try apiSetGlobalChatLayout(chatLayoutGroupDefault.get())
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)

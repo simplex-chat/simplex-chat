@@ -646,6 +646,7 @@ processChatCommand cxt nm = \case
         createDirectoryIfMissing True f
         chatWriteVar sel $ Just f
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
+  APISetGlobalChatLayout chatLayout -> chatWriteVar globalChatLayout chatLayout >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
 #if !defined(dbPostgres)
   APIExportArchive cfg -> checkChatStopped $ CRArchiveExported <$> lift (exportArchive cfg)
@@ -1655,16 +1656,23 @@ processChatCommand cxt nm = \case
         liftIO $ setGroupUIThemes db user g uiThemes
       ok user
     _ -> throwCmdError "not supported"
-  APISetChatLayout (ChatRef cType chatId scope) chatLayoutOverride -> withUser $ \user -> case cType of
+  APISetUserChatLayout uId chatLayout -> withUser $ \user@User {userId} -> do
+    user'@User {userId = uId'} <- withFastStore $ \db -> do
+      user' <- getUser db uId
+      liftIO $ setUserChatLayout db user' chatLayout
+      pure user'
+    when (userId == uId') $ chatWriteVar currentUser $ Just (user :: User) {chatLayout}
+    ok user'
+  APISetChatLayout (ChatRef cType chatId scope) userChatLayout -> withUser $ \user -> case cType of
     CTDirect -> do
       withFastStore $ \db -> do
         ct <- getContact db cxt user chatId
-        liftIO $ setContactChatLayoutOverride db user ct chatLayoutOverride
+        liftIO $ setContactUserChatLayout db user ct userChatLayout
       ok user
     CTGroup | isNothing scope -> do
       withFastStore $ \db -> do
         g <- getGroupInfo db cxt user chatId
-        liftIO $ setGroupChatLayoutOverride db user g chatLayoutOverride
+        liftIO $ setGroupUserChatLayout db user g userChatLayout
       ok user
     _ -> throwCmdError "not supported"
   APISetGroupCustomData groupId customData_ -> withUser $ \user -> do
@@ -2530,21 +2538,10 @@ processChatCommand cxt nm = \case
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APISetProfileAddress userId onOff
-  APISetAddressSettings userId pqRatchet_ settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
-    ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
-    forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
-      when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
-      when (businessAddress && acceptIncognito) $ throwCmdError "requests to business address cannot be accepted incognito"
-    if addressSettings == settings
-      then pure $ CRUserContactLinkUpdated user ucl
-      else do
-        let ucl' = ucl {addressSettings = settings}
-            pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
-        ucl'' <- if shortLinkDataSet then setMyAddressData False pqInitKeys user ucl' else pure ucl'
-        withFastStore' $ \db -> updateUserAddressSettings db userContactLinkId settings
-        pure $ CRUserContactLinkUpdated user ucl''
-  SetAddressSettings pqRatchet_ settings -> withUser $ \User {userId} ->
-    processChatCommand cxt nm $ APISetAddressSettings userId pqRatchet_ settings
+  APISetAddressSettings userId pqRatchet_ settings -> withUserId userId $ \user ->
+    setAddressSettings user pqRatchet_ $ const settings
+  SetAddressSettings pqRatchet_ settings chatLayout_ -> withUser $ \user ->
+    setAddressSettings user pqRatchet_ $ \AddressSettings {chatLayout} -> (settings :: AddressSettings) {chatLayout = fromMaybe chatLayout chatLayout_}
   AcceptContact incognito cName -> withUser $ \User {userId} -> do
     connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand cxt nm $ APIAcceptContact incognito connReqId
@@ -3410,7 +3407,7 @@ processChatCommand cxt nm = \case
         -- TODO PQ should negotitate contact connection with PQSupportOn?
         (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
         -- [incognito] reuse membership incognito profile
-        ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
+        ct <- withFastStore' $ \db -> createMemberContact db cxt user connId cReq g m mConn subMode
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         -- TODO not sure it is correct to set connections status here?
         pure $ CRNewMemberContact user ct g m
@@ -4160,6 +4157,21 @@ processChatCommand cxt nm = \case
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
           ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True, addressSettings = addressSettings {autoAccept = autoAccept'}}
       pure ucl'
+    setAddressSettings :: User -> Maybe Bool -> (AddressSettings -> AddressSettings) -> CM ChatResponse
+    setAddressSettings user pqRatchet_ updateSettings = do
+      ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
+      let settings@AddressSettings {businessAddress, autoAccept} = updateSettings addressSettings
+      forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
+        when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
+        when (businessAddress && acceptIncognito) $ throwCmdError "requests to business address cannot be accepted incognito"
+      if addressSettings == settings
+        then pure $ CRUserContactLinkUpdated user ucl
+        else do
+          let ucl' = ucl {addressSettings = settings}
+              pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
+          ucl'' <- if shortLinkDataSet then setMyAddressData False pqInitKeys user ucl' else pure ucl'
+          withFastStore' $ \db -> updateUserAddressSettings db userContactLinkId settings
+          pure $ CRUserContactLinkUpdated user ucl''
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just conn@Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -6239,6 +6251,8 @@ chatCommandP =
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
+      "/_layout user " *> (APISetUserChatLayout <$> A.decimal <* A.space <*> chatLayoutP_),
+      "/_layout global " *> (APISetGlobalChatLayout <$> chatLayoutP_),
       "/_layout " *> (APISetChatLayout <$> chatRefP <* A.space <*> chatLayoutP_),
       "/_set custom #" *> (APISetGroupCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set custom @" *> (APISetContactCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
@@ -6453,7 +6467,7 @@ chatCommandP =
       "/_profile_address " *> (APISetProfileAddress <$> A.decimal <* A.space <*> onOffP),
       ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
       "/_address_settings " *> (APISetAddressSettings <$> A.decimal <*> optional (" pq_ratchet=" *> onOffP) <* A.space <*> jsonP),
-      "/auto_accept" *> (SetAddressSettings <$> optional (" pq_ratchet=" *> onOffP) <* A.space <*> autoAcceptP),
+      "/auto_accept" *> (uncurry . SetAddressSettings <$> optional (" pq_ratchet=" *> onOffP) <* A.space <*> autoAcceptP),
       ("/accept" <|> "/ac") *> (AcceptContact <$> incognitoP <* A.space <* char_ '@' <*> displayNameP),
       ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP <*> (" notify" $> True <|> pure False)),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
@@ -6761,11 +6775,12 @@ chatCommandP =
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
 #endif
     -- TODO [short links] parser for address settings
-    autoAcceptP = ifM onOffP (businessAA <|> addressAA) (AddressSettings False Nothing <$> layoutP <*> pure Nothing)
+    autoAcceptP = ifM onOffP (businessAA <|> addressAA) (toSettings False Nothing <$> layoutP <*> pure Nothing)
       where
-        addressAA = AddressSettings False <$> (Just . AutoAccept <$> (" incognito=" *> onOffP <|> pure False)) <*> layoutP <*> autoReply
-        businessAA = " business" *> (AddressSettings True (Just $ AutoAccept False) <$> layoutP <*> autoReply)
-        layoutP = optional (" layout=" *> chatLayoutP)
+        addressAA = toSettings False <$> (Just . AutoAccept <$> (" incognito=" *> onOffP <|> pure False)) <*> layoutP <*> autoReply
+        businessAA = " business" *> (toSettings True (Just $ AutoAccept False) <$> layoutP <*> autoReply)
+        toSettings business autoAccept chatLayout_ autoReply_ = (AddressSettings business autoAccept Nothing autoReply_, chatLayout_)
+        layoutP = optional (" layout=" *> chatLayoutP_)
         autoReply = optional (A.space *> msgContentP)
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (quotedP <|> text1P))
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')

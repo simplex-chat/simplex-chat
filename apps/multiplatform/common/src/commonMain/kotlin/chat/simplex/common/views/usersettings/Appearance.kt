@@ -44,8 +44,10 @@ import chat.simplex.res.*
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
 import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.io.File
@@ -530,6 +532,7 @@ object AppearanceScope {
 
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
       ThemeDestinationPicker(themeUserDestination)
+      ChatLayoutRow(themeUserDestination.value?.first)
 
       val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
         if (to != null) onImport(to)
@@ -887,6 +890,57 @@ object AppearanceScope {
         // If failed to apply for some reason return the old themes
         chatModel.updateCurrentUserUiThemes(remoteHostId, oldThemes)
       }
+    }
+  }
+
+  @Composable
+  private fun ChatLayoutRow(userId: Long?) {
+    val globalLayout = remember { appPrefs.chatLayout.state }
+    if (userId == null) {
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.chat_layout),
+        listOf(ChatLayout.Classic, ChatLayout.Terminal).map { it to chatLayoutName(it) },
+        globalLayout,
+        onSelected = { layout ->
+          appPrefs.chatLayout.set(layout)
+          withBGApi {
+            if (controller.apiSetGlobalChatLayout(layout)) reloadChats()
+          }
+        }
+      )
+    } else {
+      val userLayout = chatModel.currentUser.value?.chatLayout
+      val otherLayout = otherChatLayout(globalLayout.value)
+      val selection = remember(userLayout, otherLayout) { mutableStateOf(if (userLayout == otherLayout) otherLayout else null) }
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.chat_layout),
+        listOf(
+          null to "${chatLayoutName(globalLayout.value)} ${generalGetString(MR.strings.chat_layout_default_suffix)}",
+          otherLayout to chatLayoutName(otherLayout)
+        ),
+        selection,
+        onSelected = { layout ->
+          selection.value = layout
+          withBGApi {
+            val rh = chatModel.remoteHostId()
+            if (controller.apiSetUserChatLayout(rh, userId, layout)) {
+              withContext(Dispatchers.Main) { chatModel.updateCurrentUserChatLayout(rh, layout) }
+              reloadChats()
+            }
+          }
+        }
+      )
+    }
+  }
+
+  private suspend fun reloadChats() {
+    try {
+      withContext(Dispatchers.Main) {
+        val chats = controller.apiGetChats(chatModel.remoteHostId())
+        chatModel.chatsContext.updateChats(chats)
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "apiGetChats error: ${e.message}")
     }
   }
 

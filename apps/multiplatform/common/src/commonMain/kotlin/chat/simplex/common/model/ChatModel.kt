@@ -1152,6 +1152,16 @@ object ChatModel {
     currentUser.value = updated
   }
 
+  fun updateCurrentUserChatLayout(rhId: Long?, chatLayout: ChatLayout?) {
+    val current = currentUser.value ?: return
+    val updated = current.copy(chatLayout = chatLayout)
+    val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
+    if (i != -1) {
+      users[i] = users[i].copy(user = updated)
+    }
+    currentUser.value = updated
+  }
+
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withContext(Dispatchers.Main) {
@@ -1347,6 +1357,7 @@ data class User(
   val autoAcceptGroupInvitations: Boolean,
   val viewPwdHash: UserPwdHash?,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayout? = null,
   val userChatRelay: Boolean,
 ): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
@@ -1858,13 +1869,10 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> emptyList()
   }
 
-  val chatLayout: ChatLayout get() {
-    val layouts = when (this) {
-      is Direct -> listOf(contact.chatLayoutOverride, contact.chatLayout)
-      is Group -> listOf(groupInfo.chatLayoutOverride, groupInfo.chatLayout)
-      else -> emptyList()
-    }
-    return layouts.firstOrNull { it != null && it !is ChatLayout.Unknown } ?: ChatLayout.Classic
+  val activeChatLayout: ChatLayout get() = when (this) {
+    is Direct -> contact.activeChatLayout
+    is Group -> groupInfo.activeChatLayout
+    else -> ChatLayout.Classic
   }
 
   val contactCard: Boolean
@@ -1908,7 +1916,9 @@ data class Contact(
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
   val chatLayout: ChatLayout? = null,
-  val chatLayoutOverride: ChatLayout? = null,
+  val userChatLayout: ChatLayout? = null,
+  val defaultChatLayout: ChatLayout = ChatLayout.Classic,
+  val activeChatLayout: ChatLayout = ChatLayout.Classic,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -2211,16 +2221,19 @@ sealed class ChatLayout {
       is Terminal -> "terminal"
       is Unknown -> type
     }
+
+  companion object {
+    fun fromText(text: String): ChatLayout = when (text) {
+      "classic" -> Classic
+      "terminal" -> Terminal
+      else -> Unknown(text)
+    }
+  }
 }
 
 object ChatLayoutSerializer : KSerializer<ChatLayout> {
   override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatLayout", PrimitiveKind.STRING)
-  override fun deserialize(decoder: Decoder): ChatLayout =
-    when (val v = decoder.decodeString()) {
-      "classic" -> ChatLayout.Classic
-      "terminal" -> ChatLayout.Terminal
-      else -> ChatLayout.Unknown(v)
-    }
+  override fun deserialize(decoder: Decoder): ChatLayout = ChatLayout.fromText(decoder.decodeString())
   override fun serialize(encoder: Encoder, value: ChatLayout) = encoder.encodeString(value.text)
 }
 
@@ -2538,7 +2551,9 @@ data class GroupInfo (
   val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
   val chatLayout: ChatLayout? = null,
-  val chatLayoutOverride: ChatLayout? = null,
+  val userChatLayout: ChatLayout? = null,
+  val defaultChatLayout: ChatLayout = ChatLayout.Classic,
+  val activeChatLayout: ChatLayout = ChatLayout.Classic,
   val groupSummary: GroupSummary,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,

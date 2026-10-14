@@ -735,10 +735,10 @@ contactChatLayout cc cName =
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
       runExceptT (getContact db (storeCxt $ chatController cc) user =<< getContactIdByName db user cName)
-        >>= either (fail . show) (\Contact {chatLayout, chatLayoutOverride} -> pure (chatLayout, chatLayoutOverride))
+        >>= either (fail . show) (\Contact {chatLayout, userChatLayout} -> pure (chatLayout, userChatLayout))
 
 groupChatLayout :: TestCC -> GroupName -> IO (Maybe ChatLayout, Maybe ChatLayout)
-groupChatLayout cc gName = (\GroupInfo {chatLayout, chatLayoutOverride} -> (chatLayout, chatLayoutOverride)) <$> getTestCCGroup cc gName
+groupChatLayout cc gName = (\GroupInfo {chatLayout, userChatLayout} -> (chatLayout, userChatLayout)) <$> getTestCCGroup cc gName
 
 groupProfileChatLayout :: TestCC -> GroupName -> IO (Maybe ChatLayout)
 groupProfileChatLayout cc gName = (\GroupInfo {groupProfile = GroupProfile {chatLayout}} -> chatLayout) <$> getTestCCGroup cc gName

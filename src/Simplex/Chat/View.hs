@@ -116,7 +116,7 @@ chatErrorToView isCmd ChatConfig {logLevel, testView} = viewChatError isCmd logL
 
 chatResponseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
 chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, testView} liveItems ts tz outputRH = \case
-  CRActiveUser User {profile = p@LocalProfile {localBadge}, uiThemes} -> viewUserProfile localBadge (fromLocalProfile p) <> viewUITheme uiThemes
+  CRActiveUser User {profile = p@LocalProfile {localBadge}, uiThemes, chatLayout} -> viewUserProfile localBadge (fromLocalProfile p) <> viewUITheme uiThemes <> viewChatLayout "chat layout" chatLayout
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -1882,7 +1882,7 @@ dayTime :: UTCTime -> Text
 dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, chatLayout, chatLayoutOverride, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, chatLayout, userChatLayout, defaultChatLayout, activeChatLayout, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
@@ -1898,19 +1898,17 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> ["quantum resistant end-to-end encryption" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
     <> viewUITheme uiThemes
-    <> viewChatLayout "chat layout" chatLayout
-    <> viewChatLayout "chat layout override" chatLayoutOverride
+    <> viewChatLayouts chatLayout userChatLayout defaultChatLayout activeChatLayout
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
-viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, groupProfile = GroupProfile {publicGroup}, uiThemes, chatLayout, chatLayoutOverride, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
+viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, groupProfile = GroupProfile {publicGroup}, uiThemes, chatLayout, userChatLayout, defaultChatLayout, activeChatLayout, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
   [ "group ID: " <> sShow groupId,
     memberCountLine
   ]
     <> domainLine
     <> viewUITheme uiThemes
-    <> viewChatLayout "chat layout" chatLayout
-    <> viewChatLayout "chat layout override" chatLayoutOverride
+    <> viewChatLayouts chatLayout userChatLayout defaultChatLayout activeChatLayout
     <> viewCustomData customData
   where
     -- a business presents as a contact (@-name); a public group/channel shows its #-name
@@ -1926,6 +1924,15 @@ viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> viewJSON uiThemes])
 
 viewChatLayout :: StyledString -> Maybe ChatLayout -> [StyledString]
 viewChatLayout name = maybe [] (\chatLayout -> [name <> ": " <> plain (textEncode chatLayout)])
+
+viewChatLayouts :: Maybe ChatLayout -> Maybe ChatLayout -> ChatLayout -> ChatLayout -> [StyledString]
+viewChatLayouts chatLayout userChatLayout defaultChatLayout activeChatLayout =
+  viewChatLayout "chat layout" chatLayout
+    <> viewChatLayout "user chat layout" userChatLayout
+    <> viewChatLayout "default chat layout" (nonClassic defaultChatLayout)
+    <> viewChatLayout "active chat layout" (nonClassic activeChatLayout)
+  where
+    nonClassic layout = if layout == CLClassic then Nothing else Just layout
 
 viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])

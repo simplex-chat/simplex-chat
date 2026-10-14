@@ -149,7 +149,8 @@ data User = User
     userMemberProfileUpdatedAt :: Maybe UTCTime,
     userChatRelay :: BoolDef,
     clientService :: BoolDef,
-    uiThemes :: Maybe UIThemeEntityOverrides
+    uiThemes :: Maybe UIThemeEntityOverrides,
+    chatLayout :: Maybe ChatLayout
   }
   deriving (Show)
 
@@ -221,7 +222,9 @@ data Contact = Contact
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatLayout :: Maybe ChatLayout,
-    chatLayoutOverride :: Maybe ChatLayout,
+    userChatLayout :: Maybe ChatLayout,
+    defaultChatLayout :: ChatLayout,
+    activeChatLayout :: ChatLayout,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
@@ -535,7 +538,9 @@ data GroupInfo = GroupInfo
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatLayout :: Maybe ChatLayout,
-    chatLayoutOverride :: Maybe ChatLayout,
+    userChatLayout :: Maybe ChatLayout,
+    defaultChatLayout :: ChatLayout,
+    activeChatLayout :: ChatLayout,
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
     rosterVersion :: Maybe VersionRoster,
@@ -784,6 +789,7 @@ data ChatLayout = CLClassic | CLTerminal | CLUnknown Text
 
 instance FromJSON ChatLayout where
   parseJSON = textParseJSON "ChatLayout"
+  omittedField = Just CLClassic
 
 instance ToJSON ChatLayout where
   toJSON = J.String . textEncode
@@ -802,6 +808,15 @@ instance TextEncoding ChatLayout where
     CLClassic -> "classic"
     CLTerminal -> "terminal"
     CLUnknown tag -> tag
+
+chatLayouts :: StoreCxt -> User -> Maybe ChatLayout -> Maybe ChatLayout -> (ChatLayout, ChatLayout)
+chatLayouts StoreCxt {globalLayout} User {chatLayout = profileLayout} chatLayout userChatLayout =
+  (defaultLayout, fromMaybe defaultLayout $ knownLayout userChatLayout)
+  where
+    defaultLayout = fromMaybe CLClassic $ knownLayout chatLayout <|> knownLayout profileLayout <|> knownLayout globalLayout
+    knownLayout = \case
+      Just (CLUnknown _) -> Nothing
+      layout -> layout
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
@@ -2301,7 +2316,7 @@ type VersionRangeChat = VersionRange ChatVersion
 
 -- | Store-wide context passed to store functions in place of the bare `vr`
 -- parameter. Built from config by storeCxt; more fields are added here over time.
-data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey, drg :: TVar ChaChaDRG}
+data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey, drg :: TVar ChaChaDRG, globalLayout :: Maybe ChatLayout}
 
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v

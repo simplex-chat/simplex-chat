@@ -969,6 +969,31 @@ def test_bot_address_settings_include_the_chat_layout(monkeypatch):
     ]
 
 
+def test_bot_address_settings_keep_the_stored_chat_layout(monkeypatch):
+    import simplex_chat.client as client_mod
+
+    api = _StubApi()
+    api.address = {
+        "connLinkContact": {"connFullLink": "https://l"},
+        "addressSettings": {"businessAddress": False, "chatLayout": "terminal"},
+    }
+    monkeypatch.setattr(client_mod, "ChatApi", _init_returning(api))
+    bot = Bot(
+        profile=BotProfile(display_name="x"),
+        db=SqliteDb(file_prefix="/tmp/test"),
+        update_profile=False,
+    )
+
+    async def go():
+        async with bot:
+            pass
+
+    asyncio.run(go())
+    assert api.address_settings == [
+        {"businessAddress": False, "autoAccept": {"acceptIncognito": False}, "chatLayout": "terminal"}
+    ]
+
+
 def test_profile_can_be_replaced(monkeypatch):
     c, _ = _client_with_stub_api(monkeypatch)
     c.profile = Profile(display_name="other", full_name="Other")

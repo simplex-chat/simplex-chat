@@ -693,6 +693,7 @@ private suspend fun finishMigration(appSettings: AppSettings, close: () -> Unit)
   try {
     getMigrationTempFilesDirectory().deleteRecursively()
     appSettings.importIntoApp()
+    controller.apiSetGlobalChatLayout(appPrefs.chatLayout.get())
     val user = chatModel.currentUser.value
     if (user != null) {
       startChat(user)

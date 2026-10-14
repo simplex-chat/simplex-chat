@@ -86,7 +86,11 @@ Business chat is a special group chat under the hood, but the connected customer
 
 ### Chat layout
 
-Bot can choose the layout of the chats that users create by connecting to its address: `classic` or `terminal`. To do that, set `chatLayout` property in the address settings with [APISetAddressSettings](./api/COMMANDS.md#apisetaddresssettings) or with `/auto_accept on [business] layout=terminal` CLI command. For a business address this layout is used for business chats.
+Bot can choose the layout of the chats that users create by connecting to its address: `classic` or `terminal`. To do that, read the address settings with [APIShowMyAddress](./api/COMMANDS.md#apishowmyaddress), set `chatLayout` property and write the whole settings object back with [APISetAddressSettings](./api/COMMANDS.md#apisetaddresssettings). The settings object replaces the stored settings, so the other properties must be written back as they were read. For a business address this layout is used for business chats.
+
+The layout is stored with the contact when the user's app prepares the chat from the address link data before connecting. A contact created by connecting to the address without this step, for example with `/connect` CLI command or [APIConnect](./api/COMMANDS.md#apiconnect), is created without the address layout.
+
+`/auto_accept on [business|incognito=on|off] [layout=classic|terminal|default] [text <welcome message>]` and `/auto_accept off [layout=classic|terminal|default]` CLI commands are deprecated, use [APISetAddressSettings](./api/COMMANDS.md#apisetaddresssettings) instead. These commands keep the stored layout unless `layout=` is given, and `layout=default` removes it.
 
 For groups, set `chatLayout` property in the group profile with [APIUpdateGroupProfile](./api/COMMANDS.md#apiupdategroupprofile) or with `/set layout #<group> classic|terminal|default` CLI command. This layout is used by the members who join the group after it is set.
 

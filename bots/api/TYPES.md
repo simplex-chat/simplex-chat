@@ -1918,7 +1918,9 @@ Error:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatLayout: [ChatLayout](#chatlayout)?
-- chatLayoutOverride: [ChatLayout](#chatlayout)?
+- userChatLayout: [ChatLayout](#chatlayout)?
+- defaultChatLayout: [ChatLayout](#chatlayout)
+- activeChatLayout: [ChatLayout](#chatlayout)
 - chatDeleted: bool
 - customData: JSONObject?
 
@@ -2504,7 +2506,9 @@ MemberSupport:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatLayout: [ChatLayout](#chatlayout)?
-- chatLayoutOverride: [ChatLayout](#chatlayout)?
+- userChatLayout: [ChatLayout](#chatlayout)?
+- defaultChatLayout: [ChatLayout](#chatlayout)
+- activeChatLayout: [ChatLayout](#chatlayout)
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
 - rosterVersion: int64?
@@ -4542,6 +4546,7 @@ Handshake:
 - userChatRelay: bool
 - clientService: bool
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---
