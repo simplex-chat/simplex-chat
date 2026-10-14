@@ -24,18 +24,18 @@ import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Test.Hspec
 
--- expected encodings and signatures are viem's, against the SimplexController, SimplexSponsor and SimplexResolver ABIs
 badgeNameRegistrationTests :: Spec
 badgeNameRegistrationTests = describe "badge service name registration" $ do
   g <- runIO C.newRandom
+  -- expected encodings and signatures are viem's, against the SimplexController, SimplexSponsor and SimplexResolver ABIs
   describe "encoding" $ do
     it "encodes registerWithCredit with records" $ testRegisterCalldataWithRecords g
     it "encodes registerWithCredit without records" $ testRegisterCalldataWithoutRecords g
     it "encodes commit with the commitment of a registration" testCommitCalldata
   describe "verifying the register intent" $ do
-    it "refuses an intent signed by another wallet" $ testVerifyOtherSigner g
-    it "refuses an intent past its deadline" $ testVerifyExpired g
-    it "refuses a secret that is not 32 bytes" $ testVerifyShortSecret g
+    it "rejects an intent signed by another wallet" $ testVerifyOtherSigner g
+    it "rejects an intent past its deadline" $ testVerifyExpired g
+    it "rejects a secret that is not 32 bytes" $ testVerifyShortSecret g
   it "sends nothing when the dry run reverts" $ testRevertedDryRun g
   it "registers a name the client committed to without revealing it" $ testCommitThenRegister g
 
@@ -81,7 +81,7 @@ testRevertedDryRun g = withFakeEthNode $ \node -> do
 testCommitThenRegister :: TVar ChaChaDRG -> IO ()
 testCommitThenRegister g = withFakeEthNode $ \node -> do
   w <- newEphemeralWallet g
-  (ewAddress <$> walletFromCode g (redemptionCode w)) `shouldReturn` ewAddress w
+  ewAddress <$> walletFromCode g (redemptionCode w) `shouldReturn` ewAddress w
   let registration = knownRegistration {rOwner = ewAddress w}
       commitment = makeCommitment registration
   commitTx <- expectedTransaction g 0 controller $ commitCalldata commitment

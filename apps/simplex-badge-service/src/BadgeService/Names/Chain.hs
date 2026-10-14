@@ -14,7 +14,7 @@ where
 import BadgeService.Names.Registration (RegisterIntent, commitCalldata, registerWithCreditCalldata)
 import Control.Concurrent.STM (TVar)
 import Control.Exception (try)
-import Control.Monad.Except (ExceptT, liftEither, runExceptT)
+import Control.Monad.Except (ExceptT, liftEither, runExceptT, throwError)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
@@ -28,12 +28,12 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
-import Network.HTTP.Types (hContentType)
+import Network.HTTP.Types (hContentType, methodPost)
 import Numeric (readHex)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
-import Simplex.Messaging.Util (eitherToMaybe, liftError', tshow)
+import Simplex.Messaging.Util (liftError', tshow)
 
 data ChainClient = ChainClient
   { ccManager :: Manager,
@@ -81,8 +81,15 @@ rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> ExceptT C
 rpc ChainClient {ccManager, ccRpcUrl} method params parseResult = do
   resp <- liftError' (\(e :: HTTP.HttpException) -> ChainError $ tshow e) $ try $ do
     req <- HTTP.parseRequest ccRpcUrl
-    HTTP.httpLbs req {HTTP.method = "POST", HTTP.requestHeaders = [(hContentType, "application/json")], HTTP.requestBody = HTTP.RequestBodyLBS body} ccManager
-  liftEither $ either (Left . ChainError . T.pack) id $ JT.parseEither response =<< J.eitherDecode (HTTP.responseBody resp)
+    HTTP.httpLbs
+      req
+        { HTTP.method = methodPost,
+          HTTP.redirectCount = 0,
+          HTTP.requestHeaders = (hContentType, "application/json") : HTTP.requestHeaders req,
+          HTTP.requestBody = HTTP.RequestBodyLBS body
+        }
+      ccManager
+  either (throwError . ChainError . T.pack) liftEither $ JT.parseEither response =<< J.eitherDecode (HTTP.responseBody resp)
   where
     body = J.encode $ J.object ["jsonrpc" .= ("2.0" :: Text), "id" .= (1 :: Int), "method" .= method, "params" .= params]
     response = J.withObject "JSON-RPC response" $ \o -> o .:? "error" >>= maybe (Right <$> (parseResult =<< o .: "result")) rpcError
@@ -91,13 +98,12 @@ rpc ChainClient {ccManager, ccRpcUrl} method params parseResult = do
 quantity :: (Eq a, Num a) => J.Value -> JT.Parser a
 quantity = J.withText "quantity" $ \t -> case T.stripPrefix "0x" t of
   Just h | [(n, "")] <- readHex (T.unpack h) -> pure n
-  _ -> fail $ "not a quantity: " <> T.unpack t
+  _ -> fail "not a quantity"
 
 bytes :: J.Value -> JT.Parser ByteString
-bytes = J.withText "data" $ maybe (fail "not hex data") pure . fromHex
-
-fromHex :: Text -> Maybe ByteString
-fromHex t = T.stripPrefix "0x" t >>= eitherToMaybe . convertFromBase Base16 . encodeUtf8
+bytes = J.withText "data" $ \t -> case T.stripPrefix "0x" t of
+  Just h | Right bs <- convertFromBase Base16 (encodeUtf8 h) -> pure bs
+  _ -> fail "not hex data"
 
 hex :: ByteString -> Text
 hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)

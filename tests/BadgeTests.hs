@@ -344,7 +344,7 @@ testNameCodeVectors =
 
 testNameCodeChecksum :: IO ()
 testNameCodeChecksum =
-  isNothing (parseNameCode "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV") `shouldBe` True
+  formatNameCode <$> parseNameCode "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV" `shouldBe` Nothing
 
 -- entropy and its name code, computed by a separate Python implementation of the format
 nameCodeVectors :: [(ByteString, T.Text)]

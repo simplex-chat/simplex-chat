@@ -149,8 +149,8 @@ parseNameCode t = do
   body <- T.stripPrefix nameCodePrefix $ T.toUpper $ T.filter isAlphaNum t
   vs <- mapM charValue $ T.unpack body
   guard $ length vs == nameCodeLength
-  let (payload, digest) = foldl' (\acc v -> acc * toInteger base + toInteger v) 0 vs `divMod` (2 ^ nameCodeChecksumBits)
-  guard $ digest == nameCodeChecksum payload
+  let (payload, checksum) = foldl' (\acc v -> acc * toInteger base + toInteger v) 0 vs `divMod` (2 ^ nameCodeChecksumBits)
+  guard $ checksum == nameCodeChecksum payload
   NameCode <$> eitherToMaybe (mkEntropy $ i2ospOf_ 16 payload)
 
 formatNameCode :: NameCode -> Text

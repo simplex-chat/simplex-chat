@@ -109,7 +109,9 @@ recordCalls :: Registration -> [ByteString]
 recordCalls Registration {rLabel, rTLD, rContactLinks, rChannelLinks} =
   [setText key ls | (key, ls) <- [("simplex.contact", rContactLinks), ("simplex.channel", rChannelLinks)], not (null ls)]
   where
-    setText key ls = selector "setText(bytes32,string,string)" <> abiTuple [Static node, Dynamic $ abiBytes key, Dynamic $ abiBytes $ encodeUtf8 $ T.intercalate ";" ls]
+    setText key ls =
+      selector "setText(bytes32,string,string)"
+        <> abiTuple [Static node, Dynamic $ abiBytes key, Dynamic $ abiBytes $ encodeUtf8 $ T.intercalate ";" ls]
     node = namehash rTLD rLabel
 
 namehash :: SimplexTLD -> Text -> ByteString

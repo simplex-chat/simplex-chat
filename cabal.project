@@ -1,4 +1,4 @@
-packages: . ../simplexmq
+packages: .
 -- packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
@@ -18,10 +18,10 @@ package cryptostore
 
 constraints: zip +disable-bzip2 +disable-zstd
 
--- source-repository-package
---     type: git
---     location: https://github.com/simplex-chat/simplexmq.git
---     tag: cba13823567d7cd564d8a1f354046174fba375d8
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/simplexmq.git
+    tag: 3bd483209b221f4dc349aa048aec2a6b6a330e4f
 
 source-repository-package
     type: git

@@ -72,14 +72,14 @@ fakeApp st req respond = do
 
 answer :: TVar FakeState -> Text -> [J.Value] -> STM [JT.Pair]
 answer st method params = do
-  FakeState {fsRevert, fsSent} <- readTVar st
+  s@FakeState {fsRevert, fsSent} <- readTVar st
   case (method, params) of
     ("eth_estimateGas", _) -> pure $ if fsRevert then reverted else result $ quantity fakeGas
     ("eth_getTransactionCount", _) -> pure $ result $ quantity $ toInteger $ length fsSent
     ("eth_maxPriorityFeePerGas", _) -> pure $ result $ quantity fakeTip
     ("eth_getBlockByNumber", _) -> pure $ result $ J.object ["baseFeePerGas" .= quantity fakeBaseFee]
     ("eth_sendRawTransaction", [J.String raw]) | Just tx <- fromHex raw -> do
-      modifyTVar' st $ \s -> s {fsSent = tx : fsSent}
+      writeTVar st s {fsSent = tx : fsSent}
       pure $ result $ hex $ keccak256 tx
     _ -> pure ["error" .= J.object ["code" .= (-32601 :: Int), "message" .= ("method not found" :: Text)]]
   where
