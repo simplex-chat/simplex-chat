@@ -86,7 +86,7 @@ Features and services users build would bring new users and increase revenue.
 
 [How custom UX helps unify messaging](https://simplex.chat/crowdfunding/#one-protocol)
 
-# Get a stake in SimpleX Chat
+# Own a part of SimpleX Chat
 
 We are building a network that people own.
 We invite you to invest and become part of it.

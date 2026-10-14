@@ -7,7 +7,7 @@
 A primeira rede sem IDs de usuário.
 Seus contatos, grupos e canais pertencem a você.
 
-Invest in SimpleX Chat. [Saiba mais.](https://simplex.chat/crowdfunding/)
+Invest in SimpleX Chat. [Saiba mais.](https://wefunder.com/simplex.chat?utm_source=home)
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [Aplicativo SimpleX no F-Droid](https://simplex.chat/pt_BR/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
@@ -40,7 +40,7 @@ Para manter a independência, grandes canais e comunidades pagarão pelos seus s
 
 E os usuários agora podem investir no SimpleX Chat — o crowdfunding está ativo!
 
-[Investir no SimpleX Chat](https://simplex.chat/crowdfunding/)
+[Investir no SimpleX Chat](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## Roteiro do SimpleX para uma Internet Livre
 

@@ -7,7 +7,7 @@
 The first network without user IDs.
 You own your contacts, groups and channels.
 
-Invest in SimpleX Chat. [بیشتر بدانید.](https://simplex.chat/crowdfunding/)
+Invest in SimpleX Chat. [بیشتر بدانید.](https://wefunder.com/simplex.chat?utm_source=home)
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX app via F-Droid](https://simplex.chat/fa/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
@@ -40,7 +40,7 @@ No single entity controls the network – anyone can run servers.
 
 و اکنون کاربران می‌توانند در SimpleX Chat سرمایه‌گذاری کنند — تأمین مالی جمعی آغاز شده است!
 
-[در SimpleX Chat سرمایه‌گذاری کنید](https://simplex.chat/crowdfunding/)
+[در SimpleX Chat سرمایه‌گذاری کنید](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## SimpleX Roadmap to Free Internet
 

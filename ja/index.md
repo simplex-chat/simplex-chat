@@ -7,7 +7,7 @@
 ユーザーIDのない世界初のネットワーク。
 連絡先、グループ、チャンネルはあなたのものです。
 
-Invest in SimpleX Chat. [さらに詳しく.](https://simplex.chat/crowdfunding/)
+Invest in SimpleX Chat. [さらに詳しく.](https://wefunder.com/simplex.chat?utm_source=home)
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [F-Droid経由のSimpleXアプリ](https://simplex.chat/ja/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
@@ -40,7 +40,7 @@ Invest in SimpleX Chat. [さらに詳しく.](https://simplex.chat/crowdfunding/
 
 ユーザーはSimpleX Chatに投資できるようになりました — クラウドファンディングが始まりました！
 
-[SimpleX Chatに投資する](https://simplex.chat/crowdfunding/)
+[SimpleX Chatに投資する](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## 自由なインターネットを目指す SimpleX ロードマップ
 

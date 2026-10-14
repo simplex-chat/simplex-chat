@@ -7,7 +7,7 @@
 首个无用户 ID 的网络。
 您的联系人、群组和频道由您掌控。
 
-Invest in SimpleX Chat. [了解更多.](https://simplex.chat/crowdfunding/)
+Invest in SimpleX Chat. [了解更多.](https://wefunder.com/simplex.chat?utm_source=home)
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX 安卓应用（通过 F-Droid）](https://simplex.chat/zh_Hans/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
@@ -40,7 +40,7 @@ Invest in SimpleX Chat. [了解更多.](https://simplex.chat/crowdfunding/)
 
 用户现在可以投资 SimpleX Chat — 众筹已上线！
 
-[投资 SimpleX Chat](https://simplex.chat/crowdfunding/)
+[投资 SimpleX Chat](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## SimpleX 通往自由互联网的路线图
 

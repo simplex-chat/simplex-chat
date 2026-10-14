@@ -7,7 +7,7 @@
 Jaringan pertama tanpa ID pengguna.
 Anda pemilik kontak, grup, dan kanal Anda.
 
-Invest in SimpleX Chat. [Lebih lanjut.](https://simplex.chat/crowdfunding/)
+Invest in SimpleX Chat. [Lebih lanjut.](https://wefunder.com/simplex.chat?utm_source=home)
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [Aplikasi SimpleX via F-Droid](https://simplex.chat/id/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
@@ -40,7 +40,7 @@ Untuk tetap independen, kanal dan komunitas besar akan membayar server mereka.
 
 Dan pengguna sekarang bisa berinvestasi di SimpleX Chat — crowdfunding kini aktif!
 
-[Investasi di SimpleX Chat](https://simplex.chat/crowdfunding/)
+[Investasi di SimpleX Chat](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## SimpleX Roadmap Menuju Internet Bebas
 

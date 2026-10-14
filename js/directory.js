@@ -69,7 +69,7 @@ function isCurrentSite(uri) {
 }
 
 function targetBlank(uri) {
-  return isCurrentSite(uri) ? '' : ' target="_blank"'
+  return isCurrentSite(uri) ? '' : ' target="_blank" rel="noopener"'
 }
 
 function renderMarkdown(fts) {
@@ -116,7 +116,7 @@ function renderMarkdown(fts) {
         case 'simplexLink': {
           const { showText, linkType, simplexUri, smpHosts } = format;
           const linkText = showText ? escapeHtml(showText) : getSimplexLinkDescr(linkType);
-          html += `<a href="${safeHref(platformSimplexUri(simplexUri))}" target="_blank">${linkText} <em>(${escapeHtml(viaHost(smpHosts))})</em></a>`;
+          html += `<a href="${safeHref(platformSimplexUri(simplexUri))}" target="_blank" rel="noopener">${linkText} <em>(${escapeHtml(viaHost(smpHosts))})</em></a>`;
           break;
         }
         case 'command':
@@ -504,6 +504,7 @@ function displayEntries(entries) {
         imgLinkElement.href = groupLinkUri;
       }
       imgLinkElement.target = "_blank";
+      imgLinkElement.rel = "noopener";
       imgLinkElement.title = `Join ${displayName}`;
 
       const imgElement = document.createElement('img');

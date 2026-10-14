@@ -64,7 +64,7 @@ function isCurrentSite(uri) {
 }
 
 function targetBlank(uri) {
-  return isCurrentSite(uri) ? '' : ' target="_blank"'
+  return isCurrentSite(uri) ? '' : ' target="_blank" rel="noopener"'
 }
 
 function renderMarkdown(fts) {
@@ -111,7 +111,7 @@ function renderMarkdown(fts) {
         case 'simplexLink': {
           const { showText, linkType, simplexUri, smpHosts } = format;
           const linkText = showText ? escapeHtml(showText) : getSimplexLinkDescr(linkType);
-          html += `<a href="${safeHref(platformSimplexUri(simplexUri))}" target="_blank">${linkText} <em>(${escapeHtml(viaHost(smpHosts))})</em></a>`;
+          html += `<a href="${safeHref(platformSimplexUri(simplexUri))}" target="_blank" rel="noopener">${linkText} <em>(${escapeHtml(viaHost(smpHosts))})</em></a>`;
           break;
         }
         case 'command':
@@ -1203,11 +1203,11 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
   }
 }
 
-var BADGE_APPLE = '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>';
-var BADGE_GOOGLE = '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>';
-var BADGE_FDROID = '<a href="https://simplex.chat/fdroid" target="_blank"><img src="https://simplex.chat/img/new/f_droid.svg" alt="F-Droid"></a>';
-var BADGE_APK = '<a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img src="https://simplex.chat/img/design_3/android-dark.png" alt="APK Download"></a>';
-var BADGE_TESTFLIGHT = '<a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img src="https://simplex.chat/img/design_3/testflight-dark.png" alt="TestFlight"></a>';
+var BADGE_APPLE = '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank" rel="noopener"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>';
+var BADGE_GOOGLE = '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" rel="noopener"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>';
+var BADGE_FDROID = '<a href="https://simplex.chat/fdroid" target="_blank" rel="noopener"><img src="https://simplex.chat/img/new/f_droid.svg" alt="F-Droid"></a>';
+var BADGE_APK = '<a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank" rel="noopener"><img src="https://simplex.chat/img/design_3/android-dark.png" alt="APK Download"></a>';
+var BADGE_TESTFLIGHT = '<a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank" rel="noopener"><img src="https://simplex.chat/img/design_3/testflight-dark.png" alt="TestFlight"></a>';
 
 function renderAppBadges(container) {
   const title = document.createElement('p');

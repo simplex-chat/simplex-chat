@@ -7,7 +7,7 @@
 Az első hálózat felhasználói azonosítók nélkül.
 A saját partnerei, csoportjai és csatornái felett Ön rendelkezik.
 
-Fektessen be a SimpleX Chatbe. [Tudjon meg többet.](https://simplex.chat/crowdfunding/)
+Fektessen be a SimpleX Chatbe. [Tudjon meg többet.](https://wefunder.com/simplex.chat?utm_source=home)
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX alkalmazás az F-Droidon keresztül](https://simplex.chat/hu/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
@@ -40,7 +40,7 @@ A függetlenség megőrzéséhez a nagy csatornák és közösségek fizetni fog
 
 És a felhasználók mostantól befektethetnek a SimpleX Chatbe — a közösségi finanszírozás elindult!
 
-[Befektetés a SimpleX Chatbe](https://simplex.chat/crowdfunding/)
+[Befektetés a SimpleX Chatbe](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## A SimpleX ütemterve a szabad internethez
 

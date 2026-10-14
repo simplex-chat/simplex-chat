@@ -6,4 +6,4 @@ Recorded on September 15, 2026
 
 Watch [on X](https://x.com/i/broadcasts/1pKdRDneNyoJW) or [YouTube](https://www.youtube.com/watch?v=vIwgi39VMFA)
 
-[Get a stake in SimpleX Chat](https://simplex.chat/crowdfunding/)
+[Invest in SimpleX Chat](https://simplex.chat/crowdfunding/)

@@ -7,7 +7,7 @@
 أول شبكة بدون معرّفات مستخدمين.
 أنت تملك جهات اتصالك ومجموعاتك وقنواتك.
 
-Invest in SimpleX Chat. [اقرأ أكثر.](https://simplex.chat/crowdfunding/)
+Invest in SimpleX Chat. [اقرأ أكثر.](https://wefunder.com/simplex.chat?utm_source=home)
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [تطبيق SimpleX من خلال F-Droid](https://simplex.chat/ar/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
@@ -40,7 +40,7 @@ Invest in SimpleX Chat. [اقرأ أكثر.](https://simplex.chat/crowdfunding/)
 
 ويمكن للمستخدمين الآن الاستثمار في SimpleX Chat — التمويل الجماعي متاح!
 
-[استثمر في SimpleX Chat](https://simplex.chat/crowdfunding/)
+[استثمر في SimpleX Chat](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## خارطة طريق SimpleX للإنترنت المجاني
 

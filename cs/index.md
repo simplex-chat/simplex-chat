@@ -7,7 +7,7 @@
 První síť bez uživatelských ID.
 Vaše kontakty, skupiny a kanály patří vám.
 
-Invest in SimpleX Chat. [Další informace.](https://simplex.chat/crowdfunding/)
+Invest in SimpleX Chat. [Další informace.](https://wefunder.com/simplex.chat?utm_source=home)
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [Stáhnout aplikaci SimpleX přes F-Droid](https://simplex.chat/cs/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
@@ -40,7 +40,7 @@ Pro zachování nezávislosti budou velké kanály a komunity platit za své ser
 
 A uživatelé nyní mohou investovat do SimpleX Chat — crowdfunding je spuštěn!
 
-[Investovat do SimpleX Chat](https://simplex.chat/crowdfunding/)
+[Investovat do SimpleX Chat](https://wefunder.com/simplex.chat?utm_source=home)
 
 ## Plán SimpleX ke svobodnému internetu
 
