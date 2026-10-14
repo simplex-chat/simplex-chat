@@ -206,7 +206,7 @@ grDirectoryStatus = \case
 
 verifiedGroupDomain :: GroupInfo -> Maybe SimplexDomain
 verifiedGroupDomain GroupInfo {groupProfile = GroupProfile {publicGroup}, groupDomainVerified}
-  | groupDomainVerified == Just True = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+  | groupDomainVerified == Just DVVerified = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
   | otherwise = Nothing
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)

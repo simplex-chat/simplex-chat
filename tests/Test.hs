@@ -37,6 +37,7 @@ import Test.Hspec.Core.Spec (sequential)
 import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests
+import WalletTests
 #if defined(dbPostgres)
 import Control.Exception (bracket_, finally)
 import PostgresSchemaDump
@@ -87,6 +88,7 @@ main = do
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
       describe "SimpleX chat view" viewTests
+      describe "Wallet derivation" walletDerivationTests
       describe "SimpleX chat protocol" protocolTests
       describe "Valid names" validNameTests
       describe "Message batching" batchingTests
@@ -106,6 +108,7 @@ main = do
           describe "Mobile API Tests" mobileTests
 #endif
           describe "SimpleX chat client" chatTests
+          describe "Wallet" walletTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           describe "SimpleX Directory service bot" directoryServiceTests
           describe "SimpleX badge service e2e" $ do

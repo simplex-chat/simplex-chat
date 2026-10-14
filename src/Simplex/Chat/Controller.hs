@@ -69,6 +69,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
+import Simplex.Chat.Wallet (WalletAddress, WalletInfo)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
@@ -93,7 +94,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), USDCents, XFTPServer)
 import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
@@ -438,6 +439,11 @@ data ChatCommand
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
+  | APIGetWallet {userId :: UserId}
+  | APICreateWallet
+  | APICreateWalletAccount {userId :: UserId}
+  | APIExportWalletMnemonic
+  | APIDeleteWallet
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -712,8 +718,8 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMAllGroups -- resolve all known groups and all unknown chats
-  | PRMUnknown -- only resolve if chat is unknown (default)
+  = PRMAllGroups -- resolve names, links of known groups and of unknown chats
+  | PRMUnknown -- resolve names, and links of unknown chats (default)
   | PRMNever -- do not resolve links and names, only do local search
   deriving (Eq, Show)
 
@@ -743,6 +749,9 @@ allowRemoteCommand = \case
   SetFilesFolder _ -> False
   SetRemoteHostsFolder _ -> False
   APISetEncryptLocalFiles _ -> False
+  APICreateWallet -> False
+  APIExportWalletMnemonic -> False
+  APIDeleteWallet -> False
 #if !defined(dbPostgres)
   APIExportArchive _ -> False
   APIImportArchive _ -> False
@@ -874,6 +883,9 @@ data ChatResponse
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
+  | CRWallet {user :: User, walletInfo :: WalletInfo}
+  | CRWalletMnemonic {user :: User, mnemonic :: Text}
+  | CRWalletAddress {user :: User, walletAddress :: WalletAddress}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
@@ -987,6 +999,7 @@ data ChatEvent
   | CEvtGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
   | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
+  | CEvtNameMoved {user :: User, contactIds :: [ContactId], groupIds :: [GroupId]}
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
@@ -1156,10 +1169,25 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
-  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameChange :: Maybe NameChange}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameChange :: Maybe NameChange}
   | CPError {chatError :: ChatError}
   deriving (Show)
+
+data NameChange
+  = NCLapsed {nameWarning :: NameWarning}
+  | NCMoved {knownChat :: AChatInfo}
+  deriving (Show)
+
+data NameWarning
+  = NWExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
+  | NWAvailable {price :: NamePrice}
+  | NWReservedForCommunity
+  | NWNotRegistered
+  deriving (Eq, Show)
+
+data NamePrice = NamePrice {amount :: USDCents, years :: Int}
+  deriving (Eq, Show)
 
 data InvitationLinkPlan
   = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
@@ -1219,13 +1247,15 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap -> case cap of
+  CPContactAddress _ (Just NCLapsed {}) -> False
+  CPContactAddress cap _ -> case cap of
     CAPOk {} -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp -> case glp of
+  CPGroupLink _ (Just NCLapsed {}) -> False
+  CPGroupLink glp _ -> case glp of
     GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
@@ -1233,6 +1263,12 @@ connectionPlanProceed = \case
     GLPUpdateRequired _ -> False
     _ -> False
   CPError _ -> True
+
+connectionPlanOwnLink :: ConnectionPlan -> Bool
+connectionPlanOwnLink = \case
+  CPContactAddress CAPOwnLink _ -> True
+  CPGroupLink GLPOwnLink {} _ -> True
+  _ -> False
 
 data ForwardConfirmation
   = FCFilesNotAccepted {fileIds :: [FileTransferId]}
@@ -1482,6 +1518,7 @@ data ChatError
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
+  | SDENameWarning {nameWarning :: NameWarning}
   deriving (Eq, Show)
 
 data BadgeRedeemError
@@ -1849,6 +1886,10 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
+$(JQ.deriveJSON defaultJSON ''NamePrice)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NW") ''NameWarning)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
@@ -1864,6 +1905,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NC") ''NameChange)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 

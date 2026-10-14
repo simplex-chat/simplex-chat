@@ -58,12 +58,22 @@ suspend fun apiConnectPlan(rh: Long?, connLink: String, inProgress: MutableState
 
 ```kotlin
 sealed class ConnectionPlan {
+  val localChats: List<ChatInfo>
+  val planChat: ChatInfo?
+  val knownChat: ChatInfo?
   class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
-  class GroupLink(val groupLinkPlan: GroupLinkPlan): ConnectionPlan()
+  class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameChange: NameChange? = null): ConnectionPlan()
+  class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameChange: NameChange? = null): ConnectionPlan()
   class Error(val chatError: ChatError): ConnectionPlan()
 }
+
+sealed class NameChange {
+  class Lapsed(val nameWarning: NameWarning): NameChange()
+  class Moved(val knownChat: ChatInfo): NameChange()
+}
 ```
+
+`planChat` is the plan's contact or group, `knownChat` is the chat of `Moved`, and `localChats` lists both.
 
 4. For `InvitationLinkPlan`:
    - `Ok`: Fresh invitation, safe to connect.
@@ -98,17 +108,20 @@ suspend fun planAndConnect(
   cleanup: (() -> Unit)? = null,
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
+  showLocalChats: ((List<ChatInfo>) -> Unit)? = null,
 ): CompletableDeferred<Boolean>
 ```
 
 1. A progress indicator is shown.
 2. `apiConnectPlan` is called to analyze the link.
-3. Based on the plan type, the appropriate UI is shown:
+3. `localChats` are added to or updated in the chat list, and passed to `showLocalChats`.
+4. Based on the plan type, the appropriate UI is shown:
+   - For a name warning (`NameChange.Lapsed`): the name warning alert, with Open chat for `planChat`. With nothing local, the warning is the error `SimplexDomainError.NameWarning`, and the same alert is shown by the connect error handler.
    - For `Ok` plans: proceed to `apiConnect`.
    - For `Known`: navigate to the existing contact/group.
    - For `OwnLink`: show alert.
    - For `Connecting`: show reconnect confirmation or prohibit.
-4. Returns a `CompletableDeferred<Boolean>` indicating success.
+5. Returns a `CompletableDeferred<Boolean>` indicating success.
 
 ### 2.3 Execute Connection
 
