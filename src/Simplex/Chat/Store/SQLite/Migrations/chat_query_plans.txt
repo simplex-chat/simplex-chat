@@ -4094,7 +4094,11 @@ Query:
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
                p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
-               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at,
+               (CASE WHEN EXISTS (
+                  SELECT 1 FROM badge_ledger l
+                  WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
+                ) THEN 1 ELSE 0 END)
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
@@ -4102,6 +4106,8 @@ Query:
 Plan:
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH l USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
 
 Query: 
         SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.msg_chat_binding, m.msg_signatures
@@ -7923,6 +7929,10 @@ SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_store_receipts SET next_attempt_at = ?
+Plan:
+SCAN badge_store_receipts
 
 Query: UPDATE badge_store_receipts SET payment = ?
 Plan:
