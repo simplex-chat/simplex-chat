@@ -189,6 +189,7 @@ badgeServiceTests = do
     it "should ask the store only once coverage has ended, and at most once an hour, failed checks included" testSubscriptionStoreChecksBounded
     it "should record and not grant a revoked, other-tier, offer, unstarted or ended charge" testSubscriptionChargeNotGranted
     it "should answer an unreachable store with the check interval, writing no charge or ledger row" testSubscriptionStoreUnreachable
+    it "should renew an App Store subscription by its original id, granting a charge first recorded before its period started" testAppleSubscriptionRenews
     it "should keep asking at zero months, and present the renewed credential when the old one expires" testSubscriptionRenews
     it "should keep the badge and ask again a day later while the store has not charged, then issue from the period start" testSubscriptionAwaitsCharge
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
@@ -2046,6 +2047,9 @@ testSubscriptionPurchaseNotGrantable ps =
     play (subscriptionCheck SSBillingRetry Nothing) `shouldReturn` (BSEPaymentPending, aDay)
     play (subscriptionCheck SSBillingRetry $ Just $ monthlyFrom $ addMonths (-2) now) `shouldReturn` (BSEPaymentPending, aDay)
     play (subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-99" (addUTCTime (-3600) now) 1) `shouldReturn` (BSEPaymentPending, aDay)
+    -- Play gives a plan it does not know no length, so its charge has an empty period, and is still only an unsold plan
+    let unsoldAt t = (storeCharge "subscr-badge-supporter-month-99" t 1) {periodEnd = t}
+    play (subscriptionCheck SSRenewing $ Just $ unsoldAt $ addMonths 1 now) `shouldReturn` (BSEPaymentPending, aDay)
     -- an Apple resubscription keeps the original id, so an ended subscription may yet be credited
     answer (SubscriptionApple appleSubscriptionOriginalId) SPApple {jws = appleSubscriptionJWS} (subscriptionCheck SSEnded $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) now) 1)
       `shouldReturn` (BSEPaymentPending, aDay)
@@ -2144,7 +2148,9 @@ testSubscriptionChargeNotGranted ps =
             monthlyCharge "subscr-badge-legend-month-01" firstStart 2,
             (monthlyCharge monthly firstStart 3) {offer = True},
             (monthlyCharge monthly firstStart 4) {periodStart = addUTCTime nominalDay (checkedAt 3), periodEnd = addMonths 1 (addUTCTime nominalDay (checkedAt 3))},
-            (monthlyCharge monthly firstStart 5) {periodStart = firstStart, periodEnd = addMonths 1 firstStart}
+            (monthlyCharge monthly firstStart 5) {periodStart = firstStart, periodEnd = addMonths 1 firstStart},
+            -- an unsold Play plan, given an empty period
+            (monthlyCharge "subscr-badge-supporter-month-99" firstStart 6) {periodEnd = addMonths 6 firstStart}
           ]
     forM_ (zip [0 ..] notGranted) $ \(i, charge) -> do
       storeReports store $ subscriptionCheck SSRenewing $ Just charge
@@ -2169,6 +2175,45 @@ testSubscriptionStoreUnreachable ps =
     subscriptionCheckedAt cc >>= (`shouldSatisfy` \case [Just t] -> abs (diffUTCTime t ended) < 60; _ -> False)
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1
+
+testAppleSubscriptionRenews :: HasCallStack => TestParams -> IO ()
+testAppleSubscriptionRenews ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc@ChatController {chatStore}, bsStore = store@FakeStore {appleSubscriptionJWS}} -> do
+    firstStart <- addUTCTime (-3600) <$> serviceNow env
+    let monthly = "SUBSCR_BADGE_SUPPORTER_MONTH_01"
+        appleReports = setSubscription store (SubscriptionApple appleSubscriptionOriginalId) . subscriptionCheck SSRenewing . Just
+        firstCheck = addUTCTime (3 * nominalDay) (addMonths 1 firstStart)
+        renewalStart = addUTCTime nominalDay firstCheck
+        renewal = (storeCharge monthly renewalStart 1) {chargeRef = "2000000812345690"}
+        recordedIds :: IO [Text]
+        recordedIds = withTransaction chatStore $ \db -> map fromOnly <$> DB.query db "SELECT charge_id FROM sx_badge_service_subscription_charges WHERE provider_charge_ref = ?" (Only ("2000000812345690" :: Text))
+        grantsOf :: Text -> IO [Int]
+        grantsOf chargeId = withTransaction chatStore $ \db -> map fromOnly <$> DB.query db "SELECT COUNT(*) FROM sx_badge_service_badge_ledger WHERE charge_id = ?" (Only chargeId)
+    appleReports $ storeCharge monthly firstStart 1
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPApple {jws = appleSubscriptionJWS}
+    subscriptionOf purchased `shouldBe` Just SSRenewing
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    -- the next charge is reported before its period starts: recorded, and nothing granted or issued
+    appleReports renewal
+    setClockAt bsClock firstCheck
+    waiting <- assertBalance env purchaseKey (last $ fst $ statementOf purchased)
+    subscriptionOf waiting `shouldBe` Just SSRenewing
+    credentialOf waiting `shouldBe` Nothing
+    map entryTag (fst $ statementOf waiting) `shouldBe` []
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    [recorded] <- recordedIds
+    grantsOf recorded `shouldReturn` [0]
+    -- once its period has started, a later check grants that charge under the id it was recorded with
+    setClockAt bsClock $ addUTCTime 3600 renewalStart
+    renewed <- assertBalance env purchaseKey (last $ fst $ statementOf purchased)
+    map entryTag (fst $ statementOf renewed) `shouldBe` ["charge", "badge"]
+    map createdAtOf (take 1 $ fst $ statementOf renewed) `shouldBe` [renewalStart]
+    subscriptionOf renewed `shouldBe` Just SSRenewing
+    expiryOf renewed `shouldSatisfy` (> expiryOf purchased)
+    recordedIds `shouldReturn` [recorded]
+    grantsOf recorded `shouldReturn` [1]
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 2
 
 -- | The client buys a monthly Play subscription an hour into its first period: that period's start, and its ledger then.
 clientSubscribedMonthly :: HasCallStack => BadgeServiceEnv -> TestCC -> IO (UTCTime, [ReplicatedRow])

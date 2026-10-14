@@ -214,7 +214,7 @@ CREATE TABLE @subscription_charges(
 
 ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
 
-CREATE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id);
+CREATE UNIQUE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id);
 
 ALTER TABLE @payments ADD COLUMN subscription_state TEXT;
 
