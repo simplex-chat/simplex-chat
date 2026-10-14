@@ -14,7 +14,8 @@ import BadgeService.Poller
 import BadgeService.Providers
 import BadgeService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
 import BadgeService.Providers.Stripe (stripeProvider)
-import BadgeService.Store (KeyPurchase (..), KeyRedemption (..), ManagedGroup (..), NewCodePurchase (..), NewStorePurchase (..), RevokeResult (..), appendLedgerPlan, createCodePurchase, createStorePurchase, getCodePurchaseForKey, getLedgerEntries, getLedgerTip, getManagedGroup, insertBadgeCode, insertManagedGroup, markOwnerBootstrapped, revokeCode)
+import BadgeService.Store (KeyPurchase (..), KeyRedemption (..), ManagedGroup (..), NewCodePurchase (..), NewStorePurchase (..), RevokeResult (..), appendLedgerPlan, createCodePurchase, createStorePurchase, getCodePurchaseForKey, getLedgerEntries, getLedgerTip, getManagedGroup, insertBadgeCode, insertManagedGroup, insertSubscriptionCharge, markOwnerBootstrapped, revokeCode)
+import BadgeService.StoreReceipts (StoreCharge (..))
 import BadgeService.Store.Invoices
 import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
@@ -60,7 +61,7 @@ import Network.HTTP.Types.Status (statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.Badges.Ledger (addMonths, emptyEntry, grantEntry)
-import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..), StatementCreditType (..))
+import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), SubscriptionState (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withConnection, withTransaction)
@@ -729,12 +730,9 @@ testChargeCreditRoundTrip = withServiceStore $ \st -> do
   now <- truncateToSecond <$> getCurrentTime
   (purchaseKey, masterKey) <- newPurchaseKeys
   Just purchaseId <- withTransaction st $ \db ->
-    createStorePurchase db NewStorePurchase {paymentId = "pay1", provider = PPApple, providerRef = "2000000812345671", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter} now
-  withConnection st $ \db ->
-    DB.execute
-      db
-      "INSERT INTO sx_badge_service_subscription_charges (charge_id, payment_id, provider_charge_ref, plan_id, period_start, period_end, created_at) VALUES (?,?,?,?,?,?,?)"
-      ("ch1" :: Text, "pay1" :: Text, "2000000812345672" :: Text, "SUBSCR_BADGE_SUPPORTER_MONTH_01" :: Text, now, addMonths 1 now, now)
+    createStorePurchase db NewStorePurchase {paymentId = "pay1", provider = PPApple, providerRef = "2000000812345671", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter, subscriptionState = Just SSRenewing, providerToken = Nothing} now
+  withTransaction st $ \db ->
+    insertSubscriptionCharge db "pay1" "ch1" StoreCharge {chargeRef = "2000000812345672", planId = "SUBSCR_BADGE_SUPPORTER_MONTH_01", periodStart = now, periodEnd = addMonths 1 now, chargePaid = Nothing, revoked = False, offer = False} now
   let charge = grantEntry now "e1" 1 (SCCharge "ch1") (emptyEntry now BTSupporter)
   withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing [charge] Nothing
   withTransaction st (\db -> getLedgerEntries db purchaseId 0) >>= (`shouldBe` Just [J.toJSON charge]) . fmap (map J.toJSON)

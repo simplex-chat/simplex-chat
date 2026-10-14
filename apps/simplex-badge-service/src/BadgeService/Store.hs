@@ -32,6 +32,7 @@ module BadgeService.Store
     appendLedgerPlan,
     createCodePurchase,
     createStorePurchase,
+    insertSubscriptionCharge,
     insertBadgeCode,
     setCodeGroupItem,
     CodeTracker (..),
@@ -43,6 +44,7 @@ module BadgeService.Store
 where
 
 import BadgeService.Store.Invoices (executeChanging, paymentStatusText)
+import BadgeService.StoreReceipts (StoreCharge (..))
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -52,14 +54,14 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementEntry (..), StatementEntryType (..))
+import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), PaymentProvider, PaymentStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (textEncode)
+import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow')
 
 #if defined(dbPostgres)
@@ -99,7 +101,8 @@ data FundingCredit
 data CreditedPurchase = CreditedPurchase
   { badgePurchaseId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,
-    credential :: BadgeCredential
+    credential :: BadgeCredential,
+    subscription :: Maybe SubscriptionState
   }
 
 data NewCodePurchase = NewCodePurchase
@@ -116,7 +119,9 @@ data NewStorePurchase = NewStorePurchase
     paid :: Maybe (CurrencyAmount, Text),
     purchaseKey :: C.PublicKeyEd25519,
     masterKey :: BadgeMasterKey,
-    badgeType :: BadgeType
+    badgeType :: BadgeType,
+    subscriptionState :: Maybe SubscriptionState,
+    providerToken :: Maybe Text -- Play's token of a subscription, which every renewal check asks by; never logged or returned
   }
 
 data ServicePurchase = ServicePurchase
@@ -207,7 +212,7 @@ getStorePaymentCredit db provider providerRef =
     DB.query
       db
       [sql|
-        SELECT p.badge_purchase_id, p.purchase_key, i.credential
+        SELECT p.badge_purchase_id, p.purchase_key, i.credential, pay.subscription_state
         FROM sx_badge_service_payments pay
         JOIN sx_badge_service_badge_purchases p ON p.payment_id = pay.payment_id
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
@@ -217,8 +222,8 @@ getStorePaymentCredit db provider providerRef =
       |]
       (textEncode provider, providerRef)
   where
-    toCredit (badgePurchaseId, purchaseKey, credential_) = case decodeCredential =<< credential_ of
-      Just credential -> Credited CreditedPurchase {badgePurchaseId, purchaseKey, credential}
+    toCredit (badgePurchaseId, purchaseKey, credential_, state_) = case decodeCredential =<< credential_ of
+      Just credential -> Credited CreditedPurchase {badgePurchaseId, purchaseKey, credential, subscription = textDecode =<< state_}
       Nothing -> CreditedUnreadable
 
 decodeCredential :: Binary ByteString -> Maybe BadgeCredential
@@ -367,16 +372,19 @@ createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = Bad
 -- | In the transaction of the credential rows. The payment's unique (provider, provider_ref) is the
 -- claim: a transaction presented twice at once, or under another key, inserts nothing the second time.
 createStorePurchase :: DB.Connection -> NewStorePurchase -> UTCTime -> IO (Maybe Int64)
-createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
+createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey = BadgeMasterKey mk, badgeType, subscriptionState, providerToken} now = do
   claimed <-
     executeChanging
       db
       [sql|
-        INSERT INTO sx_badge_service_payments (payment_id, provider, provider_ref, amount, currency, status, created_at, updated_at)
-        VALUES (?,?,?,?,?,?,?,?)
+        INSERT INTO sx_badge_service_payments
+          (payment_id, provider, provider_ref, amount, currency, status, subscription_state, subscription_checked_at, provider_token, created_at, updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT (provider, provider_ref) DO NOTHING
       |]
-      (paymentId, textEncode provider, providerRef, (\(CurrencyAmount a) -> a) . fst <$> paid, snd <$> paid, paymentStatusText PSSettled, now, now)
+      ( (paymentId, textEncode provider, providerRef, (\(CurrencyAmount a) -> a) . fst <$> paid, snd <$> paid, paymentStatusText PSSettled)
+          :. (textEncode <$> subscriptionState, now <$ subscriptionState, providerToken, now, now)
+      )
   if claimed == 0
     then pure Nothing
     else do
@@ -389,6 +397,19 @@ createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid,
         |]
         (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, paymentId, now, now)
       Just <$> insertedRowId db
+
+-- | A charge the store reports again is recorded once, by its own reference.
+insertSubscriptionCharge :: DB.Connection -> Text -> Text -> StoreCharge -> UTCTime -> IO ()
+insertSubscriptionCharge db paymentId chargeId StoreCharge {chargeRef, planId, periodStart, periodEnd, chargePaid = paid} now =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO sx_badge_service_subscription_charges
+        (charge_id, payment_id, provider_charge_ref, plan_id, period_start, period_end, amount, currency, created_at)
+      VALUES (?,?,?,?,?,?,?,?,?)
+      ON CONFLICT (payment_id, provider_charge_ref) DO NOTHING
+    |]
+    ((chargeId, paymentId, chargeRef, planId, periodStart, periodEnd) :. ((\(CurrencyAmount a) -> a) . fst <$> paid, snd <$> paid, now))
 
 -- | Revoked and AlreadyRevoked carry the code id, so the caller can retire the code's group tracker,
 -- or repair one an earlier revoke left live.

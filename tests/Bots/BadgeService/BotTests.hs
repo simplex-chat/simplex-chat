@@ -19,8 +19,8 @@ import Bots.BadgeService.FakeStore
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store (IssuedCode (..), getBadgeCode)
-import BadgeService.Store.Invoices (markCodePaid)
-import BadgeService.StoreReceipts (StoreRefusal (..), StoreVerifier (..), noStoreVerifier)
+import BadgeService.Store.Invoices (markCodePaid, truncateToSecond)
+import BadgeService.StoreReceipts (StoreCharge (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), SubscriptionRef (..), noStoreVerifier)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import ChatClient
@@ -59,7 +59,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError 
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..))
 import Simplex.Chat.Store.Badges (getNextHeldStoreReceipt)
 import Simplex.Messaging.Agent (disposeAgentClient)
@@ -175,6 +175,9 @@ badgeServiceTests = do
       it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
       it "should keep a receipt whose attempt throws" testStoreReceiptAttemptThrows
       it "should credit a held receipt after the app restarts" testStoreReceiptAfterRestart
+  describe "subscriptions" $ do
+    it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
+    it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -1755,7 +1758,7 @@ testStoreAcknowledgesBeforeCrediting ps = do
     let purchase payment = serviceCmd env purchaseKey $ purchaseCmd masterKey payment
     unsettled <- purchase $ googlePayment "badge_supporter_01" googlePendingToken
     fst (refusalOf unsettled) `shouldBe` BSEPaymentPending
-    unpriced <- purchase $ googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
+    unpriced <- purchase $ googlePayment "badge_unknown_01" googleUnknownProductToken
     refusalOf unpriced `shouldBe` (BSEProductUnavailable, Nothing)
     readIORef acknowledged `shouldReturn` []
     writeIORef acknowledgement $ Left $ SRUnreachable "acknowledging: fake store is down"
@@ -1777,9 +1780,9 @@ testStoreUnknownProduct :: HasCallStack => TestParams -> IO ()
 testStoreUnknownProduct ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
     (purchaseKey, masterKey) <- newPurchaseKeys
-    -- a real purchase of a subscription, whose renewals nothing adds to a badge yet
-    subscription <- serviceCmd env purchaseKey $ purchaseCmd masterKey $ googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
-    refusalOf subscription `shouldBe` (BSEProductUnavailable, Nothing)
+    -- a real purchase the store vouches for, of a product this service does not price
+    unpriced <- serviceCmd env purchaseKey $ purchaseCmd masterKey $ googlePayment "badge_unknown_01" googleUnknownProductToken
+    refusalOf unpriced `shouldBe` (BSEProductUnavailable, Nothing)
     nothingPurchased cc
 
 testStoreUpgradeRefused :: HasCallStack => TestParams -> IO ()
@@ -1933,6 +1936,103 @@ testStoreUnsentProductId ps = do
     refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey $ googlePayment "badge_supporter_01/../other" googleSupporterToken) `shouldReturn` (BSEReceiptInvalid, Nothing)
     verifications `shouldReturn` 0
     nothingPurchased cc
+
+subscriptionPlay :: ServicePayment
+subscriptionPlay = googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
+
+subscriptionCheck :: SubscriptionState -> Maybe StoreCharge -> SubscriptionCheck
+subscriptionCheck subscriptionState latestCharge = SubscriptionCheck {subscriptionState, testSubscription = False, latestCharge}
+
+storeCharge :: Text -> UTCTime -> Integer -> StoreCharge
+storeCharge planId periodStart months =
+  StoreCharge {chargeRef = "GPA.3301-1234-5678-90123", planId, periodStart, periodEnd = addMonths months periodStart, chargePaid = Nothing, revoked = False, offer = False}
+
+subscriptionOf :: HasCallStack => BadgeServiceResponse -> Maybe SubscriptionState
+subscriptionOf = \case
+  BSPBadgeCredential {subscription} -> subscription
+  r -> error $ "expected badgeCredential, got " <> show (J.toJSON r)
+
+createdAtOf :: StatementEntry -> UTCTime
+createdAtOf StatementEntry {createdAt} = createdAt
+
+-- | The ledger stores whole seconds.
+serviceNow :: BadgeServiceEnv -> IO UTCTime
+serviceNow BadgeServiceEnv {bsClock} = truncateToSecond <$> testClockTime bsClock
+
+subscriptionPayments :: ChatController -> IO [(Text, Text, Maybe Text, Maybe Text)]
+subscriptionPayments ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    DB.query_ db "SELECT provider, provider_ref, subscription_state, provider_token FROM sx_badge_service_payments ORDER BY provider"
+
+testSubscriptionPurchase :: HasCallStack => TestParams -> IO ()
+testSubscriptionPurchase ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleSandboxSubscriptionJWS}} -> do
+    now <- serviceNow env
+    let periodStart = addUTCTime (-3600) now
+        changes = map (\e -> let (c, m, _) = entryOf e in (c, m)) . fst . statementOf
+    setSubscription store (SubscriptionGoogle googleSubscriptionToken) $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" periodStart 1
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
+    map entryTag (fst $ statementOf purchased) `shouldBe` ["charge", "badge"]
+    changes purchased `shouldBe` [(1, 1), (-1, 0)]
+    -- the month is granted at the store's period start, not when the receipt arrived
+    map createdAtOf (take 1 $ fst $ statementOf purchased) `shouldBe` [periodStart]
+    badgeTypeOf purchased `shouldBe` Just BTSupporter
+    subscriptionOf purchased `shouldBe` Just SSRenewing
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1
+    rowCount cc "sx_badge_service_badge_ledger WHERE charge_id IS NOT NULL" `shouldReturn` 1
+    subscriptionPayments cc `shouldReturn` [("google", googlePurchaseRef googleSubscriptionToken, Just "renewing", Just googleSubscriptionToken)]
+    checks <- subscriptionChecks store
+    replayed <- serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
+    credentialOf replayed `shouldBe` credentialOf purchased
+    subscriptionOf replayed `shouldBe` Just SSRenewing
+    subscriptionChecks store `shouldReturn` checks
+    (otherKey, otherMasterKey) <- newPurchaseKeys
+    refusalOf <$> serviceCmd env otherKey (purchaseCmd otherMasterKey subscriptionPlay) `shouldReturn` (BSEReceiptUsed, Nothing)
+    -- an annual Apple subscription is claimed by its original id, which the store is asked about
+    setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_YEAR_01" periodStart 12
+    (appleKey, appleMasterKey) <- newPurchaseKeys
+    apple <- serviceCmd env appleKey $ purchaseCmd appleMasterKey SPApple {jws = appleSubscriptionJWS}
+    changes apple `shouldBe` [(12, 12), (-1, 11)]
+    subscriptionOf apple `shouldBe` Just SSRenewing
+    take 1 <$> subscriptionPayments cc `shouldReturn` [("apple", appleSubscriptionOriginalId, Just "renewing", Nothing)]
+    -- a test purchase is named, on the store's word for Play, and before the store is asked for Apple
+    let testToken = "fake-play-token-subscription-test.AO-J1Os2q5djX0pRm6"
+    setSubscription store (SubscriptionGoogle testToken) SubscriptionCheck {subscriptionState = SSRenewing, testSubscription = True, latestCharge = Just $ storeCharge "subscr-badge-supporter-month-02" periodStart 1}
+    (testKey, testMasterKey) <- newPurchaseKeys
+    refusalOf <$> serviceCmd env testKey (purchaseCmd testMasterKey $ googlePayment "subscr_badge_supporter_01" testToken) `shouldReturn` (BSETestPurchase, Nothing)
+    sandboxChecks <- subscriptionChecks store
+    refusalOf <$> serviceCmd env testKey (purchaseCmd testMasterKey SPApple {jws = appleSandboxSubscriptionJWS}) `shouldReturn` (BSETestPurchase, Nothing)
+    subscriptionChecks store `shouldReturn` sandboxChecks
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 2
+
+testSubscriptionPurchaseNotGrantable :: HasCallStack => TestParams -> IO ()
+testSubscriptionPurchaseNotGrantable ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS}} -> do
+    now <- serviceNow env
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    let monthlyFrom start = storeCharge "subscr-badge-supporter-month-02" start 1
+        monthly = monthlyFrom (addUTCTime (-3600) now)
+        answer ref payment checked = do
+          setSubscription store ref checked
+          refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey payment)
+        play = answer (SubscriptionGoogle googleSubscriptionToken) subscriptionPlay
+        aDay = Just 86400
+    play (subscriptionCheck SSRenewing $ Just $ monthlyFrom $ addUTCTime 3600 now) `shouldReturn` (BSEPaymentPending, Just 300)
+    -- Play gives a subscription bought again a new token, so this one can never be credited
+    play (subscriptionCheck SSEnded $ Just monthly) `shouldReturn` (BSEReceiptInvalid, Nothing)
+    -- a later charge could still credit this receipt
+    play (subscriptionCheck SSRenewing $ Just monthly {revoked = True}) `shouldReturn` (BSEPaymentPending, aDay)
+    play (subscriptionCheck SSRenewing $ Just monthly {offer = True}) `shouldReturn` (BSEPaymentPending, aDay)
+    play (subscriptionCheck SSBillingRetry Nothing) `shouldReturn` (BSEPaymentPending, aDay)
+    play (subscriptionCheck SSBillingRetry $ Just $ monthlyFrom $ addMonths (-2) now) `shouldReturn` (BSEPaymentPending, aDay)
+    play (subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-99" (addUTCTime (-3600) now) 1) `shouldReturn` (BSEPaymentPending, aDay)
+    -- an Apple resubscription keeps the original id, so an ended subscription may yet be credited
+    answer (SubscriptionApple appleSubscriptionOriginalId) SPApple {jws = appleSubscriptionJWS} (subscriptionCheck SSEnded $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) now) 1)
+      `shouldReturn` (BSEPaymentPending, aDay)
+    play (subscriptionCheck SSRenewing $ Just monthly {periodEnd = addUTCTime (-7200) now}) `shouldReturn` (BSEInternal, Nothing)
+    nothingPurchased cc
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 0
 
 testPurchaseBadge :: HasCallStack => TestParams -> IO ()
 testPurchaseBadge ps =

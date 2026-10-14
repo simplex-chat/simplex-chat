@@ -230,7 +230,8 @@
           "metadata": {"comment": "a redeemed code; its invoice belongs to the buyer, not the redeemer"}
         },
         "charge": {
-          "properties": {"chargeId": {"type": "string"}}
+          "properties": {"chargeId": {"type": "string"}},
+          "metadata": {"comment": "a store subscription's charge, dated (createdAt) to the store's billing period start"}
         },
         "support": {
           "optionalProperties": {}
@@ -375,6 +376,10 @@
             "receipt": {
               "type": "string",
               "metadata": {"comment": "not provided for lifetime badges"}
+            },
+            "subscription": {
+              "type": "string",
+              "metadata": {"comment": "SubscriptionState: renewing, cancelled, billingRetry, ended; any other value is read as not ended. Present exactly when a store subscription funds the purchase"}
             }
           }
         },

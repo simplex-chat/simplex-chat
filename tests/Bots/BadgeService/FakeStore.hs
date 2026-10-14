@@ -16,6 +16,10 @@ module Bots.BadgeService.FakeStore
     googleThrowingToken,
     googleHangingToken,
     googleSubscriptionToken,
+    googleUnknownProductToken,
+    appleSubscriptionOriginalId,
+    setSubscription,
+    subscriptionChecks,
     googlePayment,
     unsignedJWS,
   )
@@ -28,9 +32,11 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
-import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
+import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.FilePath ((</>))
@@ -47,8 +53,14 @@ data FakeStore = FakeStore
     appleThrowingJWS :: Text,
     appleMisnamedJWS :: Text,
     appleQuantityJWS :: Text,
+    -- a renewal of the subscription appleSubscriptionOriginalId names, and the same from Apple's Sandbox
+    appleSubscriptionJWS :: Text,
+    appleSandboxSubscriptionJWS :: Text,
     pendingSettled :: IORef Bool,
     googleDown :: IORef Bool,
+    -- what the store answers about each subscription: Apple's by original id, Google's by token
+    subscriptions :: IORef (M.Map (Either Text Text) SubscriptionCheck),
+    subscriptionCheckCount :: IORef Int,
     fakeVerifier :: StoreVerifier
   }
 
@@ -60,20 +72,30 @@ newFakeStore = do
   let appleThrowingJWS = unsignedJWS "{\"transactionId\":\"2000000812345679\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleMisnamedJWS = unsignedJWS "{\"transactionId\":\"2000000812345698\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleQuantityJWS = unsignedJWS "{\"transactionId\":\"2000000812345697\",\"productId\":\"BADGE_SUPPORTER_01\"}"
+      appleSubscriptionJWS = subscriptionJWS "2000000812345681"
+      appleSandboxSubscriptionJWS = subscriptionJWS "2000000812345682"
   pendingSettled <- newIORef False
   googleDown <- newIORef False
+  subscriptions <- newIORef M.empty
+  subscriptionCheckCount <- newIORef 0
   let appleReceipts =
         [ (appleSupporterJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" False 700),
           (appleLegendJWS, appleTransaction "2000000812345672" "BADGE_LEGEND_01" False 7000),
           (appleSandboxJWS, appleTransaction "2000000812345673" "BADGE_LEGEND_01" True 7000),
           -- a verifier vouching for another transaction than the one the evidence names
           (appleMisnamedJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" False 700),
-          (appleQuantityJWS, (appleTransaction "2000000812345697" "BADGE_SUPPORTER_01" False 1400) {quantity = 2})
+          (appleQuantityJWS, (appleTransaction "2000000812345697" "BADGE_SUPPORTER_01" False 1400) {quantity = 2}),
+          -- vouched by the ref the claim reads, the subscription's original id
+          (appleSubscriptionJWS, appleSubscription appleSubscriptionJWS False),
+          (appleSandboxSubscriptionJWS, appleSubscription appleSandboxSubscriptionJWS True)
         ]
       verifyApple jws
         | jws == appleThrowingJWS = error "fake verifier bug"
         | otherwise = maybe (Left $ SRInvalid "not a fake receipt") Right $ lookup jws appleReceipts
       verifyGoogle = googleVerdict pendingSettled googleDown
+      checkSubscription ref = do
+        modifyIORef' subscriptionCheckCount (+ 1)
+        maybe (Left $ SRUnreachable "the fake store knows no such subscription") Right . M.lookup (subscriptionKey ref) <$> readIORef subscriptions
   pure
     FakeStore
       { appleSupporterJWS,
@@ -82,14 +104,41 @@ newFakeStore = do
         appleThrowingJWS,
         appleMisnamedJWS,
         appleQuantityJWS,
+        appleSubscriptionJWS,
+        appleSandboxSubscriptionJWS,
         pendingSettled,
         googleDown,
-        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, acknowledgeGoogle = Nothing, verifyTimeout = 500000}
+        subscriptions,
+        subscriptionCheckCount,
+        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, acknowledgeGoogle = Nothing, checkSubscription = Just checkSubscription, verifyTimeout = 500000}
       }
   where
     fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)
     appleTransaction transactionRef productId testPurchase cents =
       VerifiedStoreTransaction {transactionRef, productId, quantity = 1, testPurchase, paid = Just (CurrencyAmount cents, "USD")}
+    subscriptionJWS transactionId =
+      unsignedJWS $
+        LB.toStrict $
+          J.encode $
+            J.object
+              [ "transactionId" J..= (transactionId :: Text),
+                "originalTransactionId" J..= appleSubscriptionOriginalId,
+                "type" J..= ("Auto-Renewable Subscription" :: Text),
+                "productId" J..= ("SUBSCR_BADGE_SUPPORTER_MONTH_01" :: Text)
+              ]
+    appleSubscription jws testPurchase =
+      VerifiedStoreTransaction {transactionRef = fromMaybe "" (appleTransactionRef jws), productId = "SUBSCR_BADGE_SUPPORTER_MONTH_01", quantity = 1, testPurchase, paid = Just (CurrencyAmount 700, "USD")}
+
+subscriptionKey :: SubscriptionRef -> Either Text Text
+subscriptionKey = \case
+  SubscriptionApple originalId -> Left originalId
+  SubscriptionGoogle token -> Right token
+
+setSubscription :: FakeStore -> SubscriptionRef -> SubscriptionCheck -> IO ()
+setSubscription FakeStore {subscriptions} ref checked = modifyIORef' subscriptions $ M.insert (subscriptionKey ref) checked
+
+subscriptionChecks :: FakeStore -> IO Int
+subscriptionChecks FakeStore {subscriptionCheckCount} = readIORef subscriptionCheckCount
 
 googleVerdict :: IORef Bool -> IORef Bool -> Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
 googleVerdict pendingSettled googleDown productId token =
@@ -97,7 +146,7 @@ googleVerdict pendingSettled googleDown productId token =
     True -> pure $ Left $ SRUnreachable "fake store is down"
     False
       | (productId, token) == ("badge_supporter_01", googleSupporterToken) -> pure $ Right purchased
-      | (productId, token) == ("subscr_badge_supporter_01", googleSubscriptionToken) -> pure $ Right purchased
+      | (productId, token) == ("badge_unknown_01", googleUnknownProductToken) -> pure $ Right purchased
       | (productId, token) == ("badge_supporter_01", googlePendingToken) -> do
           settled <- readIORef pendingSettled
           pure $ if settled then Right purchased else Left SRPending
@@ -124,13 +173,17 @@ settlePending FakeStore {pendingSettled} = writeIORef pendingSettled True
 setGoogleDown :: FakeStore -> Bool -> IO ()
 setGoogleDown FakeStore {googleDown} = writeIORef googleDown
 
-googleSupporterToken, googlePendingToken, googleUnreachableToken, googleThrowingToken, googleHangingToken, googleSubscriptionToken :: Text
+googleSupporterToken, googlePendingToken, googleUnreachableToken, googleThrowingToken, googleHangingToken, googleSubscriptionToken, googleUnknownProductToken :: Text
 googleSupporterToken = "fake-play-token-supporter.AO-J1Oz9x2kqE7wYt3"
 googlePendingToken = "fake-play-token-pending.AO-J1Oy8w1jpD6vXs2"
 googleUnreachableToken = "fake-play-token-unreachable.AO-J1Ox7v0ioC5uWr1"
 googleThrowingToken = "fake-play-token-throwing.AO-J1Ov5t8gmA3sUp9"
 googleHangingToken = "fake-play-token-hanging.AO-J1Ou4s7flZ2rTo8"
 googleSubscriptionToken = "fake-play-token-subscription.AO-J1Ow6u9hnB4tVq0"
+googleUnknownProductToken = "fake-play-token-unknown-product.AO-J1Ot3r6ekY1qSn7"
+
+appleSubscriptionOriginalId :: Text
+appleSubscriptionOriginalId = "2000000812345680"
 
 googlePayment :: Text -> Text -> ServicePayment
 googlePayment productId token = SPGoogle {productId, token}
