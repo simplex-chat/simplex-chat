@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -85,10 +86,7 @@ verifyPurchase env productId token = (>>= purchaseVerdict productId token) <$> r
 -- which is how the app finds a purchase it has not yet settled.
 acknowledgePurchase :: PlayEnv -> Text -> Text -> IO (Either StoreRefusal ())
 acknowledgePurchase env productId token =
-  readPurchase env productId token >>= \case
-    Left refusal -> pure $ Left $ acknowledging refusal
-    Right ProductPurchase {alreadyAcknowledged = True} -> pure $ Right ()
-    Right _ -> bimap acknowledging (const ()) <$> playCall env (\req -> req {method = methodPost}) (purchaseUrl env productId token <> ":acknowledge")
+  bimap acknowledging (const ()) <$> playCall env (\req -> req {method = methodPost}) (purchaseUrl env productId token <> ":acknowledge")
   where
     acknowledging = \case
       SRUnreachable reason -> SRUnreachable $ "acknowledging: " <> reason
@@ -118,7 +116,7 @@ playCall env@PlayEnv {accessToken} prepare url =
         Right (code, _) -> pure $ Left $ SRUnreachable $ "Play answered HTTP " <> tshow code
 
 purchaseVerdict :: Text -> Text -> ProductPurchase -> Either StoreRefusal VerifiedStoreTransaction
-purchaseVerdict productId token ProductPurchase {purchaseState, purchaseType, purchaseQuantity, purchaseProductId}
+purchaseVerdict productId token ProductPurchase {purchaseState, purchaseType, purchaseQuantity, purchaseProductId, alreadyAcknowledged}
   | maybe False (/= productId) purchaseProductId = Left $ SRVerifierFailed "Play answered about another product"
   | otherwise = case purchaseState of
       0 -> purchased <$> testPurchaseOf purchaseType
@@ -133,7 +131,8 @@ purchaseVerdict productId token ProductPurchase {purchaseState, purchaseType, pu
           productId,
           quantity = fromMaybe 1 purchaseQuantity,
           testPurchase,
-          paid = Nothing
+          paid = Nothing,
+          alreadyAcknowledged
         }
     testPurchaseOf = \case
       Nothing -> Right False

@@ -66,6 +66,7 @@ import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
+import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
@@ -288,9 +289,22 @@ issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} =
 processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
 processQueuedRequests key trackerQ_ env = do
   cc <- atomically $ readTMVar $ serviceCC env
-  forever $ do
-    (u, reqId, sigKey, reqData) <- atomically $ readTQueue $ serviceRequestQ env
-    survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ handleServiceRequest key (storeVerifier env) cc trackerQ_ u reqId sigKey reqData
+  -- a Play hand-over can wait two verifyTimeouts on Play, so it waits on a lane of its own
+  playQ <- newTQueueIO
+  let answer (u, reqId, sigKey, reqData) = handleServiceRequest key (storeVerifier env) cc trackerQ_ u reqId sigKey reqData
+      route req@(_, _, _, reqData)
+        | presentsPlayReceipt reqData = atomically $ writeTQueue playQ req
+        | otherwise = answer req
+      lane q act = forever $ do
+        req@(_, reqId, _, _) <- atomically $ readTQueue q
+        survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ act req
+  raceAny_ [lane (serviceRequestQ env) route, lane playQ answer]
+
+-- | Only what creates a purchase leaves the main lane: an append to an existing ledger is guarded by nothing but that lane being serial.
+presentsPlayReceipt :: J.Object -> Bool
+presentsPlayReceipt reqData = case J.fromJSON (J.Object reqData) of
+  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> True
+  _ -> False
 
 -- | Cancellation is rethrown, since that is how the race stops this thread. The
 -- exception itself is not logged: it can quote the request, which carries codes and store receipts.
@@ -465,10 +479,10 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
         Right (Left resp) -> resp
         _ -> errorResponse BSEInternal
     -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
-    newPurchase VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
+    newPurchase tx@VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       Just StoreProduct {badgeType, months} ->
-        fromMaybe (pure $ Right ()) acknowledgeReceipt >>= \case
+        maybe (pure $ Right ()) ($ tx) acknowledgeReceipt >>= \case
           Left refusal -> storeRefusalResponse refusal
           Right () -> do
             now <- badgeNow cc

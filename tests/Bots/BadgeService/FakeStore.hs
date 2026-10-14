@@ -89,7 +89,7 @@ newFakeStore = do
   where
     fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)
     appleTransaction transactionRef productId testPurchase cents =
-      VerifiedStoreTransaction {transactionRef, productId, quantity = 1, testPurchase, paid = Just (CurrencyAmount cents, "USD")}
+      VerifiedStoreTransaction {transactionRef, productId, quantity = 1, testPurchase, paid = Just (CurrencyAmount cents, "USD"), alreadyAcknowledged = False}
 
 googleVerdict :: IORef Bool -> IORef Bool -> Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
 googleVerdict pendingSettled googleDown productId token =
@@ -106,7 +106,7 @@ googleVerdict pendingSettled googleDown productId token =
       | token == googleHangingToken -> forever $ threadDelay 1000000
       | otherwise -> pure $ Left $ SRInvalid "not a fake purchase"
   where
-    purchased = VerifiedStoreTransaction {transactionRef = googlePurchaseRef token, productId, quantity = 1, testPurchase = False, paid = Nothing}
+    purchased = VerifiedStoreTransaction {transactionRef = googlePurchaseRef token, productId, quantity = 1, testPurchase = False, paid = Nothing, alreadyAcknowledged = False}
 
 -- | The fake store, running the hook's action once, inside the first Google verification, before it answers.
 googleVerifierWithHook :: IORef (IO ()) -> FakeStore -> StoreVerifier
