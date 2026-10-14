@@ -1809,6 +1809,10 @@ class Format_secret(TypedDict):
 class Format_small(TypedDict):
     type: Literal["small"]
 
+class Format_header(TypedDict):
+    type: Literal["header"]
+    level: int  # int
+
 class Format_colored(TypedDict):
     type: Literal["colored"]
     color: "Color"
@@ -1853,6 +1857,7 @@ Format = (
     | Format_snippet
     | Format_secret
     | Format_small
+    | Format_header
     | Format_colored
     | Format_uri
     | Format_hyperLink
@@ -1864,7 +1869,7 @@ Format = (
     | Format_phone
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "header", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
