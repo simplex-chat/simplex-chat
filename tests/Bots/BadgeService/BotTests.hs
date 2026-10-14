@@ -2315,7 +2315,7 @@ testPlayHoldsNoOtherRequest ps = do
   hook <- newIORef $ putMVar entered () >> takeMVar release
   -- past the 20s line wait, so a request queued behind the held call cannot be answered in time
   let holding store = (googleVerifierWithHook hook store) {verifyTimeout = 60000000}
-  withBadgeServiceVerifier ps holding $ \BadgeServiceEnv {bsClientCfg, bsController = cc, bsStore = FakeStore {appleSupporterJWS}} ->
+  withBadgeServiceVerifier ps holding $ \BadgeServiceEnv {bsClientCfg, bsAddress, bsController = cc, bsStore = FakeStore {appleSupporterJWS}} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
       withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
         withNewTestChatCfg ps bsClientCfg "cath" cathProfile $ \cath -> do
@@ -2329,6 +2329,15 @@ testPlayHoldsNoOtherRequest ps = do
           bob <##. "expires "
           cath ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
           cath <### [StartsWith (openPurchase ""), StartsWith "1: supporter"]
+          g <- C.newRandom
+          (upgradeKey, upgradePriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+          (fromPurchaseKey, fromPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+          masterKey <- generateMasterKey g
+          now <- getCurrentTime
+          let upgrade = BadgeUpgrade {fromPurchaseKey, receipt = "receipt", receiptSignature = C.sign' fromPriv "receipt", balance = BadgeBalance {lastEntry = emptyEntry now BTSupporter}}
+              upgradeReq = LB.unpack $ J.encode $ requestObject upgradeKey BSCPurchaseBadge {masterKey, payment = supporterPlay, upgrade = Just upgrade}
+          bob ##> ("/_service_request 1 " <> bsAddress <> " sign_key=" <> B.unpack (strEncode $ C.StoredPrivateKey upgradePriv) <> " " <> upgradeReq)
+          bob <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
           putMVar release ()
           expectLinesWithin 60 alice ["1: supporter"] []
           rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 3
