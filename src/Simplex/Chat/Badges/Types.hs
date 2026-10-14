@@ -20,6 +20,7 @@ module Simplex.Chat.Badges.Types
     LedgerDebitType (..),
     BadgeAlertKind (..),
     BadgeServiceErrorCode (..),
+    SubscriptionState (..),
     BadgeIssueFailure (..),
     BadgeIssueError (..),
     BadgeFunding (..),
@@ -249,6 +250,15 @@ data BadgeServiceErrorCode
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
 
+-- | The store's answer as the service last read it. A client reads a state it does not know as not ended.
+data SubscriptionState
+  = SSRenewing
+  | SSCancelled -- auto-renew is off, and the paid period still runs
+  | SSBillingRetry -- a charge failed and the store is retrying it: grace, retry or hold
+  | SSEnded -- no charge will come: expired, revoked or refunded
+  | SSUnknown Text -- forwards-compatible: service is deployed ahead of clients
+  deriving (Eq, Show)
+
 -- | Why a renewal request ended without a credential stored. retryable is the service's own view of
 -- transience: it gave retryAfter, which holds for codes this version does not know.
 data BadgeIssueFailure
@@ -377,6 +387,27 @@ instance ToJSON BadgeServiceErrorCode where
 
 instance FromJSON BadgeServiceErrorCode where
   parseJSON = textParseJSON "BadgeServiceErrorCode"
+
+instance TextEncoding SubscriptionState where
+  textEncode = \case
+    SSRenewing -> "renewing"
+    SSCancelled -> "cancelled"
+    SSBillingRetry -> "billingRetry"
+    SSEnded -> "ended"
+    SSUnknown t -> t
+  textDecode s = Just $ case s of
+    "renewing" -> SSRenewing
+    "cancelled" -> SSCancelled
+    "billingRetry" -> SSBillingRetry
+    "ended" -> SSEnded
+    t -> SSUnknown t
+
+instance ToJSON SubscriptionState where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+instance FromJSON SubscriptionState where
+  parseJSON = textParseJSON "SubscriptionState"
 
 instance StrEncoding BadgeIssueFailure where
   strEncode = \case

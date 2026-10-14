@@ -43,7 +43,6 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Types
 import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (TextEncoding (..), textParseJSON, textToEncoding, textToJSON)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Version (VersionRange, VersionScope, mkVersionRange)
 import Simplex.Messaging.Version.Internal (Version (..))
@@ -131,15 +130,6 @@ data BadgeServiceResponse
         message :: Maybe Text,
         retryAfter :: Maybe Word32
       }
-
--- | The store's answer as the service last read it. A client reads a state it does not know as not ended.
-data SubscriptionState
-  = SSRenewing
-  | SSCancelled -- auto-renew is off, and the paid period still runs
-  | SSBillingRetry -- a charge failed and the store is retrying it: grace, retry or hold
-  | SSEnded -- no charge will come: expired, revoked or refunded
-  | SSUnknown Text -- forwards-compatible: service is deployed ahead of clients
-  deriving (Eq, Show)
 
 data BadgeCatalog = BadgeCatalog
   { prices :: [BadgePrice],
@@ -247,27 +237,6 @@ instance ToJSON StatementDebitType where
   toEncoding = \case
     SDUnknown _ j -> JE.value $ J.Object j
     v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "SD") ''StatementDebitType) v
-
-instance TextEncoding SubscriptionState where
-  textEncode = \case
-    SSRenewing -> "renewing"
-    SSCancelled -> "cancelled"
-    SSBillingRetry -> "billingRetry"
-    SSEnded -> "ended"
-    SSUnknown t -> t
-  textDecode s = Just $ case s of
-    "renewing" -> SSRenewing
-    "cancelled" -> SSCancelled
-    "billingRetry" -> SSBillingRetry
-    "ended" -> SSEnded
-    t -> SSUnknown t
-
-instance ToJSON SubscriptionState where
-  toJSON = textToJSON
-  toEncoding = textToEncoding
-
-instance FromJSON SubscriptionState where
-  parseJSON = textParseJSON "SubscriptionState"
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "SE") ''StatementEntryType)
 
