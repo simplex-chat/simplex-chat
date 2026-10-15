@@ -2,6 +2,8 @@
 
 # Test backend on the app runner: a chat relay and a directory service on the preset servers, with one group
 # and one channel registered and approved by a CLI peer, and a search request that must find both.
+# Both have profile images as large as the apps make them, so their search results don't fit in one service
+# response, and the search must page through them.
 # Usage:
 #   scripts/ci/desktop-linux/backend.sh start <backend .tar.gz> <work dir>   writes the directory's short address to <work dir>/directory-link
 #   scripts/ci/desktop-linux/backend.sh stop <work dir>                      stops the relay and the directory, prints their logs
@@ -12,6 +14,12 @@ set -euo pipefail
 directory_name="SimpleX Directory"
 admin=ci_admin
 search_text="ci seed"
+# the longest profile image data URI the apps make and the core accepts (maxProfileImageSize)
+max_image_size=12500
+# the largest service response body, compressed if it has to be (maxServiceBodyLength)
+max_service_body=10737
+group_colour="rgb(200,40,40)"
+channel_colour="rgb(40,170,60)"
 
 # Runs one chat command in a CLI client that stays online for <secs> after it; the output is in $work/out.
 chat() {
@@ -20,7 +28,8 @@ chat() {
   local status=0
   "$bin/simplex-chat" -d "$work/$db" -e "$cmd" -t "$secs" --execute-log all "$@" < /dev/null > "$work/out" 2>&1 || status=$?
   cat "$work/out" >> "$work/$db-cli.log"
-  echo "::group::$db: $cmd"
+  # commands with images are thousands of characters long
+  echo "::group::$db: ${cmd:0:200}"
   cat "$work/out"
   echo "::endgroup::"
   return "$status"
@@ -51,6 +60,22 @@ admin_until() {
 
 db_query() {
   sqlite3 "$work/$1_chat.db" "$2"
+}
+
+# Prints a profile image data URI made as the apps make one: JPEG at quality 85, scaled down by the square root
+# of its excess, at most halved per step, until it is at most max_image_size characters. The source is noise
+# over the colour, which JPEG can't compress much, so the image ends up near the limit.
+avatar() {
+  local colour=$1 source=$work/avatar-source.png file=$work/avatar.jpg size=512 uri
+  convert -size 512x512 xc:gray50 -seed 1 +noise Random -modulate 100,0 -fill "$colour" -colorize 70% "$source"
+  while :; do
+    convert "$source" -resize "${size}x${size}" -quality 85 "$file"
+    uri="data:image/jpg;base64,$(base64 -w 0 "$file")"
+    [ "${#uri}" -gt "$max_image_size" ] || break
+    size=$(awk -v s="$size" -v n="${#uri}" -v m="$max_image_size" 'BEGIN { r = sqrt(n / m); if (r > 2) r = 2; print int(s / r) }')
+  done
+  echo "avatar over $colour: ${size}x${size} px, ${#uri} characters, mean colour $(convert "$file" -resize '1x1!' -format '%[pixel:p{0,0}]' info:)" >&2
+  echo "$uri"
 }
 
 start_relay() {
@@ -134,8 +159,18 @@ approve() {
   admin_until "$reply" 120 "/tail @'$directory_name' 20"
 }
 
+# The CLI's group commands can't set an image, so groups are created with the API commands, with the profiles
+# that "/g" and "/public group" make plus the image.
+group_json() {
+  local name=$1 descr=$2 image=$3 prefs=$4
+  echo "{\"displayName\":\"$name\",\"fullName\":\"\",\"shortDescr\":\"$descr\",\"image\":\"$image\",\"groupPreferences\":{\"directMessages\":{\"enable\":\"on\"},\"history\":{\"enable\":\"on\"}$prefs}}"
+}
+
 seed_group() {
-  admin 1 "/g ci_group CI seed group"
+  local user_id
+  user_id=$(db_query "$admin" "SELECT user_id FROM users WHERE local_display_name = '$admin'")
+  group_image=$(avatar "$group_colour")
+  admin 1 "/_group $user_id $(group_json ci_group "CI seed group" "$group_image" "")"
   expect_out "group #ci_group \(CI seed group\) is created"
   admin 5 "/a ci_group '$directory_name' admin"
   expect_out "invitation to join the group #ci_group sent to"
@@ -145,9 +180,11 @@ seed_group() {
 seed_channel() {
   admin 1 "/relays name=ci_relay $relay_link"
   expect_out "^ok$"
-  local relay_id
+  local user_id relay_id
+  user_id=$(db_query "$admin" "SELECT user_id FROM users WHERE local_display_name = '$admin'")
   relay_id=$(db_query "$admin" "SELECT chat_relay_id FROM chat_relays WHERE display_name = 'ci_relay' AND deleted = 0")
-  admin 10 "/public group relays=$relay_id #ci_channel CI seed channel"
+  channel_image=$(avatar "$channel_colour")
+  admin 10 "/_public group $user_id $relay_id $(group_json ci_channel "CI seed channel" "$channel_image" ",\"support\":{\"enable\":\"off\"}")"
   expect_out "group #ci_channel \(CI seed channel\) is created"
   local group_id
   group_id=$(db_query "$admin" "SELECT group_id FROM groups WHERE local_display_name = 'ci_channel'")
@@ -157,12 +194,55 @@ seed_channel() {
   approve ci_channel "Channel approved!"
 }
 
-# What the app will send, from a client that never connected to the directory.
+page_summary() {
+  local resp=$1 compressed=""
+  if command -v zstd > /dev/null; then
+    compressed=", $(printf '%s' "$resp" | zstd -3 -q -c | wc -c) bytes zstd-compressed"
+  fi
+  jq -r '[.entries[] | "\(.displayName) (image: \(.image // "" | length) characters)"] | join(", ") | "entries: " + .' <<< "$resp"
+  echo "body: ${#resp} bytes$compressed, limit $max_service_body"
+}
+
+# What the app will send, from a client that never connected to the directory, following the cursor to the last page.
+# The images make the results too large for one response, so the directory must split them, and each must arrive
+# once and with its whole image.
 probe_search() {
-  chat probe 1 "/_service_request 1 $directory_link timeout=30 {\"type\":\"search\",\"searchText\":\"$search_text\"}" --user-display-name ci_probe
-  expect_out '"displayName":"ci_group"'
-  expect_out '"displayName":"ci_channel"'
-  echo "search for \"$search_text\" found ci_group and ci_channel"
+  local cursor="" pages=0 started resp req
+  : > "$work/probe-entries"
+  while :; do
+    pages=$((pages + 1))
+    if [ "$pages" -gt 10 ]; then
+      echo "error: the search is still returning pages after 10"
+      return 1
+    fi
+    req="{\"type\":\"search\",\"searchText\":\"$search_text\"${cursor:+,\"searchCursor\":$cursor}}"
+    started=$SECONDS
+    chat probe 1 "/_service_request 1 $directory_link timeout=30 $req" --user-display-name ci_probe
+    resp=$(sed -n 's/^service response: //p' "$work/out")
+    if [ -z "$resp" ]; then
+      echo "error: no service response for page $pages"
+      return 1
+    fi
+    echo "page $pages, in $((SECONDS - started)) s:"
+    page_summary "$resp"
+    jq -r '.entries[] | "\(.displayName) \(.image // "" | length)"' <<< "$resp" >> "$work/probe-entries"
+    cursor=$(jq -c '.searchCursor // empty' <<< "$resp")
+    [ -n "$cursor" ] || break
+  done
+  local expected="ci_channel ${#channel_image}
+ci_group ${#group_image}"
+  if [ "$(sort "$work/probe-entries")" != "$expected" ]; then
+    echo "error: expected each result once with its whole image (name, image length):"
+    echo "$expected"
+    echo "got:"
+    sort "$work/probe-entries"
+    return 1
+  fi
+  if [ "$pages" -lt 2 ]; then
+    echo "error: the results fit in one response, so the search no longer tests paging"
+    return 1
+  fi
+  echo "search for \"$search_text\" found ci_group and ci_channel with their images, in $pages pages"
 }
 
 dump_directory() {
