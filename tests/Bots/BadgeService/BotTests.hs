@@ -52,7 +52,7 @@ import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Calendar (fromGregorian)
+import Data.Time.Calendar (fromGregorian, toGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Word (Word32)
@@ -2215,13 +2215,14 @@ testSubscriptionChargeNotGranted ps =
 testClippedPlayPeriodNotGranted :: HasCallStack => TestParams -> IO ()
 testClippedPlayPeriodNotGranted ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
-    (purchaseKey, _, purchased) <- subscribedMonthly env
+    (purchaseKey, firstStart, purchased) <- subscribedMonthly env
     ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
-    -- Play dates the period ending on 31 March from 28 February, and the ledger's month from then ends on 28 March
-    let clippedEnd = UTCTime (fromGregorian 2027 3 31) 43200
+    -- Play dates the period ending on 31 March from the last day of February, and the ledger's month from then ends before 31 March
+    let (year, _, _) = toGregorian (utctDay firstStart)
+        clippedEnd = UTCTime (fromGregorian (year + 1) 3 31) 43200
         clipped = (storeCharge "subscr-badge-supporter-month-02" (addMonths (-1) clippedEnd) 1) {periodEnd = clippedEnd, chargeRef = "GPA.clipped"}
     storeReports store $ subscriptionCheck SSRenewing $ Just clipped
-    setClockAt bsClock $ addUTCTime (-2 * nominalDay) clippedEnd
+    setClockAt bsClock $ addUTCTime (-nominalDay) clippedEnd
     renewal <- assertBalance env purchaseKey (last purchased)
     credentialOf renewal `shouldBe` Nothing
     map entryTag (fst $ statementOf renewal) `shouldBe` []
