@@ -5867,8 +5867,8 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
         storedAt <- badgeNow
         (applied, balance_) <- withStore' $ \db -> do
           applied <- applyBadgeStatement db g badgePurchaseId badgeType statement verifiedCred_ storedAt
-          -- the service reads the store only for a request whose asserted coverage had ended when it was made;
-          -- to any other it repeats the state it stored, which for an annual plan can be a year old
+          -- past the asserted coverage the state is the store's, except within an hour of an earlier check, when it can be
+          -- the last successful check's (a later fresh answer or device report corrects it); before then it can be a year old
           when (L.paidThrough lastEntry <= now) $ forM_ subscription $ setBadgeSubscriptionStatus db badgePurchaseId . boundedSubscriptionState
           (applied,) <$> getBadgeLedgerLastEntry db badgePurchaseId
         -- the statement is applied either way, so a month can be spent with nothing to show for it

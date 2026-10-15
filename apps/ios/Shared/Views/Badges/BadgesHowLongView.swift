@@ -183,6 +183,7 @@ struct BadgesHowLongView: View {
     private func continueButton() -> some View {
         ZStack {
             Button {
+                chosenPeriod = selectedPeriod
                 continueActive = true
             } label: {
                 Text("Continue")

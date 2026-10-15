@@ -365,11 +365,11 @@ object BadgeStore {
           Log.e(TAG, "BadgeStore.presentUnfinished: ${e.message}")
         }
       }
-      reportSubscriptionStates()
       chatModel.controller.loadBadgeState(chatModel.remoteHostId())
     } finally {
       withContext(Dispatchers.Main + NonCancellable) { reconciledOnce.value = true }
     }
+    reportSubscriptionStates()
   }
 
   // Play lists a Google account's purchases on every device signed into it, so these are handed over as listed
@@ -410,7 +410,10 @@ object BadgeStore {
     // the store's purchases are this device's, so they are told to its own core
     if (chatModel.remoteHostId() != null || useBadgeTestProducts || !platform.androidHasPlatformStore) return
     try {
-      for (outcome in platform.androidUnfinishedBadgePurchases()) {
+      val purchases = platform.androidUnfinishedBadgePurchases()
+      if (purchases.none { (it as? BadgePurchaseOutcome.Purchased)?.receipt?.autoRenewing != null }) return
+      load()
+      for (outcome in purchases) {
         val receipt = (outcome as? BadgePurchaseOutcome.Purchased)?.receipt ?: continue
         val state = when (receipt.autoRenewing) {
           true -> BadgeSubscriptionState.Renewing
@@ -434,7 +437,7 @@ object BadgeStore {
   }
 
   // Hands over as the device's own whatever the store lists, so a purchase no record here has is claimed by this profile.
-  // Answers whether a badge is shown or a store purchase is open afterwards.
+  // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
   suspend fun restorePurchases(): Boolean {
     var handOverError: Exception? = null
     val purchases = if (useBadgeTestProducts) emptyList() else platform.androidUnfinishedBadgePurchases()
@@ -454,7 +457,7 @@ object BadgeStore {
     return withContext(Dispatchers.Main) {
       val userId = chatModel.currentUser.value?.userId
       val badgeShown = BadgeModel.isCurrent(rhId, userId) && BadgeModel.badgeState.value?.shown == true
-      badgeShown || openStorePurchases(userId).isNotEmpty()
+      badgeShown || purchaseState(userId) != null
     }
   }
 

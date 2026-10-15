@@ -205,6 +205,12 @@ final class BadgeStore: ObservableObject {
         await loadBadgeStateAsync(userId)
         do {
             let outcome = try await storePurchase(product, invoiceId)
+            if product.type == .autoRenewable {
+                switch outcome {
+                case .purchased, .pending: await MainActor.run { subscribedBefore = true }
+                case .cancelled: break
+                }
+            }
             if case let .purchased(receipt) = outcome, receipt.signatureVerified {
                 try await handOver(receipt, listed: false)
             }
@@ -302,9 +308,9 @@ final class BadgeStore: ObservableObject {
         for await verification in Transaction.unfinished {
             await reconcileListed(verification)
         }
-        await reportSubscriptionStates()
         await loadCurrentBadgeState()
         await MainActor.run { reconciledOnce = true }
+        await reportSubscriptionStates()
     }
 
     // transactions the store settles outside a purchase call, such as an approved Ask to Buy
@@ -339,6 +345,7 @@ final class BadgeStore: ObservableObject {
     private func reconcile(_ verification: VerificationResult<Transaction>, listed: Bool) async throws {
         let receipt = storeReceipt(verification)
         let t = receipt.transaction
+        if t.productType == .autoRenewable { await MainActor.run { subscribedBefore = true } }
         if t.productType == .autoRenewable && t.revocationDate != nil {
             // the service refuses a revoked charge as invalid, and that would refuse the whole subscription's record
             await t.finish()
@@ -352,6 +359,7 @@ final class BadgeStore: ObservableObject {
     // The service asks the store only once the paid period ends, so a cancellation or a failed charge before
     // then is seen only here. Sent with the latest transaction, which names the subscription as its first one did.
     func reportSubscriptionStates() async {
+        guard await hasSubscribedBefore() else { return }
         await load()
         guard let subscription = await MainActor.run(body: { products.values.first { $0.type == .autoRenewable }?.subscription }) else { return }
         do {
@@ -392,7 +400,7 @@ final class BadgeStore: ObservableObject {
     }
 
     // Hands over as the device's own whatever the store lists, so a purchase no record here has is claimed by this profile.
-    // Answers whether a badge is shown or a store purchase is open afterwards.
+    // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
     func restorePurchases() async throws -> Bool {
         try await AppStore.sync()
         var handOverError: Error? = nil
@@ -408,7 +416,7 @@ final class BadgeStore: ObservableObject {
         return await MainActor.run {
             let userId = ChatModel.shared.currentUser?.userId
             let badgeShown = BadgeModel.shared.userId == userId && BadgeModel.shared.badgeState?.shown == true
-            return badgeShown || !openStorePurchases(userId).isEmpty
+            return badgeShown || purchaseState(userId) != nil
         }
     }
 

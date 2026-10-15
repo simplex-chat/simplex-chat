@@ -123,7 +123,7 @@ fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDep
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      ContinueButton(level, selectedPeriod, modalManager, unwindToDepth)
+      ContinueButton(level, selectedPeriod, modalManager, unwindToDepth) { chosenPeriod = it }
       BadgeBillingFooter(selectedPeriod)
     }
   }
@@ -188,12 +188,13 @@ private fun savingsPercent(level: BadgeLevel, period: BadgePeriod): Int? =
   if (period == BadgePeriod.Annual) BadgeStore.annualSavings(level) else null
 
 @Composable
-private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modalManager: ModalManager, unwindToDepth: Int) {
+private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modalManager: ModalManager, unwindToDepth: Int, choosePeriod: (BadgePeriod) -> Unit) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.badges_continue,
     onboarding = null,
     onclick = {
+      choosePeriod(selectedPeriod)
       modalManager.showModal(cardScreen = true) { BadgesCheckOrderView(level, selectedPeriod, modalManager, unwindToDepth) }
     }
   )

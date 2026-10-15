@@ -107,9 +107,15 @@ suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurc
 // and either awaiting a slow payment
 suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> {
   val client = connectedBadgeBillingClient()
-  val purchases = queryBadgePurchases(client, BillingClient.ProductType.INAPP) +
-      queryBadgePurchases(client, BillingClient.ProductType.SUBS)
-  return purchases.mapNotNull(::badgePurchaseOutcome)
+  val oneTime = queryBadgePurchases(client, BillingClient.ProductType.INAPP)
+  // a failed subscription query must not cost the one-time purchases their sweep
+  val subscriptions = try {
+    queryBadgePurchases(client, BillingClient.ProductType.SUBS)
+  } catch (e: BadgeStoreError.BillingError) {
+    Log.e(TAG, "unfinishedBadgePurchases: subscriptions ${e.message}")
+    emptyList()
+  }
+  return (oneTime + subscriptions).mapNotNull(::badgePurchaseOutcome)
 }
 
 private suspend fun queryBadgePurchases(client: BillingClient, productType: String): List<Purchase> {
