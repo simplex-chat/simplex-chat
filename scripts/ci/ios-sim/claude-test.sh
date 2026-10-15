@@ -62,6 +62,7 @@ write_prompt() {
   echo "- Cases: $cases."
   echo "- Entries to use: $(scope "entries-$layout")."
   echo "- Link to paste (C4, W3): $(cat "$BACKEND_DIR/directory-link") (the test directory's address)."
+  echo "- Names server to add in the app: $(cat "$BACKEND_DIR/names-server")."
   if [ -z "$previous" ]; then
     echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name), which has no conversations, and searched the directory once, choosing \"Search\" in the alert."
   else

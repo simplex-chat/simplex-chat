@@ -30,12 +30,29 @@ You are testing the SimpleX Chat iOS app in an iPhone 17 simulator (iOS 26.5, sc
 - **If the app gets stuck**, `ui relaunch` restarts it (search text and results are cleared, everything else stays).
 - Waiting: prefer `ui wait <text> <secs>` over repeated trees.
 
+## SimpleX names
+
+The test backend resolves SimpleX names through its own SMP server, whose address is under "This session"; the names it knows are under "Test directory" → "SimpleX names" (all end in `.testing`; a bare word of 5 or more letters is completed with `.testing`, so `cinews` is `cinews.testing`).
+
+**Set the app up for it, once, before the first N case** (if an earlier session in this run did it, check it instead: the server is listed under "Your servers"):
+
+1. Open the picker (your profile image), "Settings", "Network & servers".
+2. Under "Preset servers", open each operator ("SimpleX Chat", "Flux"), turn "To resolve names" off, and go back. Otherwise the app may ask the real servers, which do not know the test names.
+3. "Your servers" → "Add server" → "Enter server manually". Put the names server's address in the address field by pasting it (`ui clipboard "<address>"`, tap the field twice, tap the menu's "Paste"; typing it would let the keyboard capitalize it), check it in the tree, and go back.
+4. In "Your servers", open the new server and set "To receive" to "no", "For private routing" to "no" and "To resolve names" to "yes" (each is a picker), then go back.
+5. On "Network & servers", tap "Save servers" (and "Save" if asked). Close Settings.
+6. Check: type `cinews`, press the Search key: a "Names" part with a row for the channel cinews must appear. If it does not, record what you see and look at the steps again before running the N cases.
+
+**What the names are for:** `cinews` is a listed channel (N1, N6, the full search); `cialice` and `cibobby` are contacts that accept a connection at once (N2, N5, N10, W7, W8, G1; `cibobby`'s profile is called "Robert", so its name is not in its display name); `ciboth` has both a contact address and a channel (N3); `cinone` is not registered (N4). N7 needs the second profile with "To resolve names" off for both operators (step 2 only, no server added). Which case uses which contact in this layout is under "This session".
+
+**The full search** (in both layouts, after N1): with a local chat whose name contains "cinews" (join the group cinews_digest from its Directory row first, if it is not in your chats yet), type `cinews` and press the Search key. The plan's parts are the chats already loaded, a "Names" part and a "Directory" part (N1: the "Names" header above the Directory part; W4 for New chat: "Names" and "Directory" after "Your Contacts"). Record for this layout, from the tree, every header and row with its y, top to bottom: the local chats, "Names" with its rows, "Directory" with its rows (cinews_weekly; cinews should not repeat there, as it is the Names row), and say whether the part names and their order match the plan. Do the same in New chat (W4).
+
 ## How to run the cases
 
 - Run each case of the session's list, in the plan's order unless a case needs another first (for example D15 needs a profile without conversations, U1 and U2 need a joined channel from D6).
 - For each case, do what the plan says, decide pass or fail against the plan's "Expect" column, and take at least one `ui shot` at the moment that shows the result, named after the case and layout without a number, for example `ui shot D2-reachable` (the helper numbers the files).
 - Pass only what you saw: quote the evidence (element labels, values and coordinates from the tree, or what a screenshot shows). If an expectation cannot be checked here, say which part and why, and mark the case passed for the parts you checked only if those parts are the substance of the case; otherwise skipped.
-- **Skip** the N cases (no name-resolving server here), and any case that needs something this runner lacks, saying exactly what is missing. Known: U3 (needs a listed group joined through another link), W7, W8 and G1 (need contacts with SimpleX names), W10 (needs a notification from another profile), W11 unless "Archived contacts" is shown. Do not skip a case only because it takes several steps.
+- **Skip** any case that needs something this runner lacks, saying exactly what is missing. Known: U3 (needs a listed group joined through another link), W10 (needs a notification from another profile), W11 unless "Archived contacts" is shown. Do not skip a case only because it takes several steps.
 - **The Directory header** must be above its results in this layout (D2, D4, D8 and every screen with results): record the heading's y and the first and last result's y each time, and note whether `Heading "Directory"` comes before or after the result texts in the tree's order.
 - **Avatars and the response size limit** (part of D2 and D7): search `ci avatar`. Six entries match; each has an avatar about the size the app makes, and a directory response must fit 10737 bytes, so expect about one entry per page. Tap "Show more" until it disappears and record which entries each page added. Compare with the page-by-page table under "Test directory" below: every entry reachable, none twice, none silently missing. Look at the screenshots: does every row show its picture (not the placeholder icon), is any row drawn wrong?
 - Other app bugs you notice are findings: write what you did, what you saw, what you expected, and the screenshot.
