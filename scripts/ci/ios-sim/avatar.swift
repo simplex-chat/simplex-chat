@@ -2,7 +2,7 @@
 // a JPEG at quality 0.85 drawn at scale 1, shrunk by sqrt(size / 12500), at most halved per step,
 // until its data URI is at most 12500 characters. The picture is synthetic and photo-like: a gradient,
 // discs and noise, with more noise for a higher detail.
-// Usage: avatar <seed> <detail 0...1> <output file>
+// Usage: avatar <seed> <detail 0...1> <output file> [side in pixels, default 1024]
 
 import CoreGraphics
 import Foundation
@@ -70,12 +70,12 @@ func reduced(_ image: CGImage, ratio: Double) -> CGImage {
 }
 
 let args = CommandLine.arguments
-guard args.count == 4, let seed = UInt64(args[1]), let detail = Double(args[2]) else {
-    print("usage: avatar <seed> <detail 0...1> <output file>")
+guard args.count == 4 || args.count == 5, let seed = UInt64(args[1]), let detail = Double(args[2]), let side = Int(args.count == 5 ? args[4] : "1024") else {
+    print("usage: avatar <seed> <detail 0...1> <output file> [side in pixels, default 1024]")
     exit(1)
 }
 var generator = Random(state: seed)
-var image = picture(side: 1024, detail: detail, random: &generator)
+var image = picture(side: side, detail: detail, random: &generator)
 var uri = jpegDataURI(image)
 var steps = 0
 while uri.count > maxDataSize {

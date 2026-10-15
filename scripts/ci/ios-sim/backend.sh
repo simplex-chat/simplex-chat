@@ -224,12 +224,16 @@ new_address() {
   esac
 }
 
-# Avatars at the size the app makes them (avatar.swift), with different amounts of detail.
+# Avatars at the size the app makes them (avatar.swift), with different amounts of detail;
+# and small ones for the smoke test's entries, so that its two search results still arrive in one response.
 make_avatars() {
   xcrun swiftc -O -o "$work/avatar" "$(dirname "$0")/avatar.swift"
   local i
   for i in 1 2 3 4 5 6; do
     "$work/avatar" "$i" "0.$((i + 2))" "$work/avatar-$i.txt"
+  done
+  for i in 7 8 9; do
+    "$work/avatar" "$i" 0 "$work/avatar-$i.txt" 64
   done
 }
 
@@ -402,7 +406,8 @@ write_seed() {
     echo
     echo "| Search with | Entries | Seeded for |"
     echo "|---|---|---|"
-    echo "| \`$search_text\` | ci_group (group, no avatar), ci_channel (channel, no avatar) | the smoke test; results on one page |"
+    echo "| \`$search_text\` | ci_group (group), ci_channel (channel), each with a small avatar (64 px) | the smoke test; results on one page |"
+    echo "| \`ci cards\` | ci_cards (channel, with a small avatar) | the smoke test joins it, so that the chat list shows its cards |"
     echo "| \`$avatar_search_text\` | ci_avatar_g1…3 (groups), ci_avatar_c1…3 (channels), each with an avatar the size the app makes | avatars and the response size limit: about one entry per page |"
     echo "| \`ci long\` | $long_name (group): a long name and a two-line description | D3 |"
     echo "| \`ci markdown\` | ci_markdown (group): markdown in the description | D5 |"
@@ -446,9 +451,10 @@ start() {
   start_directory "0:nobody"
   trap dump_directory EXIT
   connect_admin
-  seed_group ci_group "CI seed group"
+  seed_group ci_group "CI seed group" "$work/avatar-7.txt"
   setup_relay
-  seed_channel ci_channel "CI seed channel"
+  seed_channel ci_channel "CI seed channel" "$work/avatar-8.txt"
+  seed_channel ci_cards "CI cards channel" "$work/avatar-9.txt"
   seed_avatars
   seed_group "$long_name" "CI long entry: a description long enough to take two lines in the directory results, to check how the row truncates"
   seed_group ci_markdown "CI markdown *bold* _italic_ [x](https://example.com)"
@@ -456,6 +462,7 @@ start() {
   probe_search
   probe_names
   write_seed
+  probe_pages "$search_text" 2
   probe_pages "$avatar_search_text" 6
 }
 
