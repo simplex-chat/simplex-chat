@@ -50,7 +50,7 @@ Searching beyond the user's own chats happens only when the user asks, and the r
 
 A result is not shown twice: a name or directory entry for a chat already shown in the list is hidden, and a directory entry is hidden when the name search found the same channel (matched by its link). A group the user joined through a link other than the directory's still appears in the Directory part. Directory entries that are not group or channel links are ignored. Looking up a name never shows an error; a name that is not found simply gives no row, and "Connect to …" stays.
 
-With no conversations yet (onboarding), the online results replace the onboarding pages while a search runs or has results.
+With no conversations yet (onboarding), the online results replace the onboarding pages while a search runs or has results. With conversations, while an online search runs or after it has run, even one that found nothing, the list hides the banner (Wefunder or badges), the one-hand UI card and the "New 1-time link" / "Paste link / Scan" cards; filtering the chats by typing keeps them, and they come back when the search text is cleared (× or Cancel).
 
 ### Chat Filter Tabs (Tags)
 

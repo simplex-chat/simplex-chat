@@ -546,6 +546,7 @@ struct ChatListView: View {
     private var chatListContent: some View {
         let cs = filteredChats()
         let rows = onlineSearch.rows(shownChatIds: Set(cs.map { $0.id }))
+        let showsCards = !onlineSearch.showResults
         return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
@@ -564,7 +565,7 @@ struct ChatListView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, oneHandUI ? 8 : 0)
                     .id("searchBar")
-                    if !oneHandUICardShown {
+                    if showsCards && !oneHandUICardShown {
                         OneHandUICard()
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -572,7 +573,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                     }
                     // one slot: a badge the user paid for ending outranks the pitch to get one
-                    if supportEnded, let alert = badgeModel.alert {
+                    if showsCards, supportEnded, let alert = badgeModel.alert {
                         SupportSimpleXBanner(
                             title: "Your badge expired",
                             subtitle: "Your badge expired on \(alert.dateText).",
@@ -585,7 +586,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .badgeExpired }
-                    } else if badgeIssueFailed {
+                    } else if showsCards && badgeIssueFailed {
                         SupportSimpleXBanner(
                             title: "Badge renewal failed",
                             subtitle: "Tap for details",
@@ -601,7 +602,7 @@ struct ChatListView: View {
                             .onAppear { chatModel.chatListBanner = .badgeIssueFailed }
                     // noShownBadge is false until the badge state loads: the pitch must not lock the slot and then
                     // be hidden by a supporter's badge arriving a moment later, leaving the slot empty for the session
-                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
+                    } else if showsCards && chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             showDismiss: supporterBannerTapped,
                             onTap: {
@@ -616,7 +617,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .badgePitch }
-                    } else if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
+                    } else if showsCards && chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
                         GetStakeBanner(
                             showDismiss: getStakeBannerTapped && !chatModel.chats.isEmpty,
                             onTap: openGetStake,
@@ -650,7 +651,7 @@ struct ChatListView: View {
                     }
                     nameRows(rows.names)
                     directoryRows(rows)
-                    if !addressCreationCardShown && hasConversations {
+                    if showsCards && !addressCreationCardShown && hasConversations {
                         ConnectBannerCard()
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
