@@ -71,9 +71,17 @@
           package *
             extra-lib-dirs: ${pkgs'.libiconv}/lib
         '';
-        src = pkgs.haskell-nix.haskellLib.cleanGit {
+        src = pkgs.haskell-nix.haskellLib.cleanSourceWith {
           name = "simplex-chat";
-          src = ./.;
+          src = pkgs.haskell-nix.haskellLib.cleanGit {
+            name = "simplex-chat";
+            src = ./.;
+          };
+          # This generated website asset is deployed separately, not as Cabal
+          # data. Its checkout symlink is dangling until the website is built,
+          # while the v2 source packager dereferences every included symlink.
+          filter = path: type: !(type == "symlink" && pkgs.lib.hasSuffix
+            "/apps/simplex-directory-service/web/directory.js" (toString path));
         };
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [
