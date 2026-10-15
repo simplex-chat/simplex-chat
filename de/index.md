@@ -1,22 +1,24 @@
-[SimpleX domains launch](https://simplex.domains/)
+[Start der SimpleX-Domains](https://simplex.domains/)
 
 # Sei frei
 
 ## In Deinem Netzwerk
 
-Das erste Netzwerk ohne Benutzer-IDs.
+Das einzige Messaging-Netzwerk ohne jegliche Benutzerkennungen.
 Ihre Kontakte, Gruppen und Kanäle gehören Ihnen.
 
-Investieren Sie in SimpleX Chat. [Erfahren Sie mehr darüber.](https://wefunder.com/simplex.chat?utm_source=home)
+Besitzen Sie einen Teil davon. [Investieren Sie in SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
 
-[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX-App über das F-Droid-Repository](https://simplex.chat/de/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
+**3M**Downloads
+
+**600K**Monatliche Nutzer
+
+[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX-App über das F-Droid-Repository](https://simplex.chat/de/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
 [Security-Gutachten](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html)
 
 Security-
 Audits
-
-[Messenger-Empfehlungen von Privacy Guides](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) [Whonix - Empfehlungen für Messenger](https://www.whonix.org/wiki/Chat#Recommendation) [Veröffentlichungen von Heise Online](https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search) [Überprüfung von Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/) [Podcast-Interview von OptOut](https://optoutpod.com/episodes/s3e02-simplexchat/)
 
 ## Niemand kann sehen, mit wem Sie kommunizieren
 
@@ -66,7 +68,7 @@ Tools zur Förderung Ihrer Communitys
 
 ## Treten Sie SimpleX-Communitys bei
 
-Mehr als 2 Millionen Nutzer haben schon SimpleX-Apps heruntergeladen.
+Mehr als 3 Millionen Nutzer haben schon SimpleX-Apps heruntergeladen.
 
 Finden Sie Kanäle und Communitys im Verzeichnis oder erstellen Sie Ihre Eigenen!
 

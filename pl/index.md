@@ -1,22 +1,24 @@
-[SimpleX domains launch](https://simplex.domains/)
+[Start domen SimpleX](https://simplex.domains/)
 
 # Bądź Wolny
 
 ## W Swojej Sieci
 
-Pierwsza sieć bez identyfikatorów użytkowników.
+Jedyna sieć komunikacyjna bez żadnych identyfikatorów użytkowników.
 Twoje kontakty, grupy i kanały należą do Ciebie.
 
-Invest in SimpleX Chat. [Dowiedz się więcej.](https://wefunder.com/simplex.chat?utm_source=home)
+Miej w niej udział. [Zainwestuj w SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
 
-[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX app z F-Droid](https://simplex.chat/pl/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
+**3M**Pobrań
+
+**600K**Użytkowników miesięcznie
+
+[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX app z F-Droid](https://simplex.chat/pl/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
 [Audyty Bezpieczeństwa](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html)
 
 Audyty
 Bezpieczeństwa
-
-[Wskazówki dotyczące prywatności – zalecenia dotyczące komunikatorów](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) [Rekomendowane komunikatory przez Whonix](https://www.whonix.org/wiki/Chat#Recommendation) [Publikacje Online Heise](https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search) [Recenzja od Mike'a Kuketz'a](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/) [Wywiad w formie podcastu od OptOut](https://optoutpod.com/episodes/s3e02-simplexchat/)
 
 ## Nikt Nie Widzi Z Kim Rozmawiasz
 
@@ -66,7 +68,7 @@ Narzędzia do promowania Twoich społeczności
 
 ## Dołącz do Społeczności SimpleX
 
-Ponad 2 miliony osób pobrało aplikacje SimpleX.
+Ponad 3 miliony osób pobrało aplikacje SimpleX.
 
 Znajdź swoje kanały i społeczności w katalogu i stwórz własne!
 

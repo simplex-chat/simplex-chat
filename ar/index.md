@@ -1,22 +1,24 @@
-[SimpleX domains launch](https://simplex.domains/)
+[إطلاق نطاقات SimpleX](https://simplex.domains/)
 
 # كن حراً
 
 ## في شبكتك
 
-أول شبكة بدون معرّفات مستخدمين.
+شبكة المراسلة الوحيدة بدون أي معرّفات للمستخدمين.
 أنت تملك جهات اتصالك ومجموعاتك وقنواتك.
 
-Invest in SimpleX Chat. [اقرأ أكثر.](https://wefunder.com/simplex.chat?utm_source=home)
+امتلك جزءًا منها. [استثمر في SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
 
-[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [تطبيق SimpleX من خلال F-Droid](https://simplex.chat/ar/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
+**3M**تنزيلات
+
+**600K**مستخدمون شهريًا
+
+[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [تطبيق SimpleX من خلال F-Droid](https://simplex.chat/ar/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
 [التحقيقات الآمنية](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html)
 
 التحقيقات
 الآمنية
-
-[توصيات Privacy Guides للمُراسلة](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) [توصيات Whonix للمُراسلة](https://www.whonix.org/wiki/Chat#Recommendation) [منشورات Heise Online](https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search) [مراجعة بواسطة Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/) [مقابلة بودكاست OptOut](https://optoutpod.com/episodes/s3e02-simplexchat/)
 
 ## لا أحد يمكنه معرفة من تتحدث إليه
 
@@ -66,7 +68,7 @@ Invest in SimpleX Chat. [اقرأ أكثر.](https://wefunder.com/simplex.chat?u
 
 ## انضم إلى مجتمعات SimpleX
 
-أكثر من 2 مليون شخص قاموا بتنزيل تطبيقات SimpleX.
+أكثر من 3 ملايين شخص قاموا بتنزيل تطبيقات SimpleX.
 
 ابحث عن قنواتك ومجتمعاتك في الدليل وأنشئ قنواتك الخاصة!
 

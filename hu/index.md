@@ -1,22 +1,24 @@
-[SimpleX domains launch](https://simplex.domains/)
+[A SimpleX domainek indulása](https://simplex.domains/)
 
 # Legyen szabad
 
 ## A saját hálózatában
 
-Az első hálózat felhasználói azonosítók nélkül.
+Az egyetlen üzenetküldő hálózat semmilyen felhasználói azonosító nélkül.
 A saját partnerei, csoportjai és csatornái felett Ön rendelkezik.
 
-Fektessen be a SimpleX Chatbe. [Tudjon meg többet.](https://wefunder.com/simplex.chat?utm_source=home)
+Legyen résztulajdonos. [Fektessen be a SimpleX Chatbe.](https://wefunder.com/simplex.chat?utm_source=home)
 
-[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX alkalmazás az F-Droidon keresztül](https://simplex.chat/hu/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
+**3M**Letöltés
+
+**600K**Havi felhasználó
+
+[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX alkalmazás az F-Droidon keresztül](https://simplex.chat/hu/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
 [Biztonsági auditok](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html)
 
 Biztonsági
 auditok
-
-[A Privacy Guides üzenetváltó ajánlásai](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) [Whonix ajánlás](https://www.whonix.org/wiki/Chat#Recommendation) [A Heise Online kiadványai](https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search) [Áttekintette: Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/) [OptOut podcast interjú](https://optoutpod.com/episodes/s3e02-simplexchat/)
 
 ## Senki sem láthatja, kivel beszélget
 
@@ -66,7 +68,7 @@ Eszközök biztosítása a közösségek népszerűsítéséhez
 
 ## Csatlakozzon a SimpleX közösségekhez
 
-Több mint 2 millió ember töltötte le a SimpleX alkalmazások egyikét.
+Több mint 3 millió ember töltötte le a SimpleX alkalmazások egyikét.
 
 Találja meg a kedvenc csatornáit és közösségeit a csoportjegyzékben, vagy hozza létre a sajátját!
 

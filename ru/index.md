@@ -1,22 +1,24 @@
-[SimpleX domains launch](https://simplex.domains/)
+[Запуск доменов SimpleX](https://simplex.domains/)
 
 # Будь Свободен
 
 ## В Своей Сети
 
-Первая сеть без идентификаторов пользователей.
+Единственная сеть обмена сообщениями без идентификаторов пользователей.
 Ваши контакты, группы и каналы принадлежат Вам.
 
-Invest in SimpleX Chat. [Узнать больше.](https://wefunder.com/simplex.chat?utm_source=home)
+Владейте её частью. [Инвестируйте в SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
 
-[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [Загрузить через F-Droid](https://simplex.chat/ru/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu) [Android APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
+**3M**Загрузок
+
+**600K**Пользователей в месяц
+
+[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [Загрузить через F-Droid](https://simplex.chat/ru/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
 [Аудиты безопасности](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html)
 
 Аудиты
 безопасности
-
-[Рекомендации мессенджеров Privacy Guides](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) [Рекомендации мессенджеров от Whonix](https://www.whonix.org/wiki/Chat#Recommendation) [Публикации Heise Online](https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search) [Обзор от Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/) [OptOut подкаст интервью](https://optoutpod.com/episodes/s3e02-simplexchat/)
 
 ## Никто Не Знает С Кем Вы Общаетесь
 
@@ -66,7 +68,7 @@ Invest in SimpleX Chat. [Узнать больше.](https://wefunder.com/simple
 
 ## Вступайте в Группы SimpleX
 
-Более 2 миллионов человек скачали приложения SimpleX.
+Более 3 миллионов человек скачали приложения SimpleX.
 
 Найдите каналы и сообщества в каталоге и создайте свои!
 
