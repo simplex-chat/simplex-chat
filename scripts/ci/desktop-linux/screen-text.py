@@ -21,8 +21,9 @@ import sys
 LIGHT_BACKGROUND = 190
 
 
+# In the app's font a capital I looks like a lowercase l, and OCR reads it as one, so the two compare equal.
 def key(text):
-    return re.sub(r"[^0-9a-z]", "", text.lower())
+    return re.sub(r"[^0-9a-z]", "", text.lower()).replace("l", "i")
 
 
 def read_words(path, scale):
