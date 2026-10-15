@@ -160,7 +160,7 @@ active_home: true
                     </div>
 
                     <div class="socials">
-                        <a href="/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
+                        <a href="{{ '' if lang == 'en' or not (lang | translated('/downloads/')) else '/' ~ lang }}/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
                             <div class="btn-content">
                                 <div>
                                     <img class="no-border" src="/img/design_3/socials/linux.png">
