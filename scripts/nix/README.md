@@ -134,7 +134,7 @@ their historical build scripts.
 ## Migration validation
 
 On 2026-10-15, all 21 existing Hydra derivations evaluated successfully at
-`ef3a3b0b78aa108f9ab192278e4dae9a3d978d07`: 11 on x86_64 Linux, two on ARM64 Linux,
+`52cbb2c7f796bfeca0824bd3e2168e344ce84774`: 11 on x86_64 Linux, two on ARM64 Linux,
 and four on each Darwin architecture. This includes both Android ABIs, Windows,
 and all three static Linux targets.
 
@@ -153,16 +153,34 @@ SQLCipher component also built with Nix and registered both Apple frameworks.
 The replacement RTS and `text` built with Nix and passed ABI,
 instruction-baseline, UTF-8, and GC checks.
 
-A packaging check passed on copies of those tested Swift/CommonCrypto Cabal
-archives, using the production `mac2ios`, strip, ZIP, FFI, and GMP tools and
-archives. All 3,600 Mach-O members were tagged for iOS, and the five ZIP entries
-passed CRC and content-hash checks. The production FFI archive also passed an
-instruction-baseline check. This is a Cabal-archive packaging check, not the
-final Nix iOS artifact or a runtime test after retagging.
+Both full Nix ARM64 iOS library ZIPs, Swift JSON and tagged JSON, built at
+`ef3a3b0b78aa108f9ab192278e4dae9a3d978d07`. Each ZIP contained its five expected
+archive entries with valid CRCs and 3,630 Mach-O members tagged ARM64/iOS. Their
+Hydra product markers pointed to the actual ZIPs. The production FFI archive
+passed an instruction-baseline check. The package uses the full Cabal v2 unit ID
+in its archive filenames; the existing Xcode project updater accepts those names.
+The later Android-only changes leave these build inputs unchanged. This verifies
+the packaged library, not execution after retagging.
 
-The complete set of 21 final Nix artifacts, ARMv7 cross-TH, Android device tests,
-and an Xcode application build remain unverified. Derivation evaluation and
-native mobile checks do not establish that those builds and runtime checks pass.
+The Android API26 ARMv7 `ghc-internal` built at
+`52cbb2c7f796bfeca0824bd3e2168e344ce84774`, including all 292 Haskell modules and
+C sources. Its unit ID and ABI match the earlier build, and GNU iconv is retained
+in its installed paths and consumer dependencies. The production interpreter
+build stopped before startup because this local external-builder backend rejects
+its `recursive-nix` scheduling requirement. The upstream native-x86 guard stays
+in place; the full interpreter and cross-TH checks still need a suitable builder.
+
+A diagnostic build of ARMv7 `base`, with only that scheduling metadata relaxed,
+completed all 241 modules under Rosetta. A small GHC 9.14 Haskell program using
+that diagnostic `base` and the production core libraries then passed on both
+Rosetta QEMU and native ARM64 Linux QEMU. The same static ARM32 executable checked
+32-bit `Int`, arithmetic, `forkIO`, and GC; it needed no TLS adjustment. This
+proves basic Haskell execution under software emulation, not the full TH path or
+qualification for removing the production scheduling guard.
+
+The final Linux/Windows and Intel Darwin outputs, ARMv7 cross-TH, Android device
+tests, and an Xcode application build remain unverified. Derivation evaluation
+and native mobile checks do not establish that those builds and runtime checks pass.
 
 ## Updating package hashes
 
