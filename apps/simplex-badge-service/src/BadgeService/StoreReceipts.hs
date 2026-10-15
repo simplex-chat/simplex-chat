@@ -63,7 +63,7 @@ data StoreRefusal
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
 
--- | Apple's one-time receipt is verified offline, from the certificate chain it ships; a Play token is opaque
+-- | Apple's receipt is verified offline, from the certificate chain it ships; a Play token is opaque
 -- and must be asked about, and a subscription's charges are known only to its store, so those fields are in IO.
 data StoreVerifier = StoreVerifier
   { -- the JWS
