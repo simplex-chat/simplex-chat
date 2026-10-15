@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ios-sim-${{ github.ref }}
@@ -22,8 +23,42 @@ env:
   HOMEBREW_NO_INSTALL_CLEANUP: 1
 
 jobs:
+  plan:
+    name: find earlier builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      core: ${{ steps.names.outputs.core }}
+      backend: ${{ steps.names.outputs.backend }}
+      core-run: ${{ steps.core.outputs.run-id }}
+      backend-run: ${{ steps.backend.outputs.run-id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded
+      - name: Artifact names
+        id: names
+        run: |
+          echo "core=ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "backend=ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: core
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.core }}"
+
+      - name: Find backend
+        id: backend
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.backend }}"
+
   core:
     name: core library for the iOS simulator
+    needs: plan
+    if: needs.plan.outputs.core-run == ''
     runs-on: macos-latest
     timeout-minutes: 240
     steps:
@@ -37,21 +72,12 @@ jobs:
           df -h /
           xcodebuild -version
 
-      - name: Restore core library
-        id: core-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/Downloads/${{ env.CORE_PKG }}
-          key: ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}
-
       # without ~/.cabal, cabal 3.10 keeps its store in XDG directories, not where setup-haskell reports it
       - name: Use ~/.cabal for cabal
-        if: steps.core-cache.outputs.cache-hit != 'true'
         run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
 
       - name: Setup Haskell
         id: haskell
-        if: steps.core-cache.outputs.cache-hit != 'true'
         uses: simplex-chat/setup-haskell-action@v2
         with:
           ghc-version: ${{ env.GHC_VER }}
@@ -59,7 +85,6 @@ jobs:
 
       - name: Restore cabal store
         id: cabal-cache
-        if: steps.core-cache.outputs.cache-hit != 'true'
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -71,16 +96,14 @@ jobs:
             ios-sim-core-store-ghc${{ env.GHC_VER }}-
 
       - name: Install libraries
-        if: steps.core-cache.outputs.cache-hit != 'true'
         run: brew install openssl@3 libffi gmp
 
       - name: Build core library
         id: build
-        if: steps.core-cache.outputs.cache-hit != 'true'
         run: scripts/ci/ios-sim/build-core.sh ~/Downloads/${{ env.CORE_PKG }}
 
       - name: Save cabal store
-        if: ${{ !cancelled() && steps.core-cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() }}
         uses: actions/cache/save@v4
         with:
           path: |
@@ -88,47 +111,33 @@ jobs:
             dist-newstyle
           key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
 
-      - name: Save core library
-        if: steps.core-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/Downloads/${{ env.CORE_PKG }}
-          key: ${{ steps.core-cache.outputs.cache-primary-key }}
-
       - name: Patch core library for the simulator
         run: scripts/ci/ios-sim/prepare-libs.sh
 
       - name: Upload core library
         uses: actions/upload-artifact@v4
         with:
-          name: ios-core-aarch64
+          name: ${{ needs.plan.outputs.core }}
           path: ~/Downloads/${{ env.CORE_PKG }}
           compression-level: 0
-          retention-days: 3
+          retention-days: 30
           if-no-files-found: error
 
   backend:
     name: test backend for the app
+    needs: plan
+    if: needs.plan.outputs.backend-run == ''
     runs-on: macos-latest
     timeout-minutes: 240
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Restore backend
-        id: backend-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/Downloads/${{ env.BACKEND_PKG }}
-          key: ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}
-
       - name: Use ~/.cabal for cabal
-        if: steps.backend-cache.outputs.cache-hit != 'true'
         run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
 
       - name: Setup Haskell
         id: haskell
-        if: steps.backend-cache.outputs.cache-hit != 'true'
         uses: simplex-chat/setup-haskell-action@v2
         with:
           ghc-version: ${{ env.GHC_VER }}
@@ -136,7 +145,6 @@ jobs:
 
       - name: Restore cabal store
         id: cabal-cache
-        if: steps.backend-cache.outputs.cache-hit != 'true'
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -148,11 +156,10 @@ jobs:
             ios-sim-backend-store-ghc${{ env.GHC_VER }}-
 
       - name: Build backend
-        if: steps.backend-cache.outputs.cache-hit != 'true'
         run: scripts/ci/ios-sim/build-backend.sh ~/Downloads/${{ env.BACKEND_PKG }}
 
       - name: Save cabal store
-        if: ${{ !cancelled() && steps.backend-cache.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() }}
         uses: actions/cache/save@v4
         with:
           path: |
@@ -160,25 +167,20 @@ jobs:
             dist-newstyle
           key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
 
-      - name: Save backend
-        if: steps.backend-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/Downloads/${{ env.BACKEND_PKG }}
-          key: ${{ steps.backend-cache.outputs.cache-primary-key }}
-
       - name: Upload backend
         uses: actions/upload-artifact@v4
         with:
-          name: ios-sim-backend
+          name: ${{ needs.plan.outputs.backend }}
           path: ~/Downloads/${{ env.BACKEND_PKG }}
           compression-level: 0
-          retention-days: 3
+          retention-days: 30
           if-no-files-found: error
 
   app:
     name: app in the iOS simulator
-    needs: [core, backend]
+    needs: [plan, core, backend]
+    # core and backend are skipped when an earlier run built them
+    if: ${{ !cancelled() && !failure() }}
     runs-on: macos-latest
     timeout-minutes: 90
     steps:
@@ -195,8 +197,10 @@ jobs:
       - name: Download core library
         uses: actions/download-artifact@v4
         with:
-          name: ios-core-aarch64
+          name: ${{ needs.plan.outputs.core }}
           path: ~/Downloads
+          run-id: ${{ needs.plan.outputs.core-run || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Prepare libraries
         run: |
@@ -206,8 +210,10 @@ jobs:
       - name: Download backend
         uses: actions/download-artifact@v4
         with:
-          name: ios-sim-backend
+          name: ${{ needs.plan.outputs.backend }}
           path: ~/Downloads
+          run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Start test backend
         timeout-minutes: 30
