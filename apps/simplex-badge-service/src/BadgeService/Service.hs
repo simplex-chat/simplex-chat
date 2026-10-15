@@ -640,9 +640,7 @@ firstMonthResponse db purchaseId creditPaymentId_ subscription (rows, issuance@(
 issueBadgeCmd :: BadgeIssuerKey -> ChatController -> StoreVerifier -> C.PublicKeyEd25519 -> BadgeBalance -> IO BadgeServiceResponse
 issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
   now <- badgeNow cc
-  purchase_ <- withDB' "getBadgePurchase" cc $ \db -> do
-    p_ <- getPurchaseByKey db purchaseKey
-    forM p_ $ \p@ServicePurchase {badgePurchaseId} -> (p,,) <$> getLedgerTip db badgePurchaseId <*> getPurchaseSubscription db badgePurchaseId
+  purchase_ <- withDB' "getBadgePurchase" cc (\db -> getIssuePurchase db purchaseKey)
   case purchase_ of
     Left _ -> pure $ errorResponse BSEInternal
     Right Nothing -> pure $ errorResponse BSEUnknownPurchaseKey
@@ -672,8 +670,8 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
       pure $ fromRight (errorResponse BSEInternal) r
     -- Nothing but the store's answer is written until a charge is granted: a lapse at now would be dated
     -- after a grant a later check may make at an earlier period start, and the client would read it as a pass that issued.
-    renewSubscription ServicePurchase {badgePurchaseId, masterKey, badgeType} tip PurchaseSubscription {paymentId, provider, subscriptionRef, storedState, checkedAt} now
-      | maybe False (\t -> diffUTCTime now t < subscriptionCheckInterval) checkedAt = answered "answerStoredSubscription" $ \db -> issueResponse db badgePurchaseId now (Just storedState)
+    renewSubscription ServicePurchase {badgePurchaseId, masterKey, badgeType} tip subscription@PurchaseSubscription {paymentId, provider, subscriptionRef, storedState} now
+      | not (subscriptionCheckDue now tip subscription) = answered "answerStoredSubscription" $ \db -> issueResponse db badgePurchaseId now (Just storedState)
       | otherwise =
           withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
             Left _ -> pure $ errorResponse BSEInternal
@@ -731,6 +729,15 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
       entries_ <- getLedgerEntries db purchaseId (fromMaybe 0 assertedId)
       credential_ <- getCurrentIssuance db purchaseId t
       pure $ maybe (errorResponse BSEInternal) (credentialResponse credential_ (assertedUuid <$ assertedId) subscription) entries_
+
+getIssuePurchase :: DB.Connection -> C.PublicKeyEd25519 -> IO (Maybe (ServicePurchase, Maybe StatementEntry, Maybe PurchaseSubscription))
+getIssuePurchase db purchaseKey = do
+  p_ <- getPurchaseByKey db purchaseKey
+  forM p_ $ \p@ServicePurchase {badgePurchaseId} -> (p,,) <$> getLedgerTip db badgePurchaseId <*> getPurchaseSubscription db badgePurchaseId
+
+subscriptionCheckDue :: UTCTime -> StatementEntry -> PurchaseSubscription -> Bool
+subscriptionCheckDue now tip PurchaseSubscription {checkedAt} =
+  paidThrough tip <= now && maybe True (\t -> diffUTCTime now t >= subscriptionCheckInterval) checkedAt
 
 -- | Each subscription asks its store at most this often, failed attempts included, so a client
 -- repeating its requests cannot spend the store quota every subscriber shares.
