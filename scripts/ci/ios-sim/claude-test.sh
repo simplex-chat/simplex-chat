@@ -60,8 +60,10 @@ write_prompt() {
   echo
   echo "- Layout: $(layout_name "$layout")."
   echo "- Cases: $cases."
+  echo "- Entries to use: $(scope "entries-$layout")."
+  echo "- Link to paste (C4, W3): $(cat "$BACKEND_DIR/directory-link") (the test directory's address)."
   if [ -z "$previous" ]; then
-    echo "- At the start: the smoke test onboarded the profile citester, which has no conversations, and searched the directory once, choosing \"Search\" in the alert."
+    echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name), which has no conversations, and searched the directory once, choosing \"Search\" in the alert."
   else
     echo "- At the start: an earlier session ran the cases in $(layout_name "$previous") on this app, so the profile may have chats, other profiles may exist and hints may be changed; look at the state first."
   fi

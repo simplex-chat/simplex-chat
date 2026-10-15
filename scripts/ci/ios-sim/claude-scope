@@ -1,6 +1,9 @@
 # What claude-test.sh runs: one Claude session per layout (reachable, top), the plan's cases, and each session's bounds.
+# entries-<layout> tells that session which directory entries its joining cases use, so none meets an entry already known.
 model: claude-haiku-5-5
 layouts: reachable top
 cases: all of the plan's cases (C1-C9, D1-D15, U1-U3, N1-N11, W1-W11, G1-G4), skipping those named under "How to run the cases"
+entries-reachable: D6 joins ci_channel, which U1 then searches by name and U2 by "seed channel"; W6 joins ci_avatar_c2; D11 searches "private" (only the local chat "Private notes" has it); D14 and D15 use a second profile you add
+entries-top: D6 joins ci_avatar_c1, which U1 then searches by name and U2 by "avatar channel 1"; W6 joins ci_avatar_c3; D11 searches "private"; D14 and D15 use the second profile from the earlier session (add one if it is missing)
 max-turns: 700
 max-budget-usd: 10
