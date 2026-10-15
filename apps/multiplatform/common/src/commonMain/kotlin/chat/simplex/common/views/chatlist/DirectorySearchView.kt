@@ -253,7 +253,7 @@ fun DirectorySearchRow(entry: DirectorySearchEntry, modifier: Modifier = Modifie
       if (descr != null && descr.isNotEmpty()) {
         Text(descr, color = MaterialTheme.colors.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
       }
-      Text(membersText, style = MaterialTheme.typography.caption, color = MaterialTheme.colors.secondary)
+      Text(membersText, style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary)
     }
     Text(
       stringResource(if (isChannel) MR.strings.compose_view_join_channel else MR.strings.compose_view_join_group),
