@@ -5,6 +5,10 @@ The compiler and all cross-compilers come from the haskell.nix input pinned in
 GHC 9.14 release from GHCup. Use the same source checkout and lock file for every
 platform; Android ARMv7 does not require a separate branch or tag.
 
+`compiler-selection.nix` matches Hydra's compiler build context so the pinned
+compiler can use its existing cache. That context is scoped to the compiler and
+its build tools; application dependencies keep the project's current packages.
+
 Run these commands from the repository root:
 
 ```sh

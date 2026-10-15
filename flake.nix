@@ -37,6 +37,7 @@
       }; in
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
+      let compilerSelection = import ./scripts/nix/compiler-selection.nix { inherit haskellNix; }; in
       let drv' = { extra-modules, pkgs', package-flags ? {}, package-ghc-options ? {}, ... }:
       let packageFlags = pkgs.lib.recursiveUpdate {
         direct-sqlcipher = { openssl = true; commoncrypto = false; tomcrypt = false; };
@@ -47,6 +48,7 @@
         }) package-ghc-options;
       in pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc914-sh";
+        inherit compilerSelection;
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
         projectFileName = "cabal.project";
