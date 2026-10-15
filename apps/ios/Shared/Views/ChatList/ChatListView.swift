@@ -482,36 +482,49 @@ struct ChatListView: View {
 
     @ViewBuilder private func nameRows(_ names: [NameSearchResult]) -> some View {
         if !names.isEmpty {
-            searchPartHeader("Names")
-            ForEach(names) { result in
-                NameSearchRow(result: result)
-                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                    .listRowBackground(Color.clear)
-                    .onTapGesture {
-                        searchFocussed = false
-                        planAndConnect(result.target, theme: theme, dismiss: false, cleanup: nil)
-                    }
+            searchPart("Names") {
+                ForEach(names) { result in
+                    NameSearchRow(result: result)
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        .listRowBackground(Color.clear)
+                        .onTapGesture {
+                            searchFocussed = false
+                            planAndConnect(result.target, theme: theme, dismiss: false, cleanup: nil)
+                        }
+                }
             }
         }
     }
 
     @ViewBuilder private func directoryRows(_ rows: OnlineSearchRows) -> some View {
         if !rows.directory.isEmpty || rows.footer != nil {
-            searchPartHeader("Directory")
-            ForEach(rows.directory) { result in
-                DirectorySearchRow(entry: result.entry)
-                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                    .listRowBackground(Color.clear)
-                    .onTapGesture {
-                        searchFocussed = false
-                        planAndConnect(result.entry.link, theme: theme, dismiss: false, cleanup: nil)
-                    }
+            searchPart("Directory") {
+                ForEach(rows.directory) { result in
+                    DirectorySearchRow(entry: result.entry)
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        .listRowBackground(Color.clear)
+                        .onTapGesture {
+                            searchFocussed = false
+                            planAndConnect(result.entry.link, theme: theme, dismiss: false, cleanup: nil)
+                        }
+                }
+                switch rows.footer {
+                case .retry: directoryRetryRow()
+                case .showMore: directoryShowMoreRow()
+                case nil: EmptyView()
+                }
             }
-            switch rows.footer {
-            case .retry: directoryRetryRow()
-            case .showMore: directoryShowMoreRow()
-            case nil: EmptyView()
-            }
+        }
+    }
+
+    // the list is flipped in one-hand UI, so there the header follows its rows to be drawn above them
+    @ViewBuilder private func searchPart<Content: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
+        if oneHandUI {
+            content()
+            searchPartHeader(title)
+        } else {
+            searchPartHeader(title)
+            content()
         }
     }
 
