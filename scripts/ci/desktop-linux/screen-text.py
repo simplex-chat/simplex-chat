@@ -6,16 +6,18 @@
 #   screen-text.py <scale> <ocr dir> find <text>   "x y" of the first phrase containing the text; fails if none does
 #
 # <ocr dir> has tesseract's TSV of the dark-text and the light-text pass (dark.tsv, light.tsv), in pixels of the
-# screenshot enlarged by <scale>, and background.pgm, the background luminance at screen size. Printed coordinates are
+# screenshot enlarged by <scale>, and gray.pgm, the screenshot in 8-bit grayscale. Printed coordinates are
 # screen pixels. Words are compared ignoring case and punctuation.
 
 import csv
 import os
 import re
+import statistics
 import sys
 
-# Luminance (0-255) below which a background is dark enough for light text: the blue buttons are about 115.
-LIGHT_BACKGROUND = 160
+# Luminance (0-255) below which a background is dark enough for light text: blue buttons are about 115, disabled grey
+# ones about 137, light ones (window, fields, cards) over 230.
+LIGHT_BACKGROUND = 190
 
 
 def key(text):
@@ -34,13 +36,21 @@ def read_words(path, scale):
     return words
 
 
-def read_background(path):
+def read_gray(path):
     with open(path, "rb") as f:
         data = f.read()
     header = re.match(rb"P5\s+(\d+)\s+(\d+)\s+(\d+)\s", data)
     if int(header[3]) != 255:
         sys.exit(f"{path}: expected 8-bit samples, got maximum {int(header[3])}")
     return int(header[1]), int(header[2]), data[header.end():]
+
+
+# The median of the rows 2 to 4 pixels above and below the word: its background, free of its own letters.
+def background(gray, w):
+    width, height, luminance = gray
+    left, right = max(int(w["l"]), 0), min(int(w["r"]), width - 1)
+    rows = [int(w["t"]) - d for d in (2, 3, 4)] + [int(w["b"]) + d for d in (2, 3, 4)]
+    return statistics.median(luminance[y * width + x] for y in rows if 0 <= y < height for x in range(left, right + 1))
 
 
 def centre(words):
@@ -51,11 +61,10 @@ def centre(words):
 # Each pass also reads noise where its polarity doesn't apply (the gaps between dark letters look like light text),
 # so a word counts only from the pass that matches the background under it.
 def screen_words(ocr_dir, scale):
-    width, height, luminance = read_background(os.path.join(ocr_dir, "background.pgm"))
+    gray = read_gray(os.path.join(ocr_dir, "gray.pgm"))
 
     def on_light_background(w):
-        x, y = centre([w])
-        return luminance[min(int(y), height - 1) * width + min(int(x), width - 1)] >= LIGHT_BACKGROUND
+        return background(gray, w) >= LIGHT_BACKGROUND
 
     dark = read_words(os.path.join(ocr_dir, "dark.tsv"), scale)
     light = read_words(os.path.join(ocr_dir, "light.tsv"), scale)

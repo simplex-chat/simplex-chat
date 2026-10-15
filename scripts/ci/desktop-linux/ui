@@ -89,10 +89,9 @@ start() {
 ocr() {
   local png=$1 o=$state/ocr
   shift
-  convert "$png" -colorspace Gray "$o/gray.png"
-  convert "$o/gray.png" -scale 25% -statistic Median 5x5 -scale 400% -depth 8 "$o/background.pgm"
-  convert "$o/gray.png" -resize 200% -lat 60x60-5% "$o/dark.png"
-  convert "$o/gray.png" \( +clone -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 \) -compose Difference -composite -negate -resize 200% "$o/light.png"
+  convert "$png" -colorspace Gray -depth 8 "$o/gray.pgm"
+  convert "$o/gray.pgm" -resize 200% -lat 60x60-5% "$o/dark.png"
+  convert "$o/gray.pgm" \( +clone -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 \) -compose Difference -composite -negate -resize 200% "$o/light.png"
   tesseract "$o/dark.png" "$o/dark" --psm 11 tsv > /dev/null 2>&1
   tesseract "$o/light.png" "$o/light" --psm 11 tsv > /dev/null 2>&1
   python3 "$here/screen-text.py" 2 "$o" "$@"
