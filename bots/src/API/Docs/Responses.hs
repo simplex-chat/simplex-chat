@@ -208,6 +208,7 @@ undocumentedResponses =
     "CRSndStandaloneFileCreated",
     "CRSQLResult",
     "CRStandaloneFileInfo",
+    "CRStoreReceiptNotRecorded",
     "CRTagsUpdated",
     "CRUsageConditions",
     "CRUserPrivacy",

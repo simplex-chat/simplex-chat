@@ -61,7 +61,7 @@ import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
@@ -3581,7 +3581,7 @@ processChatCommand cxt nm = \case
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
-  APIPurchaseBadge userId echoedInvoiceId payment -> withUserId userId $ \user -> handOverStoreReceipt user echoedInvoiceId payment
+  APIPurchaseBadge userId echoedInvoiceId origin payment -> withUserId userId $ \user -> handOverStoreReceipt user echoedInvoiceId origin payment
   APISetBadgeSubscriptionStatus status payment -> recordStoreSubscriptionStatus status payment >> ok_
   APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
     void requireBadgeService
@@ -5285,24 +5285,26 @@ redeemBadgeCode nm user@User {userId} codeText = do
 
 -- | The app hands a receipt over until it is answered credited or refused, under whichever profile is
 -- active; the answer is the owner's, read from the record. Nothing is sent: the owner's receipt worker is.
-handOverStoreReceipt :: User -> Maybe Text -> ServicePayment -> CM ChatResponse
-handOverStoreReceipt presentingUser echoedInvoiceId payment = do
+handOverStoreReceipt :: User -> Maybe Text -> StoreReceiptOrigin -> ServicePayment -> CM ChatResponse
+handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
   txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
   void requireBadgeService
   g <- asks random
   now <- badgeNow
-  BadgeReceiptRecord {ownerId, status} <-
-    withStore' (\db -> holdStoreReceipt db g presentingUser echoedInvoiceId txRef payment now)
-      >>= maybe (throwChatError $ CEInternalError "store receipt was not recorded") pure
-  owner <- withStore $ \db -> getUser db ownerId
-  case status of
-    RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
-    RSCredited {badgePurchaseId} -> do
-      cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
-      cred@(BadgeCredential _ _ _ info) <- maybe (throwChatError $ CEInternalError "credited store purchase has no credential") pure cred_
-      CRBadgeRedeemed owner (OwnBadge cred (mkBadgeStatus now (Just True) info)) False <$> getUserBadgeState owner
-    RSRefused {refusal = Just BIFServiceError {code}} -> throwRedeemError $ BREServiceError code
-    RSRefused {} -> throwChatError $ CEInternalError "store purchase refused for no recorded reason"
+  withStore' (\db -> holdStoreReceipt db g presentingUser origin echoedInvoiceId txRef payment now) >>= \case
+    Nothing -> case origin of
+      SROListed -> pure $ CRStoreReceiptNotRecorded presentingUser
+      SROPurchased -> throwChatError $ CEInternalError "store receipt was not recorded"
+    Just BadgeReceiptRecord {ownerId, status} -> do
+      owner <- withStore $ \db -> getUser db ownerId
+      case status of
+        RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
+        RSCredited {badgePurchaseId} -> do
+          cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
+          cred@(BadgeCredential _ _ _ info) <- maybe (throwChatError $ CEInternalError "credited store purchase has no credential") pure cred_
+          CRBadgeRedeemed owner (OwnBadge cred (mkBadgeStatus now (Just True) info)) False <$> getUserBadgeState owner
+        RSRefused {refusal = Just BIFServiceError {code}} -> throwRedeemError $ BREServiceError code
+        RSRefused {} -> throwChatError $ CEInternalError "store purchase refused for no recorded reason"
 
 -- | Renewing does not replace billing retry or ended: Play lists a subscription in its grace period as renewing,
 -- and the service's answer clears billing retry once the store charges.
@@ -6376,7 +6378,7 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
-      "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <*> optional (" invoice=" *> (safeDecodeUtf8 <$> A.takeTill (== ' '))) <* A.space <*> jsonP),
+      "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <*> optional (" invoice=" *> (safeDecodeUtf8 <$> A.takeTill (== ' '))) <*> (" listed" $> SROListed <|> pure SROPurchased) <* A.space <*> jsonP),
       "/_badge subscription " *> (APISetBadgeSubscriptionStatus <$> subscriptionStateP <* A.space <*> jsonP),
       "/_badge invoice " *> (APICreateBadgeInvoice <$> A.decimal),
       "/_badge state " *> (APIGetBadgeState <$> A.decimal),

@@ -56,7 +56,7 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeSubscription (..), OpenStorePurchase (..), SubscriptionState)
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (StoreError, insertedRowId)
@@ -130,9 +130,10 @@ data BadgeReceiptStatus
 -- concurrent hand-over of the same transaction may win either write. It stays with the record that already has
 -- it, whose keys the service may have credited; failing that it joins the record Buy created; and when no record
 -- can take it - the store echoed no invoice, or the one it echoed is already held by another transaction - the
--- presenting profile gets a new one, nothing else saying who paid.
-holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe BadgeReceiptRecord)
-holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
+-- presenting profile gets a new one, nothing else saying who paid, unless the app found the transaction in the
+-- store's list: then it may be another device's, and nothing is recorded.
+holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> StoreReceiptOrigin -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe BadgeReceiptRecord)
+holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
   getReceiptRecord db txRef >>= \case
     Just r@BadgeReceiptRecord {receiptId} -> do
       -- a resolved record stays resolved, so a hand-over landing just after its credit cannot hold it again
@@ -146,9 +147,11 @@ holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provid
           (provider, transactionRef, paymentJSON, now, invoiceId)
       getReceiptRecord db txRef >>= \case
         Just r -> pure $ Just r
-        Nothing -> do
-          insertReceipt
-          getReceiptRecord db txRef
+        Nothing -> case origin of
+          SROPurchased -> do
+            insertReceipt
+            getReceiptRecord db txRef
+          SROListed -> pure Nothing
   where
     paymentJSON = safeDecodeUtf8 . LB.toStrict $ J.encode payment
     insertReceipt = do

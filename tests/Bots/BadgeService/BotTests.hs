@@ -165,6 +165,7 @@ badgeServiceTests = do
       it "should hold a Play token the service will not send to Play" testPurchaseUnsentPlayToken
       it "should credit a purchase first handed over under another profile to that profile" testPurchaseStrandedUnderOtherProfile
       it "should credit a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
+      it "should record a listed transaction only into a record it already has, and a Restore hand-over as its own" testListedReceiptNotRecorded
     describe "invoice first" $ do
       it "should credit a receipt to the profile that created its invoice however late it arrives, and answer as that profile" testInvoiceOtherProfile
       it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
@@ -2660,6 +2661,32 @@ testInvoiceOtherProfile ps =
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice, * supporter)"
+
+-- | The store lists an account's purchases on every device signed into it, so a listed one may be another device's.
+testListedReceiptNotRecorded :: HasCallStack => TestParams -> IO ()
+testListedReceiptNotRecorded ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let listed invoiceId_ payment = "/_badge purchase 1" <> maybe "" (" invoice=" <>) invoiceId_ <> " listed " <> paymentArg payment
+      alice ##> listed (Just "0b6a5e6c-4f3e-4d51-9f55-3a0f7c2f9e11") supporterPlay
+      alice <## "store purchase not recorded"
+      storeReceiptRows (chatController alice) `shouldReturn` []
+      nothingPurchased cc
+      invoiceId <- createInvoice alice 1
+      alice ##> listed (Just invoiceId) supporterPlay
+      inAnyOrder alice [[invoicePurchase "" invoiceId], creditedLines "" invoiceId "1: supporter"]
+      alice ##> listed Nothing supporterPlay
+      alice <## "badge already redeemed"
+      alice ##> listed Nothing subscriptionPlay
+      alice <## "store purchase not recorded"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
+      -- unmarked, as Restore sends it, the same transaction is recorded; held, as a badge is shown
+      alice ##> ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      alice <##. "1: supporter"
+      storePurchaseOpen alice ""
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True), (1, Nothing, True)]
+      heldStoreReceipts (chatController alice) `shouldReturn` 1
+      rowCount cc "sx_badge_service_payments" `shouldReturn` 1
 
 testInvoiceUnknown :: HasCallStack => TestParams -> IO ()
 testInvoiceUnknown ps =

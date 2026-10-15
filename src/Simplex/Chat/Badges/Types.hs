@@ -33,6 +33,7 @@ module Simplex.Chat.Badges.Types
     BadgeSubscription (..),
     BadgeState (..),
     OpenStorePurchase (..),
+    StoreReceiptOrigin (..),
   ) where
 
 import Control.Applicative ((<|>))
@@ -313,6 +314,13 @@ data OpenStorePurchase = OpenStorePurchase
     creditError :: Maybe BadgeIssueFailure
   }
   deriving (Show)
+
+-- | Where the app found a store transaction it hands over. The store lists an account's purchases on every
+-- device signed into it, so a listed one is claimed only by a core that already has a record for it.
+data StoreReceiptOrigin
+  = SROPurchased -- the app's own purchase call, or Restore
+  | SROListed -- the store's list of unfinished transactions, or its updates
+  deriving (Eq, Show)
 
 instance TextEncoding BadgePurchaseStatus where
   textEncode = \case
