@@ -17,11 +17,15 @@
 #                                 with red, green or blue, fail unless that colour dominates
 #   ui type <text>                type into the focused field
 #   ui key <key>...               press keys named as in xdotool (Return, Escape, ctrl+a)
+#   ui do <command> [args] -- <command> [args] ...
+#                                 run the commands in order, stopping at the first that fails
 #   ui stop                       stop the app, openbox and Xvfb
 #
 # Text is compared ignoring case, spaces and punctuation; a phrase that is exactly the text wins over one that contains it.
 
 set -euo pipefail
+# an agent on the runner runs this, and nothing it starts needs the agent's credentials
+unset CLAUDE_CODE_OAUTH_TOKEN
 
 : "${UI_OUT:?UI_OUT must be the output directory}"
 export DISPLAY=${UI_DISPLAY:-:99}
@@ -211,6 +215,18 @@ case "${1:-}" in
     shift
     xdotool key --delay 100 -- "$@"
     log "key $*"
+    ;;
+  do)
+    shift
+    command=()
+    for arg in "$@" --; do
+      if [ "$arg" != -- ]; then
+        command+=("$arg")
+      elif [ ${#command[@]} -gt 0 ]; then
+        "$0" "${command[@]}"
+        command=()
+      fi
+    done
     ;;
   stop)
     stop_process app 10
