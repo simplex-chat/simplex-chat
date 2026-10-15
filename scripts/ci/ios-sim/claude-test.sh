@@ -30,6 +30,10 @@ max_budget=$(scope max-budget-usd)
 
 export PATH="$dir:$PATH" BACKEND_DIR APP_LOG=$out/app.log CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 cp "$BACKEND_DIR/seed.md" "$out/seed.md"
+settings=$out/settings.json
+cat > "$settings" << EOF
+{"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "$dir/claude-guard.py"}]}]}}
+EOF
 
 xcrun simctl spawn "$SIM_UDID" log stream --level debug --style compact --predicate 'process == "SimpleX"' > "$APP_LOG" 2>&1 &
 log_pid=$!
@@ -77,6 +81,9 @@ for layout in $layouts; do
   write_prompt "$layout" "$previous" > "$session/prompt.md"
   echo "::group::Claude session: $layout, cases $cases, $model, $max_turns turns, \$$max_budget"
   session_status=0
+  # outside the session's directory, so the session cannot change it
+  export CLAUDE_GUARD_LOG=$out/$layout-guard.log
+  : > "$CLAUDE_GUARD_LOG"
   (
     cd "$session"
     UI_OUT=$session/shots CLAUDE_CODE_OAUTH_TOKEN=$token claude -p \
@@ -92,6 +99,7 @@ for layout in $layouts; do
       --max-budget-usd "$max_budget" \
       --autocompact 200k \
       --no-session-persistence \
+      --settings "$settings" \
       --output-format stream-json \
       --verbose \
       < prompt.md > transcript.jsonl 2> stderr.log
@@ -103,7 +111,15 @@ for layout in $layouts; do
   else
     echo "no report.md"
   fi
+  echo "guard hook: $(grep -c '^allow' "$CLAUDE_GUARD_LOG" || true) allowed, $(grep -c '^refuse' "$CLAUDE_GUARD_LOG" || true) refused"
+  grep '^refuse' "$CLAUDE_GUARD_LOG" || true
   echo "::endgroup::"
+  # the token must never be uploaded, whatever the session did; grep reads it from a pipe, not from its arguments
+  if grep -rqF -f <(printf '%s\n' "$token") "$session" "$CLAUDE_GUARD_LOG"; then
+    rm -rf "$session" "$CLAUDE_GUARD_LOG"
+    echo "::error::the $layout session's files contained the token, so they were deleted before the upload"
+    session_status=1
+  fi
   if [ "$session_status" -ne 0 ]; then
     status=$session_status
   fi
