@@ -20,11 +20,21 @@
           aarch64-android-prebuilt = import prev.path {
             inherit system;
             inherit (prev) overlays;
+            # The prebuilt Android NDK and its compiler wrappers are unfree.
+            config = prev.config // {
+              allowUnfreePredicate = package:
+                prev.lib.hasInfix "ndk" (prev.lib.getName package);
+            };
             crossSystem = prev.lib.systems.examples.aarch64-android-prebuilt // { androidSdkVersion = "26"; };
           };
           armv7a-android-prebuilt = import prev.path {
             inherit system;
             inherit (prev) overlays;
+            # The prebuilt Android NDK and its compiler wrappers are unfree.
+            config = prev.config // {
+              allowUnfreePredicate = package:
+                prev.lib.hasInfix "ndk" (prev.lib.getName package);
+            };
             crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // { androidSdkVersion = "26"; };
           };
         };
