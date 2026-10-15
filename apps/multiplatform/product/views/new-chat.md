@@ -92,7 +92,7 @@ The search field of the New chat sheet filters "Your contacts" and offers the sa
 | "Connect to …" row | Below the field for a SimpleX name; hidden once the online search found anything for that name |
 | "Search in Directory" row | Below the field (after "Connect to …") for non-empty text that is not a SimpleX link; searches SimpleX Directory |
 | Keyboard Search key | On Android the keyboard's Search action, on desktop Enter. Searches the directory and, for a SimpleX name, resolves the name online |
-| Names and Directory sections | After the contacts, each with a section header in the style of "Your contacts". Tapping a result connects and closes the sheet, as other New chat actions do. A result for a contact already listed is not repeated. With the one-hand UI the list is reversed, so a header is shown below its rows, as "Your contacts" is |
+| Names and Directory sections | After the contacts, each with a section header in the style of "Your contacts". Tapping a result connects and closes the sheet, as other New chat actions do. A result for a contact already listed is not repeated. With the one-hand UI the list is reversed, and each header is still shown above its rows |
 | Contacts empty state | "No filtered contacts" is not shown while the online search runs or shows results |
 | Online search running | Progress indicator in the search bar; closing the sheet cancels the search |
 | Directory search failed | "Search failed, tap to retry" row at the end of the Directory section |

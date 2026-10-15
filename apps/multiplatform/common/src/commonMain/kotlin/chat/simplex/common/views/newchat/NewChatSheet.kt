@@ -188,40 +188,45 @@ private fun ModalData.NewChatSheetLayout(
 
   @Composable
   fun OnlineSearchHeader(title: String) {
-    SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
     SectionView(title, headerBottomPadding = DEFAULT_PADDING_HALF) {}
   }
 
+  // the divider is an item of its own: the reversed one-hand column also reverses the nodes inside an item,
+  // which would put it between the header and its rows
   fun LazyListScope.onlineSearchSections(rows: OnlineSearchRows) {
     if (rows.names.isNotEmpty()) {
-      item { OnlineSearchHeader(stringResource(MR.strings.online_search_names)) }
-      items(rows.names, key = { it.id }) { result ->
-        val view = LocalMultiplatformView()
-        NameSearchRow(
-          result,
-          Modifier.clickable {
-            hideKeyboard(view)
-            withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = close, cleanup = null) }
-          }
-        )
+      item { SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false) }
+      searchPart(MR.strings.online_search_names, oneHandUI.value, header = { OnlineSearchHeader(it) }) {
+        items(rows.names, key = { it.id }) { result ->
+          val view = LocalMultiplatformView()
+          NameSearchRow(
+            result,
+            Modifier.clickable {
+              hideKeyboard(view)
+              withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = close, cleanup = null) }
+            }
+          )
+        }
       }
     }
     if (rows.directory.isNotEmpty() || rows.footer != null) {
-      item { OnlineSearchHeader(stringResource(MR.strings.online_search_directory)) }
-      items(rows.directory, key = { it.id }) { result ->
-        val view = LocalMultiplatformView()
-        DirectorySearchRow(
-          result.entry,
-          Modifier.clickable {
-            hideKeyboard(view)
-            withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = close, cleanup = null) }
-          }
-        )
-      }
-      when (rows.footer) {
-        DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
-        DirectoryFooter.ShowMore -> item { DirectoryShowMoreRow(onlineSearch) }
-        null -> {}
+      item { SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false) }
+      searchPart(MR.strings.online_search_directory, oneHandUI.value, header = { OnlineSearchHeader(it) }) {
+        items(rows.directory, key = { it.id }) { result ->
+          val view = LocalMultiplatformView()
+          DirectorySearchRow(
+            result.entry,
+            Modifier.clickable {
+              hideKeyboard(view)
+              withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = close, cleanup = null) }
+            }
+          )
+        }
+        when (rows.footer) {
+          DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
+          DirectoryFooter.ShowMore -> item { DirectoryShowMoreRow(onlineSearch) }
+          null -> {}
+        }
       }
     }
   }
