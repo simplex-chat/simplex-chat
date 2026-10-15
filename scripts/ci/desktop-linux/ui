@@ -21,7 +21,8 @@
 #                                 run the commands in order, stopping at the first that fails
 #   ui stop                       stop the app, openbox and Xvfb
 #
-# Text is compared ignoring case, spaces and punctuation; a phrase that is exactly the text wins over one that contains it.
+# Text is compared ignoring case, spaces and punctuation, with a capital I and a lowercase l alike; a phrase that is
+# exactly the text wins over one that contains it.
 
 set -euo pipefail
 # an agent on the runner runs this, and nothing it starts needs the agent's credentials
