@@ -11,8 +11,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -111,12 +109,6 @@ fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
       }
       SectionTextFooter(stringResource(MR.strings.badges_prepaid_footer))
       SectionSpacer()
-      if (badgeStoreLane) {
-        SectionView {
-          RestorePurchasesRow()
-        }
-        SectionSpacer()
-      }
     }
     SectionView {
       SettingsActionItem(
@@ -186,23 +178,10 @@ private fun SubscriptionSection(badgeType: BadgeType, footer: String, status: @C
         { BadgeStore.manageSubscriptions(badgeType) },
         textColor = MaterialTheme.colors.primary
       )
-      RestorePurchasesRow()
     }
   }
   SectionTextFooter(footer)
   SectionSpacer()
-}
-
-@Composable
-private fun RestorePurchasesRow() {
-  val restoring = remember { mutableStateOf(false) }
-  SettingsActionItem(
-    painterResource(MR.images.ic_refresh),
-    stringResource(MR.strings.badges_restore_purchases),
-    { restoreBadgePurchases(restoring) },
-    textColor = MaterialTheme.colors.primary,
-    disabled = restoring.value
-  )
 }
 
 @Composable

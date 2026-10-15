@@ -71,9 +71,6 @@ struct BadgesYourBadgeView: View {
                         Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
                             .foregroundColor(theme.colors.secondary)
                     }
-                    Section {
-                        restorePurchasesRow()
-                    }
                 }
                 Section {
                     NavigationLink {
@@ -150,19 +147,12 @@ struct BadgesYourBadgeView: View {
                     Task { await BadgeStore.shared.manageSubscriptions() }
                 }
             }
-            restorePurchasesRow()
         } header: {
             Text("Subscription")
                 .foregroundColor(theme.colors.secondary)
         } footer: {
             Text(footer)
                 .foregroundColor(theme.colors.secondary)
-        }
-    }
-
-    private func restorePurchasesRow() -> some View {
-        settingsRow("arrow.clockwise", color: theme.colors.secondary) {
-            RestorePurchasesButton()
         }
     }
 
