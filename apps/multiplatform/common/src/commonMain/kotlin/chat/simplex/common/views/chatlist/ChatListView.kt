@@ -554,12 +554,12 @@ private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: On
 }
 
 // the list is reversed in one-hand UI, so there the header follows its rows to be drawn above them
-private fun LazyListScope.searchPart(title: StringResource, oneHandUI: Boolean, content: LazyListScope.() -> Unit) {
+internal fun LazyListScope.searchPart(title: StringResource, oneHandUI: Boolean, header: @Composable (String) -> Unit = { SearchPartHeader(it) }, content: LazyListScope.() -> Unit) {
   if (oneHandUI) {
     content()
-    item { SearchPartHeader(stringResource(title)) }
+    item { header(stringResource(title)) }
   } else {
-    item { SearchPartHeader(stringResource(title)) }
+    item { header(stringResource(title)) }
     content()
   }
 }
