@@ -19,6 +19,7 @@ module Bots.BadgeService.FakeStore
     googleSubscriptionToken,
     googleUnknownProductToken,
     appleSubscriptionOriginalId,
+    appleSecondSubscriptionOriginalId,
     setSubscription,
     subscriptionChecks,
     googlePayment,
@@ -63,6 +64,9 @@ data FakeStore = FakeStore
     appleRenewalSubscriptionJWS :: Text,
     appleSandboxSubscriptionJWS :: Text,
     appleRevokedSubscriptionJWS :: Text,
+    -- two other subscriptions, the first under appleSecondSubscriptionOriginalId and the second one the store does not know
+    appleSecondSubscriptionJWS :: Text,
+    appleThirdSubscriptionJWS :: Text,
     pendingSettled :: IORef Bool,
     googleDown :: IORef Bool,
     -- what the store answers about each subscription: Apple's by original id, Google's by token
@@ -79,10 +83,12 @@ newFakeStore = do
   let appleThrowingJWS = unsignedJWS "{\"transactionId\":\"2000000812345679\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleMisnamedJWS = unsignedJWS "{\"transactionId\":\"2000000812345698\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleQuantityJWS = unsignedJWS "{\"transactionId\":\"2000000812345697\",\"productId\":\"BADGE_SUPPORTER_01\"}"
-      appleSubscriptionJWS = subscriptionJWS "2000000812345681" [purchasedAt 1767225600000]
-      appleRenewalSubscriptionJWS = subscriptionJWS "2000000812345683" [purchasedAt 1769904000000]
-      appleSandboxSubscriptionJWS = subscriptionJWS "2000000812345682" [purchasedAt 1767225600000]
-      appleRevokedSubscriptionJWS = subscriptionJWS "2000000812345684" [purchasedAt 1769904000000, "revocationDate" J..= (1770000000000 :: Int64)]
+      appleSubscriptionJWS = subscriptionJWS appleSubscriptionOriginalId "2000000812345681" [purchasedAt 1767225600000]
+      appleRenewalSubscriptionJWS = subscriptionJWS appleSubscriptionOriginalId "2000000812345683" [purchasedAt 1769904000000]
+      appleSandboxSubscriptionJWS = subscriptionJWS appleSubscriptionOriginalId "2000000812345682" [purchasedAt 1767225600000]
+      appleRevokedSubscriptionJWS = subscriptionJWS appleSubscriptionOriginalId "2000000812345684" [purchasedAt 1769904000000, "revocationDate" J..= (1770000000000 :: Int64)]
+      appleSecondSubscriptionJWS = subscriptionJWS appleSecondSubscriptionOriginalId "2000000812345701" [purchasedAt 1767225600000]
+      appleThirdSubscriptionJWS = subscriptionJWS "2000000812345710" "2000000812345711" [purchasedAt 1767225600000]
   pendingSettled <- newIORef False
   googleDown <- newIORef False
   subscriptions <- newIORef M.empty
@@ -97,7 +103,9 @@ newFakeStore = do
           -- vouched by the ref the claim reads, the subscription's original id
           (appleSubscriptionJWS, appleSubscription appleSubscriptionJWS False),
           (appleRenewalSubscriptionJWS, appleSubscription appleRenewalSubscriptionJWS False),
-          (appleSandboxSubscriptionJWS, appleSubscription appleSandboxSubscriptionJWS True)
+          (appleSandboxSubscriptionJWS, appleSubscription appleSandboxSubscriptionJWS True),
+          (appleSecondSubscriptionJWS, appleSubscription appleSecondSubscriptionJWS False),
+          (appleThirdSubscriptionJWS, appleSubscription appleThirdSubscriptionJWS False)
         ]
       verifyApple jws
         | jws == appleThrowingJWS = error "fake verifier bug"
@@ -121,6 +129,8 @@ newFakeStore = do
         appleRenewalSubscriptionJWS,
         appleSandboxSubscriptionJWS,
         appleRevokedSubscriptionJWS,
+        appleSecondSubscriptionJWS,
+        appleThirdSubscriptionJWS,
         pendingSettled,
         googleDown,
         subscriptions,
@@ -135,15 +145,15 @@ newFakeStore = do
     appleSubscription jws testPurchase =
       VerifiedStoreTransaction {transactionRef = fromMaybe "" (appleTransactionRef jws), productId = "SUBSCR_BADGE_SUPPORTER_MONTH_01", quantity = 1, testPurchase, paid = Just (CurrencyAmount 700, "USD"), alreadyAcknowledged = False}
 
--- | A transaction of the subscription appleSubscriptionOriginalId names, with the payload fields given.
-subscriptionJWS :: Text -> [Pair] -> Text
-subscriptionJWS transactionId fields =
+-- | A transaction of the subscription the original id names, with the payload fields given.
+subscriptionJWS :: Text -> Text -> [Pair] -> Text
+subscriptionJWS originalId transactionId fields =
   unsignedJWS $
     LB.toStrict $
       J.encode $
         J.object $
           [ "transactionId" J..= transactionId,
-            "originalTransactionId" J..= appleSubscriptionOriginalId,
+            "originalTransactionId" J..= originalId,
             "type" J..= ("Auto-Renewable Subscription" :: Text),
             "productId" J..= ("SUBSCR_BADGE_SUPPORTER_MONTH_01" :: Text)
           ]
@@ -212,8 +222,9 @@ googleHangingToken = "fake-play-token-hanging.AO-J1Ou4s7flZ2rTo8"
 googleSubscriptionToken = "fake-play-token-subscription.AO-J1Ow6u9hnB4tVq0"
 googleUnknownProductToken = "fake-play-token-unknown-product.AO-J1Ot3r6ekY1qSn7"
 
-appleSubscriptionOriginalId :: Text
+appleSubscriptionOriginalId, appleSecondSubscriptionOriginalId :: Text
 appleSubscriptionOriginalId = "2000000812345680"
+appleSecondSubscriptionOriginalId = "2000000812345700"
 
 googlePayment :: Text -> Text -> ServicePayment
 googlePayment productId token = SPGoogle {productId, token}

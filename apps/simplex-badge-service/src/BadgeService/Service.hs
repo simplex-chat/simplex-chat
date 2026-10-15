@@ -14,6 +14,10 @@ module BadgeService.Service
     badgeServiceCLI,
     badgeServiceResponse,
     mayAskStore,
+    PurchaseChecks,
+    newPurchaseChecks,
+    purchaseCheckWait,
+    maxPurchaseChecks,
     badgeErrorRetryAfter,
     shownServiceRequest,
     survive,
@@ -304,7 +308,8 @@ processQueuedRequests key trackerQ_ env = do
   cc <- atomically $ readTMVar $ serviceCC env
   -- a store call can take verifyTimeout, and a Play hand-over two, so every request that may make one waits on a lane of its own
   storeQ <- newTQueueIO
-  let answer (u, reqId, sigKey, reqData) = handleServiceRequest key (storeVerifier env) cc trackerQ_ u reqId sigKey reqData
+  checks <- newPurchaseChecks
+  let answer (u, reqId, sigKey, reqData) = handleServiceRequest key (storeVerifier env) checks cc trackerQ_ u reqId sigKey reqData
       route req@(_, _, sigKey, reqData) =
         mayAskStore cc sigKey reqData >>= \case
           True -> atomically $ writeTQueue storeQ req
@@ -355,12 +360,12 @@ badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do
       unless noAddress $ initializeBotAddress' (not testing) (Just True) False cc
       void $ atomically $ tryPutTMVar (serviceCC env) cc
 
-handleServiceRequest :: BadgeIssuerKey -> StoreVerifier -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
-handleServiceRequest key verifier cc trackerQ_ User {userId} reqId sigKey reqData = do
+handleServiceRequest :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
+handleServiceRequest key verifier checks cc trackerQ_ User {userId} reqId sigKey reqData = do
   let reqIdT = safeDecodeUtf8 (strEncode reqId)
   logInfo $ "badge service request " <> reqIdT
   resp <-
-    badgeServiceResponse key verifier cc trackerQ_ sigKey reqData `catchOwn'` \_ ->
+    badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData `catchOwn'` \_ ->
       logError ("badge service request " <> reqIdT <> " failed") $> errorResponse BSEInternal
   sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
     Right _ -> pure ()
@@ -383,8 +388,8 @@ badgeErrorRetryAfter = \case
 
 
 -- | The agent verified the signature, so sigKey is a key the sender holds; a differing purchaseKey would let a client claim a purchase it cannot sign for.
-badgeServiceResponse :: BadgeIssuerKey -> StoreVerifier -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
-badgeServiceResponse key verifier cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object reqData) of
+badgeServiceResponse :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
+badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Error _ -> pure $ errorResponse BSEBadRequest
   J.Success BadgeServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
@@ -395,7 +400,7 @@ badgeServiceResponse key verifier cc trackerQ_ sigKey reqData = case J.fromJSON 
           Nothing -> pure $ errorResponse BSEBadRequest
         BSCPurchaseBadge {masterKey, payment, upgrade}
           | Just receipt_ <- toStoreReceipt verifier payment -> case (purchaseKey, upgrade) of
-              (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc verifier k masterKey) receipt_
+              (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc verifier checks k masterKey) receipt_
               -- store upgrades are not built, and ignoring one would credit its months at the discounted price
               (Just _, Just _) -> pure $ errorResponse BSEBadRequest
               (Nothing, _) -> pure $ errorResponse BSEBadRequest
@@ -479,8 +484,8 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
 
 -- | Every refusal is answered before anything is written, so it leaves the receipt unclaimed; and
 -- nothing is written until the credential is signed.
-purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> StoreVerifier -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
-purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, receiptProductId, subscriptionRef, verifyReceipt, acknowledgeReceipt, acknowledgeSubscription} =
+purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> StoreVerifier -> PurchaseChecks -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
+purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, receiptProductId, subscriptionRef, verifyReceipt, acknowledgeReceipt, acknowledgeSubscription} =
   withDB' "getStorePayment" cc (\db -> getStorePaymentCredit db provider providerRef) >>= \case
     Left _ -> pure $ errorResponse BSEInternal
     Right credit
@@ -513,7 +518,13 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
     newPurchase tx@VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       -- an Apple subscription, whose JWS was verified offline
-      Just StoreSubscription -> purchaseSubscription (Just productId) Uncredited
+      Just StoreSubscription
+        | isJust (checkSubscription verifier) -> do
+            now <- badgeNow cc
+            atomically (purchaseCheckWait checks now providerRef) >>= \case
+              Nothing -> atLeastCheckInterval <$> purchaseSubscription (Just productId) Uncredited
+              Just remaining -> pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just (ceiling remaining)}
+        | otherwise -> purchaseSubscription (Just productId) Uncredited
       Just StoreOneTime {badgeType, months} ->
         acknowledged (($ tx) <$> acknowledgeReceipt) $ do
           now <- badgeNow cc
@@ -596,7 +607,7 @@ grantableCharge provider tier now SubscriptionCheck {subscriptionState, latestCh
           | now >= periodEnd -> Left NGPeriodOver
           | otherwise -> Right (charge, plan)
 
--- | No payment row exists yet to bound the store checks by, so the retryAfter of each answer is what bounds them.
+-- | No payment row exists yet to stamp, so an App Store claim's checks are bounded by the purchase checks, a Play one's by each answer's retryAfter.
 firstChargeNotGranted :: PaymentProvider -> NotGranted -> IO BadgeServiceResponse
 firstChargeNotGranted provider = \case
   NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
@@ -694,7 +705,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             Left _ -> pure $ errorResponse BSEInternal
             Right () ->
               checkStoreSubscription verifier subscriptionRef Nothing >>= \case
-                Left refusal -> withCheckInterval <$> storeRefusalResponse refusal
+                Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
                 Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider (Just badgeType) now checked of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
                   Left reason -> do
@@ -733,10 +744,6 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             setSubscriptionState db paymentId state now
             issueResponse db badgePurchaseId now (Just state)
     answered what action = fromRight (errorResponse BSEInternal) <$> withDB' what cc action
-    -- the next check waits out the interval whatever the client is told, so its retry waits as long
-    withCheckInterval = \case
-      BSPError {code, message, retryAfter = Just _} -> BSPError {code, message, retryAfter = Just $ round subscriptionCheckInterval}
-      resp -> resp
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t subscription = do
       let StatementEntry {entryId = assertedUuid} = lastEntry
@@ -760,3 +767,30 @@ subscriptionCheckDue now tip PurchaseSubscription {checkedAt} =
 -- repeating its requests cannot spend the store quota every subscriber shares.
 subscriptionCheckInterval :: NominalDiffTime
 subscriptionCheckInterval = 3600
+
+-- | The next check waits out the interval whatever the client is told, so its retry waits as long.
+atLeastCheckInterval :: BadgeServiceResponse -> BadgeServiceResponse
+atLeastCheckInterval = \case
+  BSPError {code, message, retryAfter = Just t} -> BSPError {code, message, retryAfter = Just $ max t $ round subscriptionCheckInterval}
+  resp -> resp
+
+-- | The App Store subscription claims the purchase path asked its store about, by original transaction id.
+type PurchaseChecks = TVar (M.Map T.Text UTCTime)
+
+newPurchaseChecks :: IO PurchaseChecks
+newPurchaseChecks = newTVarIO M.empty
+
+-- | How long a claim waits before its store is asked again; Nothing records a check at now. A claim that finds
+-- the table full of checks inside the interval is asked without being recorded, so a full table refuses no one.
+purchaseCheckWait :: PurchaseChecks -> UTCTime -> T.Text -> STM (Maybe NominalDiffTime)
+purchaseCheckWait checks now ref = stateTVar checks $ \m ->
+  let live = M.filter (\t -> diffUTCTime now t < subscriptionCheckInterval) m
+   in case M.lookup ref live of
+        Just t -> (Just $ subscriptionCheckInterval - diffUTCTime now t, live)
+        Nothing
+          | M.size live >= maxPurchaseChecks -> (Nothing, live)
+          | otherwise -> (Nothing, M.insert ref now live)
+
+-- | Far above an hour of genuine App Store subscription purchases: every key is one Apple signed for this app.
+maxPurchaseChecks :: Int
+maxPurchaseChecks = 10000
