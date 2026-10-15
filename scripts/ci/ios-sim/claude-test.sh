@@ -105,21 +105,22 @@ for layout in $layouts; do
       < prompt.md > transcript.jsonl 2> stderr.log
   ) || session_status=$?
   echo "claude exited with $session_status"
-  tail -n 20 "$session/stderr.log"
-  if [ -f "$session/report.md" ]; then
-    cat "$session/report.md"
-  else
-    echo "no report.md"
-  fi
-  echo "guard hook: $(grep -c '^allow' "$CLAUDE_GUARD_LOG" || true) allowed, $(grep -c '^refuse' "$CLAUDE_GUARD_LOG" || true) refused"
-  grep '^refuse' "$CLAUDE_GUARD_LOG" || true
-  echo "::endgroup::"
-  # the token must never be uploaded, whatever the session did; grep reads it from a pipe, not from its arguments
+  # the token must never be printed or uploaded, whatever the session did; grep reads it from a pipe, not from its arguments
   if grep -rqF -f <(printf '%s\n' "$token") "$session" "$CLAUDE_GUARD_LOG"; then
     rm -rf "$session" "$CLAUDE_GUARD_LOG"
     echo "::error::the $layout session's files contained the token, so they were deleted before the upload"
     session_status=1
+  else
+    tail -n 20 "$session/stderr.log"
+    if [ -f "$session/report.md" ]; then
+      cat "$session/report.md"
+    else
+      echo "no report.md"
+    fi
+    echo "guard hook: $(grep -c '^allow' "$CLAUDE_GUARD_LOG" || true) allowed, $(grep -c '^refuse' "$CLAUDE_GUARD_LOG" || true) refused"
+    grep '^refuse' "$CLAUDE_GUARD_LOG" || true
   fi
+  echo "::endgroup::"
   if [ "$session_status" -ne 0 ]; then
     status=$session_status
   fi
