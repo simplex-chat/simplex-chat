@@ -201,6 +201,8 @@ badgeServiceTests = do
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
     it "should keep the device store's view of a credited subscription, except renewing over billing retry, and nothing for any other transaction" testSubscriptionStateFromStore
+    it "should alert a cancelled subscription until acknowledged, and not remind a monthly plan of its renewal" testSubscriptionAlerts
+    it "should remind an annual plan three days before it renews, from a wake of its own, until acknowledged" testRenewalReminder
     it "should resolve an Apple renewal to the subscription's record, and credit a held record that adopted it" testAppleRenewalResolvesToPurchase
     it "should adopt into a held Apple record only another transaction bought later and not revoked" testAppleAdoptionRules
     it "should credit an adopted Apple transaction at once though the attempt with the one before it failed" testAdoptedReceiptNotOverwritten
@@ -2291,7 +2293,13 @@ testSubscriptionAwaitsCharge ps =
       checks <- subscriptionChecks store
       setClockAt bsClock requestAt
       alice `send` "/_app activate"
-      alice <### ["/_app activate", "ok", Predicate (", subscription billingRetry" `isInfixOf`)]
+      alice
+        <### [ "/_app activate",
+               "ok",
+               paymentIssue,
+               Predicate (\l -> "1: supporter" `isPrefixOf` l && ", subscription billingRetry" `isInfixOf` l),
+               paymentIssue
+             ]
       -- nothing issued and no failure: the badge stays, and the next request is a day on
       waitWakeFrom (chatController alice) (addUTCTime (nominalDay - 60) requestAt)
       subscriptionChecks store `shouldReturn` checks + 1
@@ -2322,9 +2330,9 @@ testSubscriptionEnds ps =
       alice
         <### [ "/_app activate",
                "ok",
-               StartsWith "badge alert: support_ended ",
+               StartsWith "badge alert: subscription_ended ",
                StartsWith "1: supporter",
-               StartsWith "badge alert: support_ended "
+               StartsWith "badge alert: subscription_ended "
              ]
       waitShownBadge (chatController alice) Nothing
       -- a retired purchase is not asked about again
@@ -2351,8 +2359,67 @@ testSubscriptionStateKept ps =
       storeReports store $ subscriptionCheck SSBillingRetry Nothing
       setClockAt bsClock $ fst $ renewalMoments rows
       alice `send` "/_app activate"
-      alice <### ["/_app activate", "ok", Predicate (", subscription billingRetry" `isInfixOf`)]
+      alice <### ["/_app activate", "ok", Predicate (", subscription billingRetry" `isInfixOf`), paymentIssue, paymentIssue]
       subscriptionStatuses (chatController alice) `shouldReturn` [Just "billingRetry"]
+
+nextWakes :: ChatController -> IO [Maybe UTCTime]
+nextWakes ChatController {chatStore} =
+  withTransaction chatStore $ \db -> map fromOnly <$> DB.query_ db "SELECT next_wake_at FROM badge_purchases"
+
+-- | A monthly plan is not reminded of its renewal; a cancellation is alerted until acknowledged.
+testSubscriptionAlerts :: HasCallStack => TestParams -> IO ()
+testSubscriptionAlerts ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (firstStart, _) <- clientSubscribedMonthly env alice
+      let paidThrough = addMonths 1 firstStart
+          episode = T.unpack $ safeDecodeUtf8 $ strEncode paidThrough
+      armWakeAt alice bsClock $ addUTCTime (-3 * nominalDay) paidThrough
+      nextWakes (chatController alice) >>= (`shouldSatisfy` all (maybe False (>= paidThrough)))
+      threadDelay 2000000
+      (alice </)
+      alice ##> ("/_badge subscription cancelled " <> paymentArg subscriptionPlay)
+      alice <### ["ok", StartsWith "1: supporter", subscriptionCancelled, subscriptionCancelled]
+      alice ##> ("/_badge ack 1 1 subscription_cancelled off " <> episode)
+      alice <##. "1: supporter"
+      ackedEpisode (chatController alice) `shouldReturn` (Just "subscription_cancelled", Just (T.pack episode))
+      alice ##> "/_badge state 1"
+      alice <##. "1: supporter"
+      (alice </)
+
+-- | An annual plan is reminded three days before it renews, by a wake of its own.
+testRenewalReminder :: HasCallStack => TestParams -> IO ()
+testRenewalReminder ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store@FakeStore {appleSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_YEAR_01" firstStart 12
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+      inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+      waitWakeArmed (chatController alice)
+      let paidThrough = addMonths 12 firstStart
+          remindAt = addUTCTime (-3 * nominalDay) paidThrough
+          episode = T.unpack $ safeDecodeUtf8 $ strEncode paidThrough
+      -- with the last month issued, the reminder is the next thing due
+      setClockAt bsClock $ addUTCTime (-20 * nominalDay) paidThrough
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <##. "1: supporter, 0 months left"
+      waitWakeFrom (chatController alice) remindAt
+      nextWakes (chatController alice) `shouldReturn` [Just remindAt]
+      armWakeAt alice bsClock remindAt
+      alice <##. "badge alert: renewal_approaching "
+      alice ##> ("/_badge ack 1 1 renewal_approaching off " <> episode)
+      alice <##. "1: supporter"
+      alice ##> "/_badge state 1"
+      alice <##. "1: supporter"
+      (alice </)
+
+paymentIssue :: ConsoleResponse
+paymentIssue = StartsWith "badge alert: payment_issue "
+
+subscriptionCancelled :: ConsoleResponse
+subscriptionCancelled = StartsWith "badge alert: subscription_cancelled "
 
 -- | The service answers a request made while coverage runs from the state it stored, which for an annual plan is up to a year old.
 testAnnualStateNotFromStoredAnswer :: HasCallStack => TestParams -> IO ()
@@ -2362,7 +2429,7 @@ testAnnualStateNotFromStoredAnswer ps =
       firstStart <- addUTCTime (-3600) <$> serviceNow env
       storeReports store $ subscriptionCheck SSCancelled $ Just $ storeCharge "subscr-badge-supporter-year-01" firstStart 12
       alice ##> ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
-      inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+      inAnyOrder alice [[openPurchase ""], ["1: supporter", "badge alert: subscription_cancelled "], ["badge alert: subscription_cancelled "]]
       waitWakeArmed (chatController alice)
       rows <- ledgerRows (chatController alice) "badge_ledger"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) rows `shouldBe` [(12, 12, Just "charge"), (-1, 11, Just "badge")]
@@ -2373,7 +2440,7 @@ testAnnualStateNotFromStoredAnswer ps =
       alice ##> "/_app activate"
       alice <## "ok"
       _ <- waitLedgerRows (chatController alice) 3
-      alice <### [Predicate (\l -> "1: supporter, 10 months left" `isPrefixOf` l && ", subscription cancelled" `isInfixOf` l)]
+      alice <### [Predicate (\l -> "1: supporter, 10 months left" `isPrefixOf` l && ", subscription cancelled" `isInfixOf` l), subscriptionCancelled]
       subscriptionChecks store `shouldReturn` checks
       subscriptionPayments cc `shouldReturn` [("google", googlePurchaseRef googleSubscriptionToken, Just "renewing", Just googleSubscriptionToken)]
       subscriptionStatuses (chatController alice) `shouldReturn` [Just "cancelled"]
@@ -2385,7 +2452,7 @@ testSubscriptionStateFromStore ps =
       (_, rows) <- clientSubscribedMonthly env alice
       let report state payment = alice ##> ("/_badge subscription " <> state <> " " <> paymentArg payment)
       report "cancelled" subscriptionPlay
-      alice <### ["ok", Predicate (", subscription cancelled" `isInfixOf`)]
+      alice <### ["ok", Predicate (", subscription cancelled" `isInfixOf`), subscriptionCancelled, subscriptionCancelled]
       subscriptionStatuses (chatController alice) `shouldReturn` [Just "cancelled"]
       report "cancelled" subscriptionPlay
       alice <## "ok"
@@ -2393,7 +2460,7 @@ testSubscriptionStateFromStore ps =
       storeReports store $ subscriptionCheck SSBillingRetry Nothing
       setClockAt bsClock $ fst $ renewalMoments rows
       alice `send` "/_app activate"
-      alice <### ["/_app activate", "ok", Predicate (", subscription billingRetry" `isInfixOf`)]
+      alice <### ["/_app activate", "ok", Predicate (", subscription billingRetry" `isInfixOf`), paymentIssue, paymentIssue]
       checks <- subscriptionChecks store
       report "renewing" subscriptionPlay
       alice <## "ok"
@@ -2401,6 +2468,7 @@ testSubscriptionStateFromStore ps =
       -- a held transaction, here a one-time purchase handed over while the badge is shown, and an unknown one change nothing
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       alice <##. "1: supporter"
+      alice <##. "badge alert: payment_issue "
       alice <##. openPurchase ""
       report "cancelled" supporterPlay
       alice <## "ok"

@@ -43,6 +43,8 @@ ALTER TABLE badge_purchases ADD COLUMN subscription_status TEXT;
 down_m20260925_badge_store_receipts :: Text
 down_m20260925_badge_store_receipts =
   [r|
+UPDATE badge_purchases SET alert_acked_kind = NULL, alert_acked_episode = NULL, alert_snooze_until = NULL WHERE alert_acked_kind = 'subscription_cancelled';
+
 ALTER TABLE badge_purchases DROP COLUMN subscription_status;
 
 DROP INDEX idx_badge_purchases_store_receipt;

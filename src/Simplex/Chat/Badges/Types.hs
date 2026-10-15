@@ -120,13 +120,14 @@ data LedgerDebitType
   deriving (Eq, Show)
 
 -- unconfirmed draft
-data BadgeAlertKind = BARenewalApproaching | BAPaymentIssue | BASubscriptionEnded | BAPrepaidEnding | BASupportEnded | BAIssueFailed
+data BadgeAlertKind = BARenewalApproaching | BAPaymentIssue | BASubscriptionCancelled | BASubscriptionEnded | BAPrepaidEnding | BASupportEnded | BAIssueFailed
   deriving (Eq, Show)
 
 instance TextEncoding BadgeAlertKind where
   textEncode = \case
     BARenewalApproaching -> "renewal_approaching"
     BAPaymentIssue -> "payment_issue"
+    BASubscriptionCancelled -> "subscription_cancelled"
     BASubscriptionEnded -> "subscription_ended"
     BAPrepaidEnding -> "prepaid_ending"
     BASupportEnded -> "support_ended"
@@ -134,6 +135,7 @@ instance TextEncoding BadgeAlertKind where
   textDecode = \case
     "renewal_approaching" -> Just BARenewalApproaching
     "payment_issue" -> Just BAPaymentIssue
+    "subscription_cancelled" -> Just BASubscriptionCancelled
     "subscription_ended" -> Just BASubscriptionEnded
     "prepaid_ending" -> Just BAPrepaidEnding
     "support_ended" -> Just BASupportEnded

@@ -35,13 +35,14 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
-import Simplex.Chat.Badges.Types (BadgeIssueFailure (..), BadgeSubscription (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeSubscription (..))
 import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, storeTransactionRef)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, storeTransactionRef)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts, appleTransactionRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
+import qualified Simplex.Chat.Store.Badges as SB
 import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
@@ -113,6 +114,7 @@ badgeTests = do
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
   describe "badge state" $ do
     it "carries a subscription's plan and last seen state, renewing only when it was seen renewing, and bounds a state it does not know" testBadgeSubscriptionJSON
+    it "derives one alert for a subscription in order of urgency, dated paidThrough, and leaves prepaid alerts as they were" testSubscriptionAlertDerivation
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
@@ -1118,6 +1120,61 @@ testBadgeSubscriptionJSON = do
   boundedSubscriptionState (SSUnknown "Visit evil.example.com!\ESC[2J") `shouldBe` SSUnknown "Visitevilexamplecom2J"
   boundedSubscriptionState (SSUnknown (T.replicate 100 "a")) `shouldBe` SSUnknown (T.replicate 32 "a")
   boundedSubscriptionState (SSUnknown "") `shouldBe` SSUnknown "unknown"
+
+testSubscriptionAlertDerivation :: IO ()
+testSubscriptionAlertDerivation = do
+  drg <- C.newRandom
+  (k, pk) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  mk <- generateMasterKey drg
+  let start = at 2026 3 10
+      ends = addMonths 1 start
+      balance = grant start 1 (newBalance start)
+      failedAt = at 2026 3 20
+      failure = BadgeIssueError {failedSince = failedAt, lastAttemptAt = failedAt, reason = BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False}}
+      early = addUTCTime (-10 * nominalDay) ends
+      soon = addUTCTime (-nominalDay) ends
+      past = addUTCTime nominalDay ends
+      subscription months st = SB.PKSubscription BadgeSubscription {planMonths = months, status = st}
+      alertOf t kind' isShown err =
+        let p = SB.UserBadgePurchase {badgePurchaseId = 1, purchaseKey = k, purchasePrivKey = pk, masterKey = mk, badgeType = BTSupporter, shown = isShown, alertAcked = Nothing, alertSnoozeUntil = Nothing, issueError = err, nextWakeAt = Nothing, purchaseKind = kind'}
+         in (\BT.BadgeAlert {kind, date} -> (kind, date)) <$> derivedBadgeAlert t p Nothing balance
+      renewing = Just SSRenewing
+      cancelled = Just SSCancelled
+      billingRetry = Just SSBillingRetry
+  mapM_
+    (\(t, kind', isShown, err, expected) -> alertOf t kind' isShown err `shouldBe` expected)
+    [ -- retired at or after paidThrough, whatever else holds
+      (past, subscription 1 renewing, False, Nothing, Just (BASubscriptionEnded, ends)),
+      (past, subscription 12 billingRetry, False, Just failure, Just (BASubscriptionEnded, ends)),
+      (past, subscription 1 cancelled, False, Nothing, Just (BASubscriptionEnded, ends)),
+      -- still shown past paidThrough: waiting for the store to charge
+      (past, subscription 1 renewing, True, Nothing, Nothing),
+      (past, subscription 12 Nothing, True, Nothing, Nothing),
+      (past, subscription 1 cancelled, True, Nothing, Nothing),
+      -- billing retry before and after paidThrough, over a renewal failure
+      (early, subscription 12 billingRetry, True, Nothing, Just (BAPaymentIssue, ends)),
+      (past, subscription 1 billingRetry, True, Just failure, Just (BAPaymentIssue, ends)),
+      -- a renewal failure over a cancellation and a reminder
+      (soon, subscription 1 cancelled, True, Just failure, Just (BAIssueFailed, failedAt)),
+      (soon, subscription 12 renewing, True, Just failure, Just (BAIssueFailed, failedAt)),
+      (early, subscription 1 cancelled, True, Nothing, Just (BASubscriptionCancelled, ends)),
+      (soon, subscription 12 cancelled, True, Nothing, Just (BASubscriptionCancelled, ends)),
+      -- reminded only for a renewing annual plan, and only in the last three days
+      (soon, subscription 12 renewing, True, Nothing, Just (BARenewalApproaching, ends)),
+      (early, subscription 12 renewing, True, Nothing, Nothing),
+      (soon, subscription 1 renewing, True, Nothing, Nothing),
+      (soon, subscription 12 Nothing, True, Nothing, Nothing),
+      (soon, subscription 12 (Just $ SSUnknown "paused"), True, Nothing, Nothing),
+      (soon, subscription 1 (Just SSEnded), True, Nothing, Nothing),
+      -- prepaid, as before
+      (past, SB.PKPrepaid, True, Nothing, Just (BASupportEnded, ends)),
+      (past, SB.PKPrepaid, False, Just failure, Just (BASupportEnded, ends)),
+      (soon, SB.PKPrepaid, True, Just failure, Just (BAIssueFailed, failedAt)),
+      (soon, SB.PKPrepaid, True, Nothing, Nothing)
+    ]
+  -- the reminder starts exactly three days before paidThrough
+  alertOf (addUTCTime (-3 * nominalDay) ends) (subscription 12 renewing) True Nothing `shouldBe` Just (BARenewalApproaching, ends)
+  alertOf (addUTCTime (-3 * nominalDay - 1) ends) (subscription 12 renewing) True Nothing `shouldBe` Nothing
 
 testErrorResponseJSON :: IO ()
 testErrorResponseJSON = do

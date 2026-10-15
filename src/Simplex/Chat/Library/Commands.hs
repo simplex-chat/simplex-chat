@@ -5637,7 +5637,10 @@ updateUserBadge userId emitted now = do
               UserBadgePurchase {alertSnoozeUntil, issueError = failureAfter, purchaseKind = kindAfter} = p'
               snoozeAt = find (> now) alertSnoozeUntil
               stalledAt = if requestDue && not issued then Just $ badgeStalledInterval `addUTCTime` now else Nothing
-              wakeAt = earliestTime [serviceAt, snoozeAt, stalledAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
+              reminderAt = case kindAfter of
+                PKSubscription s -> find (> now) $ renewalReminderAt s balance'
+                PKPrepaid -> Nothing
+              wakeAt = earliestTime [serviceAt, snoozeAt, stalledAt, reminderAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
               failed = failureAfter /= failureBefore
               subscriptionChanged = kindAfter /= purchaseKind
           -- written before the event, so the state it reports carries the attempt it leads to
@@ -5645,20 +5648,34 @@ updateUserBadge userId emitted now = do
           when (retired || issued || failed || subscriptionChanged) $ toView . CEvtBadgeChanged user'' =<< getUserBadgeState user''
           pure wakeAt
 
--- | The other kinds need subscriptions, and warning before a prepaid badge ends is not actionable
--- while topping up cannot credit months without issuing.
+-- | Warning before a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
 derivedBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
-derivedBadgeAlert now p@UserBadgePurchase {purchaseKind, shown} shownCred b
-  -- a subscription still shown past paidThrough is waiting for its store to charge, not ended
-  | endsAt <= now && not (subscribed && shown) = Just $ alertOf BASupportEnded endsAt
-  | otherwise = (\BadgeIssueError {failedSince} -> alertOf BAIssueFailed failedSince) <$> shownIssueError now p shownCred
+derivedBadgeAlert now p@UserBadgePurchase {purchaseKind, shown} shownCred b = case purchaseKind of
+  PKPrepaid
+    | endsAt <= now -> Just $ alertOf BASupportEnded endsAt
+    | otherwise -> issueFailed
+  PKSubscription s@BadgeSubscription {status}
+    -- a subscription still shown past paidThrough is waiting for its store to charge, not ended
+    | endsAt <= now && not shown -> Just $ alertOf BASubscriptionEnded endsAt
+    | status == Just SSBillingRetry -> Just $ alertOf BAPaymentIssue endsAt
+    | isJust issueFailed -> issueFailed
+    | now < endsAt && status == Just SSCancelled -> Just $ alertOf BASubscriptionCancelled endsAt
+    | now < endsAt && maybe False (<= now) (renewalReminderAt s b) -> Just $ alertOf BARenewalApproaching endsAt
+    | otherwise -> Nothing
   where
-    subscribed = case purchaseKind of
-      PKSubscription _ -> True
-      PKPrepaid -> False
     endsAt = L.paidThrough b
+    issueFailed = (\BadgeIssueError {failedSince} -> alertOf BAIssueFailed failedSince) <$> shownIssueError now p shownCred
     alertOf kind date = BadgeAlert {kind, episode = safeDecodeUtf8 $ strEncode date, date, price = Nothing}
+
+-- | Only an annual plan is reminded of: with no way to turn reminders off, a monthly one would come every month.
+renewalReminderAt :: BadgeSubscription -> StatementEntry -> Maybe UTCTime
+renewalReminderAt BadgeSubscription {planMonths, status} b
+  | planMonths == 12 && status == Just SSRenewing = Just $ negate renewalReminderLead `addUTCTime` L.paidThrough b
+  | otherwise = Nothing
+
+renewalReminderLead :: NominalDiffTime
+renewalReminderLead = 3 * nominalDay
 
 -- | A failure that can clear on its own is only shown once the credential lapses and contacts see it.
 shownIssueError :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> Maybe BadgeIssueError
