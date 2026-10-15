@@ -163,7 +163,7 @@ subscriptionVerdict SubscriptionPurchase {subscriptionStateName, testSubscriptio
       latestCharge <- forM latestSuccessfulOrderId $ \orderId -> case (expiryTime, basePlanId) of
         (Just periodEnd, Just planId) ->
           let periodStart = maybe periodEnd (\(_, months) -> addMonths (negate $ toInteger months) periodEnd) (storePlan PPGoogle planId)
-           -- hashed: the order id is on the buyer's Play receipt email
+           -- hashed so the row does not show the order id; unkeyed, so a holder of the buyer's receipt can still find it
            in Right StoreCharge {chargeRef = googlePurchaseRef orderId, planId, periodStart, periodEnd, chargePaid = Nothing, revoked = False, offer = inOffer}
         _ -> Left $ SRVerifierFailed "Play answered a charge without its expiryTime or base plan"
       pure SubscriptionCheck {subscriptionState, testSubscription, latestCharge}
