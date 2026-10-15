@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: desktop-linux-${{ github.ref }}
@@ -18,8 +19,95 @@ env:
   CABAL_VER: 3.10.2.0
   JAVA_VER: 17
   CORE_PKG: desktop-core-linux-x86_64.tar.gz
+  BACKEND_PKG: desktop-linux-backend.tar.gz
 
 jobs:
+  plan:
+    name: find earlier builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      backend: ${{ steps.names.outputs.backend }}
+      backend-run: ${{ steps.backend.outputs.run-id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded
+      - name: Artifact names
+        id: names
+        run: echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find backend
+        id: backend
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.backend }}"
+
+  backend:
+    name: test backend for the app
+    needs: plan
+    if: needs.plan.outputs.backend-run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Setup Haskell
+        id: haskell
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: ${{ env.GHC_VER }}
+          cabal-version: ${{ env.CABAL_VER }}
+
+      # before the first backend store exists, the core library's has most of the same Hackage dependencies
+      - name: Restore cabal store
+        id: cabal-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: |
+            ${{ steps.haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: desktop-linux-backend-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-${{ github.run_id }}
+          restore-keys: |
+            desktop-linux-backend-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
+            desktop-linux-backend-store-ghc${{ env.GHC_VER }}-
+            desktop-linux-core-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
+
+      - name: Install libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev
+
+      - name: Build backend
+        run: scripts/ci/desktop-linux/build-backend.sh ~/backend/${{ env.BACKEND_PKG }}
+
+      - name: Save cabal store
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            ${{ steps.haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
+
+      - name: Upload backend
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/backend/${{ env.BACKEND_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
   core:
     name: core library for Linux
     runs-on: ubuntu-24.04
@@ -100,7 +188,9 @@ jobs:
 
   app:
     name: desktop app under Xvfb
-    needs: core
+    needs: [plan, core, backend]
+    # backend is skipped when an earlier run built it
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -118,6 +208,12 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME"
           ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" || true
 
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
+
       - name: Download core library
         uses: actions/download-artifact@v7
         with:
@@ -125,9 +221,24 @@ jobs:
           path: ~/core
 
       - name: Install core library
+        id: core
         run: scripts/ci/desktop-linux/install-core.sh ~/core/${{ env.CORE_PKG }}
 
+      - name: Download backend
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/backend
+          run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Start test backend
+        timeout-minutes: 30
+        run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+
+      # the app and its tests are still built when the backend fails
       - name: Setup Java
+        if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         uses: actions/setup-java@v5
         with:
           distribution: corretto
@@ -136,6 +247,7 @@ jobs:
 
       - name: Build app
         id: build
+        if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         working-directory: apps/multiplatform
         run: |
           ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :desktop:createDistributable
@@ -153,16 +265,13 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/desktop-linux/test-summary.py apps/multiplatform/common/build/test-results/desktopTest
 
-      - name: Install UI tools
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr
-          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr
-
       - name: Run smoke test
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/smoke-test"
+
+      - name: Stop test backend
+        if: ${{ !cancelled() }}
+        run: scripts/ci/desktop-linux/backend.sh stop "$RUNNER_TEMP/backend"
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
@@ -181,6 +290,15 @@ jobs:
           path: |
             apps/multiplatform/common/build/reports/tests/desktopTest
             apps/multiplatform/common/build/test-results/desktopTest
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Upload backend logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-backend-logs
+          path: ${{ runner.temp }}/backend/*.log
           retention-days: 3
           if-no-files-found: warn
 
