@@ -171,7 +171,7 @@
             #fff6e0 90%);
 }
 
-@media screen and (max-width: 959px) {
+@media screen and (max-width: 1015px) {
     :root {
         --bg-grad: linear-gradient(30deg,
                 #e8f3ff 0%,
@@ -225,7 +225,7 @@ body {
     background: #0a0f2b;
 }
 
-@media screen and (min-width: 960px) {
+@media screen and (min-width: 1016px) {
     html {
         overscroll-behavior: none;
     }
@@ -368,7 +368,7 @@ section.cover {
     --cover-fade-rgb: 33, 70, 110;
     background-image: url("/img/design_3/cover-light.webp");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
-    background-position: calc(50% + var(--sec-vwu) * 10.08) center;
+    background-position: calc(50% + var(--sec-vwu) * 8.5) center;
     background-repeat: no-repeat;
     overflow: hidden;
     z-index: 12;
@@ -381,15 +381,13 @@ section.cover {
 
 .chrome-ios section.cover,
 .safari-ios section.cover {
-    background-position: calc(50% + var(--sec-vwu) * 10.08) calc(50% - calc(110lvh - 100svh) / 2);
+    --cover-bottom-ext: calc(110lvh - 100svh);
+    background-position: calc(50% + var(--sec-vwu) * 8.5) calc(50% - calc(110lvh - 100svh) / 2);
 }
 
 .chrome-android section.cover {
-    background-position: calc(50% + var(--sec-vwu) * 10.08) calc(50% - calc(100lvh - 100svh) / 2);
-}
-
-[dir="rtl"] section.cover {
-    background-position-x: calc(50% - var(--sec-vwu) * 10.08);
+    --cover-bottom-ext: calc(100lvh - 100svh);
+    background-position: calc(50% + var(--sec-vwu) * 8.5) calc(50% - calc(100lvh - 100svh) / 2);
 }
 
 .cover-art {
@@ -402,16 +400,16 @@ section.cover {
 
 .cover-phone {
     position: absolute;
-    right: calc(var(--sec-vwu) * -3.1);
-    bottom: calc(var(--sec-vhu) * -70);
-    height: calc(var(--sec-vhu) * 144.4);
+    right: calc(var(--sec-vwu) * 4);
+    bottom: calc(var(--sec-vhu) * -55.56);
+    height: calc(var(--sec-vhu) * 129.96);
     width: auto;
 }
 
 .cover-fade {
     position: absolute;
-    right: calc(var(--sec-vwu) * -3.1);
-    width: calc(var(--sec-vhu) * 144.4 * 0.4914);
+    right: calc(var(--sec-vwu) * 4);
+    width: calc(var(--sec-vhu) * 129.96 * 0.4914);
     bottom: var(--cover-area-off);
     height: calc(var(--sec-vhu) * 38);
     background: linear-gradient(to top, rgb(var(--cover-fade-rgb)) 22%, rgba(var(--cover-fade-rgb), .8) 52%, rgba(var(--cover-fade-rgb), 0) 100%);
@@ -426,18 +424,18 @@ section.cover div.content {
     gap: calc(var(--sec-vhu) * 3.5);
     width: var(--sec-w);
     height: var(--sec-h);
-    padding-left: calc(var(--sec-vwu) * 7.5);
+    padding-left: calc(var(--sec-vwu) * 4);
 }
 
-@media (min-width: 960px) {
+@media (min-width: 1016px), (max-width: 1015px) and (orientation: landscape) {
     [dir="rtl"] section.cover div.content {
         padding-left: 0;
-        padding-right: calc(var(--sec-vwu) * 7.5);
+        padding-right: calc(var(--sec-vwu) * 4);
     }
 
     [dir="rtl"] .cover-phone,
     [dir="rtl"] .cover-fade {
-        left: calc(var(--sec-vwu) * -3.1);
+        left: calc(var(--sec-vwu) * 4);
         right: auto;
     }
 
@@ -482,8 +480,12 @@ section.cover div.content p {
     font-size: calc(var(--sec-vwu) * 2.14);
     align-items: center;
     color: #ffffff;
-    max-width: calc(var(--sec-vwu) * 56);
+    max-width: calc(var(--sec-vwu) * 55);
     text-wrap: balance;
+}
+
+section.cover div.content p .nowrap {
+    white-space: nowrap;
 }
 
 section.cover div.content p.invest {
@@ -496,10 +498,32 @@ section.cover div.content p.invest a {
     white-space: nowrap;
 }
 
+html:not(.dark) section.cover div.content p {
+    font-weight: 300;
+    max-width: calc(var(--sec-vwu) * 55.2);
+}
+
+html:not(.dark) section.cover div.content p.invest {
+    font-weight: 400;
+}
+
+html:not(.dark) section.cover div.content p.invest a {
+    font-weight: 600;
+}
+
+html:not(.dark) section.cover div.content .gradient-text {
+    background: linear-gradient(90deg,
+            #ffb55d 0%,
+            #fff494 50%,
+            #fbffdd 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
 .cover-stats {
     position: absolute;
     right: 30px;
-    bottom: 74px;
+    bottom: calc(74px + var(--cover-bottom-ext, 0px));
     display: flex;
     align-items: center;
     gap: 48px;
@@ -532,7 +556,7 @@ section.cover div.content p.invest a {
 
 .security-btns {
     position: absolute;
-    bottom: 24px;
+    bottom: calc(24px + var(--cover-bottom-ext, 0px));
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -570,7 +594,7 @@ section.cover div.content p.invest a {
 
 .socials {
     position: absolute;
-    bottom: 22px;
+    bottom: calc(22px + var(--cover-bottom-ext, 0px));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -578,7 +602,7 @@ section.cover div.content p.invest a {
     flex-wrap: wrap;
 }
 
-@media (min-width: 960px) {
+@media (min-width: 1016px) {
     .socials .desktop-app-btn,
     .socials .apple-store-btn,
     .socials .google-play-btn {
@@ -640,14 +664,7 @@ section.cover div.content p.invest a {
     gap: 6px;
 }
 
-@media screen and (max-width: 959px) {
-
-    .cover-stats,
-    .security-btns,
-    .socials {
-        position: static;
-    }
-
+@media screen and (max-width: 1015px) and (orientation: portrait) {
     .socials {
         min-height: 42px;
     }
@@ -759,7 +776,7 @@ main .section-bg {
     background-image: url("/img/design_3/section-5-desktop.webp");
 }
 
-@media screen and (max-width: 959px) {
+@media screen and (max-width: 1015px) {
     .page-2 {
         background-image: url("/img/design_3/section-2-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.84);
@@ -1004,19 +1021,29 @@ main .section-bg {
     display: none;
 }
 
-@media (max-width: 959px) and (orientation: portrait) {
+@media (max-width: 1015px) and (orientation: portrait) {
     section.cover {
+        --cover-crest: 10px;
+        --cover-text-top: calc(var(--cover-crest) + var(--cover-bg-w) * 0.0125);
+        --cover-text-b: calc(var(--cover-text-top) + var(--cover-bg-w) * 0.19);
         --cover-phone-w: 82vw;
-        --cover-phone-h: calc(var(--cover-phone-w) / 0.4914);
-        --cover-text-b: calc(var(--cover-text-top) + 36px + var(--sec-vwu) * 83.25);
-        --cover-phone-ceiling: calc(var(--cover-text-b) + var(--cover-phone-w) * 0.1917);
-        --cover-phone-show: min(max(52vw, min(calc(var(--cover-phone-h) * 0.55), calc(100svh - var(--cover-phone-ceiling)))), calc(100svh - var(--cover-text-b) - 12px));
-        --cover-phone-top: calc(100svh - var(--cover-phone-show) + var(--cover-area-off));
+        --cover-phone-top: calc(var(--cover-text-b) + 16px + var(--cover-area-off));
         --cover-cta-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        --cover-audits-top: calc(100svh - var(--cover-cta-bottom) - 36px);
+        --cover-socials-top: calc(var(--cover-audits-top) - 66px);
+        --cover-row-gap: clamp(14px, 4.5vw, 20px);
+        --cover-row-start: calc(50% - (var(--cover-socials-w, 165px) + var(--cover-row-gap) + var(--cover-stats-w, 141px)) / 2);
         --cover-fade-ext: max(0px, calc(110lvh - 100svh));
         --cover-fade-dyn: max(0px, calc(110lvh - 100dvh));
-        --cover-fade-base: calc(var(--cover-fade-dyn) + var(--cover-cta-bottom) + 40px);
-        --cover-fade-ramp: 80px;
+        --cover-fade-base: calc(var(--cover-fade-dyn) + var(--cover-cta-bottom) + 114px);
+        --cover-fade-ramp: 48px;
+    }
+
+    section.cover,
+    .chrome-ios section.cover,
+    .safari-ios section.cover,
+    .chrome-android section.cover {
+        background-position: 50% calc(var(--cover-crest) - var(--cover-bg-h) * 0.2678);
     }
 
     .cover-phone {
@@ -1033,60 +1060,109 @@ main .section-bg {
         left: 50%;
         right: auto;
         transform: translateX(-50%);
-        width: var(--cover-phone-w);
+        width: 100vw;
         bottom: calc(var(--cover-area-off) - var(--cover-fade-ext));
         height: calc(var(--cover-fade-base) + var(--cover-fade-ramp));
         background: linear-gradient(to top, rgba(var(--cover-fade-rgb), .9) var(--cover-fade-base), rgba(var(--cover-fade-rgb), 0) 100%);
     }
 
-    [dir="ltr"] .socials,
+    [dir="ltr"] .socials {
+        top: var(--cover-socials-top);
+        bottom: auto;
+        left: var(--cover-row-start);
+        right: auto;
+    }
+
     [dir="rtl"] .socials {
-        position: absolute;
-        top: calc(100svh - var(--cover-cta-bottom) - 40px);
+        top: var(--cover-socials-top);
+        bottom: auto;
+        left: auto;
+        right: var(--cover-row-start);
+    }
+
+    [dir="ltr"] .cover-stats {
+        top: var(--cover-socials-top);
+        bottom: auto;
+        left: calc(var(--cover-row-start) + var(--cover-socials-w, 165px) + var(--cover-row-gap));
+        right: auto;
+    }
+
+    [dir="rtl"] .cover-stats {
+        top: var(--cover-socials-top);
+        bottom: auto;
+        left: auto;
+        right: calc(var(--cover-row-start) + var(--cover-socials-w, 165px) + var(--cover-row-gap));
+    }
+
+    [dir="ltr"] .security-btns,
+    [dir="rtl"] .security-btns {
+        top: var(--cover-audits-top);
         bottom: auto;
         left: 0;
         right: 0;
     }
 }
 
-@media (max-width: 959px) and (orientation: landscape) {
-    .cover-art {
-        display: none;
+@media (max-width: 1015px) and (orientation: landscape) {
+    section.cover {
+        --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100svh));
+        --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100svh));
+        --sec-w: calc(min(100vw, (1920 / 1080) * 100svh));
+        --sec-h: calc(min((1080 / 1920) * 100vw, 100svh));
+        --sec-vwu: calc(var(--sec-w) / 100);
+        --sec-vhu: calc(var(--sec-h) / 100);
     }
 }
 
-@media (max-width: 959px) {
-    section.cover {
-        --cover-text-top: 88px;
+@media (max-width: 1015px) and (orientation: landscape) and (max-height: 500px) {
+    section.cover div.content h1 br {
+        display: none;
     }
 
+    .cover-stats {
+        gap: 24px;
+    }
+
+    .cover-stat {
+        gap: 8px;
+    }
+
+    .cover-stat b {
+        font-size: 24px;
+    }
+
+    .cover-stat span {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 1015px) and (orientation: portrait) {
     section.cover div.content {
         justify-content: flex-start;
+        align-items: center;
+        text-align: center;
         gap: calc(var(--sec-vwu) * 3);
+        margin-top: min(0px, calc(var(--cover-text-top) + var(--cover-area-off)));
         padding: max(0px, calc(var(--cover-text-top) + var(--cover-area-off))) 21.6px 0;
     }
 
     section.cover div.content h1 {
         line-height: 0.85;
         font-weight: 700;
-        font-size: calc(var(--sec-vwu) * 20);
-    }
-
-    section.cover div.content h1 br {
-        display: none;
+        font-size: calc(var(--sec-vwu) * 24.75);
     }
 
     section.cover div.content h1 .small {
-        font-size: calc(var(--sec-vwu) * 10.7);
+        font-size: calc(var(--sec-vwu) * 13.2);
     }
 
     section.cover div.content h1 .medium {
-        font-size: calc(var(--sec-vwu) * 16);
+        font-size: calc(var(--sec-vwu) * 19.8);
     }
 
     section.cover div.content h2 {
         font-weight: 500;
-        font-size: calc(var(--sec-vwu) * 11.5);
+        font-size: calc(var(--sec-vwu) * 10.6);
     }
 
     section.cover div.content p {
@@ -1103,23 +1179,40 @@ main .section-bg {
         font-weight: 600;
     }
 
+    html:not(.dark) section.cover div.content p,
+    html:not(.dark) section.cover div.content p.invest {
+        font-weight: 500;
+        max-width: none;
+    }
+
+    html:not(.dark) section.cover div.content p.invest a {
+        font-weight: 700;
+    }
+
     .cover-stats {
-        gap: calc(var(--sec-vwu) * 8);
+        height: 42px;
+        gap: clamp(12px, 4vw, 16px);
     }
 
     .cover-stat {
         display: block;
+        text-align: start;
     }
 
     .cover-stat b {
         display: block;
-        font-size: calc(var(--sec-vwu) * 6.5);
+        font-size: clamp(19px, 5.6vw, 22px);
+        line-height: 1.05;
     }
 
     .cover-stat span {
-        font-size: calc(var(--sec-vwu) * 3.4);
+        display: block;
+        font-size: clamp(10px, 2.8vw, 11px);
+        line-height: 1.25;
     }
+}
 
+@media (max-width: 1015px) {
     /* --- MAIN SECTIONS --- */
     .page .text-container {
         justify-content: flex-end;
@@ -1216,7 +1309,7 @@ main .section-bg {
     border-radius: calc(var(--sec-vhu) * 1.8);
 }
 
-@media screen and (max-width: 959px) {
+@media screen and (max-width: 1015px) {
     .page-6 .group-images {
         width: 100%;
         height: 10%;
@@ -1429,7 +1522,7 @@ main .section-bg {
     margin: calc(var(--sec-vhu) * 2);
 }
 
-@media screen and (max-width: 959px) {
+@media screen and (max-width: 1015px) {
     .page-6 .group-images>a.group-image:nth-child(1) {
         --c: 3;
         --r: 1;
@@ -1633,7 +1726,7 @@ section.page.footer {
     min-height: fit-content;
 }
 
-@media screen and (max-width: 959px) {
+@media screen and (max-width: 1015px) {
     section.page.footer {
         height: 100lvh;
         min-height: 100lvh;
@@ -1668,7 +1761,7 @@ section.page.footer {
     }
 }
 
-@media (min-width: 960px) {
+@media (min-width: 1016px) {
 
     .footer .container-md,
     .footer .container-sm,
