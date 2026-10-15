@@ -1,15 +1,17 @@
 #!/bin/bash
 
 # Test backend on the app runner: a chat relay and a directory service on the preset servers, with groups and
-# channels registered and approved by a CLI peer, and search requests that must find them.
+# channels registered and approved by a CLI peer, and search requests that must find them; and for SimpleX names,
+# a local SMP server with a name resolver, names claimed by channels and by contacts that accept connections.
 # Usage:
-#   scripts/ci/ios-sim/backend.sh start <backend zip> <work dir>   writes the directory's short address to <work dir>/directory-link
+#   scripts/ci/ios-sim/backend.sh start <backend zip> <work dir>   writes the directory's short address to <work dir>/directory-link,
+#                                                                  the names server's address to <work dir>/names-server
 #                                                                  and what was seeded to <work dir>/seed.md
-#   scripts/ci/ios-sim/backend.sh stop <work dir>                  stops the relay and the directory, prints their logs
+#   scripts/ci/ios-sim/backend.sh stop <work dir>                  stops everything it started, prints the logs
 #   scripts/ci/ios-sim/backend.sh directory-stop <work dir>        stops the directory only
 #   scripts/ci/ios-sim/backend.sh directory-start <work dir>       starts it again
 #   scripts/ci/ios-sim/backend.sh listings <work dir>              prints the directory's listed groups and channels
-# The relay and the directory keep running between start and stop.
+# Everything it starts keeps running between start and stop.
 
 set -euo pipefail
 
@@ -20,6 +22,7 @@ avatar_search_text="ci avatar"
 long_name=ci_long_name_entry_for_layout_truncation_checks
 # maxServiceBodyLength in src/Simplex/Chat/Protocol.hs
 max_service_body=10737
+names_resolver_port=18080
 
 # Runs one chat command in a CLI client that stays online for <secs> after it; the output is in $work/out.
 chat() {
@@ -38,9 +41,22 @@ admin() {
   chat "$admin" "$1" "$2" --user-display-name "$admin"
 }
 
+# A command that resolves a SimpleX name: given -s, the client uses that server alone, with every role, names included.
+named() {
+  local db=$1 user=$2 secs=$3 cmd=$4
+  chat "$db" "$secs" "$cmd" --user-display-name "$user" -s "$names_server"
+}
+
 expect_out() {
   if ! grep -qE "$1" "$work/out"; then
     echo "error: \"$1\" not in the output"
+    return 1
+  fi
+}
+
+expect_no_error() {
+  if grep -qiE "error" "$work/out"; then
+    echo "error: the command failed"
     return 1
   fi
 }
@@ -87,14 +103,7 @@ start_relay() {
 # The address is created here, like the directory tests do, with auto-accept on before the service subscribes to it.
 create_directory() {
   chat directory 1 "/ad pq_ratchet=on" --create-bot-display-name "$directory_name"
-  directory_link=$(awk '/Your new chat address is created!/ {getline; getline; print; exit}' "$work/out")
-  case "$directory_link" in
-    https://*/a#*) ;;
-    *)
-      echo "error: no short directory address in the output"
-      return 1
-      ;;
-  esac
+  directory_link=$(new_address)
   chat directory 1 "/auto_accept on"
   expect_out "^auto_accept on"
   echo "$directory_link" > "$work/directory-link"
@@ -176,16 +185,43 @@ setup_relay() {
   relay_id=$(db_query "$admin" "SELECT chat_relay_id FROM chat_relays WHERE display_name = 'ci_relay' AND deleted = 0")
 }
 
-seed_channel() {
+create_channel() {
   local name=$1 descr=$2 image_file=${3:-}
   admin 10 "/_public group 1 $relay_id $(group_profile "$name" "$descr" '{"history":{"enable":"on"},"support":{"enable":"off"}}' "$image_file")"
   expect_out "group #$name .*is created"
   local group_id
   group_id=$(db_query "$admin" "SELECT group_id FROM groups WHERE local_display_name = '$name'")
   admin_until "relay id [0-9]+: active" 180 "/_get relays #$group_id"
+}
+
+list_channel() {
+  local name=$1
   admin 5 "/share chat #$name @'$directory_name'"
   expect_out "link to join channel #$name"
   approve "$name"
+}
+
+seed_channel() {
+  create_channel "$@"
+  list_channel "$1"
+}
+
+channel_link() {
+  admin 1 "/show link #$1" >&2
+  grep -m 1 -oE 'https://[^ ]+/c#[^ ]+' "$work/out"
+}
+
+# The short address that /ad printed.
+new_address() {
+  local address
+  address=$(awk '/Your new chat address is created!/ {getline; getline; print; exit}' "$work/out")
+  case "$address" in
+    https://*/a#*) echo "$address" ;;
+    *)
+      echo "error: no short address in the output" >&2
+      return 1
+      ;;
+  esac
 }
 
 # Avatars at the size the app makes them (avatar.swift), with different amounts of detail.
@@ -203,6 +239,102 @@ seed_avatars() {
     seed_group "ci_avatar_g$i" "CI avatar group $i" "$work/avatar-$i.txt"
     seed_channel "ci_avatar_c$i" "CI avatar channel $i" "$work/avatar-$((i + 3)).txt"
   done
+}
+
+# A local SMP server whose [NAMES] section points at names-resolver.py, which answers from names.json.
+start_names() {
+  echo "{}" > "$work/names.json"
+  nohup python3 "$(dirname "$0")/names-resolver.py" "$names_resolver_port" "$work/names.json" < /dev/null > "$work/names-resolver.log" 2>&1 &
+  echo $! > "$work/names-resolver.pid"
+  export SMP_SERVER_CFG_PATH=$work/smp-server/etc SMP_SERVER_LOG_PATH=$work/smp-server/log
+  "$bin/smp-server" init -y --disable-store-log --no-password --fqdn localhost --disable-web > "$work/out" 2>&1 || {
+    cat "$work/out"
+    return 1
+  }
+  cat "$work/out"
+  names_server=$(grep -m 1 -oE 'smp://[^ ]+@localhost' "$work/out")
+  sed -i '' \
+    -e 's/^enable: off$/enable: on/' \
+    -e "s|^# resolver_endpoint: http://127.0.0.1:8000\$|resolver_endpoint: http://127.0.0.1:$names_resolver_port|" \
+    -e 's/^port = 5223,443$/port = 5223/' \
+    "$SMP_SERVER_CFG_PATH/smp-server.ini"
+  grep -E '^(enable: on|resolver_endpoint|port = )' "$SMP_SERVER_CFG_PATH/smp-server.ini"
+  nohup "$bin/smp-server" start < /dev/null > "$work/smp-server.log" 2>&1 &
+  echo $! > "$work/smp-server.pid"
+  local deadline=$((SECONDS + 60))
+  until nc -z 127.0.0.1 5223 2> /dev/null; do
+    if ! kill -0 "$(cat "$work/smp-server.pid")" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: the names server did not start"
+      cat "$work/smp-server.log" "$work/names-resolver.log"
+      return 1
+    fi
+    sleep 1
+  done
+  echo "$names_server" > "$work/names-server"
+  echo "names server: $names_server"
+}
+
+register_name() {
+  local name=$1 contact=$2 channel=$3
+  jq --arg n "$name" --arg ct "$contact" --arg ch "$channel" \
+    '.[$n] = {simplexContact: ([$ct] | map(select(. != ""))), simplexChannel: ([$ch] | map(select(. != "")))}' \
+    "$work/names.json" > "$work/names.json.new"
+  mv "$work/names.json.new" "$work/names.json"
+}
+
+# A contact that claims a name and accepts every connection; it keeps running, so the app can connect to it.
+start_contact() {
+  local db=$1 display_name=$2 name=$3
+  chat "$db" 1 "/ad" --user-display-name "$display_name"
+  local address
+  address=$(new_address)
+  chat "$db" 1 "/auto_accept on" --user-display-name "$display_name"
+  expect_out "^auto_accept on"
+  register_name "$name" "$address" ""
+  named "$db" "$display_name" 5 "/_set domain 1 $name"
+  expect_no_error
+  # --headless is for relays only; a command with a long -t keeps the client online, accepting contacts, for 6 hours
+  nohup "$bin/simplex-chat" -d "$work/$db" -e "/auto_accept on" -t 21600 --user-display-name "$display_name" < /dev/null > "$work/$db.log" 2>&1 &
+  echo $! > "$work/$db.pid"
+}
+
+# A name is claimed before its channel is listed: a profile change after approval hides it until approved again.
+seed_names() {
+  local address link
+  create_channel cinews "CI news channel"
+  link=$(channel_link cinews)
+  register_name cinews.testing "" "$link"
+  named "$admin" "$admin" 5 "/public group access #cinews domain=cinews.testing"
+  expect_out "updated public group access: domain=cinews.testing"
+  list_channel cinews
+  seed_group cinews_digest "CI news digest"
+  seed_group cinews_weekly "CI news weekly"
+
+  create_channel ciboth "CI both channel"
+  admin 1 "/ad"
+  address=$(new_address)
+  link=$(channel_link ciboth)
+  register_name ciboth.testing "$address" "$link"
+  named "$admin" "$admin" 5 "/_set domain 1 ciboth.testing"
+  expect_no_error
+  named "$admin" "$admin" 5 "/public group access #ciboth domain=ciboth.testing"
+  expect_out "updated public group access: domain=ciboth.testing"
+
+  start_contact ci_alice cialice cialice.testing
+  start_contact ci_robert Robert cibobby.testing
+}
+
+# What the app will resolve, from a client that knows none of the names' owners.
+probe_names() {
+  local target pattern
+  for target in "#cinews.testing|ok to connect via relays" "@cialice.testing|contact address: ok to connect" "@cibobby.testing|contact address: ok to connect" "ciboth.testing|You can also connect to @ciboth"; do
+    pattern=${target#*|}
+    target=${target%%|*}
+    named probe ci_probe 5 "/_connect plan 1 $target"
+    expect_out "$pattern"
+  done
+  named probe ci_probe 5 "/_connect plan 1 #cinone.testing" || true
+  echo "names resolve: cinews, cialice, cibobby, ciboth; cinone is not registered"
 }
 
 # What the app will send, from a client that never connected to the directory.
@@ -274,8 +406,21 @@ write_seed() {
     echo "| \`$avatar_search_text\` | ci_avatar_g1…3 (groups), ci_avatar_c1…3 (channels), each with an avatar the size the app makes | avatars and the response size limit: about one entry per page |"
     echo "| \`ci long\` | $long_name (group): a long name and a two-line description | D3 |"
     echo "| \`ci markdown\` | ci_markdown (group): markdown in the description | D5 |"
+    echo "| \`cinews\` | cinews (channel, with the name cinews.testing), cinews_digest and cinews_weekly (groups) | a search that shows local chats, Names and Directory |"
     echo
     sqlite3 -markdown "$work/directory_chat.db" "$listings_query"
+    echo
+    echo "## SimpleX names"
+    echo
+    echo "Names server, to add in the app for resolving names: \`$names_server\`"
+    echo
+    echo "| Name | Resolves to |"
+    echo "|---|---|"
+    echo "| cinews.testing | the channel cinews, listed in the directory (\"CI news channel\") |"
+    echo "| ciboth.testing | a contact address (ci_admin) and the channel ciboth, not listed |"
+    echo "| cialice.testing | the contact cialice, online and accepting connections |"
+    echo "| cibobby.testing | the contact Robert (display name without the name), online and accepting connections |"
+    echo "| any other, e.g. cinone.testing | not registered |"
     echo
   } > "$work/seed.md"
 }
@@ -292,8 +437,10 @@ start() {
   unzip -o -q "$1" -d "$bin"
   "$bin/simplex-chat" --version
   "$bin/simplex-directory-service" --version
+  "$bin/smp-server" --version
   make_avatars
 
+  start_names
   start_relay
   create_directory
   start_directory "0:nobody"
@@ -305,20 +452,22 @@ start() {
   seed_avatars
   seed_group "$long_name" "CI long entry: a description long enough to take two lines in the directory results, to check how the row truncates"
   seed_group ci_markdown "CI markdown *bold* _italic_ [x](https://example.com)"
+  seed_names
   probe_search
+  probe_names
   write_seed
   probe_pages "$avatar_search_text" 6
 }
 
 stop() {
-  local p
-  for p in directory relay; do
+  local p processes="directory relay ci_alice ci_robert smp-server names-resolver"
+  for p in $processes; do
     if [ -f "$work/$p.pid" ]; then
       kill -INT "$(cat "$work/$p.pid")" 2> /dev/null || true
     fi
   done
   sleep 3
-  for p in directory relay; do
+  for p in $processes; do
     echo "::group::$p log"
     cat "$work/$p.log" 2> /dev/null || true
     echo "::endgroup::"
