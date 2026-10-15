@@ -38,7 +38,8 @@ pkg=$(mktemp -d)
 for exe in simplex-chat simplex-directory-service; do
   cp "$(cabal list-bin "exe:$exe")" "$pkg"
 done
-cp "$(cd "$smq" && cabal list-bin exe:smp-server)" "$pkg"
+# in a fresh project list-bin first prints git's output from syncing the source-repository-packages
+cp "$(cd "$smq" && cabal list-bin exe:smp-server | tail -n 1)" "$pkg"
 ldd "$pkg"/*
 
 tar -C "$pkg" -czf "$out" .
