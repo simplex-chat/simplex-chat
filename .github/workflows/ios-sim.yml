@@ -44,6 +44,11 @@ jobs:
           path: ~/Downloads/${{ env.CORE_PKG }}
           key: ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}
 
+      # without ~/.cabal, cabal 3.10 keeps its store in XDG directories, not where setup-haskell reports it
+      - name: Use ~/.cabal for cabal
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
+
       - name: Setup Haskell
         id: haskell
         if: steps.core-cache.outputs.cache-hit != 'true'
@@ -116,6 +121,10 @@ jobs:
         with:
           path: ~/Downloads/${{ env.BACKEND_PKG }}
           key: ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}
+
+      - name: Use ~/.cabal for cabal
+        if: steps.backend-cache.outputs.cache-hit != 'true'
+        run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
 
       - name: Setup Haskell
         id: haskell
