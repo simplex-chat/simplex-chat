@@ -21,7 +21,9 @@ fi
 
 finish() {
   local status=$?
-  "$ui" shot final || true
+  if [ "$status" -ne 0 ]; then
+    "$ui" shot final || true
+  fi
   echo "::group::app log, last 300 lines"
   tail -n 300 "$UI_OUT/app.log" || true
   echo "::endgroup::"
