@@ -110,7 +110,7 @@ suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> {
   val oneTime = queryBadgePurchases(client, BillingClient.ProductType.INAPP)
   // a Play that cannot sell subscriptions holds none; any other failure must not read as no purchases
   val subscriptions =
-    if (client.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS).responseCode != BillingClient.BillingResponseCode.OK) emptyList()
+    if (client.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS).responseCode == BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED) emptyList()
     else queryBadgePurchases(client, BillingClient.ProductType.SUBS)
   return (oneTime + subscriptions).mapNotNull(::badgePurchaseOutcome)
 }

@@ -84,6 +84,7 @@ enum BadgeStoreError: Error {
     case noActiveProfile
     case invalidInvoiceId(String)
     case noWindowScene
+    case subscribedBefore
 }
 
 final class BadgeStore: ObservableObject {
@@ -201,7 +202,7 @@ final class BadgeStore: ObservableObject {
             await MainActor.run { subscribedBefore = true }
         }
         guard await MainActor.run(body: { forSale(period) }) else {
-            throw BadgeStoreError.productUnavailable(productId: productId)
+            throw BadgeStoreError.subscribedBefore
         }
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else {
             throw BadgeStoreError.noActiveProfile

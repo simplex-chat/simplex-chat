@@ -53,6 +53,14 @@ struct BadgesCheckOrderView: View {
                         }
                     }
 
+                    if !store.forSale(period) && store.subscribedBefore == true {
+                        Text("This Apple ID subscribed before. Subscribing again is not available in the app yet.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     Spacer(minLength: 20)
 
                     VStack(spacing: 10) {
