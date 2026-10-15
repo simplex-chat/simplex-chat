@@ -158,8 +158,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr
-          tesseract --version
-          xdotool version
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr
 
       - name: Run smoke test
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -203,8 +202,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr
-          tesseract --version
-          xdotool version
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr
 
       - name: Run smoke test
         run: scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/release/app/opt/simplex" "$RUNNER_TEMP/smoke-test"
