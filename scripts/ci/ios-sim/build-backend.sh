@@ -44,7 +44,8 @@ pkg=$(mktemp -d)
 for target in $targets; do
   cp "$(cabal list-bin "$target")" "$pkg"
 done
-cp "$(cd "$simplexmq" && cabal list-bin exe:smp-server)" "$pkg"
+# in the clone, list-bin first prints git's output from syncing the source packages
+cp "$(cd "$simplexmq" && cabal list-bin exe:smp-server | tail -n 1)" "$pkg"
 otool -L "$pkg"/*
 
 rm -f "$out"
