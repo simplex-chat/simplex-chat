@@ -1,0 +1,94 @@
+name: Nix Haskell builds
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, stable, build/stable-ghc-9.14]
+    paths:
+      - 'flake.*'
+      - '*.cabal'
+      - 'cabal.project*'
+      - 'src/**'
+      - 'apps/simplex-*/**'
+      - 'bots/**'
+      - 'scripts/nix/**'
+      - 'Makefile'
+      - '.github/workflows/nix.yml'
+  pull_request:
+    paths:
+      - 'flake.*'
+      - '*.cabal'
+      - 'cabal.project*'
+      - 'src/**'
+      - 'apps/simplex-*/**'
+      - 'bots/**'
+      - 'scripts/nix/**'
+      - 'Makefile'
+      - '.github/workflows/nix.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.system }} / pinned Haskell compiler
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+          - system: aarch64-darwin
+            runner: macos-15
+          - system: x86_64-darwin
+            runner: macos-15-intel
+    env:
+      NIX_SYSTEM: ${{ matrix.system }}
+      NIX_BUILD_TIMEOUT: 7200
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            extra-substituters = https://cache.iog.io https://cache.zw3rk.com
+            extra-trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=
+
+      - name: Show outputs from this checkout
+        run: make nix-list
+
+      # Use the compiler fork in flake.lock, including both Android ABIs.
+      # Stock GHC installed by ghcup is not interchangeable with this compiler.
+      - name: Build existing Haskell outputs
+        run: make nix-build
+
+      - name: Collect library ZIPs and CLIs
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          for output in result-nix/"$NIX_SYSTEM"/*; do
+            [ -d "$output" ] || continue
+            destination="artifacts/$(basename "$output")"
+            mkdir -p "$destination"
+            find -L "$output" -maxdepth 1 -type f -name '*.zip' -exec cp {} "$destination/" \;
+            if [ -f "$output/bin/simplex-chat" ]; then
+              cp "$output/bin/simplex-chat" "$destination/"
+            fi
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nix-${{ matrix.system }}-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error

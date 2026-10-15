@@ -245,10 +245,7 @@ Continue?'
   # Build phase
   for arch in $ARCHES; do
     case "$arch" in
-      armv7a)
-        build_tag="${tag}-armv7a"
-        ;;
-      aarch64)
+      aarch64|armv7a)
         build_tag="${tag}"
         ;;
       *)

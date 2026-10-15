@@ -9,7 +9,7 @@ function readlink() {
 OS=linux
 ARCH="$(uname -m)"
 DATABASE_BACKEND="${1:-sqlite}"
-GHC_VERSION=9.6.3
+GHC_VERSION=$(ghc --numeric-version)
 
 if [ "$ARCH" == "aarch64" ]; then
     COMPOSE_ARCH=arm64
