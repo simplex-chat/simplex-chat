@@ -76,6 +76,9 @@ jobs:
           xcrun --show-sdk-path
           ls /Library/Developer/CommandLineTools/SDKs || true
 
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
       # without ~/.cabal, cabal 3.10 keeps its store in XDG directories, not where setup-haskell reports it
       - name: Use ~/.cabal for cabal
         run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
@@ -144,6 +147,9 @@ jobs:
           xcrun --show-sdk-path
           ls /Library/Developer/CommandLineTools/SDKs || true
 
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
       - name: Use ~/.cabal for cabal
         run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
 
@@ -211,6 +217,9 @@ jobs:
           xcrun --show-sdk-path
           ls /Library/Developer/CommandLineTools/SDKs || true
           xcrun simctl list runtimes
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
 
       - name: Download core library
         uses: actions/download-artifact@v4
