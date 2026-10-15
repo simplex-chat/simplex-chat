@@ -409,6 +409,7 @@ fun ChatView(
                 var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
                 var preloadedCode: String? = null
                 var preloadedLink: GroupLink? = null
+                var preloadedChatId: ChatId? = chatInfo.id
                 if (chatInfo is ChatInfo.Direct) {
                   preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                   preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
@@ -426,21 +427,27 @@ fun ChatView(
                     if (chatInfo is ChatInfo.Direct) {
                       var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
                       var code: String? by remember { mutableStateOf(preloadedCode) }
-                      KeyChangeEffect(chatInfo.id) {
+                      LaunchedEffect(chatInfo.id) {
+                        if (chatInfo.id == preloadedChatId) return@LaunchedEffect
+                        preloadedChatId = null
                         contactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                         preloadedContactInfo = contactInfo
                         code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
                         preloadedCode = code
+                        preloadedChatId = chatInfo.id
                       }
                       ChatInfoView(chatsCtx, chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
                         showSearch.value = true
                       }
                     } else if (chatInfo is ChatInfo.Group) {
                       var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
-                      KeyChangeEffect(chatInfo.id) {
+                      LaunchedEffect(chatInfo.id) {
+                        if (chatInfo.id == preloadedChatId) return@LaunchedEffect
+                        preloadedChatId = null
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
                         preloadedLink = link
+                        preloadedChatId = chatInfo.id
                       }
                       GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, selectedItems, appBar, scrollToItemId, {
                         link = it
