@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-10 (revised 2026-10-13 after adversarial review rounds 1–49; review stopped on a time box; revised 2026-10-14: what is built is in 0.5, status in section 15)
 **Base:** master at `d72f68e6d` (`~/wt-uitest-ref`)
-**Files:** this plan and its companions are in `plans/ui-tests/`: the Android plan (`2026-10-12-android-ui-test-automation.md`), the Android research log (`2026-10-12-android-research-progress.md`), the P1a start page (`2026-10-13-p1a-start-here.md`), and the test catalogue (`catalogue/`: chapters `00`–`05`, review and progress notes in `catalogue/verify/`, count and status scripts in `catalogue/tools/`). Paths starting with `~/` refer to the author's machine (reference worktree, build scripts, Waydroid tooling).
+**Files:** this plan and its companions are in `plans/ui-tests/`: the Android plan (`2026-10-12-android-ui-test-automation.md`), the Android research log (`2026-10-12-android-research-progress.md`), the P1a start page (`2026-10-13-p1a-start-here.md`), and the test catalogue (`catalogue/`: chapters `00`–`05`, review and progress notes in `catalogue/verify/`, count and status scripts in `catalogue/tools/`), the test drafts the shared and desktop tests were merged from (`drafts/`: per-batch test files, `keys.diff`, `screens.kt` and `NOTES.md` with the catalogue corrections; `drafts/BRIEF.md` holds the rules given to the drafting agents; batch 3 `drafts/b3` is not merged yet), and the 2026-10-14 PR and plan-sync review reports (`reviews/`; they are point-in-time, and what was done about each finding is in 15.4 and 15.4.2). Paths starting with `~/` refer to the author's machine (reference worktree, build scripts, Waydroid tooling).
 **Start here (implementers):** `plans/ui-tests/2026-10-13-p1a-start-here.md`. It covers the reading order, build order and exit check for P1a (section 12). P1a is complete, so that page is historical; the current harness is described in 0.5.
 
 ## Summary
@@ -204,9 +204,9 @@ Android has no allowlist.
 - Requires a previous `scripts/uitest.sh` run (for `env.properties`, the CLI and `uitest-servers`) and 4500 MB `MemAvailable`.
 - Environment:
   - `UITEST_SERIAL`: any adb device; Waydroid is then not used;
-  - `WD_INSTANCE` (default 2), `WD_OWNER` (default `uitest-$USER`);
+  - `WD_INSTANCE` (default 2), `WD_OWNER` (default `uitest-$USER`), `WD_SH` (default `scripts/waydroid/wd.sh`, the Waydroid tool in the repo; Qubes and other Linux hosts, see its `README.md`);
   - `UITEST_APP_ID` (default `chat.simplex.app.debug`);
-  - `ADB`, `JAVA_HOME` (defaults: `adb` from `ANDROID_HOME`/`ANDROID_SDK_ROOT` or `PATH`, `java` from `JAVA_HOME` or `PATH`).
+  - `ADB`, `JAVA_HOME` (defaults: the adb `wd.sh adb-path` prints, so the runner and `wd.sh` share one adb binary; `java` from `JAVA_HOME` or `PATH`).
 - Setup:
   - rebuilds the bridge classpath only when one of its 7 sources is newer;
   - claims the Waydroid instance and starts it in the background if needed;
@@ -1387,7 +1387,7 @@ Next: re-plan P1b from these results.
 **Status 2026-10-14, about 20:05 UTC (code before the PR; counts from the code, 0.5.1):**
 - Desktop: 142 `@Test` methods (112 shared + 25 desktop-only + 5 harness; `HarnessMeasureTest` is `@Ignore`d, so 141 run).
 - Android: 127 (112 shared + 14 `BackKeyTest` + `SmokeTest`). The last Android run (`run-20261014-164429`, 53/53) predates the exhaustive batches, so 74 shared tests had not run on Android before the final runs.
-- **Latest run results (2026-10-14, final code):** desktop `b22-desktop.log`: 142 completed, 141 passed, 0 failed, 1 skipped (`HarnessMeasureTest`, manual), 6 min 37 s with automatic forks; Android full run `run-20261014-214038` on Waydroid instance 2: 127 tests, 126 passed, 0 failed, 1 skipped (`connectBannerCardOpensPasteLink`, no camera), 18.5 min. Open flakes seen in earlier runs of the same day: 15.4.1, 15.4.1a, item 41.
+- **Latest run results (2026-10-14, final code):** desktop `b22-desktop.log`: 142 completed, 141 passed, 0 failed, 1 skipped (`HarnessMeasureTest`, manual), 6 min 37 s with automatic forks; Android full run `run-20261014-214038` on Waydroid instance 2: 127 tests, 126 passed, 0 failed, 1 skipped (`connectBannerCardOpensPasteLink`, no camera), 18.5 min. Open flakes seen in earlier runs of the same day: 15.4.1, 15.4.1a, item 41. After rebasing on master `000258224` (2026-10-15): desktop `b23-desktop-rebased.log` 140 passed, 1 failed (15.4.1b; 3 reruns of the class passed), 1 skipped; Android `run-20261015-072618` through `scripts/waydroid/wd.sh` 126 passed, 0 failed, 1 skipped, 18.5 min.
 
 **Earlier status, 2026-10-14 about 17:00:** desktop 43/43, twice in a row (`b13-desktop-1/2.log`); Android 53/53 in one run (`run-20261014-164429`: 38 shared + 14 Back-key + smoke, 16.5 min of instrumentation). The exhaustive pass then added 99 catalogue tests (74 shared, 25 desktop-only) in two batches (P1a progress, batches 5 and 6).
 
@@ -1534,6 +1534,7 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
     - Confirming a contact link plan opens the prepared chat full screen on Android, covering the chat list; `contactMenuForNotReadyContactOnlyDelete` calls `backToChatList()` before opening the row menu (no-op on desktop, where the list stays visible).
     - The "Paste link / Scan" banner opens the QR scanner; Waydroid has no camera, so CameraX fails and the app crashes when the scanner is disposed (15.5 item 4). `connectBannerCardOpensPasteLink` calls `assumeCamera()` (skipped on devices without a camera; no-op on desktop).
 41. **`chatCloseStore` failures were ignored.** It returns an error text ("" on success); the resets deleted the database files whatever it returned. One desktop run (b21) had `apiNewGroup` fail with "SQLite3 returned ErrorIO … disk I/O error" right after a reset (first time in about 20 runs; the disk was not full). Both harnesses now fail the reset when `chatCloseStore` returns an error, so a recurrence names its cause. The I/O error itself is not explained yet (open item).
+42. **The Waydroid tool is in the repo and portable** (2026-10-15, user request). `apps/multiplatform/scripts/waydroid/` holds `wd.sh`, `provision2.sh` (instance 2), `watchdog2.sh`, `weston.ini`, `fetch-images.sh` and a README; `uitest-android.sh` uses it by default (`WD_SH` overrides) and takes its adb from `wd.sh adb-path`, so both use one adb binary (before, the runner used `$ANDROID_HOME`'s adb 37.0.0 and `wd.sh` `~/Android/Sdk`'s 36.0.2). Machine paths became `WD_HOME`/`WD2_HOME`/`$HOME`/SDK variables. On Qubes it behaves as before (offline debs, `$WD_HOME/var` bind mount, Qubes nft chains). Elsewhere it installs with apt (repo.waydro.id) or dnf, uses `/var/lib/waydroid` directly, lets `waydroid init` download images, trusts the bridge in firewalld, and isolates with an nft table of its own (`inet wd_uitest`). Weston flags follow the version (12+: `--backend=headless --renderer=pixman`; checked against weston 11, 12 and 14 sources). Verified on Qubes: instance 2 up/status/shot/nodes/rootsh, `net isolate/open` with the Qubes chain and, on a scratch copy with the Qubes check off, with the own table; the full Android suite ran through it. The apt/dnf install, image download and firewalld paths were not run (no non-Qubes host here).
 
 ### 15.4.1 Open flake: a CLI member's group join not completed (desktop, 2 of 5 runs)
 
@@ -1545,6 +1546,11 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 
 - `ChatListRowsTest.previewGroupSenderPrefix` (full Android run, 2026-10-14 21:07): after alice leaves the group chat, bob sends "#team hello all"; for 10 s the `team` row showed the unread badge "1" but kept the preview "mine" (failure screenshot). Passed in the rerun of the class.
 - The badge proves the row recomposed with new chat stats; the preview text comes from `chat.chatItems.lastOrNull()` (`ChatPreviewView.kt:228`). Either the new item did not reach the chat's preview list while its stats did (app-side model update), or an earlier group event incremented the counter and the message was still in transit. Not resolved; next step is to capture `chatModel.chats` for the row on failure.
+
+### 15.4.1b Open flake: received message missing from a chat opened at the same moment (desktop, 1 of 4 runs)
+
+- `ForwardTest.forward_toNotes_showsSavedFrom` (rebased run b23, 2026-10-15): bob sends "hey", alice opens bob's chat right away; the chat list row shows "hey" with unread 1, but the open chat shows no items (only the "1" unread-below counter) for 10 s. Three reruns of the class passed.
+- Likely an app race between loading the opened chat's items and the new-item event (the item is in the chat preview, not in the open chat's list). Not resolved; next step is to capture `chatsContext.chatItems` on failure.
 
 ### 15.4.2 Test strength limits (second review, 2026-10-14)
 
@@ -1592,5 +1598,5 @@ Fixed in the same review: `createGroup_opensChatAndInviteSheet` now checks the o
 - 01:34 and 01:8: accepting conditions enables the operators selected in onboarding, not all preset ones.
 - 01:34: on desktop with no conversations the app then shows the "Talk to someone" connect-onboarding view, and the chat-list title and search are hidden (`shouldShowOnboarding()`, `OnboardingCards.kt:52`), not "the chat list".
 - 01:37: `TestServers.configure()` (not `useLocalServers()`).
-- The other corrections drafted per batch are in `~/uitest-drafts/b*/*/NOTES.md`, sections "Catalogue corrections". They are applied to the catalogue files after each batch passes.
+- The other corrections drafted per batch are in `plans/ui-tests/drafts/b*/*/NOTES.md`, sections "Catalogue corrections". They are applied to the catalogue files after each batch passes.
 

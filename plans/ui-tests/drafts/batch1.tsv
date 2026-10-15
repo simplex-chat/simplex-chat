@@ -1,0 +1,50 @@
+01	27	1. Onboarding (24 tests)	onboardingWelcomeShowsDesktopActions	ONBOARD	False
+01	27	1. Onboarding (24 tests)	onboardingWhySimplexIsBuiltOpensHowItWorks	ONBOARD	False
+01	28	1. Onboarding (24 tests)	onboardingCreateProfileValidName	ONBOARD	False
+01	28	1. Onboarding (24 tests)	onboardingCreateProfileButtonDisabledForEmptyName	ONBOARD	False
+01	28	1. Onboarding (24 tests)	onboardingCreateProfileInvalidNameShowsCorrectionAlert	ONBOARD	False
+01	28	1. Onboarding (24 tests)	onboardingCreateProfileBackReturnsToWelcome	ONBOARD	False
+01	29	1. Onboarding (24 tests)	onboardingMigrateFromAnotherDeviceOpensMigrationScreen	ONBOARD	False
+01	30	1. Onboarding (24 tests)	onboardingSetDatabasePassphrase	ONBOARD	False
+01	30	1. Onboarding (24 tests)	onboardingSetPassphraseMismatchDisablesButton	ONBOARD	False
+01	30	1. Onboarding (24 tests)	onboardingUseRandomPassphraseAlert	ONBOARD	False
+01	31	1. Onboarding (24 tests)	onboardingPassphrasePersistsAcrossRestart	ONBOARD RESTART	False
+01	32	1. Onboarding (24 tests)	onboardingYourNetworkShowsSetupRouters	ONBOARD	False
+01	32	1. Onboarding (24 tests)	onboardingContinueGoesToConditions	ONBOARD	False
+01	33	1. Onboarding (24 tests)	onboardingChooseOperatorsToggle	ONBOARD	False
+01	33	1. Onboarding (24 tests)	onboardingChooseOperatorsCannotDeselectAll	ONBOARD	False
+01	33	1. Onboarding (24 tests)	onboardingHowItHelpsPrivacyInfo	ONBOARD	False
+01	34	1. Onboarding (24 tests)	onboardingAcceptConditionsCompletesOnboarding	ONBOARD	False
+01	34	1. Onboarding (24 tests)	onboardingConditionsLinkOpensConditionsText	ONBOARD	False
+01	36	1. Onboarding (24 tests)	onboardingNoNotificationsStepOnDesktop	ONBOARD	False
+01	37	1. Onboarding (24 tests)	onboardingThenConnectToCliPeerViaLocalServers	ONBOARD P	False
+01	38	1. Onboarding (24 tests)	onboardingLinkAMobileShowsQrAndDeviceName	CB DT ONBOARD	False
+01	39	1. Onboarding (24 tests)	onboardingLinkAMobileBackReturnsToWelcome	ONBOARD	False
+01	46	2. What's New (6 tests)	whatsNewFromSettings	—	False
+01	47	2. What's New (6 tests)	whatsNewShownAfterVersionUpgrade	RESTART	False
+01	47	2. What's New (6 tests)	whatsNewOkCloses	RESTART	False
+01	49	2. What's New (6 tests)	whatsNewNotShownForNewUser	ONBOARD	False
+01	50	2. What's New (6 tests)	whatsNewShowsViewUpdatedConditions	RESTART	False
+01	56	3. Chat list (106 tests)	chatListTitleAndProfileButton	—	False
+01	56	3. Chat list (106 tests)	chatListScrollToTopOnTitleClick	—	False
+01	57	3. Chat list (106 tests)	chatListUnreadDotOnProfileButtonForOtherUsers	P	False
+01	58	3. Chat list (106 tests)	chatListStoppedChatIndicator	—	False
+01	59	3. Chat list (106 tests)	subscriptionIndicatorConnected	—	False
+01	59	3. Chat list (106 tests)	subscriptionIndicatorPercentageToggle	—	False
+01	61	3. Chat list (106 tests)	newChatButtonOpensNewChatSheet	—	False
+01	62	3. Chat list (106 tests)	searchFiltersByAlias	P	False
+01	62	3. Chat list (106 tests)	searchMatchesPendingConnectionAlias	P	False
+01	62	3. Chat list (106 tests)	searchNoChatsFound	P	False
+01	62	3. Chat list (106 tests)	searchClearsWhenFilterChanges	P	False
+01	63	3. Chat list (106 tests)	searchPasteLinkTriggersConnectPlan	CB P	False
+01	63	3. Chat list (106 tests)	searchPasteKnownContactLinkFiltersToContact	CB P	False
+01	63	3. Chat list (106 tests)	searchPasteKnownGroupLinkFiltersToGroup	CB P	False
+01	64	3. Chat list (106 tests)	searchNameShowsConnectToNameRow	—	False
+01	66	3. Chat list (106 tests)	unreadFilterToggle	P	False
+01	66	3. Chat list (106 tests)	unreadFilterEmptyState	P	False
+01	67	3. Chat list (106 tests)	presetFilterFavorites	P	False
+01	67	3. Chat list (106 tests)	presetFilterContacts	P	False
+01	67	3. Chat list (106 tests)	presetFilterGroups	P	False
+01	67	3. Chat list (106 tests)	presetFilterBusinesses	P	False
+01	67	3. Chat list (106 tests)	presetFilterNotes	P	False
+01	67	3. Chat list (106 tests)	presetFilterReports	P	False

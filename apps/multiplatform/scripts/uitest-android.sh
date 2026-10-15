@@ -2,13 +2,15 @@
 # Usage: scripts/uitest-android.sh <app.apk> <androidTest.apk> [am instrument -e args...]
 # Needs scripts/uitest.sh to have run once (it builds the CLI and test servers and writes build/uitest/env.properties).
 # Env:
-#   UITEST_SERIAL  adb serial of the device or emulator to use; when unset, a Waydroid instance is claimed with wd.sh from PATH
+#   UITEST_SERIAL  adb serial of the device or emulator to use; when unset, a Waydroid instance is claimed with scripts/waydroid/wd.sh
+#   WD_SH          another wd.sh to use (default scripts/waydroid/wd.sh; see scripts/waydroid/README.md)
 #   WD_INSTANCE    Waydroid instance (default 2), WD_OWNER claim owner (default uitest-$USER)
 #   UITEST_APP_ID  application id of the app APK (default chat.simplex.app.debug)
-#   ADB, JAVA_HOME tool locations (default: adb from ANDROID_HOME, ANDROID_SDK_ROOT or PATH; java from JAVA_HOME or PATH)
+#   ADB, JAVA_HOME tool locations (default: the adb wd.sh uses, `wd.sh adb-path`; java from JAVA_HOME or PATH)
 set -eu
-sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-ADB="${ADB:-$( [ -n "$sdk" ] && [ -x "$sdk/platform-tools/adb" ] && echo "$sdk/platform-tools/adb" || echo adb )}"
+mp="$(dirname "$(readlink -f "$0")")/.."
+wd="${WD_SH:-$mp/scripts/waydroid/wd.sh}"
+ADB="${ADB:-$("$wd" adb-path)}"
 adb() { "$ADB" "$@"; }
 app_apk=$1; test_apk=$2; shift 2
 export WD_INSTANCE="${WD_INSTANCE:-2}" WD_OWNER="${WD_OWNER:-uitest-$(id -un)}"
@@ -19,7 +21,6 @@ mkdir -p "$out"
 t0=$(date +%s)
 step() { echo "uitest-android: [$(( $(date +%s) - t0 )) s] $*"; }
 
-mp="$(dirname "$(readlink -f "$0")")/.."
 bridge_log="$out/bridge.log"
 avail_mb=$(awk '/^MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)
 [ "$avail_mb" -ge 4500 ] || { echo "uitest-android: only $avail_mb MB available, need 4500 (bridge + Waydroid); free memory first" >&2; exit 1; }
@@ -32,7 +33,7 @@ wd_pid=
 cleanup() {
   [ -z "${bridge_pid:-}" ] || kill -TERM "$bridge_pid" 2>/dev/null || true
   [ -z "$wd_pid" ] || wait "$wd_pid" 2>/dev/null || true
-  [ -n "${UITEST_SERIAL:-}" ] || wd.sh release >/dev/null 2>&1 || true
+  [ -n "${UITEST_SERIAL:-}" ] || "$wd" release >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 trap 'exit 130' INT
@@ -43,9 +44,9 @@ if [ ! -s "$cp_file" ] || [ -n "$(find $bridge_srcs -newer "$cp_file" 2>/dev/nul
     || { echo "uitest-android: bridge build failed; see $out/bridge-build.log" >&2; exit 1; }
 fi
 if [ -z "${UITEST_SERIAL:-}" ]; then
-  wd.sh claim "$WD_OWNER"
-  if ! wd.sh status | grep -q "Session:.*RUNNING"; then
-    wd.sh up > "$out/waydroid-up.log" 2>&1 &
+  "$wd" claim "$WD_OWNER"
+  if ! "$wd" status | grep -q "Session:.*RUNNING"; then
+    "$wd" up > "$out/waydroid-up.log" 2>&1 &
     wd_pid=$!
   fi
 fi
@@ -64,7 +65,7 @@ if [ -n "$wd_pid" ]; then
   wait "$wd_pid" || { echo "uitest-android: wd.sh up failed; see $out/waydroid-up.log" >&2; wd_pid=; exit 1; }
   wd_pid=
 fi
-serial="${UITEST_SERIAL:-$(wd.sh serial)}"
+serial="${UITEST_SERIAL:-$("$wd" serial)}"
 step "device $serial ready"
 echo "uitest-android: note: pm clear removes the app's data on $serial"
 app_sum=$(sha256sum "$app_apk" | cut -c1-16)
@@ -73,7 +74,7 @@ installed_ver=$(adb -s "$serial" shell dumpsys package "$pkg" 2>/dev/null | tr -
 if [ -n "$installed_ver" ] && [ "$(cat "$stamp" 2>/dev/null)" = "$app_sum $installed_ver" ]; then
   echo "uitest-android: app APK unchanged on $serial, skipping its install"
 else
-  if [ -n "${UITEST_SERIAL:-}" ]; then adb -s "$serial" install -r -g "$app_apk" >/dev/null; else wd.sh install "$app_apk"; fi
+  if [ -n "${UITEST_SERIAL:-}" ]; then adb -s "$serial" install -r -g "$app_apk" >/dev/null; else "$wd" install "$app_apk"; fi
   installed_ver=$(adb -s "$serial" shell dumpsys package "$pkg" | tr -d '\r' | sed -n 's/^ *lastUpdateTime=//p' | head -1)
   echo "$app_sum $installed_ver" > "$stamp"
 fi
