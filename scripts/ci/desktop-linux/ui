@@ -11,6 +11,7 @@
 #   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.txt (OCR's input and output in UI_OUT/ocr), and print the text on screen
 #   ui text                       print the text on screen, one phrase per line after its centre x,y
 #   ui find <text>                print "x y left top right bottom", the text's centre and box; fail if it is not on screen
+#   ui ink <text>                 print the height in pixels of the text's ink, to compare text sizes
 #   ui wait <text> [secs]         wait up to secs (30) until the text is on screen
 #   ui click <x> <y>              click at x,y
 #   ui click-text <text> [secs]   wait up to secs (20) for the text and click its centre
@@ -208,6 +209,17 @@ case "${1:-}" in
     fi
     log "find \"$2\": $pos" > /dev/null
     echo "$pos"
+    ;;
+  ink)
+    if ! pos=$(screen_ocr find "$2"); then
+      log "ink \"$2\": not on screen" >&2
+      exit 1
+    fi
+    read -r _ _ l t r b <<< "$pos"
+    # 2 px around OCR's box, less than the gap between lines
+    h=$(python3 "$here/screen-ink.py" "$state/ocr/gray.pgm" "$l" $((t - 2)) "$r" $((b + 2)))
+    log "ink \"$2\": $h px" > /dev/null
+    echo "$h"
     ;;
   wait)
     secs=${3:-30}

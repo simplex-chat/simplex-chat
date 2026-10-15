@@ -121,12 +121,6 @@ y_of() {
   cut -d ' ' -f 2 <<< "$pos"
 }
 
-height_of() {
-  local x y l t r b
-  read -r x y l t r b < <("$ui" find "$1") || return 1
-  echo $((b - t))
-}
-
 above() {
   local a b
   a=$(y_of "$1") || return 1
@@ -175,9 +169,9 @@ scroll_to() {
 # the count's text is smaller than the description's above it: both have capitals and ascenders, no descenders
 count_text_smaller() {
   local count description
-  count=$(height_of "1 subscriber") || return 1
-  description=$(height_of "CI seeded channel") || return 1
-  echo "NOTE text heights: \"1 subscriber\" $count px, \"CI seeded channel\" $description px" | tee -a "$checks"
+  count=$("$ui" ink "1 subscriber") || return 1
+  description=$("$ui" ink "CI seeded channel") || return 1
+  echo "NOTE ink heights: \"1 subscriber\" $count px, \"CI seeded channel\" $description px" | tee -a "$checks"
   [ "$count" -lt "$description" ]
 }
 

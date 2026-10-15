@@ -22,7 +22,7 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
 4. Use "Show more" until both #ci_group and #ci_channel are listed, and note how many pages that took.
 5. Check, noting the evidence (screenshot names, positions):
    - each result's row shows its name, its description, its count ("2 members" or "1 subscriber") and "Join group" (#ci_group) or "Join channel" (#ci_channel);
-   - the count's text is smaller than the description's above it;
+   - the count's text is smaller than the description's above it: compare `ui ink "1 subscriber"` with `ui ink "CI seeded channel"`, and look at the screenshot;
    - each shows its avatar, filling the picture: run `ui avatar "#ci_group" red` and `ui avatar "#ci_channel" green`, and look at the screenshot;
    - **(both layouts)** the "Directory" header is above its results;
    - **(both layouts)** no "Show more" is left, and nothing is cut off, overlapping or garbled.
