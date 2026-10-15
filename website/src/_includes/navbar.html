@@ -162,7 +162,7 @@
             </a>
 
             <ul class="sub-menu">
-                {% if ("docs" in page.url) or ('downloads' in page.url) or ('security' in page.url) or ('reproduce' in page.url) or ('transparency' in page.url) or ('jobs' in page.url) or ('faq' in page.url) %}
+                {% if ("docs" in page.url) or ('security' in page.url) or ('reproduce' in page.url) or ('transparency' in page.url) or ('jobs' in page.url) or ('faq' in page.url) %}
                     {% for supportedLang in supportedLangsForDoc %}
                         {% for language in languages.languages %}
                             {% if language.label == supportedLang %}
@@ -176,7 +176,7 @@
                     {% endfor %}
                 {% else %}
                     {% for language in languages.languages %}
-                        {% if language.enabled and (language.home or (page.url != '/' and page.url != '/' + lang + '/')) and (language.why or ('why' not in page.url)) %}
+                        {% if language.enabled and (language.label | translated(page.url)) %}
                             <li>
                                 <a href="{% completeRoute {url: page.url, lang: language.label} %}">
                                     <p>{{ language.name }}</p>
