@@ -21,6 +21,8 @@ env:
   BACKEND_PKG: ios-sim-backend.zip
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALL_CLEANUP: 1
+  # newer images add Command Line Tools whose macOS SDK the default Xcode's linker cannot read
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
 jobs:
   plan:
@@ -71,6 +73,8 @@ jobs:
           sysctl -n hw.ncpu hw.memsize
           df -h /
           xcodebuild -version
+          xcrun --show-sdk-path
+          ls /Library/Developer/CommandLineTools/SDKs || true
 
       # without ~/.cabal, cabal 3.10 keeps its store in XDG directories, not where setup-haskell reports it
       - name: Use ~/.cabal for cabal
@@ -133,6 +137,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Show runner
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun --show-sdk-path
+          ls /Library/Developer/CommandLineTools/SDKs || true
+
       - name: Use ~/.cabal for cabal
         run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
 
@@ -192,6 +203,8 @@ jobs:
           sw_vers
           df -h /
           xcodebuild -version
+          xcrun --show-sdk-path
+          ls /Library/Developer/CommandLineTools/SDKs || true
           xcrun simctl list runtimes
 
       - name: Download core library
