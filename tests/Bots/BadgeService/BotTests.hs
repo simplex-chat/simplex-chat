@@ -207,6 +207,7 @@ badgeServiceTests = do
     it "should send a due request at once when the stored wake is further than a stall away" testFarWakeHoldsNothing
     it "should wait a day, not the hour the service answered, after a renewal whose store check failed" testStoreUnreachableWaitsStall
     it "should keep a request's wait past a snooze that ends sooner, and raise the alert again without a request" testSnoozeKeepsRequestWait
+    it "should wait from a late request until the next daily moment of the shown credential's expiry, not a day after it" testStallRejoinsSharedMoment
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
@@ -2503,6 +2504,35 @@ testSnoozeKeepsRequestWait ps =
       subscriptionChecks store `shouldReturn` checks + 1
       subscriptionCheckedAt cc `shouldReturn` checkedAt
       nextWakes (chatController alice) `shouldReturn` wake
+
+testStallRejoinsSharedMoment :: HasCallStack => TestParams -> IO ()
+testStallRejoinsSharedMoment ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let (requestAt, presentAt) = renewalMoments rows
+          requestedAt t = do
+            checks <- subscriptionChecks store
+            setClockAt bsClock t
+            alice ##> "/_app activate"
+            alice <## "ok"
+            subscriptionChecks store `shouldEventuallyReturn` (checks + 1)
+      storeReports store $ subscriptionCheck SSBillingRetry Nothing
+      setClockAt bsClock requestAt
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               paymentIssue,
+               Predicate (\l -> "1: supporter" `isPrefixOf` l && ", subscription billingRetry" `isInfixOf` l),
+               paymentIssue
+             ]
+      waitWakeFrom (chatController alice) (addUTCTime (nominalDay - 60) requestAt)
+      -- the app is not running at the expiry, and an activation three hours later sends the request
+      requestedAt $ addUTCTime (3 * 3600) presentAt
+      nextWakes (chatController alice) `shouldEventuallyReturn` [Just $ addUTCTime nominalDay presentAt]
+      requestedAt $ addUTCTime nominalDay presentAt
+      nextWakes (chatController alice) `shouldEventuallyReturn` [Just $ addUTCTime (2 * nominalDay) presentAt]
 
 setNextWake :: ChatController -> UTCTime -> IO ()
 setNextWake ChatController {chatStore} at =

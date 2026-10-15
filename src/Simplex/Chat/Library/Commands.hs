@@ -3602,7 +3602,7 @@ processChatCommand cxt nm = \case
     now <- badgeNow
     let snoozeUntil = if snooze then Just (addUTCTime nominalDay now) else Nothing
     withStore' $ \db -> setBadgeAlertAcked db user badgePurchaseId alertKind episode snoozeUntil
-    -- after the write, so the pass it signals arms a wake for the snooze rather than raising again
+    -- after the write, so the pass it signals reads the ack rather than raising the alert again
     lift $ startBadgeWork user
     badgeStateResponse user
   SetBotCommands commands -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
@@ -5641,7 +5641,7 @@ updateUserBadge userId emitted now = do
               UserBadgePurchase {alertSnoozeUntil, issueError = failureAfter, purchaseKind = kindAfter} = p'
               -- a snooze ends when the user chose, so while a request waits, the request's own wake brings the alert back
               snoozeAt = if isJust (stalledAt <|> heldUntil) then Nothing else find (> now) alertSnoozeUntil
-              stalledAt = if requestDue && not issued then Just $ badgeStalledInterval `addUTCTime` now else Nothing
+              stalledAt = if requestDue && not issued then badgeStallUntil now <$> shownBadgeCredential user'' p' else Nothing
               reminderAt = case kindAfter of
                 PKSubscription s -> find (> now) $ renewalReminderAt s balance'
                 PKPrepaid -> Nothing
@@ -5750,8 +5750,9 @@ badgeRenewal paidThrough = \case
   Just BadgeSubscription {status = Just SSRenewing} -> (Just paidThrough, True)
   _ -> (Nothing, False)
 
--- | How long a month that did not issue waits before it is tried again, whatever stopped it. Not
--- derived from the failure, so a misclassified one cannot leave a funded badge to expire.
+-- | The longest a month that did not issue waits before it is tried again, whatever stopped it: until the next
+-- daily moment of the shown expiry, or this long after a thrown error. Not derived from the failure, so a
+-- misclassified one cannot leave a funded badge to expire.
 badgeStalledInterval :: NominalDiffTime
 badgeStalledInterval = nominalDay
 
@@ -5807,6 +5808,14 @@ badgeBoundary now shownCred balance = case filter (> now) moments of
     renewalMoments cred =
       let expiry = credentialExpiry cred
        in [negate badgeRequestLead `addUTCTime` expiry, expiry]
+
+-- | The first moment after now a whole number of stall intervals from the shown credential's expiry. Every client whose
+-- credential shares that expiry asks at these moments, so a request an activation sent late is followed by one among them.
+badgeStallUntil :: UTCTime -> BadgeCredential -> UTCTime
+badgeStallUntil now cred = (fromInteger (stalls + 1) * badgeStalledInterval) `addUTCTime` expiry
+  where
+    expiry = credentialExpiry cred
+    stalls = floor $ diffUTCTime now expiry / badgeStalledInterval
 
 earliestTime :: [Maybe UTCTime] -> Maybe UTCTime
 earliestTime ts = case catMaybes ts of
