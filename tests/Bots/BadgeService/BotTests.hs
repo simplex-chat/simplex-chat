@@ -64,6 +64,7 @@ import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
+import Simplex.Chat.Library.Commands (subscriptionRecoveryWindow)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
@@ -208,8 +209,10 @@ badgeServiceTests = do
     it "should wait a day, not the hour the service answered, after a renewal whose store check failed" testStoreUnreachableWaitsStall
     it "should keep a request's wait past a snooze that ends sooner, and raise the alert again without a request" testSnoozeKeepsRequestWait
     it "should wait from a late request until the next daily moment of the shown credential's expiry, not a day after it" testStallRejoinsSharedMoment
-    it "should retire a subscription badge once no store could still charge it, whatever the service answers" testSubscriptionRetiredAfterRecoveryWindow
+    it "should retire a subscription badge after asking, once no store could still charge it, whatever the service answers" testSubscriptionRetiredAfterRecoveryWindow
     it "should keep a subscription badge whose ledger still holds months, past the recovery window from its shown credential" testBankedSubscriptionNotRetired
+    it "should ask about a subscription not opened for longer than the recovery window, and keep it when the store kept charging" testIdleSubscriptionKeptPastWindow
+    it "should keep a subscription badge past the recovery window while the service does not answer" testSubscriptionNotRetiredWithoutAnswer
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
@@ -2547,9 +2550,8 @@ testSubscriptionRetiredAfterRecoveryWindow ps =
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       (_, rows) <- clientSubscribedMonthly env alice
       let coveredUntil = dueAtOf rows
-          recoveryWindow = 67 * nominalDay
       setServicePurchaseKey cc "not the purchase key"
-      setClockAt bsClock $ addUTCTime (recoveryWindow - 3600) coveredUntil
+      setClockAt bsClock $ addUTCTime (subscriptionRecoveryWindow - 3600) coveredUntil
       alice `send` "/_app activate"
       alice
         <### [ "/_app activate",
@@ -2562,19 +2564,27 @@ testSubscriptionRetiredAfterRecoveryWindow ps =
              ]
       shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
       errorAt <- issueErrorAt (chatController alice)
-      setClockAt bsClock $ addUTCTime (recoveryWindow + 3600) coveredUntil
+      -- past the window, and at or after the wake the refusal stored, so the request is sent and answered
+      [Just wake] <- nextWakes (chatController alice)
+      setClockAt bsClock $ max wake $ addUTCTime (subscriptionRecoveryWindow + 3600) coveredUntil
       alice `send` "/_app activate"
       alice
         <### [ "/_app activate",
                "ok",
+               ConsoleString badgeServiceRefused,
                StartsWith "badge alert: subscription_ended ",
                StartsWith "1: supporter",
                StartsWith "renewal failing since ",
                StartsWith "badge alert: subscription_ended "
              ]
       waitShownBadge (chatController alice) Nothing
+      retiredErrorAt <- issueErrorAt (chatController alice)
+      retiredErrorAt `shouldNotBe` errorAt
+      testClockTime bsClock >>= setClockAt bsClock . addUTCTime 3600
+      alice ##> "/_app activate"
+      alice <## "ok"
       threadDelay 2000000
-      issueErrorAt (chatController alice) `shouldReturn` errorAt
+      issueErrorAt (chatController alice) `shouldReturn` retiredErrorAt
 
 testBankedSubscriptionNotRetired :: HasCallStack => TestParams -> IO ()
 testBankedSubscriptionNotRetired ps =
@@ -2588,7 +2598,7 @@ testBankedSubscriptionNotRetired ps =
       rows <- ledgerRows (chatController alice) "badge_ledger"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) rows `shouldBe` [(12, 12, Just "charge"), (-1, 11, Just "badge")]
       setServicePurchaseKey cc "not the purchase key"
-      setClockAt bsClock $ addUTCTime (68 * nominalDay) $ snd $ renewalMoments rows
+      setClockAt bsClock $ addUTCTime (subscriptionRecoveryWindow + nominalDay) $ snd $ renewalMoments rows
       alice `send` "/_app activate"
       alice
         <### [ "/_app activate",
@@ -2599,6 +2609,37 @@ testBankedSubscriptionNotRetired ps =
                StartsWith "renewal failing since ",
                StartsWith "badge alert: issue_failed "
              ]
+      shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
+
+testIdleSubscriptionKeptPastWindow :: HasCallStack => TestParams -> IO ()
+testIdleSubscriptionKeptPastWindow ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (firstStart, rows) <- clientSubscribedMonthly env alice
+      -- the store kept charging while the app was not opened: its third renewal covers the day of the first activation
+      storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 3
+      setClockAt bsClock $ addUTCTime (subscriptionRecoveryWindow + nominalDay) $ dueAtOf rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      renewed <- waitLedgerRows (chatController alice) 4
+      alice <##. "1: supporter"
+      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, addMonths 3 firstStart, Just "charge"), (-1, 0, addMonths 4 firstStart, Just "badge")]
+      waitShownIssued (chatController alice)
+      shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
+      (alice </)
+
+testSubscriptionNotRetiredWithoutAnswer :: HasCallStack => TestParams -> IO ()
+testSubscriptionNotRetiredWithoutAnswer ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
+    rows <- withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> snd <$> clientSubscribedMonthly env alice
+    stopBadgeService cc
+    setClockAt bsClock $ addUTCTime (subscriptionRecoveryWindow + 3600) $ dueAtOf rows
+    withTestChatCfg ps (failingServiceCfg bsClientCfg) "alice" $ \alice -> do
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      alice <##. "badge alert: issue_failed "
+      (_, reason) <- issueErrorRow (chatController alice)
+      reason `shouldBe` Just "service_timeout"
       shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
 
 setNextWake :: ChatController -> UTCTime -> IO ()

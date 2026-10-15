@@ -5605,14 +5605,12 @@ updateUserBadge userId emitted now = do
         Nothing -> pure Nothing
         Just balance -> do
           -- No months come after a prepaid purchase's paidThrough, so it is retired before asking, as
-          -- retirement needs no service and an unbounded retry would not return before it. A
-          -- subscription's come from the store, so it is retired once the service says it ended, or once
-          -- no store could still charge it, whatever the service answers.
+          -- retirement needs no service and an unbounded retry would not return before it. A subscription's come
+          -- from the store, so it is asked about first, and retired once the service says it ended, or once, after
+          -- any answer, the coverage it holds ends more than the stores' recovery window ago.
           retiredBefore <- case purchaseKind of
             PKPrepaid -> retireExpiredBadge user p now balance
-            PKSubscription _
-              | subscriptionRecoveryWindow `addUTCTime` L.paidThrough balance <= now -> retireExpiredBadge user p now balance
-              | otherwise -> pure False
+            PKSubscription _ -> pure False
           latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
           let due = not retiredBefore && badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance
               -- a due month waits for the wake the last pass set, so a request that issued nothing is not repeated at every activation;
@@ -5624,7 +5622,9 @@ updateUserBadge userId emitted now = do
               then fromMaybe (balance, Nothing) <$> requestBadgeIssue userId p now
               else pure (balance, Nothing)
           retired <-
-            if subscription_ == Just SSEnded
+            -- after an answer only: the client's paidThrough moves only when it asks, so an app closed for months
+            -- would otherwise retire a subscription its store kept charging
+            if subscription_ == Just SSEnded || requestDue && subscriptionRecoveryWindow `addUTCTime` L.paidThrough balance' <= now
               then retireExpiredBadge user p now balance'
               else pure retiredBefore
           -- presenting broadcasts the record it is handed, and the request above can block for the
@@ -5638,11 +5638,10 @@ updateUserBadge userId emitted now = do
           -- retiring and presenting both replace the badge on the record read above, so it is read again
           user'' <- withStore $ \db -> getUser db userId
           emitBadgeAlert user'' emitted p' (shownBadgeCredential user'' p') now balance'
-          -- a snooze is the one wake that is not in the ledger: nothing else brings the alert back,
-          -- since support having ended leaves both ledger boundaries in the past
           let UserBadgePurchase {issueError = failureBefore} = p
               UserBadgePurchase {alertSnoozeUntil, issueError = failureAfter, purchaseKind = kindAfter} = p'
-              -- a snooze ends when the user chose, so while a request waits, the request's own wake brings the alert back
+              -- a snooze is a wake only while no request waits: support having ended leaves no ledger moment ahead,
+              -- and a waiting request's own wake brings the alert back
               snoozeAt = if isJust (stalledAt <|> heldUntil) then Nothing else find (> now) alertSnoozeUntil
               stalledAt = if requestDue && not issued then badgeStallUntil now <$> shownBadgeCredential user'' p' else Nothing
               reminderAt = case kindAfter of
@@ -5759,8 +5758,8 @@ badgeRenewal paidThrough = \case
 badgeStalledInterval :: NominalDiffTime
 badgeStalledInterval = nominalDay
 
--- | Apple retries a failed renewal for up to 60 days, the longest either store recovers a subscription with Play's pause
--- off (its grace period and account hold default to 60 days together); a week more covers a day between requests.
+-- | Apple retries a failed renewal for up to 60 days, the longest either store recovers a subscription with Play's pause off
+-- (its grace and hold default to 60 days together); a week more covers a day between requests and Play's clipped period start.
 subscriptionRecoveryWindow :: NominalDiffTime
 subscriptionRecoveryWindow = 67 * nominalDay
 
