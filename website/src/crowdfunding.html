@@ -1149,7 +1149,7 @@ templateEngineOverride: njk
         <section class="page cf cf-dark cf-close" id="invest" data-section="invest">
             <div class="area">
                 <div class="cf-hero-text">
-                    <h1><span class="cf-close-l1">Get a stake</span><br><span class="cf-close-l2">in SimpleX Chat</span></h1>
+                    <h1><span class="cf-close-l1">Own a part</span><br><span class="cf-close-l2">of SimpleX Chat</span></h1>
                     <p class="cf-close-call">We are building a network that people own.<br>We invite you to invest and become part of it.</p>
                     <div class="cf-hero-cta">
                         <a class="cf-pill cf-primary" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
@@ -1358,7 +1358,8 @@ templateEngineOverride: njk
     </script>
     <script type="module">
         import { init, track } from '/js/page.js'
-        init({ domain: 'simplex.chat', endpoint: 'https://api.simplex.chat/api/event', logging: false })
+        {% include "events.js" %}
+        init(pageEvents)
         var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf[data-section]'))
         var seen = {}
         var current = 'hero'
@@ -1381,13 +1382,6 @@ templateEngineOverride: njk
         })
         var bar = document.querySelector('#cf-cta-invest')
         if (bar) bar.addEventListener('click', function () { track('Invest', { props: { place: 'bar', section: current } }) })
-        var exits = [['#navbar .logo', 'home', 'logo'], ['.cf-fine-links a[href="/"]', 'home', 'footer'], ['.cf-fine-links a[href="/privacy"]', 'privacy', 'footer'],
-            ['.cf-simplex-link', 'chat', 'request'], ['.cf-deck-link', 'deck', 'request'], ['.cf-modal-footnote a', 'source', 'ai-threat']]
-        exits.forEach(function (x) {
-            document.querySelectorAll(x[0]).forEach(function (el) {
-                el.addEventListener('click', function () { track('Exit', { props: { to: x[1], place: x[2] } }) })
-            })
-        })
         document.addEventListener('mc:result', function (e) { track('Subscribed', { props: { status: e.detail.status } }) })
         window.addEventListener('hashchange', function () {
             var id = location.hash.slice(1)

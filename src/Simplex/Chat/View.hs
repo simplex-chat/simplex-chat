@@ -469,6 +469,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
   CEvtUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
   CEvtUnknownMemberAnnounced u g _ um m -> ttyUser u [ttyGroup' g <> ": unknown member " <> ttyMember um <> " updated to " <> ttyMember m]
+  CEvtDuplicateGroupMessage {} -> []
   CEvtRcvFileDescrReady _ _ _ _ -> []
   CEvtRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CEvtRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft

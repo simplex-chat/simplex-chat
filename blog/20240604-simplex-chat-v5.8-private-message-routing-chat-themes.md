@@ -110,7 +110,7 @@ We [wrote previously](https://github.com/simplex-chat/simplexmq/blob/master/rfcs
 
 While we cannot require the operators of self-hosted and private servers to disclose any information about them (apart from which server code they use - this is the requirement of the AGPLv3 license to share this information with users connecting to the server), as we add other server operators to the app, it is important for the users to have all important information about these operators and servers location.
 
-This server release adds server information page where all this information can be made available to the users. For example, this is <a href="https://smp8.simplex.im" target="_blank">the information</a> about one of the servers preset in the app.
+This server release adds server information page where all this information can be made available to the users. For example, this is <a href="https://smp8.simplex.im" target="_blank" rel="noopener">the information</a> about one of the servers preset in the app.
 
 The updated server guide also includes [the instruction](../docs/SERVER.md#) about how to host this page for your server. It is generated as a static page when the server starts. We recommend using Caddy webserver to serve it.
 

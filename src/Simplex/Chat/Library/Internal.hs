@@ -2901,7 +2901,7 @@ sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM 
 sendFwdMemberMessage member fwd verifiedMsg =
   forM_ (readyMemberConn member) $ \(_, conn) -> do
     let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
+    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags {notification = msgHasNotification verifiedMsg}, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()
@@ -2938,11 +2938,13 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
   msg <-
     withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
       `catchAllErrors` \e -> case e of
-        ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
-          cxt <- chatStoreCxt
-          fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
-          forM_ (memberConn fm) $ \fmConn ->
-            void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
+        ChatErrorStore (SEDuplicateGroupMessage _ _ _ forwardedByGroupMemberId_) -> do
+          unlessM isMainApp $ toView $ CEvtDuplicateGroupMessage user am'
+          forM_ forwardedByGroupMemberId_ $ \forwardedByGroupMemberId -> do
+            cxt <- chatStoreCxt
+            fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
+            forM_ (memberConn fm) $ \fmConn ->
+              void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
           throwError e
         _ -> throwError e
   pure (am', conn', msg)
@@ -2956,19 +2958,24 @@ saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMemb
   -- TODO [relays] TBC highlighting difference between deduplicated messages (useRelays branch)
   withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId) >>= \case
     Right msg -> pure $ Just msg
-    Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId}
-      | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected
-      | otherwise -> case (authorGroupMemberId, forwardedByGroupMemberId) of
-          (Just authorGMId, Nothing) -> do
-            cxt <- chatStoreCxt
-            am@GroupMember {memberId = amMemberId} <- withStore $ \db -> getGroupMember db cxt user groupId authorGMId
-            if maybe False (\ref -> sameMemberId (memberId' ref) am) refAuthorMember_
-              then forM_ (memberConn forwardingMember) $ \fmConn ->
-                void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemberId) groupId
-              else toView $ CEvtMessageError user "error" "saveGroupFwdRcvMsg: referenced author member id doesn't match message member id"
-            throwError $ ChatErrorStore e
-          _ -> throwError $ ChatErrorStore e
+    Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId} -> do
+      unlessM isMainApp $ toView $ CEvtDuplicateGroupMessage user forwardingMember
+      if
+        | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected
+        | otherwise -> case (authorGroupMemberId, forwardedByGroupMemberId) of
+            (Just authorGMId, Nothing) -> do
+              cxt <- chatStoreCxt
+              am@GroupMember {memberId = amMemberId} <- withStore $ \db -> getGroupMember db cxt user groupId authorGMId
+              if maybe False (\ref -> sameMemberId (memberId' ref) am) refAuthorMember_
+                then forM_ (memberConn forwardingMember) $ \fmConn ->
+                  void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemberId) groupId
+                else toView $ CEvtMessageError user "error" "saveGroupFwdRcvMsg: referenced author member id doesn't match message member id"
+              throwError $ ChatErrorStore e
+            _ -> throwError $ ChatErrorStore e
     Left e -> throwError $ ChatErrorStore e
+
+isMainApp :: CM Bool
+isMainApp = (SMSubscribe ==) <$> chatReadVar subscriptionMode
 
 saveSndChatItem :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> CM (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing Nothing False

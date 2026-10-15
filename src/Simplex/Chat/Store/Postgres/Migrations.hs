@@ -55,6 +55,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
 import Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
 import Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_bindings
 import Simplex.Chat.Store.Postgres.Migrations.M20261010_invite_member_via_group
+import Simplex.Chat.Store.Postgres.Migrations.M20261012_delivery_job_notification
 import Simplex.Chat.Store.Postgres.Migrations.M20261013_chat_layout
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
@@ -111,6 +112,7 @@ schemaMigrations =
     ("20260923_preferences_json", m20260923_preferences_json, Just down_m20260923_preferences_json),
     ("20260925_badge_bindings", m20260925_badge_bindings, Just down_m20260925_badge_bindings),
     ("20261010_invite_member_via_group", m20261010_invite_member_via_group, Just down_m20261010_invite_member_via_group),
+    ("20261012_delivery_job_notification", m20261012_delivery_job_notification, Just down_m20261012_delivery_job_notification),
     ("20261013_chat_layout", m20261013_chat_layout, Just down_m20261013_chat_layout)
   ]
 

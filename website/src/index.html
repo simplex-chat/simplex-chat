@@ -166,7 +166,7 @@ active_home: true
                     <h1>{{ "index-hero-h1" | i18n({}, lang) | safe }}</h1>
                     <h2 class="gradient-text">{{ "index-hero-h2" | i18n({}, lang) | safe }}</h2>
                     <p>{{ "index-hero-p1" | i18n({}, lang) | safe }}</p>
-                    <p class="invest">{{ "index-hero-invest" | i18n({}, lang) | safe }} <a class="gradient-text" href="/crowdfunding/">{{ "learn-more" | i18n({}, lang) }}.</a></p>
+                    <p class="invest">{{ "index-hero-invest" | i18n({}, lang) | safe }} <a class="gradient-text" href="https://wefunder.com/simplex.chat?utm_source=home" target="_blank" rel="noopener">{{ "learn-more" | i18n({}, lang) }}.</a></p>
 
                     <div class="socials">
                         <a href="/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
@@ -179,14 +179,14 @@ active_home: true
                                 <p>Download<br>Desktop App</p>
                             </div>
                         </a>
-                        <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="/img/new/apple_store.svg" alt="App Store"></a>
-                        <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="/img/new/google_play.svg" alt="Google Play"></a>
+                        <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank" rel="noopener"><img src="/img/new/apple_store.svg" alt="App Store"></a>
+                        <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" rel="noopener"><img src="/img/new/google_play.svg" alt="Google Play"></a>
                         <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid" title="{{ 'index-f-droid-title' | i18n({}, lang) }}"><img src="/img/new/f_droid.svg"></a>
-                        <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="no-border" src="/img/design_3/testflight-dark.png" title="{{ 'index-testflight-title' | i18n({}, lang) }}" alt="TestFlight"></a>
-                        <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img src="/img/design_3/android-dark.png" alt="Android APK"></a>
+                        <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank" rel="noopener"><img class="no-border" src="/img/design_3/testflight-dark.png" title="{{ 'index-testflight-title' | i18n({}, lang) }}" alt="TestFlight"></a>
+                        <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank" rel="noopener"><img src="/img/design_3/android-dark.png" alt="Android APK"></a>
                     </div>
                     <div class="security-btns">
-                        <a title="{{ 'index-security-assessment-title' | i18n({}, lang) }}" href="https://www.trailofbits.com/about" target="_blank">
+                        <a title="{{ 'index-security-assessment-title' | i18n({}, lang) }}" href="https://www.trailofbits.com/about" target="_blank" rel="noopener">
                             <img src="/img/design_3/publications/trail-of-bits.png" alt="Trail of Bits">
                         </a>
                         <a class="box-btn btn-1" title="{{ 'index-security-review-2022-title' | i18n({}, lang) }}" href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">
@@ -200,19 +200,19 @@ active_home: true
                         </p>
                     </div>
                     <div class="publications-btns">
-                        <a title="{{ 'index-publications-privacy-guides-title' | i18n({}, lang) }}" href="https://www.privacyguides.org/en/real-time-communication/#simplex-chat" target="_blank">
+                        <a title="{{ 'index-publications-privacy-guides-title' | i18n({}, lang) }}" href="https://www.privacyguides.org/en/real-time-communication/#simplex-chat" target="_blank" rel="noopener">
                             <img src="/img/design_3/publications/privacy-guides.png" alt="Privacy Guides">
                         </a>
-                        <a title="{{ 'index-publications-whonix-title' | i18n({}, lang) }}" href="https://www.whonix.org/wiki/Chat#Recommendation" target="_blank">
+                        <a title="{{ 'index-publications-whonix-title' | i18n({}, lang) }}" href="https://www.whonix.org/wiki/Chat#Recommendation" target="_blank" rel="noopener">
                             <img src="/img/design_3/publications/whonix.png" alt="Whonix" class="whonix">
                         </a>
-                        <a title="{{ 'index-publications-heise-title' | i18n({}, lang) }}" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank">
+                        <a title="{{ 'index-publications-heise-title' | i18n({}, lang) }}" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank" rel="noopener">
                             <img src="/img/design_3/publications/heise.png" alt="Heise">
                         </a>
-                        <a title="{{ 'index-publications-kuketz-title' | i18n({}, lang) }}" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank">
+                        <a title="{{ 'index-publications-kuketz-title' | i18n({}, lang) }}" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank" rel="noopener">
                             <img src="/img/design_3/publications/kuketz-blog.png" alt="Kuketz Blog" class="kuketz">
                         </a>
-                        <a title="{{ 'index-publications-optout-title' | i18n({}, lang) }}" href="https://optoutpod.com/episodes/s3e02-simplexchat/" target="_blank">
+                        <a title="{{ 'index-publications-optout-title' | i18n({}, lang) }}" href="https://optoutpod.com/episodes/s3e02-simplexchat/" target="_blank" rel="noopener">
                             <img src="/img/design_3/publications/optout.png" alt="Opt Out">
                         </a>
                     </div>
@@ -251,7 +251,7 @@ active_home: true
                         <h2>{{ "index-token-h2" | i18n({}, lang) }}</h2>
                         <p>{{ "index-token-p1" | i18n({}, lang) }}</p>
                         <p>{{ "index-token-p2-cf" | i18n({}, lang) | safe }}</p>
-                        <a class="gradient-text" href="/crowdfunding/">{{ "index-token-cta-cf" | i18n({}, lang) | safe }}</a>
+                        <a class="gradient-text" href="https://wefunder.com/simplex.chat?utm_source=home" target="_blank" rel="noopener">{{ "index-token-cta-cf" | i18n({}, lang) | safe }}</a>
                     </div>
                 </div>
             </section>
@@ -288,36 +288,36 @@ active_home: true
         <section id="directory" class="page-6 page">
             <div class="area">
                 <div class="group-images">
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM" class="simplex-image" title="{{ 'index-directory-users-group-title' | i18n({}, lang) }}" target="_blank">
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM" class="simplex-image" title="{{ 'index-directory-users-group-title' | i18n({}, lang) }}" target="_blank" rel="noopener">
                         <img class="block dark:hidden" src="/img/new/logo-symbol-light.svg">
                         <img class="hidden dark:block" src="/img/new/logo-symbol-dark.svg">
                     </a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank" rel="noopener"><img src="/img/group.svg"></a>
                 </div>
                 <div class="text-container">
                     <h2>{{ "index-directory-h2" | i18n({}, lang) }}</h2>

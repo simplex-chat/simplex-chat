@@ -3311,7 +3311,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var relayLink: String?
     public var memberVerifiedCode: SecurityCode?
 
-    public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var id: String { groupMemberEntityId(groupId, groupMemberId) }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var sendMsgEnabled: Bool { get {
@@ -3498,6 +3498,10 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         activeConn: Connection.sampleData,
         memberChatVRange: VersionRange(2, 12)
     )
+}
+
+public func groupMemberEntityId(_ groupId: Int64, _ groupMemberId: Int64) -> String {
+    "#\(groupId) @\(groupMemberId)"
 }
 
 public struct GroupSupportChat: Codable, Hashable {
@@ -4273,6 +4277,10 @@ public enum CIDirection: Decodable, Hashable {
         }
     }
 
+    public var groupMemberId: Int64? {
+        if case let .groupRcv(groupMember) = self { groupMember.groupMemberId } else { nil }
+    }
+
     public func sameDirection(_ dir: CIDirection) -> Bool {
         switch (self, dir) {
         case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
@@ -4298,6 +4306,7 @@ public struct CIMeta: Decodable, Hashable {
     public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
+    public var forwardedByMember: Int64?
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
 

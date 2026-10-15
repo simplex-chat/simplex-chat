@@ -1346,6 +1346,11 @@ hasNotification = \case
   XCallInv_ -> True
   _ -> False
 
+msgHasNotification :: VerifiedMsg e -> Bool
+msgHasNotification verifiedMsg = hasNotification $ toCMEventTag chatMsgEvent
+  where
+    ChatMessage {chatMsgEvent} = verifiedChatMsg verifiedMsg
+
 hasDeliveryReceipt :: CMEventTag e -> Bool
 hasDeliveryReceipt = \case
   XMsgNew_ -> True

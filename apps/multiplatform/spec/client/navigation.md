@@ -256,6 +256,7 @@ Each `ModalManager` maintains a stack of `ModalViewHolder` objects with:
 | `closeModals` | Pop all modals from the stack |
 | `closeModalsExceptFirst` | Pop all but the bottom modal |
 | `hasModalsOpen()` | Check if any modals are on the stack |
+| `isLastModal(data)` | Check if the modal with this `ModalData` is the top modal not being removed |
 | `showInView` | Render the current modal stack into the composable tree |
 
 ### Usage Pattern
