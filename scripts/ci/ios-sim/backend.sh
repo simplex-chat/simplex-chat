@@ -42,9 +42,14 @@ admin() {
 }
 
 # A command that resolves a SimpleX name: given -s, the client uses that server alone, with every role, names included.
+# -s also saves it among the user's servers, and later runs would put queues on it that the directory can't reach
+# (it routes to unknown servers through a preset proxy), so it is then kept for names only.
 named() {
   local db=$1 user=$2 secs=$3 cmd=$4
-  chat "$db" "$secs" "$cmd" --user-display-name "$user" -s "$names_server"
+  local status=0
+  chat "$db" "$secs" "$cmd" --user-display-name "$user" -s "$names_server" || status=$?
+  db_query "$db" "UPDATE protocol_servers SET role_storage = 0, role_proxy = 0, role_names = 1 WHERE host = 'localhost'"
+  return "$status"
 }
 
 expect_out() {
