@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper:
-# onboarding to the chat list, and a search of the test directory (backend.sh) from the chat list search field.
+# onboarding to the chat list, and a search of the test directory (backend.sh) from the chat list search field,
+# with the toolbar at the bottom (the default) and then at the top.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [onboarding]
 # With "onboarding" it stops at the chat list: releases before directory search show no search field without chats.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
@@ -17,6 +18,8 @@ cases=${3:-all}
 search_text="ci seed"
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
+# the "Reachable app toolbars" switch, at the right of the left pane, where Settings open
+toolbar_switch_x=335
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -136,6 +139,31 @@ search_directory() {
   check "$layout: subscriber count shown" on_screen "subscriber"
 }
 
+# Turns "Reachable app toolbars" off in Settings > Appearance, which moves the toolbar and the search field to the top.
+use_top_toolbar() {
+  local y
+  # Escape clears the search field, and then closes one screen at a time
+  "$ui" key Escape
+  # the profile picture at the left of the bottom toolbar opens the user menu
+  "$ui" click 27 730
+  "$ui" click-text "Settings" 10
+  "$ui" click-text "Appearance" 10
+  "$ui" wait "Reachable app toolbars" 10
+  "$ui" shot appearance
+  y=$(y_of "Reachable app toolbars")
+  "$ui" click "$toolbar_switch_x" "$y"
+  "$ui" shot appearance-toolbar-switched
+  for _ in 1 2 3 4 5; do
+    if not_on_screen "Appearance" && not_on_screen "Chat preferences" && on_screen "Search or paste SimpleX link"; then
+      break
+    fi
+    "$ui" key Escape
+  done
+  "$ui" shot top-chat-list
+  y=$(y_of "Search or paste SimpleX link") || fail "no search field after closing Settings"
+  [ "$y" -lt 200 ] || fail "the search field is still at the bottom (y $y) after switching Reachable app toolbars"
+}
+
 "$ui" start "$app_dir"
 
 # onboarding to the chat list
@@ -181,7 +209,16 @@ fi
 "$ui" shot bottom-search-typed
 search_directory bottom "Search"
 
+# the alert was answered with "Search", so it asks again
+use_top_toolbar
+"$ui" click-text "Search or paste SimpleX link"
+"$ui" type "$search_text"
+"$ui" wait "$search_text" 15
+"$ui" wait "Search in Directory" 15
+"$ui" shot top-search-typed
+search_directory top "Search and don't show again"
+
 if grep -q '^FAIL' "$checks"; then
   fail "the search for \"$search_text\" failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
 fi
-echo "smoke test passed: the directory search for \"$search_text\" shows #ci_group and #ci_channel with their avatars"
+echo "smoke test passed: the directory search for \"$search_text\" shows #ci_group and #ci_channel with their avatars, with the toolbar at the bottom and at the top"
