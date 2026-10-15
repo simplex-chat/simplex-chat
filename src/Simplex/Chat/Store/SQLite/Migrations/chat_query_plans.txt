@@ -7711,6 +7711,10 @@ Query: SELECT index_in_group, member_relations_vector FROM group_members WHERE l
 Plan:
 SCAN group_members
 
+Query: SELECT issue_error_at FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT issue_failed_since, issue_error FROM badge_purchases
 Plan:
 SCAN badge_purchases
@@ -7946,6 +7950,10 @@ SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE badge_purchases SET issue_failed_since = NULL, issue_error_at = NULL, issue_error = NULL WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET next_wake_at = ?
+Plan:
+SCAN badge_purchases
 
 Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
