@@ -73,6 +73,9 @@ jobs:
       - name: Build existing Haskell outputs
         run: make nix-build
 
+      - name: Check native CLI encryption and profile passwords
+        run: python3 scripts/nix/smoke-cli.py "result-nix/$NIX_SYSTEM/exe:simplex-chat/bin/simplex-chat"
+
       - name: Collect library ZIPs and CLIs
         shell: bash
         run: |
