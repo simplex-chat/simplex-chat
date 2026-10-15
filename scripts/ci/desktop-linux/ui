@@ -5,7 +5,9 @@
 # coordinates are screen pixels, as in the screenshots. Screenshots, the text read from them and
 # a log of every command (steps.log) go to UI_OUT; the app's data stays in UI_STATE between starts.
 #
-#   ui start <app dir>            start Xvfb, openbox and <app dir>/bin/simplex, and wait for its window
+#   ui start <app dir> [<setting>=<value>...]
+#                                 start Xvfb, openbox and <app dir>/bin/simplex, and wait for its window; the app gets
+#                                 the settings given when UI_STATE has none yet
 #   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.txt (OCR's input and output in UI_OUT/ocr), and print the text on screen
 #   ui text                       print the text on screen, one phrase per line after its centre x,y
 #   ui find <text>                print "x y left top right bottom", the text's centre and box; fail if it is not on screen
@@ -61,8 +63,9 @@ stop_process() {
 }
 
 start() {
-  local app_dir
+  local app_dir settings=$state/config/simplex/settings.properties
   app_dir=$(cd "$1" && pwd)
+  shift
   if running app; then
     echo "error: the app is already running"
     return 1
@@ -82,6 +85,10 @@ start() {
   echo $! > "$state/openbox.pid"
 
   mkdir -p "$state/data" "$state/config" "$state/tmp"
+  if [ $# -gt 0 ] && [ ! -f "$settings" ]; then
+    mkdir -p "$(dirname "$settings")"
+    printf '%s\n' "$@" > "$settings"
+  fi
   XDG_DATA_HOME="$state/data" \
     XDG_CONFIG_HOME="$state/config" \
     JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$state/tmp -Dskiko.renderApi=SOFTWARE" \
@@ -188,8 +195,9 @@ avatar() {
 
 case "${1:-}" in
   start)
-    log "start $2"
-    start "$2"
+    shift
+    log "start $*"
+    start "$@"
     ;;
   shot) shot "$2" ;;
   text) screen_ocr lines ;;
