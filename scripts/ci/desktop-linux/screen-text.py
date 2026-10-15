@@ -37,7 +37,9 @@ def read_words(path, scale):
 def read_background(path):
     with open(path, "rb") as f:
         data = f.read()
-    header = re.match(rb"P5\s+(\d+)\s+(\d+)\s+\d+\s", data)
+    header = re.match(rb"P5\s+(\d+)\s+(\d+)\s+(\d+)\s", data)
+    if int(header[3]) != 255:
+        sys.exit(f"{path}: expected 8-bit samples, got maximum {int(header[3])}")
     return int(header[1]), int(header[2]), data[header.end():]
 
 
