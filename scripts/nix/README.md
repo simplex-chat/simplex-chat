@@ -58,7 +58,9 @@ link uses ABI-checked replacement RTS registrations, plus a replacement `text`
 on ARM64. These boot libraries and all ARM64 mobile app C/C++ code target the
 Apple A7 instruction baseline before `mac2ios` retags the archives. The cached
 native compiler itself stays unchanged. Android applies the RTS source patch
-when building its boot libraries.
+when building its boot libraries. The Android overlay also supplies GNU iconv
+headers and a static PIC archive to `ghc-internal`, including the separate
+iserv projects, while keeping the minimum Android API at 26.
 
 Android ARM32's QEMU wrapper preserves the guest's `PER_LINUX32` execution
 domain when an ARM64 host kernel rejects that domain. Upper personality flags
@@ -82,8 +84,11 @@ nix build --impure --file scripts/nix/check-android-personality.nix \
 Use `--argstr system x86_64-linux` for an x86_64 Linux builder. This optional
 check does not add a Hydra output. It checks C startup and personality handling;
 it does not qualify GHC/base under Rosetta, cross-TH, or Android device behavior.
-The static C fixture supplies the ARM TLS alignment input added to newer
-Android CRTs; its minimum API stays at 26.
+The static C fixture supplies the ARM
+[TLS alignment input](https://android.googlesource.com/platform/bionic/+/cc9b100%5E!/)
+added to newer Android CRTs; its minimum API stays at 26. On 2026-10-15 this
+regression passed on native ARM64 Linux, native x86_64 Linux, and x86_64 Linux
+through Rosetta on an Apple Silicon Mac.
 
 `NIX_ARGS` passes additional options to `nix build`, and `NIX_OUT_DIR` changes the
 output-link directory. Each derivation has a two-hour timeout by default; set
@@ -128,16 +133,28 @@ their historical build scripts.
 ## Migration validation
 
 On 2026-10-15, all 21 existing Hydra derivations evaluated successfully at
-`c72da15836d9b154532db29eb5013c3b8fb37a14`: 11 on x86_64 Linux, two on ARM64 Linux,
+`ef3a3b0b78aa108f9ab192278e4dae9a3d978d07`: 11 on x86_64 Linux, two on ARM64 Linux,
 and four on each Darwin architecture. This includes both Android ABIs, Windows,
 and all three static Linux targets.
 
-The native ARM64 Darwin library and CLI compiled with the pinned compiler using
-Cabal. Encrypted-store/profile-password, BBS, and native mobile C API smoke checks
-passed. The replacement RTS and `text` also built with Nix and passed ABI,
-instruction-baseline, UTF-8, and GC checks. These checks do not establish that all
-21 final Nix artifacts build: that artifact matrix is still unverified. Android
-device tests and an Xcode application build remain unverified too.
+The native ARM64 Darwin library and CLI built with Nix at `e1d2f1ebc` and
+passed `python3 scripts/nix/smoke-cli.py /path/to/simplex-chat`, covering encrypted
+stores and profile passwords. Native BBS checks also passed. The later Android
+iconv commit leaves the native Haskell/C/Cabal sources, compiler, flags, and
+other dependencies unchanged. It changes the overall source tarball and hence
+the native derivation paths; those later native derivations have not been rebuilt.
+
+A native build with the iOS Swift/CommonCrypto flags passed mobile C API checks
+using the rolled archive produced by `link-mobile-library.sh`: Swift JSON,
+encrypted stores, UTF-8, reopen behavior, and wrong-key errors with copying and
+nonmoving GC. This ran on macOS before archive retagging. The CommonCrypto
+SQLCipher component also built with Nix and registered both Apple frameworks.
+The replacement RTS and `text` built with Nix and passed ABI,
+instruction-baseline, UTF-8, and GC checks.
+
+The 21 final Nix artifacts, ARMv7 cross-TH, Android device tests, and an Xcode
+application build remain unverified. Derivation evaluation and native mobile
+checks do not establish that those builds and runtime checks pass.
 
 ## Updating package hashes
 
