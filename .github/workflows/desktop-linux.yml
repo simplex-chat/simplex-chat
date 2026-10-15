@@ -379,10 +379,13 @@ jobs:
         working-directory: apps/multiplatform
         run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :desktop:createDistributable
 
-      - name: Install Claude Code
+      # ui goes on every shell's PATH, where Claude's Bash tool finds it whatever environment it builds
+      - name: Install Claude Code and the ui command
         run: |
           npm install --prefix "$RUNNER_TEMP/claude-code" "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
           echo "$RUNNER_TEMP/claude-code/node_modules/.bin" >> "$GITHUB_PATH"
+          printf '#!/bin/sh\nexec %s/scripts/ci/desktop-linux/ui "$@"\n' "$PWD" | sudo tee /usr/local/bin/ui
+          sudo chmod +x /usr/local/bin/ui
 
       - name: Start the app at the chat list
         run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/claude-test/screens" onboarding
