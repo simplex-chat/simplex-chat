@@ -24,7 +24,6 @@ scope() {
 
 model=$(scope model)
 layouts=$(scope layouts)
-cases=$(scope cases)
 max_turns=$(scope max-turns)
 max_budget=$(scope max-budget-usd)
 
@@ -59,7 +58,7 @@ write_prompt() {
   echo "## This session"
   echo
   echo "- Layout: $(layout_name "$layout")."
-  echo "- Cases: $cases."
+  echo "- Cases: $(scope "cases-$layout")."
   echo "- Entries to use: $(scope "entries-$layout")."
   echo "- Link to paste (C4, W3): $(cat "$BACKEND_DIR/directory-link") (the test directory's address)."
   echo "- Names server to add in the app: $(cat "$BACKEND_DIR/names-server")."
@@ -82,7 +81,7 @@ for layout in $layouts; do
   mkdir -p "$session/shots"
   ui layout "$layout"
   write_prompt "$layout" "$previous" > "$session/prompt.md"
-  echo "::group::Claude session: $layout, cases $cases, $model, $max_turns turns, \$$max_budget"
+  echo "::group::Claude session: $layout, $model, $max_turns turns, \$$max_budget"
   session_status=0
   # outside the session's directory, so the session cannot change it
   export CLAUDE_GUARD_LOG=$out/$layout-guard.log

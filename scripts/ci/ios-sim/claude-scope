@@ -1,9 +1,11 @@
-# What claude-test.sh runs: one Claude session per layout (reachable, top), the plan's cases, and each session's bounds.
+# What claude-test.sh runs: one Claude session per layout (reachable, top), each with its cases, and each session's bounds.
+# A case runs in both layouts only when the layouts render it differently; the rest run in one.
 # entries-<layout> tells that session which directory entries and names its cases use, so none meets an entry already known.
 model: claude-haiku-5-5
 layouts: reachable top
-cases: all of the plan's cases (C1-C9, D1-D15, U1-U3, N1-N11, W1-W11, G1-G4) and the full search, skipping those named under "How to run the cases"
-entries-reachable: D6 joins ci_channel, which U1 then searches by name and U2 by "seed channel"; W6 joins ci_avatar_c2; D11 searches "private" (only the local chat "Private notes" has it); D14 and D15 use a second profile you add, which N7 then uses; N10 connects to @cialice.testing, which N5, W7 and G1 then use; W8 first connects to @cibobby.testing (Robert) from its Names row
-entries-top: D6 joins ci_avatar_c1, which U1 then searches by name and U2 by "avatar channel 1"; W6 joins ci_avatar_c3; D11 searches "private"; D14, D15 and N7 use the second profile from the earlier session (add one if it is missing); the contacts cialice and Robert are already connected (N5, W7, W8, G1 use them); N10 taps the Names row of the channel #ciboth.testing
+cases-reachable: the SimpleX names setup, then N1-N11, W4 with names, W7, W8, G1 and the full search (chat list and New chat)
+cases-top: N1 and N4 (this layout places the "Connect to …" row and the Names and Directory parts differently) and the full search on the chat list only (New chat looks the same in both layouts); the names setup is already done
+entries-reachable: N7 uses a second profile you add (the first profile has no other); N10 connects to @cialice.testing, which N5, W7 and G1 then use; W8 first connects to @cibobby.testing (Robert) from its Names row; the full search joins the group cinews_digest
+entries-top: the earlier session joined cinews_digest and connected to cialice and Robert; N1 and N4 join nothing
 max-turns: 900
 max-budget-usd: 10
