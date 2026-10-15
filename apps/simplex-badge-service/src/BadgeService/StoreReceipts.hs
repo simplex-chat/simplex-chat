@@ -63,8 +63,8 @@ data StoreRefusal
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
 
--- | Apple signs its receipt and ships the certificate chain in it, so it is verified with no network
--- call; a Play token is opaque and must be asked about, which is why only the Play fields are in IO.
+-- | Apple's one-time receipt is verified offline, from the certificate chain it ships; a Play token is opaque
+-- and must be asked about, and a subscription's charges are known only to its store, so those fields are in IO.
 data StoreVerifier = StoreVerifier
   { -- the JWS
     verifyApple :: Maybe (Text -> Either StoreRefusal VerifiedStoreTransaction),

@@ -13,6 +13,7 @@ module BadgeService.Service
     badgeService,
     badgeServiceCLI,
     badgeServiceResponse,
+    mayAskStore,
     badgeErrorRetryAfter,
     shownServiceRequest,
     survive,
@@ -54,7 +55,7 @@ import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word32)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
@@ -66,7 +67,7 @@ import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
-import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
@@ -301,22 +302,38 @@ issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} =
 processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
 processQueuedRequests key trackerQ_ env = do
   cc <- atomically $ readTMVar $ serviceCC env
-  -- a Play hand-over can wait two verifyTimeouts on Play, so it waits on a lane of its own
-  playQ <- newTQueueIO
+  -- a store call can take verifyTimeout, and a Play hand-over two, so every request that may make one waits on a lane of its own
+  storeQ <- newTQueueIO
   let answer (u, reqId, sigKey, reqData) = handleServiceRequest key (storeVerifier env) cc trackerQ_ u reqId sigKey reqData
-      route req@(_, _, _, reqData)
-        | presentsPlayReceipt reqData = atomically $ writeTQueue playQ req
-        | otherwise = answer req
+      route req@(_, _, sigKey, reqData) =
+        mayAskStore cc sigKey reqData >>= \case
+          True -> atomically $ writeTQueue storeQ req
+          False -> answer req
       lane q act = forever $ do
         req@(_, reqId, _, _) <- atomically $ readTQueue q
         survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ act req
-  raceAny_ [lane (serviceRequestQ env) route, lane playQ answer]
+  raceAny_ [lane (serviceRequestQ env) route, lane storeQ answer]
 
--- | Only what creates a purchase leaves the main lane: an append to an existing ledger is guarded by nothing but that lane being serial.
-presentsPlayReceipt :: J.Object -> Bool
-presentsPlayReceipt reqData = case J.fromJSON (J.Object reqData) of
-  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> True
-  _ -> False
+-- | Store calls wait on the store lane, so appends to one ledger come from both lanes: each write's tip
+-- re-read guards them while transactions run one at a time (SQLite; Postgres at --pool-size 1).
+mayAskStore :: ChatController -> Maybe C.PublicKeyEd25519 -> J.Object -> IO Bool
+mayAskStore cc sigKey reqData = case J.fromJSON (J.Object reqData) of
+  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> pure True
+  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPApple {jws}, upgrade = Nothing}} ->
+    pure $ maybe False autoRenewable (appleTransactionFacts jws)
+  J.Success BadgeServiceRequest {purchaseKey = Just k, request = BSCIssueBadge {}}
+    | sigKey == Just k -> do
+        now <- badgeNow cc
+        withDB' "mayAskStore" cc (\db -> getIssuePurchase db k) <&> \case
+          Right (Just (_, Just tip, Just subscription)) -> subscriptionCheckDue (addUTCTime routeLookahead now) tip subscription
+          Right _ -> False
+          -- a read that failed may hide a due check, and the main lane is what must not wait on a store
+          Left _ -> True
+  _ -> pure False
+
+-- | The router judges a minute ahead, so a handler reading the clock moments later finds due only what the router routed to the store lane.
+routeLookahead :: NominalDiffTime
+routeLookahead = 60
 
 -- | Cancellation is rethrown, since that is how the race stops this thread. The
 -- exception itself is not logged: it can quote the request, which carries codes and store receipts.

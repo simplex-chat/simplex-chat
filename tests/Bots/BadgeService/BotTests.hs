@@ -186,8 +186,11 @@ badgeServiceTests = do
       it "should delete a month-old record that will fund no badge, and keep held and credited ones" testStoreReceiptCleanup
       it "should keep a receipt whose attempt throws" testStoreReceiptAttemptThrows
       it "should credit a held receipt after the app restarts" testStoreReceiptAfterRestart
-    describe "the Play lane" $ do
+    describe "the store lane" $ do
       it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
+      it "should route exactly the requests that may ask a store to the store lane, judging a minute ahead" testStoreRouting
+      it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
+      it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
     it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
@@ -3171,6 +3174,109 @@ testPlayHoldsNoOtherRequest ps = do
           putMVar release ()
           expectLinesWithin 60 alice ["1: supporter"] []
           rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 3
+
+testStoreRouting :: HasCallStack => TestParams -> IO ()
+testStoreRouting ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleSupporterJWS}} -> do
+    let routedAs signer key cmd = mayAskStore cc (Just signer) (requestObject key cmd)
+        routed key = routedAs key key
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    let purchase payment = routed purchaseKey $ purchaseCmd masterKey payment
+    purchase supporterPlay `shouldReturn` True
+    purchase subscriptionPlay `shouldReturn` True
+    purchase SPApple {jws = appleSubscriptionJWS} `shouldReturn` True
+    purchase SPApple {jws = appleSupporterJWS} `shouldReturn` False
+    g <- C.newRandom
+    (fromPurchaseKey, fromPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+    now <- getCurrentTime
+    let upgrade = BadgeUpgrade {fromPurchaseKey, receipt = "receipt", receiptSignature = C.sign' fromPriv "receipt", balance = BadgeBalance {lastEntry = emptyEntry now BTSupporter}}
+    routed purchaseKey BSCPurchaseBadge {masterKey, payment = supporterPlay, upgrade = Just upgrade} `shouldReturn` False
+    code <- issueCode cc BTSupporter 1
+    codeKeys@(codeKey, codeMasterKey) <- newPurchaseKeys
+    routed codeKey BSCRedeemBadgeCode {masterKey = codeMasterKey, code = badgeCodeText code} `shouldReturn` False
+    redeemed <- redeemWithKeys env codeKeys code
+    routed codeKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last $ fst $ statementOf redeemed}} `shouldReturn` False
+    (subscriberKey, firstStart, purchased) <- subscribedMonthly env
+    let issue = BSCIssueBadge {balance = BadgeBalance {lastEntry = last purchased}}
+        coverageEnd = addMonths 1 firstStart
+        routedAt t = setClockAt bsClock t >> routed subscriberKey issue
+        answeredWithoutStore = do
+          checks <- subscriptionChecks store
+          _ <- assertBalance env subscriberKey (last purchased)
+          subscriptionChecks store `shouldReturn` checks
+    routedAt (addUTCTime (-90) coverageEnd) `shouldReturn` False
+    routedAt (addUTCTime (-30) coverageEnd) `shouldReturn` True
+    answeredWithoutStore
+    storeReports store $ subscriptionCheck SSBillingRetry Nothing
+    routedAt (addUTCTime 60 coverageEnd) `shouldReturn` True
+    checks <- subscriptionChecks store
+    _ <- assertBalance env subscriberKey (last purchased)
+    subscriptionChecks store `shouldReturn` checks + 1
+    [Just lastCheck] <- subscriptionCheckedAt cc
+    routedAt (addUTCTime 3530 lastCheck) `shouldReturn` False
+    routedAt (addUTCTime 3550 lastCheck) `shouldReturn` True
+    answeredWithoutStore
+    routedAt (addUTCTime 3700 lastCheck) `shouldReturn` True
+    routedAs purchaseKey subscriberKey issue `shouldReturn` False
+    (unknownKey, _) <- newPurchaseKeys
+    routed unknownKey issue `shouldReturn` False
+
+testRenewalHoldsNoOtherRequest :: HasCallStack => TestParams -> IO ()
+testRenewalHoldsNoOtherRequest ps = do
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  -- the purchase asks the store too, so the hold is armed once it is credited
+  hook <- newIORef (pure ())
+  let holding store = (subscriptionCheckWithHook hook store) {verifyTimeout = 60000000}
+  withBadgeServiceVerifier ps holding $ \env@BadgeServiceEnv {bsClientCfg, bsClock, bsController = cc, bsStore = store@FakeStore {appleSupporterJWS}} -> do
+    -- her request outlives the hold, so her pass does not give up and send it again
+    let patientCfg = bsClientCfg {agentConfig = (agentConfig bsClientCfg) {serviceRequestTimeout = 120}}
+    withNewTestChatCfg ps patientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+        withNewTestChatCfg ps bsClientCfg "cath" cathProfile $ \cath -> do
+          (firstStart, rows) <- clientSubscribedMonthly env alice
+          let (requestAt, _) = renewalMoments rows
+              renewalStart = addMonths 1 firstStart
+          writeIORef hook $ putMVar entered () >> takeMVar release
+          storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 1
+          setClockAt bsClock requestAt
+          alice ##> "/_app activate"
+          alice <## "ok"
+          timeout 30000000 (takeMVar entered) `shouldReturn` Just ()
+          code <- issueCode cc BTSupporter 1
+          bob ##> ("/_redeem_badge_code 1 " <> codeArg code)
+          bob <## "badge redeemed"
+          bob <## "supporter badge - active"
+          bob <##. "expires "
+          cath ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
+          cath <### [StartsWith (openPurchase ""), StartsWith "1: supporter"]
+          putMVar release ()
+          alice <##. "1: supporter"
+          renewed <- waitLedgerRows (chatController alice) 4
+          drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+
+testAppleSubscriptionHoldsNoOtherRequest :: HasCallStack => TestParams -> IO ()
+testAppleSubscriptionHoldsNoOtherRequest ps = do
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  hook <- newIORef $ putMVar entered () >> takeMVar release
+  let holding store = (subscriptionCheckWithHook hook store) {verifyTimeout = 60000000}
+  withBadgeServiceVerifier ps holding $ \env@BadgeServiceEnv {bsClientCfg, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "dan" danProfile $ \dan ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        now <- serviceNow env
+        setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) now) 1
+        dan ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+        storePurchaseOpen dan ""
+        timeout 30000000 (takeMVar entered) `shouldReturn` Just ()
+        code <- issueCode cc BTSupporter 1
+        bob ##> ("/_redeem_badge_code 1 " <> codeArg code)
+        bob <## "badge redeemed"
+        bob <## "supporter badge - active"
+        bob <##. "expires "
+        putMVar release ()
+        expectLinesWithin 60 dan ["1: supporter"] []
+        rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 2
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
 createInvoice cc userId = do
