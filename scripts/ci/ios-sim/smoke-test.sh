@@ -3,7 +3,9 @@
 # Installs the app in a new iPhone simulator and runs the scripted UI cases with the ui helper:
 # onboarding to the chat list, typing in the search field, and searching the test directory, whose results
 # must show their avatars and have the Directory header above them in both layouts; then, with a joined
-# channel, the chat list's cards must show while typing and hide under the results. It leaves the app in the one-hand UI.
+# channel, the chat list's cards must show while typing and hide under the results; and "Show more" must be disabled
+# while its page loads (a screenshot shows its colour). It leaves the app in the one-hand UI.
+# Needs BACKEND_DIR, the work dir of the running test backend.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir>
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -247,4 +249,14 @@ if "$ui" layout top; then
 else
   echo "::warning::the top bar layout could not be set, so its chat list cards were not checked"
 fi
-echo "smoke test passed: the directory search for \"$search_text\" shows #ci_group (Join group) and #ci_channel (Join channel) with their avatars and the Directory header above them; with a chat, the list's cards show while typing and hide under the results"
+
+# with the directory stopped, the next page waits 10 s before it fails: long enough to see "Show more" while it loads
+type_search "ci avatar"
+search_directory "Show more"
+"$ui" directory stop
+"$ui" tap "Show more"
+"$ui" shot show-more-loading
+expect_in_tree -E '^Button "Show more" .* disabled$'
+"$ui" directory start
+clear_search
+echo "smoke test passed: the directory search for \"$search_text\" shows #ci_group (Join group) and #ci_channel (Join channel) with their avatars and the Directory header above them; with a chat, the list's cards show while typing and hide under the results; \"Show more\" is disabled while its page loads"
