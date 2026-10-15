@@ -1,0 +1,50 @@
+01	98	3. Chat list (106 tests)	connectBannerCardDismiss	—	False
+01	99	3. Chat list (106 tests)	getStakeBannerShownAndDismissed	—	False
+01	100	3. Chat list (106 tests)	getStakeBannerOpensCrowdfunding	—	False
+01	101	3. Chat list (106 tests)	centerConnectOnboardingCardsWithNoConversations	—	False
+01	101	3. Chat list (106 tests)	centerCardsInviteSomeone	—	False
+01	101	3. Chat list (106 tests)	centerCardsCreatePublicAddress	—	False
+01	101	3. Chat list (106 tests)	centerCardsConnectViaLink	—	False
+01	102	3. Chat list (106 tests)	noSelectedChatPlaceholder	—	False
+01	109	4. Servers summary (10 tests)	serversSummaryOpensFromIndicator	—	False
+01	109	4. Servers summary (10 tests)	serversSummaryReconnectAll	—	False
+01	110	4. Servers summary (10 tests)	serversSummaryShowsLocalSmpConnected	P	False
+01	110	4. Servers summary (10 tests)	serversSummaryAllVsCurrentProfile	P	False
+01	110	4. Servers summary (10 tests)	serversSummarySmpServerDetail	P	False
+01	110	4. Servers summary (10 tests)	serversSummaryDetailedStats	P	False
+01	110	4. Servers summary (10 tests)	serversSummaryReconnectServer	P	False
+01	110	4. Servers summary (10 tests)	serversSummaryResetStats	P	False
+01	112	4. Servers summary (10 tests)	serversSummaryShareJson	CB	False
+01	118	5. User picker and profiles (44 tests)	userPickerOpensAndShowsCurrentUser	—	False
+01	118	5. User picker and profiles (44 tests)	userPickerCurrentUserOpensProfileEditor	—	False
+01	120	5. User picker and profiles (44 tests)	userPickerUnreadBadgePerUser	P	False
+01	120	5. User picker and profiles (44 tests)	userPickerMutedUserGrayBadge	P	False
+01	121	5. User picker and profiles (44 tests)	userPickerAddressRowLabelCreateVsYour	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerChatPreferencesRow	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerLinkAMobileRow	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerSettingsRow	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerDisabledWhenChatStopped	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerHiddenUsersNotListed	—	False
+01	122	5. User picker and profiles (44 tests)	profilesListShowsAllVisible	—	False
+01	122	5. User picker and profiles (44 tests)	profilesAddProfileInvalidName	—	False
+01	122	5. User picker and profiles (44 tests)	profilesAddProfileDuplicateNameError	—	False
+01	122	5. User picker and profiles (44 tests)	profilesActivateByTap	—	False
+01	122	5. User picker and profiles (44 tests)	profilesSearchByName	—	False
+01	123	5. User picker and profiles (44 tests)	profilesHiddenNoticeFirstTime	—	False
+01	124	5. User picker and profiles (44 tests)	profilesHideProfileWithPassword	—	False
+01	124	5. User picker and profiles (44 tests)	profilesHidePasswordMismatchDisabled	—	False
+01	124	5. User picker and profiles (44 tests)	profilesRevealHiddenByPasswordInSearch	—	False
+01	124	5. User picker and profiles (44 tests)	profilesActivateHiddenViaSearchPassword	—	False
+01	124	5. User picker and profiles (44 tests)	profilesUnhideActiveRequiresPassword	—	False
+01	124	5. User picker and profiles (44 tests)	profilesHideOnlyWhenMoreThanOneVisible	—	False
+01	125	5. User picker and profiles (44 tests)	profilesHiddenNotListedAfterHide	P	False
+01	126	5. User picker and profiles (44 tests)	profilesMuteUnmute	—	False
+01	126	5. User picker and profiles (44 tests)	profilesMutedAlertDontShowAgain	—	False
+01	127	5. User picker and profiles (44 tests)	profilesDeleteInactiveWithConnections	P	False
+01	127	5. User picker and profiles (44 tests)	profilesDeleteInactiveLocalDataOnly	P	False
+01	128	5. User picker and profiles (44 tests)	profilesDeleteActiveSwitchesToNext	—	False
+01	128	5. User picker and profiles (44 tests)	profilesDeleteLastVisibleShowsCreateChatProfile	—	False
+01	128	5. User picker and profiles (44 tests)	profilesDeleteHiddenActiveRequiresPassword	—	False
+01	129	5. User picker and profiles (44 tests)	editProfileBio	P	False
+01	129	5. User picker and profiles (44 tests)	editProfileDescription	P	False
+01	129	5. User picker and profiles (44 tests)	editProfileUnsavedChangesAlertSave	P	False

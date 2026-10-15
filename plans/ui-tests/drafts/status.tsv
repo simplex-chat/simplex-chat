@@ -1,0 +1,1429 @@
+01	27	1. Onboarding (24 tests)	onboardingWelcomeShowsDesktopActions	ONBOARD	True
+01	27	1. Onboarding (24 tests)	onboardingWhySimplexIsBuiltOpensHowItWorks	ONBOARD	True
+01	28	1. Onboarding (24 tests)	onboardingCreateProfileValidName	ONBOARD	True
+01	28	1. Onboarding (24 tests)	onboardingCreateProfileButtonDisabledForEmptyName	ONBOARD	True
+01	28	1. Onboarding (24 tests)	onboardingCreateProfileInvalidNameShowsCorrectionAlert	ONBOARD	True
+01	28	1. Onboarding (24 tests)	onboardingCreateProfileBackReturnsToWelcome	ONBOARD	True
+01	29	1. Onboarding (24 tests)	onboardingMigrateFromAnotherDeviceOpensMigrationScreen	ONBOARD	True
+01	30	1. Onboarding (24 tests)	onboardingSetDatabasePassphrase	ONBOARD	True
+01	30	1. Onboarding (24 tests)	onboardingSetPassphraseMismatchDisablesButton	ONBOARD	True
+01	30	1. Onboarding (24 tests)	onboardingUseRandomPassphraseAlert	ONBOARD	True
+01	31	1. Onboarding (24 tests)	onboardingPassphrasePersistsAcrossRestart	ONBOARD RESTART	True
+01	32	1. Onboarding (24 tests)	onboardingYourNetworkShowsSetupRouters	ONBOARD	True
+01	32	1. Onboarding (24 tests)	onboardingContinueGoesToConditions	ONBOARD	True
+01	33	1. Onboarding (24 tests)	onboardingChooseOperatorsToggle	ONBOARD	True
+01	33	1. Onboarding (24 tests)	onboardingChooseOperatorsCannotDeselectAll	ONBOARD	True
+01	33	1. Onboarding (24 tests)	onboardingHowItHelpsPrivacyInfo	ONBOARD	True
+01	34	1. Onboarding (24 tests)	onboardingAcceptConditionsCompletesOnboarding	ONBOARD	True
+01	34	1. Onboarding (24 tests)	onboardingConditionsLinkOpensConditionsText	ONBOARD	True
+01	35	1. Onboarding (24 tests)	onboardingAcceptButtonDisabledWithNoOperators	FIXTURE ONBOARD	False
+01	36	1. Onboarding (24 tests)	onboardingNoNotificationsStepOnDesktop	ONBOARD	True
+01	37	1. Onboarding (24 tests)	onboardingThenConnectToCliPeerViaLocalServers	ONBOARD P	True
+01	38	1. Onboarding (24 tests)	onboardingLinkAMobileShowsQrAndDeviceName	CB DT ONBOARD	True
+01	39	1. Onboarding (24 tests)	onboardingLinkAMobileBackReturnsToWelcome	ONBOARD	True
+01	40	1. Onboarding (24 tests)	onboardingCreateProfileWhenOnlyHiddenUsersExist	FIXTURE ONBOARD	False
+01	46	2. What's New (6 tests)	whatsNewFromSettings	—	True
+01	47	2. What's New (6 tests)	whatsNewShownAfterVersionUpgrade	RESTART	True
+01	47	2. What's New (6 tests)	whatsNewOkCloses	RESTART	True
+01	48	2. What's New (6 tests)	whatsNewPaginationPrevNext	URI	False
+01	49	2. What's New (6 tests)	whatsNewNotShownForNewUser	ONBOARD	True
+01	50	2. What's New (6 tests)	whatsNewShowsViewUpdatedConditions	RESTART	True
+01	56	3. Chat list (106 tests)	chatListTitleAndProfileButton	—	True
+01	56	3. Chat list (106 tests)	chatListScrollToTopOnTitleClick	—	True
+01	57	3. Chat list (106 tests)	chatListUnreadDotOnProfileButtonForOtherUsers	P	True
+01	58	3. Chat list (106 tests)	chatListStoppedChatIndicator	—	True
+01	59	3. Chat list (106 tests)	subscriptionIndicatorConnected	—	True
+01	59	3. Chat list (106 tests)	subscriptionIndicatorPercentageToggle	—	True
+01	60	3. Chat list (106 tests)	subscriptionIndicatorServerDown	SRVCTL	False
+01	61	3. Chat list (106 tests)	newChatButtonOpensNewChatSheet	—	True
+01	62	3. Chat list (106 tests)	searchFiltersByDisplayName	P	True
+01	62	3. Chat list (106 tests)	searchFiltersByAlias	P	True
+01	62	3. Chat list (106 tests)	searchMatchesPendingConnectionAlias	P	True
+01	62	3. Chat list (106 tests)	searchNoChatsFound	P	True
+01	62	3. Chat list (106 tests)	searchClearsWhenFilterChanges	P	True
+01	63	3. Chat list (106 tests)	searchPasteLinkTriggersConnectPlan	CB P	True
+01	63	3. Chat list (106 tests)	searchPasteKnownContactLinkFiltersToContact	CB P	True
+01	63	3. Chat list (106 tests)	searchPasteKnownGroupLinkFiltersToGroup	CB P	True
+01	64	3. Chat list (106 tests)	searchNameShowsConnectToNameRow	—	True
+01	65	3. Chat list (106 tests)	searchKnownNameFiltersChat	NAMES P	False
+01	66	3. Chat list (106 tests)	unreadFilterToggle	P	True
+01	66	3. Chat list (106 tests)	unreadFilterEmptyState	P	True
+01	67	3. Chat list (106 tests)	presetFilterFavorites	P	True
+01	67	3. Chat list (106 tests)	presetFilterContacts	P	True
+01	67	3. Chat list (106 tests)	presetFilterGroups	P	True
+01	67	3. Chat list (106 tests)	presetFilterBusinesses	P	True
+01	67	3. Chat list (106 tests)	presetFilterNotes	P	True
+01	67	3. Chat list (106 tests)	presetFilterReports	P	True
+01	68	3. Chat list (106 tests)	presetFilterChannels	P RELAY	False
+01	69	3. Chat list (106 tests)	presetFiltersCollapsedMenuWhenMany	P	True
+01	69	3. Chat list (106 tests)	presetFilterAllResets	P	True
+01	69	3. Chat list (106 tests)	presetTagsHiddenWhenOnlyOneKind	P	True
+01	70	3. Chat list (106 tests)	createListFromAddList	—	True
+01	70	3. Chat list (106 tests)	createListWithEmoji	—	True
+01	70	3. Chat list (106 tests)	createListDuplicateNameError	—	True
+01	71	3. Chat list (106 tests)	addChatToListFromContextMenu	P	True
+01	71	3. Chat list (106 tests)	changeChatListFromContextMenu	P	True
+01	71	3. Chat list (106 tests)	removeChatFromList	P	True
+01	72	3. Chat list (106 tests)	filterByUserList	P	True
+01	72	3. Chat list (106 tests)	emptyListShowsNoChatsInList	P	True
+01	72	3. Chat list (106 tests)	listUnreadDot	P	True
+01	73	3. Chat list (106 tests)	editListNameAndEmoji	—	True
+01	73	3. Chat list (106 tests)	deleteListConfirm	—	True
+01	73	3. Chat list (106 tests)	reorderListsDrag	—	False
+01	74	3. Chat list (106 tests)	listsArePerUser	—	True
+01	75	3. Chat list (106 tests)	previewShowsLastTextMessage	P	True
+01	75	3. Chat list (106 tests)	previewShowsDraft	P	True
+01	75	3. Chat list (106 tests)	previewLink	P	True
+01	75	3. Chat list (106 tests)	previewDeletedMessage	P	True
+01	75	3. Chat list (106 tests)	previewContactCardMessage	P	True
+01	76	3. Chat list (106 tests)	previewImage	P XFTP	False
+01	76	3. Chat list (106 tests)	previewVoice	P XFTP	False
+01	76	3. Chat list (106 tests)	previewFile	P XFTP	False
+01	77	3. Chat list (106 tests)	previewGroupSenderPrefix	P	True
+01	78	3. Chat list (106 tests)	previewReportPrefix	FIXTURE P RESTART	False
+01	79	3. Chat list (106 tests)	unreadCounterIncrementsAndClears	P	True
+01	79	3. Chat list (106 tests)	unreadCounterGrayWhenMuted	P	True
+01	80	3. Chat list (106 tests)	mentionBadgeSingleUnread	P	True
+01	80	3. Chat list (106 tests)	mentionIconWithMultipleUnread	P	True
+01	81	3. Chat list (106 tests)	mutedIconWhenNoUnread	P	True
+01	81	3. Chat list (106 tests)	favoriteStarWhenNoUnread	P	True
+01	81	3. Chat list (106 tests)	incognitoIconOnRow	P	True
+01	81	3. Chat list (106 tests)	verifiedIconOnRow	P	True
+01	81	3. Chat list (106 tests)	timestampShown	P	True
+01	82	3. Chat list (106 tests)	previewContactShouldAcceptForAddress	P	True
+01	82	3. Chat list (106 tests)	previewGroupInvitationJoinAs	P	True
+01	83	3. Chat list (106 tests)	previewConnectingForInvitation	P PEERCTL	False
+01	84	3. Chat list (106 tests)	contactMenuMarkRead	P	True
+01	84	3. Chat list (106 tests)	contactMenuMarkUnread	P	True
+01	84	3. Chat list (106 tests)	contactMenuFavoriteUnfavorite	P	True
+01	84	3. Chat list (106 tests)	contactMenuMuteUnmute	P	True
+01	84	3. Chat list (106 tests)	contactMenuClearChat	P	True
+01	84	3. Chat list (106 tests)	contactMenuRightClickOpens	P	True
+01	85	3. Chat list (106 tests)	contactMenuForNotReadyContactOnlyDelete	P	True
+01	86	3. Chat list (106 tests)	groupMenuMuteModesAllMentionsNone	P	True
+01	87	3. Chat list (106 tests)	notesMenuMarkUnreadAndClear	—	True
+01	88	3. Chat list (106 tests)	pendingInvitationRowIconAndName	—	True
+01	88	3. Chat list (106 tests)	pendingConnectionMenuSetName	—	True
+01	88	3. Chat list (106 tests)	pendingConnectionClickOpensInfo	—	True
+01	89	3. Chat list (106 tests)	pendingConnectionMenuDeleteInitiated	P	True
+01	90	3. Chat list (106 tests)	pendingAcceptedRowIcon	CB P PEERCTL	False
+01	90	3. Chat list (106 tests)	pendingConnectionMenuDeleteAccepted	CB P PEERCTL	False
+01	91	3. Chat list (106 tests)	contactRequestMenuAccept	P S	True
+01	91	3. Chat list (106 tests)	contactRequestMenuReject	P S	True
+01	91	3. Chat list (106 tests)	contactRequestIncognitoHiddenWithShortLinkData	P S	True
+01	92	3. Chat list (106 tests)	contactRequestMenuAcceptIncognito	FIXTURE P	False
+01	93	3. Chat list (106 tests)	contactWithRequestOpenToAccept	P	True
+01	93	3. Chat list (106 tests)	contactWithRequestComposeAccept	P	True
+01	93	3. Chat list (106 tests)	contactWithRequestComposeReject	P	True
+01	94	3. Chat list (106 tests)	contactWithRequestComposeAcceptAlertIncognito	FIXTURE P	False
+01	95	3. Chat list (106 tests)	contactRequestLegacyRowWantsToConnect	FIXTURE P RESTART	False
+01	95	3. Chat list (106 tests)	contactRequestTapAlertAccept	FIXTURE P RESTART	False
+01	95	3. Chat list (106 tests)	contactRequestTapAlertReject	FIXTURE P RESTART	False
+01	96	3. Chat list (106 tests)	contactRequestTapAlertAcceptIncognito	FIXTURE P RESTART	False
+01	97	3. Chat list (106 tests)	oneHandToolbarCardSelectBottomBar	—	True
+01	97	3. Chat list (106 tests)	oneHandToolbarCardDismissShowsAlert	—	True
+01	97	3. Chat list (106 tests)	oneHandCardAutoHiddenAfterThreeChats	—	True
+01	98	3. Chat list (106 tests)	connectBannerCardOpensNewLink	—	True
+01	98	3. Chat list (106 tests)	connectBannerCardOpensPasteLink	—	True
+01	98	3. Chat list (106 tests)	connectBannerCardDismiss	—	False
+01	99	3. Chat list (106 tests)	getStakeBannerShownAndDismissed	—	False
+01	100	3. Chat list (106 tests)	getStakeBannerOpensCrowdfunding	—	False
+01	101	3. Chat list (106 tests)	centerConnectOnboardingCardsWithNoConversations	—	False
+01	101	3. Chat list (106 tests)	centerCardsInviteSomeone	—	False
+01	101	3. Chat list (106 tests)	centerCardsCreatePublicAddress	—	False
+01	101	3. Chat list (106 tests)	centerCardsConnectViaLink	—	False
+01	102	3. Chat list (106 tests)	noSelectedChatPlaceholder	—	False
+01	103	3. Chat list (106 tests)	youHaveNoChatsEmptyState	FIXTURE	False
+01	109	4. Servers summary (10 tests)	serversSummaryOpensFromIndicator	—	False
+01	109	4. Servers summary (10 tests)	serversSummaryReconnectAll	—	False
+01	110	4. Servers summary (10 tests)	serversSummaryShowsLocalSmpConnected	P	False
+01	110	4. Servers summary (10 tests)	serversSummaryAllVsCurrentProfile	P	False
+01	110	4. Servers summary (10 tests)	serversSummarySmpServerDetail	P	False
+01	110	4. Servers summary (10 tests)	serversSummaryDetailedStats	P	False
+01	110	4. Servers summary (10 tests)	serversSummaryReconnectServer	P	False
+01	110	4. Servers summary (10 tests)	serversSummaryResetStats	P	False
+01	111	4. Servers summary (10 tests)	serversSummaryFilesTabShowsXftp	P XFTP	False
+01	112	4. Servers summary (10 tests)	serversSummaryShareJson	CB	False
+01	118	5. User picker and profiles (44 tests)	userPickerOpensAndShowsCurrentUser	—	False
+01	118	5. User picker and profiles (44 tests)	userPickerCurrentUserOpensProfileEditor	—	False
+01	119	5. User picker and profiles (44 tests)	userPickerSwitchProfile	—	True
+01	120	5. User picker and profiles (44 tests)	userPickerUnreadBadgePerUser	P	False
+01	120	5. User picker and profiles (44 tests)	userPickerMutedUserGrayBadge	P	False
+01	121	5. User picker and profiles (44 tests)	userPickerAddressRowLabelCreateVsYour	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerChatPreferencesRow	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerLinkAMobileRow	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerSettingsRow	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerDisabledWhenChatStopped	—	False
+01	121	5. User picker and profiles (44 tests)	userPickerHiddenUsersNotListed	—	False
+01	122	5. User picker and profiles (44 tests)	profilesListShowsAllVisible	—	False
+01	122	5. User picker and profiles (44 tests)	profilesAddProfile	—	True
+01	122	5. User picker and profiles (44 tests)	profilesAddProfileInvalidName	—	False
+01	122	5. User picker and profiles (44 tests)	profilesAddProfileDuplicateNameError	—	False
+01	122	5. User picker and profiles (44 tests)	profilesActivateByTap	—	False
+01	122	5. User picker and profiles (44 tests)	profilesSearchByName	—	False
+01	123	5. User picker and profiles (44 tests)	profilesHiddenNoticeFirstTime	—	False
+01	124	5. User picker and profiles (44 tests)	profilesHideProfileWithPassword	—	False
+01	124	5. User picker and profiles (44 tests)	profilesHidePasswordMismatchDisabled	—	False
+01	124	5. User picker and profiles (44 tests)	profilesRevealHiddenByPasswordInSearch	—	False
+01	124	5. User picker and profiles (44 tests)	profilesActivateHiddenViaSearchPassword	—	False
+01	124	5. User picker and profiles (44 tests)	profilesUnhideActiveRequiresPassword	—	False
+01	124	5. User picker and profiles (44 tests)	profilesHideOnlyWhenMoreThanOneVisible	—	False
+01	125	5. User picker and profiles (44 tests)	profilesHiddenNotListedAfterHide	P	False
+01	126	5. User picker and profiles (44 tests)	profilesMuteUnmute	—	False
+01	126	5. User picker and profiles (44 tests)	profilesMutedAlertDontShowAgain	—	False
+01	127	5. User picker and profiles (44 tests)	profilesDeleteInactiveWithConnections	P	False
+01	127	5. User picker and profiles (44 tests)	profilesDeleteInactiveLocalDataOnly	P	False
+01	128	5. User picker and profiles (44 tests)	profilesDeleteActiveSwitchesToNext	—	False
+01	128	5. User picker and profiles (44 tests)	profilesDeleteLastVisibleShowsCreateChatProfile	—	False
+01	128	5. User picker and profiles (44 tests)	profilesDeleteHiddenActiveRequiresPassword	—	False
+01	129	5. User picker and profiles (44 tests)	editProfileDisplayName	P	True
+01	129	5. User picker and profiles (44 tests)	editProfileBio	P	False
+01	129	5. User picker and profiles (44 tests)	editProfileDescription	P	False
+01	129	5. User picker and profiles (44 tests)	editProfileUnsavedChangesAlertSave	P	False
+01	130	5. User picker and profiles (44 tests)	editProfileFullNameShownOnlyIfDifferent	—	False
+01	130	5. User picker and profiles (44 tests)	editProfileBioTooLarge	—	False
+01	130	5. User picker and profiles (44 tests)	editProfileUnsavedChangesAlertExit	—	False
+01	130	5. User picker and profiles (44 tests)	editProfileNameUsedByOtherUserError	—	False
+01	130	5. User picker and profiles (44 tests)	editProfileSaveDisabledWhenUnchanged	—	False
+01	131	5. User picker and profiles (44 tests)	editProfileImageSetAndDelete	FD	False
+01	132	5. User picker and profiles (44 tests)	editProfileInvalidNameDisablesSave	—	False
+01	132	5. User picker and profiles (44 tests)	editProfileClosesOnUserSwitch	—	False
+01	138	6. New chat sheet and contacts (17 tests)	newChatSheetShowsActions	—	False
+01	138	6. New chat sheet and contacts (17 tests)	newChatSheetCreateGroupEntry	—	False
+01	138	6. New chat sheet and contacts (17 tests)	newChatSheetCreateChannelEntry	—	False
+01	139	6. New chat sheet and contacts (17 tests)	newChatSheetContactsListSorted	FIXTURE P RESTART	False
+01	140	6. New chat sheet and contacts (17 tests)	newChatSheetContactTapOpensChat	P	False
+01	140	6. New chat sheet and contacts (17 tests)	newChatSheetContactWithRequestOpensChat	P	False
+01	140	6. New chat sheet and contacts (17 tests)	newChatSheetContactMenuDelete	P	False
+01	141	6. New chat sheet and contacts (17 tests)	contactCardConnectCurrentProfile	FIXTURE P RESTART	False
+01	141	6. New chat sheet and contacts (17 tests)	contactCardConnectIncognito	FIXTURE P RESTART	False
+01	142	6. New chat sheet and contacts (17 tests)	newChatSheetSearchFiltersContacts	P	False
+01	142	6. New chat sheet and contacts (17 tests)	newChatSheetSearchIncludesArchived	P	False
+01	142	6. New chat sheet and contacts (17 tests)	newChatSheetFavoritesFilterToggle	P	False
+01	142	6. New chat sheet and contacts (17 tests)	newChatSheetNoFilteredContacts	P	False
+01	143	6. New chat sheet and contacts (17 tests)	newChatSheetPasteLinkInSearchConnects	CB P	False
+01	144	6. New chat sheet and contacts (17 tests)	newChatSheetConnectToNameRow	NAMES P	False
+01	145	6. New chat sheet and contacts (17 tests)	archivedContactsListAndOpen	P	False
+01	145	6. New chat sheet and contacts (17 tests)	archivedContactsSendMessageRestores	P	False
+01	151	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	createOneTimeLinkShowsLinkAndQr	—	False
+01	152	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkCopyToClipboard	CB	False
+01	152	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkShareButton	CB	False
+01	153	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkCliConnectsViaShortLink	P S	True
+01	154	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkCliConnectsViaFullLink	DT P S	False
+01	155	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkShortFullToggleRequiresDevTools	DT	False
+01	156	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkCreationErrorShowsRetry	SRVCTL	False
+01	157	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkKeepUnusedAlertKeep	—	False
+01	157	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkKeepUnusedAlertDelete	—	False
+01	158	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkUsedNoAlert	CB	False
+01	159	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkQrClickSavesPng	FD	False
+01	160	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkLearnMore	—	False
+01	161	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkSwitchToIncognito	P	True
+01	161	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkSwitchBackFromIncognito	P	False
+01	161	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkChangeToOtherProfile	P	False
+01	161	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkChangeToHiddenProfileViaPassword	P	False
+01	162	7. 1-time link (create / share / QR / incognito / profile) (17 tests)	oneTimeLinkIncognitoInfoButton	—	False
+01	170	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	pasteLinkInvalidTextAlert	CB	False
+01	170	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	pasteLinkClipboardEmptyNoop	CB	False
+01	171	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planProgressIndicatorAndCancel	CB P SRVCTL	False
+01	172	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planInvitationShortLinkOpenNewChat	CB P	False
+01	173	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planInvitationFullLinkUseCurrentProfile	CB P S	False
+01	173	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planInvitationFullLinkUseIncognito	CB P S	False
+01	173	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planInvitationFullLinkCancel	CB P S	False
+01	174	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planOwnInvitationConnectToYourself	CB	False
+01	175	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planInvitationAlreadyConnectingFullLink	CB P PEERCTL	False
+01	176	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planInvitationKnownContactOpenChat	CB P	False
+01	177	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planInvitationConnectingPreparedOpensKnown	CB P	False
+01	178	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planInvitationDeletedLinkError	CB P	False
+01	179	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planAddressShortLinkOpenNewChat	CB P	False
+01	180	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planAddressFullLinkConnectAlert	CB P S	False
+01	181	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planOwnAddressConnectToYourself	CB	False
+01	182	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planAddressRepeatConnectionRequest	CB P	False
+01	183	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planAddressConnectingProhibitOpensKnown	CB P	False
+01	184	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planAddressKnownContactOpenChat	CB P	False
+01	185	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planAddressContactViaAddressOpensChat	CB FIXTURE P RESTART	False
+01	186	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planAddressDeletedContactReconnect	CB P	False
+01	187	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planBotAddressShowsBotIcon	CB P	False
+01	188	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planSignedAddressCardVerified	P	False
+01	189	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planOwnerSignatureFailed	P	False
+01	190	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planConnectByNameContact	NAMES P	False
+01	191	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planConnectByNameNotFound	NAMES	False
+01	192	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planConnectByNameOtherKindButton	NAMES P RELAY	False
+01	193	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planOpenedViaSimplexUriHandler	P	False
+01	194	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	planViaChatItemLinkCard	P	False
+01	195	8. Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) (29 tests)	linkCardInMessageShowsNameAndSignedInfoLine	P	False
+01	201	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactInvitationConnectButton	P	False
+01	201	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactBannerTexts	P	False
+01	201	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactRowOpenToConnect	P	False
+01	202	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactAddressSendRequestWithMessage	P	False
+01	202	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactAddressSendRequestWithoutMessage	P	False
+01	202	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactSendRequestAlertAddMessage	P	False
+01	202	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactAfterConnectShowsContactShouldAccept	P	False
+01	203	9. Connecting a prepared chat (compose area) (11 tests)	preparedBotConnect	P	False
+01	204	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactChangeProfileBeforeConnect	P	False
+01	204	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactIncognitoBeforeConnect	P	False
+01	205	9. Connecting a prepared chat (compose area) (11 tests)	preparedContactConnectRetryAfterServerError	P SRVCTL	False
+01	211	10. Pending connection info screen (7 tests)	pendingInfoInvitedShowsLinkQrShare	CB	False
+01	212	10. Pending connection info screen (7 tests)	pendingInfoAcceptedShowsNoLink	P PEERCTL	False
+01	213	10. Pending connection info screen (7 tests)	pendingInfoIncognitoShown	—	False
+01	213	10. Pending connection info screen (7 tests)	pendingInfoLearnMore	—	False
+01	213	10. Pending connection info screen (7 tests)	pendingInfoDelete	—	False
+01	214	10. Pending connection info screen (7 tests)	pendingInfoSetAliasPersistsToContact	P	False
+01	215	10. Pending connection info screen (7 tests)	pendingInfoGroupLinkHidesAlias	P PEERCTL	False
+01	221	11. Address screens (23 tests)	addressScreenNoAddressShowsCreate	—	False
+01	221	11. Address screens (23 tests)	addressCreateOneTimeLinkButton	—	False
+01	221	11. Address screens (23 tests)	addressLearnMore	—	False
+01	222	11. Address screens (23 tests)	createAddressNoContactsSharesAutomatically	—	False
+01	223	11. Address screens (23 tests)	createAddressWithContactsAsksToShare	P	False
+01	223	11. Address screens (23 tests)	createAddressWithContactsAsksToShareCancel	P	False
+01	224	11. Address screens (23 tests)	addressQrAndShareAddress	CB	False
+01	225	11. Address screens (23 tests)	addressShareViaChat	P	False
+01	226	11. Address screens (23 tests)	addressCliConnectsAndRequestAppears	P S	True
+01	227	11. Address screens (23 tests)	addressUpgradeShortLink	FIXTURE	False
+01	228	11. Address screens (23 tests)	addressBusinessToggleAutoEnablesAutoAccept	—	False
+01	229	11. Address screens (23 tests)	addressSettingsShareWithContactsOn	P	False
+01	229	11. Address screens (23 tests)	addressSettingsShareWithContactsOff	P	False
+01	229	11. Address screens (23 tests)	addressSettingsShareCancelReverts	P	False
+01	229	11. Address screens (23 tests)	addressAutoAcceptOn	P	False
+01	229	11. Address screens (23 tests)	addressAutoAcceptOff	P	False
+01	229	11. Address screens (23 tests)	addressWelcomeMessage	P	False
+01	230	11. Address screens (23 tests)	addressSettingsSaveDisabledWhenUnchanged	—	False
+01	231	11. Address screens (23 tests)	addressAutoAcceptIncognito	FIXTURE P	False
+01	232	11. Address screens (23 tests)	addressSettingsUnsavedChangesAlertSave	—	False
+01	232	11. Address screens (23 tests)	addressSettingsUnsavedChangesAlertExit	—	False
+01	233	11. Address screens (23 tests)	addressDelete	P	False
+01	233	11. Address screens (23 tests)	addressDeleteKeepsPendingRequests	P	False
+01	239	12. SimpleX name (8 tests)	simplexNameEntryShownWithAddress	—	False
+01	239	12. SimpleX name (8 tests)	simplexNameValidationIcon	—	False
+01	240	12. SimpleX name (8 tests)	simplexNameSaveConfirmBroadcast	NAMES	False
+01	240	12. SimpleX name (8 tests)	simplexNameSaveNotOwnAddressError	NAMES	False
+01	240	12. SimpleX name (8 tests)	simplexNameRemove	NAMES	False
+01	240	12. SimpleX name (8 tests)	simplexNameUnsavedChangesAlert	NAMES	False
+01	240	12. SimpleX name (8 tests)	simplexNameRemovedWhenAddressDeleted	NAMES	False
+01	241	12. SimpleX name (8 tests)	simplexNameRegisterLinkOpensBrowser	URI	False
+01	249	13. Contact info screen (28 tests)	contactInfoOpensFromChatHeader	P	False
+01	249	13. Contact info screen (28 tests)	contactInfoSetLocalAlias	P	True
+01	249	13. Contact info screen (28 tests)	contactInfoClearLocalAlias	P	False
+01	250	13. Contact info screen (28 tests)	contactInfoHeaderShowsNameBioCopy	CB P TOAST	False
+01	251	13. Contact info screen (28 tests)	contactInfoSearchButton	P	False
+01	251	13. Contact info screen (28 tests)	contactInfoMuteButtonToggles	P	False
+01	251	13. Contact info screen (28 tests)	contactInfoCallProhibitedAlert	P	False
+01	251	13. Contact info screen (28 tests)	contactInfoAllowCallsAlert	P	False
+01	252	13. Contact info screen (28 tests)	contactInfoCallButtonsStubbed	P URI	False
+01	253	13. Contact info screen (28 tests)	contactInfoIncognitoSection	P	False
+01	254	13. Contact info screen (28 tests)	contactInfoVerifyCodeMatchesCli	P	True
+01	254	13. Contact info screen (28 tests)	contactInfoMarkVerified	P	True
+01	254	13. Contact info screen (28 tests)	contactInfoClearVerification	P	False
+01	255	13. Contact info screen (28 tests)	contactInfoSendReceiptsNo	P	False
+01	255	13. Contact info screen (28 tests)	contactInfoSendReceiptsDefault	P	False
+01	256	13. Contact info screen (28 tests)	contactInfoChatTtlEnable	P	False
+01	256	13. Contact info screen (28 tests)	contactInfoChatTtlDisable	P	False
+01	257	13. Contact info screen (28 tests)	contactInfoE2eeQuantumResistant	P	False
+01	257	13. Contact info screen (28 tests)	contactInfoContactAddressSection	P	False
+01	257	13. Contact info screen (28 tests)	contactInfoServersSection	P	False
+01	257	13. Contact info screen (28 tests)	contactInfoNetworkStatusAlert	P	False
+01	258	13. Contact info screen (28 tests)	contactInfoSwitchAddress	P	False
+01	259	13. Contact info screen (28 tests)	contactInfoAbortSwitchAddress	P SRVCTL	False
+01	260	13. Contact info screen (28 tests)	contactInfoFixConnection	FIXTURE P RESTART	False
+01	261	13. Contact info screen (28 tests)	contactInfoClearChat	P	False
+01	261	13. Contact info screen (28 tests)	contactInfoWallpaperEntry	P	False
+01	262	13. Contact info screen (28 tests)	contactInfoDeveloperSection	DT P	False
+01	263	13. Contact info screen (28 tests)	contactInfoNotReadyContactHidesSections	P	False
+01	269	14. Preferences (12 tests)	contactPrefsDisappearingMessagesAllow	P	False
+01	269	14. Preferences (12 tests)	contactPrefsFullDeletion	P	False
+01	269	14. Preferences (12 tests)	contactPrefsReactions	P	False
+01	269	14. Preferences (12 tests)	contactPrefsVoice	P	False
+01	269	14. Preferences (12 tests)	contactPrefsCalls	P	False
+01	269	14. Preferences (12 tests)	contactPrefsResetRevertsChanges	P	False
+01	269	14. Preferences (12 tests)	contactPrefsUnsavedAlertSave	P	False
+01	269	14. Preferences (12 tests)	contactPrefsUnsavedAlertExit	P	False
+01	269	14. Preferences (12 tests)	contactPrefsContactAllowsReflectsPeer	P	False
+01	270	14. Preferences (12 tests)	userPrefsTimedMessagesAndTtl	P	False
+01	270	14. Preferences (12 tests)	userPrefsFullDeleteReactionsVoiceCalls	P	False
+01	270	14. Preferences (12 tests)	userPrefsResetAndUnsavedAlert	P	False
+01	276	15. Delete contact variants (10 tests)	deleteContactOnlyConversation	P	False
+01	276	15. Delete contact variants (10 tests)	deleteConversationNoticeDontShowAgain	P	False
+01	276	15. Delete contact variants (10 tests)	deleteContactCancel	P	False
+01	277	15. Delete contact variants (10 tests)	deleteContactAndNotify	P	True
+01	277	15. Delete contact variants (10 tests)	deleteContactWithoutNotification	P	False
+01	277	15. Delete contact variants (10 tests)	deleteContactKeepConversation	P	False
+01	277	15. Delete contact variants (10 tests)	deleteContactFromInfoClosesChat	P	False
+01	278	15. Delete contact variants (10 tests)	deleteArchivedContactConfirm	P	False
+01	279	15. Delete contact variants (10 tests)	deleteNotReadyContactConfirm	P	False
+01	280	15. Delete contact variants (10 tests)	contactDeletedByPeerShowsDeleted	P	False
+02	24	A. Chat view shell, toolbar, banner (11 tests)	directChat_opens_showsToolbarAndBanner	P	False
+02	24	A. Chat view shell, toolbar, banner (11 tests)	groupChat_opens_showsBannerGroup	P	False
+02	25	A. Chat view shell, toolbar, banner (11 tests)	notes_opens_showsSearchAndContentFilterIcons	—	False
+02	26	A. Chat view shell, toolbar, banner (11 tests)	chatBanner_contextText_perChatType	P	False
+02	27	A. Chat view shell, toolbar, banner (11 tests)	toolbarTitle_click_opensChatInfo	P	False
+02	28	A. Chat view shell, toolbar, banner (11 tests)	toolbarMenu_direct_items	P	False
+02	28	A. Chat view shell, toolbar, banner (11 tests)	toolbarMenu_group_items	P	False
+02	28	A. Chat view shell, toolbar, banner (11 tests)	toolbarMenu_muteUnmute_togglesNtfMode	P	False
+02	29	A. Chat view shell, toolbar, banner (11 tests)	toolbarMenu_channel_items	P RELAY	False
+02	30	A. Chat view shell, toolbar, banner (11 tests)	toolbarCall_audio_opensCallLink	P URI	False
+02	31	A. Chat view shell, toolbar, banner (11 tests)	callStart_browserUnavailable_showsAlertAndEnds	P URI	False
+02	36	B. Composing and sending text, links, mentions, commands (29 tests)	sendText_enter_peerReceives	P S	True
+02	37	B. Composing and sending text, links, mentions, commands (29 tests)	sendText_sendButton_peerReceives	P	False
+02	38	B. Composing and sending text, links, mentions, commands (29 tests)	sendButton_hiddenWhenEmpty_disabledForWhitespace	P	False
+02	39	B. Composing and sending text, links, mentions, commands (29 tests)	multiline_shiftEnter_peerReceivesTwoLines	P	False
+02	39	B. Composing and sending text, links, mentions, commands (29 tests)	multiline_received_rendersBothLines	P	False
+02	40	B. Composing and sending text, links, mentions, commands (29 tests)	groupSend_allMembersReceive	P	True
+02	41	B. Composing and sending text, links, mentions, commands (29 tests)	markdown_received_rendersBoldItalicCodeStrikeSecretColor	P	False
+02	41	B. Composing and sending text, links, mentions, commands (29 tests)	markdown_secret_clickReveals	P	False
+02	41	B. Composing and sending text, links, mentions, commands (29 tests)	markdown_sent_peerSeesTextWithoutMarkers	P	False
+02	42	B. Composing and sending text, links, mentions, commands (29 tests)	emojiOnly_rendersLargeEmoji	P	False
+02	43	B. Composing and sending text, links, mentions, commands (29 tests)	link_click_showsOpenWebLinkAlert	P URI	False
+02	43	B. Composing and sending text, links, mentions, commands (29 tests)	link_openClean_opensSanitizedUri	P URI	False
+02	44	B. Composing and sending text, links, mentions, commands (29 tests)	linkPreview_firstTimeAlert_enable_fetchesPreview	HTTP P	False
+02	44	B. Composing and sending text, links, mentions, commands (29 tests)	linkPreview_sent_peerReceivesLinkContent	HTTP P	False
+02	44	B. Composing and sending text, links, mentions, commands (29 tests)	linkPreview_cancel_sendsPlainText	HTTP P	False
+02	45	B. Composing and sending text, links, mentions, commands (29 tests)	linkPreview_firstTimeAlert_disable_noPreview	P	False
+02	45	B. Composing and sending text, links, mentions, commands (29 tests)	linkPreview_received_rendersCard	P	False
+02	46	B. Composing and sending text, links, mentions, commands (29 tests)	linkPreview_simplexLink_noPreview	P	False
+02	47	B. Composing and sending text, links, mentions, commands (29 tests)	mention_picker_select_insertsAndSends	P	False
+02	47	B. Composing and sending text, links, mentions, commands (29 tests)	mention_picker_filtersByName	P	False
+02	47	B. Composing and sending text, links, mentions, commands (29 tests)	mention_received_ofMe_highlighted	P	False
+02	47	B. Composing and sending text, links, mentions, commands (29 tests)	mention_editAddsMention	P	False
+02	48	B. Composing and sending text, links, mentions, commands (29 tests)	mention_maxReached_showsLimit	P	False
+02	49	B. Composing and sending text, links, mentions, commands (29 tests)	commandsMenu_slash_showsBotCommands	P	False
+02	49	B. Composing and sending text, links, mentions, commands (29 tests)	commandsMenu_selectCommand_sendsToBot	P	False
+02	49	B. Composing and sending text, links, mentions, commands (29 tests)	commandsMenu_commandWithParams_insertsKeyword	P	False
+02	49	B. Composing and sending text, links, mentions, commands (29 tests)	commandsMenu_submenu_navigateBack	P	False
+02	49	B. Composing and sending text, links, mentions, commands (29 tests)	commandsMenu_filterByPrefix	P	False
+02	50	B. Composing and sending text, links, mentions, commands (29 tests)	compose_clearTextButton_clears	P	False
+02	57	C. Live messages (10 tests)	liveMessage_menuStart_alertConfirm_peerSeesStarted	P	False
+02	57	C. Live messages (10 tests)	liveMessage_typingUpdates_peerSeesUpdates	P	False
+02	57	C. Live messages (10 tests)	liveMessage_finish_peerSeesEnded	P	False
+02	58	C. Live messages (10 tests)	liveMessage_boltButton_emptyStart	P	False
+02	59	C. Live messages (10 tests)	liveMessage_cancelEmpty_nothingSent	P	False
+02	60	C. Live messages (10 tests)	liveMessage_alertShownOnce	P	False
+02	61	C. Live messages (10 tests)	liveMessage_group_membersSeeLive	P	False
+02	62	C. Live messages (10 tests)	liveMessage_chatSwitch_sendsToOriginalChat	P	False
+02	63	C. Live messages (10 tests)	liveMessage_info_historyHasVersions	P	False
+02	63	C. Live messages (10 tests)	liveMessage_received_showsLiveBadge	P	False
+02	68	D. Timed / disappearing messages (6 tests)	timed_send30s_bothSidesDelete	P SLOW	False
+02	69	D. Timed / disappearing messages (6 tests)	timed_menuOptions_listed	P	False
+02	69	D. Timed / disappearing messages (6 tests)	timed_customTime_sendsWithChosenTtl	P	False
+02	70	D. Timed / disappearing messages (6 tests)	timed_menuHidden_whenFeatureOff	P	False
+02	71	D. Timed / disappearing messages (6 tests)	timed_chatPref_receivedMessagesDisappear	P	False
+02	71	D. Timed / disappearing messages (6 tests)	timed_meta_showsTimerAndTtl	P	False
+02	76	E. Voice messages (11 tests)	voice_record_send_peerReceivesVoice	P REC XFTP	False
+02	77	E. Voice messages (11 tests)	voice_tapToRecord_stopButton_addsPreview	REC	False
+02	77	E. Voice messages (11 tests)	voice_tooShort_discarded	REC	False
+02	77	E. Voice messages (11 tests)	voice_preview_cancel_deletesTmpFile	REC	False
+02	78	E. Voice messages (11 tests)	voice_prohibitedByContact_showsAlert	P	False
+02	79	E. Voice messages (11 tests)	voice_needToAllow_allowUpdatesPrefs	P	False
+02	80	E. Voice messages (11 tests)	voice_disabledWhileRecording_cancels	P REC	False
+02	81	E. Voice messages (11 tests)	voice_received_autoDownloaded_showsDuration	P XFTP	False
+02	82	E. Voice messages (11 tests)	voice_playback_playPauseProgress	AV P XFTP	False
+02	83	E. Voice messages (11 tests)	voice_preview_playPauseAndSeek	AV REC	False
+02	84	E. Voice messages (11 tests)	voice_notes_recordAndSave	REC	False
+02	89	F. Attachments – sending (21 tests, 1 ignored)	attach_sheet_showsImageVideoFile	P	False
+02	90	F. Attachments – sending (21 tests, 1 ignored)	attachFile_send_peerReceivesOffer	FD P S XFTP	False
+02	90	F. Attachments – sending (21 tests, 1 ignored)	attachFile_withText_peerReceivesTextAndFile	FD P S XFTP	False
+02	91	F. Attachments – sending (21 tests, 1 ignored)	attachFile_cancelPreview_nothingSent	FD P	False
+02	92	F. Attachments – sending (21 tests, 1 ignored)	attachImage_send_peerReceivesCompressedImage	FD P XFTP	False
+02	92	F. Attachments – sending (21 tests, 1 ignored)	attachImages_multiple_sentAsSeparateMessages	FD P XFTP	False
+02	92	F. Attachments – sending (21 tests, 1 ignored)	attachImage_textOnLastImageOnly	FD P XFTP	False
+02	93	F. Attachments – sending (21 tests, 1 ignored)	attachImage_cancelPreview	FD P	False
+02	94	F. Attachments – sending (21 tests, 1 ignored)	attachGif_sentUncompressedAnimated	FD P XFTP	False
+02	95	F. Attachments – sending (21 tests, 1 ignored)	attachVideo_send_peerReceivesVideo	AV FD P XFTP	False
+02	96	F. Attachments – sending (21 tests, 1 ignored)	attachVideo_undecodable_showsAlert	AV FD P	False
+02	97	F. Attachments – sending (21 tests, 1 ignored)	paste_filePathText_attachesFile	P	False
+02	98	F. Attachments – sending (21 tests, 1 ignored)	ctrlV_clipboardFiles_attaches	CB P	False
+02	99	F. Attachments – sending (21 tests, 1 ignored)	pasteFileList_webmAudio_sentAsFile	AV CB P XFTP	False
+02	100	F. Attachments – sending (21 tests, 1 ignored)	ctrlV_clipboardImage_attachesPng	IMGCB P	False
+02	101	F. Attachments – sending (21 tests, 1 ignored)	dragDrop_files_attach	IGNORE	False
+02	102	F. Attachments – sending (21 tests, 1 ignored)	attachFile_tooLarge_showsLargeFileAlert	FD P	False
+02	103	F. Attachments – sending (21 tests, 1 ignored)	attach_groupFilesProhibited_buttonDisabled	P	False
+02	103	F. Attachments – sending (21 tests, 1 ignored)	attach_disabled_whileEditing	P	False
+02	104	F. Attachments – sending (21 tests, 1 ignored)	attachImage_withQuote_peerSeesQuote	FD P XFTP	False
+02	105	F. Attachments – sending (21 tests, 1 ignored)	attachImage_group_allMembersReceive	FD P XFTP	False
+02	110	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvImage_autoReceived_renders	P XFTP	False
+02	111	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvImage_large_clickDownloads	P XFTP	False
+02	112	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_clickIcon_receives	P XFTP	False
+02	112	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_menuDownload_receives	P XFTP	False
+02	113	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_acceptedBeforeUpload_showsWaitingAlert	P SRVCTL XFTP	False
+02	114	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_stopReceiving_thenRedownload	P SRVCTL XFTP	False
+02	115	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_senderRevoked_showsCancelled	P XFTP	False
+02	115	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	sndFile_revoke_peerSeesCancelled	P XFTP	False
+02	116	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	sndFile_stopDuringUpload	P SRVCTL XFTP	False
+02	117	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_xftpAuthError_showsFileErrorAlert	P SRVCTL XFTP	False
+02	118	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	sndFile_xftpResetDuringUpload_showsFileError	P SRVCTL XFTP	False
+02	119	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_temporaryError_showsTemporaryFileError	P XFTP	False
+02	120	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_expired_showsFileExpired	FIXTURE P RESTART SRVCTL XFTP	False
+02	121	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_senderDeletedItem_cannotReceive	P XFTP	False
+02	122	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_clickCompleted_opensSaveDialog	FD P XFTP	False
+02	123	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_missingOnDisk_clickDoesNothing	FD P TOAST XFTP	False
+02	124	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvImage_click_opensFullScreen	P XFTP	False
+02	124	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	fullScreen_click_closes	P XFTP	False
+02	125	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvVideo_previewAndDownload	AV P XFTP	False
+02	126	G. Receiving files: download, cancel, errors, save, viewers (20 tests)	rcvFile_group_receive	P XFTP	False
+02	131	H. Replies / quotes (7 tests)	reply_menu_sendQuoted_peerSeesQuote	P S	True
+02	131	H. Replies / quotes (7 tests)	reply_cancelContext	P S	False
+02	132	H. Replies / quotes (7 tests)	quote_click_scrollsToQuotedAndHighlights	P	False
+02	132	H. Replies / quotes (7 tests)	quote_click_unloadedItem_loadsAround	P	False
+02	132	H. Replies / quotes (7 tests)	quote_click_deleted_showsNoMessageAlert	P	False
+02	133	H. Replies / quotes (7 tests)	reply_group_peerSeesMemberQuote	P	False
+02	134	H. Replies / quotes (7 tests)	reply_whileEditing_replacesEdit	P	False
+02	139	I. Edit and history (12 tests)	edit_menu_updatesPeer	P S	True
+02	139	I. Edit and history (12 tests)	edit_unchanged_noUpdate	P S	False
+02	139	I. Edit and history (12 tests)	edit_cancel_clearsCompose	P S	False
+02	139	I. Edit and history (12 tests)	edit_metaShowsEditedIcon	P S	False
+02	140	I. Edit and history (12 tests)	edit_upArrow_editsLastMessage	P	False
+02	141	I. Edit and history (12 tests)	edit_received_updatesBubble	P	True
+02	141	I. Edit and history (12 tests)	edit_quotedReply_keepsQuote	P	False
+02	142	I. Edit and history (12 tests)	edit_imageCaption_updates	P XFTP	False
+02	143	I. Edit and history (12 tests)	edit_ownImage_previewWithoutCancel	FD P XFTP	False
+02	143	I. Edit and history (12 tests)	edit_ownFile_previewWithoutCancel	FD P XFTP	False
+02	144	I. Edit and history (12 tests)	edit_notOffered_forReceivedVoiceForwarded	P REC XFTP	False
+02	145	I. Edit and history (12 tests)	edit_group_membersSeeEdited	P	False
+02	150	J. Delete / reveal / blocked (8 tests)	delete_ownForMe_localOnly	P S	False
+02	150	J. Delete / reveal / blocked (8 tests)	delete_ownForEveryone_peerSeesMarkedDeleted	P S	True
+02	150	J. Delete / reveal / blocked (8 tests)	delete_forEveryone_fullDeletion_peerSeesDeleted	P S	False
+02	151	J. Delete / reveal / blocked (8 tests)	delete_received_onlyForMe	P	True
+02	151	J. Delete / reveal / blocked (8 tests)	markedDeleted_received_revealHide	P	False
+02	151	J. Delete / reveal / blocked (8 tests)	delete_received_fullDelete_removed	P	False
+02	152	J. Delete / reveal / blocked (8 tests)	blockedByAdmin_items_showBlocked	P	False
+02	152	J. Delete / reveal / blocked (8 tests)	markedDeleted_consecutive_collapsedCount	P	False
+02	157	K. Multi-select and selection toolbar (9 tests)	select_enterMode_showsCounterToolbar	P	False
+02	157	K. Multi-select and selection toolbar (9 tests)	select_toggle_updatesCounter	P	False
+02	157	K. Multi-select and selection toolbar (9 tests)	select_close_exitsMode	P	False
+02	158	K. Multi-select and selection toolbar (9 tests)	selectDelete_forEveryone_peerSeesBoth	P	False
+02	158	K. Multi-select and selection toolbar (9 tests)	selectDelete_mixed_onlyForMe	P	False
+02	159	K. Multi-select and selection toolbar (9 tests)	selectForward_multiple_peerReceives	P	False
+02	160	K. Multi-select and selection toolbar (9 tests)	select_limits_forward20_delete200	P	False
+02	160	K. Multi-select and selection toolbar (9 tests)	select_mergedEvents_selectsWholeRange	P	False
+02	160	K. Multi-select and selection toolbar (9 tests)	select_itemDeletedByPeer_recheck	P	False
+02	165	L. Forwarding (17 tests)	forward_contactToContact_peerSeesForwarded	P	True
+02	165	L. Forwarding (17 tests)	forward_withComment_sendsCommentQuoted	P	False
+02	165	L. Forwarding (17 tests)	forward_cancelContext	P	False
+02	166	L. Forwarding (17 tests)	forward_contactToGroup	P	False
+02	166	L. Forwarding (17 tests)	forward_groupToContact	P	False
+02	166	L. Forwarding (17 tests)	forward_groupToGroup	P	False
+02	167	L. Forwarding (17 tests)	forward_toNotes_showsSavedFrom	P	True
+02	167	L. Forwarding (17 tests)	forward_fromNotes_toContact	P	False
+02	168	L. Forwarding (17 tests)	forwarded_goToSource_opensOriginalChat	P	False
+02	168	L. Forwarding (17 tests)	forwarded_received_showsHeader	P	False
+02	169	L. Forwarding (17 tests)	forward_file_peerReceivesFile	P XFTP	False
+02	170	L. Forwarding (17 tests)	forwardPlan_filesNotAccepted_alertOptions	P XFTP	False
+02	170	L. Forwarding (17 tests)	forwardPlan_nothingToForward	P XFTP	False
+02	170	L. Forwarding (17 tests)	forwardPlan_downloadButton_receivesFiles	P XFTP	False
+02	171	L. Forwarding (17 tests)	forward_notOffered_forDeletedOrLive	P	False
+02	171	L. Forwarding (17 tests)	forward_itemsDeletedAfterSelection_alert	P	False
+02	172	L. Forwarding (17 tests)	forward_destinationProhibitsContent_alert	P XFTP	False
+02	177	M. Reactions (8 tests)	reaction_add_peerSeesAdded	P S	True
+02	177	M. Reactions (8 tests)	reaction_chipClick_removes	P S	False
+02	177	M. Reactions (8 tests)	reaction_chipClickOthers_adds	P S	False
+02	177	M. Reactions (8 tests)	reaction_row_hidesAlreadyAdded	P S	False
+02	178	M. Reactions (8 tests)	reaction_received_chipCount	P	True
+02	179	M. Reactions (8 tests)	reaction_chipMenu_direct_showsNames	P	False
+02	180	M. Reactions (8 tests)	reaction_chipMenu_group_membersAndOpenInfo	P	False
+02	181	M. Reactions (8 tests)	reaction_disabled_noMenuRow	P	False
+02	186	N. Copy / Share / Save / text selection (9 tests)	copy_text_toClipboardAndToast	CB P TOAST	False
+02	187	N. Copy / Share / Save / text selection (9 tests)	copy_fileItem_copiesPath	CB P TOAST XFTP	False
+02	188	N. Copy / Share / Save / text selection (9 tests)	share_text_copiesToClipboard	CB P	False
+02	189	N. Copy / Share / Save / text selection (9 tests)	share_file_savesViaDialog	FD P TOAST XFTP	False
+02	190	N. Copy / Share / Save / text selection (9 tests)	save_image_writesFile	FD P XFTP	False
+02	190	N. Copy / Share / Save / text selection (9 tests)	save_encryptedFile_decrypts	FD P XFTP	False
+02	191	N. Copy / Share / Save / text selection (9 tests)	copyShare_hidden_whenNoContent	P XFTP	False
+02	192	N. Copy / Share / Save / text selection (9 tests)	textSelection_dragAcrossItems_copyButton	CB P	False
+02	192	N. Copy / Share / Save / text selection (9 tests)	textSelection_ctrlC_copies	CB P	False
+02	199	O. Reports, member side (7 tests)	report_member_spam_moderatorsReceive	P	False
+02	199	O. Reports, member side (7 tests)	report_reasons_allListed	P	False
+02	199	O. Reports, member side (7 tests)	report_sentAlert_dontShowAgain	P	False
+02	199	O. Reports, member side (7 tests)	report_cancelReason	P	False
+02	200	O. Reports, member side (7 tests)	report_notVisibleToOtherMembers	P	False
+02	201	O. Reports, member side (7 tests)	report_notOffered_forModeratorOrOwn	P	False
+02	201	O. Reports, member side (7 tests)	report_groupPrefOff_notOffered	P	False
+02	206	P. Chat item info (15 tests)	info_sent_showsSentAt	P	False
+02	206	P. Chat item info (15 tests)	info_received_showsReceivedAt	P	False
+02	207	P. Chat item info (15 tests)	info_devTools_showsDbIdAndStatuses	DT P XFTP	False
+02	208	P. Chat item info (15 tests)	info_history_listsVersions	P	False
+02	209	P. Chat item info (15 tests)	info_historyBubble_copy	CB P	False
+02	210	P. Chat item info (15 tests)	info_delivery_groupMemberStatuses	P	False
+02	211	P. Chat item info (15 tests)	info_delivery_liveUpdatesOnReceipt	P PEERCTL	False
+02	212	P. Chat item info (15 tests)	info_quoteTab_showsQuoted	P	False
+02	212	P. Chat item info (15 tests)	info_forwardedTab_showsSource	P	False
+02	212	P. Chat item info (15 tests)	info_notes_savedTab	P	False
+02	213	P. Chat item info (15 tests)	info_timed_showsDisappearsAt	P	False
+02	213	P. Chat item info (15 tests)	info_deleted_showsDeletedAt	P	False
+02	213	P. Chat item info (15 tests)	info_moderated_showsModeratedAt	P	False
+02	214	P. Chat item info (15 tests)	info_share_copiesText	CB P	False
+02	215	P. Chat item info (15 tests)	info_closesOnChatSwitch	P	False
+02	220	Q. Unread handling, scrolling, pagination (18 tests)	unread_openChat_scrollsToFirstUnread	P	False
+02	220	Q. Unread handling, scrolling, pagination (18 tests)	unread_visibleItems_markedReadAfterDelay	P	False
+02	220	Q. Unread handling, scrolling, pagination (18 tests)	unread_itemsHiddenBehindCompose_notMarked	P	False
+02	220	Q. Unread handling, scrolling, pagination (18 tests)	unreadChatFlag_clearedOnOpen	P	False
+02	221	Q. Unread handling, scrolling, pagination (18 tests)	unreadFab_top_click_scrollsToOldestUnread	P	False
+02	221	Q. Unread handling, scrolling, pagination (18 tests)	unreadFab_top_rightClick_markRead	P	False
+02	221	Q. Unread handling, scrolling, pagination (18 tests)	bottomFab_counter_scrollsToBottom	P	False
+02	221	Q. Unread handling, scrolling, pagination (18 tests)	bottomFab_arrow_whenScrolledUp	P	False
+02	222	Q. Unread handling, scrolling, pagination (18 tests)	newMessage_atBottom_autoScrolls	P	False
+02	222	Q. Unread handling, scrolling, pagination (18 tests)	newMessage_scrolledUp_keepsPosition	P	False
+02	223	Q. Unread handling, scrolling, pagination (18 tests)	pagination_scrollUp_loadsOlder	P	False
+02	223	Q. Unread handling, scrolling, pagination (18 tests)	pagination_reachTop_showsBanner	P	False
+02	223	Q. Unread handling, scrolling, pagination (18 tests)	pagination_afterAround_scrollDownLoadsNewer	P	False
+02	223	Q. Unread handling, scrolling, pagination (18 tests)	pagination_initial_aroundFirstUnread	P	False
+02	224	Q. Unread handling, scrolling, pagination (18 tests)	dateSeparator_betweenDays	FIXTURE P REALTIME RESTART	False
+02	224	Q. Unread handling, scrolling, pagination (18 tests)	floatingDate_whileScrolling	FIXTURE P REALTIME RESTART	False
+02	225	Q. Unread handling, scrolling, pagination (18 tests)	groupRcv_consecutiveMessages_avatarOnce	P	False
+02	225	Q. Unread handling, scrolling, pagination (18 tests)	groupRcv_avatarClick_opensMemberInfo	P	False
+02	230	R. Search and content filters (11 tests)	search_direct_filtersResults	P	True
+02	230	R. Search and content filters (11 tests)	search_group_filtersResults	P	False
+02	230	R. Search and content filters (11 tests)	search_goToResult_opensAroundItem	P	False
+02	230	R. Search and content filters (11 tests)	search_close_restoresAll	P	False
+02	231	R. Search and content filters (11 tests)	search_notes_filtersResults	—	False
+02	232	R. Search and content filters (11 tests)	contentFilter_menu_listsAvailableTypes	P XFTP	False
+02	232	R. Search and content filters (11 tests)	contentFilter_files	P XFTP	False
+02	232	R. Search and content filters (11 tests)	contentFilter_images	P XFTP	False
+02	232	R. Search and content filters (11 tests)	contentFilter_allMessages_resets	P XFTP	False
+02	233	R. Search and content filters (11 tests)	contentFilter_links_showsOnlyLinks	P	False
+02	233	R. Search and content filters (11 tests)	contentFilter_withSearchText	P	False
+02	238	S. Draft persistence (8 tests)	draft_text_restoredAfterChatSwitch	P	False
+02	238	S. Draft persistence (8 tests)	draft_withQuote_restored	P	False
+02	238	S. Draft persistence (8 tests)	draft_editingState_restored	P	False
+02	238	S. Draft persistence (8 tests)	draft_onlyLastChatKept	P	False
+02	238	S. Draft persistence (8 tests)	draft_clearedWhenSendDisabled	P	False
+02	238	S. Draft persistence (8 tests)	draft_forwardIntoChatWithDraft_restoresDraftAfterSend	P	False
+02	239	S. Draft persistence (8 tests)	draft_withAttachment_restored	CB P	False
+02	240	S. Draft persistence (8 tests)	draft_voiceRecording_finishedOnSwitch	P REC	False
+02	245	T. Status icons and delivery (9 tests)	status_direct_sentThenDelivered	P PEERCTL S	False
+02	246	T. Status icons and delivery (9 tests)	status_receiptsOff_staysSent	P S	False
+02	247	T. Status icons and delivery (9 tests)	status_group_partialThenComplete	P PEERCTL S	False
+02	248	T. Status icons and delivery (9 tests)	status_authError_clickShowsDeliveryError	P	False
+02	249	T. Status icons and delivery (9 tests)	status_pending_whileServerDown	P SRVCTL	False
+02	250	T. Status icons and delivery (9 tests)	status_quotaExceeded_warningAlert	P PEERCTL	False
+02	251	T. Status icons and delivery (9 tests)	status_rcvNew_dotUntilRead	P	False
+02	252	T. Status icons and delivery (9 tests)	meta_signature_verified	P RELAY	False
+02	253	T. Status icons and delivery (9 tests)	meta_signature_missingAlert	P	False
+02	258	U. Special items (19 tests, 1 ignored)	e2eeInfo_direct_pq	P	False
+02	259	U. Special items (19 tests, 1 ignored)	e2eeInfo_group_noPq	P	False
+02	260	U. Special items (19 tests, 1 ignored)	featureItem_contactChangesPref_shown	P	False
+02	260	U. Special items (19 tests, 1 ignored)	featureOffer_accept_updatesPrefs	P	False
+02	260	U. Special items (19 tests, 1 ignored)	featureOffer_timed_set1Day	P	False
+02	261	U. Special items (19 tests, 1 ignored)	featureItems_merged_iconRowExpandHide	P	False
+02	262	U. Special items (19 tests, 1 ignored)	groupInvitation_expired	IGNORE	False
+02	263	U. Special items (19 tests, 1 ignored)	callItem_incoming_answerButton	AV P URI	False
+02	263	U. Special items (19 tests, 1 ignored)	callItem_endedStates	AV P URI	False
+02	264	U. Special items (19 tests, 1 ignored)	callAlert_incoming_acceptRejectIgnore	AV P S URI	False
+02	265	U. Special items (19 tests, 1 ignored)	callItem_answerEnded_showsAlert	AV FIXTURE P RESTART	False
+02	266	U. Special items (19 tests, 1 ignored)	events_merged_deleteRange	P	False
+02	267	U. Special items (19 tests, 1 ignored)	memberContact_openButton_opensDirectChat	P	False
+02	268	U. Special items (19 tests, 1 ignored)	decryptionError_fixConnection_syncs	FIXTURE P RESTART	False
+02	268	U. Special items (19 tests, 1 ignored)	integrityError_hiddenWithoutDevTools	FIXTURE P RESTART	False
+02	268	U. Special items (19 tests, 1 ignored)	syncEvents_shownAsEvents	FIXTURE P RESTART	False
+02	269	U. Special items (19 tests, 1 ignored)	integrityError_skipped_devToolsVisible	DT FIXTURE P RESTART	False
+02	270	U. Special items (19 tests, 1 ignored)	invalidJson_item_rendered	FIXTURE P RESTART	False
+02	271	U. Special items (19 tests, 1 ignored)	legacyDeletedItem_rendered	FIXTURE P RESTART	False
+02	276	V. Private notes (7 tests)	notes_sendText_saved	—	True
+02	276	V. Private notes (7 tests)	notes_menu_noReplyLiveTimed	—	False
+02	276	V. Private notes (7 tests)	notes_edit_updates	—	False
+02	277	V. Private notes (7 tests)	notes_attachImage_storedLocally	FD	False
+02	277	V. Private notes (7 tests)	notes_attachFile_storedLocally	FD	False
+02	277	V. Private notes (7 tests)	notes_delete_removesFile	FD	False
+02	277	V. Private notes (7 tests)	notes_contentFilterImages	FD	False
+02	282	W. Context menus and keyboard (5 tests)	contextMenu_rightClick_opens	P	False
+02	282	W. Context menus and keyboard (5 tests)	contextMenu_longPress_opens	P	False
+02	283	W. Context menus and keyboard (5 tests)	contextMenu_itemsMatrix_byItemType	AV P XFTP	False
+02	284	W. Context menus and keyboard (5 tests)	enter_whenSendDisabled_noop	P	False
+02	284	W. Context menus and keyboard (5 tests)	escape_closesItemInfoModal	P	False
+02	289	X. Rare states and out-of-reach rows (4 tests, 2 ignored)	call_webrtcSession_connects	IGNORE	False
+02	290	X. Rare states and out-of-reach rows (4 tests, 2 ignored)	rcvFile_inlineSmpTransfer_waitingAlert	FIXTURE P RESTART XFTP	False
+02	291	X. Rare states and out-of-reach rows (4 tests, 2 ignored)	send_signedMessage_fromMenu	IGNORE	False
+02	292	X. Rare states and out-of-reach rows (4 tests, 2 ignored)	send_apiFailure_restoresCompose	P	False
+03	30	1. Create group (12 tests)	createGroup_buttonDisabledForEmptyOrInvalidName	—	False
+03	30	1. Create group (12 tests)	createGroup_invalidNameAlertOffersFix	—	False
+03	31	1. Create group (12 tests)	createGroup_opensChatAndInviteSheet	—	True
+03	32	1. Create group (12 tests)	createGroup_skipInviting	P	False
+03	33	1. Create group (12 tests)	createGroup_withProfileImage	FD	False
+03	33	1. Create group (12 tests)	createGroup_removeImageBeforeCreate	FD	False
+03	34	1. Create group (12 tests)	createGroup_sameNameGetsLocalSuffix	DT	False
+03	35	1. Create group (12 tests)	createGroupIncognito_opensGroupLinkStep	—	False
+03	35	1. Create group (12 tests)	createGroupIncognito_inviteMembersProhibited	—	False
+03	36	1. Create group (12 tests)	createGroupIncognito_cliJoinerSeesIncognitoHost	P	False
+03	37	1. Create group (12 tests)	createGroup_setPreferencesDuringInviteStep	P	False
+03	37	1. Create group (12 tests)	createGroup_setAdmissionDuringInviteStep	P	False
+03	43	2. Invite members (11 tests)	inviteMembers_listsOnlyEligibleContacts	P	False
+03	43	2. Invite members (11 tests)	inviteMembers_searchFiltersContacts	P	False
+03	44	2. Invite members (11 tests)	inviteMembers_noContactsToAdd	—	False
+03	45	2. Invite members (11 tests)	inviteMembers_selectionCounterAndClear	P	False
+03	46	2. Invite members (11 tests)	inviteMembers_rolePickerLimitedToOwnRole	P	False
+03	47	2. Invite members (11 tests)	inviteMembers_singleContactAsMember	P S	False
+03	47	2. Invite members (11 tests)	inviteMembers_asObserver	P S	False
+03	48	2. Invite members (11 tests)	inviteMembers_multipleContactsAsAdmin	P S	False
+03	49	2. Invite members (11 tests)	inviteMembers_incognitoContactProhibited	P	False
+03	50	2. Invite members (11 tests)	inviteMembers_reAddInvitedMember	P	False
+03	51	2. Invite members (11 tests)	inviteMembers_infoScreenEntryPoints	—	False
+03	57	3. Group info screen rows (13 tests)	groupInfo_headerShowsProfileAndCopiesName	CB TOAST	False
+03	58	3. Group info screen rows (13 tests)	groupInfo_setLocalAlias	—	False
+03	58	3. Group info screen rows (13 tests)	groupInfo_clearLocalAlias	—	False
+03	59	3. Group info screen rows (13 tests)	groupInfo_actionButtonsByRole	P	False
+03	60	3. Group info screen rows (13 tests)	groupInfo_searchButton	—	False
+03	61	3. Group info screen rows (13 tests)	groupInfo_muteCycleWithMentions	—	False
+03	62	3. Group info screen rows (13 tests)	groupInfo_sendReceiptsOption	—	False
+03	63	3. Group info screen rows (13 tests)	groupInfo_sendReceiptsDisabledOver20Members	P SLOW	False
+03	64	3. Group info screen rows (13 tests)	groupInfo_chatThemeOpensEditor	—	False
+03	65	3. Group info screen rows (13 tests)	groupInfo_setChatTTL	—	False
+03	66	3. Group info screen rows (13 tests)	groupInfo_developerToolsRows	DT	False
+03	67	3. Group info screen rows (13 tests)	groupInfo_prefsFooterForGroup	—	False
+03	68	3. Group info screen rows (13 tests)	groupInfo_membersSectionCountAndSelfRow	P	False
+03	74	4. Group profile and welcome message (14 tests)	editGroupProfile_renameNotifiesMembers	P	False
+03	74	4. Group profile and welcome message (14 tests)	editGroupProfile_shortDescription	P	False
+03	75	4. Group profile and welcome message (14 tests)	editGroupProfile_changeImage	FD P	False
+03	76	4. Group profile and welcome message (14 tests)	editGroupProfile_unsavedChangesAlert	—	False
+03	76	4. Group profile and welcome message (14 tests)	editGroupProfile_descriptionTooLarge	—	False
+03	77	4. Group profile and welcome message (14 tests)	editGroupProfile_hiddenForNonOwner	P	False
+03	78	4. Group profile and welcome message (14 tests)	welcomeMessage_addNotifiesMembers	P	False
+03	78	4. Group profile and welcome message (14 tests)	welcomeMessage_newMemberReceivesItFirst	P	False
+03	79	4. Group profile and welcome message (14 tests)	welcomeMessage_previewRendersMarkdown	—	False
+03	79	4. Group profile and welcome message (14 tests)	welcomeMessage_tooLongDisablesSave	—	False
+03	79	4. Group profile and welcome message (14 tests)	welcomeMessage_unsavedChangesAlert	—	False
+03	79	4. Group profile and welcome message (14 tests)	welcomeMessage_clearRemovesIt	—	False
+03	80	4. Group profile and welcome message (14 tests)	welcomeMessage_readOnlyForMember	P	False
+03	81	4. Group profile and welcome message (14 tests)	welcomeMessage_receivedAsFirstItem	P	False
+03	91	5. Group preferences (19 tests, 1 ignored)	groupPrefs_disappearingOnWithTtl	P	False
+03	91	5. Group preferences (19 tests, 1 ignored)	groupPrefs_disappearingMessageExpires	P	False
+03	91	5. Group preferences (19 tests, 1 ignored)	groupPrefs_disappearingOff	P	False
+03	92	5. Group preferences (19 tests, 1 ignored)	groupPrefs_directMessagesOff_memberInfoProhibited	P	False
+03	92	5. Group preferences (19 tests, 1 ignored)	groupPrefs_directMessagesForOwnersOnly	P	False
+03	93	5. Group preferences (19 tests, 1 ignored)	groupPrefs_fullDeleteOn	P	False
+03	94	5. Group preferences (19 tests, 1 ignored)	groupPrefs_reactionsOff_hidesReactionMenu	P	False
+03	95	5. Group preferences (19 tests, 1 ignored)	groupPrefs_voiceOff_showsNotAllowed	P	False
+03	96	5. Group preferences (19 tests, 1 ignored)	groupPrefs_voiceForAdminsOnly	P	False
+03	97	5. Group preferences (19 tests, 1 ignored)	groupPrefs_filesForOwnersOnly	P XFTP	False
+03	98	5. Group preferences (19 tests, 1 ignored)	groupPrefs_simplexLinksForOwnersOnly	P	False
+03	99	5. Group preferences (19 tests, 1 ignored)	groupPrefs_reportsToggleDisabled	—	False
+03	100	5. Group preferences (19 tests, 1 ignored)	groupPrefs_historyOff_newMemberGetsNoHistory	P	False
+03	101	5. Group preferences (19 tests, 1 ignored)	groupPrefs_supportToggleDisabledInGroups	—	False
+03	102	5. Group preferences (19 tests, 1 ignored)	groupPrefs_signMessages	IGNORE	False
+03	103	5. Group preferences (19 tests, 1 ignored)	groupPrefs_resetRestoresSaved	—	False
+03	103	5. Group preferences (19 tests, 1 ignored)	groupPrefs_unsavedChangesAlert	—	False
+03	104	5. Group preferences (19 tests, 1 ignored)	groupPrefs_readOnlyForMember	P	False
+03	104	5. Group preferences (19 tests, 1 ignored)	groupPrefs_receivedUpdateShownAsEvent	P	False
+03	110	6. Member admission and review (16 tests, 2 ignored)	memberAdmission_enableReviewAll	P	False
+03	110	6. Member admission and review (16 tests, 2 ignored)	memberAdmission_readOnlyForNonOwner	P	False
+03	111	6. Member admission and review (16 tests, 2 ignored)	memberAdmission_unsavedChangesAlert	—	False
+03	112	6. Member admission and review (16 tests, 2 ignored)	review_pendingMemberListedInChatsWithMembers	P	False
+03	112	6. Member admission and review (16 tests, 2 ignored)	review_hostChatsWithPendingMember	P	False
+03	112	6. Member admission and review (16 tests, 2 ignored)	review_acceptAsMember	P	False
+03	112	6. Member admission and review (16 tests, 2 ignored)	review_acceptAsObserver	P	False
+03	112	6. Member admission and review (16 tests, 2 ignored)	review_rejectPendingMember	P	False
+03	112	6. Member admission and review (16 tests, 2 ignored)	review_acceptFromLongPressMenu	P	False
+03	113	6. Member admission and review (16 tests, 2 ignored)	review_moderatorAcceptsMember	P	False
+03	114	6. Member admission and review (16 tests, 2 ignored)	joinerPendingReview_supportChatAutoOpens	CB P	False
+03	114	6. Member admission and review (16 tests, 2 ignored)	joinerPendingReview_messagesAdmins	CB P	False
+03	114	6. Member admission and review (16 tests, 2 ignored)	joinerPendingReview_acceptedByAdmin	CB P	False
+03	114	6. Member admission and review (16 tests, 2 ignored)	joinerPendingReview_rejected	CB P	False
+03	115	6. Member admission and review (16 tests, 2 ignored)	admission_hostPendingApproval	IGNORE	False
+03	116	6. Member admission and review (16 tests, 2 ignored)	admission_joinRejectedByHook	IGNORE	False
+03	122	7. Group link (14 tests)	groupLink_createdAutomatically	—	False
+03	123	7. Group link (14 tests)	groupLink_toggleFullShortLink	DT	False
+03	124	7. Group link (14 tests)	groupLink_shareCopiesShortLink	CB	False
+03	125	7. Group link (14 tests)	groupLink_cliJoinsViaShortLink	P	False
+03	126	7. Group link (14 tests)	groupLink_cliJoinsViaFullLink	DT P	False
+03	127	7. Group link (14 tests)	groupLink_initialRoleObserver	P	False
+03	127	7. Group link (14 tests)	groupLink_changeInitialRoleBackToMember	P	False
+03	128	7. Group link (14 tests)	groupLink_deleteKeepsMembers	P	False
+03	128	7. Group link (14 tests)	groupLink_deletedLinkRejectsJoin	P	False
+03	129	7. Group link (14 tests)	groupLink_creationStepContinue	—	False
+03	130	7. Group link (14 tests)	groupLink_memberRejoinsAfterDeletingGroup	P	False
+03	130	7. Group link (14 tests)	groupLink_existingContactMergedWithMember	P	False
+03	131	7. Group link (14 tests)	groupLink_upgradeOldLink	FIXTURE	False
+03	132	7. Group link (14 tests)	groupLink_shareOldLink	CB FIXTURE	False
+03	138	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	joinGroup_pasteShortLinkPrepareAndJoin	CB P	False
+03	138	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	joinGroup_preparedShowsWelcomeBeforeJoin	CB P	False
+03	138	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	joinGroup_preparedJoinIncognito	CB P	False
+03	138	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	joinGroup_preparedChangeProfile	CB P	False
+03	139	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	joinGroup_fullLinkCurrentProfile	CB P	False
+03	139	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	joinGroup_fullLinkIncognito	CB P	False
+03	139	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	joinGroup_cancelAlert	CB P	False
+03	140	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	joinGroup_retryAfterServerError	CB P SRVCTL	False
+03	141	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	connectPlan_knownGroupOpensGroup	CB P	False
+03	141	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	connectPlan_knownGroupShowsRole	CB P	False
+03	142	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	connectPlan_ownGroupLinkOpenGroup	CB	False
+03	142	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	connectPlan_ownGroupLinkJoinAsSecondMember	CB	False
+03	143	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	connectPlan_connectingAllowsReconnect	CB P PEERCTL	False
+03	143	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	connectPlan_connectingProhibit	CB P PEERCTL	False
+03	144	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	connectPlan_rejoinAfterLeaving	CB P	False
+03	145	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	connectPlan_groupLinkRequiresNewerVersion	P RELAY	False
+03	146	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	groupInvitation_tapToJoin	P S	False
+03	146	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	groupInvitation_tapRowShowsJoinAlert	P S	True
+03	147	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	groupInvitation_hostSeesSentInvitationItem	P S	False
+03	148	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	groupInvitation_joinFromChatListMenu	P	False
+03	148	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	groupInvitation_deleteInvitation	P	False
+03	149	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	groupInvitation_tapAfterAcceptShowsJoiningAlert	P PEERCTL	False
+03	150	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	groupInvitation_incognitoContactJoinsIncognito	P	False
+03	151	8. Joining (alice as joiner), connect-plan states, invitations (24 tests)	groupInvitation_joinAfterHostDeleted_showsExpiredAlert	P	False
+03	157	9. Member list and multi-select (10 tests)	memberList_rolesAndStatuses	P	False
+03	158	9. Member list and multi-select (10 tests)	memberList_searchOver8Members	P	False
+03	159	9. Member list and multi-select (10 tests)	memberList_contextMenuAsAdmin	P	False
+03	160	9. Member list and multi-select (10 tests)	memberList_contextMenuAsMember	P	False
+03	161	9. Member list and multi-select (10 tests)	memberSelection_removeMultiple	P	False
+03	161	9. Member list and multi-select (10 tests)	memberSelection_blockForAllMultiple	P	False
+03	161	9. Member list and multi-select (10 tests)	memberSelection_unblockForAllMultiple	P	False
+03	161	9. Member list and multi-select (10 tests)	memberSelection_changeRoleToObserver	P	False
+03	161	9. Member list and multi-select (10 tests)	memberSelection_selectAllExcludesModerators	P	False
+03	162	9. Member list and multi-select (10 tests)	memberList_memberInactive	FIXTURE P RESTART	False
+03	170	10. Member info (28 tests)	memberInfo_openShowsSections	P	False
+03	171	10. Member info (28 tests)	memberInfo_changeRoleToAdmin	P	True
+03	171	10. Member info (28 tests)	memberInfo_changeRoleDismissRestores	P	False
+03	171	10. Member info (28 tests)	memberInfo_changeRoleOfInvitedMember	P	False
+03	172	10. Member info (28 tests)	memberInfo_roleReadOnlyForHigherRole	P	False
+03	173	10. Member info (28 tests)	memberInfo_blockForMeHidesMessages	P	False
+03	173	10. Member info (28 tests)	memberInfo_unblockForMe	P	False
+03	174	10. Member info (28 tests)	memberInfo_blockForAllNotifiesMembers	P	False
+03	174	10. Member info (28 tests)	memberInfo_unblockForAll	P	False
+03	174	10. Member info (28 tests)	memberInfo_blockedByAdminShownToMember	P	False
+03	175	10. Member info (28 tests)	memberInfo_removeMember	P	True
+03	175	10. Member info (28 tests)	memberInfo_removeMemberWithMessages	P	False
+03	175	10. Member info (28 tests)	memberInfo_deleteMessagesOfLeftMember	P	False
+03	175	10. Member info (28 tests)	memberInfo_reAddRemovedMember	P	False
+03	176	10. Member info (28 tests)	memberInfo_messageOpensKnownContact	P	False
+03	176	10. Member info (28 tests)	memberInfo_callButtonsShowSendMessageAlert	P	False
+03	177	10. Member info (28 tests)	memberInfo_callButtonsDirectMessagesProhibitedAlert	P	False
+03	178	10. Member info (28 tests)	memberInfo_verifyCodeMatchesCli	P	False
+03	178	10. Member info (28 tests)	memberInfo_markVerifiedShowsShield	P	False
+03	178	10. Member info (28 tests)	memberInfo_clearVerification	P	False
+03	179	10. Member info (28 tests)	memberInfo_connectionStatsShowServers	P	False
+03	179	10. Member info (28 tests)	memberInfo_networkStatusAlert	P	False
+03	180	10. Member info (28 tests)	memberInfo_connectionFailedSection	P SMP2 SRVCTL	False
+03	181	10. Member info (28 tests)	memberInfo_switchAddress	P	False
+03	182	10. Member info (28 tests)	memberInfo_abortSwitchAddress	P SRVCTL	False
+03	183	10. Member info (28 tests)	memberInfo_fixConnectionAfterDesync	FIXTURE P RESTART	False
+03	184	10. Member info (28 tests)	memberInfo_memberAddressConnect	P	False
+03	185	10. Member info (28 tests)	memberInfo_debugDeliveryQueueInfo	DT P	False
+03	191	11. Member contacts (5 tests)	memberContact_createAndSendInvitation	P	False
+03	191	11. Member contacts (5 tests)	memberContact_incognitoMemberSharesIncognitoProfile	P	False
+03	192	11. Member contacts (5 tests)	memberContact_acceptRequest	P	False
+03	192	11. Member contacts (5 tests)	memberContact_rejectRequest	P	False
+03	192	11. Member contacts (5 tests)	memberContact_acceptIncognito	P	False
+03	200	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	supportChat_memberSendsToAdmins	P	False
+03	200	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	supportChat_memberReceivesAdminReply	P	False
+03	200	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	supportChat_unreadBannerInGroupChat	P	False
+03	200	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	supportChat_hiddenWhenDisabledWithoutChat	P	False
+03	200	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	supportChat_search	P	False
+03	201	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	chatsWithMembers_listSearchAndOpen	P	False
+03	201	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	chatsWithMembers_markRead	P	False
+03	201	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	chatsWithMembers_deleteChat	P	False
+03	201	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	chatsWithMembers_bannerInGroupChat	P	False
+03	201	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	supportChat_adminOpensFromMemberInfo	P	False
+03	201	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	chatsWithMembers_removedMemberChatGone	P	False
+03	202	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	chatsWithMembers_emptyState	—	False
+03	203	12. Support chats, «Chats with members» / «Chat with admins» (13 tests)	chatsWithMembers_disabledState	P	False
+03	211	13. Reports, moderator side (9 tests)	reports_moderatorBannerAndCounts	P	False
+03	211	13. Reports, moderator side (9 tests)	reports_openReportsView	P	False
+03	211	13. Reports, moderator side (9 tests)	reports_archiveForMe	P	False
+03	211	13. Reports, moderator side (9 tests)	reports_archiveForAllModerators	P	False
+03	211	13. Reports, moderator side (9 tests)	reports_deleteReport	P	False
+03	211	13. Reports, moderator side (9 tests)	reports_archiveAllFromChatList	P	False
+03	211	13. Reports, moderator side (9 tests)	reports_moderateReportedMessageMarksReport	P	False
+03	212	13. Reports, moderator side (9 tests)	reports_selectMultipleArchive	P	False
+03	212	13. Reports, moderator side (9 tests)	reports_tapReportJumpsToReportedMessage	P	False
+03	218	14. Moderation (6 tests)	moderate_markDeletedForAll	P	False
+03	218	14. Moderation (6 tests)	moderate_fullDeleteWhenEnabled	P	False
+03	218	14. Moderation (6 tests)	moderate_multipleSelected	P	False
+03	218	14. Moderation (6 tests)	moderate_notOfferedForHigherRole	P	False
+03	219	14. Moderation (6 tests)	moderate_receivedModerationShown	P	False
+03	219	14. Moderation (6 tests)	groupMessage_deleteOwnForEveryone	P	False
+03	227	15. Mentions, notification side (2 tests)	mentions_mentionsOnlyMuteStillNotifies	NTF P	False
+03	227	15. Mentions, notification side (2 tests)	mentions_blockedMemberMentionIgnored	NTF P	False
+03	233	16. Group events and history (8 tests)	groupEvents_memberConnectedMerged	P	False
+03	233	16. Group events and history (8 tests)	groupEvents_roleChangeItems	P	False
+03	233	16. Group events and history (8 tests)	groupEvents_memberLeftAndRemoved	P	False
+03	233	16. Group events and history (8 tests)	groupEvents_groupProfileUpdated	P	False
+03	233	16. Group events and history (8 tests)	groupEvents_expandCollapsed	P	False
+03	234	16. Group events and history (8 tests)	history_newCliMemberReceivesHistory	P	False
+03	234	16. Group events and history (8 tests)	history_guiJoinerReceivesHistory	P	False
+03	234	16. Group events and history (8 tests)	history_welcomeAfterHistory	P	False
+03	240	17. Leave, delete, clear (8 tests)	leaveGroup_notifiesMembers	P	False
+03	240	17. Leave, delete, clear (8 tests)	leaveGroup_thenDeleteLocalCopy	P	False
+03	240	17. Leave, delete, clear (8 tests)	leaveGroup_fromChatListMenu	P	True
+03	241	17. Leave, delete, clear (8 tests)	deleteGroup_ownerDeletesForAll	P	False
+03	241	17. Leave, delete, clear (8 tests)	deleteGroup_memberSeesGroupDeleted	P	False
+03	241	17. Leave, delete, clear (8 tests)	deleteGroup_fromChatListMenu	P	False
+03	242	17. Leave, delete, clear (8 tests)	clearChat_removesLocalItemsOnly	P	False
+03	242	17. Leave, delete, clear (8 tests)	removedFromGroup_composeDisabled	P	False
+03	248	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	createChannel_noRelaysBlocksCreation	—	False
+03	249	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	createChannel_singleRelayCompletesAndShowsLink	RELAY	False
+03	250	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	createChannel_cancelAndDelete	PEERCTL RELAY	False
+03	250	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	createChannel_relayAddressDeletedShowsError	PEERCTL RELAY	False
+03	251	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	createChannel_withImage	FD RELAY	False
+03	252	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	createChannel_twoRelaysProgress	RELAY	False
+03	253	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	createChannel_continueWithPartialRelays	PEERCTL RELAY	False
+03	254	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelInfo_ownerRows	P RELAY	False
+03	254	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelInfo_subscriberCountUpdates	P RELAY	False
+03	254	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelInfo_leaveHiddenForSoleOwner	P RELAY	False
+03	255	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelName_setSimplexName	NAMES RELAY	False
+03	255	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelName_removeSimplexName	NAMES RELAY	False
+03	256	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelLink_shareCopiesLink	CB RELAY	False
+03	257	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelLink_shareViaChatToContactSigned	P RELAY	False
+03	257	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelLink_shareViaChatToGroup	P RELAY	False
+03	257	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelLink_cliSubscriberJoins	P RELAY	False
+03	258	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channel_broadcastPlaceholderAndDelivery	P RELAY	False
+03	258	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channel_editBroadcast	P RELAY	False
+03	258	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channel_deleteBroadcast	P RELAY	False
+03	258	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channel_receiveSubscriberReaction	P RELAY	False
+03	258	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channel_ownerModeratesContributorMessage	P RELAY	False
+03	259	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channel_broadcastFile	FD P RELAY XFTP	False
+03	260	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channel_ownerRelayBarStates	RELAY	False
+03	261	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelRelays_listShowsActive	RELAY	False
+03	261	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelRelays_addRelay	RELAY	False
+03	261	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelRelays_noAvailableRelays	RELAY	False
+03	261	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelRelays_removeRelay	RELAY	False
+03	261	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelRelays_removeLastRelayWarning	RELAY	False
+03	261	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelRelays_relayMemberInfo	RELAY	False
+03	262	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelRelays_relayLeftShowsRemovedByOperator	P PEERCTL RELAY	False
+03	262	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelRelays_rejectedRelayStatus	P PEERCTL RELAY	False
+03	263	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelSubscribers_listAndCount	P RELAY	False
+03	263	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelSubscribers_promoteToContributor	P RELAY	False
+03	263	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelSubscribers_demoteToSubscriber	P RELAY	False
+03	263	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelSubscribers_blockForAll	P RELAY	False
+03	263	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelSubscribers_removeSubscriber	P RELAY	False
+03	263	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelSubscribers_verifyCodeViaMembershipKeys	P RELAY	False
+03	264	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelProfile_editNotifiesSubscribers	P RELAY	False
+03	264	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelProfile_linkWorksAfterUpdate	P RELAY	False
+03	264	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWelcome_setNotifiesSubscribers	P RELAY	False
+03	264	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWelcome_newSubscriberSeesWelcome	P RELAY	False
+03	265	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelPrefs_fullDeleteOn	P RELAY	False
+03	265	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelPrefs_reactionsOff	P RELAY	False
+03	265	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelPrefs_historyOff	P RELAY	False
+03	265	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelPrefs_enableChatWithAdminsConfirm	P RELAY	False
+03	265	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelPrefs_enableChatWithAdminsDismissReverts	P RELAY	False
+03	265	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelPrefs_groupOnlyRowsAbsent	P RELAY	False
+03	266	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelSupport_ownerRepliesToSubscriber	P RELAY	False
+03	267	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWebPage_noWebRelayMessage	RELAY	False
+03	268	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWebPage_embedCodeWithWebRelay	RELAY	False
+03	268	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWebPage_saveUrlShowsInHeader	RELAY	False
+03	268	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWebPage_allowEmbeddingToggle	RELAY	False
+03	268	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWebPage_unsavedChangesAlert	RELAY	False
+03	268	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWebPage_relayWritesPreviewJson	RELAY	False
+03	269	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWebPage_copyEmbedCode	CB RELAY	False
+03	270	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelWebPage_externalEmbedScriptLoads	IGNORE	False
+03	271	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	channelOwner_leaveWithSecondOwner	FIXTURE P RELAY RESTART	False
+03	272	18. Channels: alice as owner, with relays and CLI subscribers (58 tests, 1 ignored)	deleteChannel_ownerDeletesForAll	P RELAY	False
+03	278	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	joinChannel_pasteLinkOpenChannel	CB P RELAY	False
+03	278	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	joinChannel_joinViaRelay	CB P RELAY	False
+03	278	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	joinChannel_incognito	CB P RELAY	False
+03	278	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	joinChannel_noActiveRelays	CB P RELAY	False
+03	278	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	joinChannel_receivesHistory	CB P RELAY	False
+03	279	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	joinChannel_twoRelaysBothConnect	CB P RELAY	False
+03	280	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	joinChannel_viaSharedSignedCard	P RELAY	False
+03	281	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	joinChannel_signatureVerificationFailed	P RELAY	False
+03	282	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_receivesBroadcast	P RELAY	False
+03	282	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_receivesEditAndDelete	P RELAY	False
+03	282	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_composeDisabled	P RELAY	False
+03	282	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_canReact	P RELAY	False
+03	282	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_promotedToContributorCanPost	P RELAY	False
+03	283	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriberInfo_rows	P RELAY	False
+03	283	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriberInfo_ownersAndContributorsList	P RELAY	False
+03	283	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriberInfo_relaysView	P RELAY	False
+03	283	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriberInfo_shareViaChat	P RELAY	False
+03	283	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_leaveChannel	P RELAY	False
+03	283	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_channelDeletedByOwner	P RELAY	False
+03	283	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_chatWithAdmins	P RELAY	False
+03	283	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_verifyOwnerCode	P RELAY	False
+03	284	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_relayBarAfterRelayRemoved	P RELAY	False
+03	284	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	subscriber_relayBarWaitingForOwner	P RELAY	False
+03	285	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	connectPlan_knownChannelSubscriber	CB P RELAY	False
+03	286	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	connectPlan_ownChannelLink	CB RELAY	False
+03	286	19. Channels: alice as subscriber, with a CLI owner and relays (26 tests)	connectPlan_relayAddressRejected	CB RELAY	False
+03	294	20. Business chats (16 tests)	business_customerConnectsCreatesBusinessChat	P	False
+03	294	20. Business chats (16 tests)	business_autoReplyWelcome	P	False
+03	294	20. Business chats (16 tests)	business_customerProfileUpdateRenamesChat	P	False
+03	295	20. Business chats (16 tests)	businessInfo_rowsForBusinessSide	P	False
+03	295	20. Business chats (16 tests)	business_addTeamMember	P	False
+03	295	20. Business chats (16 tests)	business_promoteCustomerToAdmin	P	False
+03	295	20. Business chats (16 tests)	business_removeMemberChatWording	P	False
+03	295	20. Business chats (16 tests)	business_deleteChat	P	False
+03	296	20. Business chats (16 tests)	customer_connectToBusinessAddress	CB P	False
+03	296	20. Business chats (16 tests)	customer_connectWithRequestMessage	CB P	False
+03	297	20. Business chats (16 tests)	customer_knownBusinessPlan	CB P	False
+03	298	20. Business chats (16 tests)	connectPlan_businessPendingOpensKnownChat	CB P PEERCTL	False
+03	299	20. Business chats (16 tests)	customer_seesTeamMemberAdded	P	False
+03	299	20. Business chats (16 tests)	customer_chatInfoRows	P	False
+03	299	20. Business chats (16 tests)	customer_addFriendsWhenPromoted	P	False
+03	299	20. Business chats (16 tests)	customer_leaveChat	P	False
+04	38	A. Settings root and global keys (7 tests)	settingsRoot_listsDesktopItems	—	False
+04	39	A. Settings root and global keys (7 tests)	settingsRoot_itemsDisabledWhenChatStopped	—	False
+04	40	A. Settings root and global keys (7 tests)	settingsRoot_crowdfundingOpensGetStake	URI	False
+04	41	A. Settings root and global keys (7 tests)	userPicker_colorModeSwitcherClick	—	False
+04	42	A. Settings root and global keys (7 tests)	userPicker_colorModeSwitcherRightClickSystem	TOAST	False
+04	43	A. Settings root and global keys (7 tests)	keyboard_escClosesTopModal	—	False
+04	44	A. Settings root and global keys (7 tests)	keyboard_escDismissesAlert	—	False
+04	52	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	privacy_sectionsAndFooter	—	False
+04	53	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	privacy_linkPreviewsOff_noPreview	HTTP P	False
+04	54	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	privacy_removeLinkTracking	P	False
+04	55	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	privacy_autoAcceptImagesOff	P XFTP	False
+04	56	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	privacy_blurMediaOptions	—	False
+04	57	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	privacy_autoAcceptGroupInvitations	P	False
+04	58	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	privacy_autoAcceptContactRequestsInGroups	P	False
+04	59	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_showLastMessages	P	False
+04	60	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_messageDraftDisabledClears	P	False
+04	61	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_verifySimplexNamesPref	NAMES P	False
+04	62	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_encryptLocalFilesOn	P XFTP	False
+04	62	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_encryptLocalFilesOff	P XFTP	False
+04	63	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_protectIpAsksForUnknownXftp	P XFTP2	False
+04	63	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_protectIpOffDownloadsSilently	P XFTP2	False
+04	64	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_showEncryptionToggle	P XFTP	False
+04	65	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	morePrivacy_notificationPreviewModes	NTF P	False
+04	66	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	receipts_contactsToggle_noOverrides	P	False
+04	67	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	receipts_contactsOverrideAlert_keep	P	False
+04	67	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	receipts_contactsOverrideAlert_forAll	P	False
+04	67	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	receipts_contactsOverrideAlert_cancel	P	False
+04	68	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	receipts_groupsToggle	P	False
+04	69	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	receipts_groupsOverrideAlert	P	False
+04	70	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	deliveryReceiptsStartupView_enable	RESTART	False
+04	70	B. Privacy (Your privacy, More privacy, receipts) (24 tests)	deliveryReceiptsStartupView_skip	RESTART	False
+04	76	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_enable_setsPasscode	—	False
+04	77	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_enable_cancelKeepsOff	—	False
+04	78	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_enable_confirmMismatch	—	False
+04	79	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_lockAfterOptions	—	False
+04	80	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_changePasscode_success	—	False
+04	80	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_changePasscode_wrongCurrent	—	False
+04	81	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_disable_requiresPasscode	—	False
+04	82	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_screenOnStartup_correct	RESTART	False
+04	82	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_screenOnStartup_wrong_showsUnlock	RESTART	False
+04	83	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_relocksAfterDelay	—	False
+04	84	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_protectedActionsPrompt	—	False
+04	84	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	profiles_actionsRequireAuthOnceWhenLocked	—	False
+04	85	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_noticeOfferedWithManyChats	RESTART	False
+04	86	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_passcodeKeyboardKeys	—	False
+04	87	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	lock_passcodeKeypad_digitsBackspaceClearReveal	—	False
+04	88	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	selfDestruct_enable	—	False
+04	88	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	selfDestruct_cannotEqualAppPasscode	—	False
+04	89	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	selfDestruct_infoView	—	False
+04	90	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	selfDestruct_displayNamePersisted	—	False
+04	91	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	selfDestruct_changePasscode	—	False
+04	92	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	selfDestruct_triggeredOnLockScreen	P RESTART	False
+04	93	C. SimpleX Lock (desktop passcode) and self-destruct (22 tests)	selfDestruct_disable	—	False
+04	99	D. Appearance (24 tests)	appearance_language_switch	—	False
+04	99	D. Appearance (24 tests)	appearance_language_backToSystem	—	False
+04	100	D. Appearance (24 tests)	appearance_reachableAppToolbars	—	False
+04	100	D. Appearance (24 tests)	appearance_reachableChatToolbarVisibility	—	False
+04	101	D. Appearance (24 tests)	appearance_colorMode_systemLightDark	—	False
+04	102	D. Appearance (24 tests)	appearance_darkModeColors	—	False
+04	103	D. Appearance (24 tests)	appearance_wallpaperPreset_select	—	False
+04	104	D. Appearance (24 tests)	appearance_wallpaperImage_import	FD	False
+04	104	D. Appearance (24 tests)	appearance_wallpaperImage_remove	FD	False
+04	105	D. Appearance (24 tests)	appearance_themeDestination_perUser	—	False
+04	106	D. Appearance (24 tests)	customizeTheme_editInterfaceColor	DT	False
+04	106	D. Appearance (24 tests)	customizeTheme_resetColors	DT	False
+04	107	D. Appearance (24 tests)	customizeTheme_wallpaperScaleAndChatColors	DT FD	False
+04	108	D. Appearance (24 tests)	customizeTheme_exportTheme	FD	False
+04	108	D. Appearance (24 tests)	customizeTheme_importTheme	FD	False
+04	108	D. Appearance (24 tests)	customizeTheme_importInvalidTheme	FD	False
+04	109	D. Appearance (24 tests)	appearance_closeToTray_hiddenWithoutTray	—	False
+04	110	D. Appearance (24 tests)	appearance_toolbarTransparency	—	False
+04	110	D. Appearance (24 tests)	appearance_toolbarBlur	—	False
+04	111	D. Appearance (24 tests)	appearance_messageShapeCornerAndTail	—	False
+04	112	D. Appearance (24 tests)	appearance_profileImageCornerRadius	—	False
+04	113	D. Appearance (24 tests)	appearance_fontSize_sliderAndReset	—	False
+04	114	D. Appearance (24 tests)	appearance_zoom_sliderAndReset	—	False
+04	115	D. Appearance (24 tests)	appearance_settingsPersistAcrossRestart	RESTART	True
+04	121	E. Network & servers (43 tests)	network_rootLayout	—	False
+04	122	E. Network & servers (43 tests)	operators_enableDisableOperator	—	False
+04	123	E. Network & servers (43 tests)	operators_reviewAcceptConditions	RESTART	False
+04	124	E. Network & servers (43 tests)	operators_roleToggles_validation	—	False
+04	125	E. Network & servers (43 tests)	operators_infoView	—	False
+04	126	E. Network & servers (43 tests)	yourServers_addSmpManually	SMP2	False
+04	127	E. Network & servers (43 tests)	yourServers_addXftpManually	XFTP2	False
+04	128	E. Network & servers (43 tests)	yourServers_testServers_allPass	—	False
+04	129	E. Network & servers (43 tests)	yourServers_testServers_someFail	—	False
+04	130	E. Network & servers (43 tests)	newServer_invalidAddress	—	False
+04	131	E. Network & servers (43 tests)	newServer_presetHostAddedToOperator	—	False
+04	132	E. Network & servers (43 tests)	serverView_toggleUseAndSave	—	False
+04	132	E. Network & servers (43 tests)	serverView_deleteServer	—	False
+04	133	E. Network & servers (43 tests)	serverView_perServerRoles	—	False
+04	134	E. Network & servers (43 tests)	serverView_addToAnotherDeviceQr	—	False
+04	135	E. Network & servers (43 tests)	network_unsavedServersAlert_save	—	False
+04	135	E. Network & servers (43 tests)	network_unsavedServersAlert_exit	—	False
+04	136	E. Network & servers (43 tests)	servers_validationErrorsBlockSave	—	False
+04	137	E. Network & servers (43 tests)	chatRelays_addAndTest	RELAY	False
+04	138	E. Network & servers (43 tests)	chatRelays_invalidNameOrAddress	—	False
+04	139	E. Network & servers (43 tests)	chatRelays_testFails	PEERCTL RELAY	False
+04	140	E. Network & servers (43 tests)	chatRelays_toggleUseAndDelete	RELAY	False
+04	141	E. Network & servers (43 tests)	socks_enable_confirm	—	False
+04	141	E. Network & servers (43 tests)	socks_disable_confirm	—	False
+04	142	E. Network & servers (43 tests)	socks_settings_validation	—	False
+04	143	E. Network & servers (43 tests)	socks_settings_authModes	—	False
+04	144	E. Network & servers (43 tests)	socks_onionHostsOptions	—	False
+04	145	E. Network & servers (43 tests)	socks_saveAndReconnect	—	False
+04	145	E. Network & servers (43 tests)	socks_resetToDefaults	—	False
+04	146	E. Network & servers (43 tests)	socks_wrongConfigAlert	—	False
+04	147	E. Network & servers (43 tests)	socks_unsavedAlert	—	False
+04	148	E. Network & servers (43 tests)	socks_trafficRoutedThroughProxy	P SOCKS	False
+04	149	E. Network & servers (43 tests)	advNet_privateRoutingMode	—	False
+04	149	E. Network & servers (43 tests)	advNet_privateRoutingFallback	—	False
+04	150	E. Network & servers (43 tests)	advNet_showMessageStatus_sentViaProxy	P SMP2	False
+04	151	E. Network & servers (43 tests)	advNet_transportIsolation	—	False
+04	152	E. Network & servers (43 tests)	advNet_webPort	—	False
+04	153	E. Network & servers (43 tests)	advNet_timeoutsSaved	—	False
+04	154	E. Network & servers (43 tests)	advNet_keepAlive	—	False
+04	155	E. Network & servers (43 tests)	advNet_resetToDefaults	—	False
+04	155	E. Network & servers (43 tests)	advNet_unsavedChangesAlert	—	False
+04	156	E. Network & servers (43 tests)	advNet_persistAcrossRestart	RESTART	False
+04	157	E. Network & servers (43 tests)	network_remoteHostHidesLocalSettings	P	False
+04	163	F. Audio & video calls (6 tests)	calls_screenLayout_noLockScreenOption	—	False
+04	164	F. Audio & video calls (6 tests)	calls_alwaysUseRelayToggle	—	False
+04	165	F. Audio & video calls (6 tests)	iceServers_saveCustom	—	False
+04	165	F. Audio & video calls (6 tests)	iceServers_invalidRejected	—	False
+04	165	F. Audio & video calls (6 tests)	iceServers_resetToDefaults	—	False
+04	166	F. Audio & video calls (6 tests)	iceServers_openFromNetworkScreen	—	False
+04	172	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_layout	—	False
+04	173	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_ttlIncrease_noAlert	—	False
+04	173	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_ttlDecrease_alertConfirm	—	False
+04	173	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_ttlDecrease_alertCancel	—	False
+04	174	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_ttlCustomSecondsShown	RESTART	False
+04	175	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_ttlPerProfile	—	False
+04	176	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_ttlExpiresMessages	FIXTURE P RESTART SLOW	False
+04	177	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_deleteFilesAndMedia	P XFTP	False
+04	178	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	chatData_deleteFilesLabelForMultipleProfiles	—	False
+04	179	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_layout	—	False
+04	180	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_stopChat	—	False
+04	180	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_startChat	—	False
+04	181	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_stoppedStatePersistsRestart	RESTART	False
+04	182	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_exportProhibitedWithRandomPassphrase	—	False
+04	183	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_exportArchive	FD	False
+04	184	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_importArchive_restoresData	FD P	False
+04	185	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_importInvalidArchive	IGNORE	False
+04	186	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_importRestoresAppSettings	FD	False
+04	187	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_deleteDatabase	—	False
+04	188	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_openDatabaseFolder	IGNORE	False
+04	189	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbMgmt_disconnectMobilesWhenRemote	P	False
+04	190	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbEncrypt_setFirstPassphrase	—	False
+04	191	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbEncrypt_changePassphrase	—	False
+04	191	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbEncrypt_wrongCurrentPassphrase	—	False
+04	192	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbEncrypt_removeFromSettings	—	False
+04	192	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbEncrypt_saveToSettings	—	False
+04	193	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbEncrypt_footerStates	—	False
+04	194	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbEncrypt_footerUnencrypted	FIXTURE	False
+04	195	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbError_enterPassphraseOnStartup_open	RESTART	False
+04	195	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbError_wrongPassphrase	RESTART	False
+04	196	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbError_saveAndOpen	RESTART	False
+04	197	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbError_upgradeConfirmation	DT FIXTURE RESTART	False
+04	198	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbError_incompatibleDowngrade	FIXTURE RESTART	False
+04	199	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbError_restoreBackup	FIXTURE RESTART	False
+04	200	G. Chat data, database, encryption, startup DB errors (35 tests, 3 ignored)	dbError_openDatabaseFolder	IGNORE	False
+04	208	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_stopsChatAndAuth	—	False
+04	209	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_passphraseNotSetRedirect	—	False
+04	210	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_verifyPassphraseWrong	—	False
+04	211	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_uploadAndShowLink	IGNORE	False
+04	212	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_uploadFailedRetry	IGNORE	False
+04	213	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_cancelMigration	IGNORE	False
+04	214	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_finalize_startChatWarning	IGNORE	False
+04	215	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_finalize_deleteDatabase	IGNORE	False
+04	216	H. Migrate to/from device (15 tests, 6 ignored)	migrateTo_fromCliArchive_chatMigrated	CB ONBOARD P PEERCTL XFTP	False
+04	217	H. Migrate to/from device (15 tests, 6 ignored)	migrateTo_invalidLink	CB ONBOARD	False
+04	218	H. Migrate to/from device (15 tests, 6 ignored)	migrateTo_deletedFile	CB ONBOARD P SRVCTL XFTP	False
+04	219	H. Migrate to/from device (15 tests, 6 ignored)	migrateTo_wrongPassphrase	CB ONBOARD P XFTP	False
+04	220	H. Migrate to/from device (15 tests, 6 ignored)	migrateTo_networkSettingsConfirm	CB ONBOARD P XFTP	False
+04	221	H. Migrate to/from device (15 tests, 6 ignored)	migrateTo_resumeAfterRestart	CB ONBOARD P RESTART XFTP	False
+04	222	H. Migrate to/from device (15 tests, 6 ignored)	migrateFrom_resumeAfterRestart	IGNORE	False
+04	228	I. App version, update checker, developer tools (15 tests)	version_screenShowsVersions	—	False
+04	229	I. App version, update checker, developer tools (15 tests)	updates_channelDropdown	—	False
+04	230	I. App version, update checker, developer tools (15 tests)	updates_noticeDialog	RESTART	False
+04	231	I. App version, update checker, developer tools (15 tests)	console_sendCommand	—	False
+04	232	I. App version, update checker, developer tools (15 tests)	console_sqlBlockedWithoutLockAndDevTools	—	False
+04	233	I. App version, update checker, developer tools (15 tests)	dev_resetAllHints	—	False
+04	234	I. App version, update checker, developer tools (15 tests)	dev_showDeveloperOptionsSection	—	False
+04	235	I. App version, update checker, developer tools (15 tests)	dev_enableLogs	DT	False
+04	236	I. App version, update checker, developer tools (15 tests)	dev_confirmDbUpgradesPref	DT	False
+04	237	I. App version, update checker, developer tools (15 tests)	dev_showConsoleInNewWindow_requiresAuth	DT	False
+04	238	I. App version, update checker, developer tools (15 tests)	dev_showInternalErrors	DT	False
+04	238	I. App version, update checker, developer tools (15 tests)	dev_showSlowApiCalls	DT	False
+04	239	I. App version, update checker, developer tools (15 tests)	dev_simplexLinksMode	P	False
+04	240	I. App version, update checker, developer tools (15 tests)	dev_installTerminalLink	URI	False
+04	241	I. App version, update checker, developer tools (15 tests)	dev_devToolsExtraSessionModes	DT	False
+04	247	J. Help & support (8 tests, 2 ignored)	help_layout	—	False
+04	248	J. Help & support (8 tests, 2 ignored)	help_howToUse	—	False
+04	249	J. Help & support (8 tests, 2 ignored)	help_aboutSimplex	—	False
+04	250	J. Help & support (8 tests, 2 ignored)	help_followNews_opensSimplexUri	IGNORE	False
+04	250	J. Help & support (8 tests, 2 ignored)	help_chatWithFounder_opensSimplexUri	IGNORE	False
+04	251	J. Help & support (8 tests, 2 ignored)	help_sendEmail_mailto	URI	False
+04	252	J. Help & support (8 tests, 2 ignored)	help_contributeAndStar	URI	False
+04	253	J. Help & support (8 tests, 2 ignored)	help_disabledItemsWhenStopped	—	False
+04	266	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_layout	—	False
+04	267	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_deviceNameChange	P	False
+04	268	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_multicastToggle	P	False
+04	269	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_newPairing_verifyAndConnect	CB DT P	False
+04	270	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_remoteChatsVisible_sendMessage	P	False
+04	271	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_switchLocalRemote	P	False
+04	272	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_disconnectFromDesktop	P	False
+04	273	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_mobileStopsSession	P	False
+04	274	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_reconnectStoredPairing	P	False
+04	275	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_deleteHost	P	False
+04	276	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_customPortRefreshQr	—	False
+04	276	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_openPortInfo	—	False
+04	277	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_multicastDiscovery	MCAST P	False
+04	278	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_closePairingStopsHost	—	False
+04	279	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_remoteFiles	FD P XFTP	False
+04	280	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_remoteFileNotFound	FD P TOAST XFTP	False
+04	281	K. Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) (17 tests)	linkMobile_onboardingLinkAMobile	ONBOARD P	False
+04	287	L. Supporter perks (badge-display screens excluded) (8 tests, 1 ignored)	badges_supportScreenLayout	—	False
+04	288	L. Supporter perks (badge-display screens excluded) (8 tests, 1 ignored)	badges_howItWorks	URI	False
+04	289	L. Supporter perks (badge-display screens excluded) (8 tests, 1 ignored)	badges_getYourCodeLink	URI	False
+04	290	L. Supporter perks (badge-display screens excluded) (8 tests, 1 ignored)	badges_redeemCodeFormatting	—	False
+04	290	L. Supporter perks (badge-display screens excluded) (8 tests, 1 ignored)	badges_redeemDisabledUntilValid	—	False
+04	291	L. Supporter perks (badge-display screens excluded) (8 tests, 1 ignored)	badges_pasteButton	CB	False
+04	292	L. Supporter perks (badge-display screens excluded) (8 tests, 1 ignored)	badges_redeemOfflineError	—	False
+04	293	L. Supporter perks (badge-display screens excluded) (8 tests, 1 ignored)	badges_redeemInvalidCode	IGNORE	False
+04	301	M. Out of reach in-process (8 tests, all ignored)	tray_closeToTrayBehaviour	IGNORE	False
+04	301	M. Out of reach in-process (8 tests, all ignored)	tray_showQuitItems	IGNORE	False
+04	302	M. Out of reach in-process (8 tests, all ignored)	window_statePersistence	IGNORE	False
+04	302	M. Out of reach in-process (8 tests, all ignored)	window_crashRestartLoop	IGNORE	False
+04	303	M. Out of reach in-process (8 tests, all ignored)	window_floatingConsole	IGNORE	False
+04	304	M. Out of reach in-process (8 tests, all ignored)	updates_checkDownloadInstall	IGNORE	False
+04	305	M. Out of reach in-process (8 tests, all ignored)	socks_realTorOnionRouting	IGNORE	False
+04	306	M. Out of reach in-process (8 tests, all ignored)	appearance_visualRendering	IGNORE	False
+05	74	1. Onboarding and first-run screens on Android (15 tests)	androidOnboardingWelcomeShowsGetStarted	ONBOARD	False
+05	75	1. Onboarding and first-run screens on Android (15 tests)	androidOnboardingCreateProfileMobileLayout	IME ONBOARD	False
+05	76	1. Onboarding and first-run screens on Android (15 tests)	androidOnboardingMigrateButtonOpensScanAndPaste	ONBOARD PERM	False
+05	77	1. Onboarding and first-run screens on Android (15 tests)	androidOnboardingNoPassphraseStepAfterProfile	ONBOARD	False
+05	78	1. Onboarding and first-run screens on Android (15 tests)	androidYourNetworkShowsSetupNotifications	ONBOARD	False
+05	79	1. Onboarding and first-run screens on Android (15 tests)	onboardingNotifications_cardsAndDefault	ONBOARD	False
+05	80	1. Onboarding and first-run screens on Android (15 tests)	onboardingNotifications_selectPeriodicReturns	ONBOARD	False
+05	81	1. Onboarding and first-run screens on Android (15 tests)	onboardingNotifications_batteryInfoPage	ONBOARD	False
+05	82	1. Onboarding and first-run screens on Android (15 tests)	onboardingNotifications_continueAppliesInstant	ONBOARD SYSNTF	False
+05	83	1. Onboarding and first-run screens on Android (15 tests)	onboardingNotifications_continueAppliesPeriodic	ONBOARD SYSNTF	False
+05	84	1. Onboarding and first-run screens on Android (15 tests)	onboardingNotifications_continueAppliesOff	ONBOARD SYSNTF	False
+05	85	1. Onboarding and first-run screens on Android (15 tests)	androidOnboardingCards_inChatList	—	False
+05	85	1. Onboarding and first-run screens on Android (15 tests)	androidOnboardingCards_swipeBetweenPages	—	False
+05	86	1. Onboarding and first-run screens on Android (15 tests)	androidOnboardingCards_connectViaLinkShowsScanner	PERM	False
+05	87	1. Onboarding and first-run screens on Android (15 tests)	whatsNewAndroid_v60ShowsReachableChatToolbar	—	False
+05	95	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfSettings_rootItemIconAndStoppedState	—	False
+05	96	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfSettings_layoutShowsCurrentMode	—	False
+05	97	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfSettings_modePickerOptions	—	False
+05	98	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfMode_switchToOff_stopsServiceAndReceivers	SYSNTF	False
+05	99	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfMode_switchToPeriodic_schedulesFetcher	SYSNTF	False
+05	100	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfMode_switchToService_startsForegroundService	SYSNTF	False
+05	101	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	serviceNotification_hideOpensChannelSettings	INTENTS SYSNTF	False
+05	102	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	serviceNotification_tapOpensApp	BG SYSNTF	False
+05	103	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfMode_serviceNotStartedWithoutNotificationPermission	PERM SYSNTF	False
+05	104	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfService_stopChatStopsService_startRestartsIt	SYSNTF	False
+05	105	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfService_passphraseNeededNotification	BG RESTART SYSNTF	False
+05	106	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	bgNotice_instant_allowed_showsInfoOnce	BG	False
+05	107	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	bgNotice_periodic_allowed_showsInfo	BG	False
+05	108	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	bgNotice_batteryOptimized_allowOpensSystemDialog	BG INTENTS SHELL	False
+05	109	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	bgNotice_batteryOptimized_disableTurnsOff	BG SHELL SYSNTF	False
+05	110	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	bgNotice_batteryOptimized_dismissDisables	BG SHELL	False
+05	111	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	bgNotice_systemRestricted_openAppSettings	BG INTENTS SHELL	False
+05	111	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	bgNotice_systemRestricted_disable	BG INTENTS SHELL	False
+05	112	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	bgNotice_shownBefore_optimizedAgain_reprompts	BG SHELL	False
+05	113	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfMode_changeWhileOptimized_noOffAlert	SHELL	False
+05	114	2. Notification service modes and background-service alerts (21 tests, 1 ignored)	ntfService_restartsAfterRebootUpdateOrTaskRemoval	IGNORE	False
+05	122	3. System notifications: messages, requests and calls (19 tests)	sysNtf_message_backgroundShowsTitleAndText	BG P SYSNTF	False
+05	123	3. System notifications: messages, requests and calls (19 tests)	sysNtf_groupMessage_titleIsGroup	BG P SYSNTF	False
+05	124	3. System notifications: messages, requests and calls (19 tests)	sysNtf_foreground_onlyForChatsNotOpen	P SYSNTF	False
+05	125	3. System notifications: messages, requests and calls (19 tests)	sysNtf_tapOpensChat	BG P SYSNTF	False
+05	126	3. System notifications: messages, requests and calls (19 tests)	sysNtf_summaryTapShowsChatList	BG P SYSNTF	False
+05	127	3. System notifications: messages, requests and calls (19 tests)	sysNtf_openingChatCancelsItsNotification	BG P SYSNTF	False
+05	128	3. System notifications: messages, requests and calls (19 tests)	sysNtf_deletedMessageUpdatesNotification	BG P SYSNTF	False
+05	129	3. System notifications: messages, requests and calls (19 tests)	sysNtf_previewContactName	BG P SYSNTF	False
+05	129	3. System notifications: messages, requests and calls (19 tests)	sysNtf_previewHidden	BG P SYSNTF	False
+05	130	3. System notifications: messages, requests and calls (19 tests)	sysNtf_secretMarkdownHidden	BG P SYSNTF	False
+05	131	3. System notifications: messages, requests and calls (19 tests)	sysNtf_mutedChat_noNotification	BG P SYSNTF	False
+05	131	3. System notifications: messages, requests and calls (19 tests)	sysNtf_mutedProfile_noNotification	BG P SYSNTF	False
+05	132	3. System notifications: messages, requests and calls (19 tests)	sysNtf_otherProfile_tapSwitchesProfile	BG P SYSNTF	False
+05	133	3. System notifications: messages, requests and calls (19 tests)	sysNtf_contactRequest_acceptAction	BG P SYSNTF	False
+05	134	3. System notifications: messages, requests and calls (19 tests)	sysNtf_contactConnected	BG P SYSNTF	False
+05	135	3. System notifications: messages, requests and calls (19 tests)	sysNtf_permissionDenied_nothingPosted	BG P PERM SYSNTF	False
+05	136	3. System notifications: messages, requests and calls (19 tests)	sysNtf_callInvitation_backgroundShowsAcceptReject	BG P SYSNTF	False
+05	137	3. System notifications: messages, requests and calls (19 tests)	sysNtf_callInvitation_rejectAction	BG P SYSNTF	False
+05	138	3. System notifications: messages, requests and calls (19 tests)	sysNtf_callInvitation_acceptAfterEnded_showsAlert	BG P SYSNTF	False
+05	146	4. Runtime permissions (13 tests)	notificationPermission_requestedOnFirstChatList_allow	ONBOARD PERM SYSUI	False
+05	147	4. Runtime permissions (13 tests)	notificationPermission_deniedRationale_notAskedAgain	ONBOARD PERM RESTART SYSUI	False
+05	148	4. Runtime permissions (13 tests)	notificationPermission_grantedLater_reenablesAsking	BG PERM	False
+05	149	4. Runtime permissions (13 tests)	qrScanner_permissionRequestedOnOpen_allowShowsPreview	PERM SYSUI VIEW	False
+05	150	4. Runtime permissions (13 tests)	qrScanner_denied_showsEnableCameraAccess	PERM SYSUI	False
+05	151	4. Runtime permissions (13 tests)	qrScanner_hiddenAfterPaste_tapToScanShowsPreview	CB P PERM	False
+05	152	4. Runtime permissions (13 tests)	attachCamera_permissionDenied_showsToast	P PERM SYSUI TOAST	False
+05	153	4. Runtime permissions (13 tests)	profileImageCamera_permissionDenied_showsToast	PERM SYSUI TOAST	False
+05	154	4. Runtime permissions (13 tests)	scanServer_requestsCameraPermission	PERM SYSUI	False
+05	155	4. Runtime permissions (13 tests)	voicePermission_micTapRequestsPermission	P PERM SYSUI	False
+05	155	4. Runtime permissions (13 tests)	voicePermission_grantedShowsRecordButton	P PERM SYSUI	False
+05	156	4. Runtime permissions (13 tests)	callPermissions_micDenied_showsGrantScreen	P PERM SYSUI	False
+05	157	4. Runtime permissions (13 tests)	callPermissions_permanentlyDenied_showsSettingsAlert	INTENTS P PERM SYSUI	False
+05	165	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	qrScan_newChat_connectsViaCamera	IGNORE	False
+05	165	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	qrScan_newChat_notSimplexCodeAlert	IGNORE	False
+05	166	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	verifyCode_androidScanCodeButtonOpensScanner	P PERM	False
+05	167	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	qrScan_verifySecurityCode	IGNORE	False
+05	168	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	qrScan_serverAddress	IGNORE	False
+05	169	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	qrScan_migrationLink	IGNORE	False
+05	170	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	qrScan_desktopAddress	IGNORE	False
+05	171	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	qrScan_badgeCode	IGNORE	False
+05	172	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	qrScanner_cameraNotAvailableBranch	IGNORE	False
+05	173	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	attachCamera_stubbedCapture_sendsImage	INTENTS P PERM XFTP	False
+05	174	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	attachCamera_cancelled_noPreview	INTENTS P PERM	False
+05	175	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	attachCamera_noCaptureActivity_opensStillCamera	INTENTS P PERM	False
+05	176	5. Camera: QR scanning and photo capture (13 tests, 8 ignored)	profileImage_cameraStub_setsImage	INTENTS PERM	False
+05	186	6. Attachments, files, media and the share chooser (22 tests)	attachSheet_androidShowsCameraImageVideoFile	P	False
+05	187	6. Attachments, files, media and the share chooser (22 tests)	attachSheet_keyboardOpen_fullyExpanded	IME P VIEW	False
+05	188	6. Attachments, files, media and the share chooser (22 tests)	attachGallery_twoImages_sendsEach	INTENTS P XFTP	False
+05	189	6. Attachments, files, media and the share chooser (22 tests)	attachGallery_elevenImages_alertKeepsTen	INTENTS P	False
+05	190	6. Attachments, files, media and the share chooser (22 tests)	attachGallery_video_sendsVideo	AV INTENTS P XFTP	False
+05	191	6. Attachments, files, media and the share chooser (22 tests)	attachGallery_elevenVideos_alert	AV INTENTS P	False
+05	192	6. Attachments, files, media and the share chooser (22 tests)	attachFile_getContent_sendsFile	INTENTS P XFTP	False
+05	193	6. Attachments, files, media and the share chooser (22 tests)	attachGallery_noPickActivity_fallsBackToGetContent	INTENTS P	False
+05	194	6. Attachments, files, media and the share chooser (22 tests)	rcvFile_tapLoaded_showsOpenWithAndSave	P XFTP	False
+05	195	6. Attachments, files, media and the share chooser (22 tests)	rcvFile_openWith_firesViewIntentWithReadGrant	INTENTS P XFTP	False
+05	196	6. Attachments, files, media and the share chooser (22 tests)	rcvFile_save_createDocumentWritesDecrypted	INTENTS P TOAST XFTP	False
+05	197	6. Attachments, files, media and the share chooser (22 tests)	rcvImage_save_insertsIntoGallery	P TOAST XFTP	False
+05	198	6. Attachments, files, media and the share chooser (22 tests)	fullScreenImage_swipeBetweenImages	BACK P XFTP	False
+05	199	6. Attachments, files, media and the share chooser (22 tests)	shareText_itemMenu_firesChooser	INTENTS P XFTP	False
+05	199	6. Attachments, files, media and the share chooser (22 tests)	shareFile_itemMenu_firesChooserWithStream	INTENTS P XFTP	False
+05	200	6. Attachments, files, media and the share chooser (22 tests)	copyAndroid_text_noToast	CB P TOAST	False
+05	201	6. Attachments, files, media and the share chooser (22 tests)	copyAndroid_fileItem_copiesCaptionOnly	CB INTENTS P TOAST XFTP	False
+05	202	6. Attachments, files, media and the share chooser (22 tests)	shareText_oneTimeLink_firesChooser	INTENTS	False
+05	202	6. Attachments, files, media and the share chooser (22 tests)	shareText_address_firesChooser	INTENTS	False
+05	202	6. Attachments, files, media and the share chooser (22 tests)	shareText_pendingConnection_firesChooser	INTENTS	False
+05	203	6. Attachments, files, media and the share chooser (22 tests)	profileImage_galleryStub_setsImage	INTENTS	False
+05	204	6. Attachments, files, media and the share chooser (22 tests)	compose_imeCommitImage_attachesToOpenChat	P VIEW XFTP	False
+05	212	7. Sharing into the app from other apps (15 tests)	shareIn_text_toContact	INTENT P VIEW	False
+05	213	7. Sharing into the app from other apps (15 tests)	shareIn_image_toContact	INTENT P XFTP	False
+05	214	7. Sharing into the app from other apps (15 tests)	shareIn_multipleImages_toContact	INTENT P XFTP	False
+05	215	7. Sharing into the app from other apps (15 tests)	shareIn_video_toContact	AV INTENT P XFTP	False
+05	216	7. Sharing into the app from other apps (15 tests)	shareIn_file_toContact	INTENT P XFTP	False
+05	217	7. Sharing into the app from other apps (15 tests)	shareIn_textWithStream_sharedAsFileWithText	INTENT P VIEW XFTP	False
+05	218	7. Sharing into the app from other apps (15 tests)	shareIn_fileSchemeUri_invalidPathAlert	INTENT	False
+05	219	7. Sharing into the app from other apps (15 tests)	shareIn_sendMultipleNonMedia_onlyClosesChat	INTENT P	False
+05	220	7. Sharing into the app from other apps (15 tests)	shareIn_closesOpenChatAndModals	INTENT P	False
+05	221	7. Sharing into the app from other apps (15 tests)	shareIn_fileToGroupWithFilesOff_alert	INTENT P	False
+05	222	7. Sharing into the app from other apps (15 tests)	shareIn_simplexLinkToGroupWithLinksOff_alert	INTENT P	False
+05	223	7. Sharing into the app from other apps (15 tests)	shareIn_toolbarBack_dropsSharedContent	INTENT P VIEW	False
+05	224	7. Sharing into the app from other apps (15 tests)	shareIn_systemBack_dropsContentAndFinishes	BACK INTENT	False
+05	225	7. Sharing into the app from other apps (15 tests)	shareIn_switchProfileBeforeChoosingChat	INTENT P	False
+05	226	7. Sharing into the app from other apps (15 tests)	shareIn_chatStopped_showsStoppedIcon	INTENT	False
+05	234	8. Opening links from other apps (8 tests)	appLink_oneTimeLink_opensPlan	INTENT P	False
+05	235	8. Opening links from other apps (8 tests)	appLink_simplexScheme_addressOpensPlan	INTENT P	False
+05	236	8. Opening links from other apps (8 tests)	appLink_groupLink_opensJoinPlan	INTENT P	False
+05	237	8. Opening links from other apps (8 tests)	appLink_noData_showsInvalidLinkAlert	INTENT	False
+05	238	8. Opening links from other apps (8 tests)	appLink_beforeOnboarding_openedAfterCompletion	INTENT ONBOARD P	False
+05	239	8. Opening links from other apps (8 tests)	appLink_whileLocked_openedAfterUnlock	BG INTENT P	False
+05	240	8. Opening links from other apps (8 tests)	appLink_whileChatStopped_openedAfterStart	INTENT P	False
+05	241	8. Opening links from other apps (8 tests)	appLink_intentFilter_matchesOnlyConnectionPaths	—	False
+05	249	9. Calls on Android (19 tests, 6 ignored)	callSettings_androidLockScreenOptions	—	False
+05	250	9. Calls on Android (19 tests, 6 ignored)	call_outgoingAudio_invitationReachesPeer	P PERM	False
+05	251	9. Calls on Android (19 tests, 6 ignored)	callPermissions_videoCallNeedsCamera	P PERM SYSUI	False
+05	252	9. Calls on Android (19 tests, 6 ignored)	call_outgoing_hangUp_peerSeesEnded	P PERM	False
+05	253	9. Calls on Android (19 tests, 6 ignored)	call_outgoing_peerEnds_closesCallScreen	P PERM	False
+05	254	9. Calls on Android (19 tests, 6 ignored)	call_backCollapses_greenBarReturnsToCall	BACK P PERM	False
+05	255	9. Calls on Android (19 tests, 6 ignored)	call_serviceNotification_endCallAction	P PERM SYSNTF	False
+05	256	9. Calls on Android (19 tests, 6 ignored)	call_backgroundRestricted_pillAndAlert	INTENTS P PERM SHELL	False
+05	257	9. Calls on Android (19 tests, 6 ignored)	call_incomingForeground_inAppAlertNoSystemNotification	P SYSNTF	False
+05	258	9. Calls on Android (19 tests, 6 ignored)	call_lockScreenAlert_acceptMode_reject	BG INTENT P SYSNTF	False
+05	258	9. Calls on Android (19 tests, 6 ignored)	call_lockScreenAlert_acceptMode_ignore	BG INTENT P SYSNTF	False
+05	259	9. Calls on Android (19 tests, 6 ignored)	call_lockScreenAlert_showMode_openBringsAppWithAlert	BG INTENT P	False
+05	260	9. Calls on Android (19 tests, 6 ignored)	call_lockScreenAlert_hiddenPreview_noName	BG INTENT P	False
+05	261	9. Calls on Android (19 tests, 6 ignored)	call_realLockScreen_fullScreenIntentUnlocks	IGNORE	False
+05	262	9. Calls on Android (19 tests, 6 ignored)	call_answer_mediaConnects	IGNORE	False
+05	262	9. Calls on Android (19 tests, 6 ignored)	call_connectedControls_micSpeakerVideoFlip	IGNORE	False
+05	263	9. Calls on Android (19 tests, 6 ignored)	call_pictureInPicture_videoCall	IGNORE	False
+05	263	9. Calls on Android (19 tests, 6 ignored)	call_proximityScreenOff	IGNORE	False
+05	263	9. Calls on Android (19 tests, 6 ignored)	call_audioDevicePicker	IGNORE	False
+05	271	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidPrivacy_deviceSectionShowsLockAndProtectScreen	—	False
+05	272	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	protectScreen_defaultOnSetsFlagSecure	—	False
+05	273	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	protectScreen_toggleUpdatesFlagWithoutRestart	—	False
+05	274	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_modeSelectorDefaultSystem	—	False
+05	275	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_modeChangeWhileOff_noAuthentication	—	False
+05	276	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_enableSystemWithoutCredential_unavailable	SHELL	False
+05	277	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_noticeOffersModeChoice	RESTART	False
+05	278	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_noticePasscodeEntry_setsPasscodeMode	RESTART	False
+05	279	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_noticeSystemWithoutCredential_unavailable	RESTART SHELL	False
+05	280	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_enableSystemWithDevicePin_turnsOn	SHELL SYSUI	False
+05	281	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_systemMode_relocksAfterBackground	BG SHELL SYSUI	False
+05	282	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_systemPromptCancelled_showsUnlockButton	BG SHELL SYSUI	False
+05	283	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_switchPasscodeToSystem	SHELL SYSUI	False
+05	284	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_switchSystemToPasscode	SHELL SYSUI	False
+05	285	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_credentialRemoved_turnsLockOff	BG SHELL	False
+05	286	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_backFromRootClearsAuth	BACK BG	False
+05	287	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_passcodeRelocksAfterRealBackground	BG	False
+05	288	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_rotationWithZeroDelay_doesNotLock	ROT	False
+05	289	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	passcodeAndroid_landscapeShowsSubmit	BG ROT	False
+05	290	10. SimpleX Lock with system authentication, and screen protection (20 tests, 1 ignored)	androidLock_biometricSensorUnlock	IGNORE	False
+05	298	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	keystore_freshDb_randomPassphraseFooter	—	False
+05	299	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	keystore_changePassphrase_storedAlert	—	False
+05	300	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	keystore_removePassphrase_alertAndFooter	—	False
+05	301	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	keystore_removed_restartAsksPassphrase	RESTART	False
+05	302	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	keystore_passphrasePrompt_imeDoneSubmits	IME RESTART	False
+05	303	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	keystore_reEnable_footerUntilRestart	—	False
+05	304	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	keystore_keyMissing_showsNotFoundAlert	RESTART	False
+05	305	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	keystore_lockPasscodesStoredEncrypted	—	False
+05	306	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	dbExport_androidCreateDocument	INTENTS TOAST	False
+05	307	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	dbImport_androidGetContent	INTENTS	False
+05	308	11. Database passphrase in the Android Keystore, archive files (11 tests, 1 ignored)	criticalError_restartEndsProcess	IGNORE	False
+05	320	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_pickerRowOpensConnectScreen	—	False
+05	321	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_layoutWithoutDevTools	PERM	False
+05	322	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_pasteFieldStates	CB DT	False
+05	323	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_pasteVerifyConfirm_connected	CB DT P	False
+05	324	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_deviceNameShownToController	CB DT P	False
+05	325	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_controllerSendsAsAndroidUser	CB DT P	False
+05	326	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_disconnectFromAndroid	CB DT P	False
+05	327	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_closeWhileConnected_asksToDisconnect	BACK CB DT P	False
+05	328	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_controllerStops_noAlert	CB DT P	False
+05	329	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_badAddressAlert	CB DT	False
+05	330	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_incompatibleControllerAlert	CB DT P	False
+05	331	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_storedDesktop_autoConfirms	CB DT P	False
+05	331	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_storedDesktop_verifyWhenEnabled	CB DT P	False
+05	332	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_linkedDesktops_deleteAndOptions	CB DT P	False
+05	333	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_multicastFindsKnownDesktop	CB DT MCAST P	False
+05	334	12. "Use from desktop": Android as the remote host of a CLI controller (16 tests)	useFromDesktop_startsServiceWhileOpen	SYSNTF	False
+05	342	13. The system Back key (17 tests)	back_chatToChatList	BACK P	True
+05	343	13. The system Back key (17 tests)	back_closesChatSearchBeforeChat	BACK P	True
+05	344	13. The system Back key (17 tests)	back_exitsSelectionMode	BACK P	True
+05	345	13. The system Back key (17 tests)	back_closesContactAndGroupInfo	BACK P	True
+05	346	13. The system Back key (17 tests)	pendingReview_closeSupportChat_returnsToChatList	BACK CB P	False
+05	347	13. The system Back key (17 tests)	back_hidesKeyboardFirst	BACK IME P VIEW	True
+05	348	13. The system Back key (17 tests)	back_clearsChatListSearch	BACK	True
+05	349	13. The system Back key (17 tests)	back_closesUserPicker	BACK	True
+05	350	13. The system Back key (17 tests)	back_closesNewChatSheet	BACK	True
+05	351	13. The system Back key (17 tests)	back_closesModalsOneByOne	BACK	True
+05	352	13. The system Back key (17 tests)	back_onChatListRootFinishesActivity	BACK	True
+05	353	13. The system Back key (17 tests)	back_duringForward_returnsToSourceChat	BACK P	True
+05	354	13. The system Back key (17 tests)	back_onProtectedActionPrompt_leavesUnlockScreen	BACK	False
+05	355	13. The system Back key (17 tests)	back_onSetPasscode_cancelsAndLeavesLockOff	BACK	False
+05	356	13. The system Back key (17 tests)	back_onboardingProfile_returnsToWelcome	BACK ONBOARD	True
+05	357	13. The system Back key (17 tests)	back_onboardingYourNetwork_finishesActivity	BACK ONBOARD	True
+05	358	13. The system Back key (17 tests)	back_closesWhatsNew	BACK	True
+05	364	14. Layout, gestures, keyboard and appearance on Android (28 tests)	layout_onePane_chatReplacesList	P	False
+05	365	14. Layout, gestures, keyboard and appearance on Android (28 tests)	layout_reachableToolbarsDefault_bottomBars	P	False
+05	366	14. Layout, gestures, keyboard and appearance on Android (28 tests)	appearanceAndroid_interfaceSectionToolbars	—	False
+05	367	14. Layout, gestures, keyboard and appearance on Android (28 tests)	appearanceAndroid_languageRecreatesActivity	—	False
+05	368	14. Layout, gestures, keyboard and appearance on Android (28 tests)	appearanceAndroid_appIconSwitchesLauncherAlias	—	False
+05	369	14. Layout, gestures, keyboard and appearance on Android (28 tests)	appearanceAndroid_fontSizeSlider	—	False
+05	370	14. Layout, gestures, keyboard and appearance on Android (28 tests)	appearanceAndroid_colorModeSetsApplicationNightMode	—	False
+05	371	14. Layout, gestures, keyboard and appearance on Android (28 tests)	getStake_pinchZoomAndroid	—	False
+05	372	14. Layout, gestures, keyboard and appearance on Android (28 tests)	gesture_swipeToReply_quotesMessage	P	False
+05	373	14. Layout, gestures, keyboard and appearance on Android (28 tests)	gesture_swipeToReply_notOnDeletedOrDisabled	P	False
+05	374	14. Layout, gestures, keyboard and appearance on Android (28 tests)	pager_newChatTabsSwipe	—	False
+05	374	14. Layout, gestures, keyboard and appearance on Android (28 tests)	pager_serversSummaryTabsSwipe	—	False
+05	375	14. Layout, gestures, keyboard and appearance on Android (28 tests)	toolbar_directChat_filterInMenuWhenCallsAvailable	P	False
+05	376	14. Layout, gestures, keyboard and appearance on Android (28 tests)	toolbar_directChat_filterInBarWhenCallsUnavailable	P	False
+05	377	14. Layout, gestures, keyboard and appearance on Android (28 tests)	toolbar_notes_filterInMenuAndroid	—	False
+05	378	14. Layout, gestures, keyboard and appearance on Android (28 tests)	toolbar_supportBanner_shortCountOnAndroid	P	False
+05	379	14. Layout, gestures, keyboard and appearance on Android (28 tests)	chatInfo_searchButtonClosesInfoAndSearches	P	False
+05	380	14. Layout, gestures, keyboard and appearance on Android (28 tests)	compose_editText_clearButtonForWrappedParagraph	P VIEW	False
+05	381	14. Layout, gestures, keyboard and appearance on Android (28 tests)	compose_replyAndEdit_showKeyboard	IME P VIEW	False
+05	382	14. Layout, gestures, keyboard and appearance on Android (28 tests)	compose_enterKeyInsertsNewline_sendButtonSends	IME P VIEW	False
+05	383	14. Layout, gestures, keyboard and appearance on Android (28 tests)	layout_composeStaysAboveKeyboard	IME P VIEW	False
+05	384	14. Layout, gestures, keyboard and appearance on Android (28 tests)	connectProgress_inChatStripAndCancel	BACK P SLOW SOCKS	False
+05	385	14. Layout, gestures, keyboard and appearance on Android (28 tests)	timedCustom_androidWheelPickerSetsTtl	P	False
+05	386	14. Layout, gestures, keyboard and appearance on Android (28 tests)	userPickerAndroid_bottomSheetLayoutAndDismiss	—	False
+05	387	14. Layout, gestures, keyboard and appearance on Android (28 tests)	userPickerAndroid_profilesRowSwitchesUser	—	False
+05	388	14. Layout, gestures, keyboard and appearance on Android (28 tests)	userPickerAndroid_landscapeTwoColumns	ROT	False
+05	389	14. Layout, gestures, keyboard and appearance on Android (28 tests)	rotation_keepsOpenChatAndDraft	P ROT VIEW	False
+05	390	14. Layout, gestures, keyboard and appearance on Android (28 tests)	tagListAndroid_emojiPickerViewSetsEmoji	VIEW	False
+05	396	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	settingsAndroid_rootListsAndroidItems	—	False
+05	397	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	settingsAndroid_shutdownAlertCancel	—	False
+05	398	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	settingsAndroid_shutdownAndRestartEndProcess	IGNORE	False
+05	399	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	helpAndroid_rateTheAppOpensMarket	INTENTS	False
+05	400	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	versionAndroid_showsAndroidBuildAndDevTools	—	False
+05	401	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	devToolsAndroid_noConsoleWindowOption	DT	False
+05	402	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	networkAndroid_connectionStatusOnline	—	False
+05	403	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	networkAndroid_connectionStatusOffline	SHELL	False
+05	404	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	profilesAndroid_deleteLastVisibleReturnsToOnboarding	—	False
+05	405	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	settingsAndroid_playStoreBuildDifferences	IGNORE	False
+05	406	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	settingsAndroid_xiaomiAutostartText	IGNORE	False
+05	407	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	lifecycle_resumeRestartsServiceInServiceMode	BG SYSNTF	False
+05	408	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	lifecycle_lockNotShownWithinDelay	BG SLOW	False
+05	409	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	lifecycle_backgroundStopsVideoPlayback	AV BG P XFTP	False
+05	410	15. Android-only settings rows and app lifecycle (15 tests, 3 ignored)	lifecycle_startReloadsChatList	BG P	False

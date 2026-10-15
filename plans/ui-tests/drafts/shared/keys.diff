@@ -1,0 +1,415 @@
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
+@@ -20,6 +20,7 @@
+   object ChatList {
+     val NewChat = UiKey("chatList.newChat")
+     val UserPicker = UiKey("chatList.userPicker")
++    val Search = UiKey("chatList.search")
+     fun Row(chatId: String, remoteHostId: Long? = null) = UiKey("chatList.row", rowArg(chatId, remoteHostId))
+     fun RowMenu(chatId: String, action: String, remoteHostId: Long? = null) = UiKey("chatList.row.menu.$action", rowArg(chatId, remoteHostId))
+     private fun rowArg(chatId: String, rh: Long?) = if (rh == null) chatId else "$rh:$chatId"
+@@ -34,6 +35,7 @@
+     fun User(userId: Long) = UiKey("userPicker.user", userId)
+     val Address = UiKey("userPicker.address")
+     val Settings = UiKey("userPicker.settings")
++    val Profiles = UiKey("userPicker.profiles")
+   }
+   object Settings {
+     val Appearance = UiKey("settings.appearance")
+@@ -55,6 +57,13 @@
+     val Name = UiKey("profile.name")
+     val Save = UiKey("profile.save")
+   }
++  object Profiles {
++    val Add = UiKey("profiles.add")
++  }
++  object NewProfile {
++    val Name = UiKey("newProfile.name")
++    val Create = UiKey("newProfile.create")
++  }
+   object Link {
+     val Text = UiKey("link.text")
+     val ShareProfile = UiKey("link.shareProfile")
+@@ -65,14 +74,35 @@
+     val Bar = UiKey("chat.bar")
+     val Message = UiKey("chat.compose")
+     val Send = UiKey("chat.send")
++    val BarMenu = UiKey("chat.bar.menu")
++    fun BarMenuItem(action: String) = UiKey("chat.bar.menu.$action")
+     fun Item(itemId: Long) = UiKey("chat.item", itemId)
+     fun ItemMenu(itemId: Long, action: String) = UiKey("chat.item.menu.$action", itemId)
+     fun ItemReaction(itemId: Long, emoji: String) = UiKey("chat.item.menu.react", "$itemId:$emoji")
+     fun ReactionChip(itemId: Long, emoji: String) = UiKey("chat.item.reaction", "$itemId:$emoji")
+   }
++  object Share {
++    fun Row(chatId: String) = UiKey("share.row", chatId)
++  }
+   object Info {
+     val Alias = UiKey("info.alias")
+     val DeleteContact = UiKey("info.deleteContact")
++    val VerifyCode = UiKey("info.verifyCode")
++  }
++  object VerifyCode {
++    val Code = UiKey("verifyCode.code")
++    val Mark = UiKey("verifyCode.mark")
++  }
++  object InviteMembers {
++    fun Contact(contactId: Long) = UiKey("inviteMembers.contact", contactId)
++    val Invite = UiKey("inviteMembers.invite")
++  }
++  object GroupInfo {
++    fun Member(groupMemberId: Long) = UiKey("groupInfo.member", groupMemberId)
++  }
++  object MemberInfo {
++    val Role = UiKey("memberInfo.role")
++    val Remove = UiKey("memberInfo.remove")
+   }
+   enum class AlertSource { Shared, PrivacySensitive }
+   object Alert {
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
+@@ -801,7 +801,7 @@
+         tint = MaterialTheme.colors.secondary
+       )
+       SearchTextField(
+-        Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
++        Modifier.ui(Ui.ChatList.Search).weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+         placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
+         alwaysVisible = true,
+         searchText = searchText,
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DefaultTopAppBar.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DefaultTopAppBar.kt
+@@ -84,7 +84,7 @@
+         title = {
+           if (showSearch) {
+             val placeholder = searchPlaceholder ?: stringResource(MR.strings.search_verb)
+-            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, placeholder = placeholder, trailingContent = searchTrailingContent, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
++            SearchTextField(Modifier.ui(uiKey?.part("search")).fillMaxWidth(), alwaysVisible = searchAlwaysVisible, placeholder = placeholder, trailingContent = searchTrailingContent, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
+           } else if (title != null) {
+             title()
+           } else if (titleText.value.isNotEmpty() && connection != null) {
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt
+@@ -34,6 +34,7 @@
+ import chat.simplex.common.model.ChatModel.activeCall
+ import chat.simplex.common.model.ChatModel.controller
+ import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.call.*
+ import chat.simplex.common.views.chat.group.*
+@@ -1295,7 +1296,7 @@
+         }
+       }
+       menuItems.add {
+-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
++        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), uiKey = Ui.Chat.BarMenuItem("search"), onClick = {
+           showMenu.value = false
+           showSearch.value = true
+         })
+@@ -1325,7 +1326,7 @@
+         }
+       }
+       menuItems.add {
+-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
++        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), uiKey = Ui.Chat.BarMenuItem("search"), onClick = {
+           showMenu.value = false
+           showSearch.value = true
+         })
+@@ -1423,7 +1424,7 @@
+ 
+   if (menuItems.isNotEmpty()) {
+     barButtons.add {
+-      IconButton({ showMenu.value = true }) {
++      IconButton({ showMenu.value = true }, Modifier.ui(Ui.Chat.BarMenu)) {
+         Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+       }
+     }
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt
+@@ -475,7 +475,7 @@
+                       (cItem.file == null || cItem.file.forwardingAllowed()) &&
+                       !cItem.isLiveDummy && !live
+                     ) {
+-                      ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {
++                      ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), uiKey = Ui.Chat.ItemMenu(cItem.id, "forward"), onClick = {
+                         forwardItem(cInfo, cItem)
+                         showMenu.value = false
+                       })
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ShareListNavLinkView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ShareListNavLinkView.kt
+@@ -10,6 +10,8 @@
+ import androidx.compose.ui.text.style.TextOverflow
+ import androidx.compose.ui.unit.dp
+ import chat.simplex.common.model.*
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.UiKey
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.helpers.*
+ import chat.simplex.res.*
+@@ -37,7 +39,8 @@
+             scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) }
+           }
+         },
+-        stopped
++        stopped,
++        uiKey = Ui.Share.Row(chat.id)
+       )
+     }
+     is ChatInfo.Group -> {
+@@ -54,14 +57,16 @@
+             scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) }
+           }
+         },
+-        stopped
++        stopped,
++        uiKey = Ui.Share.Row(chat.id)
+       )
+     }
+     is ChatInfo.Local ->
+       ShareListNavLinkLayout(
+         chatLinkPreview = { SharePreviewView(chat, disabled = false) },
+         click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
+-        stopped
++        stopped,
++        uiKey = Ui.Share.Row(chat.id)
+       )
+     is ChatInfo.ContactRequest, is ChatInfo.ContactConnection, is ChatInfo.InvalidJSON -> {}
+   }
+@@ -79,8 +84,9 @@
+   chatLinkPreview: @Composable () -> Unit,
+   click: () -> Unit,
+   stopped: Boolean,
++  uiKey: UiKey,
+ ) {
+-  SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 8.dp), click = click, disabled = stopped) {
++  SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 8.dp), click = click, disabled = stopped, uiKey = uiKey) {
+     chatLinkPreview()
+   }
+   Divider(Modifier.padding(horizontal = 8.dp))
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt
+@@ -1214,6 +1214,7 @@
+     click = onClick,
+     iconColor = MaterialTheme.colors.secondary,
+     disabled = disabled,
++    uiKey = Ui.Info.VerifyCode,
+   )
+ }
+ 
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/VerifyCodeView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/VerifyCodeView.kt
+@@ -18,6 +18,8 @@
+ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.unit.sp
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.helpers.*
+ import chat.simplex.common.views.newchat.QRCode
+@@ -79,6 +81,7 @@
+       SelectionContainer(Modifier.padding(vertical = DEFAULT_PADDING_HALF, horizontal = DEFAULT_PADDING_HALF)) {
+         Text(
+           splitCode,
++          Modifier.ui(Ui.VerifyCode.Code),
+           fontFamily = FontFamily.Monospace,
+           fontSize = 18.sp,
+           maxLines = 20
+@@ -114,7 +117,7 @@
+             }
+           }
+         }
+-        SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user)) {
++        SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user), uiKey = Ui.VerifyCode.Mark) {
+           withApi {
+             val verified = verifyCode(connectionCode)
+             if (!verified) {
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/SimpleButton.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/SimpleButton.kt
+@@ -19,14 +19,17 @@
+ import androidx.compose.ui.text.style.TextDecoration
+ import androidx.compose.ui.unit.dp
+ import chat.simplex.common.platform.appPlatform
++import chat.simplex.common.ui.UiKey
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.SimpleXTheme
+ import chat.simplex.res.*
+ 
+ @Composable
+ fun SimpleButton(text: String, icon: Painter,
+                  color: Color = MaterialTheme.colors.primary,
++                 uiKey: UiKey? = null,
+                  click: () -> Unit) {
+-  SimpleButtonFrame(click) {
++  SimpleButtonFrame(click, Modifier.ui(uiKey)) {
+     Icon(
+       icon, text, tint = color,
+       modifier = Modifier.padding(end = 8.dp)
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt
+@@ -300,7 +300,8 @@
+                 })
+             }
+           },
+-          disabled = stopped
++          disabled = stopped,
++          uiKey = Ui.UserPicker.Profiles
+         )
+       }
+     }
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/UserProfilesView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/UserProfilesView.kt
+@@ -22,6 +22,7 @@
+ import chat.simplex.common.model.*
+ import chat.simplex.common.model.ChatModel.controller
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.chat.item.ItemAction
+ import chat.simplex.common.views.chatlist.UserProfilePickerItem
+@@ -179,7 +180,7 @@
+         Divider(Modifier.padding(horizontal = 8.dp))
+       }
+       if (searchTextOrPassword.value.trim().isEmpty()) {
+-        SectionItemView(addUser, minHeight = 68.dp) {
++        SectionItemView(addUser, minHeight = 68.dp, uiKey = Ui.Profiles.Add) {
+           Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
+           Spacer(Modifier.padding(horizontal = 4.dp))
+           Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/WelcomeView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/WelcomeView.kt
+@@ -34,6 +34,7 @@
+ import chat.simplex.common.model.ChatController.appPrefs
+ import chat.simplex.common.model.ChatModel.controller
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.ui.UiKey
+ import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+@@ -136,7 +137,7 @@
+               }
+             }
+           }
+-          ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
++          ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester, uiKey = Ui.NewProfile.Name)
+ 
+           Spacer(Modifier.height(DEFAULT_PADDING))
+ 
+@@ -159,6 +160,7 @@
+         SettingsActionItem(
+           painterResource(MR.images.ic_check),
+           stringResource(MR.strings.create_another_profile_button),
++          uiKey = Ui.NewProfile.Create,
+           disabled = !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
+           textColor = MaterialTheme.colors.primary,
+           iconColor = MaterialTheme.colors.primary,
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/AddGroupMembersView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/AddGroupMembersView.kt
+@@ -30,6 +30,7 @@
+ import chat.simplex.common.views.usersettings.SettingsActionItem
+ import chat.simplex.common.model.GroupInfo
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
+ import chat.simplex.res.*
+ import dev.icerock.moko.resources.StringResource
+ import kotlinx.coroutines.*
+@@ -248,6 +249,7 @@
+     textColor = MaterialTheme.colors.primary,
+     iconColor = MaterialTheme.colors.primary,
+     disabled = disabled,
++    uiKey = Ui.InviteMembers.Invite,
+   )
+ }
+ 
+@@ -349,7 +351,8 @@
+         else
+           removeContact(contact.apiId)
+       }
+-    } else null
++    } else null,
++    uiKey = Ui.InviteMembers.Contact(contact.contactId)
+   ) {
+     ProfileImage(size = 36.dp, contact.image)
+     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Section.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Section.kt
+@@ -231,9 +231,10 @@
+     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding)
+   else
+     PaddingValues(horizontal = itemHPadding),
++  uiKey: UiKey? = null,
+   content: (@Composable RowScope.() -> Unit)
+ ) {
+-  SectionItemView(click, minHeight, disabled, extraPadding, padding, content = content)
++  SectionItemView(click, minHeight, disabled, extraPadding, padding, uiKey = uiKey, content = content)
+ }
+ 
+ @Composable
+@@ -247,9 +248,11 @@
+     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+   else
+     PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
++  uiKey: UiKey? = null,
+   content: (@Composable RowScope.() -> Unit)
+ ) {
+   val modifier = Modifier
++    .ui(uiKey)
+     .fillMaxWidth()
+     .sizeIn(minHeight = minHeight)
+   Row(
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/GroupChatInfoView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/GroupChatInfoView.kt
+@@ -39,6 +39,7 @@
+ import androidx.compose.ui.unit.*
+ import chat.simplex.common.model.*
+ import chat.simplex.common.model.ChatController.appPrefs
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.helpers.*
+ import chat.simplex.common.views.usersettings.*
+@@ -794,7 +795,8 @@
+             },
+             longClick = { showMenu.value = true },
+             minHeight = 54.dp,
+-            padding = PaddingValues(horizontal = DEFAULT_PADDING)
++            padding = PaddingValues(horizontal = DEFAULT_PADDING),
++            uiKey = Ui.GroupInfo.Member(member.groupMemberId)
+           ) {
+             Box(contentAlignment = Alignment.CenterStart) {
+               androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/GroupMemberInfoView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/GroupMemberInfoView.kt
+@@ -28,6 +28,7 @@
+ import androidx.compose.ui.unit.*
+ import chat.simplex.common.model.*
+ import chat.simplex.common.model.ChatModel.controller
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.chat.*
+ import chat.simplex.common.views.helpers.*
+@@ -314,7 +315,7 @@
+           SectionItemView({
+             AlertManager.shared.hideAlert()
+             removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
+-          }) {
++          }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "remove")) {
+             Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+           }
+           SectionItemView({
+@@ -850,6 +851,7 @@
+     click = onClick,
+     textColor = Color.Red,
+     iconColor = Color.Red,
++    uiKey = Ui.MemberInfo.Remove,
+   )
+ }
+ 
+@@ -921,6 +923,7 @@
+       selectedRole,
+       icon = null,
+       enabled = remember { mutableStateOf(true) },
++      uiKey = Ui.MemberInfo.Role,
+       onSelected = onSelected
+     )
+   }

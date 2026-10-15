@@ -1,4 +1,8 @@
 #!/bin/sh
+# Usage: scripts/uitest.sh [gradle args]   e.g. --tests '*ChatListMenuTest', -PuiForks=2, -PuiForkEvery=N
+# Runs the desktop UI tests (common/src/uiTestShared + desktopTest/.../ui) in a private network namespace with local servers.
+# Needs cabal/GHC for the CLI peers and test servers, and the desktop native libs (./gradlew :desktop:cmakeBuildAndCopy).
+# Results: common/build/reports/tests/desktopUiTest/pass1; run directories (failure screenshots) in build/uitest/run-*.
 set -eu
 self=$(readlink -f "$0")
 cd "$(dirname "$self")/.."

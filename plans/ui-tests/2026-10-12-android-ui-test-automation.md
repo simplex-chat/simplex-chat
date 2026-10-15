@@ -1,7 +1,7 @@
 # Android UI test automation on this host
 
 **Date:** 2026-10-12. **Status (2026-10-14):** the instrumented harness (layer (a), 3.1) is built and running in `~/wt-uitest`: 127 Android tests (112 shared with desktop + 14 `BackKeyTest` + `SmokeTest`); what is built is described in the desktop plan, section 0.5 (`plans/ui-tests/2026-10-10-desktop-ui-test-dsl-plan.md`), and run findings are in §8. Sections 0–7 below are the 2026-10-12 investigation, with notes where the build differs.
-Running log: `plans/ui-tests/2026-10-12-android-research-progress.md`. Evidence: `~/android-uitest-research/evidence/`. Tool: `~/waydroid/` (`wd.sh` + `README.md`).
+Running log: `plans/ui-tests/2026-10-12-android-research-progress.md`. Evidence: `~/android-uitest-research/evidence/`. Tool: `apps/multiplatform/scripts/waydroid/` (`wd.sh`, `README.md`, `provision2.sh` for instance 2; state in `WD_HOME`, default `~/waydroid`). It runs on Qubes AppVMs and on other Linux hosts (2026-10-15).
 
 ## 0. Summary
 
@@ -67,7 +67,7 @@ Gotchas found and solved, all handled in `wd.sh`:
 5. **Lock fd inheritance:** daemons started while `wd.sh` held its flock inherited the fd and blocked every later
    command. Fix: `{LFD}>&-`.
 6. **Slow download:** `waydroid init` downloads serially at ~0.4 MB/s here. Replaced by a parallel, resumable range
-   download (`~/waydroid/fetch-images.sh`) and init from local images (`/etc/waydroid-extra/images`).
+   download (`scripts/waydroid/fetch-images.sh`) and init from local images (`/etc/waydroid-extra/images`).
    A corrupted part, caused by two downloaders appending to the same file, was repaired block by block (`repair-zip.py`).
 
 ## 3. Automation layer
@@ -220,7 +220,7 @@ layer (5.1). The host-driven layer (5.2) can share the DSL's surface but not its
     `/_get` via a peer.
   - No Compose idling; every observation is a 2–3 s `uiautomator dump`, or less with a resident UiAutomator2 server (not measured here).
   - Off-screen lazy-list items aren't in the tree, so scrolling is needed.
-- **Fit.** Good for smoke tests and LLM-guided exploratory testing (`~/waydroid/README.md` "How an LLM agent should
+- **Fit.** Good for smoke tests and LLM-guided exploratory testing (`scripts/waydroid/README.md` "How an agent should
   drive the GUI"). Not a substitute for the catalogue's assertions.
 
 ### 5.3 Catalogue carry-over (1,177 names; counts from `plans/ui-tests/catalogue/tools/needs.py`)
@@ -249,8 +249,8 @@ layer (5.1). The host-driven layer (5.2) can share the DSL's surface but not its
 
 ## 6. Recommendation
 
-1. **Runtime:** Waydroid via `~/waydroid/wd.sh` (setup steps in `~/waydroid/README.md`; it re-provisions itself
-   after qube restarts from `~/waydroid`). Use the emulator only for framework-only questions with stub APKs, as before.
+1. **Runtime:** Waydroid via `apps/multiplatform/scripts/waydroid/wd.sh` (setup steps in its `README.md`; on Qubes it
+   re-provisions itself after qube restarts from `$WD_HOME`, default `~/waydroid`). Use the emulator only for framework-only questions with stub APKs, as before.
 2. **Now, no app change:** LLM-guided and smoke GUI testing with `wd.sh nodes/shot/tap-text/text` on the existing
    debug APKs. This is already usable and is shared between sessions with `claim`/`WD_OWNER`.
 3. **Desktop plan alignment (after its P1 keys land):** (status 2026-10-14: a, b, c and d are done, except the items marked below; see §0 "Built" and plan 0.5)

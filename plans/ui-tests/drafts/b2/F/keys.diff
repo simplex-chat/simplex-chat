@@ -1,0 +1,32 @@
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt
+@@ -467,7 +467,8 @@
+       clearNoteFolderDialog(chat)
+       showMenu.value = false
+     },
+-    color = WarningOrange
++    color = WarningOrange,
++    uiKey = Ui.ChatList.RowMenu(chat.id, "clear", chat.remoteHostId)
+   )
+ }
+ 
+@@ -480,7 +481,8 @@
+       deleteContactDialog(chat, chatModel)
+       showMenu.value = false
+     },
+-    color = Color.Red
++    color = Color.Red,
++    uiKey = Ui.ChatList.RowMenu(chat.id, "delete", chat.remoteHostId)
+   )
+ }
+ 
+@@ -619,7 +621,8 @@
+       }
+       showMenu.value = false
+     },
+-    color = Color.Red
++    color = Color.Red,
++    uiKey = Ui.ChatList.RowMenu(chatInfo.id, "delete", rhId),
+   )
+ }
+ 

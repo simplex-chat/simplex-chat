@@ -1,0 +1,270 @@
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
+@@ -21,6 +21,9 @@
+     val NewChat = UiKey("chatList.newChat")
+     val UserPicker = UiKey("chatList.userPicker")
+     val Search = UiKey("chatList.search")
++    val Bar = UiKey("chatList.bar")
++    val Stopped = UiKey("chatList.stopped")
++    val Subscriptions = UiKey("chatList.subscriptions")
+     fun Row(chatId: String, remoteHostId: Long? = null) = UiKey("chatList.row", rowArg(chatId, remoteHostId))
+     fun RowMenu(chatId: String, action: String, remoteHostId: Long? = null) = UiKey("chatList.row.menu.$action", rowArg(chatId, remoteHostId))
+     private fun rowArg(chatId: String, rh: Long?) = if (rh == null) chatId else "$rh:$chatId"
+@@ -45,10 +48,21 @@
+   object Help {
+     val WhatsNew = UiKey("help.whatsNew")
+   }
++  object WhatsNew {
++    val Ok = UiKey("whatsNew.ok")
++    val ViewConditions = UiKey("whatsNew.viewConditions")
++  }
++  object ServersSummary {
++    val ShowPercentage = UiKey("serversSummary.showPercentage")
++  }
+   object Onboarding {
+     val GetStarted = UiKey("onboarding.getStarted")
+     val ProfileName = UiKey("onboarding.profileName")
+     val CreateProfile = UiKey("onboarding.createProfile")
++    val CreateYourProfile = UiKey("onboarding.createYourProfile")
++    val RandomPassphrase = UiKey("onboarding.randomPassphrase")
++    val Continue = UiKey("onboarding.continue")
++    val AcceptConditions = UiKey("onboarding.acceptConditions")
+   }
+   object Appearance {
+     val ColorMode = UiKey("appearance.colorMode")
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
+@@ -552,7 +552,7 @@
+           generalGetString(MR.strings.chat_is_stopped_indication),
+           generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
+         )
+-      }) {
++      }, Modifier.ui(Ui.ChatList.Stopped)) {
+         Icon(
+           painterResource(MR.images.ic_report_filled),
+           generalGetString(MR.strings.chat_is_stopped_indication),
+@@ -664,7 +664,8 @@
+     onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,
+     onTop = !oneHandUI.value,
+     onSearchValueChanged = {},
+-    buttons = { barButtons.forEach { it() } }
++    buttons = { barButtons.forEach { it() } },
++    uiKey = Ui.ChatList.Bar,
+   )
+ }
+ 
+@@ -698,6 +699,7 @@
+ 
+   SimpleButtonFrame(
+     click = click,
++    Modifier.ui(Ui.ChatList.Subscriptions),
+     disabled = chatModel.chatRunning.value != true
+   ) {
+     SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ServersSummaryView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ServersSummaryView.kt
+@@ -47,6 +47,7 @@
+ import chat.simplex.common.model.XFTPServerSummary
+ import chat.simplex.common.model.localTimestamp
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.helpers.*
+ import chat.simplex.common.views.usersettings.SettingsPreferenceItem
+@@ -346,7 +347,7 @@
+         generalGetString(MR.strings.servers_info_subscriptions_total),
+         numOrDash(totals.subs.total)
+       )
+-      SettingsPreferenceItem(null, stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage)
++      SettingsPreferenceItem(null, stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage, uiKey = Ui.ServersSummary.ShowPercentage)
+     }
+   }
+ }
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/ChooseServerOperators.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/ChooseServerOperators.kt
+@@ -28,6 +28,8 @@
+ import chat.simplex.common.model.*
+ import chat.simplex.common.model.ChatController.appPrefs
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.helpers.*
+ import chat.simplex.common.views.newchat.darkStops
+@@ -316,7 +318,7 @@
+   selectedOperatorIds: State<Set<Long>>
+ ) {
+   OnboardingActionButton(
+-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
++    modifier = Modifier.ui(Ui.Onboarding.AcceptConditions).then(if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp)),
+     labelId = MR.strings.onboarding_conditions_accept,
+     onboarding = null,
+     enabled = enabled,
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/SetupDatabasePassphrase.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/SetupDatabasePassphrase.kt
+@@ -17,6 +17,7 @@
+ import androidx.compose.ui.unit.dp
+ import chat.simplex.common.model.*
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.database.*
+ import chat.simplex.common.views.helpers.*
+@@ -203,7 +204,7 @@
+ 
+ @Composable
+ private fun SkipButton(disabled: Boolean, onClick: () -> Unit) {
+-  TextButtonBelowOnboardingButton(stringResource(MR.strings.use_random_passphrase), onClick = if (disabled) null else onClick)
++  TextButtonBelowOnboardingButton(stringResource(MR.strings.use_random_passphrase), onClick = if (disabled) null else onClick, uiKey = Ui.Onboarding.RandomPassphrase)
+ }
+ 
+ @Composable
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/SimpleXInfo.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/SimpleXInfo.kt
+@@ -28,6 +28,8 @@
+ import chat.simplex.common.model.*
+ import chat.simplex.common.model.ChatController.appPrefs
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.UiKey
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.helpers.*
+ import chat.simplex.common.views.newchat.darkStops
+@@ -220,13 +222,13 @@
+ }
+ 
+ @Composable
+-fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?, icon: Painter? = null) {
++fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?, icon: Painter? = null, uiKey: UiKey? = null) {
+   val state = getKeyboardState()
+   val enabled = onClick != null
+   val topPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else 7.5.dp)
+   val bottomPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else 7.5.dp)
+   if ((appPlatform.isAndroid && state.value == KeyboardState.Closed) || topPadding > 0.dp) {
+-    TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
++    TextButton({ onClick?.invoke() }, Modifier.ui(uiKey).padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
+       if (icon != null) {
+         Icon(icon, null, tint = MaterialTheme.colors.primary)
+         Spacer(Modifier.width(4.dp))
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/WhatsNewView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/WhatsNewView.kt
+@@ -53,6 +53,8 @@
+ import chat.simplex.common.model.ChatController.setConditionsNotified
+ import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.chat.item.CIFileViewScope
+ import chat.simplex.common.views.helpers.*
+@@ -199,6 +201,7 @@
+           stringResource(MR.strings.view_updated_conditions),
+           color = MaterialTheme.colors.primary,
+           modifier = Modifier
++            .ui(Ui.WhatsNew.ViewConditions)
+             .clickable(
+               interactionSource = remember { MutableInteractionSource() },
+               indication = null
+@@ -225,6 +228,7 @@
+               verticalAlignment = Alignment.CenterVertically,
+               horizontalArrangement = Arrangement.Center,
+               modifier = Modifier
++                .ui(Ui.WhatsNew.Ok)
+                 .clickable { close() }
+                 .padding(8.dp)
+             ) {
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/YourNetwork.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/onboarding/YourNetwork.kt
+@@ -24,6 +24,8 @@
+ import chat.simplex.common.model.*
+ import chat.simplex.common.model.ChatController.appPrefs
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.helpers.*
+ import chat.simplex.common.views.newchat.darkStops
+@@ -116,7 +118,7 @@
+               horizontalAlignment = Alignment.CenterHorizontally
+             ) {
+               OnboardingActionButton(
+-                modifier = Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth(),
++                modifier = Modifier.ui(Ui.Onboarding.Continue).padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth(),
+                 labelId = MR.strings.onboarding_network_operators_continue,
+                 onboarding = null,
+                 onclick = {
+@@ -155,7 +157,7 @@
+         Spacer(Modifier.fillMaxHeight().weight(1f))
+         Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+           OnboardingActionButton(
+-            Modifier.widthIn(min = 300.dp),
++            Modifier.widthIn(min = 300.dp).ui(Ui.Onboarding.Continue),
+             labelId = MR.strings.onboarding_network_operators_continue,
+             onboarding = null,
+             onclick = {
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/CallSettings.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/CallSettings.kt
+@@ -18,6 +18,8 @@
+ import chat.simplex.common.model.*
+ import chat.simplex.common.platform.ColumnWithScrollBar
+ import chat.simplex.common.platform.appPlatform
++import chat.simplex.common.ui.UiKey
++import chat.simplex.common.ui.ui
+ import chat.simplex.res.*
+ 
+ @Composable
+@@ -86,8 +88,10 @@
+   preference: SharedPreference<Boolean>,
+   enabled: Boolean = true,
+   onChange: ((Boolean) -> Unit)? = null,
++  uiKey: UiKey? = null,
+ ) {
+   DefaultSwitch(
++    modifier = Modifier.ui(uiKey),
+     enabled = enabled,
+     checked = remember { preference.state }.value,
+     onCheckedChange = {
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt
+@@ -429,9 +429,10 @@
+   iconColor: Color = MaterialTheme.colors.secondary,
+   enabled: Boolean = true,
+   onChange: ((Boolean) -> Unit)? = null,
++  uiKey: UiKey? = null,
+ ) {
+   SettingsActionItemWithContent(icon, text, iconColor = iconColor,) {
+-    SharedPreferenceToggle(pref, enabled, onChange)
++    SharedPreferenceToggle(pref, enabled, onChange, uiKey)
+   }
+ }
+ 
+--- a/apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.desktop.kt
++++ b/apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.desktop.kt
+@@ -99,6 +99,7 @@
+     Box(
+       Modifier
+         .fillMaxSize()
++        .ui(Ui.UserPicker.Sheet)
+         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { pickerState.value = AnimatedViewState.HIDING }),
+       contentAlignment = Alignment.TopStart
+     ) {
+--- a/apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/onboarding/SimpleXInfo.desktop.kt
++++ b/apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/onboarding/SimpleXInfo.desktop.kt
+@@ -8,6 +8,8 @@
+ import chat.simplex.common.model.SharedPreference
+ import chat.simplex.common.model.User
+ import chat.simplex.common.platform.chatModel
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.DEFAULT_PADDING
+ import chat.simplex.res.*
+ import dev.icerock.moko.resources.compose.painterResource
+@@ -17,7 +19,7 @@
+   if (user == null) {
+     Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING * 2.5f)) {
+       OnboardingActionButton(labelId = MR.strings.link_a_mobile, onboarding = if (controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) OnboardingStage.Step2_5_SetupDatabasePassphrase else OnboardingStage.LinkAMobile, icon = painterResource(MR.images.ic_smartphone_300), onclick = onclick)
+-      OnboardingActionButton(labelId = MR.strings.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, icon = painterResource(MR.images.ic_desktop), onclick = onclick)
++      OnboardingActionButton(Modifier.ui(Ui.Onboarding.CreateYourProfile), labelId = MR.strings.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, icon = painterResource(MR.images.ic_desktop), onclick = onclick)
+     }
+   } else {
+     OnboardingActionButton(Modifier.widthIn(min = 300.dp), labelId = MR.strings.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onclick = onclick)

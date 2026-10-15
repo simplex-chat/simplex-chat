@@ -1,0 +1,237 @@
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
+@@ -20,6 +20,7 @@
+   object ChatList {
+     val NewChat = UiKey("chatList.newChat")
+     val UserPicker = UiKey("chatList.userPicker")
++    val Search = UiKey("chatList.search")
+     fun Row(chatId: String, remoteHostId: Long? = null) = UiKey("chatList.row", rowArg(chatId, remoteHostId))
+     fun RowMenu(chatId: String, action: String, remoteHostId: Long? = null) = UiKey("chatList.row.menu.$action", rowArg(chatId, remoteHostId))
+     private fun rowArg(chatId: String, rh: Long?) = if (rh == null) chatId else "$rh:$chatId"
+@@ -34,9 +35,19 @@
+     fun User(userId: Long) = UiKey("userPicker.user", userId)
+     val Address = UiKey("userPicker.address")
+     val Settings = UiKey("userPicker.settings")
++    val Sheet = UiKey("userPicker.sheet")
+   }
+   object Settings {
+     val Appearance = UiKey("settings.appearance")
++    val Help = UiKey("settings.help")
++  }
++  object Help {
++    val WhatsNew = UiKey("help.whatsNew")
++  }
++  object Onboarding {
++    val GetStarted = UiKey("onboarding.getStarted")
++    val ProfileName = UiKey("onboarding.profileName")
++    val CreateProfile = UiKey("onboarding.createProfile")
+   }
+   object Appearance {
+     val ColorMode = UiKey("appearance.colorMode")
+@@ -65,6 +76,9 @@
+     val Bar = UiKey("chat.bar")
+     val Message = UiKey("chat.compose")
+     val Send = UiKey("chat.send")
++    val More = UiKey("chat.more")
++    fun Menu(action: String) = UiKey("chat.menu.$action")
++    val Selection = UiKey("chat.selection")
+     fun Item(itemId: Long) = UiKey("chat.item", itemId)
+     fun ItemMenu(itemId: Long, action: String) = UiKey("chat.item.menu.$action", itemId)
+     fun ItemReaction(itemId: Long, emoji: String) = UiKey("chat.item.menu.react", "$itemId:$emoji")
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
+@@ -801,7 +801,7 @@
+         tint = MaterialTheme.colors.secondary
+       )
+       SearchTextField(
+-        Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
++        Modifier.weight(1f).ui(Ui.ChatList.Search).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+         placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
+         alwaysVisible = true,
+         searchText = searchText,
+--- a/apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.android.kt
++++ b/apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.android.kt
+@@ -147,6 +147,7 @@
+     Box(
+       Modifier
+         .fillMaxSize()
++        .ui(if (pickerIsVisible) Ui.UserPicker.Sheet else null)
+         .then(clickableModifier)
+         .drawBehind {
+           val pos = calculatePosition(dismissState)
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/SettingsView.kt
+@@ -103,7 +103,7 @@
+     SectionView {
+       SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it) }, uiKey = Ui.Settings.Appearance)
+       SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.your_privacy), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
+-      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal) })
++      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal) }, uiKey = Ui.Settings.Help)
+       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
+       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
+     }
+@@ -159,7 +159,7 @@
+ 
+     SectionView(stringResource(MR.strings.settings_section_title_help)) {
+       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
+-      SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped)
++      SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped, uiKey = Ui.Help.WhatsNew)
+       SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
+     }
+     SectionDividerSpaced()
+--- a/apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/onboarding/SimpleXInfo.android.kt
++++ b/apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/onboarding/SimpleXInfo.android.kt
+@@ -5,12 +5,14 @@
+ import androidx.compose.ui.Modifier
+ import chat.simplex.common.model.SharedPreference
+ import chat.simplex.common.model.User
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.res.*
+ 
+ @Composable
+ actual fun OnboardingActionButton(user: User?, onboardingStage: SharedPreference<OnboardingStage>, onclick: (() -> Unit)?) {
+   if (user == null) {
+-    OnboardingActionButton(Modifier.fillMaxWidth(), labelId = MR.strings.get_started, onboarding = OnboardingStage.Step2_CreateProfile, onclick = onclick)
++    OnboardingActionButton(Modifier.fillMaxWidth().ui(Ui.Onboarding.GetStarted), labelId = MR.strings.get_started, onboarding = OnboardingStage.Step2_CreateProfile, onclick = onclick)
+   } else {
+     OnboardingActionButton(Modifier.fillMaxWidth(), labelId = MR.strings.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onclick = onclick)
+   }
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/WelcomeView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/WelcomeView.kt
+@@ -34,6 +34,7 @@
+ import chat.simplex.common.model.ChatController.appPrefs
+ import chat.simplex.common.model.ChatModel.controller
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.ui.UiKey
+ import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+@@ -285,13 +286,13 @@
+           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+         )
+         Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+-        ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
++        ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester, uiKey = Ui.Onboarding.ProfileName)
+ 
+         Spacer(Modifier.weight(1f))
+ 
+         Column(Modifier.widthIn(max = 450.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+           OnboardingActionButton(
+-            Modifier.fillMaxWidth(),
++            Modifier.fillMaxWidth().ui(Ui.Onboarding.CreateProfile),
+             labelId = MR.strings.create_profile,
+             onboarding = null,
+             enabled = canCreateProfile(displayName.value),
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt
+@@ -34,6 +34,7 @@
+ import chat.simplex.common.model.ChatModel.activeCall
+ import chat.simplex.common.model.ChatModel.controller
+ import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.call.*
+ import chat.simplex.common.views.chat.group.*
+@@ -1295,7 +1296,7 @@
+         }
+       }
+       menuItems.add {
+-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
++        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), uiKey = Ui.Chat.Menu("search"), onClick = {
+           showMenu.value = false
+           showSearch.value = true
+         })
+@@ -1325,7 +1326,7 @@
+         }
+       }
+       menuItems.add {
+-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
++        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), uiKey = Ui.Chat.Menu("search"), onClick = {
+           showMenu.value = false
+           showSearch.value = true
+         })
+@@ -1423,7 +1424,7 @@
+ 
+   if (menuItems.isNotEmpty()) {
+     barButtons.add {
+-      IconButton({ showMenu.value = true }) {
++      IconButton({ showMenu.value = true }, Modifier.ui(Ui.Chat.More)) {
+         Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+       }
+     }
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DefaultTopAppBar.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DefaultTopAppBar.kt
+@@ -84,7 +84,7 @@
+         title = {
+           if (showSearch) {
+             val placeholder = searchPlaceholder ?: stringResource(MR.strings.search_verb)
+-            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, placeholder = placeholder, trailingContent = searchTrailingContent, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
++            SearchTextField(Modifier.fillMaxWidth().ui(uiKey?.part("search")), alwaysVisible = searchAlwaysVisible, placeholder = placeholder, trailingContent = searchTrailingContent, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
+           } else if (title != null) {
+             title()
+           } else if (titleText.value.isNotEmpty() && connection != null) {
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/SelectableChatItemToolbars.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/SelectableChatItemToolbars.kt
+@@ -15,6 +15,7 @@
+ import chat.simplex.common.model.*
+ import chat.simplex.common.platform.BackHandler
+ import chat.simplex.common.platform.chatModel
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.views.helpers.*
+ import dev.icerock.moko.resources.compose.stringResource
+ import chat.simplex.res.*
+@@ -43,7 +44,8 @@
+       onTitleClick = null,
+       onTop = onTop,
+       onSearchValueChanged = {},
+-      buttons = if (selectAll != null) { { SelectAllButton(selectAll) } } else {{}}
++      buttons = if (selectAll != null) { { SelectAllButton(selectAll) } } else {{}},
++      uiKey = Ui.Chat.Selection
+     )
+   }
+ }
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt
+@@ -475,7 +475,7 @@
+                       (cItem.file == null || cItem.file.forwardingAllowed()) &&
+                       !cItem.isLiveDummy && !live
+                     ) {
+-                      ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {
++                      ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), uiKey = Ui.Chat.ItemMenu(cItem.id, "forward"), onClick = {
+                         forwardItem(cInfo, cItem)
+                         showMenu.value = false
+                       })
+@@ -500,7 +500,7 @@
+                     }
+                     if (cItem.canBeDeletedForSelf) {
+                       Divider()
+-                      SelectItemAction(showMenu, selectChatItem)
++                      SelectItemAction(showMenu, selectChatItem, Ui.Chat.ItemMenu(cItem.id, "select"))
+                     }
+                   }
+                 }
+@@ -941,10 +941,12 @@
+ fun SelectItemAction(
+   showMenu: MutableState<Boolean>,
+   selectItem: () -> Unit,
++  uiKey: UiKey? = null,
+ ) {
+   ItemAction(
+     stringResource(MR.strings.select_verb),
+     painterResource(MR.images.ic_check_circle),
++    uiKey = uiKey,
+     onClick = {
+       showMenu.value = false
+       selectItem()
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/GroupChatInfoView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/GroupChatInfoView.kt
+@@ -1208,7 +1208,7 @@
+         }
+         if (selectedItems.value == null && member.memberRole < GroupMemberRole.Moderator) {
+           Divider()
+-          SelectItemAction(showMenu) { toggleItemSelection(member.groupMemberId, selectedItems) }
++          SelectItemAction(showMenu, selectItem = { toggleItemSelection(member.groupMemberId, selectedItems) })
+         }
+       }
+     }

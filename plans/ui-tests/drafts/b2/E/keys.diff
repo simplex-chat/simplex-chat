@@ -1,0 +1,138 @@
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
+@@ -3,6 +3,8 @@
+ import androidx.compose.runtime.Immutable
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.platform.testTag
++import androidx.compose.ui.semantics.SemanticsProperties
++import androidx.compose.ui.semantics.semantics
+ 
+ @Immutable
+ class UiKey(val id: String, val arg: Any? = null) {
+@@ -16,6 +18,9 @@
+ 
+ fun Modifier.ui(key: UiKey?): Modifier = if (key == null || !uiTagsEnabled) this else testTag(key.tag)
+ 
++fun Modifier.uiMarker(key: UiKey?): Modifier =
++  if (key == null || !uiTagsEnabled) this else semantics(mergeDescendants = true) { set(SemanticsProperties.TestTag, key.tag) }
++
+ object Ui {
+   object ChatList {
+     val NewChat = UiKey("chatList.newChat")
+@@ -122,6 +127,7 @@
+     val Bar = UiKey("chat.bar")
+     val Message = UiKey("chat.compose")
+     val Send = UiKey("chat.send")
++    val Connect = UiKey("chat.connect")
+     val BarMenu = UiKey("chat.bar.menu")
+     fun BarMenuItem(action: String) = UiKey("chat.bar.menu.$action")
+     val Selection = UiKey("chat.selection")
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt
+@@ -32,6 +32,7 @@
+ import chat.simplex.common.model.ChatModel.controller
+ import chat.simplex.common.model.ChatModel.filesToDelete
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.badges.openBadgesView
+ import chat.simplex.common.views.chat.group.hostFromRelayLink
+@@ -1546,6 +1547,7 @@
+           style = MaterialTheme.typography.body2,
+           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+           disabled = composeState.value.inProgress,
++          uiKey = Ui.Chat.Connect,
+           click = { withApi { sendRequest() } }
+         )
+       }
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatPreviewView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatPreviewView.kt
+@@ -24,6 +24,10 @@
+ import androidx.compose.ui.text.font.FontStyle
+ import androidx.compose.ui.text.style.*
+ import androidx.compose.ui.unit.*
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.UiKey
++import chat.simplex.common.ui.ui
++import chat.simplex.common.ui.uiMarker
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.helpers.*
+ import chat.simplex.common.model.*
+@@ -51,6 +55,7 @@
+   defaultClickAction: () -> Unit
+ ) {
+   val cInfo = chat.chatInfo
++  val rowKey = Ui.ChatList.Row(chat.id, chat.remoteHostId)
+ 
+   @Composable
+   fun inactiveIcon() {
+@@ -95,7 +100,7 @@
+ 
+   @Composable
+   fun VerifiedIcon() {
+-    Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(19.sp.toDp()).padding(end = 3.sp.toDp(), top = 1.sp.toDp()), tint = MaterialTheme.colors.secondary)
++    Icon(painterResource(MR.images.ic_verified_user), null, Modifier.uiMarker(rowKey.part("verified")).size(19.sp.toDp()).padding(end = 3.sp.toDp(), top = 1.sp.toDp()), tint = MaterialTheme.colors.secondary)
+   }
+ 
+   fun messageDraft(draft: ComposeState, sp20: Dp): Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>> {
+@@ -123,7 +128,7 @@
+       "editIcon" to InlineTextContent(
+         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
+       ) {
+-        Icon(painterResource(MR.images.ic_edit_note), null, Modifier.size(sp20), tint = MaterialTheme.colors.primary)
++        Icon(painterResource(MR.images.ic_edit_note), null, Modifier.uiMarker(rowKey.part("draft")).size(sp20), tint = MaterialTheme.colors.primary)
+       },
+       "attachmentIcon" to InlineTextContent(
+         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
+@@ -320,7 +325,7 @@
+         val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+         IconButton(
+           { openBrowserAlert(mc.preview.uri, uriHandler) },
+-          Modifier.desktopPointerHoverIconHand(),
++          Modifier.ui(rowKey.part("link")).desktopPointerHoverIconHand(),
+         ) {
+           Image(image, null, Modifier.desktopModifyBlurredState(blurred, noMenu).privacyBlur(fullSize = false, image, blurred, chatViewScrollState.collectAsState()), contentScale = ContentScale.Crop)
+         }
+@@ -392,10 +397,10 @@
+       } else if (chat.chatInfo.groupInfo_?.membership?.memberPending == true) {
+         FlagIcon(color = MaterialTheme.colors.secondary)
+       } else {
+-        IncognitoIcon(chat.chatInfo.incognito)
++        IncognitoIcon(chat.chatInfo.incognito, rowKey.part("incognito"))
+       }
+     } else {
+-      IncognitoIcon(chat.chatInfo.incognito)
++      IncognitoIcon(chat.chatInfo.incognito, rowKey.part("incognito"))
+     }
+   }
+ 
+@@ -554,13 +559,14 @@
+ }
+ 
+ @Composable
+-fun IncognitoIcon(incognito: Boolean) {
++fun IncognitoIcon(incognito: Boolean, uiKey: UiKey? = null) {
+   if (incognito) {
+     Icon(
+       painterResource(MR.images.ic_theater_comedy),
+       contentDescription = null,
+       tint = MaterialTheme.colors.secondary,
+       modifier = Modifier
++        .uiMarker(uiKey)
+         .size(21.sp.toDp())
+         .offset(x = 1.sp.toDp())
+     )
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/SimpleButton.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/SimpleButton.kt
+@@ -76,9 +76,10 @@
+   style: TextStyle = MaterialTheme.typography.caption,
+   color: Color = MaterialTheme.colors.primary,
+   disabled: Boolean = false,
++  uiKey: UiKey? = null,
+   click: () -> Unit
+ ) {
+-  SimpleButtonFrame(click, disabled = disabled) {
++  SimpleButtonFrame(click, Modifier.ui(uiKey), disabled = disabled) {
+     Text(text, style = style, color = color)
+     Icon(
+       icon, text, tint = color,

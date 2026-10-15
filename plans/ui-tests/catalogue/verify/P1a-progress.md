@@ -81,13 +81,13 @@ Worktree `~/wt-uitest`, branch `nd/desktop-ui-tests`, based on origin/master eda
 
 ## Batch 5 (2026-10-14, evening): exhaustive pass, batch 1 (onboarding, What's New, chat list)
 - Starting point: desktop 43/43 twice (`b13-desktop-1/2.log`); Android 53/53 (`run-20261014-164429`: 38 shared + 14 `BackKeyTest` + smoke). The Back-key tests and 14 more shared tests came after batch 4.
-- 50 catalogue rows drafted in parallel (`~/uitest-drafts/b1`, `batch1.tsv`): 22 onboarding, 5 What's New, 23 chat list (toolbar, subscription indicator, search, unread and preset filters). Desktop-only rows (onboarding, What's New for a new user) go to `desktopTest/.../ui/desktop`.
+- 50 catalogue rows drafted in parallel (`plans/ui-tests/drafts/b1`, `batch1.tsv`): 22 onboarding, 5 What's New, 23 chat list (toolbar, subscription indicator, search, unread and preset filters). Desktop-only rows (onboarding, What's New for a new user) go to `desktopTest/.../ui/desktop`.
 - Harness changes found while running it: `ModelSnapshot` unwraps `by lazy` fields (plan 15.4 item 26); per-test `drain()` inside the scene and the known-app-issue allowlist (15.4 items 27–28; 15.5 item 3); desktop failure PNGs (item 29); the CLI typing window 200 ms → 1.5 s (item 30).
 - Catalogue corrections from passing tests: plan 15.6.
 - First desktop run with the batch: `b14-desktop.log`, 93 tests, 19 failed.
 
 ## Batch 6 (2026-10-14, late evening): chat list lists, rows, menus, cards; PR review fixes
-- 50 chat-list rows drafted (`~/uitest-drafts/b2`, `batch2.tsv`): the remaining preset filters, user lists, row previews and icons, row menus, pending connections, contact requests and cards. Batches 5 and 6 together added 99 catalogue tests: 74 shared, 25 desktop-only.
+- 50 chat-list rows drafted (`plans/ui-tests/drafts/b2`, `batch2.tsv`): the remaining preset filters, user lists, row previews and icons, row menus, pending connections, contact requests and cards. Batches 5 and 6 together added 99 catalogue tests: 74 shared, 25 desktop-only.
 - Runs: `b15-desktop.log` 142 completed, 12 failed; `b16-desktop.log` 142 completed, 8 failed. Final results: plan 15.3 status ("RESULTS" line).
 - PR review fixes (plan 0.5 describes the result):
   - app code: `UiIdle` is a no-op unless `uiTestHooksEnabled` (renamed from `uiTagsEnabled`); counters removed; `sendCmd` and the receiver use thin `UiIdle.track`/`trackEvent` wrappers; unused keys removed (`Ui.UserPicker.Sheet` kept as the one presence-only key); app rule in plan 13;
@@ -110,3 +110,8 @@ Worktree `~/wt-uitest`, branch `nd/desktop-ui-tests`, based on origin/master eda
 - Desktop runs: b18 136/141 + 4 failed (pending-connection info has no Back on desktop, item 33); b20 141/141; b21 140/141 (one SQLite "disk I/O error" after a reset, item 41); b22 141/141 (6.6 min).
 - First full Android run of the shared tests (127): 121 passed; the 6 failures were Android-only (keyboard eats the first Back, prepared chat covers the list, no camera on Waydroid → app finding 15.5 item 4, one flake 15.4.1a); after the fixes the 4 affected classes passed 49/49 with the camera test skipped.
 - App code fix needed for Android compile: `uiKey` moved before trailing lambdas (item 39).
+
+## Batch 8 (2026-10-15): PR #7723 follow-ups
+- Rebased on master `000258224` (one `UserPicker.kt` conflict with #7679); desktop 140/141 (ForwardTest flake, plan 15.4.1b), Android 126/127 + 1 skipped.
+- Waydroid tool moved into the repo and made portable (`apps/multiplatform/scripts/waydroid/`, plan 15.4 item 42); the Android runner uses it.
+- Plans, catalogue, review reports and test drafts (`plans/ui-tests/drafts/`, batch 3 unmerged) are in the PR.
