@@ -1,0 +1,84 @@
+--- a/linux-user/qemu.h
++++ b/linux-user/qemu.h
+@@ -100,6 +100,11 @@
+ 
+ struct TaskState {
+     pid_t ts_tid;     /* tid (or pid) of this task */
++#if defined(TARGET_ARM) && !defined(TARGET_AARCH64)
++    /* Guest execution domain when the host cannot accept PER_LINUX32. */
++    uint32_t guest_personality;
++    bool guest_personality_virtualized;
++#endif
+ #ifdef TARGET_ARM
+ # ifdef TARGET_ABI32
+     /* FPA state */
+--- a/linux-user/syscall.c
++++ b/linux-user/syscall.c
+@@ -6969,6 +6969,11 @@
+         ts->bprm = parent_ts->bprm;
+         ts->info = parent_ts->info;
+         ts->signal_mask = parent_ts->signal_mask;
++#if defined(TARGET_ARM) && !defined(TARGET_AARCH64)
++        ts->guest_personality = parent_ts->guest_personality;
++        ts->guest_personality_virtualized =
++            parent_ts->guest_personality_virtualized;
++#endif
+ 
+ #ifdef TARGET_AARCH64
+         ts->gcs_el0_locked = parent_ts->gcs_el0_locked;
+@@ -9653,6 +9658,43 @@
+            int, __to_dfd, const char *, __to_pathname, unsigned int, flag)
+ #endif
+ 
++#if defined(TARGET_ARM) && !defined(TARGET_AARCH64)
++/*
++ * Android's ARM32 libc requests PER_LINUX32 during startup.  An ARM64 host
++ * without AArch32 EL0 rejects that execution domain even though TCG can run
++ * the guest.  QEMU already provides the guest architecture for uname().
++ *
++ * Only substitute the execution domain after the host rejects it with EINVAL.
++ * Keep every upper flag host-backed, and retain the full guest value so query
++ * and setter return values do not expose the substituted host domain.  This
++ * per-task state is copied by clone; a new Android exec initializes it again
++ * when libc sets its personality.
++ */
++static abi_long do_arm32_personality(CPUState *cpu, uint32_t value)
++{
++    TaskState *ts = get_task_state(cpu);
++    uint32_t previous = ts->guest_personality;
++    bool virtualized = ts->guest_personality_virtualized;
++    int ret = personality(value);
++
++    if (ret == -1 && errno == EINVAL && (value & PER_MASK) == PER_LINUX32) {
++        ret = personality((value & ~PER_MASK) | PER_LINUX);
++        if (ret != -1) {
++            ts->guest_personality = value;
++            ts->guest_personality_virtualized = true;
++            return virtualized ? previous : (uint32_t)ret;
++        }
++    }
++    if (ret == -1) {
++        return get_errno(ret);
++    }
++    if (value != UINT32_MAX) {
++        ts->guest_personality_virtualized = false;
++    }
++    return virtualized ? previous : (uint32_t)ret;
++}
++#endif
++
+ /* This is an internal helper for do_syscall so that it is easier
+  * to have a single return point, so that actions, such as logging
+  * of syscall results, can be performed.
+@@ -11732,7 +11774,11 @@
+     case TARGET_NR_fchdir:
+         return get_errno(fchdir(arg1));
+     case TARGET_NR_personality:
++#if defined(TARGET_ARM) && !defined(TARGET_AARCH64)
++        return do_arm32_personality(cpu, (uint32_t)arg1);
++#else
+         return get_errno(personality(arg1));
++#endif
+ #ifdef TARGET_NR__llseek /* Not on alpha */
+     case TARGET_NR__llseek:
+         {

@@ -60,6 +60,31 @@ Apple A7 instruction baseline before `mac2ios` retags the archives. The cached
 native compiler itself stays unchanged. Android applies the RTS source patch
 when building its boot libraries.
 
+Android ARM32's QEMU wrapper preserves the guest's `PER_LINUX32` execution
+domain when an ARM64 host kernel rejects that domain. Upper personality flags
+still go through the host, and queries and setters retain the previous guest
+value. This applies only to the Android ARM32 emulator; native compiler cache
+paths and the other emulator targets stay unchanged. Android's libc initializes
+this state again at startup after an exec.
+
+A standalone C regression checks startup, full personality values, the host's
+`UNAME26` effect, and independent thread/fork state. Run it from this checkout
+with configured Linux builders; Nix supplies the pinned Android API26 NDK and
+patched QEMU. The NDK compiles the tiny payload on x86_64 Linux; QEMU then runs
+on the selected Linux architecture. For example, on an Apple Silicon Mac whose
+Linux builder supports both x86_64 and ARM64:
+
+```sh
+nix build --impure --file scripts/nix/check-android-personality.nix \
+  --argstr system aarch64-linux --max-jobs 1 --cores 1 --print-build-logs
+```
+
+Use `--argstr system x86_64-linux` for an x86_64 Linux builder. This optional
+check does not add a Hydra output. It checks C startup and personality handling;
+it does not qualify GHC/base under Rosetta, cross-TH, or Android device behavior.
+The static C fixture supplies the ARM TLS alignment input added to newer
+Android CRTs; its minimum API stays at 26.
+
 `NIX_ARGS` passes additional options to `nix build`, and `NIX_OUT_DIR` changes the
 output-link directory. Each derivation has a two-hour timeout by default; set
 `NIX_BUILD_TIMEOUT` in seconds to change it. For a wall-clock limit on a local
