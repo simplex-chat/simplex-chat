@@ -340,18 +340,25 @@ new_chat_sheet_search() {
   check "New chat: \"Directory\" header above #ci_channel" above "Directory" "#ci_channel"
   check "New chat: Names, then Directory, from the search field up" \
     in_order "Directory" "#ci_channel" "Names" "ci_contact" "Search in Directory"
+  # with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
+  "$ui" key Escape
+  "$ui" wait "Create group" 10
+  "$ui" click 27 730
   back_to_chat_list || fail "no chat list after the New chat sheet"
 }
 
 # Escape closes one screen at a time, and clears the search field
 back_to_chat_list() {
   for _ in 1 2 3 4 5 6; do
-    if not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"; then
-      return 0
-    fi
+    on_chat_list && return 0
     "$ui" key Escape
   done
-  on_screen "Search or paste SimpleX link"
+  on_chat_list
+}
+
+# New chat has the same search field
+on_chat_list() {
+  not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"
 }
 
 # Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
