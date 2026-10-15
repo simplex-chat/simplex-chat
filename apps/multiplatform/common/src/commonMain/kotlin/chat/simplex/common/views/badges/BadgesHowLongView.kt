@@ -75,7 +75,9 @@ enum class BadgePeriod {
 
 @Composable
 fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDepth: Int) {
-  var selectedPeriod by remember { mutableStateOf(BadgePeriod.OneMonth) }
+  var chosenPeriod by remember { mutableStateOf<BadgePeriod?>(null) }
+  // monthly once subscriptions turn out to be for sale, unless a period was chosen before that
+  val selectedPeriod = chosenPeriod ?: (if (BadgeStore.forSale(BadgePeriod.Monthly)) BadgePeriod.Monthly else BadgePeriod.OneMonth)
 
   LaunchedEffect(Unit) { BadgeStore.load() }
   CloseWhenSupportGivesWay(modalManager, unwindToDepth)
@@ -114,7 +116,7 @@ fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDep
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       BadgePeriod.entries.forEach { period ->
-        PeriodCard(level, period, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
+        PeriodCard(level, period, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { chosenPeriod = it }
       }
     }
 
