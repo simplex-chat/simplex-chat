@@ -48,6 +48,9 @@
               ghcOptions = lib.mkDefault [
                 "-j1"
               ];
+              # Enable SQLCipher encryption for native/static builds too. This
+              # beats generated Cabal defaults; archive targets select CommonCrypto.
+              packages.direct-sqlcipher.flags.openssl = lib.mkOverride 900 true;
             }
           )
 
@@ -600,6 +603,7 @@
                   packages.simplex-chat.flags.swift = true;
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
+                  packages.direct-sqlcipher.flags.openssl = false;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplex-chat.flags.client_library = true;
@@ -617,6 +621,7 @@
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
+                  packages.direct-sqlcipher.flags.openssl = false;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplex-chat.flags.client_library = true;
@@ -637,6 +642,7 @@
                   packages.simplex-chat.flags.swift = true;
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
+                  packages.direct-sqlcipher.flags.openssl = false;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplex-chat.flags.client_library = true;
@@ -653,6 +659,7 @@
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
+                  packages.direct-sqlcipher.flags.openssl = false;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplex-chat.flags.client_library = true;
