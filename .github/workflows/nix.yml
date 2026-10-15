@@ -64,6 +64,9 @@ jobs:
           extra_nix_config: |
             extra-substituters = https://cache.iog.io https://cache.zw3rk.com
             extra-trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=
+            # The pinned haskell.nix uses this scheduling marker for cross
+            # slices that need a real x86_64 host. This runner is native x86_64.
+            extra-system-features = ${{ matrix.system == 'x86_64-linux' && 'recursive-nix' || '' }}
 
       - name: Show outputs from this checkout
         run: make nix-list

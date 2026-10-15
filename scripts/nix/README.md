@@ -80,6 +80,14 @@ the same `hydraJobs` attributes. The older application release workflow still
 uses its existing GHCup/Docker compiler settings; migrating that packaging and
 release path is separate from this Nix build lane.
 
+Hydra needs builders advertising `aarch64-darwin` and `x86_64-darwin` to run the
+corresponding Mac/iOS jobs. Check its [builder pool](https://ci.zw3rk.com/machines)
+when jobs remain queued. For cross builds, the pinned haskell.nix also uses
+`recursive-nix` as a scheduling marker for slices that require a real x86_64
+Linux host. Advertise that feature on a native x86_64 Linux builder; keep it off
+x86_64 Linux slots running through Rosetta on Apple Silicon. The GitHub workflow
+sets it only for its native x86_64 Linux runner.
+
 To build both Android APK ABIs from the current checkout, preserving the same
 compiler and source, use the existing builder's source/skip-checkout flags:
 
