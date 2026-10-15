@@ -2,13 +2,14 @@
 pkgs:
 let
   inherit (pkgs.stdenv) buildPlatform hostPlatform targetPlatform;
+  nativePackages = import ./native-packages.nix { inherit haskellNix; };
   # Extending a buildPackages splice can restore its parent cross compiler.
   # Start native compiler selection from a fresh native set so Cabal's build
   # tools see the installed boot libraries, rather than an empty target DB.
   # Compare full triples: a GNU-to-musl cross has the same system string.
   compilerPkgs = if buildPlatform.config == hostPlatform.config
       && buildPlatform.config == targetPlatform.config
-    then haskellNix.legacyPackages.${buildPlatform.system}
+    then nativePackages buildPlatform.system
     else pkgs;
 in
 # Hydra's compiler builds use this overlay. Its pkg-config metadata changes
