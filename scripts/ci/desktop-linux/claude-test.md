@@ -16,7 +16,7 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
 
 **A. Search in Directory.**
 
-1. Click the search field and type `ci seed`. A row "Search in Directory" appears; click it.
+1. Click the search field and type `ci seed`. A row "Search in Directory" appears. Take a shot: in the first layout, check that the chat list still shows its banner "Invest in SimpleX Chat", the "Bottom bar" / "Top bar" card and the "New 1-time link" / "Paste link" cards. Then click "Search in Directory".
 2. The alert "Search in Directory?" asks before searching. In the first layout click "Search"; in the second, "Search and don't show again".
 3. Wait for results, up to 60 s. If "Search failed, tap to retry" shows, tap it once and note it.
 4. Use "Show more" until both #ci_group and #ci_channel are listed, and note how many pages that took.
@@ -24,9 +24,10 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
    - each result's row shows its name, its description, its count ("2 members" or "1 subscriber") and "Join group" (#ci_group) or "Join channel" (#ci_channel);
    - the count's text is smaller than the description's above it: compare `ui ink "1 subscriber"` with `ui ink "CI seeded channel"`, and look at the screenshot;
    - each shows its avatar, filling the picture: run `ui avatar "#ci_group" red` and `ui avatar "#ci_channel" green`, and look at the screenshot;
+   - that banner and those cards are hidden while the results show;
    - **(both layouts)** the "Directory" header is above its results;
    - **(both layouts)** no "Show more" is left, and nothing is cut off, overlapping or garbled.
-6. Press Escape to clear the search field.
+6. Press Escape to clear the search field. In the first layout, take a shot and check that the banner and the cards show again.
 
 **B. The full search.**
 
@@ -45,7 +46,8 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
 
 You have at most 60 turns, and the whole test fits in about 40 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example, in the first layout:
 
-- `ui do click-text "Search or paste SimpleX link" -- type "ci seed" -- click-text "Search in Directory" -- wait "Search and don't show again" -- click-text "Search" -- wait "Join" 60 -- shot bottom-directory-1`
+- `ui do click-text "Search or paste SimpleX link" -- type "ci seed" -- wait "Search in Directory" -- shot bottom-typed`
+- `ui do click-text "Search in Directory" -- wait "Search and don't show again" -- click-text "Search" -- wait "Join" 60 -- shot bottom-directory-1`
 - `ui do click-text "Show more" -- wait "#ci_group" 60 -- shot bottom-directory-2` (wait for whichever result is missing)
 - `ui do avatar "#ci_group" red -- avatar "#ci_channel" green`
 - `ui do key Escape -- click-text "Search or paste SimpleX link" -- type seeded -- wait "Connect to seeded.testing" -- key Return -- wait "Search and don't show again" -- click-text "Search" -- wait ci_contact 60 -- shot bottom-full-1`
