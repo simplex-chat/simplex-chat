@@ -37,7 +37,8 @@
       }; in
       # `appendOverlays` with a singleton is identical to `extend`.
       let nativePackages = import ./scripts/nix/native-packages.nix { inherit haskellNix; }; in
-      let pkgs = (nativePackages system).appendOverlays [android26]; in
+      let compilerCache = import ./scripts/nix/compiler-cache-overlay.nix { inherit haskellNix; }; in
+      let pkgs = (nativePackages system).appendOverlays [android26 compilerCache]; in
       let compilerSelection = import ./scripts/nix/compiler-selection.nix { inherit haskellNix; }; in
       let mobileRuntime = import ./scripts/nix/mobile-runtime.nix { inherit pkgs compilerSelection; }; in
       let drv' = { extra-modules, pkgs', package-flags ? {}, package-ghc-options ? {}, mobile ? false, ... }:
