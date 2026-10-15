@@ -53,6 +53,11 @@ You will have to add `/opt/homebrew/opt/openssl@3.0/bin` to your PATH in order t
 
 ## Project branches
 
+The pinned GHC 9.14 Nix build lane uses one checkout for every supported target,
+including Android ARMv7. See [Haskell builds with Nix](../scripts/nix/README.md)
+for its commands and validation status. The `*-android` branch instructions below
+describe the legacy release process while that migration is being validated.
+
 **In simplex-chat repo**
 
 - `stable` - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.3).

@@ -5,9 +5,9 @@ The compiler and all cross-compilers come from the haskell.nix input pinned in
 GHC 9.14 release from GHCup. Use the same source checkout and lock file for every
 platform; Android ARMv7 does not require a separate branch or tag.
 
-`compiler-selection.nix` matches Hydra's compiler build context so the pinned
-compiler can use its existing cache. That context is scoped to the compiler and
-its build tools; application dependencies keep the project's current packages.
+`compiler-selection.nix` and `compiler-cache-overlay.nix` match Hydra's compiler
+build context, including auxiliary iserv projects, so the pinned compiler can use
+its existing cache. Application dependencies keep the project's current packages.
 
 Run these commands from the repository root:
 
@@ -91,6 +91,20 @@ This command also needs the Android SDK, Gradle, and its other existing tools.
 The APK reproduction script now checks out the supplied tag for both ABIs.
 Historical releases that used a separate `-armv7a` tag must be reproduced with
 their historical build scripts.
+
+## Migration validation
+
+On 2026-10-15, all 21 existing Hydra derivations evaluated successfully at
+`c72da15836d9b154532db29eb5013c3b8fb37a14`: 11 on x86_64 Linux, two on ARM64 Linux,
+and four on each Darwin architecture. This includes both Android ABIs, Windows,
+and all three static Linux targets.
+
+The native ARM64 Darwin library and CLI compiled with the pinned compiler using
+Cabal. Encrypted-store/profile-password, BBS, and native mobile C API smoke checks
+passed. The replacement RTS and `text` also built with Nix and passed ABI,
+instruction-baseline, UTF-8, and GC checks. These checks do not establish that all
+21 final Nix artifacts build: that artifact matrix is still unverified. Android
+device tests and an Xcode application build remain unverified too.
 
 ## Updating package hashes
 
