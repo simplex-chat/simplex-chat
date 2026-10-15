@@ -40,7 +40,7 @@ import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
 import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, storeTransactionRef)
-import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef)
+import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts, appleTransactionRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
@@ -116,6 +116,7 @@ badgeTests = do
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
+    it "reads an Apple transaction's id, purchase date, revocation and type from its unverified payload" testAppleTransactionFacts
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
@@ -981,6 +982,22 @@ testAppleTransactionRef = do
   appleTransactionRef (jws ids) `shouldBe` Just "2000000900000002"
   -- a subscription is never claimed by its own transaction id, which the next renewal would not share
   appleTransactionRef (jws $ take 2 (ofType "Auto-Renewable Subscription")) `shouldBe` Nothing
+
+testAppleTransactionFacts :: IO ()
+testAppleTransactionFacts = do
+  let jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
+      part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      renewal = ["transactionId" J..= ("2000000900000002" :: T.Text), "type" J..= ("Auto-Renewable Subscription" :: T.Text)]
+      facts purchaseDate revoked autoRenewable = Just AppleTransactionFacts {transactionId = "2000000900000002", purchaseDate, revoked, autoRenewable}
+  appleTransactionFacts (jws $ ("purchaseDate" J..= (1769904000000 :: Int)) : renewal) `shouldBe` facts (Just 1769904000000) False True
+  -- the service reads a null revocationDate as not revoked, and so does the client
+  appleTransactionFacts (jws $ ("revocationDate" J..= J.Null) : renewal) `shouldBe` facts Nothing False True
+  appleTransactionFacts (jws $ ("revocationDate" J..= (1770000000000 :: Int)) : renewal) `shouldBe` facts Nothing True True
+  -- a date that does not read is absent, and leaves the rest of the payload readable
+  appleTransactionFacts (jws $ ("purchaseDate" J..= ("yesterday" :: T.Text)) : renewal) `shouldBe` facts Nothing False True
+  appleTransactionFacts (jws $ take 1 renewal <> ["type" J..= ("Consumable" :: T.Text)]) `shouldBe` facts Nothing False False
+  appleTransactionFacts (jws $ drop 1 renewal) `shouldBe` Nothing
+  appleTransactionFacts "not.a-jws" `shouldBe` Nothing
 
 testShownServiceRequest :: IO ()
 testShownServiceRequest = do

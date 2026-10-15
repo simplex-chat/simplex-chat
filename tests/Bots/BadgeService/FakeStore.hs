@@ -8,6 +8,7 @@ module Bots.BadgeService.FakeStore
   ( FakeStore (..),
     newFakeStore,
     googleVerifierWithHook,
+    subscriptionCheckWithHook,
     settlePending,
     setGoogleDown,
     googleSupporterToken,
@@ -21,6 +22,7 @@ module Bots.BadgeService.FakeStore
     setSubscription,
     subscriptionChecks,
     googlePayment,
+    subscriptionJWS,
     unsignedJWS,
   )
 where
@@ -29,9 +31,11 @@ import BadgeService.StoreReceipts
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import qualified Data.Aeson as J
+import Data.Aeson.Types (Pair)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
+import Data.Int (Int64)
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
@@ -53,10 +57,12 @@ data FakeStore = FakeStore
     appleThrowingJWS :: Text,
     appleMisnamedJWS :: Text,
     appleQuantityJWS :: Text,
-    -- two transactions of the subscription appleSubscriptionOriginalId names, and one from Apple's Sandbox
+    -- two transactions of the subscription appleSubscriptionOriginalId names, the renewal bought later, one
+    -- from Apple's Sandbox, and a later one Apple revoked, which the fake does not vouch for
     appleSubscriptionJWS :: Text,
     appleRenewalSubscriptionJWS :: Text,
     appleSandboxSubscriptionJWS :: Text,
+    appleRevokedSubscriptionJWS :: Text,
     pendingSettled :: IORef Bool,
     googleDown :: IORef Bool,
     -- what the store answers about each subscription: Apple's by original id, Google's by token
@@ -73,9 +79,10 @@ newFakeStore = do
   let appleThrowingJWS = unsignedJWS "{\"transactionId\":\"2000000812345679\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleMisnamedJWS = unsignedJWS "{\"transactionId\":\"2000000812345698\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleQuantityJWS = unsignedJWS "{\"transactionId\":\"2000000812345697\",\"productId\":\"BADGE_SUPPORTER_01\"}"
-      appleSubscriptionJWS = subscriptionJWS "2000000812345681"
-      appleRenewalSubscriptionJWS = subscriptionJWS "2000000812345683"
-      appleSandboxSubscriptionJWS = subscriptionJWS "2000000812345682"
+      appleSubscriptionJWS = subscriptionJWS "2000000812345681" [purchasedAt 1767225600000]
+      appleRenewalSubscriptionJWS = subscriptionJWS "2000000812345683" [purchasedAt 1769904000000]
+      appleSandboxSubscriptionJWS = subscriptionJWS "2000000812345682" [purchasedAt 1767225600000]
+      appleRevokedSubscriptionJWS = subscriptionJWS "2000000812345684" [purchasedAt 1769904000000, "revocationDate" J..= (1770000000000 :: Int64)]
   pendingSettled <- newIORef False
   googleDown <- newIORef False
   subscriptions <- newIORef M.empty
@@ -113,6 +120,7 @@ newFakeStore = do
         appleSubscriptionJWS,
         appleRenewalSubscriptionJWS,
         appleSandboxSubscriptionJWS,
+        appleRevokedSubscriptionJWS,
         pendingSettled,
         googleDown,
         subscriptions,
@@ -123,18 +131,23 @@ newFakeStore = do
     fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)
     appleTransaction transactionRef productId testPurchase cents =
       VerifiedStoreTransaction {transactionRef, productId, quantity = 1, testPurchase, paid = Just (CurrencyAmount cents, "USD"), alreadyAcknowledged = False}
-    subscriptionJWS transactionId =
-      unsignedJWS $
-        LB.toStrict $
-          J.encode $
-            J.object
-              [ "transactionId" J..= (transactionId :: Text),
-                "originalTransactionId" J..= appleSubscriptionOriginalId,
-                "type" J..= ("Auto-Renewable Subscription" :: Text),
-                "productId" J..= ("SUBSCR_BADGE_SUPPORTER_MONTH_01" :: Text)
-              ]
+    purchasedAt ms = "purchaseDate" J..= (ms :: Int64)
     appleSubscription jws testPurchase =
       VerifiedStoreTransaction {transactionRef = fromMaybe "" (appleTransactionRef jws), productId = "SUBSCR_BADGE_SUPPORTER_MONTH_01", quantity = 1, testPurchase, paid = Just (CurrencyAmount 700, "USD"), alreadyAcknowledged = False}
+
+-- | A transaction of the subscription appleSubscriptionOriginalId names, with the payload fields given.
+subscriptionJWS :: Text -> [Pair] -> Text
+subscriptionJWS transactionId fields =
+  unsignedJWS $
+    LB.toStrict $
+      J.encode $
+        J.object $
+          [ "transactionId" J..= transactionId,
+            "originalTransactionId" J..= appleSubscriptionOriginalId,
+            "type" J..= ("Auto-Renewable Subscription" :: Text),
+            "productId" J..= ("SUBSCR_BADGE_SUPPORTER_MONTH_01" :: Text)
+          ]
+            <> fields
 
 subscriptionKey :: SubscriptionRef -> Either Text Text
 subscriptionKey = \case
@@ -173,6 +186,16 @@ googleVerifierWithHook hook FakeStore {fakeVerifier = v@StoreVerifier {verifyGoo
       action <- atomicModifyIORef' hook (pure (),)
       action
       verify productId token
+
+-- | The fake store, running the hook's action once, inside the first subscription check, before it answers.
+subscriptionCheckWithHook :: IORef (IO ()) -> FakeStore -> StoreVerifier
+subscriptionCheckWithHook hook FakeStore {fakeVerifier = v@StoreVerifier {checkSubscription}} =
+  v {checkSubscription = hooked <$> checkSubscription, verifyTimeout = 10000000}
+  where
+    hooked check ref = do
+      action <- atomicModifyIORef' hook (pure (),)
+      action
+      check ref
 
 settlePending :: FakeStore -> IO ()
 settlePending FakeStore {pendingSettled} = writeIORef pendingSettled True

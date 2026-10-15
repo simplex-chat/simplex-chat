@@ -201,6 +201,8 @@ badgeServiceTests = do
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
     it "should keep the device store's view of a credited subscription, except renewing over billing retry, and nothing for any other transaction" testSubscriptionStateFromStore
     it "should resolve an Apple renewal to the subscription's record, and credit a held record that adopted it" testAppleRenewalResolvesToPurchase
+    it "should adopt into a held Apple record only another transaction bought later and not revoked" testAppleAdoptionRules
+    it "should credit an adopted Apple transaction at once though the attempt with the one before it failed" testAdoptedReceiptNotOverwritten
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
     it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
     it "should acknowledge a Play subscription as a subscription before crediting it, and credit nothing when acknowledging fails" testPlaySubscriptionAcknowledgedBeforeCrediting
@@ -2411,9 +2413,55 @@ testSubscriptionStateFromStore ps =
       subscriptionStatuses (chatController alice) `shouldReturn` [Just "billingRetry"]
       subscriptionChecks store `shouldReturn` checks
 
-setStoreReceiptDue :: ChatController -> UTCTime -> IO ()
-setStoreReceiptDue ChatController {chatStore} t =
-  withTransaction chatStore $ \db -> DB.execute db "UPDATE badge_store_receipts SET next_attempt_at = ?" (Only t)
+-- | The held record's payment and when it is next attempted.
+heldStoreReceiptAttempt :: ChatController -> IO [(Text, UTCTime)]
+heldStoreReceiptAttempt ChatController {chatStore} =
+  withTransaction chatStore $ \db -> DB.query_ db "SELECT payment, next_attempt_at FROM badge_store_receipts WHERE payment IS NOT NULL"
+
+testAppleAdoptionRules :: HasCallStack => TestParams -> IO ()
+testAppleAdoptionRules ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store@FakeStore {appleSubscriptionJWS, appleRevokedSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      now <- serviceNow env
+      setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime 3600 now) 1
+      let handOver jws = do
+            alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws})
+            storePurchaseOpen alice ""
+      handOver appleSubscriptionJWS
+      heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      held <- heldStoreReceiptAttempt (chatController alice)
+      checks <- subscriptionChecks store
+      let resigned = T.intercalate "." $ take 2 (T.splitOn "." appleSubscriptionJWS) <> ["c2lnbmVkIGFnYWlu"]
+          earlier = subscriptionJWS "2000000812345685" ["purchaseDate" J..= (1764547200000 :: Int64)]
+          undated = subscriptionJWS "2000000812345686" []
+      forM_ [appleSubscriptionJWS, resigned, earlier, undated, appleRevokedSubscriptionJWS] $ \jws -> do
+        handOver jws
+        heldStoreReceiptAttempt (chatController alice) `shouldReturn` held
+      subscriptionChecks store `shouldReturn` checks
+
+testAdoptedReceiptNotOverwritten :: HasCallStack => TestParams -> IO ()
+testAdoptedReceiptNotOverwritten ps = do
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  hook <- newIORef (pure ())
+  withBadgeServiceVerifier ps (subscriptionCheckWithHook hook) $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store@FakeStore {appleSubscriptionJWS, appleRenewalSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      now <- serviceNow env
+      -- the first check waits for the renewal's hand-over and finds no subscription; the next finds it charged
+      writeIORef hook $ do
+        putMVar entered ()
+        takeMVar release
+        writeIORef hook $ setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) now) 1
+      let handOver jws = do
+            alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws})
+            storePurchaseOpen alice ""
+      handOver appleSubscriptionJWS
+      timeout 30000000 (takeMVar entered) `shouldReturn` Just ()
+      handOver appleRenewalSubscriptionJWS
+      putMVar release ()
+      -- the failed attempt sent the first transaction, so it does not put off the renewal adopted meanwhile
+      alice <##. "1: supporter"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]
 
 testAppleRenewalResolvesToPurchase :: HasCallStack => TestParams -> IO ()
 testAppleRenewalResolvesToPurchase ps =
@@ -2427,9 +2475,8 @@ testAppleRenewalResolvesToPurchase ps =
       handOver appleSubscriptionJWS
       storePurchaseOpen alice ""
       heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
-      -- a renewal with another transaction id joins that record, and is credited at its next attempt
+      -- a later renewal joins that record, which presents it at once
       appleReports $ addUTCTime (-3600) now
-      setStoreReceiptDue (chatController alice) now
       handOver appleRenewalSubscriptionJWS
       inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]

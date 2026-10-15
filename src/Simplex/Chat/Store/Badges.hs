@@ -57,7 +57,7 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState)
-import Simplex.Chat.PaymentService (ServicePayment)
+import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (StoreError, insertedRowId)
 import Simplex.Chat.Types
@@ -135,9 +135,16 @@ data BadgeReceiptStatus
 holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> StoreReceiptOrigin -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe BadgeReceiptRecord)
 holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
   getReceiptRecord db txRef >>= \case
-    Just r@BadgeReceiptRecord {receiptId} -> do
+    Just r@BadgeReceiptRecord {receiptId, status} -> do
       -- a resolved record stays resolved, so a hand-over landing just after its credit cannot hold it again
-      DB.execute db "UPDATE badge_store_receipts SET payment = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL" (paymentJSON, receiptId)
+      case status of
+        RSHeld {payment = held}
+          | laterAppleTransaction payment held ->
+              DB.execute
+                db
+                "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment = ?"
+                (paymentJSON, now, receiptId, held)
+        _ -> pure ()
       pure $ Just r
     Nothing -> do
       forM_ invoiceId_ $ \invoiceId ->
@@ -170,6 +177,18 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
           ON CONFLICT DO NOTHING
         |]
         ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, now))
+
+-- | Whether a held Apple record presents this payment next: another transaction of its subscription, bought
+-- later and not revoked. The core decides which is newest, since the app's store listener races its sweep, and a
+-- re-delivered or re-signed copy of the held transaction changes nothing, so it cannot cost another store check.
+laterAppleTransaction :: ServicePayment -> Text -> Bool
+laterAppleTransaction payment held = case (payment, decodeJSON held) of
+  (SPApple {jws}, Just SPApple {jws = heldJws}) -> case (appleTransactionFacts jws, appleTransactionFacts heldJws) of
+    ( Just AppleTransactionFacts {transactionId, purchaseDate = Just purchasedAt, revoked = False},
+      Just AppleTransactionFacts {transactionId = heldId, purchaseDate = Just heldPurchasedAt}
+      ) -> transactionId /= heldId && purchasedAt > heldPurchasedAt
+    _ -> False
+  _ -> False
 
 getReceiptRecord :: DB.Connection -> StoreTransactionRef -> IO (Maybe BadgeReceiptRecord)
 getReceiptRecord db StoreTransactionRef {provider, transactionRef} =
@@ -239,16 +258,17 @@ getNextHeldStoreReceipt db userId =
     toHeld (stashRow@(receiptId, _, _, _) :. (invoiceId, payment, nextAttemptAt, retryDelay)) =
       BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, invoiceId, payment, nextAttemptAt, retryDelay}}
 
-recordStoreReceiptFailure :: DB.Connection -> Int64 -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
-recordStoreReceiptFailure db receiptId retryDelay nextAttemptAt failure =
+-- | Only while the record still holds the payment that failed: one adopted meanwhile is due at once.
+recordStoreReceiptFailure :: DB.Connection -> Int64 -> Text -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
+recordStoreReceiptFailure db receiptId payment retryDelay nextAttemptAt failure =
   DB.execute
     db
     [sql|
       UPDATE badge_store_receipts
       SET retry_delay = ?, next_attempt_at = ?, retry_count = retry_count + 1, credit_error = ?
-      WHERE badge_store_receipt_id = ? AND payment IS NOT NULL
+      WHERE badge_store_receipt_id = ? AND payment = ?
     |]
-    (retryDelay, nextAttemptAt, failure, receiptId)
+    (retryDelay, nextAttemptAt, failure, receiptId, payment)
 
 -- | Kept rather than deleted, so that a later hand-over of the same transaction is answered from the record.
 refuseStoreReceipt :: DB.Connection -> Int64 -> BadgeIssueFailure -> IO ()

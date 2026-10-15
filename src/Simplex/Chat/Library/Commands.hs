@@ -5577,7 +5577,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
             -- a buyer is waiting, so unlike a renewal a failure that can clear on its own never waits the day
             | badgeFailureTransient failure = (fromIntegral delay / 1000000, SRORetry)
             | otherwise = (badgeStalledInterval, SRODeferred)
-      withStore' $ \db -> recordStoreReceiptFailure db receiptId (nextRetryDelay 0 delay ri) (retryIn `addUTCTime` now) failure
+      withStore' $ \db -> recordStoreReceiptFailure db receiptId payment (nextRetryDelay 0 delay ri) (retryIn `addUTCTime` now) failure
       pure outcome
 
 -- | Retire what has ended, renew what is due, then report the next wake. Waking early, late or not
