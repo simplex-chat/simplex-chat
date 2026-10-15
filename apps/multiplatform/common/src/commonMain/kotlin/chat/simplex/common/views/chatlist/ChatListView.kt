@@ -1107,6 +1107,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val rows = onlineSearch.rows(shownChatIds = chats.map { it.id }.toSet())
+  val showsCards = !onlineSearch.showResults
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
@@ -1138,16 +1139,14 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ChatListSearchBarWithTags(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
       }
     }
-    if (!oneHandUICardShown.value && !onlineSearch.showResults) {
+    if (showsCards && !oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
       }
     }
     // one slot: a badge the user paid for ending outranks the pitch to get one
     val alert = BadgeModel.alert.value
-    if (onlineSearch.showResults) {
-      // banners give way to online results
-    } else if (supportEnded() && alert != null) {
+    if (showsCards && supportEnded() && alert != null) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1159,7 +1158,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (badgeIssueFailed()) {
+    } else if (showsCards && badgeIssueFailed()) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1172,7 +1171,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
+    } else if (showsCards && chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1186,7 +1185,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
+    } else if (showsCards && chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1206,7 +1205,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
     nameRows(rows.names, oneHandUI.value)
     directoryRows(rows, onlineSearch, oneHandUI.value)
-    if (!addressCreationCardShown.value && !onlineSearch.showResults) {
+    if (showsCards && !addressCreationCardShown.value) {
       item {
         ChatListFeatureCards()
       }
