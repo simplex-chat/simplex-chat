@@ -19,7 +19,7 @@
         pkgsCross = prev.pkgsCross // {
           aarch64-android-prebuilt = import prev.path {
             inherit system;
-            inherit (prev) overlays;
+            overlays = prev.overlays ++ [ (import ./scripts/nix/android-iconv-overlay.nix) ];
             # Permit the SDK/NDK's unfree packages only in these Android sets.
             # Some SDK fetchers use unprefixed names such as platform-tools.
             config = prev.config // { allowUnfree = true; };
@@ -27,7 +27,7 @@
           };
           armv7a-android-prebuilt = import prev.path {
             inherit system;
-            inherit (prev) overlays;
+            overlays = prev.overlays ++ [ (import ./scripts/nix/android-iconv-overlay.nix) ];
             # Permit the SDK/NDK's unfree packages only in these Android sets.
             # Some SDK fetchers use unprefixed names such as platform-tools.
             config = prev.config // { allowUnfree = true; };
@@ -226,15 +226,6 @@
               let
                   androidPkgs = pkgs.pkgsCross.aarch64-android-prebuilt;
                   android32Pkgs = pkgs.pkgsCross.armv7a-android-prebuilt;
-                  # For some reason building libiconv with nixpgks android setup produces
-                  # LANGINFO_CODESET to be found, which is not compatible with android sdk 23;
-                  # so we'll patch up iconv to not include that.
-                  androidIconv = (androidPkgs.libiconv.override { enableStatic = true; }).overrideAttrs (old: {
-                      postConfigure = ''
-                      echo "#undef HAVE_LANGINFO_CODESET" >> libcharset/config.h
-                      echo "#undef HAVE_LANGINFO_CODESET" >> lib/config.h
-                      '';
-                  });
                   # Similarly to icovn, for reasons beyond my current knowledge, nixpkgs andorid
                   # toolchain makes configure believe we have MEMFD_CREATE, which we don't in
                   # sdk 23.
@@ -454,7 +445,6 @@
                   # find ./dist -name "libHS*-ghc*.a" -exec cp {} $out/_pkg \;
                   # find ${android32FFI}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${android32Pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${android32Pkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   echo ${android32Pkgs.openssl.override { enableKTLS = false; }}
                   find ${(android32Pkgs.openssl.override { enableKTLS = false; }).out}/lib -name "*.so" -exec cp {} $out/_pkg \;
@@ -530,7 +520,6 @@
                   # find ./dist -name "libHS*-ghc*.a" -exec cp {} $out/_pkg \;
                   # find ${androidFFI}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${androidPkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${androidPkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   echo ${androidPkgs.openssl}
                   find ${androidPkgs.openssl.out}/lib -name "*.so" -exec cp {} $out/_pkg \;
