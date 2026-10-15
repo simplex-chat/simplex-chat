@@ -211,8 +211,8 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
-          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
 
       - name: Download core library
         uses: actions/download-artifact@v7
@@ -275,7 +275,9 @@ jobs:
 
       - name: Run smoke test
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.link.outcome == 'success' }}
-        run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/smoke-test"
+        run: |
+          export NAMES_SERVER=$(cat "$RUNNER_TEMP/backend/names-server")
+          scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/smoke-test"
 
       - name: Stop test backend
         if: ${{ !cancelled() }}

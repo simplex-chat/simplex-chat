@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Builds the CLI and the directory service that the app job runs as its test backend.
+# Builds the CLI, the directory service and the SMP server that the app job runs as its test backend.
 # Usage: scripts/ci/desktop-linux/build-backend.sh <output .tar.gz>
 # They need the server-capable configuration (no client_library), as build.yml's Linux job builds the CLI.
+# The SMP server, which resolves the test's SimpleX names, comes from a clone of the simplexmq commit that
+# cabal.project pins: cabal builds only the libraries of a source-repository-package.
 
 set -euo pipefail
 
@@ -23,10 +25,19 @@ EOF
 
 cabal build exe:simplex-chat exe:simplex-directory-service
 
+simplexmq_tag=$(sed -n '/simplex-chat\/simplexmq.git/{n;s/^ *tag: *//p}' cabal.project)
+smq=$(mktemp -d)
+git -C "$smq" init -q
+git -C "$smq" fetch -q --depth 1 https://github.com/simplex-chat/simplexmq.git "$simplexmq_tag"
+git -C "$smq" checkout -q FETCH_HEAD
+cp cabal.project.local "$smq"
+(cd "$smq" && cabal build exe:smp-server)
+
 pkg=$(mktemp -d)
 for exe in simplex-chat simplex-directory-service; do
   cp "$(cabal list-bin "exe:$exe")" "$pkg"
 done
+cp "$(cd "$smq" && cabal list-bin exe:smp-server)" "$pkg"
 ldd "$pkg"/*
 
 tar -C "$pkg" -czf "$out" .
