@@ -2,7 +2,8 @@
 
 # Installs the app in a new iPhone simulator and runs the scripted UI cases with the ui helper:
 # onboarding to the chat list, typing in the search field, and searching the test directory, whose results
-# must have the Directory header above them in both layouts. It leaves the app in the one-hand UI.
+# must show their avatars and have the Directory header above them in both layouts; then, with a joined
+# channel, the chat list's cards must show while typing and hide under the results. It leaves the app in the one-hand UI.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir>
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -79,6 +80,85 @@ expect_header_above_results() {
   echo "in the $1 layout the Directory header (y=$header) is above its results (#ci_group y=$group, #ci_channel y=$channel)"
 }
 
+# a result without an avatar shows a placeholder icon labelled with its symbol name; an avatar image has no label
+expect_avatars() {
+  local tree
+  tree=$("$ui" tree)
+  if grep -qE '"(person\.2|antenna\.radiowaves\.left\.and\.right)\.circle\.fill"' <<< "$tree"; then
+    echo "error: in the $1 layout a directory result shows the placeholder icon, not its avatar"
+    exit 1
+  fi
+  echo "in the $1 layout #ci_group and #ci_channel show their avatars"
+}
+
+type_search() {
+  "$ui" tap-value "Search or paste SimpleX link"
+  "$ui" type "$1"
+  sleep 2
+}
+
+# the alert asks before every search, as the first search chose "Search", not "Search and don't show again"
+search_directory() {
+  "$ui" tap "Search in Directory"
+  if "$ui" wait "Search in Directory?" 10; then
+    "$ui" tap "Search"
+  fi
+  "$ui" wait "$1" 60
+}
+
+# "Cancel" exists only while the field is focused; the keyboard may have capitalized the typed text
+clear_search() {
+  local text
+  text=$("$ui" tree | sed -nE 's/^TextField null value="(.*)" at .*/\1/p' | head -n 1)
+  "$ui" tap-value "$text"
+  "$ui" tap Cancel
+}
+
+cards=("New 1-time link" "Paste link / Scan" "Bottom bar")
+# shown only in the US
+banner="Invest in SimpleX Chat!"
+
+shown_cards() {
+  local tree label
+  tree=$("$ui" tree)
+  for label in "${cards[@]}" "$banner"; do
+    if grep -qF "\"$label\"" <<< "$tree"; then
+      echo "$label"
+    fi
+  done
+}
+
+expect_cards_hidden_by_results() {
+  local typing results cleared label
+  type_search "$search_text"
+  "$ui" shot "cards-typing-$1"
+  typing=$(shown_cards)
+  for label in "${cards[@]}"; do
+    if ! grep -qxF "$label" <<< "$typing"; then
+      echo "error: in the $1 layout the chat list does not show \"$label\" while typing"
+      exit 1
+    fi
+  done
+  search_directory "#ci_channel"
+  "$ui" shot "cards-results-$1"
+  results=$(shown_cards)
+  if [ -n "$results" ]; then
+    echo "error: in the $1 layout the directory results are shown with cards: $(paste -sd ',' - <<< "$results")"
+    exit 1
+  fi
+  expect_header_above_results "$1 (chat list)"
+  expect_avatars "$1 (chat list)"
+  clear_search
+  sleep 2
+  "$ui" shot "cards-cleared-$1"
+  cleared=$(shown_cards)
+  if [ "$cleared" != "$typing" ]; then
+    echo "error: in the $1 layout clearing the search brought back \"$(paste -sd ',' - <<< "$cleared")\", not \"$(paste -sd ',' - <<< "$typing")\""
+    exit 1
+  fi
+  echo "in the $1 layout the cards ($(paste -sd ',' - <<< "$typing")) show while typing, are hidden under the results and come back when the search is cleared"
+}
+
 xcrun simctl install "$SIM_UDID" "$app"
 xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
@@ -135,21 +215,36 @@ expect_in_tree -F 'Join group'
 expect_in_tree -F '#ci_channel'
 expect_in_tree -F 'Join channel'
 expect_header_above_results reachable
+expect_avatars reachable
 
 # a layout the helper cannot set is a problem of the harness, not of the app, so it is reported rather than failed
 if "$ui" layout top; then
-  "$ui" tap-value "Search or paste SimpleX link"
-  "$ui" type "$search_text"
-  sleep 2
-  "$ui" tap "Search in Directory"
-  if "$ui" wait "Search in Directory?" 10; then
-    "$ui" tap "Search"
-  fi
-  "$ui" wait "Join channel" 60
+  type_search "$search_text"
+  search_directory "Join channel"
   "$ui" shot directory-results-top
   expect_header_above_results top
+  expect_avatars top
   "$ui" layout reachable
 else
   echo "::warning::the top bar layout could not be set, so its Directory header was not checked"
 fi
-echo "smoke test passed: the directory search for \"$search_text\" shows #ci_group (Join group) and #ci_channel (Join channel), with the Directory header above them"
+
+# with a conversation the chat list replaces the onboarding pages, and has cards around the chats
+type_search "ci cards"
+search_directory "#ci_cards"
+"$ui" tap "#ci_cards"
+"$ui" tap "Open channel" 30
+"$ui" wait "Tap Join channel" 30
+"$ui" tap "Join channel"
+"$ui" wait "you are subscriber" 60
+"$ui" shot joined-channel
+"$ui" tap Back
+clear_search
+expect_cards_hidden_by_results reachable
+if "$ui" layout top; then
+  expect_cards_hidden_by_results top
+  "$ui" layout reachable
+else
+  echo "::warning::the top bar layout could not be set, so its chat list cards were not checked"
+fi
+echo "smoke test passed: the directory search for \"$search_text\" shows #ci_group (Join group) and #ci_channel (Join channel) with their avatars and the Directory header above them; with a chat, the list's cards show while typing and hide under the results"

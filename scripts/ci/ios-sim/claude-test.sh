@@ -63,7 +63,7 @@ write_prompt() {
   echo "- Link to paste (C4, W3): $(cat "$BACKEND_DIR/directory-link") (the test directory's address)."
   echo "- Names server to add in the app: $(cat "$BACKEND_DIR/names-server")."
   if [ -z "$previous" ]; then
-    echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name), which has no conversations, and searched the directory once, choosing \"Search\" in the alert."
+    echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name), searched the directory in both layouts, choosing \"Search\" in the alert each time, and joined the channel ci_cards, which no case uses; it is the profile's only conversation."
   else
     echo "- At the start: an earlier session ran the cases in $(layout_name "$previous") on this app, so the profile may have chats, other profiles may exist and hints may be changed; look at the state first."
   fi
