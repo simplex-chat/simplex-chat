@@ -471,12 +471,20 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
       Box(Modifier.weight(1f).fillMaxWidth()) {
         if (onlineSearch.showResults) {
           val rows = onlineSearch.rows(shownChatIds = emptySet())
+          val resultsState = rememberLazyListState()
+          val hasNames = rows.names.isNotEmpty()
+          // the list keeps its first visible row in place by key, so in one-hand UI names arriving after
+          // the directory page would be inserted below that row, out of view
+          LaunchedEffect(hasNames) {
+            if (hasNames && oneHandUI.value) resultsState.scrollToItem(0)
+          }
           LazyColumnWithScrollBarNoAppBar(
             if (!oneHandUI.value) Modifier.fillMaxSize().imePadding() else Modifier.fillMaxSize(),
+            state = resultsState,
             reverseLayout = oneHandUI.value
           ) {
-            nameRows(rows.names)
-            directoryRows(rows, onlineSearch)
+            nameRows(rows.names, oneHandUI.value)
+            directoryRows(rows, onlineSearch, oneHandUI.value)
             if (!onlineSearch.searching && rows.isEmpty) {
               item {
                 Text(
@@ -506,40 +514,53 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
   }
 }
 
-private fun LazyListScope.nameRows(names: List<NameSearchResult>) {
+private fun LazyListScope.nameRows(names: List<NameSearchResult>, oneHandUI: Boolean) {
   if (names.isNotEmpty()) {
-    item { SearchPartHeader(stringResource(MR.strings.online_search_names)) }
-    items(names, key = { it.id }) { result ->
-      val view = LocalMultiplatformView()
-      NameSearchRow(
-        result,
-        Modifier.clickable {
-          hideKeyboard(view)
-          withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = null, cleanup = null) }
-        }
-      )
+    searchPart(MR.strings.online_search_names, oneHandUI) {
+      items(names, key = { it.id }) { result ->
+        val view = LocalMultiplatformView()
+        NameSearchRow(
+          result,
+          Modifier.clickable {
+            hideKeyboard(view)
+            withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = null, cleanup = null) }
+          }
+        )
+      }
     }
   }
 }
 
-private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: OnlineSearchModel) {
+private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: OnlineSearchModel, oneHandUI: Boolean) {
   if (rows.directory.isNotEmpty() || rows.footer != null) {
-    item { SearchPartHeader(stringResource(MR.strings.online_search_directory)) }
-    items(rows.directory, key = { it.id }) { result ->
-      val view = LocalMultiplatformView()
-      DirectorySearchRow(
-        result.entry,
-        Modifier.clickable {
-          hideKeyboard(view)
-          withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = null, cleanup = null) }
-        }
-      )
+    searchPart(MR.strings.online_search_directory, oneHandUI) {
+      items(rows.directory, key = { it.id }) { result ->
+        val view = LocalMultiplatformView()
+        DirectorySearchRow(
+          result.entry,
+          Modifier.clickable {
+            hideKeyboard(view)
+            withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = null, cleanup = null) }
+          }
+        )
+      }
+      when (rows.footer) {
+        DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
+        DirectoryFooter.ShowMore -> item { DirectoryShowMoreRow(onlineSearch) }
+        null -> {}
+      }
     }
-    when (rows.footer) {
-      DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
-      DirectoryFooter.ShowMore -> item { DirectoryShowMoreRow(onlineSearch) }
-      null -> {}
-    }
+  }
+}
+
+// the list is reversed in one-hand UI, so there the header follows its rows to be drawn above them
+private fun LazyListScope.searchPart(title: StringResource, oneHandUI: Boolean, content: LazyListScope.() -> Unit) {
+  if (oneHandUI) {
+    content()
+    item { SearchPartHeader(stringResource(title)) }
+  } else {
+    item { SearchPartHeader(stringResource(title)) }
+    content()
   }
 }
 
@@ -1181,8 +1202,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    nameRows(rows.names)
-    directoryRows(rows, onlineSearch)
+    nameRows(rows.names, oneHandUI.value)
+    directoryRows(rows, onlineSearch, oneHandUI.value)
     if (!addressCreationCardShown.value) {
       item {
         ChatListFeatureCards()
