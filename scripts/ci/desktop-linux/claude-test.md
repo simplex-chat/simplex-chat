@@ -6,6 +6,7 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 
 ## What is set up
 
+- The app is already running, past onboarding and set up as below: never run `ui start` or `ui stop`. Begin with `ui shot start` to see it.
 - The app has a profile and one chat, a group of its own called "seeded notes". The chat list is in the left pane (x 1 to 389). Its toolbar and the search field "Search or paste SimpleX link" are at the bottom: the default "Reachable app toolbars" layout.
 - A test directory lists a group, #ci_group ("CI seeded group", a red avatar with a white G), and a channel, #ci_channel ("CI seeded channel", a green avatar with a white C). Their avatars are as large as the app makes them, so the directory returns one of them per response: a search first shows one result and "Show more", which loads the other.
 - A test server resolves the SimpleX name `seeded.testing` to the address of a contact, ci_contact ("CI seeded contact", a blue avatar with a white N), and the app uses only that server to resolve names.
