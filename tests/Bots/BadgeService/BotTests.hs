@@ -208,6 +208,8 @@ badgeServiceTests = do
     it "should wait a day, not the hour the service answered, after a renewal whose store check failed" testStoreUnreachableWaitsStall
     it "should keep a request's wait past a snooze that ends sooner, and raise the alert again without a request" testSnoozeKeepsRequestWait
     it "should wait from a late request until the next daily moment of the shown credential's expiry, not a day after it" testStallRejoinsSharedMoment
+    it "should retire a subscription badge once no store could still charge it, whatever the service answers" testSubscriptionRetiredAfterRecoveryWindow
+    it "should keep a subscription badge whose ledger still holds months, past the recovery window from its shown credential" testBankedSubscriptionNotRetired
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
@@ -2538,6 +2540,66 @@ testStallRejoinsSharedMoment ps =
       nextWakes (chatController alice) `shouldEventuallyReturn` [Just $ addUTCTime nominalDay presentAt]
       requestedAt $ addUTCTime nominalDay presentAt
       nextWakes (chatController alice) `shouldEventuallyReturn` [Just $ addUTCTime (2 * nominalDay) presentAt]
+
+testSubscriptionRetiredAfterRecoveryWindow :: HasCallStack => TestParams -> IO ()
+testSubscriptionRetiredAfterRecoveryWindow ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let coveredUntil = dueAtOf rows
+          recoveryWindow = 67 * nominalDay
+      setServicePurchaseKey cc "not the purchase key"
+      setClockAt bsClock $ addUTCTime (recoveryWindow - 3600) coveredUntil
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               ConsoleString badgeServiceRefused,
+               StartsWith "badge alert: issue_failed ",
+               StartsWith "1: supporter",
+               StartsWith "renewal failing since ",
+               StartsWith "badge alert: issue_failed "
+             ]
+      shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
+      errorAt <- issueErrorAt (chatController alice)
+      setClockAt bsClock $ addUTCTime (recoveryWindow + 3600) coveredUntil
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               StartsWith "badge alert: subscription_ended ",
+               StartsWith "1: supporter",
+               StartsWith "renewal failing since ",
+               StartsWith "badge alert: subscription_ended "
+             ]
+      waitShownBadge (chatController alice) Nothing
+      threadDelay 2000000
+      issueErrorAt (chatController alice) `shouldReturn` errorAt
+
+testBankedSubscriptionNotRetired :: HasCallStack => TestParams -> IO ()
+testBankedSubscriptionNotRetired ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-year-01" firstStart 12
+      alice ##> ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+      waitWakeArmed (chatController alice)
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) rows `shouldBe` [(12, 12, Just "charge"), (-1, 11, Just "badge")]
+      setServicePurchaseKey cc "not the purchase key"
+      setClockAt bsClock $ addUTCTime (68 * nominalDay) $ snd $ renewalMoments rows
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               ConsoleString badgeServiceRefused,
+               StartsWith "badge alert: issue_failed ",
+               StartsWith "1: supporter",
+               StartsWith "renewal failing since ",
+               StartsWith "badge alert: issue_failed "
+             ]
+      shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
 
 setNextWake :: ChatController -> UTCTime -> IO ()
 setNextWake ChatController {chatStore} at =

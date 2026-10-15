@@ -5606,10 +5606,13 @@ updateUserBadge userId emitted now = do
         Just balance -> do
           -- No months come after a prepaid purchase's paidThrough, so it is retired before asking, as
           -- retirement needs no service and an unbounded retry would not return before it. A
-          -- subscription's come from the store, so it is retired only once the service says it ended.
+          -- subscription's come from the store, so it is retired once the service says it ended, or once
+          -- no store could still charge it, whatever the service answers.
           retiredBefore <- case purchaseKind of
             PKPrepaid -> retireExpiredBadge user p now balance
-            PKSubscription _ -> pure False
+            PKSubscription _
+              | subscriptionRecoveryWindow `addUTCTime` L.paidThrough balance <= now -> retireExpiredBadge user p now balance
+              | otherwise -> pure False
           latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
           let due = not retiredBefore && badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance
               -- a due month waits for the wake the last pass set, so a request that issued nothing is not repeated at every activation;
@@ -5755,6 +5758,11 @@ badgeRenewal paidThrough = \case
 -- misclassified one cannot leave a funded badge to expire.
 badgeStalledInterval :: NominalDiffTime
 badgeStalledInterval = nominalDay
+
+-- | Apple retries a failed renewal for up to 60 days, the longest either store recovers a subscription with Play's pause
+-- off (its grace period and account hold default to 60 days together); a week more covers a day between requests.
+subscriptionRecoveryWindow :: NominalDiffTime
+subscriptionRecoveryWindow = 67 * nominalDay
 
 -- | The wait after a service refusal, floored at initialInterval so answering 0 cannot spin the
 -- worker, and uncapped above it.
