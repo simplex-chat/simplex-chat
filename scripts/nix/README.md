@@ -39,6 +39,16 @@ simulator libraries retain their separate outputs. The existing iOS preparation
 scripts retag ARM64 archives with `mac2ios -s` when an Apple Silicon simulator is
 needed.
 
+The Cabal v2 builder stores ordinary package archives in its staged store.
+`link-mobile-library.sh` relinks the selected package and its dependencies before
+that store is pruned. iOS ZIPs contain both the plain `libHSsimplex-chat-*.a` and
+the rolled `libHSsimplex-chat-*-ghc*.a` used by `update-pbxproj.sh`. Android and
+Windows clients link the threaded RTS into `libsimplex.so` or `libsimplex.dll`;
+Android's separate `libsupport.so` resolves RTS symbols from the client library.
+ARM64 Android libraries retain the 16 KiB linker alignment. These steps run in
+the derivation's build/install phases because v2 component overrides do not run
+the older `postBuild` and `postInstall` hooks.
+
 `NIX_ARGS` passes additional options to `nix build`, and `NIX_OUT_DIR` changes the
 output-link directory. Each derivation has a two-hour timeout by default; set
 `NIX_BUILD_TIMEOUT` in seconds to change it. For a wall-clock limit on a local

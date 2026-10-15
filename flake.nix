@@ -31,10 +31,15 @@
       }; in
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
-      let drv' = { extra-modules, pkgs', package-flags ? {}, ... }:
+      let drv' = { extra-modules, pkgs', package-flags ? {}, package-ghc-options ? {}, ... }:
       let packageFlags = pkgs.lib.recursiveUpdate {
         direct-sqlcipher = { openssl = true; commoncrypto = false; tomcrypt = false; };
-      } package-flags; in pkgs'.haskell-nix.project {
+      } package-flags;
+      packageGhcOptions = pkgs.lib.recursiveUpdate
+        (pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isAndroid {
+          simplex-chat = [ "-pie" ];
+        }) package-ghc-options;
+      in pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc914-sh";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
@@ -48,6 +53,11 @@
                 pkgs.lib.mapAttrsToList (flag: enabled: "${if enabled then "+" else "-"}${flag}") flags
               )}
           '') packageFlags
+        ) + "\n" + pkgs.lib.concatStringsSep "\n" (
+          pkgs.lib.mapAttrsToList (package: options: ''
+            package ${package}
+              ghc-options: ${pkgs.lib.concatStringsSep " " options}
+          '') packageGhcOptions
         ) + pkgs.lib.optionalString pkgs'.stdenv.hostPlatform.isDarwin ''
           -- The compiler's ghc-internal package omits iconv's library directory.
           package *
@@ -59,7 +69,10 @@
         };
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [
-          { packages = pkgs.lib.mapAttrs (_: flags: { inherit flags; }) packageFlags; }
+          { packages = pkgs.lib.recursiveUpdate
+              (pkgs.lib.mapAttrs (_: flags: { inherit flags; }) packageFlags)
+              (pkgs.lib.mapAttrs (_: ghcOptions: { inherit ghcOptions; }) packageGhcOptions);
+          }
           ({ pkgs, lib, config, ... }:
             {
               # Override ghcOptions for ALL packages
@@ -73,14 +86,68 @@
             # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
             # on pretty much all unix platforms, but then blows up on windows m(
             packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-          })
-
-          ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
-            packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
           })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
+      # V2 slices ignore component.override and do not run postBuild/postInstall.
+      # Relink while their full package database still exists, then package after
+      # the normal install phase. The compiler is the exact slice/TH wrapper.
+      let withComponentPhases = component: change: component.overrideAttrs (old:
+        change old // {
+          passthru = (old.passthru or {}) // {
+            inherit (component) checkAgainstPlan;
+            isSlice = true;
+          };
+        }); in
+      let mobileLibrary = { kind, packageName ? "simplex-chat", linkOptions ? [], postInstall }: old:
+        let compiler = builtins.head old.nativeBuildInputs;
+            prefix = compiler.targetPrefix or "";
+        in {
+          buildPhase = old.buildPhase + ''
+            discoverStore
+            test -n "$ghcDir"
+            ${pkgs.bash}/bin/bash ${./scripts/nix/link-mobile-library.sh} \
+              ${compiler}/bin/${prefix}ghc ${compiler}/bin/${prefix}ghc-pkg \
+              "$ghcDir/$storePkgDb" ${pkgs.lib.escapeShellArg packageName} \
+              ${pkgs.lib.escapeShellArg kind} "$buildRoot/mobile-bundle" \
+              ${pkgs.lib.escapeShellArgs linkOptions}
+          '';
+          installPhase = old.installPhase + ''
+            (
+              cd "$buildRoot/mobile-bundle"
+              ${postInstall}
+            )
+          '';
+        }; in
+      let withMobileLibrary = component: options:
+        withComponentPhases component (mobileLibrary options); in
+      let chatExports = [
+        "chat_close_store"
+        "chat_decrypt_file"
+        "chat_decrypt_media"
+        "chat_encrypt_file"
+        "chat_encrypt_media"
+        "chat_migrate_init"
+        "chat_migrate_init_queue"
+        "chat_parse_markdown"
+        "chat_parse_server"
+        "chat_parse_uri"
+        "chat_password_hash"
+        "chat_read_file"
+        "chat_recv_msg"
+        "chat_recv_msg_wait"
+        "chat_send_cmd"
+        "chat_send_cmd_retry"
+        "chat_send_remote_cmd"
+        "chat_send_remote_cmd_retry"
+        "chat_valid_name"
+        "chat_parse_badge_code"
+        "chat_json_length"
+        "chat_badge_keygen"
+        "chat_badge_issue"
+        "chat_write_file"
+      ]; in
       # This will package up all *.a in $out into a pkg.zip that can
       # be downloaded from hydra.
       let withHydraLibPkg = pkg: pkg.overrideAttrs (old: {
@@ -129,12 +196,7 @@
             > $out/nix-support/hydra-build-products
       ''; in
       let iosOverrides = bundleName: {
-        smallAddressSpace = true;
-        enableShared = false;
-        # we need threaded here, otherwise all the queing logic doesn't work properly.
-        # for iOS we also use -staticlib, to get one rolled up library.
-        # still needs mac2ios patching of the archives.
-        ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
+        kind = "ios";
         postInstall = iosPostInstall bundleName;
       }; in
       rec {
@@ -183,7 +245,7 @@
                 }];
               }).simplex-chat.components.exes.simplex-chat;
               # WINDOWS x86_64-mingwW64
-              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv' {
+              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = withComponentPhases (drv' {
                 pkgs' = pkgs.pkgsCross.mingwW64;
                 package-flags = {
                   direct-sqlcipher.openssl = true;
@@ -203,8 +265,8 @@
                     sed -i 's/mingwex//g' unix-time.cabal
                   '';
                  }];
-                }).simplex-chat.components.exes.simplex-chat.override {
-                postInstall = ''
+                }).simplex-chat.components.exes.simplex-chat (old: {
+                installPhase = old.installPhase + ''
                   set -x
                   ${pkgs.tree}/bin/tree $out
                   mkdir -p $out/_pkg
@@ -216,8 +278,8 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                       > $out/nix-support/hydra-build-products
                 '';
-              };
-              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = (drv' rec {
+              });
+              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = withMobileLibrary (drv' rec {
                 pkgs' = pkgs.pkgsCross.mingwW64;
                 package-flags = {
                   direct-sqlcipher.openssl = true;
@@ -242,17 +304,11 @@
                   '';
                 }];
               }).simplex-chat.components.library
-              .override (p: {
-                # enableShared = false;
-                setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [
-                  "-shared"
-                  "-threaded"
-                  "-o" "libsimplex.dll"
-                  # "-optl-lHSrts_thr"
+              {
+                kind = "windows";
+                linkOptions = [
                   "-optl-lffi"
-                  # "-optl-static-libgcc"
-                  # We can't do -optl-static-libstdc++ with gcc. g++ might
-                  # but then we are chaning the compiler altogether.
+                  "-optl-Wl,--out-implib,libsimplex.dll.a"
                   "${./libsimplex.dll.def}"
                 ];
                 postInstall = ''
@@ -293,28 +349,18 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                       > $out/nix-support/hydra-build-products
                 '';
-              });
+              };
               # "${pkgs.pkgsCross.muslpi.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.muslpi).simplex-chat.components.exes.simplex-chat;
 
               # STATIC aarch64-linux
               "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
-              "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override (p: {
-                smallAddressSpace = true;
-                # we won't want -dyamic (see aarch64-android:lib:simplex-chat)
-                enableShared = false;
-                # we also do not want to have any dependencies listed (especially no rts!)
-                enableStatic = false;
-
-                # This used to work with 8.10.7...
-                # setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
-                # ... but now with 9.6+
-                # we have to do the -shared thing by hand.
-                postBuild = ''
-                  armv7a-unknown-linux-androideabi-ghc -shared -o libsupport.so \
-                    -optl-Wl,-u,setLineBuffering \
-                    -optl-Wl,-u,pipe_std_to_socket \
-                    dist/build/*.a
-                '';
+              "armv7a-android:lib:support" = withMobileLibrary (drv android32Pkgs).android-support.components.library {
+                kind = "android-support";
+                packageName = "android-support";
+                linkOptions = [
+                  "-optl-Wl,-u,setLineBuffering"
+                  "-optl-Wl,-u,pipe_std_to_socket"
+                ];
 
                 postInstall = ''
 
@@ -328,24 +374,17 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                         > $out/nix-support/hydra-build-products
                 '';
-              });
+              };
               # The android-support package is at
               # https://github.com/simplex-chat/android-support
-              "aarch64-android:lib:support" = (drv androidPkgs).android-support.components.library.override (p: {
-                smallAddressSpace = true;
-                # no -dynamic
-                enableShared = false;
-                # but also no -staticlib
-                enableStatic = false;
-
-                # we have to do the -shared thing by hand.
-                postBuild = ''
-                  aarch64-unknown-linux-android-ghc -shared -o libsupport.so \
-                    -optl-Wl,-u,setLineBuffering \
-                    -optl-Wl,-u,pipe_std_to_socket \
-                    -optl-Wl,-z,max-page-size=16384 \
-                    dist/build/*.a
-                '';
+              "aarch64-android:lib:support" = withMobileLibrary (drv androidPkgs).android-support.components.library {
+                kind = "android-support";
+                packageName = "android-support";
+                linkOptions = [
+                  "-optl-Wl,-u,setLineBuffering"
+                  "-optl-Wl,-u,pipe_std_to_socket"
+                  "-optl-Wl,-z,max-page-size=16384"
+                ];
 
                 postInstall = ''
 
@@ -360,8 +399,8 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                         > $out/nix-support/hydra-build-products
                 '';
-              });
-              "armv7a-android:lib:simplex-chat" = (drv' {
+              };
+              "armv7a-android:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = android32Pkgs;
                 package-flags = {
                   text.simdutf = false;
@@ -387,56 +426,12 @@
                     ./scripts/nix/memory-pr-99.patch
                   ];
                 }];
-              }).simplex-chat.components.library.override (p: {
-                smallAddressSpace = true;
-                # we want -shared, but not -dyanmic, hence `enableShared = false`.
-                enableShared = false;
-                # we _do_ want rts, and other libs. Hence `enableStatic = true`.
-                enableStatic = true;
-                # for android we build a shared library, passing these arguments is a bit tricky, as
-                # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
-                # template haskell cross compilation. Thus we just pass them as linker options (-optl).
-                setupBuildFlags = p.component.setupBuildFlags
-                # flags to tell GHC we want to produce a -shared object, and we want to also link
-                # - the ffi library (ffi)
-                ++ map (x: "--ghc-option=${x}") [
-                  "-shared" "-o" "libsimplex.so"
-                  "-threaded"
-                  # "-debug"
+              }).simplex-chat.components.library {
+                kind = "android";
+                # Link the threaded RTS only at final link, outside TH/iserv.
+                linkOptions = [
                   "-optl-lffi"
-                  "-j1"
-                ]
-                # This is fairly idiotic. LLD will strip out foreign exported
-                # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
-                # to ensure they stay in the produced library. Having them
-                # _undefined_ and _lazy_ (lld will tell with -y <sym> that the
-                # symbol is lazy), makes them _defined_. m(
-                ++ map (sym: "--ghc-option=-optl-Wl,-u,${sym}") [
-                  "chat_close_store"
-                  "chat_decrypt_file"
-                  "chat_decrypt_media"
-                  "chat_encrypt_file"
-                  "chat_encrypt_media"
-                  "chat_migrate_init"
-                  "chat_migrate_init_queue"
-                  "chat_parse_markdown"
-                  "chat_parse_server"
-                  "chat_parse_uri"
-                  "chat_password_hash"
-                  "chat_read_file"
-                  "chat_recv_msg"
-                  "chat_recv_msg_wait"
-                  "chat_send_cmd"
-                  "chat_send_cmd_retry"
-                  "chat_send_remote_cmd"
-                  "chat_send_remote_cmd_retry"
-                  "chat_valid_name"
-                  "chat_parse_badge_code"
-                  "chat_json_length"
-                  "chat_badge_keygen"
-                  "chat_badge_issue"
-                  "chat_write_file"
-                ];
+                ] ++ map (sym: "-optl-Wl,-u,${sym}") chatExports;
                 postInstall = ''
                   set -x
                   ${pkgs.tree}/bin/tree $out
@@ -489,8 +484,8 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                       > $out/nix-support/hydra-build-products
                 '';
-              });
-              "aarch64-android:lib:simplex-chat" = (drv' {
+              };
+              "aarch64-android:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = androidPkgs;
                 package-flags = {
                   text.simdutf = false;
@@ -509,59 +504,13 @@
                     (androidPkgs.openssl.override { static = true; })
                   ];
                 }];
-              }).simplex-chat.components.library.override (p: {
-                smallAddressSpace = true;
-                # we do not want a dynamically linked object, even though we _do_
-                # want to produce a _shared_ object. But `shared` implied -dyanmic
-                # with cabal, so we disable and pass `-shared` explicitly.
-                enableShared = false;
-                # we do want static (e.g. pass all dependencies in, so we get -staticlib)
-                enableStatic = true;
-                # for android we build a shared library, passing these arguments is a bit tricky, as
-                # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
-                # template haskell cross compilation. Thus we just pass them as linker options (-optl).
-                setupBuildFlags = p.component.setupBuildFlags
-                # flags to tell GHC we want to produce a -shared object, and we want to also link
-                # - the ffi library (ffi)
-                ++ map (x: "--ghc-option=${x}") [
-                  "-shared" "-o" "libsimplex.so"
-                  "-threaded"
-                  # "-debug"
+              }).simplex-chat.components.library {
+                kind = "android";
+                # Link the threaded RTS only at final link, outside TH/iserv.
+                linkOptions = [
                   "-optl-lffi"
                   "-optl-Wl,-z,max-page-size=16384"
-                  "-j1"
-                ]
-                # This is fairly idiotic. LLD will strip out foreign exported
-                # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
-                # to ensure they stay in the produced library. Having them
-                # _undefined_ and _lazy_ (lld will tell with -y <sym> that the
-                # symbol is lazy), makes them _defined_. m(
-                ++ map (sym: "--ghc-option=-optl-Wl,-u,${sym}") [
-                  "chat_close_store"
-                  "chat_decrypt_file"
-                  "chat_decrypt_media"
-                  "chat_encrypt_file"
-                  "chat_encrypt_media"
-                  "chat_migrate_init"
-                  "chat_migrate_init_queue"
-                  "chat_parse_markdown"
-                  "chat_parse_server"
-                  "chat_parse_uri"
-                  "chat_password_hash"
-                  "chat_read_file"
-                  "chat_recv_msg"
-                  "chat_recv_msg_wait"
-                  "chat_send_cmd"
-                  "chat_send_cmd_retry"
-                  "chat_send_remote_cmd"
-                  "chat_send_remote_cmd_retry"
-                  "chat_valid_name"
-                  "chat_parse_badge_code"
-                  "chat_json_length"
-                  "chat_badge_keygen"
-                  "chat_badge_issue"
-                  "chat_write_file"
-                ];
+                ] ++ map (sym: "-optl-Wl,-u,${sym}") chatExports;
                 postInstall = ''
                   set -x
                   ${pkgs.tree}/bin/tree $out
@@ -614,14 +563,15 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                       > $out/nix-support/hydra-build-products
                 '';
-              });
+              };
             };
 
             # builds for iOS and iOS simulator
             "aarch64-darwin" = {
               # aarch64-darwin iOS build (to be patched with mac2ios)
-              "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
+              "aarch64-darwin-ios:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = pkgs;
+                package-ghc-options.simplex-chat = [ "-DIOS" ];
                 package-flags = {
                   simplex-chat.swift = true;
                   simplexmq.swift = true;
@@ -638,12 +588,13 @@
                     ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
                   ];
                 }];
-              }).simplex-chat.components.library.override (
+              }).simplex-chat.components.library (
                 iosOverrides "pkg-ios-aarch64-swift-json"
               );
 	            # aarch64-darwin build with tagged JSON format (for Mac & Flutter)
-              "aarch64-darwin:lib:simplex-chat" = (drv' {
+              "aarch64-darwin:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = pkgs;
+                package-ghc-options.simplex-chat = [ "-DIOS" ];
                 package-flags = {
                   direct-sqlcipher.commoncrypto = true;
                   direct-sqlcipher.openssl = false;
@@ -657,14 +608,15 @@
                     ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
                   ];
                 }];
-              }).simplex-chat.components.library.override (
+              }).simplex-chat.components.library (
                 iosOverrides "pkg-ios-aarch64-tagged-json"
               );
             };
             "x86_64-darwin" = {
               # x86_64-darwin iOS simulator build (to be patched with mac2ios)
-              "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
+              "x86_64-darwin-ios:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = pkgs;
+                package-ghc-options.simplex-chat = [ "-DIOS" ];
                 package-flags = {
                   simplex-chat.swift = true;
                   simplexmq.swift = true;
@@ -680,12 +632,13 @@
                     (pkgs.openssl.override { static = true; })
                   ];
                 }];
-              }).simplex-chat.components.library.override (
+              }).simplex-chat.components.library (
                 iosOverrides "pkg-ios-x86_64-swift-json"
               );
               # x86_64-darwin build with tagged JSON format (for Mac & Flutter iOS simulator)
-              "x86_64-darwin:lib:simplex-chat" = (drv' {
+              "x86_64-darwin:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = pkgs;
+                package-ghc-options.simplex-chat = [ "-DIOS" ];
                 package-flags = {
                   direct-sqlcipher.commoncrypto = true;
                   direct-sqlcipher.openssl = false;
@@ -699,7 +652,7 @@
                     (pkgs.openssl.override { static = true; })
                   ];
                 }];
-              }).simplex-chat.components.library.override (
+              }).simplex-chat.components.library (
                 iosOverrides "pkg-ios-x86_64-tagged-json"
               );
             };
