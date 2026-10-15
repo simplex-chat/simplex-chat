@@ -20,23 +20,17 @@
           aarch64-android-prebuilt = import prev.path {
             inherit system;
             inherit (prev) overlays;
-            # Nixpkgs marks the prebuilt NDK, SDK tools, and wrappers unfree.
-            config = prev.config // {
-              allowUnfreePredicate = package:
-                let name = prev.lib.getName package; in
-                prev.lib.hasInfix "ndk" name || prev.lib.hasPrefix "android-sdk-" name;
-            };
+            # Permit the SDK/NDK's unfree packages only in these Android sets.
+            # Some SDK fetchers use unprefixed names such as platform-tools.
+            config = prev.config // { allowUnfree = true; };
             crossSystem = prev.lib.systems.examples.aarch64-android-prebuilt // { androidSdkVersion = "26"; };
           };
           armv7a-android-prebuilt = import prev.path {
             inherit system;
             inherit (prev) overlays;
-            # Nixpkgs marks the prebuilt NDK, SDK tools, and wrappers unfree.
-            config = prev.config // {
-              allowUnfreePredicate = package:
-                let name = prev.lib.getName package; in
-                prev.lib.hasInfix "ndk" name || prev.lib.hasPrefix "android-sdk-" name;
-            };
+            # Permit the SDK/NDK's unfree packages only in these Android sets.
+            # Some SDK fetchers use unprefixed names such as platform-tools.
+            config = prev.config // { allowUnfree = true; };
             crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // { androidSdkVersion = "26"; };
           };
         };
