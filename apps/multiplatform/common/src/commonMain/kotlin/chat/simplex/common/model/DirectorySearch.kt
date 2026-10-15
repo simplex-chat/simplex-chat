@@ -3,7 +3,7 @@ package chat.simplex.common.model
 import chat.simplex.common.views.chatlist.DirectoryFooter
 import chat.simplex.common.views.newchat.ConnectTarget
 import chat.simplex.common.views.newchat.strConnectTarget
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerializationException
