@@ -429,10 +429,14 @@ use_names_server() {
   "$ui" click-text "127.0.0.1" 10
   "$ui" wait "SMP server" 10
   scroll_to "To resolve names" || fail "no \"To resolve names\" in the test server's settings"
-  # the dropdown opens from its value; a custom server's roles default to yes, yes and no, so this is the names one
+  # A dropdown opens from its value; a custom server's roles default to yes, yes and no, so the first "default (yes)"
+  # is the receiving one. The directory can't reply to queues on this server, so it only resolves names.
+  "$ui" click-text "default (yes)"
+  "$ui" click-text "no" 10
   "$ui" click-text "default (no)"
   "$ui" click-text "yes" 10
   "$ui" shot names-server-roles
+  in_line_with "no" "To receive" || fail "the test server's \"To receive\" is not no"
   in_line_with "yes" "To resolve names" || fail "the test server's \"To resolve names\" is not yes"
   "$ui" key Escape
   "$ui" wait "Add server" 10
