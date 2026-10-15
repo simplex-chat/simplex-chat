@@ -31,14 +31,25 @@
       }; in
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
-      let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
+      let drv' = { extra-modules, pkgs', package-flags ? {}, ... }:
+      let packageFlags = pkgs.lib.recursiveUpdate {
+        direct-sqlcipher = { openssl = true; commoncrypto = false; tomcrypt = false; };
+      } package-flags; in pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc914-sh";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
         projectFileName = "cabal.project";
-        # The stable compiler's ghc-internal package names iconv without its
-        # external library directory. Include it in both planning and building.
-        cabalProjectLocal = pkgs.lib.optionalString pkgs'.stdenv.hostPlatform.isDarwin ''
+        # The v2 builder follows planned flags for source-repository packages.
+        # Render the same flags before planning and into the package modules.
+        cabalProjectLocal = pkgs.lib.concatStringsSep "\n" (
+          pkgs.lib.mapAttrsToList (package: flags: ''
+            package ${package}
+              flags: ${pkgs.lib.concatStringsSep " " (
+                pkgs.lib.mapAttrsToList (flag: enabled: "${if enabled then "+" else "-"}${flag}") flags
+              )}
+          '') packageFlags
+        ) + pkgs.lib.optionalString pkgs'.stdenv.hostPlatform.isDarwin ''
+          -- The compiler's ghc-internal package omits iconv's library directory.
           package *
             extra-lib-dirs: ${pkgs'.libiconv}/lib
         '';
@@ -48,15 +59,13 @@
         };
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [
+          { packages = pkgs.lib.mapAttrs (_: flags: { inherit flags; }) packageFlags; }
           ({ pkgs, lib, config, ... }:
             {
               # Override ghcOptions for ALL packages
               ghcOptions = lib.mkDefault [
                 "-j1"
               ];
-              # Enable SQLCipher encryption for native/static builds too. This
-              # beats generated Cabal defaults; archive targets select CommonCrypto.
-              packages.direct-sqlcipher.flags.openssl = lib.mkOverride 900 true;
             }
           )
 
@@ -176,9 +185,11 @@
               # WINDOWS x86_64-mingwW64
               "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv' {
                 pkgs' = pkgs.pkgsCross.mingwW64;
+                package-flags = {
+                  direct-sqlcipher.openssl = true;
+                  bitvec.simd = false;
+                };
                 extra-modules = [{
-                  packages.direct-sqlcipher.flags.openssl = true;
-                  packages.bitvec.flags.simd = false;
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
                   ];
@@ -208,19 +219,21 @@
               };
               "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = (drv' rec {
                 pkgs' = pkgs.pkgsCross.mingwW64;
-                extra-modules = [{
-                  packages.direct-sqlcipher.flags.openssl = true;
+                package-flags = {
+                  direct-sqlcipher.openssl = true;
                   # simd will try to read __cpu_model, which we don't expose
                   # from the rts (yet!).
-                  packages.bitvec.flags.simd = false;
+                  bitvec.simd = false;
+                  simplex-chat.client_library = true;
+                  simplexmq.client_library = true;
+                };
+                extra-modules = [{
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
                   ];
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
-                  packages.simplex-chat.flags.client_library = true;
-                  packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
@@ -350,17 +363,19 @@
               });
               "armv7a-android:lib:simplex-chat" = (drv' {
                 pkgs' = android32Pkgs;
+                package-flags = {
+                  text.simdutf = false;
+                  direct-sqlcipher.openssl = true;
+                  simplex-chat.client_library = true;
+                  simplexmq.client_library = true;
+                };
                 extra-modules = [{
-                  packages.text.flags.simdutf = false;
-                  packages.direct-sqlcipher.flags.openssl = true;
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
                   ];
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
-                  packages.simplex-chat.flags.client_library = true;
-                  packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
                   ];
@@ -477,17 +492,19 @@
               });
               "aarch64-android:lib:simplex-chat" = (drv' {
                 pkgs' = androidPkgs;
+                package-flags = {
+                  text.simdutf = false;
+                  direct-sqlcipher.openssl = true;
+                  simplex-chat.client_library = true;
+                  simplexmq.client_library = true;
+                };
                 extra-modules = [{
-                  packages.text.flags.simdutf = false;
-                  packages.direct-sqlcipher.flags.openssl = true;
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
                   ];
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
-                  packages.simplex-chat.flags.client_library = true;
-                  packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
                   ];
@@ -605,15 +622,17 @@
               # aarch64-darwin iOS build (to be patched with mac2ios)
               "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
+                package-flags = {
+                  simplex-chat.swift = true;
+                  simplexmq.swift = true;
+                  direct-sqlcipher.commoncrypto = true;
+                  direct-sqlcipher.openssl = false;
+                  simplexmq.commoncrypto = true;
+                  entropy.DoNotGetEntropy = true;
+                  simplex-chat.client_library = true;
+                  simplexmq.client_library = true;
+                };
                 extra-modules = [{
-                  packages.simplex-chat.flags.swift = true;
-                  packages.simplexmq.flags.swift = true;
-                  packages.direct-sqlcipher.flags.commoncrypto = true;
-                  packages.direct-sqlcipher.flags.openssl = false;
-                  packages.simplexmq.flags.commoncrypto = true;
-                  packages.entropy.flags.DoNotGetEntropy = true;
-                  packages.simplex-chat.flags.client_library = true;
-                  packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     # TODO: have a cross override for iOS, that sets this.
                     ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
@@ -625,13 +644,15 @@
 	            # aarch64-darwin build with tagged JSON format (for Mac & Flutter)
               "aarch64-darwin:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
+                package-flags = {
+                  direct-sqlcipher.commoncrypto = true;
+                  direct-sqlcipher.openssl = false;
+                  simplexmq.commoncrypto = true;
+                  entropy.DoNotGetEntropy = true;
+                  simplex-chat.client_library = true;
+                  simplexmq.client_library = true;
+                };
                 extra-modules = [{
-                  packages.direct-sqlcipher.flags.commoncrypto = true;
-                  packages.direct-sqlcipher.flags.openssl = false;
-                  packages.simplexmq.flags.commoncrypto = true;
-                  packages.entropy.flags.DoNotGetEntropy = true;
-                  packages.simplex-chat.flags.client_library = true;
-                  packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
                   ];
@@ -644,15 +665,17 @@
               # x86_64-darwin iOS simulator build (to be patched with mac2ios)
               "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
+                package-flags = {
+                  simplex-chat.swift = true;
+                  simplexmq.swift = true;
+                  direct-sqlcipher.commoncrypto = true;
+                  direct-sqlcipher.openssl = false;
+                  simplexmq.commoncrypto = true;
+                  entropy.DoNotGetEntropy = true;
+                  simplex-chat.client_library = true;
+                  simplexmq.client_library = true;
+                };
                 extra-modules = [{
-                  packages.simplex-chat.flags.swift = true;
-                  packages.simplexmq.flags.swift = true;
-                  packages.direct-sqlcipher.flags.commoncrypto = true;
-                  packages.direct-sqlcipher.flags.openssl = false;
-                  packages.simplexmq.flags.commoncrypto = true;
-                  packages.entropy.flags.DoNotGetEntropy = true;
-                  packages.simplex-chat.flags.client_library = true;
-                  packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.openssl.override { static = true; })
                   ];
@@ -663,13 +686,15 @@
               # x86_64-darwin build with tagged JSON format (for Mac & Flutter iOS simulator)
               "x86_64-darwin:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
+                package-flags = {
+                  direct-sqlcipher.commoncrypto = true;
+                  direct-sqlcipher.openssl = false;
+                  simplexmq.commoncrypto = true;
+                  entropy.DoNotGetEntropy = true;
+                  simplex-chat.client_library = true;
+                  simplexmq.client_library = true;
+                };
                 extra-modules = [{
-                  packages.direct-sqlcipher.flags.commoncrypto = true;
-                  packages.direct-sqlcipher.flags.openssl = false;
-                  packages.simplexmq.flags.commoncrypto = true;
-                  packages.entropy.flags.DoNotGetEntropy = true;
-                  packages.simplex-chat.flags.client_library = true;
-                  packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.openssl.override { static = true; })
                   ];
