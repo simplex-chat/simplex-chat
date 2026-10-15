@@ -88,7 +88,7 @@ create_directory() {
 
 start_directory() {
   # -y: the service adds its own tables to the database the CLI created, and would otherwise ask on stdin
-  nohup "$bin/simplex-directory-service" -d "$work/directory" -y --super-users "2:$admin" < /dev/null > "$work/directory.log" 2>&1 &
+  nohup "$bin/simplex-directory-service" -d "$work/directory" -y --super-users "$1" < /dev/null >> "$work/directory.log" 2>&1 &
   echo $! > "$work/directory.pid"
   sleep 5
   if ! kill -0 "$(cat "$work/directory.pid")" 2> /dev/null; then
@@ -98,16 +98,30 @@ start_directory() {
   fi
 }
 
+stop_directory() {
+  local pid deadline
+  pid=$(cat "$work/directory.pid")
+  kill -INT "$pid" 2> /dev/null || true
+  deadline=$((SECONDS + 30))
+  while kill -0 "$pid" 2> /dev/null; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      kill -KILL "$pid" 2> /dev/null || true
+    fi
+    sleep 1
+  done
+}
+
+# A super user is known by contact ID, which exists only after the admin connects, so the service starts
+# with nobody and is restarted with the admin.
 connect_admin() {
   admin 10 "/c $directory_link"
   expect_out "connection request sent!"
   admin_until "Welcome to $directory_name" 180 "/tail @'$directory_name' 10"
   local id
   id=$(db_query directory "SELECT contact_id FROM contacts WHERE local_display_name = '$admin'")
-  if [ "$id" != 2 ]; then
-    echo "error: $admin is contact \"$id\" of the directory, the service was started with --super-users 2:$admin"
-    return 1
-  fi
+  stop_directory
+  start_directory "$id:$admin"
+  echo "directory restarted with super user $id:$admin"
 }
 
 # The directory sends each registration to super users as a message with the exact /approve command.
@@ -166,7 +180,7 @@ start() {
 
   start_relay
   create_directory
-  start_directory
+  start_directory "0:nobody"
   trap dump_directory EXIT
   connect_admin
   seed_group
