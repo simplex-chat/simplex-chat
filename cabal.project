@@ -32,6 +32,7 @@ allow-newer:
     simplexmq:time,
     aeson:containers,
     aeson:ghc-prim,
+    aeson:hashable,
     aeson:primitive,
     aeson:template-haskell,
     aeson:th-abstraction,
