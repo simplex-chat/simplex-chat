@@ -218,6 +218,7 @@ badgeServiceTests = do
     it "should adopt into a held Apple record only another transaction bought later and not revoked" testAppleAdoptionRules
     it "should present an adopted Apple transaction at once though the attempt with the one before it failed, and credit it once the subscription's hourly check allows" testAdoptedReceiptNotOverwritten
     it "should ask the App Store about a subscription claim at most once an hour, whoever presents it and as any of its transactions" testApplePurchaseChecksBounded
+    it "should ask Play about a subscription token at most once an hour, whoever presents it, credited to another key or not" testPlayPurchaseChecksBounded
     it "should keep at most the maximum of purchase checks, asking without recording once full, and drop expired ones" testPurchaseChecksBounded
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
     it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
@@ -2044,7 +2045,7 @@ subscriptionPayments ChatController {chatStore} =
 
 testSubscriptionPurchase :: HasCallStack => TestParams -> IO ()
 testSubscriptionPurchase ps =
-  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleSandboxSubscriptionJWS}} -> do
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleSandboxSubscriptionJWS}} -> do
     now <- serviceNow env
     let periodStart = addUTCTime (-3600) now
         changes = map (\e -> let (c, m, _) = entryOf e in (c, m)) . fst . statementOf
@@ -2066,6 +2067,8 @@ testSubscriptionPurchase ps =
     subscriptionOf replayed `shouldBe` Just SSRenewing
     subscriptionChecks store `shouldReturn` checks
     (otherKey, otherMasterKey) <- newPurchaseKeys
+    -- another key is told once Play is asked again, after the hour the token is held for
+    setClockAt bsClock $ addUTCTime 3700 now
     refusalOf <$> serviceCmd env otherKey (purchaseCmd otherMasterKey subscriptionPlay) `shouldReturn` (BSEReceiptUsed, Nothing)
     -- an annual Apple subscription is claimed by its original id, which the store is asked about
     setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_YEAR_01" periodStart 12
@@ -2086,17 +2089,19 @@ testSubscriptionPurchase ps =
 
 testSubscriptionPurchaseNotGrantable :: HasCallStack => TestParams -> IO ()
 testSubscriptionPurchaseNotGrantable ps =
-  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS}} -> do
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS}} -> do
     now <- serviceNow env
     (purchaseKey, masterKey) <- newPurchaseKeys
     let monthlyFrom start = storeCharge "subscr-badge-supporter-month-02" start 1
         monthly = monthlyFrom (addUTCTime (-3600) now)
+        -- one token presented again and again, so each presentation comes after the hour the one before holds it for
         answer ref payment checked = do
           setSubscription store ref checked
-          refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey payment)
+          refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey payment) <* nextHour
+        nextHour = testClockTime bsClock >>= setClockAt bsClock . addUTCTime 3700
         play = answer (SubscriptionGoogle googleSubscriptionToken) subscriptionPlay
         aDay = Just 86400
-    play (subscriptionCheck SSRenewing $ Just $ monthlyFrom $ addUTCTime 3600 now) `shouldReturn` (BSEPaymentPending, Just 300)
+    play (subscriptionCheck SSRenewing $ Just $ monthlyFrom $ addUTCTime 3600 now) `shouldReturn` (BSEPaymentPending, Just 3600)
     -- Play gives a subscription bought again a new token, so this one can never be credited
     play (subscriptionCheck SSEnded $ Just monthly) `shouldReturn` (BSEReceiptInvalid, Nothing)
     -- a later charge could still credit this receipt
@@ -2824,9 +2829,58 @@ testApplePurchaseChecksBounded ps =
     subscriptionChecks store `shouldReturn` checks + 4
     nothingPurchased cc
 
+testPlayPurchaseChecksBounded :: HasCallStack => TestParams -> IO ()
+testPlayPurchaseChecksBounded ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
+    let token n = "fake-play-token-bounded-" <> n <> ".AO-J1Om8l3biV8pPk4"
+        reports t = setSubscription store (SubscriptionGoogle t)
+        payment = googlePayment "subscr_badge_supporter_01"
+        present (purchaseKey, masterKey) t = refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey $ payment t)
+        heldOff (code, retryAfter) = code == BSEPaymentPending && maybe False (\s -> s > 3540 && s <= 3600) retryAfter
+        waiting = subscriptionCheck SSBillingRetry Nothing
+    now <- serviceNow env
+    reports (token "1") waiting
+    reports (token "2") waiting
+    reports (token "3") waiting
+    reports (token "4") $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" (addUTCTime 3600 now) 1
+    keys <- newPurchaseKeys
+    otherKeys <- newPurchaseKeys
+    checks <- subscriptionChecks store
+    firstCheck <- testClockTime bsClock
+    present keys (token "1") `shouldReturn` (BSEPaymentPending, Just 86400)
+    subscriptionChecks store `shouldReturn` checks + 1
+    present keys (token "1") >>= (`shouldSatisfy` heldOff)
+    present otherKeys (token "1") >>= (`shouldSatisfy` heldOff)
+    subscriptionChecks store `shouldReturn` checks + 1
+    present keys (token "2") `shouldReturn` (BSEPaymentPending, Just 86400)
+    subscriptionChecks store `shouldReturn` checks + 2
+    -- answers that would bring the client back sooner carry the hour the token is held for
+    setGoogleDown store True
+    present keys (token "3") `shouldReturn` (BSEProviderUnavailable, Just 3600)
+    setGoogleDown store False
+    present keys (token "4") `shouldReturn` (BSEPaymentPending, Just 3600)
+    subscriptionChecks store `shouldReturn` checks + 4
+    setClockAt bsClock $ addUTCTime 3700 firstCheck
+    present otherKeys (token "1") `shouldReturn` (BSEPaymentPending, Just 86400)
+    subscriptionChecks store `shouldReturn` checks + 5
+    nothingPurchased cc
+    -- a token credited to one key is held for another key too, and its own key is answered from the record
+    creditedAt <- serviceNow env
+    reports (token "5") $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" (addUTCTime (-3600) creditedAt) 1
+    (creditKey, creditMasterKey) <- newPurchaseKeys
+    credited <- serviceCmd env creditKey (purchaseCmd creditMasterKey $ payment $ token "5")
+    credentialOf credited `shouldSatisfy` isJust
+    subscriptionChecks store `shouldReturn` checks + 6
+    present otherKeys (token "5") >>= (`shouldSatisfy` heldOff)
+    credentialOf <$> serviceCmd env creditKey (purchaseCmd creditMasterKey $ payment $ token "5") `shouldReturn` credentialOf credited
+    subscriptionChecks store `shouldReturn` checks + 6
+    setClockAt bsClock $ addUTCTime 3700 creditedAt
+    present otherKeys (token "5") `shouldReturn` (BSEReceiptUsed, Nothing)
+    subscriptionChecks store `shouldReturn` checks + 7
+
 testPurchaseChecksBounded :: HasCallStack => TestParams -> IO ()
 testPurchaseChecksBounded _ = do
-  checks <- newPurchaseChecks
+  PurchaseChecks {appleChecks = checks, googleChecks} <- newPurchaseChecks
   now <- getCurrentTime
   let waitAt t ref = atomically $ purchaseCheckWait checks t ref
       size = M.size <$> readTVarIO checks
@@ -2837,6 +2891,9 @@ testPurchaseChecksBounded _ = do
   waitAt now "new" `shouldReturn` Nothing
   waitAt now "new" `shouldReturn` Nothing
   size `shouldReturn` maxPurchaseChecks
+  atomically (purchaseCheckWait googleChecks now "play claim") `shouldReturn` Nothing
+  atomically (purchaseCheckWait googleChecks now "play claim") `shouldReturn` Just 3600
+  M.size <$> readTVarIO googleChecks `shouldReturn` 1
   waitAt (addUTCTime 3600 now) "new" `shouldReturn` Nothing
   size `shouldReturn` 1
 
@@ -2898,22 +2955,27 @@ testPlaySubscriptionAcknowledgedBeforeCrediting ps = do
           { acknowledgeGoogle = Just $ \_ token -> modifyIORef' oneTimeAcknowledged (token :) >> pure (Right ()),
             acknowledgeGoogleSubscription = Just $ \productId token -> modifyIORef' acknowledged ((productId, token) :) >> readIORef acknowledgement
           }
-  withBadgeServiceVerifier ps acknowledging $ \env@BadgeServiceEnv {bsController = cc, bsStore} -> do
+  withBadgeServiceVerifier ps acknowledging $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore} -> do
     now <- serviceNow env
     (purchaseKey, masterKey) <- newPurchaseKeys
     let purchase = serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
         chargedFrom start = setSubscription bsStore (SubscriptionGoogle googleSubscriptionToken) $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" start 1
+        -- the token is held an hour after each attempt
+        nextHour = testClockTime bsClock >>= setClockAt bsClock . addUTCTime 3700
     -- only a charge about to be credited is acknowledged
     chargedFrom $ addUTCTime 3600 now
     fst . refusalOf <$> purchase `shouldReturn` BSEPaymentPending
     readIORef acknowledged `shouldReturn` []
     chargedFrom $ addUTCTime (-3600) now
+    nextHour
     refusalOf <$> purchase >>= (`shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter)
     writeIORef acknowledgement $ Left $ SRVerifierFailed "acknowledging: the service account lacks the Play Console permission for this call"
+    nextHour
     refusalOf <$> purchase `shouldReturn` (BSEInternal, Nothing)
     nothingPurchased cc
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 0
     writeIORef acknowledgement $ Right ()
+    nextHour
     purchased <- purchase
     subscriptionOf purchased `shouldBe` Just SSRenewing
     replayed <- purchase

@@ -14,7 +14,8 @@ module BadgeService.Service
     badgeServiceCLI,
     badgeServiceResponse,
     mayAskStore,
-    PurchaseChecks,
+    PurchaseChecks (..),
+    ClaimChecks,
     newPurchaseChecks,
     purchaseCheckWait,
     maxPurchaseChecks,
@@ -518,15 +519,7 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
     newPurchase tx@VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       -- an Apple subscription, whose JWS was verified offline
-      Just StoreSubscription -> do
-        now <- badgeNow cc
-        atomically (purchaseCheckWait checks now providerRef) >>= \case
-          Nothing ->
-            purchaseSubscription (Just productId) Uncredited >>= \case
-              -- no store was asked, so the claim is not held off
-              resp@BSPError {code = BSEProviderNotConfigured} -> resp <$ atomically (modifyTVar' checks $ M.delete providerRef)
-              resp -> pure $ atLeastCheckInterval resp
-          Just remaining -> pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just (ceiling remaining)}
+      Just StoreSubscription -> purchaseSubscription (Just productId) Uncredited
       Just StoreOneTime {badgeType, months} ->
         acknowledged (($ tx) <$> acknowledgeReceipt) $ do
           now <- badgeNow cc
@@ -535,13 +528,23 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
             Right firstMonth ->
               claimPurchase now (\paymentId -> NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType, subscriptionState = Nothing, providerToken = Nothing}) $
                 \db purchaseId paymentId -> firstMonthResponse db purchaseId (Just paymentId) Nothing firstMonth
-    -- another key's credit is told only once the store vouched for the subscription, as for a one-time purchase
-    purchaseSubscription product_ credit =
-      checkStoreSubscription verifier subscriptionRef product_ >>= \case
-        Left refusal -> storeRefusalResponse refusal
-        Right checked -> case credit of
-          Uncredited -> newSubscription checked
-          _ -> answerCredit credit
+    -- another key's credit is told only once the store vouched for the subscription, as for a one-time purchase;
+    -- the store is asked about a claim at most once an interval on this path, whoever presents it
+    purchaseSubscription product_ credit = do
+      now <- badgeNow cc
+      atomically (purchaseCheckWait claimChecks now providerRef) >>= \case
+        Just remaining -> pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just (ceiling remaining)}
+        Nothing ->
+          checkStoreSubscription verifier subscriptionRef product_ >>= \case
+            -- no store was asked, so the claim is not held off
+            Left SRNotConfigured -> atomically (modifyTVar' claimChecks $ M.delete providerRef) >> storeRefusalResponse SRNotConfigured
+            Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
+            Right checked -> atLeastCheckInterval <$> case credit of
+              Uncredited -> newSubscription checked
+              _ -> answerCredit credit
+    claimChecks = case subscriptionRef of
+      SubscriptionApple _ -> appleChecks checks
+      SubscriptionGoogle _ -> googleChecks checks
     newSubscription checked@SubscriptionCheck {subscriptionState} = do
       now <- badgeNow cc
       case grantableCharge provider Nothing now checked >>= fundsMonthNow now Nothing of
@@ -618,7 +621,7 @@ fundsMonthNow now tip_ grant@(StoreCharge {periodStart}, (badgeType, months))
   where
     tip = fromMaybe (emptyEntry periodStart badgeType) tip_
 
--- | No payment row exists yet to stamp, so an App Store claim's checks are bounded by the purchase checks, a Play one's by each answer's retryAfter.
+-- | No payment row exists yet to stamp, so a first purchase's checks are bounded by the purchase checks.
 firstChargeNotGranted :: PaymentProvider -> NotGranted -> IO BadgeServiceResponse
 firstChargeNotGranted provider = \case
   NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
@@ -785,15 +788,18 @@ atLeastCheckInterval = \case
   BSPError {code, message, retryAfter = Just t} -> BSPError {code, message, retryAfter = Just $ max t $ round subscriptionCheckInterval}
   resp -> resp
 
--- | The App Store subscription claims the purchase path asked its store about, by original transaction id.
-type PurchaseChecks = TVar (M.Map T.Text UTCTime)
+-- | The subscription claims the purchase path asked a store about, one map per store: the App Store's by original
+-- transaction id, Play's by the token's hash, so Play tokens, which cost nothing to make up, cannot fill the App Store's.
+data PurchaseChecks = PurchaseChecks {appleChecks :: ClaimChecks, googleChecks :: ClaimChecks}
+
+type ClaimChecks = TVar (M.Map T.Text UTCTime)
 
 newPurchaseChecks :: IO PurchaseChecks
-newPurchaseChecks = newTVarIO M.empty
+newPurchaseChecks = PurchaseChecks <$> newTVarIO M.empty <*> newTVarIO M.empty
 
 -- | How long a claim waits before its store is asked again; Nothing records a check at now. A claim that finds
 -- the table full of checks inside the interval is asked without being recorded, so a full table refuses no one.
-purchaseCheckWait :: PurchaseChecks -> UTCTime -> T.Text -> STM (Maybe NominalDiffTime)
+purchaseCheckWait :: ClaimChecks -> UTCTime -> T.Text -> STM (Maybe NominalDiffTime)
 purchaseCheckWait checks now ref = stateTVar checks $ \m ->
   let live = M.filter (\t -> diffUTCTime now t < subscriptionCheckInterval) m
    in case M.lookup ref live of
@@ -802,6 +808,7 @@ purchaseCheckWait checks now ref = stateTVar checks $ \m ->
           | M.size live >= maxPurchaseChecks -> (Nothing, live)
           | otherwise -> (Nothing, M.insert ref now live)
 
--- | Far above an hour of genuine App Store subscription purchases: every key is one Apple signed for this app.
+-- | Per store, far above an hour of genuine purchases: every App Store key is one Apple signed for this app,
+-- while Play keys cost nothing to make up, so a full Play map only stops recording Play claims.
 maxPurchaseChecks :: Int
 maxPurchaseChecks = 10000
