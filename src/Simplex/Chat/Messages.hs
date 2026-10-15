@@ -40,7 +40,7 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, nominalDay)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import GHC.TypeLits (ErrorMessage (ShowType, type (:<>:)), TypeError)
+import GHC.TypeLits (ErrorMessage (ShowType, (:<>:)), TypeError)
 import qualified GHC.TypeLits as Type
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
