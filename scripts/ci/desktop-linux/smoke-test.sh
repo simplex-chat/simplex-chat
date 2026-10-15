@@ -24,6 +24,8 @@ name_text=seeded
 local_chat="seeded notes"
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
+# the Wefunder banner, the reachable toolbars card and the connect cards, which the chat list hides while it shows online results
+cards=("Invest in SimpleX Chat" "Top bar" "New 1-time link")
 # switches are at the right of the left pane, where Settings open
 switch_x=335
 mkdir -p "$UI_OUT"
@@ -75,17 +77,46 @@ check() {
   fi
 }
 
+# text compared as ui compares it: letters and digits, lowercase, a lowercase l read as i
+normalise() {
+  tr -cd '[:alnum:]' <<< "$1" | tr '[:upper:]' '[:lower:]' | tr l i
+}
+
+# Prints "x y" of the text in the chat list pane, left of x 390: a phrase equal to it, else the first containing it.
+# The chats, results and Settings are there; the right pane shows the open chat, which can have the same names.
+left_pane_position() {
+  local target line x y found=""
+  target=$(normalise "$1")
+  while IFS= read -r line; do
+    x=${line%%,*}
+    y=${line#*,}
+    y=${y%% *}
+    [ "$x" -lt 390 ] || continue
+    case "$(normalise "${line#* }")" in
+      "$target")
+        echo "$x $y"
+        return 0
+        ;;
+      *"$target"*)
+        found=${found:-"$x $y"}
+        ;;
+    esac
+  done < <("$ui" text)
+  [ -n "$found" ] || return 1
+  echo "$found"
+}
+
 on_screen() {
-  "$ui" find "$1" > /dev/null
+  left_pane_position "$1" > /dev/null
 }
 
 not_on_screen() {
-  ! "$ui" find "$1" > /dev/null 2>&1
+  ! left_pane_position "$1" > /dev/null
 }
 
 y_of() {
   local pos
-  pos=$("$ui" find "$1") || return 1
+  pos=$(left_pane_position "$1") || return 1
   cut -d ' ' -f 2 <<< "$pos"
 }
 
@@ -127,6 +158,59 @@ count_text_smaller() {
   description=$(height_of "CI seeded channel") || return 1
   echo "NOTE text heights: \"1 subscriber\" $count px, \"CI seeded channel\" $description px" | tee -a "$checks"
   [ "$count" -lt "$description" ]
+}
+
+# the phrases in the chat list pane, left of x 390, one per line, normalised; the right pane can show a banner too
+left_pane_text() {
+  local line
+  "$ui" text | while IFS= read -r line; do
+    if [ "${line%%,*}" -lt 390 ]; then
+      normalise "${line#* }"
+      echo
+    fi
+  done
+}
+
+not_in() {
+  ! grep -qF "$(normalise "$2")" <<< "$1"
+}
+
+is_in() {
+  grep -qF "$(normalise "$2")" <<< "$1"
+}
+
+# Records which of the cards the chat list shows while the typed text only filters it, in shown_cards.
+cards_while_typing() {
+  local layout=$1 screen card
+  screen=$(left_pane_text)
+  shown_cards=()
+  for card in "${cards[@]}"; do
+    if is_in "$screen" "$card"; then
+      shown_cards+=("$card")
+    fi
+  done
+  echo "NOTE $layout: while typing, the chat list shows: ${shown_cards[*]:-none of the cards}" | tee -a "$checks"
+  check "$layout: banner or cards shown while typing" [ ${#shown_cards[@]} -gt 0 ]
+}
+
+cards_hidden() {
+  local what=$1 screen card
+  screen=$(left_pane_text)
+  for card in "${shown_cards[@]}"; do
+    check "$what: \"$card\" hidden" not_in "$screen" "$card"
+  done
+}
+
+# Escape clears the search field
+clear_search_and_check_cards() {
+  local what=$1 screen card
+  "$ui" key Escape
+  "$ui" wait "Search or paste SimpleX link" 10 || true
+  "$ui" shot "$(tr -cd 'a-z-' <<< "${what// /-}")-cleared"
+  screen=$(left_pane_text)
+  for card in "${shown_cards[@]}"; do
+    check "$what: \"$card\" back after clearing the search" is_in "$screen" "$card"
+  done
 }
 
 # Shows more results until both seeded entries are listed: their avatars make each response hold one of them.
@@ -182,6 +266,8 @@ search_directory() {
   show_all_results "$layout-directory"
   check_directory_rows "$layout"
   check "$layout: the count's text is smaller than the description's" count_text_smaller
+  cards_hidden "$layout, directory results"
+  clear_search_and_check_cards "$layout directory search"
 }
 
 # Types a SimpleX name and presses Enter, the desktop's Search key: the local chat that matches, then the Names part
@@ -214,12 +300,14 @@ full_search() {
     check "$layout full search: local chat, Names, Directory, from the search field up" \
       in_order "Directory" "#ci_channel" "Names" "ci_contact" "$local_chat" "Search in Directory"
   fi
+  cards_hidden "$layout, full search results"
+  clear_search_and_check_cards "$layout full search"
 }
 
 # Escape closes one screen at a time, and clears the search field
 back_to_chat_list() {
   for _ in 1 2 3 4 5 6; do
-    if not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network & servers" && on_screen "Search or paste SimpleX link"; then
+    if not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && on_screen "Search or paste SimpleX link"; then
       return 0
     fi
     "$ui" key Escape
@@ -262,12 +350,12 @@ create_local_chat() {
   "$ui" type "$local_chat"
   "$ui" shot new-group
   "$ui" click-text "Create group" 10
-  "$ui" click-text "Skip inviting members" 20 || true
+  "$ui" click-text "Skip inviting members" 10 || true
   "$ui" shot group-created
   "$ui" key Escape
-  "$ui" key Escape
   back_to_chat_list || fail "no chat list after creating the group"
-  "$ui" wait "$local_chat" 10 || fail "\"$local_chat\" is not in the chat list"
+  # the group stays open in the right pane: Escape doesn't close a chat on desktop
+  on_screen "$local_chat" || fail "\"$local_chat\" is not in the chat list"
   "$ui" shot local-chat
 }
 
@@ -276,7 +364,8 @@ create_local_chat() {
 use_names_server() {
   local y operator
   open_settings
-  "$ui" click-text "Network & servers" 10
+  # OCR reads "Network & servers" as two phrases
+  "$ui" click-text "Network" 10
   "$ui" click-text "Your servers" 10
   "$ui" click-text "Add server" 10
   "$ui" click-text "Enter server manually" 10
@@ -363,8 +452,8 @@ fi
 "$ui" wait "$search_text" 15
 "$ui" wait "Search in Directory" 15
 "$ui" shot bottom-search-typed
+cards_while_typing bottom
 search_directory bottom "Search"
-"$ui" key Escape
 full_search bottom "Search"
 
 # the alert was answered with "Search" both times, so it asks again
@@ -374,8 +463,8 @@ use_top_toolbar
 "$ui" wait "$search_text" 15
 "$ui" wait "Search in Directory" 15
 "$ui" shot top-search-typed
+cards_while_typing top
 search_directory top "Search and don't show again"
-"$ui" key Escape
 full_search top ""
 
 if grep -q '^FAIL' "$checks"; then
