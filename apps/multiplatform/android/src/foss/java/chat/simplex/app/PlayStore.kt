@@ -31,3 +31,6 @@ suspend fun acknowledgeBadgePurchase(receipt: BadgeStoreReceipt) {}
 suspend fun finishBadgePurchase(receipt: BadgeStoreReceipt) {}
 
 suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> = emptyList()
+
+@Suppress("UNUSED_PARAMETER")
+fun manageBadgeSubscription(productId: String) {}

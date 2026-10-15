@@ -75,7 +75,7 @@ enum class BadgePeriod {
 
 @Composable
 fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDepth: Int) {
-  var selectedPeriod by remember { mutableStateOf(if (BadgePeriod.Monthly in badgePeriodsForSale) BadgePeriod.Monthly else BadgePeriod.OneMonth) }
+  var selectedPeriod by remember { mutableStateOf(BadgePeriod.OneMonth) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
   CloseWhenSupportGivesWay(modalManager, unwindToDepth)
@@ -145,7 +145,7 @@ fun BadgeBillingFooter(period: BadgePeriod) {
 @Composable
 private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: BadgePeriod, modifier: Modifier, onSelect: (BadgePeriod) -> Unit) {
   val isSelected = period == selectedPeriod
-  val forSale = period in badgePeriodsForSale
+  val forSale = BadgeStore.forSale(period)
   val textColor = if (forSale) Color.Unspecified else MaterialTheme.colors.secondary
   val borderColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
   // Light: transparent so card matches page background. Dark: subtle gray tint for visible contrast.

@@ -1076,7 +1076,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     val alert = BadgeModel.alert.value
     if (supportEnded() && alert != null) {
       item {
-        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeAlert }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_support_ended),
@@ -1088,7 +1088,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       }
     } else if (badgeIssueFailed()) {
       item {
-        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeAlert }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_renewal_failed),
