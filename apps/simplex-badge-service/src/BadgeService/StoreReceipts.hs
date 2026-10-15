@@ -99,7 +99,7 @@ data SubscriptionCheck = SubscriptionCheck
   deriving (Show)
 
 data StoreCharge = StoreCharge
-  { chargeRef :: Text, -- Apple's transactionId, Play's order id
+  { chargeRef :: Text, -- Apple's transactionId, a hash of Play's order id
     planId :: Text, -- Apple's product id, Play's base plan
     periodStart :: UTCTime,
     periodEnd :: UTCTime,

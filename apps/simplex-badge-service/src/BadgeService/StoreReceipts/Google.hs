@@ -127,12 +127,20 @@ playUrl PlayEnv {config = PlayStoreConfig {gApiHost, gPackageName}} path =
   T.intercalate "/" $ [gApiHost, "androidpublisher/v3/applications", gPackageName] <> path
 
 checkSubscription :: PlayEnv -> Text -> IO (Either StoreRefusal SubscriptionCheck)
-checkSubscription env token = (>>= subscriptionVerdict) <$> readSubscription env token
+checkSubscription env token =
+  playResponse env id (subscriptionUrl env token) >>= \case
+    -- Play answers 410 for a subscription that expired too long ago to be read
+    Right (410, _) -> pure $ Right SubscriptionCheck {subscriptionState = SSEnded, testSubscription = False, latestCharge = Nothing}
+    response -> (>>= subscriptionVerdict) . (>>= decodedSubscription) <$> either (pure . Left) (playAnswer env) response
 
 readSubscription :: PlayEnv -> Text -> IO (Either StoreRefusal SubscriptionPurchase)
-readSubscription env token = (>>= decoded) <$> playCall env id (playUrl env ["purchases/subscriptionsv2/tokens", token])
-  where
-    decoded = either (const $ Left $ SRVerifierFailed "could not read Play's subscription record") Right . J.eitherDecode'
+readSubscription env token = (>>= decodedSubscription) <$> playCall env id (subscriptionUrl env token)
+
+subscriptionUrl :: PlayEnv -> Text -> Text
+subscriptionUrl env token = playUrl env ["purchases/subscriptionsv2/tokens", token]
+
+decodedSubscription :: LB.ByteString -> Either StoreRefusal SubscriptionPurchase
+decodedSubscription = either (const $ Left $ SRVerifierFailed "could not read Play's subscription record") Right . J.eitherDecode'
 
 -- | Play reports no current period start, so it is the period end less the plan's length; a plan this
 -- service does not sell has no length, and its charge, which is never granted, is given no period.
@@ -152,10 +160,11 @@ subscriptionVerdict SubscriptionPurchase {subscriptionStateName, testSubscriptio
         "SUBSCRIPTION_STATE_EXPIRED" -> Right SSEnded
         "SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED" -> Right SSEnded
         _ -> Left $ SRVerifierFailed "a subscriptionState this service does not know"
-      latestCharge <- forM latestSuccessfulOrderId $ \chargeRef -> case (expiryTime, basePlanId) of
+      latestCharge <- forM latestSuccessfulOrderId $ \orderId -> case (expiryTime, basePlanId) of
         (Just periodEnd, Just planId) ->
           let periodStart = maybe periodEnd (\(_, months) -> addMonths (negate $ toInteger months) periodEnd) (storePlan PPGoogle planId)
-           in Right StoreCharge {chargeRef, planId, periodStart, periodEnd, chargePaid = Nothing, revoked = False, offer = inOffer}
+           -- hashed: the order id is on the buyer's Play receipt email
+           in Right StoreCharge {chargeRef = googlePurchaseRef orderId, planId, periodStart, periodEnd, chargePaid = Nothing, revoked = False, offer = inOffer}
         _ -> Left $ SRVerifierFailed "Play answered a charge without its expiryTime or base plan"
       pure SubscriptionCheck {subscriptionState, testSubscription, latestCharge}
 
@@ -195,17 +204,21 @@ instance J.FromJSON LineItem where
     pure LineItem {expiryTime, autoRenewEnabled, basePlanId, latestSuccessfulOrderId, inOffer}
 
 playCall :: PlayEnv -> (Request -> Request) -> Text -> IO (Either StoreRefusal LB.ByteString)
-playCall env@PlayEnv {accessToken} prepare url =
+playCall env prepare url = playResponse env prepare url >>= either (pure . Left) (playAnswer env)
+
+playResponse :: PlayEnv -> (Request -> Request) -> Text -> IO (Either StoreRefusal (Int, LB.ByteString))
+playResponse env prepare url =
   bearerToken env >>= \case
     Left refusal -> pure $ Left refusal
-    Right bearer ->
-      playRequest env (\req -> (prepare req) {requestHeaders = [(hAuthorization, "Bearer " <> bearer)]}) url >>= \case
-        Left refusal -> pure $ Left refusal
-        Right (code, body) | code >= 200 && code < 300 -> pure $ Right body
-        Right (401, _) -> atomically (writeTVar accessToken Nothing) $> Left (SRVerifierFailed "Play refused this service's access token")
-        Right (403, _) -> pure $ Left $ SRVerifierFailed "the service account lacks the Play Console permission for this call"
-        -- a 404 among them, which Play may answer for a token it issued but has not yet recorded
-        Right (code, _) -> pure $ Left $ SRUnreachable $ "Play answered HTTP " <> tshow code
+    Right bearer -> playRequest env (\req -> (prepare req) {requestHeaders = [(hAuthorization, "Bearer " <> bearer)]}) url
+
+playAnswer :: PlayEnv -> (Int, LB.ByteString) -> IO (Either StoreRefusal LB.ByteString)
+playAnswer PlayEnv {accessToken} = \case
+  (code, body) | code >= 200 && code < 300 -> pure $ Right body
+  (401, _) -> atomically (writeTVar accessToken Nothing) $> Left (SRVerifierFailed "Play refused this service's access token")
+  (403, _) -> pure $ Left $ SRVerifierFailed "the service account lacks the Play Console permission for this call"
+  -- a 404 among them, which Play may answer for a token it issued but has not yet recorded
+  (code, _) -> pure $ Left $ SRUnreachable $ "Play answered HTTP " <> tshow code
 
 purchaseVerdict :: Text -> Text -> ProductPurchase -> Either StoreRefusal VerifiedStoreTransaction
 purchaseVerdict productId token ProductPurchase {purchaseState, purchaseType, purchaseQuantity, purchaseProductId, alreadyAcknowledged}

@@ -110,7 +110,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "reads the charge from the line item, its period starting the plan's length before it ends" testPlaySubscriptionCharge
     it "flags a charge in a free trial or an introductory price, and not one bought on an offer now at its base price" testPlaySubscriptionOffer
     it "fails on a record it cannot read, an unknown state, or a charge without its period or plan" testPlaySubscriptionUnreadable
-    it "fails on 401 and 403, and is unreachable on 404, 429, 5xx and no answer" testPlaySubscriptionHttp
+    it "fails on 401 and 403, is unreachable on 404, 429, 5xx and no answer, and ended on 410" testPlaySubscriptionHttp
     it "acknowledges a subscription once, through the subscriptions endpoint, unless Play reports it acknowledged" testPlaySubscriptionAcknowledges
     it "reports a subscription acknowledgement Play refuses or does not answer" testPlaySubscriptionAcknowledgementFails
     it "checks Play subscriptions only where [google] is configured, beside the App Store's" testPlayConfiguredSubscriptions
@@ -940,13 +940,14 @@ testPlaySubscriptionCharge = withFakePlay $ \fake -> do
   verifier <- playVerifier fake
   let chargeFor item = answerSubscription fake (subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [item]) >> (chargeOf <$> playCheck verifier)
       at y m d = UTCTime (fromGregorian y m d)
+      orderRef = googlePurchaseRef "GPA.3312-4521-8899-01234..1"
   chargeFor (lineItem [] [])
-    `shouldReturn` Right (Just ("GPA.3312-4521-8899-01234..1", "subscr-badge-supporter-month-02", at 2026 10 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
+    `shouldReturn` Right (Just (orderRef, "subscr-badge-supporter-month-02", at 2026 10 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
   chargeFor (lineItem [basePlan "subscr-badge-legend-year-01", ("expiryTime", "2027-10-14T10:00:00Z")] [])
-    `shouldReturn` Right (Just ("GPA.3312-4521-8899-01234..1", "subscr-badge-legend-year-01", at 2026 10 14 36000, at 2027 10 14 36000, Nothing, False, False))
+    `shouldReturn` Right (Just (orderRef, "subscr-badge-legend-year-01", at 2026 10 14 36000, at 2027 10 14 36000, Nothing, False, False))
   -- a plan this service does not sell has no length, so its charge is given no period, and is never granted
   chargeFor (lineItem [basePlan "subscr-badge-supporter-month-99"] [])
-    `shouldReturn` Right (Just ("GPA.3312-4521-8899-01234..1", "subscr-badge-supporter-month-99", at 2026 11 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
+    `shouldReturn` Right (Just (orderRef, "subscr-badge-supporter-month-99", at 2026 11 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
   chargeFor (lineItem [] ["latestSuccessfulOrderId"]) `shouldReturn` Right Nothing
 
 testPlaySubscriptionOffer :: IO ()
@@ -992,7 +993,11 @@ testPlaySubscriptionHttp = withFakePlay $ \fake -> do
   let answeredWith answer = answerPurchase fake subscriptionToken answer >> (outcome <$> playCheck verifier)
   answeredWith (PlayStatus 401) `shouldReturn` Failed
   answeredWith (PlayStatus 403) `shouldReturn` Failed
-  forM_ [400, 404, 410, 429, 500, 503] $ \code -> answeredWith (PlayStatus code) `shouldReturn` Unreachable
+  forM_ [400, 404, 429, 500, 503] $ \code -> answeredWith (PlayStatus code) `shouldReturn` Unreachable
+  -- Play no longer answers about a subscription that expired long ago
+  answerPurchase fake subscriptionToken (PlayStatus 410)
+  ended <- playCheck verifier
+  (stateOf ended, chargeOf ended) `shouldBe` (Right SSEnded, Right Nothing)
   answerPurchase fake subscriptionToken PlayHang
   r <- playCheck verifier
   (outcome r, reason r) `shouldBe` (Unreachable, "subscription check timed out")
