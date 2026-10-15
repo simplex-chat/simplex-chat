@@ -18,18 +18,22 @@ package cryptostore
 
 constraints: zip +disable-bzip2 +disable-zstd
 
--- The pinned forks retain the GHC 9.6 boot-library and compiler-helper
--- bounds. Limit the exceptions to those forks and libraries; other bounds
+-- Pinned packages retain older boot-library and compiler-helper bounds.
+-- Limit the exceptions to those packages and libraries; other bounds
 -- still constrain the GHC 9.14 plan.
 allow-newer:
     android-support:base,
+    network-transport:hashable,
     simplexmq:bytestring,
     simplexmq:containers,
     simplexmq:constraints,
     simplexmq:deepseq,
     simplexmq:filepath,
+    simplexmq:hashable,
+    simplexmq:scientific,
     simplexmq:template-haskell,
     simplexmq:time,
+    simplexmq:websockets,
     aeson:containers,
     aeson:ghc-prim,
     aeson:hashable,
@@ -37,6 +41,7 @@ allow-newer:
     aeson:template-haskell,
     aeson:th-abstraction,
     aeson:time,
+    aeson:witherable,
     zip:containers,
     zip:time
 

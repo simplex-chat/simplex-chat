@@ -611,7 +611,7 @@ executable simplex-chat
     , simplexmq >=6.3
     , stm ==2.5.*
     , unliftio ==0.2.*
-    , websockets ==0.12.*
+    , websockets >=0.12 && <0.14
   default-language: Haskell2010
   if flag(client_postgres)
     cpp-options: -DdbPostgres
