@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-# Reads the words tesseract found on a screenshot (its TSV output) and prints the phrases on screen, or the centre of one phrase.
+# Reads the words tesseract found on a screenshot (TSV output, one file per OCR pass) and
+# prints the phrases on screen, or the centre of one phrase.
 #
-#   screen-text.py <scale> lines <tsv>        one phrase per line: centre x,y and its words
-#   screen-text.py <scale> find <text> <tsv>  "x y" of the first phrase containing the text; fails if none does
+#   screen-text.py <scale> lines <tsv>...        one phrase per line: centre x,y and its words
+#   screen-text.py <scale> find <text> <tsv>...  "x y" of the first phrase containing the text; fails if none does
 #
 # <scale> is how much the screenshot was enlarged for OCR; printed coordinates are screen pixels.
 # Words are compared ignoring case and punctuation.
@@ -27,8 +28,28 @@ def read_words(path, scale):
             if row["level"] != "5" or not key(text) or float(row["conf"]) < MIN_CONFIDENCE:
                 continue
             left, top, width, height = (int(row[k]) / scale for k in ("left", "top", "width", "height"))
-            words.append({"text": text, "key": key(text), "l": left, "t": top, "r": left + width, "b": top + height})
+            words.append({"text": text, "key": key(text), "conf": float(row["conf"]),
+                          "l": left, "t": top, "r": left + width, "b": top + height})
     return words
+
+
+def area(w):
+    return (w["r"] - w["l"]) * (w["b"] - w["t"])
+
+
+def same_place(a, b):
+    dx = min(a["r"], b["r"]) - max(a["l"], b["l"])
+    dy = min(a["b"], b["b"]) - max(a["t"], b["t"])
+    return dx > 0 and dy > 0 and dx * dy >= 0.5 * min(area(a), area(b))
+
+
+# The passes read the same place differently; keep the more confident reading of each place.
+def merge(passes):
+    kept = []
+    for w in sorted((w for words in passes for w in words), key=lambda w: -w["conf"]):
+        if not any(same_place(w, k) for k in kept):
+            kept.append(w)
+    return kept
 
 
 def centre(words):
@@ -80,11 +101,11 @@ def find(all_phrases, text):
 def main():
     scale, command, args = float(sys.argv[1]), sys.argv[2], sys.argv[3:]
     if command == "lines":
-        for phrase in phrases(read_words(args[0], scale)):
+        for phrase in phrases(merge(read_words(p, scale) for p in args)):
             x, y = centre(phrase)
             print(f"{round(x)},{round(y)} {' '.join(w['text'] for w in phrase)}")
     elif command == "find":
-        found = find(phrases(read_words(args[1], scale)), args[0])
+        found = find(phrases(merge(read_words(p, scale) for p in args[1:])), args[0])
         if not found:
             sys.exit(1)
         print(f"{round(found[0])} {round(found[1])}")

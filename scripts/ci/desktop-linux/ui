@@ -84,17 +84,17 @@ start() {
 }
 
 # ocr <png> lines | ocr <png> find <text>
-# Text of either polarity becomes dark on white: the difference from a morphological close (which removes dark strokes) and
-# from an open (which removes light ones). A mean-based local threshold rings coloured buttons, and tesseract skips text in rings.
+# Dark text is cut out by a local threshold, light text (labels on coloured buttons) by the difference from a morphological open:
+# a local threshold of the negative rings the buttons, and tesseract reads nothing inside a ring.
 ocr() {
   local png=$1 o=$state/ocr
   shift
   convert "$png" -colorspace Gray "$o/gray.png"
-  convert "$o/gray.png" \( +clone -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 \) -compose Difference -composite "$o/dark.png"
-  convert "$o/gray.png" \( +clone -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 \) -compose Difference -composite "$o/light.png"
-  convert "$o/dark.png" "$o/light.png" -compose Lighten -composite -negate -resize 200% "$o/text.png"
-  tesseract "$o/text.png" "$o/text" --psm 11 tsv > /dev/null 2>&1
-  python3 "$here/screen-text.py" 2 "$@" "$o/text.tsv"
+  convert "$o/gray.png" -resize 200% -lat 60x60-5% "$o/dark.png"
+  convert "$o/gray.png" \( +clone -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 \) -compose Difference -composite -negate -resize 200% "$o/light.png"
+  tesseract "$o/dark.png" "$o/dark" --psm 11 tsv > /dev/null 2>&1
+  tesseract "$o/light.png" "$o/light" --psm 11 tsv > /dev/null 2>&1
+  python3 "$here/screen-text.py" 2 "$@" "$o/dark.tsv" "$o/light.tsv"
 }
 
 screen_ocr() {
@@ -118,8 +118,10 @@ shot() {
   import -window root "$f.png"
   ocr "$f.png" lines > "$f.txt"
   mkdir -p "$UI_OUT/ocr"
-  cp "$state/ocr/text.png" "$UI_OUT/ocr/$(basename "$f").png"
-  cp "$state/ocr/text.tsv" "$UI_OUT/ocr/$(basename "$f").tsv"
+  for pass in dark light; do
+    cp "$state/ocr/$pass.png" "$UI_OUT/ocr/$(basename "$f")-$pass.png"
+    cp "$state/ocr/$pass.tsv" "$UI_OUT/ocr/$(basename "$f")-$pass.tsv"
+  done
   echo "::group::text on screen: $(basename "$f")"
   cat "$f.txt"
   echo "::endgroup::"
