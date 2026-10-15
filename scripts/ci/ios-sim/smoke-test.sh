@@ -27,6 +27,10 @@ if [ -n "${GITHUB_ENV:-}" ]; then
 fi
 xcrun simctl boot "$SIM_UDID"
 xcrun simctl bootstatus "$SIM_UDID" -b
+# the keyboard types exactly what it is given: no capitals, corrections or predictions
+for key in KeyboardAutocapitalization KeyboardAutocorrection KeyboardPrediction; do
+  xcrun simctl spawn "$SIM_UDID" defaults write com.apple.Preferences "$key" -bool false
+done
 open -a Simulator --args -CurrentDeviceUDID "$SIM_UDID"
 
 xcrun simctl spawn "$SIM_UDID" log stream --level debug --style compact --predicate 'process == "SimpleX"' > "$UI_OUT/app.log" 2>&1 &
@@ -113,7 +117,7 @@ sleep 5
 "$ui" type "$search_text"
 sleep 2
 "$ui" shot search-typed
-# the keyboard capitalizes the first letter
+# the keyboard may still capitalize the first letter
 expect_in_tree -iF "\"$search_text\""
 expect_in_tree -F '"Search in Directory"'
 
