@@ -54,7 +54,7 @@
       projectPkgs = if mobile && pkgs'.stdenv.hostPlatform.isDarwin
         then pkgs'.appendOverlays [ (import ./scripts/nix/cabal-tool-overlay.nix) ]
         else pkgs';
-      in projectPkgs.haskell-nix.project {
+      in projectPkgs.haskell-nix.project ({ config, ... }: {
         compiler-nix-name = "ghc914-sh";
         inherit compilerSelection;
         # We need this, to specify we want the cabal project.
@@ -96,6 +96,25 @@
             "/apps/simplex-directory-service/web/directory.js" (toString path));
         };
         sha256map = import ./scripts/nix/sha256map.nix;
+        # The v2 builder compiles source-repository packages from a separate
+        # minimal Git repository, which currently skips package.patches.
+        # Patch the input before planning so both source paths agree.
+        inputMap = import ./scripts/nix/source-repository-patches.nix {
+          pkgs = config.evalPackages;
+          cabalProject = builtins.readFile ./cabal.project;
+          sha256map = import ./scripts/nix/sha256map.nix;
+          patchesByUrl = {
+            "https://github.com/simplex-chat/direct-sqlcipher.git" =
+              if pkgs'.stdenv.hostPlatform.isWindows
+              then [ ./scripts/nix/direct-sqlcipher-2.3.27-win.patch ]
+              else [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ]
+                ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid
+                  ./scripts/nix/direct-sqlcipher-android-log.patch;
+          } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isDarwin {
+            "https://github.com/simplex-chat/simplexmq.git" =
+              [ ./scripts/nix/simplexmq-blst-darwin-extern.patch ];
+          };
+        };
         modules = [
           { packages = pkgs.lib.recursiveUpdate
               (pkgs.lib.mapAttrs (_: flags: { inherit flags; }) packageFlags)
@@ -110,18 +129,8 @@
             }
           )
 
-          ({ pkgs, lib, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-            # GHC's Mach-O loader rejects BLST's redundant COMMON declarations
-            # alongside the C definition during Template Haskell loading.
-            packages.simplexmq.patches = [ ./scripts/nix/simplexmq-blst-darwin-extern.patch ];
-          })
-
-          ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
-            # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
-            # on pretty much all unix platforms, but then blows up on windows m(
-            packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-          })] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid mobileRuntime.androidModule ++ extra-modules;
-      }; in
+          ] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid mobileRuntime.androidModule ++ extra-modules;
+      }); in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
       let inherit (import ./scripts/nix/mobile-library.nix { inherit pkgs; })
@@ -260,9 +269,6 @@
                   bitvec.simd = false;
                 };
                 extra-modules = [{
-                  packages.direct-sqlcipher.patches = [
-                    ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
-                  ];
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.pkgsCross.mingwW64.openssl) #.override) # { static = true; enableKTLS = false; })
                   ];
@@ -298,9 +304,6 @@
                   simplexmq.client_library = true;
                 };
                 extra-modules = [{
-                  packages.direct-sqlcipher.patches = [
-                    ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
-                  ];
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
@@ -420,9 +423,6 @@
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
                   ];
-                  packages.direct-sqlcipher.patches = [
-                    ./scripts/nix/direct-sqlcipher-android-log.patch
-                  ];
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
                   ];
@@ -504,9 +504,6 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
-                  ];
-                  packages.direct-sqlcipher.patches = [
-                    ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
