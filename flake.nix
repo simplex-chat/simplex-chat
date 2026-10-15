@@ -90,38 +90,8 @@
       }; in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
-      # V2 slices ignore component.override and do not run postBuild/postInstall.
-      # Relink while their full package database still exists, then package after
-      # the normal install phase. The compiler is the exact slice/TH wrapper.
-      let withComponentPhases = component: change: component.overrideAttrs (old:
-        change old // {
-          passthru = (old.passthru or {}) // {
-            inherit (component) checkAgainstPlan;
-            isSlice = true;
-          };
-        }); in
-      let mobileLibrary = { kind, packageName ? "simplex-chat", linkOptions ? [], postInstall }: old:
-        let compiler = builtins.head old.nativeBuildInputs;
-            prefix = compiler.targetPrefix or "";
-        in {
-          buildPhase = old.buildPhase + ''
-            discoverStore
-            test -n "$ghcDir"
-            ${pkgs.bash}/bin/bash ${./scripts/nix/link-mobile-library.sh} \
-              ${compiler}/bin/${prefix}ghc ${compiler}/bin/${prefix}ghc-pkg \
-              "$ghcDir/$storePkgDb" ${pkgs.lib.escapeShellArg packageName} \
-              ${pkgs.lib.escapeShellArg kind} "$buildRoot/mobile-bundle" \
-              ${pkgs.lib.escapeShellArgs linkOptions}
-          '';
-          installPhase = old.installPhase + ''
-            (
-              cd "$buildRoot/mobile-bundle"
-              ${postInstall}
-            )
-          '';
-        }; in
-      let withMobileLibrary = component: options:
-        withComponentPhases component (mobileLibrary options); in
+      let inherit (import ./scripts/nix/mobile-library.nix { inherit pkgs; })
+        withComponentPhases withMobileLibrary; in
       let chatExports = [
         "chat_close_store"
         "chat_decrypt_file"
