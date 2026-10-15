@@ -10,6 +10,7 @@ set -euo pipefail
 out=$1
 summary=${GITHUB_STEP_SUMMARY:-/dev/stdout}
 sessions=0
+mkdir -p "$out"
 
 {
   echo "## Claude sessions"
