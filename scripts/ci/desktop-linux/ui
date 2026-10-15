@@ -92,7 +92,7 @@ ocr() {
   convert "$png" -colorspace Gray "$o/gray.png"
   convert "$o/gray.png" \( +clone -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 \) -compose Difference -composite "$o/dark.png"
   convert "$o/gray.png" \( +clone -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 \) -compose Difference -composite "$o/light.png"
-  convert "$o/dark.png" "$o/light.png" -compose Lighten -composite -negate -resize 200% -threshold 80% "$o/text.png"
+  convert "$o/dark.png" "$o/light.png" -compose Lighten -composite -negate -resize 200% "$o/text.png"
   tesseract "$o/text.png" "$o/text" --psm 11 tsv > /dev/null 2>&1
   python3 "$here/screen-text.py" 2 "$@" "$o/text.tsv"
 }
