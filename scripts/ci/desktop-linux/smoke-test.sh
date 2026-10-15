@@ -290,7 +290,8 @@ use_names_server() {
   "$ui" key Escape
   "$ui" click-text "127.0.0.1" 10
   "$ui" wait "To resolve names" 10
-  "$ui" click-text "To resolve names"
+  # the dropdown opens from its value; a custom server's roles default to yes, yes and no, so this is the names one
+  "$ui" click-text "default (no)"
   "$ui" click-text "yes" 10
   "$ui" shot names-server-roles
   "$ui" wait "To resolve names" 10
