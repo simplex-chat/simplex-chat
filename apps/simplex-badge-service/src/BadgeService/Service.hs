@@ -518,13 +518,15 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
     newPurchase tx@VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       -- an Apple subscription, whose JWS was verified offline
-      Just StoreSubscription
-        | isJust (checkSubscription verifier) -> do
-            now <- badgeNow cc
-            atomically (purchaseCheckWait checks now providerRef) >>= \case
-              Nothing -> atLeastCheckInterval <$> purchaseSubscription (Just productId) Uncredited
-              Just remaining -> pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just (ceiling remaining)}
-        | otherwise -> purchaseSubscription (Just productId) Uncredited
+      Just StoreSubscription -> do
+        now <- badgeNow cc
+        atomically (purchaseCheckWait checks now providerRef) >>= \case
+          Nothing ->
+            purchaseSubscription (Just productId) Uncredited >>= \case
+              -- no store was asked, so the claim is not held off
+              resp@BSPError {code = BSEProviderNotConfigured} -> resp <$ atomically (modifyTVar' checks $ M.delete providerRef)
+              resp -> pure $ atLeastCheckInterval resp
+          Just remaining -> pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just (ceiling remaining)}
       Just StoreOneTime {badgeType, months} ->
         acknowledged (($ tx) <$> acknowledgeReceipt) $ do
           now <- badgeNow cc

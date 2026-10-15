@@ -215,6 +215,7 @@ badgeServiceTests = do
     it "should keep at most the maximum of purchase checks, asking without recording once full, and drop expired ones" testPurchaseChecksBounded
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
     it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
+    it "should answer an App Store subscription provider_not_configured every time when only Play's subscriptions are checked" testAppleSubscriptionWithPlayChecker
     it "should acknowledge a Play subscription as a subscription before crediting it, and credit nothing when acknowledging fails" testPlaySubscriptionAcknowledgedBeforeCrediting
     it "should credit a Play subscription Play reports, beside a one-time purchase, and answer provider_not_configured without [google]" testPlaySubscriptionThroughPlay
     it "should have the dev mock credit and renew the plan a subscription names, end one it does not know, and still vouch for a one-time purchase" testMockSubscriptions
@@ -2627,14 +2628,13 @@ testAppleRenewalResolvesToPurchase ps =
       handOver appleSubscriptionJWS
       storePurchaseOpen alice ""
       heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
-      [(_, firstRetryAt)] <- heldStoreReceiptAttempt (chatController alice)
       checks <- subscriptionChecks store
-      -- a later renewal joins that record, which presents it at once, inside the hour since the subscription was asked about
+      -- a later renewal joins that record, which presents it at once, inside the hour since the subscription was asked about;
+      -- joining clears the record's error, so the error read again is the answer to that presentation
       appleReports $ addUTCTime (-3600) now
       handOver appleRenewalSubscriptionJWS
       storePurchaseOpen alice ""
-      (any ((> firstRetryAt) . snd) <$> heldStoreReceiptAttempt (chatController alice)) `shouldEventuallyReturn` True
-      heldStoreReceiptErrors (chatController alice) `shouldReturn` ["service_error retry payment_pending"]
+      heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
       subscriptionChecks store `shouldReturn` checks
     setClockAt bsClock $ addUTCTime 3700 now
     withTestChatCfg ps bsClientCfg "alice" $ \alice -> do
@@ -2711,7 +2711,18 @@ testAppleSandboxSubscriptionNotAsked ps = do
       nothingPurchased cc
 
 testAppleSubscriptionWithoutApiKey :: HasCallStack => TestParams -> IO ()
-testAppleSubscriptionWithoutApiKey ps = do
+testAppleSubscriptionWithoutApiKey = appleSubscriptionNotConfigured id
+
+-- | With [play] beside [apple], configureStoreVerifier builds a checker that answers App Store refs not configured.
+testAppleSubscriptionWithPlayChecker :: HasCallStack => TestParams -> IO ()
+testAppleSubscriptionWithPlayChecker = appleSubscriptionNotConfigured $ \v -> v {checkSubscription = Just playOnly}
+  where
+    playOnly ref _ = case ref of
+      SubscriptionApple _ -> pure $ Left SRNotConfigured
+      SubscriptionGoogle _ -> pure $ Left $ SRUnreachable "no Play in this test"
+
+appleSubscriptionNotConfigured :: HasCallStack => (StoreVerifier -> StoreVerifier) -> TestParams -> IO ()
+appleSubscriptionNotConfigured withChecker ps = do
   chain <- trustedChain
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "apple-no-api-key" $ \d -> do
@@ -2720,10 +2731,12 @@ testAppleSubscriptionWithoutApiKey ps = do
     Right cfg <- readServiceConfig (d </> "badge_service.ini")
     let apple = AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = (d </> "root.cer") :| [], aServerApi = Nothing}
     ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = Just apple})
-    withBadgeServiceVerifier ps (const storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
+    withBadgeServiceVerifier ps (const $ withChecker storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
       (purchaseKey, masterKey) <- newPurchaseKeys
       subscription <- signedBy chain $ subscriptionPayload [] []
-      refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = subscription}) `shouldReturn` (BSEProviderNotConfigured, Nothing)
+      let presentSubscription = refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = subscription})
+      presentSubscription `shouldReturn` (BSEProviderNotConfigured, Nothing)
+      presentSubscription `shouldReturn` (BSEProviderNotConfigured, Nothing)
       nothingPurchased cc
       oneTime <- signedBy chain $ transactionPayload [] []
       badgeTypeOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = oneTime}) `shouldReturn` Just BTSupporter
