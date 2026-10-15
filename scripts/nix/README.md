@@ -60,7 +60,8 @@ Apple A7 instruction baseline before `mac2ios` retags the archives. The cached
 native compiler itself stays unchanged. Android applies the RTS source patch
 when building its boot libraries. The Android overlay also supplies GNU iconv
 headers and a static PIC archive to `ghc-internal`, including the separate
-iserv projects, while keeping the minimum Android API at 26.
+iserv projects. The `ghc-internal` system dependency propagates GNU iconv to
+interpreter consumers as well. The minimum Android API stays at 26.
 
 Android ARM32's QEMU wrapper preserves the guest's `PER_LINUX32` execution
 domain when an ARM64 host kernel rejects that domain. Upper personality flags
@@ -152,9 +153,16 @@ SQLCipher component also built with Nix and registered both Apple frameworks.
 The replacement RTS and `text` built with Nix and passed ABI,
 instruction-baseline, UTF-8, and GC checks.
 
-The 21 final Nix artifacts, ARMv7 cross-TH, Android device tests, and an Xcode
-application build remain unverified. Derivation evaluation and native mobile
-checks do not establish that those builds and runtime checks pass.
+A packaging check passed on copies of those tested Swift/CommonCrypto Cabal
+archives, using the production `mac2ios`, strip, ZIP, FFI, and GMP tools and
+archives. All 3,600 Mach-O members were tagged for iOS, and the five ZIP entries
+passed CRC and content-hash checks. The production FFI archive also passed an
+instruction-baseline check. This is a Cabal-archive packaging check, not the
+final Nix iOS artifact or a runtime test after retagging.
+
+The complete set of 21 final Nix artifacts, ARMv7 cross-TH, Android device tests,
+and an Xcode application build remain unverified. Derivation evaluation and
+native mobile checks do not establish that those builds and runtime checks pass.
 
 ## Updating package hashes
 
