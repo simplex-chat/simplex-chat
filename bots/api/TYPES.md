@@ -450,6 +450,9 @@ ServiceNotConfigured:
 BadgeActive:
 - type: "badgeActive"
 
+StorePurchaseOpen:
+- type: "storePurchaseOpen"
+
 ServiceError:
 - type: "serviceError"
 - serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)

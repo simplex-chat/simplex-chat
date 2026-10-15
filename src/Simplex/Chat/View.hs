@@ -2885,6 +2885,7 @@ viewChatError isCmd logLevel testView = \case
             BREInvalidReceipt -> "invalid store receipt"
             BREServiceNotConfigured -> "badge service not configured"
             BREBadgeActive -> "badge already active"
+            BREStorePurchaseOpen -> "store purchase open"
             BREServiceError code -> "badge service error: " <> T.unpack (badgeServiceErrorText code)
             BREInvalidResponse m -> "invalid service response: " <> m
             BREUnknownKeyIndex -> "credential names an unknown badge key index"

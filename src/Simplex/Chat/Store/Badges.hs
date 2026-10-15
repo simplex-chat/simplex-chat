@@ -27,6 +27,7 @@ module Simplex.Chat.Store.Badges
     getReceiptRecord,
     createBadgeStoreReceipt,
     getOpenStorePurchases,
+    getPendingStoreReceipts,
     getNextHeldStoreReceipt,
     recordStoreReceiptFailure,
     refuseStoreReceipt,
@@ -239,6 +240,11 @@ getOpenStorePurchases db User {userId} =
       (Only userId)
   where
     toOpenStorePurchase (invoiceId, transactionRef, creditError) = OpenStorePurchase {invoiceId, transactionRef, creditError}
+
+-- | Each held receipt's payment and its last attempt's failure, if any.
+getPendingStoreReceipts :: DB.Connection -> User -> IO [(Text, Maybe BadgeIssueFailure)]
+getPendingStoreReceipts db User {userId} =
+  DB.query db "SELECT payment, credit_error FROM badge_store_receipts WHERE user_id = ? AND payment IS NOT NULL" (Only userId)
 
 getNextHeldStoreReceipt :: DB.Connection -> UserId -> IO (Either StoreError (Maybe BadgeReceiptRecord))
 getNextHeldStoreReceipt db userId =

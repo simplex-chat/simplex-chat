@@ -166,6 +166,7 @@ badgeServiceTests = do
       it "should credit a purchase first handed over under another profile to that profile" testPurchaseStrandedUnderOtherProfile
       it "should credit a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
       it "should record a listed transaction only into a record it already has, and a Restore hand-over as its own" testListedReceiptNotRecorded
+      it "should refuse a code or an invoice while a held receipt may be credited or is an Apple subscription, and not otherwise" testRedeemRefusedWhileReceiptHeld
     describe "invoice first" $ do
       it "should credit a receipt to the profile that created its invoice however late it arrives, and answer as that profile" testInvoiceOtherProfile
       it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
@@ -2735,6 +2736,44 @@ testListedReceiptNotRecorded ps =
       heldStoreReceipts (chatController alice) `shouldReturn` 1
       rowCount cc "sx_badge_service_payments" `shouldReturn` 1
 
+-- | A badge redeemed over a held receipt would leave the receipt waiting behind it. With no subscription check
+-- the service refuses a subscription for good, though not as a refused receipt, so the record stays held.
+testRedeemRefusedWhileReceiptHeld :: HasCallStack => TestParams -> IO ()
+testRedeemRefusedWhileReceiptHeld ps =
+  withBadgeServiceVerifier ps (\store -> (fakeVerifier store) {checkSubscription = Nothing}) $ \BadgeServiceEnv {bsClientCfg, bsController = cc, bsStore = FakeStore {appleSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let refused cmd = do
+            alice ##> cmd
+            alice <## "cannot get badge: store purchase open"
+          finalError = "service_error final provider_not_configured"
+      alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken))
+      storePurchaseOpen alice ""
+      heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      code <- issueCode cc BTSupporter 1
+      refused $ "/_redeem_badge_code 1 " <> codeArg code
+      rowCount (chatController alice) "badge_code_redemptions" `shouldReturn` 0
+      nothingPurchased cc
+      refused "/_badge invoice 1"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]
+      -- a Play receipt that failed for good does not block
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> ("/_badge purchase 2 " <> paymentArg subscriptionPlay)
+      storePurchaseOpen alice ""
+      heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending", finalError]
+      alice ##> ("/_redeem_badge_code 2 " <> codeArg code)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      -- an Apple subscription that failed for good still blocks, as Apple keeps charging it
+      alice ##> "/create user alina"
+      showActiveUser alice "alina"
+      alice ##> ("/_badge purchase 3 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+      storePurchaseOpen alice ""
+      heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending", finalError, finalError]
+      issueCode cc BTSupporter 1 >>= \code' -> refused ("/_redeem_badge_code 3 " <> codeArg code')
+      refused "/_badge invoice 3"
+
 testInvoiceUnknown :: HasCallStack => TestParams -> IO ()
 testInvoiceUnknown ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
@@ -2850,9 +2889,11 @@ testStoreReceiptNotBlocked ps =
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       storePurchaseOpen alice ""
       heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry provider_unavailable"]
-      invoiceId <- createInvoice alice 1
-      alice ##> purchaseWithInvoice 1 invoiceId SPApple {jws = appleSupporterJWS}
-      inAnyOrder alice [[openPurchase "", invoicePurchase "" invoiceId], creditedLines "" invoiceId "1: supporter"]
+      alice ##> "/_badge invoice 1"
+      alice <## "cannot get badge: store purchase open"
+      -- handed over with no invoice, as Restore sends it, so no settlement is announced
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
+      inAnyOrder alice [[openPurchase "", openPurchase ""], ["1: supporter"]]
       heldStoreReceipts (chatController alice) `shouldReturn` 1
 
 testStoreRefusalKept :: HasCallStack => TestParams -> IO ()

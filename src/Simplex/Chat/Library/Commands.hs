@@ -76,7 +76,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
-import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
+import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts, appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
@@ -3586,6 +3586,7 @@ processChatCommand cxt nm = \case
   APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
     void requireBadgeService
     refuseWhileBadgeHeld user
+    refuseWhileStoreReceiptPending user
     g <- asks random
     now <- badgeNow
     invoiceId <- UUID.toText <$> liftIO V4.nextRandom
@@ -5351,7 +5352,7 @@ storeTransactionRef = \case
 stashBadgeKeys :: User -> Maybe BadgeStash -> (DB.Connection -> IO BadgeStash) -> CM BadgeStash
 stashBadgeKeys user stash_ createStash = do
   replaying <- maybe (pure False) (\s -> withStore' $ \db -> isJust <$> getStashBadgePurchase db s) stash_
-  unless replaying $ refuseWhileBadgeHeld user
+  unless replaying $ refuseWhileBadgeHeld user >> refuseWhileStoreReceiptPending user
   maybe (withStore' createStash) pure stash_
 
 requireBadgeService :: CM (ConnectTarget 'CMContact)
@@ -5359,6 +5360,18 @@ requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeem
 
 refuseWhileBadgeHeld :: User -> CM ()
 refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
+
+-- | A new badge would leave a held receipt waiting behind it. An Apple subscription always blocks, as Apple keeps
+-- charging it; any other only while its last failure, if any, can clear, since one that failed for good waits anyway.
+refuseWhileStoreReceiptPending :: User -> CM ()
+refuseWhileStoreReceiptPending user = do
+  pending <- withStore' (`getPendingStoreReceipts` user)
+  when (any blocks pending) $ throwRedeemError BREStorePurchaseOpen
+  where
+    blocks (payment, failure_) = appleSubscription payment || maybe True badgeFailureTransient failure_
+    appleSubscription payment = case decodeJSON payment of
+      Just SPApple {jws} | Just AppleTransactionFacts {autoRenewable} <- appleTransactionFacts jws -> autoRenewable
+      _ -> False
 
 -- | One attempt to turn a stash into a badge. A refusal is answered rather than thrown, with the
 -- service's retryAfter.

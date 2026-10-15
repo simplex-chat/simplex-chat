@@ -1498,6 +1498,7 @@ data BadgeRedeemError
   | BREInvalidReceipt -- names no transaction, or is not a store payment
   | BREServiceNotConfigured
   | BREBadgeActive
+  | BREStorePurchaseOpen -- a store receipt held for this profile may still be credited
   | BREServiceError {serviceError :: BadgeServiceErrorCode}
   | BREInvalidResponse {message :: String}
   | BREUnknownKeyIndex
