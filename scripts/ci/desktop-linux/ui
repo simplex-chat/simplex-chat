@@ -6,7 +6,7 @@
 # a log of every command (steps.log) go to UI_OUT; the app's data stays in UI_STATE between starts.
 #
 #   ui start <app dir>            start Xvfb, openbox and <app dir>/bin/simplex, and wait for its window
-#   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.txt, and print the text on screen
+#   ui shot <name>                save UI_OUT/NN-<name>.png, NN-<name>.txt and the images OCR read (UI_OUT/ocr), and print the text on screen
 #   ui text                       print the text on screen, one phrase per line after its centre x,y
 #   ui wait <text> [secs]         wait up to secs (30) until the text is on screen (case and punctuation ignored)
 #   ui click <x> <y>              click at x,y
@@ -83,12 +83,14 @@ start() {
   xdotool getwindowgeometry "$(head -n 1 "$state/window")"
 }
 
-# ocr <png> lines | ocr <png> find <text>: OCR of the enlarged grayscale image and of its negative, for light text on coloured buttons
+# ocr <png> lines | ocr <png> find <text>: OCR of the enlarged grayscale image and of its negative, for light text on coloured buttons.
+# A threshold per neighbourhood keeps grey text and button labels, which one threshold for the whole screen loses.
 ocr() {
   local png=$1
   shift
-  convert "$png" -colorspace Gray -resize 200% "$state/ocr/pos.png"
-  convert "$state/ocr/pos.png" -negate "$state/ocr/neg.png"
+  convert "$png" -colorspace Gray -resize 200% "$state/ocr/gray.png"
+  convert "$state/ocr/gray.png" -lat 60x60-5% "$state/ocr/pos.png"
+  convert "$state/ocr/gray.png" -negate -lat 60x60-5% "$state/ocr/neg.png"
   tesseract "$state/ocr/pos.png" "$state/ocr/pos" --psm 11 tsv > /dev/null 2>&1
   tesseract "$state/ocr/neg.png" "$state/ocr/neg" --psm 11 tsv > /dev/null 2>&1
   python3 "$here/screen-text.py" 2 "$@" "$state/ocr/pos.tsv" "$state/ocr/neg.tsv"
@@ -114,6 +116,9 @@ shot() {
   f=$(printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1")
   import -window root "$f.png"
   ocr "$f.png" lines > "$f.txt"
+  mkdir -p "$UI_OUT/ocr"
+  cp "$state/ocr/pos.png" "$UI_OUT/ocr/$(basename "$f")-pos.png"
+  cp "$state/ocr/neg.png" "$UI_OUT/ocr/$(basename "$f")-neg.png"
   echo "::group::text on screen: $(basename "$f")"
   cat "$f.txt"
   echo "::endgroup::"
