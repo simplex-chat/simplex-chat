@@ -310,6 +310,120 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
+  # Claude Code repeats the smoke test's directory search with the ui helper. Each run spends the Claude
+  # subscription's usage limits, so it runs only when dispatched or asked for in the head commit's message.
+  claude:
+    name: Claude searches the directory in the desktop app
+    needs: [plan, core, backend]
+    if: ${{ !cancelled() && !failure() && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[claude-test]')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment:
+      name: app-sim-claude
+      deployment: false
+    concurrency:
+      group: desktop-linux-claude-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      CLAUDE_CODE_VERSION: 2.1.292
+      CLAUDE_MODEL: claude-haiku-5-5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
+
+      - name: Download core library
+        uses: actions/download-artifact@v7
+        with:
+          name: desktop-core-linux-x86_64
+          path: ~/core
+
+      - name: Install core library
+        run: scripts/ci/desktop-linux/install-core.sh ~/core/${{ env.CORE_PKG }}
+
+      - name: Download backend
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/backend
+          run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Start test backend
+        timeout-minutes: 30
+        run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+
+      - name: Point the app at the test directory
+        run: |
+          link=$(cat "$RUNNER_TEMP/backend/directory-link")
+          file=apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt
+          sed -i "s|^const val DIRECTORY_SERVICE_LINK = \".*\"$|const val DIRECTORY_SERVICE_LINK = \"$link\"|" "$file"
+          grep -F "const val DIRECTORY_SERVICE_LINK = \"$link\"" "$file"
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+          cache: gradle
+
+      - name: Build app
+        working-directory: apps/multiplatform
+        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :desktop:createDistributable
+
+      - name: Install Claude Code
+        run: |
+          npm install --prefix "$RUNNER_TEMP/claude-code" "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
+          echo "$RUNNER_TEMP/claude-code/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Start the app at the chat list
+        run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/claude-test/screens" onboarding
+
+      - name: Run Claude
+        id: claude
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: 1
+          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1
+        run: scripts/ci/desktop-linux/claude-test.sh "$RUNNER_TEMP/claude-test" "$RUNNER_TEMP/claude-transcript.jsonl"
+
+      - name: Report Claude usage
+        if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}
+        run: scripts/ci/desktop-linux/claude-usage.py "$RUNNER_TEMP/claude-transcript.jsonl" "$RUNNER_TEMP/claude-usage.json"
+
+      - name: Stop test backend
+        if: ${{ !cancelled() }}
+        run: scripts/ci/desktop-linux/backend.sh stop "$RUNNER_TEMP/backend"
+
+      - name: Upload Claude test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-claude-test
+          path: |
+            ${{ runner.temp }}/claude-test
+            ${{ runner.temp }}/claude-transcript.jsonl
+            ${{ runner.temp }}/claude-usage.json
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload backend logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-claude-backend-logs
+          path: ${{ runner.temp }}/backend/*.log
+          retention-days: 3
+          if-no-files-found: warn
+
   release:
     name: released app under Xvfb
     runs-on: ubuntu-24.04

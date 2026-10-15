@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Runs Claude Code to repeat the directory search with the ui helper, as claude-test.md describes, and passes when
+# its final message ends with "CLAUDE-TEST: PASS".
+# Usage: scripts/ci/desktop-linux/claude-test.sh <output dir> <transcript .jsonl>
+# Expects the app at the chat list (smoke-test.sh ... onboarding) with UI_OUT under <output dir>, claude on PATH,
+# CLAUDE_MODEL and CLAUDE_CODE_OAUTH_TOKEN. Claude works in <output dir>: the screenshots, its report.md and the
+# prompt it was given end up there. The transcript is kept outside it, where Claude can't write.
+
+set -euo pipefail
+
+here=$(cd "$(dirname "$0")" && pwd)
+out=$(cd "$1" && pwd)
+transcript=$2
+settings=$(mktemp)
+
+{
+  cat "$here/claude-test.md"
+  echo
+  echo '```'
+  "$here/ui" || true
+  echo '```'
+} > "$out/prompt.md"
+
+cat > "$settings" << EOF
+{"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "$here/claude-guard.py"}]}]}}
+EOF
+
+claude --version
+cd "$out"
+status=0
+PATH="$here:$PATH" claude -p "$(cat prompt.md)" \
+  --model "$CLAUDE_MODEL" \
+  --max-turns 60 \
+  --max-budget-usd 4 \
+  --output-format stream-json \
+  --verbose \
+  --tools Bash,Read,Write \
+  --permission-mode dontAsk \
+  --allowedTools "Bash(ui *)" "Read(/$out/**)" "Edit(/$out/**)" \
+  --disallowedTools "mcp__*" \
+  --strict-mcp-config \
+  --disable-slash-commands \
+  --no-session-persistence \
+  --settings "$settings" \
+  < /dev/null > "$transcript" || status=$?
+
+echo "::group::report.md"
+cat report.md 2> /dev/null || echo "no report.md"
+echo "::endgroup::"
+result=$(jq -r 'select(.type == "result") | .result // empty' "$transcript" 2> /dev/null | tail -n 20 || true)
+echo "final message, last lines:"
+echo "$result"
+if [ "$status" -ne 0 ]; then
+  echo "error: claude exited with $status"
+  exit 1
+fi
+grep -qE '^[*`]*CLAUDE-TEST: PASS' <<< "$result"
