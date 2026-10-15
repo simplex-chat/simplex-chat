@@ -408,7 +408,7 @@ create_local_chat() {
 # Settings > Network & servers: the test SMP server added with the names role, and names off for the preset
 # operators, so that only the test server resolves names.
 use_names_server() {
-  local y operator
+  local x y operator
   open_settings
   # OCR reads "Network & servers" as two phrases
   "$ui" click-text "Network" 10
@@ -432,12 +432,15 @@ use_names_server() {
   # A dropdown opens from its value; a custom server's roles default to yes, yes and no, so the first "default (yes)"
   # is the receiving one. The directory can't reply to queues on this server, so it only resolves names.
   "$ui" click-text "default (yes)"
-  "$ui" click-text "no" 10
+  # OCR misreads the short "no", the item after "yes"
+  read -r x y < <(left_pane_position "yes") || fail "no menu for the test server's \"To receive\""
+  "$ui" click "$x" $((y + 48))
   "$ui" click-text "default (no)"
   "$ui" click-text "yes" 10
   "$ui" shot names-server-roles
-  in_line_with "no" "To receive" || fail "the test server's \"To receive\" is not no"
-  in_line_with "yes" "To resolve names" || fail "the test server's \"To resolve names\" is not yes"
+  # the first "default (yes)" and the first "yes" are on the lines after "To receive", so it is no
+  in_line_with "default (yes)" "For private routing" || fail "the test server's \"To receive\" is still its default"
+  in_line_with "yes" "To resolve names" || fail "the test server's \"To resolve names\" is not yes, or \"To receive\" is"
   "$ui" key Escape
   "$ui" wait "Add server" 10
   "$ui" key Escape
