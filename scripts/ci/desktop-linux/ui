@@ -6,7 +6,7 @@
 # a log of every command (steps.log) go to UI_OUT; the app's data stays in UI_STATE between starts.
 #
 #   ui start <app dir>            start Xvfb, openbox and <app dir>/bin/simplex, and wait for its window
-#   ui shot <name>                save UI_OUT/NN-<name>.png, NN-<name>.txt and the images OCR read (UI_OUT/ocr), and print the text on screen
+#   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.txt (OCR's input and output in UI_OUT/ocr), and print the text on screen
 #   ui text                       print the text on screen, one phrase per line after its centre x,y
 #   ui wait <text> [secs]         wait up to secs (30) until the text is on screen (case and punctuation ignored)
 #   ui click <x> <y>              click at x,y
@@ -83,17 +83,18 @@ start() {
   xdotool getwindowgeometry "$(head -n 1 "$state/window")"
 }
 
-# ocr <png> lines | ocr <png> find <text>: OCR of the enlarged grayscale image and of its negative, for light text on coloured buttons.
-# A threshold per neighbourhood keeps grey text and button labels, which one threshold for the whole screen loses.
+# ocr <png> lines | ocr <png> find <text>
+# Text of either polarity becomes dark on white: the difference from a morphological close (which removes dark strokes) and
+# from an open (which removes light ones). A mean-based local threshold rings coloured buttons, and tesseract skips text in rings.
 ocr() {
-  local png=$1
+  local png=$1 o=$state/ocr
   shift
-  convert "$png" -colorspace Gray -resize 200% "$state/ocr/gray.png"
-  convert "$state/ocr/gray.png" -lat 60x60-5% "$state/ocr/pos.png"
-  convert "$state/ocr/gray.png" -negate -lat 60x60-5% "$state/ocr/neg.png"
-  tesseract "$state/ocr/pos.png" "$state/ocr/pos" --psm 11 tsv > /dev/null 2>&1
-  tesseract "$state/ocr/neg.png" "$state/ocr/neg" --psm 11 tsv > /dev/null 2>&1
-  python3 "$here/screen-text.py" 2 "$@" "$state/ocr/pos.tsv" "$state/ocr/neg.tsv"
+  convert "$png" -colorspace Gray "$o/gray.png"
+  convert "$o/gray.png" \( +clone -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 \) -compose Difference -composite "$o/dark.png"
+  convert "$o/gray.png" \( +clone -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 \) -compose Difference -composite "$o/light.png"
+  convert "$o/dark.png" "$o/light.png" -compose Lighten -composite -negate -resize 200% -threshold 80% "$o/text.png"
+  tesseract "$o/text.png" "$o/text" --psm 11 tsv > /dev/null 2>&1
+  python3 "$here/screen-text.py" 2 "$@" "$o/text.tsv"
 }
 
 screen_ocr() {
@@ -117,8 +118,8 @@ shot() {
   import -window root "$f.png"
   ocr "$f.png" lines > "$f.txt"
   mkdir -p "$UI_OUT/ocr"
-  cp "$state/ocr/pos.png" "$UI_OUT/ocr/$(basename "$f")-pos.png"
-  cp "$state/ocr/neg.png" "$UI_OUT/ocr/$(basename "$f")-neg.png"
+  cp "$state/ocr/text.png" "$UI_OUT/ocr/$(basename "$f").png"
+  cp "$state/ocr/text.tsv" "$UI_OUT/ocr/$(basename "$f").tsv"
   echo "::group::text on screen: $(basename "$f")"
   cat "$f.txt"
   echo "::endgroup::"
