@@ -24,7 +24,8 @@ import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store (IssuedCode (..), getBadgeCode)
 import BadgeService.Store.Invoices (markCodePaid, truncateToSecond)
-import BadgeService.StoreReceipts (StoreCharge (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), SubscriptionRef (..), noStoreVerifier)
+import BadgeService.StoreReceipts (StoreCharge (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), SubscriptionRef (..), checkStoreSubscription, noStoreVerifier)
+import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import ChatClient
@@ -210,6 +211,7 @@ badgeServiceTests = do
     it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
     it "should acknowledge a Play subscription as a subscription before crediting it, and credit nothing when acknowledging fails" testPlaySubscriptionAcknowledgedBeforeCrediting
     it "should credit a Play subscription Play reports, beside a one-time purchase, and answer provider_not_configured without [google]" testPlaySubscriptionThroughPlay
+    it "should have the dev mock credit and renew the plan a subscription names, end one it does not know, and still vouch for a one-time purchase" testMockSubscriptions
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -284,13 +286,17 @@ withBadgeServiceEnv :: HasCallStack => TestParams -> (BadgeServiceEnv -> IO ()) 
 withBadgeServiceEnv ps = withBadgeServiceVerifier ps fakeVerifier
 
 withBadgeServiceVerifier :: HasCallStack => TestParams -> (FakeStore -> StoreVerifier) -> (BadgeServiceEnv -> IO ()) -> IO ()
-withBadgeServiceVerifier ps verifierOf test = do
+withBadgeServiceVerifier ps verifierOf = withBadgeServiceVerifierIO ps (\_ store -> pure $ verifierOf store)
+
+-- | For a verifier that reads the service's clock, as the dev mock does.
+withBadgeServiceVerifierIO :: HasCallStack => TestParams -> (TestClock -> FakeStore -> IO StoreVerifier) -> (BadgeServiceEnv -> IO ()) -> IO ()
+withBadgeServiceVerifierIO ps verifierOf test = do
   Right (pk, sk) <- bbsKeyGen
   clock <- newTestClock
   store <- newFakeStore
+  verifier <- verifierOf clock store
   let opts = mkBadgeServiceOpts ps sk
       svcCfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk, badgeCurrentTime = testClockTime clock}
-      verifier = verifierOf store
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
   runBadgeService ps verifier svcCfg opts $ \_ -> pure ()
@@ -2563,7 +2569,7 @@ testAppleSandboxSubscriptionNotAsked ps = do
   chain <- trustedChain
   withFakeAppStore ourBundleId $ \fake -> do
     Right check <- appleSubscriptionChecker (rootCert chain :| []) ourBundleId (fasApi fake)
-    let checkApple = \case
+    let checkApple ref _ = case ref of
           SubscriptionApple originalId -> check originalId
           SubscriptionGoogle _ -> pure $ Left SRNotConfigured
         verifier = noStoreVerifier {verifyApple = Just (verifyAppleTransaction (rootCert chain :| []) ourBundleId), checkSubscription = Just checkApple}
@@ -2654,6 +2660,45 @@ testPlaySubscriptionThroughPlay ps =
       badgeTypeOf <$> serviceCmd env oneTimeKey (purchaseCmd oneTimeMasterKey supporterPlay) `shouldReturn` Just BTSupporter
       readTVarIO (fpAcknowledged fake) `shouldReturn` [googleSupporterToken]
       readTVarIO (fpSubscriptionAcknowledged fake) `shouldReturn` [("subscr_badge_supporter_01", googleSubscriptionToken)]
+
+testMockSubscriptions :: HasCallStack => TestParams -> IO ()
+testMockSubscriptions ps =
+  withBadgeServiceVerifierIO ps (\clock _ -> newMockStoreVerifier (testClockTime clock)) $ \env@BadgeServiceEnv {bsClock, bsVerifier} -> do
+    now <- serviceNow env
+    let purchase payment = newPurchaseKeys >>= \(purchaseKey, masterKey) -> (purchaseKey,) <$> serviceCmd env purchaseKey (purchaseCmd masterKey payment)
+        changes = map (\e -> let (c, m, _) = entryOf e in (c, m)) . fst . statementOf
+        chargedAMinuteAgo r = case fst (statementOf r) of
+          charge : _ -> abs (diffUTCTime (createdAtOf charge) (addUTCTime (-60) now)) < 2
+          [] -> False
+        appleJWS fields = unsignedJWS $ LB.toStrict $ J.encode $ J.object fields
+        playSubscription = googlePayment "subscr_badge_supporter_01"
+    -- Apple: the plan the product names
+    (_, apple) <- purchase SPApple {jws = appleJWS ["transactionId" J..= ("2000000900000011" :: Text), "originalTransactionId" J..= ("2000000900000010" :: Text), "type" J..= ("Auto-Renewable Subscription" :: Text), "productId" J..= ("SUBSCR_BADGE_SUPPORTER_YEAR_01" :: Text)]}
+    changes apple `shouldBe` [(12, 12), (-1, 11)]
+    subscriptionOf apple `shouldBe` Just SSRenewing
+    chargedAMinuteAgo apple `shouldBe` True
+    -- Play: the base plan a test token names, else the product's monthly plan
+    (_, testToken) <- purchase $ playSubscription "test.subscr-badge-supporter-year-01.3f2c9a1e-7d4b-4c55-9a0e-6b1f2d3c4e5f"
+    changes testToken `shouldBe` [(12, 12), (-1, 11)]
+    (monthlyKey, monthly) <- purchase $ playSubscription googleSubscriptionToken
+    changes monthly `shouldBe` [(1, 1), (-1, 0)]
+    subscriptionOf monthly `shouldBe` Just SSRenewing
+    chargedAMinuteAgo monthly `shouldBe` True
+    (forgottenKey, forgotten) <- purchase $ playSubscription "fake-play-token-forgotten.AO-J1Oq1n0dkW9pRl5"
+    -- a renewal of one it credited is charged again; one a restarted mock never saw has ended
+    setClockAt bsClock $ addUTCTime nominalDay $ addMonths 1 now
+    renewed <- assertBalance env monthlyKey (last $ fst $ statementOf monthly)
+    map entryTag (fst $ statementOf renewed) `shouldBe` ["charge", "badge"]
+    subscriptionOf renewed `shouldBe` Just SSRenewing
+    restarted <- newMockStoreVerifier (testClockTime bsClock)
+    ended <- serviceCmd env {bsVerifier = restarted} forgottenKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last $ fst $ statementOf forgotten}}
+    subscriptionOf ended `shouldBe` Just SSEnded
+    credentialOf ended `shouldBe` Nothing
+    -- a first purchase naming no plan it knows is not a verdict
+    checkStoreSubscription bsVerifier (SubscriptionApple "2000000900000020") (Just "BADGE_SUPPORTER_01") >>= (`shouldSatisfy` \case Left SRUnreachable {} -> True; _ -> False)
+    -- a one-time purchase, as before
+    (_, oneTime) <- purchase SPApple {jws = appleJWS ["transactionId" J..= ("2000000900000030" :: Text), "productId" J..= ("BADGE_SUPPORTER_01" :: Text)]}
+    badgeTypeOf oneTime `shouldBe` Just BTSupporter
 
 testPurchaseBadge :: HasCallStack => TestParams -> IO ()
 testPurchaseBadge ps =

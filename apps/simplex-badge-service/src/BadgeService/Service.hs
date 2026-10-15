@@ -37,7 +37,7 @@ import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import BadgeService.StoreReceipts
 import BadgeService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot, verifyAppleTransaction)
 import BadgeService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
-import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
+import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
@@ -136,10 +136,12 @@ readConfigOrExit path =
 
 -- | The config refuses the dev flag beside a real verifier, so only one of them applies.
 configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
-configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case serviceCfg of
+configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v} = case serviceCfg of
   Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True} -> do
     logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
-    pure env {storeVerifier = mockStoreVerifier}
+    -- the badge clock is read at each check, as the controller that holds it starts after this
+    mock <- newMockStoreVerifier $ atomically (readTMVar serviceCC) >>= badgeNow
+    pure env {storeVerifier = mock}
   Just ServiceConfig {appleStore, playStore} -> do
     apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificates, aServerApi} -> do
       roots <- mapM (orExit . readAppleRoot) aRootCertificates
@@ -159,7 +161,7 @@ configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case se
                 acknowledgeGoogleSubscription = maybe (acknowledgeGoogleSubscription v) (Just . acknowledgePlaySubscription) google,
                 checkSubscription = case (snd =<< apple, checkPlaySubscription <$> google) of
                   (Nothing, Nothing) -> checkSubscription v
-                  (checkApple_, checkGoogle_) -> Just $ \case
+                  (checkApple_, checkGoogle_) -> Just $ \ref _ -> case ref of
                     SubscriptionApple originalId -> maybe notConfigured ($ originalId) checkApple_
                     SubscriptionGoogle token -> maybe notConfigured ($ token) checkGoogle_
               }
@@ -468,7 +470,7 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
       -- only the key it credited can ask, and it is told only what it was given, so the store is not asked
       | creditedBy credit -> answerCredit credit
       -- a Play subscription is verified by asking about the subscription itself
-      | Just StoreSubscription <- storeProduct provider =<< receiptProductId -> purchaseSubscription credit
+      | Just StoreSubscription <- storeProduct provider =<< receiptProductId -> purchaseSubscription receiptProductId credit
       | otherwise ->
           verifyReceipt >>= \case
             Left refusal -> storeRefusalResponse refusal
@@ -494,7 +496,7 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
     newPurchase tx@VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       -- an Apple subscription, whose JWS was verified offline
-      Just StoreSubscription -> purchaseSubscription Uncredited
+      Just StoreSubscription -> purchaseSubscription (Just productId) Uncredited
       Just StoreOneTime {badgeType, months} ->
         acknowledged (($ tx) <$> acknowledgeReceipt) $ do
           now <- badgeNow cc
@@ -504,8 +506,8 @@ purchaseWithReceipt key cc verifier purchaseKey masterKey StoreReceipt {txRef = 
               claimPurchase now (\paymentId -> NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType, subscriptionState = Nothing, providerToken = Nothing}) $
                 \db purchaseId paymentId -> firstMonthResponse db purchaseId (Just paymentId) Nothing firstMonth
     -- another key's credit is told only once the store vouched for the subscription, as for a one-time purchase
-    purchaseSubscription credit =
-      checkStoreSubscription verifier subscriptionRef >>= \case
+    purchaseSubscription product_ credit =
+      checkStoreSubscription verifier subscriptionRef product_ >>= \case
         Left refusal -> storeRefusalResponse refusal
         Right checked -> case credit of
           Uncredited -> newSubscription checked
@@ -676,7 +678,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
           withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
             Left _ -> pure $ errorResponse BSEInternal
             Right () ->
-              checkStoreSubscription verifier subscriptionRef >>= \case
+              checkStoreSubscription verifier subscriptionRef Nothing >>= \case
                 Left refusal -> withCheckInterval <$> storeRefusalResponse refusal
                 Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider (Just badgeType) now checked of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"

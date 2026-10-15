@@ -281,6 +281,19 @@ token as given. It applies to both run modes, since `--run-cli` answers service 
 the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
 parse. The service refuses to start with it on beside an `[apple]` or `[google]` section.
 
+It answers subscriptions too, each as renewing, charged from a minute before the check for the
+length of its plan:
+
+- an App Store subscription: the plan its product names;
+- a Play subscription: the base plan a test token `test.<basePlanId>.<uuid>` names (the apps'
+  test products sign their tokens so), or else the product's monthly base plan, so a licence
+  tester's purchase is credited too;
+- a renewal: a new charge for the plan it first charged. It keeps that plan in memory only, so after
+  a restart it answers a renewal of a subscription it credited before as ended.
+
+It acknowledges nothing, so Play refunds a licence tester's subscription it credited once Play's
+acknowledgement window lapses.
+
 With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
 That is harmless only while this deployment signs with an issuer key released apps do not carry, so
 they refuse what it signs — never turn it on where the key is one those apps trust.

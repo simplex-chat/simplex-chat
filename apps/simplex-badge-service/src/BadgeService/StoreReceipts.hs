@@ -71,7 +71,8 @@ data StoreVerifier = StoreVerifier
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token
     acknowledgeGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
     acknowledgeGoogleSubscription :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
-    checkSubscription :: Maybe (SubscriptionRef -> IO (Either StoreRefusal SubscriptionCheck)),
+    -- with the product the presented receipt names, absent on a renewal
+    checkSubscription :: Maybe (SubscriptionRef -> Maybe Text -> IO (Either StoreRefusal SubscriptionCheck)),
     -- microseconds; a lane answers one request at a time, so a verifier that does not finish holds up the rest of its lane
     verifyTimeout :: Int
   }
@@ -156,10 +157,10 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, ackn
 
 -- | Both stores are asked online about a subscription, so a throw or an overrun is no verdict. A test
 -- purchase is refused here, for a first purchase and a renewal alike.
-checkStoreSubscription :: StoreVerifier -> SubscriptionRef -> IO (Either StoreRefusal SubscriptionCheck)
-checkStoreSubscription StoreVerifier {checkSubscription, verifyTimeout} ref = case checkSubscription of
+checkStoreSubscription :: StoreVerifier -> SubscriptionRef -> Maybe Text -> IO (Either StoreRefusal SubscriptionCheck)
+checkStoreSubscription StoreVerifier {checkSubscription, verifyTimeout} ref product_ = case checkSubscription of
   Nothing -> pure $ Left SRNotConfigured
-  Just check -> (>>= notTest) <$> askStore verifyTimeout "subscription check" (check ref)
+  Just check -> (>>= notTest) <$> askStore verifyTimeout "subscription check" (check ref product_)
   where
     notTest = \case
       SubscriptionCheck {testSubscription = True} -> Left SRTestPurchase

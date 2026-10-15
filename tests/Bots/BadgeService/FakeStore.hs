@@ -103,7 +103,7 @@ newFakeStore = do
         | jws == appleThrowingJWS = error "fake verifier bug"
         | otherwise = maybe (Left $ SRInvalid "not a fake receipt") Right $ lookup jws appleReceipts
       verifyGoogle = googleVerdict pendingSettled googleDown
-      checkSubscription ref = do
+      checkSubscription ref _ = do
         modifyIORef' subscriptionCheckCount (+ 1)
         down <- readIORef googleDown
         case ref of
@@ -192,10 +192,10 @@ subscriptionCheckWithHook :: IORef (IO ()) -> FakeStore -> StoreVerifier
 subscriptionCheckWithHook hook FakeStore {fakeVerifier = v@StoreVerifier {checkSubscription}} =
   v {checkSubscription = hooked <$> checkSubscription, verifyTimeout = 10000000}
   where
-    hooked check ref = do
+    hooked check ref product_ = do
       action <- atomicModifyIORef' hook (pure (),)
       action
-      check ref
+      check ref product_
 
 settlePending :: FakeStore -> IO ()
 settlePending FakeStore {pendingSettled} = writeIORef pendingSettled True

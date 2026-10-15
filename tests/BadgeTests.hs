@@ -11,7 +11,7 @@ module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
 import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
-import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
+import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically)
@@ -1038,6 +1038,7 @@ validPlayToken = "fake-play-token.AO-J1Oz9x2kqE7wYt3"
 
 testMockVouchesForClaim :: IO ()
 testMockVouchesForClaim = do
+  mockStoreVerifier <- newMockStoreVerifier getCurrentTime
   let part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
       signed = T.intercalate "." [part "{\"alg\":\"ES256\"}", part "{\"transactionId\":\"2000000812345671\",\"productId\":\"BADGE_SUPPORTER_01\"}", "c2lnbmVk"]
       vouchesForClaim payment = case toStoreReceipt mockStoreVerifier payment of

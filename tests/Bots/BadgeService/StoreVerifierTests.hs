@@ -481,7 +481,7 @@ statusBody status signedTx signedRenewal =
 withAppleChecker :: TestChain -> (FakeAppStore -> (Text -> IO (Either StoreRefusal SubscriptionCheck)) -> IO a) -> IO a
 withAppleChecker chain action = withFakeAppStore ourBundleId $ \fake -> do
   check <- appleChecker chain (fasApi fake)
-  action fake $ \originalId -> checkStoreSubscription noStoreVerifier {checkSubscription = Just check, verifyTimeout = 2000000} (SubscriptionApple originalId)
+  action fake $ \originalId -> checkStoreSubscription noStoreVerifier {checkSubscription = Just (\ref _ -> check ref), verifyTimeout = 2000000} (SubscriptionApple originalId) Nothing
 
 appleChecker :: TestChain -> AppleServerApi -> IO (SubscriptionRef -> IO (Either StoreRefusal SubscriptionCheck))
 appleChecker chain serverApi =
@@ -573,7 +573,7 @@ testAppleSubscriptionUnsigned = do
 -- failure; any other throw is the network's, as for Play.
 testSubscriptionCheckThrows :: IO ()
 testSubscriptionCheckThrows = do
-  let throwing act = checkStoreSubscription noStoreVerifier {checkSubscription = Just (const act), verifyTimeout = 2000000} (SubscriptionApple subscriptionId)
+  let throwing act = checkStoreSubscription noStoreVerifier {checkSubscription = Just (\_ _ -> act), verifyTimeout = 2000000} (SubscriptionApple subscriptionId) Nothing
   outcome <$> throwing (throwIO $ StoreVerifierFailure "apple verifier: a chain it cannot place") `shouldReturn` Failed
   outcome <$> throwing (ioError $ userError "connection reset") `shouldReturn` Unreachable
 
@@ -624,8 +624,8 @@ testAppleConfiguredSubscriptions = do
     ServiceState {storeVerifier = withKey} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = apple (Just fasApi)})
     ServiceState {storeVerifier = withoutKey} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = apple Nothing})
     serveStatus fake chain 1 (subscriptionPayload [] []) (renewalPayload [])
-    stateOf <$> checkStoreSubscription withKey (SubscriptionApple subscriptionId) `shouldReturn` Right SSRenewing
-    outcome <$> checkStoreSubscription withoutKey (SubscriptionApple subscriptionId) `shouldReturn` NotConfigured
+    stateOf <$> checkStoreSubscription withKey (SubscriptionApple subscriptionId) Nothing `shouldReturn` Right SSRenewing
+    outcome <$> checkStoreSubscription withoutKey (SubscriptionApple subscriptionId) Nothing `shouldReturn` NotConfigured
     jws <- signedBy chain $ transactionPayload [] []
     outcome <$> seamVerdict withoutKey SPApple {jws} `shouldReturn` Verdict
 
@@ -640,7 +640,7 @@ playVerifier fake =
           { verifyGoogle = Just verifyPlayPurchase,
             acknowledgeGoogle = Just acknowledgePlayPurchase,
             acknowledgeGoogleSubscription = Just acknowledgePlaySubscription,
-            checkSubscription = Just $ \case
+            checkSubscription = Just $ \ref _ -> case ref of
               SubscriptionGoogle token -> checkPlaySubscription token
               SubscriptionApple _ -> pure $ Left SRNotConfigured,
             verifyTimeout = 2000000
@@ -903,7 +903,7 @@ answerSubscription fake = answerPurchase fake subscriptionToken . PlayRecord
 -- | Through the same runner as a purchase and a renewal; every reason reaches the service's log, which must never hold the token.
 playCheck :: StoreVerifier -> IO (Either StoreRefusal SubscriptionCheck)
 playCheck verifier = do
-  r <- checkStoreSubscription verifier (SubscriptionGoogle subscriptionToken)
+  r <- checkStoreSubscription verifier (SubscriptionGoogle subscriptionToken) Nothing
   reason r `shouldNotSatisfy` (subscriptionToken `T.isInfixOf`)
   pure r
 
@@ -1037,7 +1037,7 @@ testPlayConfiguredSubscriptions = do
         ini = dir </> "badge_service.ini"
         apple = Just AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = rootFile :| [], aServerApi = Just fasApi}
         configured c = (\ServiceState {storeVerifier} -> storeVerifier) <$> (newServiceState >>= configureStoreVerifier (Just c))
-        outcomes v = (,) <$> (outcome <$> checkStoreSubscription v (SubscriptionGoogle subscriptionToken)) <*> (outcome <$> checkStoreSubscription v (SubscriptionApple subscriptionId))
+        outcomes v = (,) <$> (outcome <$> checkStoreSubscription v (SubscriptionGoogle subscriptionToken) Nothing) <*> (outcome <$> checkStoreSubscription v (SubscriptionApple subscriptionId) Nothing)
         acknowledging v = subscriptionAcknowledgement v SPGoogle {productId = subscriptionProductId, token = subscriptionToken}
     B.writeFile rootFile (encodeSignedObject $ rootCert chain)
     writeFile ini "[listener]\nstatic_dir = /srv/badges\n"

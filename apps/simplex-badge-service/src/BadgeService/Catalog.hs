@@ -14,6 +14,7 @@ module BadgeService.Catalog
     StoreProduct (..),
     storeProduct,
     storePlan,
+    playMonthlyPlan,
   )
 where
 
@@ -172,4 +173,11 @@ storePlan provider planId = case (provider, planId) of
   (PPGoogle, "subscr-badge-supporter-year-01") -> Just (BTSupporter, 12)
   (PPGoogle, "subscr-badge-legend-month-01") -> Just (BTLegend, 1)
   (PPGoogle, "subscr-badge-legend-year-01") -> Just (BTLegend, 12)
+  _ -> Nothing
+
+-- | A Play subscription product's monthly base plan, which a purchase token alone does not name.
+playMonthlyPlan :: Text -> Maybe Text
+playMonthlyPlan = \case
+  "subscr_badge_supporter_01" -> Just "subscr-badge-supporter-month-02"
+  "subscr_badge_legend_01" -> Just "subscr-badge-legend-month-01"
   _ -> Nothing
