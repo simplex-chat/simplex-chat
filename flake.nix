@@ -1,10 +1,12 @@
 {
   description = "nix flake for simplex-chat";
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/armv7a";
-  inputs.nixpkgs.follows = "haskellNix/nixpkgs-2305";
+  # hkm/stable-haskell: use the same compiler and boot libraries on every target.
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/54c49b7badca29e8b746fe8681d9bd70086e308a";
+  inputs.nixpkgs.follows = "haskellNix/nixpkgs";
   inputs.mac2ios.url = "github:zw3rk/mobile-core-tools";
   inputs.hackage = {
-    url = "github:input-output-hk/hackage.nix";
+    # Match the compiler integration's package index to reuse its cached builds.
+    url = "github:input-output-hk/hackage.nix/dc08bb4627efd6ff85d421b6dde5f52ada218afa";
     flake = false;
   };
   inputs.haskellNix.inputs.hackage.follows = "hackage";
@@ -12,26 +14,25 @@
   outputs = { self, haskellNix, nixpkgs, flake-utils, mac2ios, ... }:
     let systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ]; in
     flake-utils.lib.eachSystem systems (system:
-      # this android26 overlay makes the pkgsCross.{aarch64-android,armv7a-android-prebuilt} to set stdVer to 26 (Android 8).
+      # Preserve Android 8 as the minimum native API for both architectures.
       let android26 = final: prev: {
         pkgsCross = prev.pkgsCross // {
-          aarch64-android = import prev.path {
+          aarch64-android-prebuilt = import prev.path {
             inherit system;
             inherit (prev) overlays;
-            crossSystem = prev.lib.systems.examples.aarch64-android // { sdkVer = "26"; };
+            crossSystem = prev.lib.systems.examples.aarch64-android-prebuilt // { androidSdkVersion = "26"; };
           };
           armv7a-android-prebuilt = import prev.path {
             inherit system;
             inherit (prev) overlays;
-            crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // { sdkVer = "26"; };
+            crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // { androidSdkVersion = "26"; };
           };
         };
       }; in
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
       let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
-        compiler-nix-name = "ghc963";
-        index-state = "2023-12-12T00:00:00Z";
+        compiler-nix-name = "ghc914-sh";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
         projectFileName = "cabal.project";
@@ -125,7 +126,7 @@
         } // ({
             "x86_64-linux" =
               let
-                  androidPkgs = pkgs.pkgsCross.aarch64-android;
+                  androidPkgs = pkgs.pkgsCross.aarch64-android-prebuilt;
                   android32Pkgs = pkgs.pkgsCross.armv7a-android-prebuilt;
                   # For some reason building libiconv with nixpgks android setup produces
                   # LANGINFO_CODESET to be found, which is not compatible with android sdk 23;
@@ -676,11 +677,12 @@
             gawk -f ./scripts/nix/update-sha256.awk cabal.project > ./scripts/nix/sha256map.nix
           '';
         }; in
-	pkgs.mkShell {
-          buildInputs = [ updateCmd ];
-          shellHook = ''
-            echo "welcome to the shell!"
-          '';
+        (drv pkgs).shellFor {
+          withHoogle = false;
+          nativeBuildInputs = [
+            updateCmd
+            pkgs.haskell-nix.nix-tools-unchecked-sh.exes.cabal
+          ];
         };
       }
     );
