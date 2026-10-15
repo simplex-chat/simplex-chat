@@ -92,6 +92,12 @@
             }
           )
 
+          ({ pkgs, lib, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+            # GHC's Mach-O loader rejects BLST's redundant COMMON declarations
+            # alongside the C definition during Template Haskell loading.
+            packages.simplexmq.patches = [ ./scripts/nix/simplexmq-blst-darwin-extern.patch ];
+          })
+
           ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
             # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
             # on pretty much all unix platforms, but then blows up on windows m(
