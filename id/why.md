@@ -16,4 +16,4 @@ Karena kami menghancurkan kekuatan untuk mengetahui siapa Anda. Agar kekuatan *A
 
 Bebaslah di jaringan Anda.
 
-[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[Tonton film 2 menit di YouTube](https://www.youtube.com/watch?v=k-GhLNZm8G0)

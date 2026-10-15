@@ -13,7 +13,7 @@ Besitzen Sie einen Teil davon. [Investieren Sie in SimpleX Chat.](https://wefund
 
 **600K**Monatliche Nutzer
 
-[Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX-App über das F-Droid-Repository](https://simplex.chat/de/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
+[Download Desktop App](https://simplex.chat/de/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX-App über das F-Droid-Repository](https://simplex.chat/de/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
 [Security-Gutachten](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html)
 

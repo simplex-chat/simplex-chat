@@ -37,7 +37,6 @@ All documentation pages in Markdown. The same pages in HTML are at the same addr
 - [Why we are building SimpleX Network](https://simplex.chat/docs/why.md)
 - [Hosting your own XFTP Server](https://simplex.chat/docs/xftp-server.md)
 - [Please support us with donations](https://simplex.chat/donate.md)
-- [Download SimpleX apps](https://simplex.chat/downloads.md)
 - [Frequently Asked Questions](https://simplex.chat/faq.md)
 - [Join SimpleX Chat team](https://simplex.chat/jobs.md)
 - [Verify and reproduce builds](https://simplex.chat/reproduce.md)

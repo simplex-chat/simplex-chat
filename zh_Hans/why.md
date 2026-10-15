@@ -16,4 +16,4 @@
 
 在你的网络中自由畅行。
 
-[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[在 YouTube 上观看 2 分钟短片](https://www.youtube.com/watch?v=k-GhLNZm8G0)

@@ -16,4 +16,4 @@ Parce que nous avons détruit le pouvoir de savoir qui vous êtes. Afin que *vot
 
 Soyez libre dans votre réseau.
 
-[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[Regardez le film de 2 minutes sur YouTube](https://www.youtube.com/watch?v=k-GhLNZm8G0)

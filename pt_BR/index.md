@@ -34,7 +34,7 @@ Cada contato e grupo está no seu dispositivo, não no banco de dados de um serv
 
 Nenhuma entidade controla a rede – qualquer pessoa pode operar servidores.
 
-[Why we are building it](https://simplex.chat/pt_BR/why)
+[Por que a estamos construindo](https://simplex.chat/pt_BR/why)
 
 ## Financiado Pelos Seus Usuários
 

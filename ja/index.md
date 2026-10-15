@@ -34,7 +34,7 @@
 
 ネットワークを支配する単一の組織はありません – 誰でもサーバーを運用できます。
 
-[Why we are building it](https://simplex.chat/ja/why)
+[私たちがこれを作る理由](https://simplex.chat/ja/why)
 
 ## ユーザーの資金で運営
 

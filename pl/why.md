@@ -16,4 +16,4 @@ Ponieważ zniszczyliśmy moc pozwalającą poznać, kim jesteś. Więc *twoja* m
 
 Ciesz się swobodą w swojej sieci.
 
-[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[Obejrzyj 2-minutowy film na YouTube](https://www.youtube.com/watch?v=k-GhLNZm8G0)

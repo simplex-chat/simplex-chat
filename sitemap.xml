@@ -4,6 +4,7 @@
   <url><loc>https://simplex.chat/about/</loc></url>
   <url><loc>https://simplex.chat/ar/</loc></url>
   <url><loc>https://simplex.chat/ar/contact/</loc></url>
+  <url><loc>https://simplex.chat/ar/downloads/</loc></url>
   <url><loc>https://simplex.chat/ar/fdroid/</loc></url>
   <url><loc>https://simplex.chat/ar/file/</loc></url>
   <url><loc>https://simplex.chat/ar/invitation/</loc></url>
@@ -11,6 +12,7 @@
   <url><loc>https://simplex.chat/ar/why/</loc></url>
   <url><loc>https://simplex.chat/az/</loc></url>
   <url><loc>https://simplex.chat/az/contact/</loc></url>
+  <url><loc>https://simplex.chat/az/downloads/</loc></url>
   <url><loc>https://simplex.chat/az/fdroid/</loc></url>
   <url><loc>https://simplex.chat/az/file/</loc></url>
   <url><loc>https://simplex.chat/az/invitation/</loc></url>
@@ -18,6 +20,7 @@
   <url><loc>https://simplex.chat/az/why/</loc></url>
   <url><loc>https://simplex.chat/bg/</loc></url>
   <url><loc>https://simplex.chat/bg/contact/</loc></url>
+  <url><loc>https://simplex.chat/bg/downloads/</loc></url>
   <url><loc>https://simplex.chat/bg/fdroid/</loc></url>
   <url><loc>https://simplex.chat/bg/file/</loc></url>
   <url><loc>https://simplex.chat/bg/invitation/</loc></url>
@@ -84,6 +87,7 @@
   <url><loc>https://simplex.chat/crowdfunding/</loc></url>
   <url><loc>https://simplex.chat/cs/</loc></url>
   <url><loc>https://simplex.chat/cs/contact/</loc></url>
+  <url><loc>https://simplex.chat/cs/downloads/</loc></url>
   <url><loc>https://simplex.chat/cs/fdroid/</loc></url>
   <url><loc>https://simplex.chat/cs/file/</loc></url>
   <url><loc>https://simplex.chat/cs/invitation/</loc></url>
@@ -91,6 +95,7 @@
   <url><loc>https://simplex.chat/cs/why/</loc></url>
   <url><loc>https://simplex.chat/de/</loc></url>
   <url><loc>https://simplex.chat/de/contact/</loc></url>
+  <url><loc>https://simplex.chat/de/downloads/</loc></url>
   <url><loc>https://simplex.chat/de/fdroid/</loc></url>
   <url><loc>https://simplex.chat/de/file/</loc></url>
   <url><loc>https://simplex.chat/de/invitation/</loc></url>
@@ -155,6 +160,7 @@
   <url><loc>https://simplex.chat/downloads/</loc></url>
   <url><loc>https://simplex.chat/en/</loc></url>
   <url><loc>https://simplex.chat/en/contact/</loc></url>
+  <url><loc>https://simplex.chat/en/downloads/</loc></url>
   <url><loc>https://simplex.chat/en/fdroid/</loc></url>
   <url><loc>https://simplex.chat/en/file/</loc></url>
   <url><loc>https://simplex.chat/en/invitation/</loc></url>
@@ -162,6 +168,7 @@
   <url><loc>https://simplex.chat/en/why/</loc></url>
   <url><loc>https://simplex.chat/es/</loc></url>
   <url><loc>https://simplex.chat/es/contact/</loc></url>
+  <url><loc>https://simplex.chat/es/downloads/</loc></url>
   <url><loc>https://simplex.chat/es/fdroid/</loc></url>
   <url><loc>https://simplex.chat/es/file/</loc></url>
   <url><loc>https://simplex.chat/es/invitation/</loc></url>
@@ -169,6 +176,7 @@
   <url><loc>https://simplex.chat/es/why/</loc></url>
   <url><loc>https://simplex.chat/fa/</loc></url>
   <url><loc>https://simplex.chat/fa/contact/</loc></url>
+  <url><loc>https://simplex.chat/fa/downloads/</loc></url>
   <url><loc>https://simplex.chat/fa/fdroid/</loc></url>
   <url><loc>https://simplex.chat/fa/file/</loc></url>
   <url><loc>https://simplex.chat/fa/invitation/</loc></url>
@@ -178,6 +186,7 @@
   <url><loc>https://simplex.chat/fdroid/</loc></url>
   <url><loc>https://simplex.chat/fi/</loc></url>
   <url><loc>https://simplex.chat/fi/contact/</loc></url>
+  <url><loc>https://simplex.chat/fi/downloads/</loc></url>
   <url><loc>https://simplex.chat/fi/fdroid/</loc></url>
   <url><loc>https://simplex.chat/fi/file/</loc></url>
   <url><loc>https://simplex.chat/fi/invitation/</loc></url>
@@ -187,6 +196,7 @@
   <url><loc>https://simplex.chat/fonts/GT-Walsheim/README/</loc></url>
   <url><loc>https://simplex.chat/fr/</loc></url>
   <url><loc>https://simplex.chat/fr/contact/</loc></url>
+  <url><loc>https://simplex.chat/fr/downloads/</loc></url>
   <url><loc>https://simplex.chat/fr/fdroid/</loc></url>
   <url><loc>https://simplex.chat/fr/file/</loc></url>
   <url><loc>https://simplex.chat/fr/invitation/</loc></url>
@@ -194,6 +204,7 @@
   <url><loc>https://simplex.chat/fr/why/</loc></url>
   <url><loc>https://simplex.chat/he/</loc></url>
   <url><loc>https://simplex.chat/he/contact/</loc></url>
+  <url><loc>https://simplex.chat/he/downloads/</loc></url>
   <url><loc>https://simplex.chat/he/fdroid/</loc></url>
   <url><loc>https://simplex.chat/he/file/</loc></url>
   <url><loc>https://simplex.chat/he/invitation/</loc></url>
@@ -201,6 +212,7 @@
   <url><loc>https://simplex.chat/he/why/</loc></url>
   <url><loc>https://simplex.chat/hu/</loc></url>
   <url><loc>https://simplex.chat/hu/contact/</loc></url>
+  <url><loc>https://simplex.chat/hu/downloads/</loc></url>
   <url><loc>https://simplex.chat/hu/fdroid/</loc></url>
   <url><loc>https://simplex.chat/hu/file/</loc></url>
   <url><loc>https://simplex.chat/hu/invitation/</loc></url>
@@ -208,6 +220,7 @@
   <url><loc>https://simplex.chat/hu/why/</loc></url>
   <url><loc>https://simplex.chat/id/</loc></url>
   <url><loc>https://simplex.chat/id/contact/</loc></url>
+  <url><loc>https://simplex.chat/id/downloads/</loc></url>
   <url><loc>https://simplex.chat/id/fdroid/</loc></url>
   <url><loc>https://simplex.chat/id/file/</loc></url>
   <url><loc>https://simplex.chat/id/invitation/</loc></url>
@@ -216,6 +229,7 @@
   <url><loc>https://simplex.chat/invitation/</loc></url>
   <url><loc>https://simplex.chat/it/</loc></url>
   <url><loc>https://simplex.chat/it/contact/</loc></url>
+  <url><loc>https://simplex.chat/it/downloads/</loc></url>
   <url><loc>https://simplex.chat/it/fdroid/</loc></url>
   <url><loc>https://simplex.chat/it/file/</loc></url>
   <url><loc>https://simplex.chat/it/invitation/</loc></url>
@@ -223,6 +237,7 @@
   <url><loc>https://simplex.chat/it/why/</loc></url>
   <url><loc>https://simplex.chat/ja/</loc></url>
   <url><loc>https://simplex.chat/ja/contact/</loc></url>
+  <url><loc>https://simplex.chat/ja/downloads/</loc></url>
   <url><loc>https://simplex.chat/ja/fdroid/</loc></url>
   <url><loc>https://simplex.chat/ja/file/</loc></url>
   <url><loc>https://simplex.chat/ja/invitation/</loc></url>
@@ -235,6 +250,7 @@
   <url><loc>https://simplex.chat/news/</loc></url>
   <url><loc>https://simplex.chat/nl/</loc></url>
   <url><loc>https://simplex.chat/nl/contact/</loc></url>
+  <url><loc>https://simplex.chat/nl/downloads/</loc></url>
   <url><loc>https://simplex.chat/nl/fdroid/</loc></url>
   <url><loc>https://simplex.chat/nl/file/</loc></url>
   <url><loc>https://simplex.chat/nl/invitation/</loc></url>
@@ -242,6 +258,7 @@
   <url><loc>https://simplex.chat/nl/why/</loc></url>
   <url><loc>https://simplex.chat/pl/</loc></url>
   <url><loc>https://simplex.chat/pl/contact/</loc></url>
+  <url><loc>https://simplex.chat/pl/downloads/</loc></url>
   <url><loc>https://simplex.chat/pl/fdroid/</loc></url>
   <url><loc>https://simplex.chat/pl/file/</loc></url>
   <url><loc>https://simplex.chat/pl/invitation/</loc></url>
@@ -250,6 +267,7 @@
   <url><loc>https://simplex.chat/privacy/</loc></url>
   <url><loc>https://simplex.chat/pt_BR/</loc></url>
   <url><loc>https://simplex.chat/pt_BR/contact/</loc></url>
+  <url><loc>https://simplex.chat/pt_BR/downloads/</loc></url>
   <url><loc>https://simplex.chat/pt_BR/fdroid/</loc></url>
   <url><loc>https://simplex.chat/pt_BR/file/</loc></url>
   <url><loc>https://simplex.chat/pt_BR/invitation/</loc></url>
@@ -258,6 +276,7 @@
   <url><loc>https://simplex.chat/reproduce/</loc></url>
   <url><loc>https://simplex.chat/ro/</loc></url>
   <url><loc>https://simplex.chat/ro/contact/</loc></url>
+  <url><loc>https://simplex.chat/ro/downloads/</loc></url>
   <url><loc>https://simplex.chat/ro/fdroid/</loc></url>
   <url><loc>https://simplex.chat/ro/file/</loc></url>
   <url><loc>https://simplex.chat/ro/invitation/</loc></url>
@@ -265,6 +284,7 @@
   <url><loc>https://simplex.chat/ro/why/</loc></url>
   <url><loc>https://simplex.chat/ru/</loc></url>
   <url><loc>https://simplex.chat/ru/contact/</loc></url>
+  <url><loc>https://simplex.chat/ru/downloads/</loc></url>
   <url><loc>https://simplex.chat/ru/fdroid/</loc></url>
   <url><loc>https://simplex.chat/ru/file/</loc></url>
   <url><loc>https://simplex.chat/ru/invitation/</loc></url>
@@ -273,6 +293,7 @@
   <url><loc>https://simplex.chat/security/</loc></url>
   <url><loc>https://simplex.chat/tr/</loc></url>
   <url><loc>https://simplex.chat/tr/contact/</loc></url>
+  <url><loc>https://simplex.chat/tr/downloads/</loc></url>
   <url><loc>https://simplex.chat/tr/fdroid/</loc></url>
   <url><loc>https://simplex.chat/tr/file/</loc></url>
   <url><loc>https://simplex.chat/tr/invitation/</loc></url>
@@ -281,6 +302,7 @@
   <url><loc>https://simplex.chat/transparency/</loc></url>
   <url><loc>https://simplex.chat/uk/</loc></url>
   <url><loc>https://simplex.chat/uk/contact/</loc></url>
+  <url><loc>https://simplex.chat/uk/downloads/</loc></url>
   <url><loc>https://simplex.chat/uk/fdroid/</loc></url>
   <url><loc>https://simplex.chat/uk/file/</loc></url>
   <url><loc>https://simplex.chat/uk/invitation/</loc></url>
@@ -289,6 +311,7 @@
   <url><loc>https://simplex.chat/why/</loc></url>
   <url><loc>https://simplex.chat/zh_Hans/</loc></url>
   <url><loc>https://simplex.chat/zh_Hans/contact/</loc></url>
+  <url><loc>https://simplex.chat/zh_Hans/downloads/</loc></url>
   <url><loc>https://simplex.chat/zh_Hans/fdroid/</loc></url>
   <url><loc>https://simplex.chat/zh_Hans/file/</loc></url>
   <url><loc>https://simplex.chat/zh_Hans/invitation/</loc></url>
@@ -296,6 +319,7 @@
   <url><loc>https://simplex.chat/zh_Hans/why/</loc></url>
   <url><loc>https://simplex.chat/zh_Hant/</loc></url>
   <url><loc>https://simplex.chat/zh_Hant/contact/</loc></url>
+  <url><loc>https://simplex.chat/zh_Hant/downloads/</loc></url>
   <url><loc>https://simplex.chat/zh_Hant/fdroid/</loc></url>
   <url><loc>https://simplex.chat/zh_Hant/file/</loc></url>
   <url><loc>https://simplex.chat/zh_Hant/invitation/</loc></url>

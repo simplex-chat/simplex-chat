@@ -16,4 +16,4 @@
 
 Будь свободен в своей сети.
 
-[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[Посмотрите 2-минутный фильм на YouTube](https://www.youtube.com/watch?v=k-GhLNZm8G0)

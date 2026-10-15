@@ -1,4 +1,4 @@
-[SimpleX domains launch](https://simplex.domains/)
+[SimpleX 域名上线](https://simplex.domains/)
 
 # 变得 自由
 
@@ -7,11 +7,11 @@
 首个无用户 ID 的网络。
 您的联系人、群组和频道由您掌控。
 
-Own a part of it. [Invest in SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
+拥有它的一部分。 [投资 SimpleX Chat。](https://wefunder.com/simplex.chat?utm_source=home)
 
-**3M**Downloads
+**3M**下载量
 
-**600K**Monthly users
+**600K**月活跃用户
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [SimpleX 安卓应用（通过 F-Droid）](https://simplex.chat/zh_Hans/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 

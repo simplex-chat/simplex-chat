@@ -16,4 +16,4 @@ Protože jsme zničili sílu vědět, kdo jste. Aby vám *vaši* moc nikdo nemoh
 
 Buďte svobodní ve své síti.
 
-[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[Podívejte se na 2minutový film na YouTube](https://www.youtube.com/watch?v=k-GhLNZm8G0)

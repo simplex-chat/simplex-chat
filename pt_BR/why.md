@@ -16,4 +16,4 @@ Because we destroyed the power to know who you are. So that *your* power can nev
 
 Be free in your network.
 
-[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[Watch 2-min film on YouTube](https://www.youtube.com/watch?v=k-GhLNZm8G0)

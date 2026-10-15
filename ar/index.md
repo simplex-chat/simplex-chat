@@ -34,7 +34,7 @@
 
 لا يتحكم أي كيان واحد في الشبكة – يمكن لأي شخص تشغيل الخوادم.
 
-[Why we are building it](https://simplex.chat/ar/why)
+[لماذا نبنيها](https://simplex.chat/ar/why)
 
 ## يموّله مستخدموه
 

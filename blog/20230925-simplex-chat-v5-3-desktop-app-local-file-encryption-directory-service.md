@@ -40,7 +40,7 @@ Other limitations of the desktop app:
 - you cannot send voice messages.
 - there is no support for calls yet.
 
-You can download the desktop app for Linux and Mac via [downloads page](https://simplex.chat/downloads/index.html). Windows version will be available soon.
+You can download the desktop app for Linux and Mac via [downloads page](https://simplex.chat/downloads/). Windows version will be available soon.
 
 ## Group directory service and other group improvements
 

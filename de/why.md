@@ -16,4 +16,4 @@ Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit *Ihnen Ihre* 
 
 Genießen Sie die Freiheit in Ihrem Netzwerk.
 
-[Watch the film](https://www.youtube.com/watch?v=k-GhLNZm8G0)
+[Sehen Sie sich den 2-minütigen Film auf YouTube an](https://www.youtube.com/watch?v=k-GhLNZm8G0)
