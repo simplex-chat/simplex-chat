@@ -36,6 +36,12 @@
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
         projectFileName = "cabal.project";
+        # The stable compiler's ghc-internal package names iconv without its
+        # external library directory. Include it in both planning and building.
+        cabalProjectLocal = pkgs.lib.optionalString pkgs'.stdenv.hostPlatform.isDarwin ''
+          package *
+            extra-lib-dirs: ${pkgs'.libiconv}/lib
+        '';
         src = pkgs.haskell-nix.haskellLib.cleanGit {
           name = "simplex-chat";
           src = ./.;
@@ -686,6 +692,7 @@
         }; in
         (drv pkgs).shellFor {
           withHoogle = false;
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.libiconv ];
           nativeBuildInputs = [
             updateCmd
             pkgs.haskell-nix.nix-tools-unchecked-sh.exes.cabal
