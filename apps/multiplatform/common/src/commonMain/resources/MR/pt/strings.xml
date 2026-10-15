@@ -1215,4 +1215,6 @@
     <string name="migrate_to_device_finalize_migration">Finalizar a migração noutro dispositivo.</string>
     <string name="v4_6_group_welcome_message_descr">Definir a mensagem mostrada aos novos membros!</string>
     <string name="toolbar_settings">Definições</string>
+    <string name="app_check_for_updates_beta">Beta</string>
+    <string name="v6_1_better_calls">Melhores chamadas</string>
 </resources>
