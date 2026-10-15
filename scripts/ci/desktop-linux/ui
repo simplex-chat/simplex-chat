@@ -12,6 +12,8 @@
 #   ui wait <text> [secs]         wait up to secs (30) until the text is on screen
 #   ui click <x> <y>              click at x,y
 #   ui click-text <text> [secs]   wait up to secs (20) for the text and click its centre
+#   ui scroll <x> <y> <up|down> [clicks]
+#                                 turn the mouse wheel over x,y, 3 clicks unless given
 #   ui avatar <text> [colour]     print how many pixels of the profile image left of a list row's name (the text) stand out
 #                                 from the background, and their mean colour, saving the area as UI_OUT/NN-avatar-<text>.png;
 #                                 with red, green or blue, fail unless that colour dominates
@@ -150,6 +152,21 @@ click() {
   sleep 1
 }
 
+# X buttons 4 and 5 are the wheel turned up and down
+scroll() {
+  local button
+  case "$3" in
+    up) button=4 ;;
+    down) button=5 ;;
+    *)
+      echo "error: scroll up or down, not \"$3\""
+      return 1
+      ;;
+  esac
+  xdotool mousemove --sync "$1" "$2" click --repeat "$4" --delay 100 "$button"
+  sleep 1
+}
+
 # A list row's profile image is 42 px square, 8 px left of the row's name, and starts a little below the name's top:
 # the area allows for OCR's box being a few pixels off, and leaves out the rows above and below.
 avatar() {
@@ -206,6 +223,10 @@ case "${1:-}" in
     read -r x y _ <<< "$pos"
     click "$x" "$y"
     log "click-text \"$2\" at $x,$y"
+    ;;
+  scroll)
+    scroll "$2" "$3" "$4" "${5:-3}"
+    log "scroll $4 at $2,$3, ${5:-3} clicks"
     ;;
   avatar) avatar "$2" "${3:-}" ;;
   type)

@@ -151,6 +151,26 @@ in_row_of() {
   [ "$label" -ge "$name" ] && [ $((label - name)) -lt 45 ]
 }
 
+# the value is on the same line as its setting's title
+in_line_with() {
+  local value title
+  value=$(y_of "$1") || return 1
+  title=$(y_of "$2") || return 1
+  [ $((value - title)) -lt 10 ] && [ $((title - value)) -lt 10 ]
+}
+
+# Scrolls the left pane down until the text shows above its bottom toolbar.
+scroll_to() {
+  local y
+  for _ in 1 2 3 4 5 6 7 8; do
+    if y=$(y_of "$1") && [ "$y" -lt 640 ]; then
+      return 0
+    fi
+    "$ui" scroll 195 400 down
+  done
+  return 1
+}
+
 # the count's text is smaller than the description's above it: both have capitals and ascenders, no descenders
 count_text_smaller() {
   local count description
@@ -377,24 +397,32 @@ use_names_server() {
   "$ui" click "$switch_x" "$y"
   "$ui" shot new-server
   "$ui" key Escape
+  # the New server screen shows the address with "127.0.0.1" too, until it closes
+  "$ui" wait "Add server" 10
+  "$ui" wait "Test servers" 10
   "$ui" click-text "127.0.0.1" 10
-  "$ui" wait "To resolve names" 10
+  "$ui" wait "SMP server" 10
+  scroll_to "To resolve names" || fail "no \"To resolve names\" in the test server's settings"
   # the dropdown opens from its value; a custom server's roles default to yes, yes and no, so this is the names one
   "$ui" click-text "default (no)"
   "$ui" click-text "yes" 10
   "$ui" shot names-server-roles
-  "$ui" wait "To resolve names" 10
-  in_row_of "yes" "To resolve names" || fail "the test server's \"To resolve names\" is not yes"
+  in_line_with "yes" "To resolve names" || fail "the test server's \"To resolve names\" is not yes"
   "$ui" key Escape
+  "$ui" wait "Add server" 10
   "$ui" key Escape
   for operator in "SimpleX Chat" Flux; do
     "$ui" click-text "$operator" 10
-    "$ui" wait "To resolve names" 10
+    # the operator's own toggle: the title "<operator> servers" can wrap
+    "$ui" wait "Use servers" 10
+    scroll_to "To resolve names" || fail "no \"To resolve names\" in the $operator settings"
     y=$(y_of "To resolve names")
     "$ui" click "$switch_x" "$y"
     "$ui" shot "names-off-$(tr -cd 'a-zA-Z' <<< "$operator")"
     "$ui" key Escape
+    "$ui" wait "Your servers" 10
   done
+  scroll_to "Save servers" || fail "no \"Save servers\" in Network & servers"
   "$ui" click-text "Save servers" 10
   sleep 2
   "$ui" shot servers-saved
