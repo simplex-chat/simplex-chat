@@ -3,7 +3,8 @@
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper:
 # onboarding to the chat list; setup, which creates a local group and makes the test SMP server (backend.sh) the one
 # that resolves SimpleX names; then, with the toolbar at the bottom (the default) and then at the top, a search of
-# the test directory with "Search in Directory" and the full search with Enter, which also resolves a SimpleX name.
+# the test directory with "Search in Directory" and the full search with Enter, which also resolves a SimpleX name;
+# with the toolbar at the bottom, also the full search in the New chat sheet.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [onboarding|setup]
 # With "onboarding" it stops at the chat list: releases before directory search show no search field without chats.
 # With "setup" it stops after the setup. Setup needs NAMES_SERVER, the test SMP server's address.
@@ -324,10 +325,34 @@ full_search() {
   clear_search_and_check_cards "$layout full search"
 }
 
+# The same full search from the New chat sheet, whose list is reversed too with the toolbar at the bottom.
+new_chat_sheet_search() {
+  local consent=$1
+  # the pencil at the right of the bottom toolbar opens New chat; the chat list behind it has the same search field
+  "$ui" click 363 730
+  "$ui" wait "Create group" 10
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$name_text"
+  "$ui" wait "Connect to $name_text.testing" 15
+  "$ui" key Return
+  "$ui" wait "Search and don't show again" 10
+  "$ui" click-text "$consent"
+  "$ui" wait "ci_contact" 60 || true
+  show_all_results new-chat
+  check "New chat: the first page held one result, \"Show more\" loaded the other" [ "$pages" -eq 2 ]
+  check "New chat: no more results offered" not_on_screen "Show more"
+  check "New chat: \"Names\" header above ci_contact" above "Names" "ci_contact"
+  check "New chat: \"Directory\" header above #ci_group" above "Directory" "#ci_group"
+  check "New chat: \"Directory\" header above #ci_channel" above "Directory" "#ci_channel"
+  check "New chat: Names, then Directory, from the search field up" \
+    in_order "Directory" "#ci_channel" "Names" "ci_contact" "Search in Directory"
+  back_to_chat_list || fail "no chat list after the New chat sheet"
+}
+
 # Escape closes one screen at a time, and clears the search field
 back_to_chat_list() {
   for _ in 1 2 3 4 5 6; do
-    if not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && on_screen "Search or paste SimpleX link"; then
+    if not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"; then
       return 0
     fi
     "$ui" key Escape
@@ -483,6 +508,7 @@ fi
 cards_while_typing bottom
 search_directory bottom "Search"
 full_search bottom "Search"
+new_chat_sheet_search "Search"
 
 # the alert was answered with "Search" both times, so it asks again
 use_top_toolbar
