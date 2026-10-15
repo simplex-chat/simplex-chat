@@ -72,7 +72,7 @@ struct BadgesHowLongView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
-    @State private var selectedPeriod: BadgePeriod = badgePeriodsForSale.contains(.monthly) ? .monthly : .oneMonth
+    @State private var selectedPeriod: BadgePeriod = .oneMonth
     @State private var continueActive = false
 
     var body: some View {
@@ -126,7 +126,7 @@ struct BadgesHowLongView: View {
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
-        let forSale = badgePeriodsForSale.contains(period)
+        let forSale = store.forSale(period)
         return Button {
             selectedPeriod = period
         } label: {
