@@ -20,20 +20,22 @@
           aarch64-android-prebuilt = import prev.path {
             inherit system;
             inherit (prev) overlays;
-            # The prebuilt Android NDK and its compiler wrappers are unfree.
+            # Nixpkgs marks the prebuilt NDK, SDK tools, and wrappers unfree.
             config = prev.config // {
               allowUnfreePredicate = package:
-                prev.lib.hasInfix "ndk" (prev.lib.getName package);
+                let name = prev.lib.getName package; in
+                prev.lib.hasInfix "ndk" name || prev.lib.hasPrefix "android-sdk-" name;
             };
             crossSystem = prev.lib.systems.examples.aarch64-android-prebuilt // { androidSdkVersion = "26"; };
           };
           armv7a-android-prebuilt = import prev.path {
             inherit system;
             inherit (prev) overlays;
-            # The prebuilt Android NDK and its compiler wrappers are unfree.
+            # Nixpkgs marks the prebuilt NDK, SDK tools, and wrappers unfree.
             config = prev.config // {
               allowUnfreePredicate = package:
-                prev.lib.hasInfix "ndk" (prev.lib.getName package);
+                let name = prev.lib.getName package; in
+                prev.lib.hasInfix "ndk" name || prev.lib.hasPrefix "android-sdk-" name;
             };
             crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // { androidSdkVersion = "26"; };
           };
