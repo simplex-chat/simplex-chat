@@ -154,6 +154,7 @@ subscriptionVerdict SubscriptionPurchase {subscriptionStateName, testSubscriptio
         _ -> Left $ SRVerifierFailed "Play answered a subscription without exactly one line item"
       subscriptionState <- case subscriptionStateName of
         "SUBSCRIPTION_STATE_ACTIVE" -> Right $ if autoRenewEnabled then SSRenewing else SSCancelled
+        "SUBSCRIPTION_STATE_PAUSED" -> Right $ if autoRenewEnabled then SSRenewing else SSCancelled
         "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" -> Right SSBillingRetry
         "SUBSCRIPTION_STATE_ON_HOLD" -> Right SSBillingRetry
         "SUBSCRIPTION_STATE_CANCELED" -> Right SSCancelled

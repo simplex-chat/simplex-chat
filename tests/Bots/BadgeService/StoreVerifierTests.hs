@@ -915,6 +915,8 @@ testPlaySubscriptionStates = withFakePlay $ \fake -> do
         stateOf <$> playCheck verifier
   stateFor "SUBSCRIPTION_STATE_ACTIVE" True `shouldReturn` Right SSRenewing
   stateFor "SUBSCRIPTION_STATE_ACTIVE" False `shouldReturn` Right SSCancelled
+  stateFor "SUBSCRIPTION_STATE_PAUSED" True `shouldReturn` Right SSRenewing
+  stateFor "SUBSCRIPTION_STATE_PAUSED" False `shouldReturn` Right SSCancelled
   stateFor "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" True `shouldReturn` Right SSBillingRetry
   stateFor "SUBSCRIPTION_STATE_ON_HOLD" True `shouldReturn` Right SSBillingRetry
   stateFor "SUBSCRIPTION_STATE_CANCELED" False `shouldReturn` Right SSCancelled
@@ -924,7 +926,7 @@ testPlaySubscriptionStates = withFakePlay $ \fake -> do
   answerSubscription fake $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [lineItem [] ["autoRenewingPlan"]]
   stateOf <$> playCheck verifier `shouldReturn` Right SSCancelled
   paths <- readTVarIO (fpPurchasePaths fake)
-  length paths `shouldBe` 8
+  length paths `shouldBe` 10
   nub paths `shouldBe` [["androidpublisher", "v3", "applications", fakePackageName, "purchases", "subscriptionsv2", "tokens", subscriptionToken]]
 
 testPlaySubscriptionPendingOrTest :: IO ()
