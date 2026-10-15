@@ -2257,6 +2257,9 @@ func redeemErrorText(_ error: Error, purchase: Bool) -> String {
         case .unknownKeyIndex, .credentialNotVerified: return NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
         }
     }
+    if case .subscribedBefore? = error as? BadgeStoreError {
+        return NSLocalizedString("This Apple ID subscribed before. Subscribing again is not available in the app yet.", comment: "alert message")
+    }
     return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
 }
 

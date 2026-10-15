@@ -544,7 +544,7 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
           _ -> answerCredit credit
     newSubscription checked@SubscriptionCheck {subscriptionState} = do
       now <- badgeNow cc
-      case grantableCharge provider Nothing now checked of
+      case grantableCharge provider Nothing now checked >>= fundsMonthNow now Nothing of
         Left notGranted -> firstChargeNotGranted provider notGranted
         Right (charge@StoreCharge {periodStart, chargePaid = paid}, (badgeType, months)) ->
           acknowledged acknowledgeSubscription $ do
@@ -608,6 +608,15 @@ grantableCharge provider tier now SubscriptionCheck {subscriptionState, latestCh
           | now < periodStart -> Left NGNotStarted
           | now >= periodEnd -> Left NGPeriodOver
           | otherwise -> Right (charge, plan)
+
+-- | Play dates a period from its end less the plan's months, clipped at month ends, so the months the ledger grants
+-- from that start can end before Play's period does: a charge still in its period may then fund no month now.
+fundsMonthNow :: UTCTime -> Maybe StatementEntry -> (StoreCharge, (BadgeType, Int)) -> Either NotGranted (StoreCharge, (BadgeType, Int))
+fundsMonthNow now tip_ grant@(StoreCharge {periodStart}, (badgeType, months))
+  | isJust $ issueEntry now "" $ last $ tip : chargeEntries periodStart now months "" ("", "", "") tip = Right grant
+  | otherwise = Left NGPeriodOver
+  where
+    tip = fromMaybe (emptyEntry periodStart badgeType) tip_
 
 -- | No payment row exists yet to stamp, so an App Store claim's checks are bounded by the purchase checks, a Play one's by each answer's retryAfter.
 firstChargeNotGranted :: PaymentProvider -> NotGranted -> IO BadgeServiceResponse
@@ -708,7 +717,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             Right () ->
               checkStoreSubscription verifier subscriptionRef Nothing >>= \case
                 Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
-                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider (Just badgeType) now checked of
+                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider (Just badgeType) now checked >>= fundsMonthNow now (Just tip) of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
                   Left reason -> do
                     forM_ latestCharge $ \_ -> logInfo $ "store subscription charge not granted: " <> tshow reason

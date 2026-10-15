@@ -47,18 +47,14 @@ struct BadgesCheckOrderView: View {
 
                     if case let .price(p) = store.price(level, period, compact: false) {
                         switch period {
-                        case .monthly: subscriptionDisclosure("Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at \(p) per month unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.")
-                        case .annual: subscriptionDisclosure("Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at \(p) per year unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.")
+                        case .monthly: footnote("Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at \(p) per month unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.")
+                        case .annual: footnote("Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at \(p) per year unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.")
                         case .oneMonth: EmptyView()
                         }
                     }
 
                     if !store.forSale(period) && store.subscribedBefore == true {
-                        Text("This Apple ID subscribed before. Subscribing again is not available in the app yet.")
-                            .font(.footnote)
-                            .foregroundColor(theme.colors.secondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                        footnote("This Apple ID subscribed before. Subscribing again is not available in the app yet.")
                     }
 
                     Spacer(minLength: 20)
@@ -74,11 +70,7 @@ struct BadgesCheckOrderView: View {
                         .font(.footnote)
                         RestorePurchasesButton()
                             .padding(.top, 10)
-                        Text("Adds an App Store purchase of this Apple ID that no profile here has yet. A purchase still being added on another device may be added here instead.")
-                            .font(.footnote)
-                            .foregroundColor(theme.colors.secondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                        footnote("Adds an App Store purchase of this Apple ID that no profile here has yet. A purchase still being added on another device may be added here instead.")
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -94,7 +86,7 @@ struct BadgesCheckOrderView: View {
         .alert(item: $alert) { $0.alert }
     }
 
-    private func subscriptionDisclosure(_ text: LocalizedStringKey) -> some View {
+    private func footnote(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.footnote)
             .foregroundColor(theme.colors.secondary)

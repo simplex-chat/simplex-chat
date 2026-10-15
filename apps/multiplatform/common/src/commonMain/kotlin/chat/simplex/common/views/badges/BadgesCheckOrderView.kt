@@ -61,8 +61,8 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
     val price = BadgeStore.price(level, period, compact = false)
     if (price is BadgePrice.Price) {
       when (period) {
-        BadgePeriod.Monthly -> SubscriptionDisclosure(String.format(stringResource(MR.strings.badges_subscription_disclosure_monthly), price.price))
-        BadgePeriod.Annual -> SubscriptionDisclosure(String.format(stringResource(MR.strings.badges_subscription_disclosure_annual), price.price))
+        BadgePeriod.Monthly -> Footnote(String.format(stringResource(MR.strings.badges_subscription_disclosure_monthly), price.price))
+        BadgePeriod.Annual -> Footnote(String.format(stringResource(MR.strings.badges_subscription_disclosure_annual), price.price))
         BadgePeriod.OneMonth -> {}
       }
     }
@@ -81,19 +81,14 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
       )
       if (badgeStoreLane) {
         RestorePurchasesButton(Modifier.padding(top = 10.dp))
-        Text(
-          stringResource(MR.strings.badges_restore_purchases_footnote),
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.secondary,
-          textAlign = TextAlign.Center
-        )
+        Footnote(stringResource(MR.strings.badges_restore_purchases_footnote))
       }
     }
   }
 }
 
 @Composable
-private fun SubscriptionDisclosure(text: String) {
+private fun Footnote(text: String) {
   Text(
     text,
     style = MaterialTheme.typography.body2,

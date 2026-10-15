@@ -52,7 +52,8 @@ import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Word (Word32)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
@@ -168,6 +169,7 @@ badgeServiceTests = do
       it "should credit a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
       it "should record a listed transaction only into a record it already has, and a Restore hand-over as its own" testListedReceiptNotRecorded
       it "should refuse a code or an invoice while a held receipt may be credited or is an Apple subscription, and not otherwise" testRedeemRefusedWhileReceiptHeld
+      it "should refuse an invoice while a held receipt's first attempt has not answered" testInvoiceRefusedWhileFirstAttemptOpen
     describe "invoice first" $ do
       it "should credit a receipt to the profile that created its invoice however late it arrives, and answer as that profile" testInvoiceOtherProfile
       it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
@@ -197,6 +199,7 @@ badgeServiceTests = do
     it "should grant each store charge once, and answer a repeat inside the issued month without asking the store" testSubscriptionChargeGrantedOnce
     it "should ask the store only once coverage has ended, and at most once an hour, failed checks included" testSubscriptionStoreChecksBounded
     it "should record and not grant a revoked, other-tier, offer, unstarted or ended charge" testSubscriptionChargeNotGranted
+    it "should not grant a Play charge whose month from its clipped period start has already run out" testClippedPlayPeriodNotGranted
     it "should answer an unreachable store with the check interval, writing no charge or ledger row" testSubscriptionStoreUnreachable
     it "should renew an App Store subscription by its original id, granting a charge first recorded before its period started" testAppleSubscriptionRenews
     it "should keep asking at zero months, and present the renewed credential when the old one expires" testSubscriptionRenews
@@ -2209,6 +2212,26 @@ testSubscriptionChargeNotGranted ps =
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1 + length notGranted
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
 
+testClippedPlayPeriodNotGranted :: HasCallStack => TestParams -> IO ()
+testClippedPlayPeriodNotGranted ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
+    (purchaseKey, _, purchased) <- subscribedMonthly env
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    -- Play dates the period ending on 31 March from 28 February, and the ledger's month from then ends on 28 March
+    let clippedEnd = UTCTime (fromGregorian 2027 3 31) 43200
+        clipped = (storeCharge "subscr-badge-supporter-month-02" (addMonths (-1) clippedEnd) 1) {periodEnd = clippedEnd, chargeRef = "GPA.clipped"}
+    storeReports store $ subscriptionCheck SSRenewing $ Just clipped
+    setClockAt bsClock $ addUTCTime (-2 * nominalDay) clippedEnd
+    renewal <- assertBalance env purchaseKey (last purchased)
+    credentialOf renewal `shouldBe` Nothing
+    map entryTag (fst $ statementOf renewal) `shouldBe` []
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 2
+    (otherKey, otherMasterKey) <- newPurchaseKeys
+    let otherToken = "fake-play-token-clipped.AO-J1Op9n4cjW9qQl5"
+    setSubscription store (SubscriptionGoogle otherToken) $ subscriptionCheck SSRenewing $ Just clipped
+    refusalOf <$> serviceCmd env otherKey (purchaseCmd otherMasterKey $ googlePayment "subscr_badge_supporter_01" otherToken) `shouldReturn` (BSEPaymentPending, Just 86400)
+
 testSubscriptionStoreUnreachable :: HasCallStack => TestParams -> IO ()
 testSubscriptionStoreUnreachable ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
@@ -2420,6 +2443,11 @@ testSubscriptionEnds ps =
       alice <## "ok"
       threadDelay 2000000
       subscriptionChecks store `shouldReturn` checks
+      -- the device's store still lists it as renewing, which does not undo the service's word that it ended
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "ended"]
+      alice ##> ("/_badge subscription renewing " <> paymentArg subscriptionPlay)
+      alice <## "ok"
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "ended"]
 
 subscriptionStatuses :: ChatController -> IO [Maybe Text]
 subscriptionStatuses ChatController {chatStore} =
@@ -2713,7 +2741,7 @@ testAppleSandboxSubscriptionNotAsked ps = do
 testAppleSubscriptionWithoutApiKey :: HasCallStack => TestParams -> IO ()
 testAppleSubscriptionWithoutApiKey = appleSubscriptionNotConfigured id
 
--- | With [play] beside [apple], configureStoreVerifier builds a checker that answers App Store refs not configured.
+-- | [google] beside an [apple] with no API key: configureStoreVerifier builds a checker that answers App Store refs not configured.
 testAppleSubscriptionWithPlayChecker :: HasCallStack => TestParams -> IO ()
 testAppleSubscriptionWithPlayChecker = appleSubscriptionNotConfigured $ \v -> v {checkSubscription = Just playOnly}
   where
@@ -3029,6 +3057,24 @@ testRedeemRefusedWhileReceiptHeld ps =
       heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending", finalError, finalError]
       issueCode cc BTSupporter 1 >>= \code' -> refused ("/_redeem_badge_code 3 " <> codeArg code')
       refused "/_badge invoice 3"
+
+testInvoiceRefusedWhileFirstAttemptOpen :: HasCallStack => TestParams -> IO ()
+testInvoiceRefusedWhileFirstAttemptOpen ps = do
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  hook <- newIORef $ putMVar entered () >> takeMVar release
+  let holding store = (googleVerifierWithHook hook store) {verifyTimeout = 60000000}
+  withBadgeServiceVerifier ps holding $ \BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+      storePurchaseOpen alice ""
+      timeout 30000000 (takeMVar entered) `shouldReturn` Just ()
+      heldStoreReceipts (chatController alice) `shouldReturn` 1
+      heldStoreReceiptErrors (chatController alice) `shouldReturn` []
+      alice ##> "/_badge invoice 1"
+      alice <## "cannot get badge: store purchase open"
+      putMVar release ()
+      expectLinesWithin 60 alice ["1: supporter"] []
 
 testInvoiceUnknown :: HasCallStack => TestParams -> IO ()
 testInvoiceUnknown ps =
