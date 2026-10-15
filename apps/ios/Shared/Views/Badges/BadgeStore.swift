@@ -196,6 +196,13 @@ final class BadgeStore: ObservableObject {
         guard let product = await MainActor.run(body: { products[productId] }) else {
             throw BadgeStoreError.productUnavailable(productId: productId)
         }
+        // another device on this Apple ID may have subscribed since load(), and Apple would fold this purchase into that one
+        if product.type == .autoRenewable, await hasSubscribedBefore() {
+            await MainActor.run { subscribedBefore = true }
+        }
+        guard await MainActor.run(body: { forSale(period) }) else {
+            throw BadgeStoreError.productUnavailable(productId: productId)
+        }
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else {
             throw BadgeStoreError.noActiveProfile
         }

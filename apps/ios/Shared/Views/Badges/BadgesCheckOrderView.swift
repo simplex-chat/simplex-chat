@@ -108,7 +108,7 @@ struct BadgesCheckOrderView: View {
 
     private func payButton() -> some View {
         let price = store.price(level, period, compact: false)
-        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId)
+        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(period)
         return Button {
             purchase()
         } label: {

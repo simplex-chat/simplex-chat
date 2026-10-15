@@ -108,13 +108,10 @@ suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurc
 suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> {
   val client = connectedBadgeBillingClient()
   val oneTime = queryBadgePurchases(client, BillingClient.ProductType.INAPP)
-  // a failed subscription query must not cost the one-time purchases their sweep
-  val subscriptions = try {
-    queryBadgePurchases(client, BillingClient.ProductType.SUBS)
-  } catch (e: BadgeStoreError.BillingError) {
-    Log.e(TAG, "unfinishedBadgePurchases: subscriptions ${e.message}")
-    emptyList()
-  }
+  // a Play that cannot sell subscriptions holds none; any other failure must not read as no purchases
+  val subscriptions =
+    if (client.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS).responseCode != BillingClient.BillingResponseCode.OK) emptyList()
+    else queryBadgePurchases(client, BillingClient.ProductType.SUBS)
   return (oneTime + subscriptions).mapNotNull(::badgePurchaseOutcome)
 }
 
