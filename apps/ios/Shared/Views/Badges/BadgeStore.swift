@@ -104,8 +104,8 @@ final class BadgeStore: ObservableObject {
     // closed, or a purchase it died before handing over, are both unknown, so canBuy refuses to buy again
     @Published private var reconciledOnce = false
     // Apple folds a new subscription of an Apple ID that subscribed before into the earlier one, whose record
-    // here is already credited or refused, so the buyer would pay for nothing; true until load() has checked
-    @Published private var subscribedBefore = true
+    // here is already credited or refused, so the buyer would pay for nothing; nil until load() has checked
+    @Published private(set) var subscribedBefore: Bool? = nil
     // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
     private var sweepFailureShown = false
     private var transactionUpdates: Task<Void, Never>? = nil
@@ -141,7 +141,7 @@ final class BadgeStore: ObservableObject {
     func forSale(_ period: BadgePeriod) -> Bool {
         switch period {
         case .oneMonth: true
-        case .monthly, .annual: !subscribedBefore
+        case .monthly, .annual: subscribedBefore == false
         }
     }
 
