@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
-# Reads the words tesseract found on a screenshot and prints the phrases on screen, or the centre of one phrase.
+# Reads the words tesseract found on a screenshot and prints the phrases on screen, or where one text is.
 #
 #   screen-text.py <scale> <ocr dir> lines         one phrase per line: centre x,y and its words
-#   screen-text.py <scale> <ocr dir> find <text>   "x y" of the first phrase containing the text; fails if none does
+#   screen-text.py <scale> <ocr dir> find <text>   "x y left top right bottom": centre and box of the text, from the phrase
+#                                                  that is exactly the text, else the first one containing it; fails if none does
 #
 # <ocr dir> has tesseract's TSV of the dark-text and the light-text pass (dark.tsv, light.tsv), in pixels of the
 # screenshot enlarged by <scale>, and gray.pgm, the screenshot in 8-bit grayscale. Printed coordinates are
-# screen pixels. Words are compared ignoring case and punctuation.
+# screen pixels. Text is compared ignoring case, spaces and punctuation.
 
 import csv
 import os
@@ -53,9 +54,13 @@ def background(gray, w):
     return statistics.median(luminance[y * width + x] for y in rows if 0 <= y < height for x in range(left, right + 1))
 
 
+def box(words):
+    return min(w["l"] for w in words), min(w["t"] for w in words), max(w["r"] for w in words), max(w["b"] for w in words)
+
+
 def centre(words):
-    return ((min(w["l"] for w in words) + max(w["r"] for w in words)) / 2,
-            (min(w["t"] for w in words) + max(w["b"] for w in words)) / 2)
+    left, top, right, bottom = box(words)
+    return (left + right) / 2, (top + bottom) / 2
 
 
 # Each pass also reads noise where its polarity doesn't apply (the gaps between dark letters look like light text),
@@ -89,23 +94,35 @@ def phrases(words):
     return sorted(result, key=lambda p: (min(w["t"] for w in p), p[0]["l"]))
 
 
-# OCR can glue an icon to the first word, or punctuation or the text cursor to the last,
-# so long edge words match by suffix or prefix.
-def word_matches(word, k, first, last):
-    if word == k:
-        return True
-    if len(k) < 4:
-        return False
-    return (first and word.endswith(k)) or (last and word.startswith(k))
+# OCR can split or join words ("#ci_group" read as "#ci_ group"), so words are compared by their joined characters.
+# It can also glue an icon to the first word, or punctuation or the text cursor to the last, so the text may start
+# inside the first word and end inside the last when at least 4 of its characters are in that word.
+def span_matches(words, target):
+    keys = [w["key"] for w in words]
+    joined = "".join(keys)
+    start = joined.find(target)
+    while start >= 0:
+        end = start + len(target)
+        first_ok = start == 0 or len(keys[0]) - start >= 4
+        last_ok = end == len(joined) or len(keys[-1]) - (len(joined) - end) >= 4
+        if start < len(keys[0]) and end > len(joined) - len(keys[-1]) and first_ok and last_ok:
+            return True
+        start = joined.find(target, start + 1)
+    return False
 
 
 def find(all_phrases, text):
-    keys = [k for k in map(key, text.split()) if k]
-    n = len(keys)
+    target = key(text)
+    if not target:
+        return None
     for phrase in all_phrases:
-        for i in range(len(phrase) - n + 1):
-            if all(word_matches(phrase[i + j]["key"], k, j == 0, j == n - 1) for j, k in enumerate(keys)):
-                return centre(phrase[i:i + n])
+        if "".join(w["key"] for w in phrase) == target:
+            return phrase
+    for phrase in all_phrases:
+        for i in range(len(phrase)):
+            for j in range(i + 1, len(phrase) + 1):
+                if span_matches(phrase[i:j], target):
+                    return phrase[i:j]
     return None
 
 
@@ -117,10 +134,10 @@ def main():
             x, y = centre(phrase)
             print(f"{round(x)},{round(y)} {' '.join(w['text'] for w in phrase)}")
     elif command == "find":
-        found = find(on_screen, args[0])
-        if not found:
+        words = find(on_screen, args[0])
+        if not words:
             sys.exit(1)
-        print(f"{round(found[0])} {round(found[1])}")
+        print(" ".join(str(round(v)) for v in centre(words) + box(words)))
     else:
         sys.exit(f"unknown command: {command}")
 

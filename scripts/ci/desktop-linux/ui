@@ -8,12 +8,18 @@
 #   ui start <app dir>            start Xvfb, openbox and <app dir>/bin/simplex, and wait for its window
 #   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.txt (OCR's input and output in UI_OUT/ocr), and print the text on screen
 #   ui text                       print the text on screen, one phrase per line after its centre x,y
-#   ui wait <text> [secs]         wait up to secs (30) until the text is on screen (case and punctuation ignored)
+#   ui find <text>                print "x y left top right bottom", the text's centre and box; fail if it is not on screen
+#   ui wait <text> [secs]         wait up to secs (30) until the text is on screen
 #   ui click <x> <y>              click at x,y
 #   ui click-text <text> [secs]   wait up to secs (20) for the text and click its centre
+#   ui avatar <text> [colour]     print how many pixels of the profile image left of a list row's name (the text) stand out
+#                                 from the background, and their mean colour, saving the area as UI_OUT/NN-avatar-<text>.png;
+#                                 with red, green or blue, fail unless that colour dominates
 #   ui type <text>                type into the focused field
 #   ui key <key>...               press keys named as in xdotool (Return, Escape, ctrl+a)
 #   ui stop                       stop the app, openbox and Xvfb
+#
+# Text is compared ignoring case, spaces and punctuation; a phrase that is exactly the text wins over one that contains it.
 
 set -euo pipefail
 
@@ -102,7 +108,7 @@ screen_ocr() {
   ocr "$state/ocr/screen.png" "$@"
 }
 
-# prints "x y" of the text once it is on screen
+# prints "x y left top right bottom" of the text once it is on screen
 wait_for() {
   local text=$1 deadline=$((SECONDS + $2))
   until screen_ocr find "$text"; do
@@ -111,10 +117,16 @@ wait_for() {
   done
 }
 
-shot() {
-  local n f
+# prints UI_OUT/NN-<name>, numbered after the files already saved
+next_file() {
+  local n
   n=$(find "$UI_OUT" -maxdepth 1 -name '[0-9][0-9]-*.png' | wc -l)
-  f=$(printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1")
+  printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1"
+}
+
+shot() {
+  local f
+  f=$(next_file "$1")
   import -window root "$f.png"
   ocr "$f.png" lines > "$f.txt"
   mkdir -p "$UI_OUT/ocr"
@@ -133,6 +145,25 @@ click() {
   sleep 1
 }
 
+# A list row's profile image is 42 px square, 8 px left of the row's name, and starts a little below the name's top:
+# the area allows for OCR's box being a few pixels off, and leaves out the rows above and below.
+avatar() {
+  local text=$1 colour=${2:-} pos x y l t r b f stats
+  if ! pos=$(screen_ocr find "$text"); then
+    log "avatar \"$text\": not on screen"
+    return 1
+  fi
+  read -r x y l t r b <<< "$pos"
+  f=$(next_file "avatar-$(tr -cd 'a-zA-Z0-9_' <<< "$text")")
+  convert "$state/ocr/screen.png" -crop "52x64+$((l > 56 ? l - 56 : 0))+$((t > 6 ? t - 6 : 0))" +repage "$f.png"
+  convert "$f.png" -depth 8 "$state/ocr/avatar.ppm"
+  if ! stats=$(python3 "$here/screen-colour.py" "$state/ocr/avatar.ppm" ${colour:+"$colour"}); then
+    log "avatar \"$text\": $stats, not $colour"
+    return 1
+  fi
+  log "avatar \"$text\": $stats${colour:+, $colour}"
+}
+
 case "${1:-}" in
   start)
     log "start $2"
@@ -140,13 +171,22 @@ case "${1:-}" in
     ;;
   shot) shot "$2" ;;
   text) screen_ocr lines ;;
+  find)
+    if ! pos=$(screen_ocr find "$2"); then
+      log "find \"$2\": not on screen" >&2
+      exit 1
+    fi
+    log "find \"$2\": $pos" > /dev/null
+    echo "$pos"
+    ;;
   wait)
     secs=${3:-30}
     if ! pos=$(wait_for "$2" "$secs"); then
       log "wait \"$2\": not on screen after $secs s"
       exit 1
     fi
-    log "wait \"$2\": at ${pos/ /,}"
+    read -r x y _ <<< "$pos"
+    log "wait \"$2\": at $x,$y"
     ;;
   click)
     click "$2" "$3"
@@ -158,10 +198,11 @@ case "${1:-}" in
       log "click-text \"$2\": not on screen after $secs s"
       exit 1
     fi
-    read -r x y <<< "$pos"
+    read -r x y _ <<< "$pos"
     click "$x" "$y"
     log "click-text \"$2\" at $x,$y"
     ;;
+  avatar) avatar "$2" "${3:-}" ;;
   type)
     xdotool type --delay 50 -- "$2"
     log "type \"$2\""
@@ -178,7 +219,7 @@ case "${1:-}" in
     log "stop"
     ;;
   *)
-    sed -n '3,16s/^# \{0,1\}//p' "$0"
+    sed -n '3,/^$/s/^# \{0,1\}//p' "$0"
     exit 1
     ;;
 esac
