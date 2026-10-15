@@ -116,6 +116,13 @@ clear_search() {
   "$ui" tap Cancel
 }
 
+# the first launch with more than two chats asks to turn on SimpleX Lock (laNoticeAlert in ContentView.swift)
+dismiss_lock_notice() {
+  if "$ui" wait "SimpleX Lock" 10; then
+    "$ui" tap Cancel
+  fi
+}
+
 cards=("New 1-time link" "Paste link / Scan" "Bottom bar")
 # shown only in the US
 banner="Invest in SimpleX Chat!"
@@ -244,6 +251,7 @@ search_directory "#ci_cards"
 clear_search
 expect_cards_hidden_by_results reachable
 if "$ui" layout top; then
+  dismiss_lock_notice
   expect_cards_hidden_by_results top
   "$ui" layout reachable
 else
