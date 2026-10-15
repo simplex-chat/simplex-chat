@@ -1,0 +1,27 @@
+Preserve ordered compiler/linker arguments when invoking hsc2hs.
+
+Deduplicating individual tokens corrupts repeated option/argument pairs:
+  -framework Security -framework CoreFoundation
+becomes:
+  -framework Security CoreFoundation
+The same applies to compiler options such as repeated -include. Leave
+deduplication of framework directory values in place.
+
+--- a/src/Distribution/Simple/PreProcess.hs
++++ b/src/Distribution/Simple/PreProcess.hs
+@@ -525,7 +525,6 @@
+       where
+         ldflags =
+           map ("--lflag=" ++) $
+-            ordNub $
+               concat
+                 [ programDefaultArgs gccProg ++ programOverrideArgs gccProg
+                 , osxFrameworkDirs
+@@ -574,7 +573,6 @@
+ 
+         cflags =
+           map ("--cflag=" ++) $
+-            ordNub $
+               concat
+                 [ programDefaultArgs gccProg ++ programOverrideArgs gccProg
+                 , osxFrameworkDirs

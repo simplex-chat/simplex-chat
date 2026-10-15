@@ -49,7 +49,12 @@
         (pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isAndroid {
           simplex-chat = [ "-pie" ];
         }) package-ghc-options;
-      in pkgs'.haskell-nix.project {
+      # Cabal 3.17 drops repeated option names in hsc2hs arguments. The
+      # Darwin archives need both -framework Security and CoreFoundation.
+      projectPkgs = if mobile && pkgs'.stdenv.hostPlatform.isDarwin
+        then pkgs'.appendOverlays [ (import ./scripts/nix/cabal-tool-overlay.nix) ]
+        else pkgs';
+      in projectPkgs.haskell-nix.project {
         compiler-nix-name = "ghc914-sh";
         inherit compilerSelection;
         # We need this, to specify we want the cabal project.
