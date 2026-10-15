@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Runs Claude Code to repeat the directory search with the ui helper, as claude-test.md describes, and passes when
+# Runs Claude Code to repeat the smoke test's searches with the ui helper, as claude-test.md describes, and passes when
 # its final message ends with "CLAUDE-TEST: PASS".
 # Usage: scripts/ci/desktop-linux/claude-test.sh <output dir> <transcript .jsonl>
-# Expects the app at the chat list (smoke-test.sh ... onboarding) with UI_OUT under <output dir>, claude and ui on PATH,
+# Expects the app set up at the chat list (smoke-test.sh ... setup) with UI_OUT under <output dir>, claude and ui on PATH,
 # CLAUDE_MODEL and CLAUDE_CODE_OAUTH_TOKEN. Claude works in <output dir>: the screenshots, its report.md and the
 # prompt it was given end up there. The transcript and the guard hook's log (<transcript>.guard.log) are kept
 # outside it, where Claude can't write.
