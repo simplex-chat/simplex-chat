@@ -1,3 +1,5 @@
+> Superseded by the S3-min plans: `2026-10-15-channel-multi-owner-s3min.md` (overview) and `2026-10-15-channel-multi-owner-s3min-implementation.md` (implementation).
+
 # Channel multi-owner — implementation plan
 
 Companion to the design overview (`2026-07-15-channel-multi-owner.md`); read that first for *why*. This covers *what to build*: agent APIs, data model, types, the protocol event, commands, logic, sequencing. It is a map for implementing agents, not an exhaustive edit list; trivial wiring (JSON instances, `CMEventTag` cases, view strings) is implied.

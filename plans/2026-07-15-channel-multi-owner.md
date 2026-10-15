@@ -1,3 +1,5 @@
+> Superseded by the S3-min plans: `2026-10-15-channel-multi-owner-s3min.md` (overview) and `2026-10-15-channel-multi-owner-s3min-implementation.md` (implementation).
+
 # Channel multi-owner
 
 A channel can have several equal owners, per `docs/protocol/channels-overview.md` §Governance ("v7: any-owner-decides"). Any owner can take any administrative action without coordinating with the others: post, moderate, change the profile, manage relays, update the link data, add owners, destroy the channel. The channel keeps working after any owner, including its creator, leaves. Owners cannot remove one another in this version (§11).
