@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Builds the CLI and the directory service that the app job runs as its test backend.
+# Builds the CLI, the directory service and the SMP server (for SimpleX names) that the app job runs as its test backend.
 # Usage: scripts/ci/ios-sim/build-backend.sh <output zip>
 # They need the server-capable configuration (no client_library), as build.yml's macOS job builds the CLI.
 
@@ -27,11 +27,12 @@ package direct-sqlcipher
     extra-lib-dirs: $openssl_dir/lib
 EOF
 
-cabal build -j exe:simplex-chat exe:simplex-directory-service
+targets="exe:simplex-chat exe:simplex-directory-service simplexmq:exe:smp-server"
+cabal build -j $targets
 
 pkg=$(mktemp -d)
-for exe in simplex-chat simplex-directory-service; do
-  cp "$(cabal list-bin "exe:$exe")" "$pkg"
+for target in $targets; do
+  cp "$(cabal list-bin "$target")" "$pkg"
 done
 otool -L "$pkg"/*
 
