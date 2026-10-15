@@ -326,7 +326,7 @@ jobs:
       cancel-in-progress: true
     env:
       CLAUDE_CODE_VERSION: 2.1.292
-      CLAUDE_MODEL: claude-haiku-5-5
+      CLAUDE_MODEL: claude-sonnet-5-5
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -337,8 +337,8 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 bubblewrap
-          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 bubblewrap
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
 
       - name: Download core library
         uses: actions/download-artifact@v7
@@ -390,20 +390,12 @@ jobs:
       - name: Start the app at the chat list
         run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/claude-test/screens" onboarding
 
-      # Claude Code's subprocess credential scrub runs Bash commands in a PID namespace made by bubblewrap, which needs
-      # unprivileged user namespaces; Ubuntu 24.04's AppArmor may restrict them. Checked here, before any Claude run.
-      - name: Check ui in a PID namespace
-        run: |
-          if ! bwrap --unshare-pid --dev-bind / / --proc /proc true; then
-            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          fi
-          bwrap --unshare-pid --dev-bind / / --proc /proc ui text
-
+      # Claude's Bash is limited to single ui commands by the guard hook in claude-test.sh. Claude Code's credential
+      # scrub stays off: on Linux it forces its whole Bash sandbox (bubblewrap, socat), which ui isn't set up for.
       - name: Run Claude
         id: claude
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: 1
           CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1
         run: scripts/ci/desktop-linux/claude-test.sh "$RUNNER_TEMP/claude-test" "$RUNNER_TEMP/claude-transcript.jsonl"
 
@@ -423,6 +415,7 @@ jobs:
           path: |
             ${{ runner.temp }}/claude-test
             ${{ runner.temp }}/claude-transcript.jsonl
+            ${{ runner.temp }}/claude-transcript.jsonl.guard.log
             ${{ runner.temp }}/claude-usage.json
           retention-days: 7
           if-no-files-found: warn

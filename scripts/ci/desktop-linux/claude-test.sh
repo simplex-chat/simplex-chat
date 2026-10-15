@@ -5,7 +5,8 @@
 # Usage: scripts/ci/desktop-linux/claude-test.sh <output dir> <transcript .jsonl>
 # Expects the app at the chat list (smoke-test.sh ... onboarding) with UI_OUT under <output dir>, claude and ui on PATH,
 # CLAUDE_MODEL and CLAUDE_CODE_OAUTH_TOKEN. Claude works in <output dir>: the screenshots, its report.md and the
-# prompt it was given end up there. The transcript is kept outside it, where Claude can't write.
+# prompt it was given end up there. The transcript and the guard hook's log (<transcript>.guard.log) are kept
+# outside it, where Claude can't write.
 
 set -euo pipefail
 
@@ -13,6 +14,8 @@ here=$(cd "$(dirname "$0")" && pwd)
 out=$(cd "$1" && pwd)
 transcript=$2
 settings=$(mktemp)
+export CLAUDE_GUARD_LOG=$transcript.guard.log
+: > "$CLAUDE_GUARD_LOG"
 
 {
   cat "$here/claude-test.md"
@@ -47,6 +50,9 @@ claude -p "$(cat prompt.md)" \
 
 echo "::group::report.md"
 cat report.md 2> /dev/null || echo "no report.md"
+echo "::endgroup::"
+echo "::group::guard hook decisions"
+cat "$CLAUDE_GUARD_LOG"
 echo "::endgroup::"
 result=$(jq -r 'select(.type == "result") | .result // empty' "$transcript" 2> /dev/null | tail -n 20 || true)
 echo "final message, last lines:"
