@@ -42,10 +42,10 @@ needed.
 `NIX_ARGS` passes additional options to `nix build`, and `NIX_OUT_DIR` changes the
 output-link directory. Each derivation has a two-hour timeout by default; set
 `NIX_BUILD_TIMEOUT` in seconds to change it. For a wall-clock limit on a local
-batch, use `timeout` from the Nix development environment:
+batch, use `timeout` from GNU coreutils to include environment setup in the limit:
 
 ```sh
-nix develop -c timeout 6h make nix-build
+timeout 6h nix develop -c make nix-build
 make nix-native NIX_ARGS=--dry-run
 ```
 

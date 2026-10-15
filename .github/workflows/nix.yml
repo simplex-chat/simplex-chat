@@ -79,7 +79,8 @@ jobs:
           mkdir -p artifacts
           for output in result-nix/"$NIX_SYSTEM"/*; do
             [ -d "$output" ] || continue
-            destination="artifacts/$(basename "$output")"
+            package_name=$(basename "$output")
+            destination="artifacts/${package_name//:/-}"
             mkdir -p "$destination"
             find -L "$output" -maxdepth 1 -type f -name '*.zip' -exec cp {} "$destination/" \;
             if [ -f "$output/bin/simplex-chat" ]; then
