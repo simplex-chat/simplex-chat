@@ -5600,7 +5600,7 @@ updateUserBadge userId emitted now = do
   user <- withStore $ \db -> getUser db userId
   withStore' (`getUserBadgePurchase` user) >>= \case
     Nothing -> pure Nothing
-    Just p@UserBadgePurchase {badgePurchaseId, purchaseKind} ->
+    Just p@UserBadgePurchase {badgePurchaseId, purchaseKind, nextWakeAt} ->
       withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= \case
         Nothing -> pure Nothing
         Just balance -> do
@@ -5611,7 +5611,11 @@ updateUserBadge userId emitted now = do
             PKPrepaid -> retireExpiredBadge user p now balance
             PKSubscription _ -> pure False
           latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
-          let requestDue = not retiredBefore && badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance
+          let due = not retiredBefore && badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance
+              -- a due month waits for the wake the last pass set, so a request that issued nothing is not repeated at every activation;
+              -- a wake further than a stall away was not set by such a request, but by a device clock set back since
+              heldUntil = if due then find (\w -> w > now && w <= addUTCTime badgeStalledInterval now) nextWakeAt else Nothing
+              requestDue = due && isNothing heldUntil
           (balance', subscription_, serviceAt) <-
             if requestDue
               then either (\at -> (balance, Nothing, Just at)) (\(b, s) -> (b, s, Nothing)) <$> requestBadgeIssue userId p now
@@ -5640,7 +5644,7 @@ updateUserBadge userId emitted now = do
               reminderAt = case kindAfter of
                 PKSubscription s -> find (> now) $ renewalReminderAt s balance'
                 PKPrepaid -> Nothing
-              wakeAt = earliestTime [serviceAt, snoozeAt, stalledAt, reminderAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
+              wakeAt = earliestTime [serviceAt, snoozeAt, stalledAt, heldUntil, reminderAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
               failed = failureAfter /= failureBefore
               subscriptionChanged = kindAfter /= purchaseKind
           -- written before the event, so the state it reports carries the attempt it leads to

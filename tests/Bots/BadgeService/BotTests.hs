@@ -200,7 +200,8 @@ badgeServiceTests = do
     it "should answer an unreachable store with the check interval, writing no charge or ledger row" testSubscriptionStoreUnreachable
     it "should renew an App Store subscription by its original id, granting a charge first recorded before its period started" testAppleSubscriptionRenews
     it "should keep asking at zero months, and present the renewed credential when the old one expires" testSubscriptionRenews
-    it "should keep the badge and ask again a day later while the store has not charged, then issue from the period start" testSubscriptionAwaitsCharge
+    it "should keep the badge and ask again a day later while the store has not charged, and send nothing in between, then issue from the period start" testSubscriptionAwaitsCharge
+    it "should send a due request at once when the stored wake is further than a stall away" testFarWakeHoldsNothing
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
@@ -1230,7 +1231,7 @@ testIssueFailedWaitsForExpiry ps =
     let cfg = failingServiceCfg bsClientCfg
     -- the request goes unanswered and times out, which is a failure that can clear on its own
     setClockAt bsClock requestAt
-    failedSince <- withTestChatCfg ps cfg "alice" $ \alice -> do
+    (failedSince, errorAt, wake) <- withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <##. "1: supporter"
       -- the state carries no failure and no alert: /p prints only its own output
       alice ##> "/p"
@@ -1238,7 +1239,14 @@ testIssueFailedWaitsForExpiry ps =
       alice <## "use /p <name> [<bio>] to change it"
       (since, reason) <- issueErrorRow (chatController alice)
       reason `shouldBe` Just "service_timeout"
-      pure since
+      (since,,) <$> issueErrorAt (chatController alice) <*> nextWakes (chatController alice)
+    -- restarted before the wake that failure set, it waits for it: a request sent would fail after 2s and be recorded
+    setClockAt bsClock $ addUTCTime 1800 requestAt
+    withTestChatCfg ps cfg "alice" $ \alice -> do
+      threadDelay 3000000
+      (alice </)
+      issueErrorAt (chatController alice) `shouldReturn` errorAt
+      nextWakes (chatController alice) `shouldReturn` wake
     -- the shown credential lapses: from here contacts see the badge as expired, and it is worth a word
     setClockAt bsClock presentAt
     withTestChatCfg ps cfg "alice" $ \alice -> do
@@ -1269,27 +1277,35 @@ testIssueFailedAckAndNewRun ps =
       alice <##. "renewal failing since "
       alice <##. "badge alert: issue_failed "
       episode <- episodeOf . fst <$> issueErrorRow (chatController alice)
+      errorAt <- issueErrorAt (chatController alice)
       alice ##> ("/_badge ack 1 1 issue_failed off " <> T.unpack episode)
       -- the state still carries the error, and no alert with it
       alice <##. "1: supporter"
       alice <##. "renewal failing since "
-      -- the ack signalled the worker, and the pass it ran failed again and raised nothing
-      alice <## badgeServiceRefused
+      -- the ack signalled the worker, and the pass it ran waited for the wake the refusal set, sending nothing
+      threadDelay 2000000
+      (alice </)
+      issueErrorAt (chatController alice) `shouldReturn` errorAt
+      ackedEpisode (chatController alice) `shouldReturn` (Just "issue_failed", Just episode)
+      -- and so does opening the app before that wake
+      setClockAt bsClock $ addUTCTime (nominalDay / 2) requestAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice ##> "/_badge state 1"
       alice <##. "1: supporter"
       alice <##. "renewal failing since "
-      ackedEpisode (chatController alice) `shouldReturn` (Just "issue_failed", Just episode)
-      -- the service is back: the month it owes is issued, which ends the run
+      threadDelay 2000000
+      (alice </)
+      issueErrorAt (chatController alice) `shouldReturn` errorAt
+      -- the service is back: at the wake the month it owes is issued and presented, which ends the run,
+      -- and only then is the next renewal asked for - so the run that fails next is a new one
       setServicePurchaseKey cc purchaseKey
+      setClockAt bsClock presentAt
       alice ##> "/_app activate"
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 3
       alice <##. "1: supporter"
       waitIssueErrorCleared (chatController alice)
-      -- the month issued is presented when the one on the profile lapses, and only then is the
-      -- next renewal asked for - so the run that fails next is a new one
-      setClockAt bsClock presentAt
-      alice ##> "/_app activate"
-      alice <## "ok"
       waitShownIssued (chatController alice)
       setServicePurchaseKey cc "not the purchase key"
       setClockAt bsClock $ fst $ renewalMoments renewed
@@ -1410,6 +1426,10 @@ issueErrorRow ChatController {chatStore} = do
   pure $ case rows of
     [r] -> r
     _ -> error $ "expected one badge purchase, got " <> show (length rows)
+
+issueErrorAt :: ChatController -> IO [Maybe UTCTime]
+issueErrorAt ChatController {chatStore} =
+  withTransaction chatStore $ \db -> map fromOnly <$> DB.query_ db "SELECT issue_error_at FROM badge_purchases"
 
 -- the clearing is written by the pass that stored the issuance, which the test waits for
 waitIssueErrorCleared :: HasCallStack => ChatController -> IO ()
@@ -2316,6 +2336,19 @@ testSubscriptionAwaitsCharge ps =
       ledgerRows (chatController alice) "badge_ledger" `shouldReturn` rows
       ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` rows
       shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
+      -- opening the app before that wake sends nothing, though the service would ask the store again after an hour
+      checkedAt <- subscriptionCheckedAt cc
+      wake <- nextWakes (chatController alice)
+      forM_ [2 * 3600, nominalDay / 2] $ \sinceRequest -> do
+        setClockAt bsClock $ addUTCTime sinceRequest requestAt
+        alice ##> "/_app activate"
+        alice <## "ok"
+        alice ##> "/_badge state 1"
+        alice <### [StartsWith "1: supporter", paymentIssue]
+        threadDelay 2000000
+        subscriptionChecks store `shouldReturn` checks + 1
+        subscriptionCheckedAt cc `shouldReturn` checkedAt
+        nextWakes (chatController alice) `shouldReturn` wake
       -- the charge lands, its period starting when the store recovered it
       storeReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "subscr-badge-supporter-month-02" recoveredAt 1) {chargeRef = "GPA.recovered"}
       setClockAt bsClock presentAt
@@ -2326,6 +2359,36 @@ testSubscriptionAwaitsCharge ps =
       drop 2 (rowChanges renewed) `shouldBe` [(1, 1, recoveredAt, Just "charge"), (-1, 0, addMonths 1 recoveredAt, Just "badge")]
       issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
       waitShownIssued (chatController alice)
+
+testFarWakeHoldsNothing :: HasCallStack => TestParams -> IO ()
+testFarWakeHoldsNothing ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let (requestAt, presentAt) = renewalMoments rows
+      storeReports store $ subscriptionCheck SSBillingRetry Nothing
+      setClockAt bsClock requestAt
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               paymentIssue,
+               Predicate (\l -> "1: supporter" `isPrefixOf` l && ", subscription billingRetry" `isInfixOf` l),
+               paymentIssue
+             ]
+      waitWakeFrom (chatController alice) (addUTCTime (nominalDay - 60) requestAt)
+      checks <- subscriptionChecks store
+      -- no pass stores a wake this far ahead while a request is due: a device clock set back since left it
+      setNextWake (chatController alice) $ addUTCTime (2 * nominalDay) requestAt
+      setClockAt bsClock $ addUTCTime 7200 requestAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      nextWakes (chatController alice) `shouldEventuallyReturn` [Just presentAt]
+      subscriptionChecks store `shouldReturn` checks + 1
+
+setNextWake :: ChatController -> UTCTime -> IO ()
+setNextWake ChatController {chatStore} at =
+  withTransaction chatStore $ \db -> DB.execute db "UPDATE badge_purchases SET next_wake_at = ?" (Only at)
 
 testSubscriptionEnds :: HasCallStack => TestParams -> IO ()
 testSubscriptionEnds ps =
