@@ -9,4 +9,13 @@ lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid && config.compiler-nix-name == "ghc
       extra-lib-dirs: ${lib.getLib pkgs.libiconv}/lib
       configure-options: --with-iconv-includes=${lib.getDev pkgs.libiconv}/include --with-iconv-libraries=${lib.getLib pkgs.libiconv}/lib
   '';
+
+  # The libiconv setup hook supplies -liconv during configure. Declare the
+  # system dependency too, so v2 consumer slices retain that link flag.
+  modules = [
+    ({ lib, pkgs, ... }:
+      lib.mkIf pkgs.stdenv.hostPlatform.isAndroid {
+        packages.ghc-internal.components.library.libs = lib.mkAfter [ pkgs.libiconv ];
+      })
+  ];
 }
