@@ -16,6 +16,54 @@ shift 6
 mkdir -p "$output_dir/dist"
 output_dir=$(cd "$output_dir" && pwd)
 
+# Native iOS builds reuse the compiler's boot libraries, with ABI-identical
+# replacements for mobile runtime settings and the ARM instruction baseline.
+# Work in a private database: a composed store can contain symlinks into Nix.
+if [[ -n "${MOBILE_LIBRARY_PACKAGE_DBS:-}" ]]; then
+  original_db=$package_db
+  package_db="$output_dir/package.conf.d"
+  mkdir -p "$package_db"
+  copy_registration() {
+    local conf=$1 root=$2 contents
+    contents=$(<"$conf")
+    # pkgroot is relative to the database, not the registration file's source.
+    printf '%s\n' "${contents//\$\{pkgroot\}/$root}" > "$package_db/$(basename "$conf")"
+  }
+  original_root=$(cd "$original_db/.." && pwd)
+  for conf in "$original_db"/*.conf; do
+    [[ -f "$conf" ]] || continue
+    copy_registration "$conf" "$original_root"
+  done
+  IFS=: read -r -a replacement_dbs <<< "$MOBILE_LIBRARY_PACKAGE_DBS"
+  for replacement_db in "${replacement_dbs[@]}"; do
+    replacement_root=$(cd "$replacement_db/.." && pwd)
+    found=false
+    for conf in "$replacement_db"/*.conf; do
+      [[ -f "$conf" ]] || continue
+      found=true
+      replacement_unit=$(basename "${conf%.conf}")
+      if ! old_abi=$("$ghc_pkg" --package-db="$original_db" field --ipid "$replacement_unit" abi --simple-output 2>/dev/null); then
+        # Native boot packages can live only in the compiler's global DB.
+        old_abi=$("$ghc_pkg" --global field --ipid "$replacement_unit" abi --simple-output)
+      fi
+      if ! new_abi=$("$ghc_pkg" --package-db="$replacement_db" field --ipid "$replacement_unit" abi --simple-output 2>/dev/null); then
+        echo "cannot read mobile replacement ABI for $replacement_unit in $replacement_db" >&2
+        exit 1
+      fi
+      if [[ -z "$old_abi" || "$old_abi" != "$new_abi" ]]; then
+        echo "mobile replacement changes the ABI of $replacement_unit: $old_abi -> $new_abi" >&2
+        exit 1
+      fi
+      copy_registration "$conf" "$replacement_root"
+    done
+    if ! "$found"; then
+      echo "no mobile replacement registrations in $replacement_db" >&2
+      exit 1
+    fi
+  done
+  "$ghc_pkg" --package-db="$package_db" recache
+fi
+
 read -r -a units <<< "$("$ghc_pkg" --package-db="$package_db" field "$package" id --simple-output)"
 if (( ${#units[@]} != 1 )); then
   echo "expected one $package unit in $package_db, got: ${units[*]}" >&2

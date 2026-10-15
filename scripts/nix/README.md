@@ -53,6 +53,13 @@ ARM64 Android libraries retain the 16 KiB linker alignment. These steps run in
 the derivation's build/install phases because v2 component overrides do not run
 the older `postBuild` and `postInstall` hooks.
 
+Mobile builds keep the RTS's small-address-space setting. On Darwin, the final
+link uses ABI-checked replacement RTS registrations, plus a replacement `text`
+on ARM64. These boot libraries and all ARM64 mobile app C/C++ code target the
+Apple A7 instruction baseline before `mac2ios` retags the archives. The cached
+native compiler itself stays unchanged. Android applies the RTS source patch
+when building its boot libraries.
+
 `NIX_ARGS` passes additional options to `nix build`, and `NIX_OUT_DIR` changes the
 output-link directory. Each derivation has a two-hour timeout by default; set
 `NIX_BUILD_TIMEOUT` in seconds to change it. For a wall-clock limit on a local
@@ -65,7 +72,10 @@ make nix-native NIX_ARGS=--dry-run
 
 `.github/workflows/nix.yml` runs these same outputs on Linux ARM64/x86_64 and
 Darwin ARM64/x86_64, with a six-hour job limit. It uploads the existing library ZIPs
-and CLIs under an artifact named for the source SHA. Hydra continues to consume
+and CLIs under an artifact named for the source SHA. Each native CLI also runs
+the encrypted-store and profile-password smoke test, which can be repeated with
+`python3 scripts/nix/smoke-cli.py result-nix/BUILD_SYSTEM/exe:simplex-chat/bin/simplex-chat`.
+Hydra continues to consume
 the same `hydraJobs` attributes. The older application release workflow still
 uses its existing GHCup/Docker compiler settings; migrating that packaging and
 release path is separate from this Nix build lane.

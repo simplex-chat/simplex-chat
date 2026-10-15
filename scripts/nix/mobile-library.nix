@@ -9,13 +9,14 @@ let withComponentPhases = component: change: component.overrideAttrs (old:
       isSlice = true;
     };
   }); in
-let mobileLibrary = { kind, packageName ? "simplex-chat", linkOptions ? [], postInstall }: old:
+let mobileLibrary = { kind, packageName ? "simplex-chat", linkOptions ? [], packageDbs ? [], postInstall }: old:
   let compiler = builtins.head old.nativeBuildInputs;
       prefix = compiler.targetPrefix or "";
   in {
     buildPhase = old.buildPhase + ''
       discoverStore
       test -n "$ghcDir"
+      MOBILE_LIBRARY_PACKAGE_DBS=${pkgs.lib.escapeShellArg (pkgs.lib.concatStringsSep ":" packageDbs)} \
       ${pkgs.bash}/bin/bash ${./link-mobile-library.sh} \
         ${compiler}/bin/${prefix}ghc ${compiler}/bin/${prefix}ghc-pkg \
         "$ghcDir/$storePkgDb" ${pkgs.lib.escapeShellArg packageName} \

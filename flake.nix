@@ -38,7 +38,8 @@
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
       let compilerSelection = import ./scripts/nix/compiler-selection.nix { inherit haskellNix; }; in
-      let drv' = { extra-modules, pkgs', package-flags ? {}, package-ghc-options ? {}, ... }:
+      let mobileRuntime = import ./scripts/nix/mobile-runtime.nix { inherit pkgs compilerSelection; }; in
+      let drv' = { extra-modules, pkgs', package-flags ? {}, package-ghc-options ? {}, mobile ? false, ... }:
       let packageFlags = pkgs.lib.recursiveUpdate {
         direct-sqlcipher = { openssl = true; commoncrypto = false; tomcrypt = false; };
       } package-flags;
@@ -70,6 +71,10 @@
           -- The compiler's ghc-internal package omits iconv's library directory.
           package *
             extra-lib-dirs: ${pkgs'.libiconv}/lib
+        '' + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
+          -- Keep every app C/C++ stub compatible with the same iOS ARM baseline.
+          package *
+            ghc-options: -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc -optcxx-mcpu=apple-a7 -optcxx-march=armv8-a+norcpc
         '';
         src = pkgs.haskell-nix.haskellLib.cleanSourceWith {
           name = "simplex-chat";
@@ -108,7 +113,7 @@
             # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
             # on pretty much all unix platforms, but then blows up on windows m(
             packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-          })] ++ extra-modules;
+          })] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid mobileRuntime.androidModule ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
@@ -191,6 +196,7 @@
       ''; in
       let iosOverrides = bundleName: {
         kind = "ios";
+        packageDbs = mobileRuntime.darwinPackageDbs;
         postInstall = iosPostInstall bundleName;
       }; in
       rec {
@@ -565,6 +571,7 @@
               # aarch64-darwin iOS build (to be patched with mac2ios)
               "aarch64-darwin-ios:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = pkgs;
+                mobile = true;
                 package-ghc-options.simplex-chat = [ "-DIOS" ];
                 package-flags = {
                   simplex-chat.swift = true;
@@ -588,6 +595,7 @@
 	            # aarch64-darwin build with tagged JSON format (for Mac & Flutter)
               "aarch64-darwin:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = pkgs;
+                mobile = true;
                 package-ghc-options.simplex-chat = [ "-DIOS" ];
                 package-flags = {
                   direct-sqlcipher.commoncrypto = true;
@@ -610,6 +618,7 @@
               # x86_64-darwin iOS simulator build (to be patched with mac2ios)
               "x86_64-darwin-ios:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = pkgs;
+                mobile = true;
                 package-ghc-options.simplex-chat = [ "-DIOS" ];
                 package-flags = {
                   simplex-chat.swift = true;
@@ -632,6 +641,7 @@
               # x86_64-darwin build with tagged JSON format (for Mac & Flutter iOS simulator)
               "x86_64-darwin:lib:simplex-chat" = withMobileLibrary (drv' {
                 pkgs' = pkgs;
+                mobile = true;
                 package-ghc-options.simplex-chat = [ "-DIOS" ];
                 package-flags = {
                   direct-sqlcipher.commoncrypto = true;
