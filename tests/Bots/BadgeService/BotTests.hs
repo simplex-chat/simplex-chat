@@ -205,6 +205,8 @@ badgeServiceTests = do
     it "should keep asking at zero months, and present the renewed credential when the old one expires" testSubscriptionRenews
     it "should keep the badge and ask again a day later while the store has not charged, and send nothing in between, then issue from the period start" testSubscriptionAwaitsCharge
     it "should send a due request at once when the stored wake is further than a stall away" testFarWakeHoldsNothing
+    it "should wait a day, not the hour the service answered, after a renewal whose store check failed" testStoreUnreachableWaitsStall
+    it "should keep a request's wait past a snooze that ends sooner, and raise the alert again without a request" testSnoozeKeepsRequestWait
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
@@ -1492,6 +1494,11 @@ testSnoozedAlertReturns ps =
              ]
       alice ##> ("/_badge ack 1 1 support_ended on " <> T.unpack (safeDecodeUtf8 $ strEncode endsAt))
       alice <##. "1: supporter"
+      -- no request waits, so the snooze's end, a day after the ack, is the wake
+      let snoozeWake = \case
+            [Just w] -> w >= addUTCTime nominalDay endsAt && w < addUTCTime (nominalDay + 60) endsAt
+            _ -> False
+      (snoozeWake <$> nextWakes (chatController alice)) `shouldEventuallyReturn` True
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
@@ -2415,6 +2422,87 @@ testFarWakeHoldsNothing ps =
       alice <## "ok"
       nextWakes (chatController alice) `shouldEventuallyReturn` [Just presentAt]
       subscriptionChecks store `shouldReturn` checks + 1
+
+testStoreUnreachableWaitsStall :: HasCallStack => TestParams -> IO ()
+testStoreUnreachableWaitsStall ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (firstStart, rows) <- clientSubscribedMonthly env alice
+      let (requestAt, presentAt) = renewalMoments rows
+          renewalStart = addMonths 1 firstStart
+      storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 1
+      setGoogleDown store True
+      setClockAt bsClock requestAt
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               "bad chat command: badge service error: provider_unavailable",
+               StartsWith "1: supporter"
+             ]
+      waitWakeFrom (chatController alice) (addUTCTime (nominalDay - 60) requestAt)
+      checkedAt <- subscriptionCheckedAt cc
+      errorAt <- issueErrorAt (chatController alice)
+      wake <- nextWakes (chatController alice)
+      forM_ [2 * 3600, nominalDay / 2] $ \sinceRequest -> do
+        setClockAt bsClock $ addUTCTime sinceRequest requestAt
+        alice ##> "/_app activate"
+        alice <## "ok"
+        alice ##> "/_badge state 1"
+        alice <##. "1: supporter"
+        threadDelay 2000000
+        subscriptionCheckedAt cc `shouldReturn` checkedAt
+        issueErrorAt (chatController alice) `shouldReturn` errorAt
+        nextWakes (chatController alice) `shouldReturn` wake
+      setGoogleDown store False
+      setClockAt bsClock presentAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      renewed <- waitLedgerRows (chatController alice) 4
+      alice <##. "1: supporter"
+      drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+      waitShownIssued (chatController alice)
+      waitIssueErrorCleared (chatController alice)
+
+testSnoozeKeepsRequestWait :: HasCallStack => TestParams -> IO ()
+testSnoozeKeepsRequestWait ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (firstStart, rows) <- clientSubscribedMonthly env alice
+      let (requestAt, presentAt) = renewalMoments rows
+          episode = safeDecodeUtf8 $ strEncode $ addMonths 1 firstStart
+      storeReports store $ subscriptionCheck SSBillingRetry Nothing
+      setClockAt bsClock requestAt
+      alice `send` "/_app activate"
+      alice
+        <### [ "/_app activate",
+               "ok",
+               paymentIssue,
+               Predicate (\l -> "1: supporter" `isPrefixOf` l && ", subscription billingRetry" `isInfixOf` l),
+               paymentIssue
+             ]
+      waitWakeFrom (chatController alice) (addUTCTime (nominalDay - 60) requestAt)
+      setClockAt bsClock $ addUTCTime 7200 requestAt
+      alice ##> ("/_badge ack 1 1 payment_issue on " <> T.unpack episode)
+      alice <##. "1: supporter"
+      ackedEpisode (chatController alice) `shouldReturn` (Just "payment_issue", Just episode)
+      nextWakes (chatController alice) `shouldEventuallyReturn` [Just presentAt]
+      checks <- subscriptionChecks store
+      -- the second request, while the alert is snoozed until two hours after it
+      setClockAt bsClock presentAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      subscriptionChecks store `shouldEventuallyReturn` (checks + 1)
+      waitWakeFrom (chatController alice) (addUTCTime (nominalDay - 60) presentAt)
+      checkedAt <- subscriptionCheckedAt cc
+      wake <- nextWakes (chatController alice)
+      setClockAt bsClock $ addUTCTime (3 * 3600) presentAt
+      alice `send` "/_app activate"
+      alice <### ["/_app activate", "ok", paymentIssue]
+      threadDelay 2000000
+      subscriptionChecks store `shouldReturn` checks + 1
+      subscriptionCheckedAt cc `shouldReturn` checkedAt
+      nextWakes (chatController alice) `shouldReturn` wake
 
 setNextWake :: ChatController -> UTCTime -> IO ()
 setNextWake ChatController {chatStore} at =

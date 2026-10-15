@@ -5616,10 +5616,10 @@ updateUserBadge userId emitted now = do
               -- a wake further than a stall away was not set by such a request, but by a device clock set back since
               heldUntil = if due then find (\w -> w > now && w <= addUTCTime badgeStalledInterval now) nextWakeAt else Nothing
               requestDue = due && isNothing heldUntil
-          (balance', subscription_, serviceAt) <-
+          (balance', subscription_) <-
             if requestDue
-              then either (\at -> (balance, Nothing, Just at)) (\(b, s) -> (b, s, Nothing)) <$> requestBadgeIssue userId p now
-              else pure (balance, Nothing, Nothing)
+              then fromMaybe (balance, Nothing) <$> requestBadgeIssue userId p now
+              else pure (balance, Nothing)
           retired <-
             if subscription_ == Just SSEnded
               then retireExpiredBadge user p now balance'
@@ -5639,12 +5639,13 @@ updateUserBadge userId emitted now = do
           -- since support having ended leaves both ledger boundaries in the past
           let UserBadgePurchase {issueError = failureBefore} = p
               UserBadgePurchase {alertSnoozeUntil, issueError = failureAfter, purchaseKind = kindAfter} = p'
-              snoozeAt = find (> now) alertSnoozeUntil
+              -- a snooze ends when the user chose, so while a request waits, the request's own wake brings the alert back
+              snoozeAt = if isJust (stalledAt <|> heldUntil) then Nothing else find (> now) alertSnoozeUntil
               stalledAt = if requestDue && not issued then Just $ badgeStalledInterval `addUTCTime` now else Nothing
               reminderAt = case kindAfter of
                 PKSubscription s -> find (> now) $ renewalReminderAt s balance'
                 PKPrepaid -> Nothing
-              wakeAt = earliestTime [serviceAt, snoozeAt, stalledAt, heldUntil, reminderAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
+              wakeAt = earliestTime [snoozeAt, stalledAt, heldUntil, reminderAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
               failed = failureAfter /= failureBefore
               subscriptionChanged = kindAfter /= purchaseKind
           -- written before the event, so the state it reports carries the attempt it leads to
@@ -5843,11 +5844,11 @@ badgeErrorRetry :: ChatError -> Bool
 badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 
 -- | Ask the service for the month that is due and apply the response. A timeout stores no ledger row,
--- so the same request is sent again on the next pass. 'Left' is a service error, already reported, and
--- carries when to try again, since a service error is answered rather than thrown. Any request that
+-- so the same request is sent again on the next pass. 'Nothing' is a service error, already reported,
+-- since a service error is answered rather than thrown. Any request that
 -- ends without a credential the ledger still owes is recorded on the purchase as a failed renewal;
 -- nothing else records one.
-requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime (StatementEntry, Maybe SubscriptionState))
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Maybe (StatementEntry, Maybe SubscriptionState))
 requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
@@ -5883,12 +5884,13 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
           -- waits for its store to charge - which its statement then shows
           (Nothing, _, _) | maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
           _ -> pure ()
-        maybe (throwCmdError "badge ledger has no balance") (pure . Right . (,subscription)) balance_
+        maybe (throwCmdError "badge ledger has no balance") (pure . Just . (,subscription)) balance_
       J.Success BSPError {code, retryAfter} -> do
         eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
+        -- retryAfter only marks the failure as one that can clear: the retry waits a stall like any request that
+        -- issued nothing, since a shorter wait would let the service choose how often activations reach it
         recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
-        ri <- asks $ badgeRetryInterval . config
-        pure $ Left $ badgeRetryAfter ri retryAfter `addUTCTime` now
+        pure Nothing
       _ -> do
         recordFailure BIFUnexpected {message = unexpectedResponse}
         throwCmdError $ T.unpack unexpectedResponse
