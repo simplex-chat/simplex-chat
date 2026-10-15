@@ -337,8 +337,8 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
-          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 bubblewrap
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 bubblewrap
 
       - name: Download core library
         uses: actions/download-artifact@v7
@@ -389,6 +389,15 @@ jobs:
 
       - name: Start the app at the chat list
         run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/claude-test/screens" onboarding
+
+      # Claude Code's subprocess credential scrub runs Bash commands in a PID namespace made by bubblewrap, which needs
+      # unprivileged user namespaces; Ubuntu 24.04's AppArmor may restrict them. Checked here, before any Claude run.
+      - name: Check ui in a PID namespace
+        run: |
+          if ! bwrap --unshare-pid --dev-bind / / --proc /proc true; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          bwrap --unshare-pid --dev-bind / / --proc /proc ui text
 
       - name: Run Claude
         id: claude
