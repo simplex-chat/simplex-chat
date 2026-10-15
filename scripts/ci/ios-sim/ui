@@ -13,7 +13,8 @@
 #   ui wait <text> [secs]           wait up to secs (30) until a label or value contains the text (case-sensitive)
 #   ui find <text>                  print the elements whose label or value contains the text (any case)
 #   ui shot <name>                  save UI_OUT/NN-<name>.png, a smaller NN-<name>-view.jpg and NN-<name>.json, and print the tree
-#   ui tree                         print the tree, one element per line: type, label, value, top-left corner and size in points
+#   ui tree                         print the tree, one element per line: type, label, value, top-left corner and size in points,
+#                                   and "disabled" for a disabled element
 #   ui layout <reachable|top>       restart the app with the one-hand UI (reachable toolbar) or the top bar
 #   ui relaunch                     restart the app
 #   ui text-size <category>         set Dynamic Type: medium (the default), large, extra-large, extra-extra-large,
@@ -38,7 +39,7 @@ compact_tree() {
   jq -r '(.[0].frame.height // 100000) as $h
     | [.. | objects | select(.AXLabel or .AXValue)]
     | (.[] | select((.frame.y // 0) < $h)
-        | "\(.type) \(.AXLabel | tojson) value=\(.AXValue | tojson) at \(.frame.x // 0 | round),\(.frame.y // 0 | round) size \(.frame.width // 0 | round)x\(.frame.height // 0 | round)"),
+        | "\(.type) \(.AXLabel | tojson) value=\(.AXValue | tojson) at \(.frame.x // 0 | round),\(.frame.y // 0 | round) size \(.frame.width // 0 | round)x\(.frame.height // 0 | round)\(if .enabled == false then " disabled" else "" end)"),
       (map(select((.frame.y // 0) >= $h)) | length | select(. > 0) | "(\(.) elements below the screen not listed, such as keyboard keys)")'
 }
 
@@ -208,7 +209,7 @@ case "${1:-}" in
   listings) backend listings ;;
   requests) requests ;;
   *)
-    sed -n '3,24s/^# \{0,1\}//p' "$0"
+    sed -n '3,25s/^# \{0,1\}//p' "$0"
     exit 1
     ;;
 esac
