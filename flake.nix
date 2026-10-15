@@ -162,6 +162,7 @@
               > $out/nix-support/hydra-build-products
         '';
       }); in
+      let darwinOpenSSL = mobileRuntime.darwinCLibrary (pkgs.openssl.override { static = true; }); in
       let iosPostInstall = bundleName: ''
         ${pkgs.tree}/bin/tree $out
         mkdir tmp
@@ -173,8 +174,8 @@
         # find the libHS...ghc-X.Y.Z.a static library; this is the
         # rolled up one with all dependencies included.
         find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
-        find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
-        find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+        find ${mobileRuntime.darwinCLibrary (pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; }))}/lib -name "*.a" -exec cp {} $out/_pkg \;
+        find ${mobileRuntime.darwinCLibrary (pkgs.gmp6.override { withStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
         # There is no static libc
         ${pkgs.tree}/bin/tree $out/_pkg
         for pkg in $out/_pkg/*.a; do
@@ -588,7 +589,7 @@
                 extra-modules = [{
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     # TODO: have a cross override for iOS, that sets this.
-                    ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
+                    darwinOpenSSL
                   ];
                 }];
               }).simplex-chat.components.library (
@@ -609,7 +610,7 @@
                 };
                 extra-modules = [{
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
+                    darwinOpenSSL
                   ];
                 }];
               }).simplex-chat.components.library (
@@ -634,7 +635,7 @@
                 };
                 extra-modules = [{
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.openssl.override { static = true; })
+                    darwinOpenSSL
                   ];
                 }];
               }).simplex-chat.components.library (
@@ -655,7 +656,7 @@
                 };
                 extra-modules = [{
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.openssl.override { static = true; })
+                    darwinOpenSSL
                   ];
                 }];
               }).simplex-chat.components.library (

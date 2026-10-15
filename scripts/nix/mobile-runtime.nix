@@ -26,6 +26,15 @@ let
 in {
   # Cross compilers plan boot libraries from source inside the app project.
   androidModule = rtsModule;
+  # Nixpkgs C libraries use structured attributes: export flags through env.
+  darwinCLibrary = library:
+    if pkgs.stdenv.hostPlatform.isAarch64 then library.overrideAttrs (old: {
+      env = (old.env or {}) // {
+        NIX_CFLAGS_COMPILE_arm64_apple_darwin =
+          (old.env.NIX_CFLAGS_COMPILE_arm64_apple_darwin or "")
+          + " -mcpu=apple-a7 -march=armv8-a+norcpc";
+      };
+    }) else library;
   # Native Darwin uses the compiler's boot libraries. Replace only these
   # registrations at final link, after checking that their ABIs are unchanged.
   darwinPackageDbs = assert pkgs.stdenv.hostPlatform.isDarwin;
