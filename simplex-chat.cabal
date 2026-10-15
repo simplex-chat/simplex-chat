@@ -365,7 +365,7 @@ library
     , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
-    , containers ==0.6.*
+    , containers >=0.6 && <0.9
     , crypton ==0.34.*
     , crypton-x509 ==1.7.*
     , data-default ==0.7.*
@@ -373,7 +373,7 @@ library
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , file-embed ==0.0.15.*
-    , filepath ==1.4.*
+    , filepath >=1.4 && <1.6
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
@@ -388,7 +388,7 @@ library
     , socks ==0.6.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.12.*
+    , time >=1.12 && <1.16
     , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -409,7 +409,13 @@ library
     build-depends:
         direct-sqlcipher ==2.3.*
       , sqlcipher-simple ==0.4.*
-  if impl(ghc >= 9.6.2)
+  if impl(ghc >= 9.14)
+    build-depends:
+        bytestring ==0.12.*
+      , process ==1.6.*
+      , template-haskell ==2.24.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc >= 9.6.2 && < 9.14)
     build-depends:
         bytestring ==0.11.*
       , process ==1.6.*
@@ -457,10 +463,10 @@ executable simplex-badge-service
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , containers ==0.6.*
+    , containers >=0.6 && <0.9
     , crypton ==0.34.*
     , directory ==1.3.*
-    , filepath ==1.4.*
+    , filepath >=1.4 && <1.6
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
     , http-types ==0.12.*
@@ -474,7 +480,7 @@ executable simplex-badge-service
     , simplex-chat
     , simplexmq >=6.3
     , stm ==2.5.*
-    , time ==1.12.*
+    , time >=1.12 && <1.16
     , wai ==3.2.*
     , warp ==3.3.*
   default-language: Haskell2010
@@ -490,10 +496,15 @@ executable simplex-badge-service
         BadgeService.Store.SQLite.Migrations
     build-depends:
         sqlcipher-simple ==0.4.*
-  if impl(ghc >= 9.6.2)
+  if impl(ghc >= 9.14)
+    build-depends:
+        bytestring ==0.12.*
+  if impl(ghc >= 9.6.2 && < 9.14)
     build-depends:
         bytestring ==0.11.*
-      , text >=2.0.1 && <2.2
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        text >=2.0.1 && <2.2
   if impl(ghc < 9.6.2)
     build-depends:
         bytestring ==0.10.*
@@ -639,20 +650,20 @@ executable simplex-directory-service
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
-    , containers ==0.6.*
+    , containers >=0.6 && <0.9
     , crypton ==0.34.*
     , directory ==1.3.*
-    , filepath ==1.4.*
+    , filepath >=1.4 && <1.6
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , optparse-applicative >=0.15 && <0.17
-    , process >=1.6 && <1.6.18
+    , process >=1.6 && <1.7
     , random >=1.1 && <1.3
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=6.3
     , stm ==2.5.*
-    , time ==1.12.*
+    , time >=1.12 && <1.16
     , unicode-transforms ==0.4.*
   default-language: Haskell2010
   if flag(client_postgres)
@@ -667,10 +678,15 @@ executable simplex-directory-service
         Directory.Store.SQLite.Migrations
     build-depends:
         sqlcipher-simple ==0.4.*
-  if impl(ghc >= 9.6.2)
+  if impl(ghc >= 9.14)
+    build-depends:
+        bytestring ==0.12.*
+  if impl(ghc >= 9.6.2 && < 9.14)
     build-depends:
         bytestring ==0.11.*
-      , text >=2.0.1 && <2.2
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        text >=2.0.1 && <2.2
   if impl(ghc < 9.6.2)
     build-depends:
         bytestring ==0.10.*
@@ -793,11 +809,11 @@ test-suite simplex-chat-test
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
-    , containers ==0.6.*
+    , containers >=0.6 && <0.9
     , crypton ==0.34.*
-    , deepseq ==1.4.*
+    , deepseq >=1.4 && <1.6
     , directory ==1.3.*
-    , filepath ==1.4.*
+    , filepath >=1.4 && <1.6
     , generic-random ==1.5.*
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
@@ -815,7 +831,7 @@ test-suite simplex-chat-test
     , simplexmq >=6.3
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.12.*
+    , time >=1.12 && <1.16
     , unicode-transforms ==0.4.*
     , unliftio ==0.2.*
     , uri-bytestring >=0.3.3.1 && <0.4
@@ -836,10 +852,15 @@ test-suite simplex-chat-test
         Directory.Store.SQLite.Migrations
     build-depends:
         sqlcipher-simple ==0.4.*
-  if impl(ghc >= 9.6.2)
+  if impl(ghc >= 9.14)
+    build-depends:
+        bytestring ==0.12.*
+  if impl(ghc >= 9.6.2 && < 9.14)
     build-depends:
         bytestring ==0.11.*
-      , hspec ==2.11.*
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        hspec ==2.11.*
       , process ==1.6.*
       , text >=2.0.1 && <2.2
   if impl(ghc < 9.6.2)

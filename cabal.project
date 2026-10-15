@@ -11,12 +11,27 @@ packages: .
 --    coverage: False
 --    library-coverage: False
 
-index-state: 2023-12-12T00:00:00Z
+index-state: 2026-10-14T00:00:00Z
 
 package cryptostore
     flags: +use_crypton
 
 constraints: zip +disable-bzip2 +disable-zstd
+
+-- The pinned forks retain the GHC 9.6 boot-library bounds. Limit the
+-- exceptions to those forks and libraries; other dependency bounds still
+-- constrain the GHC 9.14 plan.
+allow-newer:
+    simplexmq:bytestring,
+    simplexmq:containers,
+    simplexmq:deepseq,
+    simplexmq:filepath,
+    simplexmq:template-haskell,
+    simplexmq:time,
+    aeson:containers,
+    aeson:ghc-prim,
+    aeson:template-haskell,
+    aeson:time
 
 source-repository-package
     type: git
