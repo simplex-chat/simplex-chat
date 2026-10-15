@@ -90,6 +90,7 @@ for layout in $layouts; do
       --strict-mcp-config \
       --max-turns "$max_turns" \
       --max-budget-usd "$max_budget" \
+      --autocompact 200k \
       --no-session-persistence \
       --output-format stream-json \
       --verbose \
