@@ -364,6 +364,9 @@
         "rtcExtraInfo": {
           "properties": {
             "rtcIceCandidates": {"type": "string"}
+          },
+          "optionalProperties": {
+            "rtcSession": {"type": "string"}
           }
         }
       }

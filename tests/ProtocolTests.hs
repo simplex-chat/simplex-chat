@@ -430,5 +430,11 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.call.offer with call version" $
     "{\"v\":\"9\",\"event\":\"x.call.offer\",\"params\":{\"callId\":\"AQIDBA==\",\"offer\":{\"callType\":{\"media\":\"video\",\"capabilities\":{\"encryption\":true}},\"rtcSession\":{\"rtcSession\":\"{}\",\"rtcIceCandidates\":\"[]\"},\"callVersion\":2}}}"
       #==# XCallOffer (CallId "\1\2\3\4") CallOffer {callType = defaultCallType, rtcSession = testRTCSession, callDhPubKey = Nothing, callVersion = Just $ VersionCall 2}
+  it "x.call.extra without session" $
+    "{\"v\":\"9\",\"event\":\"x.call.extra\",\"params\":{\"callId\":\"AQIDBA==\",\"extra\":{\"rtcExtraInfo\":{\"rtcIceCandidates\":\"[]\"}}}}"
+      #==# XCallExtra (CallId "\1\2\3\4") CallExtraInfo {rtcExtraInfo = WebRTCExtraInfo {rtcSession = Nothing, rtcIceCandidates = "[]"}}
+  it "x.call.extra with ICE restart session" $
+    "{\"v\":\"9\",\"event\":\"x.call.extra\",\"params\":{\"callId\":\"AQIDBA==\",\"extra\":{\"rtcExtraInfo\":{\"rtcSession\":\"{}\",\"rtcIceCandidates\":\"[]\"}}}}"
+      #==# XCallExtra (CallId "\1\2\3\4") CallExtraInfo {rtcExtraInfo = WebRTCExtraInfo {rtcSession = Just "{}", rtcIceCandidates = "[]"}}
   where
     testRTCSession = WebRTCSession {rtcSession = "{}", rtcIceCandidates = "[]"}
