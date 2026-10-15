@@ -205,7 +205,7 @@ jobs:
           dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr
 
       - name: Run smoke test
-        run: scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/release/app/opt/simplex" "$RUNNER_TEMP/smoke-test"
+        run: scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/release/app/opt/simplex" "$RUNNER_TEMP/smoke-test" onboarding
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
