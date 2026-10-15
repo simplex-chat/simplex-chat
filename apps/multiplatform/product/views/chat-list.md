@@ -68,6 +68,8 @@ Searching beyond the user's own chats happens only when the user asks, and the r
 
 A result is not shown twice: a name or directory entry for a chat already shown in the list is hidden, and a directory entry is hidden when the name search found the same channel (matched by its link). A group the user joined through a link other than the directory's still appears in the Directory part. Directory entries that are not group or channel links are ignored. Looking up a name never shows an error; a name that is not found simply gives no row, and "Connect to …" stays.
 
+While an online search runs or has results, the list shows no banner, no one-hand UI card and no connect cards. Typing alone, which only filters the chats, keeps them; they come back when the results go (the text changes or is cleared) or when a search is cancelled before showing anything.
+
 With no conversations yet (onboarding), the search bar is shown above the onboarding pages (below them with the one-hand UI) on Android, and the online results replace the pages while a search runs or has results. On desktop the onboarding pages are in the centre pane, so the chat list pane shows the search bar and the results only. Once a result is joined and the onboarding state ends, the search is cleared.
 
 ### Chat Filter Tags (`TagsView`)
@@ -130,10 +132,10 @@ Each chat type provides specific dropdown menu items:
 
 | Element | Condition | Description |
 |---|---|---|
-| One-hand UI card (`ToggleChatListCard`) | `oneHandUICardShown == false` | Dismissible card introducing bottom toolbar mode with toggle switch |
-| Address creation card (`AddressCreationCard`) | `addressCreationCardShown == false` | Prompts user to create a SimpleX address; tappable card opens `UserAddressLearnMore` |
+| One-hand UI card (`ToggleChatListCard`) | `oneHandUICardShown == false`, and no online search results shown | Dismissible card introducing bottom toolbar mode with toggle switch |
+| Connect cards (`ChatListFeatureCards`, `ConnectBannerCard`) | `addressCreationCardShown == false`, the user has conversations, and no online search results shown | Two cards, "New 1-time link" and "Paste link" ("Paste link / Scan" on Android), each opening `NewChatView`; the X sets `addressCreationCardShown` |
 | FAB (new chat button) | Standard mode, search empty, chat running | `FloatingActionButton` at bottom-right, pencil icon, opens `NewChatSheet` |
-| Crowdfunding banner (`GetStakeBanner`) | `crowdfundingAvailable()` and not dismissed | Gradient card above the chats, and below the onboarding cards when there are no conversations; opens `GetStakeView`. The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset |
+| Crowdfunding banner (`GetStakeBanner`) | `crowdfundingAvailable()`, not dismissed, and, in the chat list, no online search results shown | Gradient card above the chats, and below the onboarding cards when there are no conversations; opens `GetStakeView`. The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset |
 
 ### Empty States
 

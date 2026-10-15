@@ -1138,14 +1138,16 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ChatListSearchBarWithTags(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
       }
     }
-    if (!oneHandUICardShown.value) {
+    if (!oneHandUICardShown.value && !onlineSearch.showResults) {
       item {
         ToggleChatListCard()
       }
     }
     // one slot: a badge the user paid for ending outranks the pitch to get one
     val alert = BadgeModel.alert.value
-    if (supportEnded() && alert != null) {
+    if (onlineSearch.showResults) {
+      // banners give way to online results
+    } else if (supportEnded() && alert != null) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1204,7 +1206,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
     nameRows(rows.names, oneHandUI.value)
     directoryRows(rows, onlineSearch, oneHandUI.value)
-    if (!addressCreationCardShown.value) {
+    if (!addressCreationCardShown.value && !onlineSearch.showResults) {
       item {
         ChatListFeatureCards()
       }
