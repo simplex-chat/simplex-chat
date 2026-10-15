@@ -416,7 +416,7 @@ Each part renders only when it has rows: the Names part when `rows.names` is not
 | Name | [`NameSearchRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L249): avatar, profile name in bold, the SimpleX name in parentheses (secondary), description (2 lines) | `planAndConnect(result.target, dismiss: false)` |
 | Directory entry | [`DirectorySearchRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L196): avatar, `#` + name, the directory's SimpleX name claim as plain text, description (2 lines), member or subscriber count, and the verb "Join channel" / "Join group" (one line, fixed size) | `planAndConnect(result.entry.link, dismiss: false)` |
 | Retry | [`DirectoryRetryRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L291) via [`directoryRetryRow()`](../../Shared/Views/ChatList/ChatListView.swift#L695): "Search failed, tap to retry" | `retry()` |
-| Show more | [`DirectoryShowMoreRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L276) via [`directoryShowMoreRow()`](../../Shared/Views/ChatList/ChatListView.swift#L689): "Show more", disabled while `loading` | `loadMore()` |
+| Show more | [`DirectoryShowMoreRow`](../../Shared/Views/ChatList/DirectorySearchView.swift#L276) via [`directoryShowMoreRow()`](../../Shared/Views/ChatList/ChatListView.swift#L689): "Show more", disabled and in the secondary colour while `loading` | `loadMore()` |
 
 A name or directory row tap first sets `searchFocussed = false`. Text from the directory and from name owners is rendered with `Text(String)` / `Text(verbatim:)` (never parsed as markdown) with line limits.
 

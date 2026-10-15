@@ -282,7 +282,7 @@ struct DirectoryShowMoreRow: View {
             Task { await onlineSearch.loadMore() }
         } label: {
             Text("Show more")
-                .foregroundColor(theme.colors.primary)
+                .foregroundColor(onlineSearch.loading ? theme.colors.secondary : theme.colors.primary)
         }
         .disabled(onlineSearch.loading)
     }
