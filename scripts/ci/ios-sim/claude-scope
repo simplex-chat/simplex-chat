@@ -1,0 +1,6 @@
+# What claude-test.sh runs: one Claude session per layout (reachable, top), the plan's cases, and each session's bounds.
+model: claude-haiku-5-5
+layouts: reachable
+cases: C2, D2, D7
+max-turns: 80
+max-budget-usd: 2

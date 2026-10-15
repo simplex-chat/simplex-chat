@@ -193,7 +193,12 @@ jobs:
     # core and backend are skipped when an earlier run built them
     if: ${{ !cancelled() && !failure() }}
     runs-on: macos-latest
-    timeout-minutes: 90
+    environment:
+      name: app-sim-claude
+      deployment: false
+    timeout-minutes: 330
+    env:
+      CLAUDE_RUN: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[claude-test]') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -262,6 +267,24 @@ jobs:
       - name: Run smoke test
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
 
+      - name: Install Claude Code
+        if: env.CLAUDE_RUN == 'true'
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.300
+          claude --version
+
+      - name: Run the device test plan with Claude
+        if: env.CLAUDE_RUN == 'true'
+        timeout-minutes: 240
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          BACKEND_DIR: ${{ runner.temp }}/backend
+        run: scripts/ci/ios-sim/claude-test.sh "$RUNNER_TEMP/claude-test"
+
+      - name: Report Claude usage
+        if: ${{ always() && env.CLAUDE_RUN == 'true' }}
+        run: scripts/ci/ios-sim/claude-usage.sh "$RUNNER_TEMP/claude-test"
+
       - name: Stop test backend
         if: ${{ !cancelled() }}
         run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
@@ -280,6 +303,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-sim-backend-logs
-          path: ${{ runner.temp }}/backend/*.log
+          path: |
+            ${{ runner.temp }}/backend/*.log
+            ${{ runner.temp }}/backend/seed.md
           retention-days: 3
+          if-no-files-found: warn
+
+      - name: Upload Claude test results
+        if: ${{ always() && env.CLAUDE_RUN == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-sim-claude-test
+          path: ${{ runner.temp }}/claude-test
+          retention-days: 14
           if-no-files-found: warn
