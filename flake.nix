@@ -680,6 +680,13 @@
         # build all packages in hydra.
         hydraJobs = packages;
 
+        checks = pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          ghc-elf-alignment = import ./scripts/nix/check-elf-alignment.nix {
+            inherit pkgs;
+            compiler = (compilerSelection pkgs).ghc914-sh;
+          };
+        };
+
         devShell = let
 	updateCmd = pkgs.writeShellApplication {
           name = "update-sha256map";

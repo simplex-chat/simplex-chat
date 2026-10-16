@@ -9,6 +9,20 @@ platform; Android ARMv7 does not require a separate branch or tag.
 build context, including auxiliary iserv projects, so the pinned compiler can use
 its existing cache. Application dependencies keep the project's current packages.
 
+On Linux x86_64, `native-rts-project.nix` patches the final compiler's RTS ELF
+loader to honor section alignment even when its file offset is unaligned.
+The stage2 RTS package patch preserves the configured source, stage1 compiler,
+plan, and package IDs, but rebuilds the final compiler and its dependent slices.
+Native, auxiliary, and cross compiler selection share this patched compiler.
+Darwin and ARM compiler configurations are unchanged. This native compiler fix
+does not patch target RTS sources or target iserv runtimes, including musl.
+
+The focused regression runs before the native x86_64 Linux CI build. To run it
+from this checkout, use `nix build .#checks.x86_64-linux.ghc-elf-alignment -L`.
+It loads the same 8192-byte C object with aligned and deliberately packed section
+file offsets, requiring both to retain 64-byte memory alignment and their data.
+It is a flake check, separate from the 21 existing Hydra artifact outputs.
+
 Cross projects add `ghc-internal` to the Cabal dependencies of the pinned
 `composition-1.0.2.2` source. This preserves its deliberate avoidance of `base`
 while making GHC 9.14's wired-in types available in isolated target package

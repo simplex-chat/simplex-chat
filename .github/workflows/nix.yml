@@ -88,6 +88,11 @@ jobs:
       - name: Show outputs from this checkout
         run: make nix-list
 
+      - name: Check native Linux GHC ELF section alignment
+        if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'native' }}
+        timeout-minutes: 120
+        run: nix build .#checks.x86_64-linux.ghc-elf-alignment --no-link -L --max-jobs 1 --timeout "$NIX_BUILD_TIMEOUT"
+
       # Use the compiler fork in flake.lock, including both Android ABIs.
       # Stock GHC installed by ghcup is not interchangeable with this compiler.
       - name: Build existing Haskell outputs
