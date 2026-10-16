@@ -53,6 +53,9 @@ Linux-built musl `ghc914-sh` iserv projects use a package-specific
 interpreter needs musl's dynamic C loader for Template Haskell dependencies;
 a fully static musl executable has a `dlopen` stub. Its Haskell library ways
 and profiling selection stay unchanged, and the final CLI remains fully static.
+An i386-only preplanning source patch omits the private `__aio_close` symbol
+registration: shared musl exposes `close`, which calls its hidden AIO hook
+internally, rather than exporting that implementation detail.
 The pure scope check runs in the Linux static CI group:
 `nix eval --json --file scripts/nix/check-musl-iserv-scope.nix`.
 
