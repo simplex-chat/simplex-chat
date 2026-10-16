@@ -76,6 +76,10 @@ that store is pruned. iOS ZIPs contain both the plain `libHSsimplex-chat-*.a` an
 the rolled `libHSsimplex-chat-*-ghc*.a` used by `update-pbxproj.sh`. Android and
 Windows clients link the threaded RTS into `libsimplex.so` or `libsimplex.dll`;
 Android's separate `libsupport.so` resolves RTS symbols from the client library.
+Android client export flags use the ordered `chat-exports.txt` manifest. The
+desktop library scripts check that manifest and `libsimplex.dll.def` against the
+Haskell exports before building; update the manifest when adding an export.
+Run `scripts/desktop/test-exports.sh` to check all three guards without compiling.
 ARM64 Android libraries retain the 16 KiB linker alignment. These steps run in
 the derivation's build/install phases because v2 component overrides do not run
 the older `postBuild` and `postInstall` hooks.

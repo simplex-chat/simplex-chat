@@ -158,34 +158,7 @@
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
       let inherit (import ./scripts/nix/mobile-library.nix { inherit pkgs; })
         withComponentPhases withMobileLibrary; in
-      let chatExports = [
-        "chat_close_store"
-        "chat_decrypt_file"
-        "chat_decrypt_media"
-        "chat_encrypt_file"
-        "chat_encrypt_media"
-        "chat_migrate_init"
-        "chat_migrate_init_key"
-        "chat_migrate_init_queue"
-        "chat_parse_markdown"
-        "chat_parse_server"
-        "chat_parse_uri"
-        "chat_password_hash"
-        "chat_read_file"
-        "chat_recv_msg"
-        "chat_recv_msg_wait"
-        "chat_reopen_store"
-        "chat_send_cmd"
-        "chat_send_cmd_retry"
-        "chat_send_remote_cmd"
-        "chat_send_remote_cmd_retry"
-        "chat_valid_name"
-        "chat_parse_badge_code"
-        "chat_json_length"
-        "chat_badge_keygen"
-        "chat_badge_issue"
-        "chat_write_file"
-      ]; in
+      let chatExports = import ./scripts/nix/chat-exports.nix; in
       # This will package up all *.a in $out into a pkg.zip that can
       # be downloaded from hydra.
       let withHydraLibPkg = pkg: pkg.overrideAttrs (old: {
