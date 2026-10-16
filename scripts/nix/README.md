@@ -138,7 +138,9 @@ startup routines. Android links libffi through the RTS package dependency.
 Android preplanning patches remove the separate `pthread` library declarations
 from crypton and direct-sqlcipher. Bionic supplies these functions in `libc`;
 the NDK has no `libpthread`. Other targets retain their original declarations,
-and compiler `-pthread` flags and the threaded RTS remain enabled. Repeat the
+and compiler `-pthread` flags and the threaded RTS remain enabled. The local
+crypton override retains its dependency-only scope; it does not add the package's
+tests or benchmarks as planning goals. Repeat the
 scope regression with `nix eval --json --file scripts/nix/check-android-pthread-scope.nix`.
 The minimum Android API stays at 26.
 For Android below API28, SplitMix's initializer uses Bionic's existing

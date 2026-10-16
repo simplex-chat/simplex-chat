@@ -23,9 +23,11 @@ assert source.src.url == "https://hackage.haskell.org/package/crypton-0.34/crypt
 assert source.src.hash == "sha256-RESEaSTKVWFfzhBJE6WmhnWhgM/q3DUKsrEk+6G8HtY=";
 assert source.patches == [ ./crypton-android-pthread.patch ];
 assert android.directSqlcipherPatches == [ ./direct-sqlcipher-android-pthread.patch ];
-assert other == { packageSources = []; directSqlcipherPatches = []; };
+assert android.cabalProjectLocal == "package crypton\n  tests: False\n  benchmarks: False\n";
+assert other == { packageSources = []; directSqlcipherPatches = []; cabalProjectLocal = ""; };
 {
   androidUsesBothPreplanningPatches = true;
   cryptonVersionAndSourcePinned = true;
+  cryptonRetainsDependencyOnlyGoals = true;
   otherPlatformsUnchangedAndLazy = true;
 }

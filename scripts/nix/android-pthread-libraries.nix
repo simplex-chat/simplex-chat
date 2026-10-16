@@ -11,6 +11,13 @@
     };
     patches = [ ./crypton-android-pthread.patch ];
   });
+  # A local metadata override must keep the former Hackage dependency scope.
+  # haskell.nix otherwise enables local tests/benchmarks while making the plan.
+  cabalProjectLocal = if hostPlatform.isAndroid then ''
+    package crypton
+      tests: False
+      benchmarks: False
+  '' else "";
   directSqlcipherPatches = pkgs.lib.optional hostPlatform.isAndroid
     ./direct-sqlcipher-android-pthread.patch;
 }

@@ -100,7 +100,7 @@
           -- function types still need ghc-internal in a cross slice's DB.
           -- Patch before planning so the v2 slice declares the same dependency.
           packages: ${pkgs.lib.concatStringsSep " " (map toString patchedPackageSources)}
-        '' + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
+        '' + androidPthreads.cabalProjectLocal + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
           -- Keep every app C/C++ stub compatible with the same iOS ARM baseline.
           package *
             ghc-options: -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc -optcxx-mcpu=apple-a7 -optcxx-march=armv8-a+norcpc
