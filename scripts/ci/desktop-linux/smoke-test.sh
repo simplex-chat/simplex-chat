@@ -2,7 +2,7 @@
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top.
-# Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|setup|backend]
+# Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
 # "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
@@ -17,6 +17,13 @@ set -euo pipefail
 app_dir=$1
 export UI_OUT=$2
 cases=${3:-layouts}
+case "$cases" in
+  start | onboarding | layouts | setup | backend) ;;
+  *)
+    echo "error: unknown case \"$cases\": start, onboarding, layouts (the default), setup or backend"
+    exit 1
+    ;;
+esac
 # backend.sh registered seeded.testing for ci_contact
 name_label=seeded
 local_chat="seeded notes"
