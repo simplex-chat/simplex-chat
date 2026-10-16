@@ -21,6 +21,10 @@ public func getChatCtrl() -> chat_ctrl {
     fatalError("chat controller not initialized")
 }
 
+public func currentChatCtrl() -> chat_ctrl? {
+    chatController
+}
+
 public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: MigrationConfirmation? = nil, backgroundMode: Bool = false) -> (Bool, DBMigrationResult) {
     if let res = migrationResult { return res }
     let dbPath = getAppDatabasePath().path

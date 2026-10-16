@@ -61,10 +61,11 @@ class NetworkObserver {
         DispatchQueue.main.sync {
             ChatModel.shared.networkInfo = info
         }
-        if !hasChatCtrl() { return }
         self.monitorLock.sync {
+            guard let ctrl = currentChatCtrl() else { return }
             do {
-                try apiSetNetworkInfo(info)
+                // the controller is passed, so that resetting it while the report is sent is not a crash
+                try apiSetNetworkInfo(info, ctrl: ctrl)
             } catch let err {
                 logger.error("setNetworkInfo error: \(responseError(err))")
             }

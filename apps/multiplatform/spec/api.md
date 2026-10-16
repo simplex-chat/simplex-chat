@@ -234,7 +234,7 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | Command | Parameters | Description | Line |
 |---------|-----------|-------------|------|
 | `apiSetNetworkConfig` | `cfg: NetCfg, showAlertOnError: Boolean, ctrl: ChatCtrl?` | Apply network configuration (SOCKS proxy, timeouts, etc.) | [L1313](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1313) |
-| `apiSetNetworkInfo` | `networkInfo: UserNetworkInfo` | Update network reachability information | [L1340](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1340) |
+| `apiSetNetworkInfo` | `networkInfo: UserNetworkInfo, ctrl: ChatCtrl` | Update network reachability information | [L1398](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1398) |
 | `apiSetSettings` | `rh: Long?, type: ChatType, id: Long, settings: ChatSettings` | Update per-chat settings (notifications, favorites) | [L1333](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1333) |
 | `apiStorageEncryption` | `currentKey: String, newKey: String` | Change the database encryption passphrase | [L999](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L999) |
 | `testStorageEncryption` | `key: String, ctrl: ChatCtrl?` | Verify a database encryption key is correct | [L1006](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1006) |
