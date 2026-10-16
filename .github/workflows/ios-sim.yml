@@ -82,7 +82,7 @@ jobs:
     name: core library for the iOS simulator
     needs: plan
     if: needs.plan.outputs.core-run == ''
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 240
     steps:
       - name: Checkout code
@@ -129,7 +129,7 @@ jobs:
     name: test backend for the app
     needs: plan
     if: needs.plan.outputs.start-backend == 'true' && needs.plan.outputs.backend-run == ''
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 240
     steps:
       - name: Checkout code
@@ -168,7 +168,7 @@ jobs:
     needs: [plan, core, backend]
     # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
     if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
-    runs-on: macos-latest
+    runs-on: macos-26
     environment:
       name: ${{ needs.plan.outputs.claude == 'true' && 'app-sim-claude' || '' }}
       deployment: false
