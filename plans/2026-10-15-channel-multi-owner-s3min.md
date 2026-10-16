@@ -11,7 +11,7 @@ The implementation plan is `2026-10-15-channel-multi-owner-s3min-implementation.
 | Post, moderate, edit the channel, manage relays, share the link | as the creator does today, from any owner's device |
 | Make a member an owner | the owner first verifies the member's security code; the member gets an invitation in its "chat with admins" and becomes an owner when it accepts |
 | Change member, moderator and admin roles | as today; with several owners each change takes 1–3 s, because it is first recorded on the channel's link server |
-| Remove an owner | any owner can remove another; the removed device can no longer change the link at once, and relays stop accepting its owner actions as soon as they learn of the removal (normally seconds) |
+| Remove an owner | any owner can remove another; the removed device can no longer change the link at once; relays check its owner actions against the link, and stop accepting its posts as soon as they learn of the removal (normally seconds) |
 | Leave | any owner can leave while another owner remains; in a channel with several owners the last one cannot leave |
 | Destroy the channel | any owner, as today |
 | See the members | a new owner downloads the member list from a relay in the background, without profile pictures |
@@ -26,7 +26,7 @@ The channel's link data lives on one SMP server, the link server, which already 
 - **One new server command, `LSWP`.** An owner reads the link data, makes its one change, and writes it back with the hash of what it read. The server accepts the write only if the data is still what the owner read, and in the same step replaces the list of owner keys allowed to write. If another owner wrote in between, the owner reads again and re-applies its change. No write is lost, and adding or removing an owner changes the data and the keys together. The server also refuses the old plain write on a link with several owners, so an old or delayed single-owner write cannot erase them.
 - **Role changes are numbered on the link server.** The link data records the latest roster version and who made it. An owner claims the next number with the same compare-and-swap before it sends the change. Each number then has one author who had already applied all earlier changes, which is what members and relays expect today; they need no change.
 - **Consent.** The promoter sends an invitation in the member's support chat; the member accepts; then one write adds it as an owner. The security code check stops a relay that substituted the member's key, because such a relay could also sign the acceptance with the substituted key.
-- **Irreversible owner actions are checked against the link.** Relays accept an owner's removal or the channel's deletion only after reading the link data in the background, so a device that was removed cannot use them; an owner added without a link write is undone at the relay's next read.
+- **Owner changes are checked against the link.** Relays accept an owner's addition or removal, the channel's deletion, and a profile or role change numbered beyond what they have read only after reading the link data in the background. A removed device therefore cannot use them, nor freeze later changes with an inflated number.
 - **Member list and count.** A new owner pulls the member list from a relay page by page, at its own pace (an owner's queue holds 128 messages and a relay drops messages to a full queue, so pushing would lose data). The first current owner in the link's owner list publishes the subscriber count, at most once a minute.
 
 ## Decisions
@@ -42,7 +42,7 @@ The channel's link data lives on one SMP server, the link server, which already 
 
 ## Trade-offs users notice
 
-- **Owner actions need the link server.** Role changes, removal, leaving and promotion need it reachable; while it is down an owner can still post, and a channel deletion reaches relays once it is back. A role change right after another owner's waits a few seconds ("catching up, try again").
+- **Owner actions need the link server.** Role changes, removal, leaving, promotion and, for an owner other than the creator, destroying the channel need it reachable; while it is down an owner can still post, and the creator's deletion of the channel reaches relays once it is back. A role change right after another owner's waits a few seconds ("catching up, try again"). Relays apply owner changes, profile edits and role changes a few seconds later than today, after their check.
 - **Edits over a changed profile are refused.** If another owner changed the profile after this owner opened the editor, the edit is refused and the current profile shown.
 - **A new owner's device connects to the link server directly** for its owner actions and, when it is the first owner, for the count. This reveals its IP address to that server's operator. The invitation says so and names the server; if the user's settings route such traffic privately, accepting needs an explicit confirmation, and settings that prohibit direct connections block owner writes. Link reads stay private.
 - **The link server learns when owners act.**
@@ -54,11 +54,11 @@ The channel's link data lives on one SMP server, the link server, which already 
 None of these is a race between honest owners:
 
 - **A link server that ignores the compare-and-swap** can make honest owners lose writes or diverge on roles. It cannot forge anything.
-- **Until a relay learns of a removal** (the remover's announcement, normally seconds, or the relay's link check every 15 minutes), the removed device can still post and send role changes through it, and an owner it adds without a link write lasts until the relay's next read. It cannot remove owners or delete the channel there.
-- **A removed owner that kept a copy of its key**, or a removed creator that kept the root key, can serve forged link data to readers only with a colluding link server.
+- **Until a relay learns of a removal** (the remover's announcement, normally seconds, or the relay's link check every 15 minutes), the removed device can still post through it and send profile and role changes numbered as ones the relay already has, which the next link read or change replaces. It cannot change owners or delete the channel there.
+- **A removed owner that kept a copy of its key**, or a removed creator that kept the root key, can serve forged link data to readers only with a colluding link server. With a colluding relay, its messages reach that relay's subscribers unchecked until they learn of the removal; an inflated number among them stops those subscribers' later profile and role updates.
 - **Any current owner can destroy the channel or lock the others out.** Owners are trusted as the single owner is today; removal is administration, not a defence against a malicious owner.
 - **A role change can be abandoned** in two failure cases: its author's device is lost in the second between recording and sending it, or it reached only a relay that then failed. Nobody received it. While a lost author is still an owner the others cannot change roles until they remove it; after that, role changes wait up to a day before the lost version is abandoned. An owner that also missed that author's earlier changes drops them with it, although some devices received them.
-- **An admin removing a member at the moment an owner promotes it** ends with the member removed: the member's device, which keeps its key until this is settled, revokes its own owner entry when it appears, in either order. If the member's device is gone and every owner saw the promotion first, the member stays listed as an owner until an owner removes it, like any lost owner device.
+- **An admin removing a member at the moment an owner promotes it** ends with the member removed: the member's device, which keeps its key until this is settled, revokes its own owner entry when it appears, in any order. For that, for a day after accepting, the new owner's device accepts an admin's removal of itself. If the member's device is gone and every owner saw the promotion first, the member stays listed as an owner until an owner removes it, like any lost owner device.
 - **A remover's device that crashes in the instant after the server accepted the removal** sends no announcement; every device applies the removal at its next read of the link, and relays at their next check.
 - **Blocking and unblocking a member is not ordered** between owners and moderators, as today.
 - **Downgrades.** A downgraded server loses link data written since its last start (owner keys are kept), and multi-owner writes stop until it is upgraded. A creator downgraded to an older app cannot change the link.
@@ -72,4 +72,4 @@ None of these is a race between honest owners:
 
 ## Size
 
-About 2,300 lines of production Haskell: ~470 in simplexmq (server command and refusal, three queue stores, store log, client, agent) and ~1,810 in chat. About 400 lines per app platform. Five new chat events and one changed; five optional link-data fields; eight columns and no new table; one SMP command and one SMP error.
+About 2,350 lines of production Haskell: ~470 in simplexmq (server command and refusal, three queue stores, store log, client, agent) and ~1,880 in chat. About 400 lines per app platform. Five new chat events and one changed; five optional link-data fields; eight columns and no new table; one SMP command and one SMP error.
