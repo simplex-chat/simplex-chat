@@ -326,7 +326,6 @@ processQueuedRequests key trackerQ_ env = do
         survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ act req
   raceAny_ [lane (serviceRequestQ env) route, lane purchaseQ answer, lane renewalQ answer]
 
--- | A store call can take verifyTimeout, so a request that may make one waits on a lane of its own.
 data RequestLane = MainLane | PurchaseLane | RenewalLane
   deriving (Eq, Show)
 
@@ -817,7 +816,7 @@ data PurchaseChecks = PurchaseChecks {appleChecks :: ClaimChecks, googleChecks :
 
 type ClaimChecks = TVar (M.Map T.Text UTCTime)
 
--- | The Play subscription reads the purchase path took in the current minute, counted as the web listener counts requests.
+-- | The Play subscription checks the purchase path made in the current minute, counted as the web listener counts requests.
 type PlayReads = TVar (Maybe Bucket)
 
 newPurchaseChecks :: IO PurchaseChecks

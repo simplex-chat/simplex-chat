@@ -2709,6 +2709,12 @@ testAbsenceRestartsUnrenewedRun ps =
       (_, rows) <- clientSubscribedMonthly env alice
       setServicePurchaseKey cc "not the purchase key"
       t0 <- firstUnrenewedAnswer alice bsClock rows [badgeServiceRefused]
+      -- held by the wake the refusal stored, so nothing is sent and the run stays
+      setClockAt bsClock $ addUTCTime 3600 t0
+      alice ##> "/_app activate"
+      alice <## "ok"
+      threadDelay 2000000
+      unrenewedRuns (chatController alice) `shouldReturn` [(Just t0, Just t0)]
       let returnAt = addUTCTime (subscriptionRecoveryWindow + 2 * nominalDay) t0
       setClockAt bsClock returnAt
       activateAnswered alice [badgeServiceRefused]
@@ -2787,7 +2793,7 @@ unrenewedRuns ChatController {chatStore} =
 
 -- | The run once the pass answered at t has stored it, the pass's clock having run on from t.
 answeredRun :: HasCallStack => ChatController -> UTCTime -> IO (UTCTime, UTCTime)
-answeredRun cc t = loop (100 :: Int)
+answeredRun cc t = loop (600 :: Int)
   where
     loop i =
       unrenewedRuns cc >>= \case

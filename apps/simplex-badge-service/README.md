@@ -264,8 +264,9 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   subscription purchases on one, and issue requests for a subscription due its hourly store check
   on another. A slow or unreachable store therefore delays only those, not code redemptions,
   App Store one-time purchases or other renewals; and no purchase, genuine or made up, delays a
-  renewal check. The purchase path reads Play's subscriptions at most 300 times a minute, so
-  made-up tokens cannot spend the quota renewal checks share.
+  renewal check. The purchase path asks Play about at most 300 subscriptions a minute (a purchase
+  it credits is read once more to acknowledge it), so made-up tokens can spend at most a tenth of
+  the quota renewal checks share.
 
 Which answers are terminal for a purchase and which leave it to be presented again is listed per
 store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
