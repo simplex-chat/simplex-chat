@@ -171,7 +171,10 @@ builder for those jobs; keep it off Rosetta slots. Nix also requires the
 when building derivations with this reserved marker. Enable both
 `extra-experimental-features = recursive-nix` and
 `extra-system-features = recursive-nix` on that builder. The GitHub workflow
-sets both only for its native x86_64 Linux runner. The upstream fixes and regression jobs
+sets the complete `experimental-features` list, including `nix-command` and
+`flakes`, because its installer suppresses those defaults when this setting is
+present. It adds `recursive-nix` to both lists only for its native x86_64 Linux
+runner. The upstream fixes and regression jobs
 are in [haskell.nix PR #2585](https://github.com/input-output-hk/haskell.nix/pull/2585).
 
 To build both Android APK ABIs from the current checkout, preserving the same
