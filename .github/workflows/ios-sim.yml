@@ -302,9 +302,7 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
-  # Claude Code runs the device test plan with the ui helper, on the app job's build in a simulator of its own. Each
-  # run spends the Claude subscription's usage limits, so it runs only when asked for. The app-sim-claude environment's
-  # branch rule decides which branches may use the token.
+  # The app-sim-claude environment's branch rule decides which branches may use the token.
   claude:
     name: Claude tests the iOS app
     needs: [plan, app]
@@ -318,7 +316,7 @@ jobs:
       group: ios-sim-claude-${{ github.ref }}
       cancel-in-progress: true
     env:
-      # the same in both app workflows; Haiku 5.5's token counts are right from 2.1.296
+      # the same in both app workflows
       CLAUDE_CODE_VERSION: 2.1.300
     steps:
       # the job holds the Claude token, so the checkout's GitHub token is not left in .git/config
