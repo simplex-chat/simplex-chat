@@ -449,6 +449,7 @@ jobs:
           path: |
             ${{ runner.temp }}/claude-test
             ${{ runner.temp }}/claude-transcript.jsonl
+            ${{ runner.temp }}/claude-transcript.jsonl.stderr
             ${{ runner.temp }}/claude-transcript.jsonl.guard.log
             ${{ runner.temp }}/claude-usage.json
           retention-days: 7
