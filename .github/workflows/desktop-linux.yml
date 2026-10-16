@@ -241,6 +241,21 @@ jobs:
           du -sh "$app"
           LD_LIBRARY_PATH="$app/lib/app/resources" ldd "$app/lib/app/resources/libapp-lib.so"
 
+      # for the Claude job; a tarball keeps the app's file modes, which an artifact drops
+      - name: Pack app
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        run: tar -czf "$RUNNER_TEMP/desktop-app.tar.gz" -C apps/multiplatform/release/main/app simplex
+
+      - name: Upload app
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-app
+          path: ${{ runner.temp }}/desktop-app.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Run desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: apps/multiplatform
@@ -294,13 +309,13 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
-  # Claude Code repeats the smoke test with the ui helper. Each run spends the Claude subscription's usage
-  # limits, so it runs only when asked for. The app-sim-claude environment's branch rule decides which branches
-  # may use the token.
+  # Claude Code repeats the smoke test with the ui helper, on the app job's build. Each run spends the Claude
+  # subscription's usage limits, so it runs only when asked for. The app-sim-claude environment's branch rule decides
+  # which branches may use the token.
   claude:
     name: Claude tests the desktop app
-    needs: [plan, core, backend]
-    if: ${{ !cancelled() && !failure() && needs.plan.outputs.run-claude == 'true' }}
+    needs: [plan, app]
+    if: ${{ !cancelled() && needs.plan.outputs.run-claude == 'true' && needs.app.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment:
@@ -313,11 +328,12 @@ jobs:
       # the first release with Haiku 5.5's token counts right (2.1.293 added the model, 2.1.296 fixed its counts)
       CLAUDE_CODE_VERSION: 2.1.296
       CLAUDE_MODEL: claude-haiku-5-5
+      # true when claude-test.md uses the test backend, which then starts when the run asks for it
+      CLAUDE_BACKEND: "false"
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          submodules: recursive
           persist-credentials: false
 
       - name: Install tools
@@ -326,19 +342,19 @@ jobs:
           sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
           dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
 
-      - name: Download core library
+      - name: Download app
         uses: actions/download-artifact@v8
         with:
-          name: ${{ needs.plan.outputs.core }}
-          path: ~/core
-          run-id: ${{ needs.plan.outputs.core-run || github.run_id }}
-          github-token: ${{ github.token }}
+          name: desktop-app
+          path: ${{ runner.temp }}
 
-      - name: Install core library
-        run: scripts/ci/desktop-linux/install-core.sh ~/core/${{ env.CORE_PKG }}
+      - name: Unpack app
+        run: |
+          mkdir -p "$RUNNER_TEMP/app"
+          tar -xzf "$RUNNER_TEMP/desktop-app.tar.gz" -C "$RUNNER_TEMP/app"
 
       - name: Download backend
-        if: needs.plan.outputs.run-backend == 'true'
+        if: needs.plan.outputs.run-backend == 'true' && env.CLAUDE_BACKEND == 'true'
         uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.backend }}
@@ -347,19 +363,10 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Start test backend
-        if: needs.plan.outputs.run-backend == 'true'
+        id: backend
+        if: needs.plan.outputs.run-backend == 'true' && env.CLAUDE_BACKEND == 'true'
         timeout-minutes: 30
         run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: corretto
-          java-version: ${{ env.JAVA_VER }}
-
-      - name: Build app
-        working-directory: apps/multiplatform
-        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :desktop:createDistributable
 
       # ui goes on every shell's PATH, where Claude's Bash tool finds it whatever environment it builds
       - name: Install Claude Code and the ui command
@@ -370,7 +377,7 @@ jobs:
           sudo chmod +x /usr/local/bin/ui
 
       - name: Start the app
-        run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/claude-test/screens" start
+        run: scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/app/simplex" "$RUNNER_TEMP/claude-test/screens" start
 
       # Claude's Bash is limited to single ui commands by the guard hook in claude-test.sh. Claude Code's credential
       # scrub stays off: on Linux it forces its whole Bash sandbox (bubblewrap, socat), which ui isn't set up for.
@@ -386,7 +393,7 @@ jobs:
         run: scripts/ci/desktop-linux/claude-usage.py "$RUNNER_TEMP/claude-transcript.jsonl" "$RUNNER_TEMP/claude-usage.json"
 
       - name: Stop test backend
-        if: ${{ !cancelled() && needs.plan.outputs.run-backend == 'true' }}
+        if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
         run: scripts/ci/desktop-linux/backend.sh stop "$RUNNER_TEMP/backend"
 
       - name: Upload Claude test results
@@ -404,7 +411,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload backend logs
-        if: ${{ !cancelled() && needs.plan.outputs.run-backend == 'true' }}
+        if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7
         with:
           name: desktop-claude-backend-logs
