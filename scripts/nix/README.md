@@ -29,6 +29,13 @@ while making GHC 9.14's wired-in types available in isolated target package
 databases. The patch runs before planning and source packaging. Native builds
 and the Mac-to-iOS conversion projects keep the original package metadata.
 
+Musl projects declare OpenSSL in Cabal's `extra-libraries-static` field for
+`direct-sqlcipher` and `simplexmq`. GHC's fully static link path reads that field,
+so an ordinary `extra-libraries` entry alone does not supply `libcrypto`. These
+source metadata patches run before planning and require Cabal specification 3.8.
+Windows patches Basement's `INVALID_HANDLE_VALUE` expression to `INT_PTR`, so
+hsc2hs receives the signed pointer-sized integer expected by the Haskell API.
+
 Run these commands from the repository root:
 
 ```sh
@@ -77,7 +84,7 @@ Mobile builds keep the RTS's small-address-space setting. On Darwin, the final
 link uses ABI-checked replacement RTS registrations, plus a replacement `text`
 on ARM64. These boot libraries and all ARM64 mobile app C/C++ code target the
 Apple A7 instruction baseline before `mac2ios` retags the archives. The cached
-native compiler itself stays unchanged. Android applies the RTS source patch
+Darwin compiler itself stays unchanged. Android applies the RTS source patch
 when building its boot libraries. The Android overlay also supplies GNU iconv
 headers and a static PIC archive to `ghc-internal`, including the separate
 iserv projects. The `ghc-internal` system dependency propagates GNU iconv to
@@ -86,12 +93,15 @@ function addresses for runtime object loading. Its source is patched before Caba
 planning, removing false missing-function stubs that shadow real static Bionic
 startup routines. Android links libffi through the RTS package dependency.
 The minimum Android API stays at 26.
+The ARM64 interpreter registers `getentropy` and `getrandom` only from API28,
+matching the NDK headers and versioned shared-library exports. API26 builds omit
+those entries; API35 retains them.
 
 Android ARM32's QEMU wrapper preserves the guest's `PER_LINUX32` execution
 domain when an ARM64 host kernel rejects that domain. Upper personality flags
 still go through the host, and queries and setters retain the previous guest
-value. This applies only to the Android ARM32 emulator; native compiler cache
-paths and the other emulator targets stay unchanged. Android's libc initializes
+value. This QEMU patch applies only to the Android ARM32 emulator;
+the other emulator targets stay unchanged. Android's libc initializes
 this state again at startup after an exec.
 
 A standalone C regression checks startup, full personality values, the host's
@@ -210,6 +220,12 @@ On 2026-10-16, all 21 existing Hydra derivations evaluated successfully at
 and four on each Darwin architecture. This includes both Android ABIs, Windows,
 and all three static Linux targets. This establishes derivation evaluation;
 the completed artifact builds are listed below.
+
+GitHub integration merge `3ad3fb6843a3acdab17299613f5cd5680263fb17` also passed
+the native ARM64 Linux library/CLI and all four ARM64 Darwin outputs, including
+CLI smoke checks. That run predates the Linux ELF loader, Android API table,
+static-link metadata, and Windows Basement fixes described above. Their focused
+reproducers pass, but full builds with the integrated fixes remain pending.
 
 The native ARM64 Darwin library and CLI built with Nix at `f26dbbc0d` and
 passed `python3 scripts/nix/smoke-cli.py /path/to/simplex-chat`, covering encrypted
