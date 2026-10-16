@@ -110,6 +110,16 @@ Darwin ARM64/x86_64, with a six-hour job limit. It uploads the existing library 
 and CLIs under an artifact named for the source SHA. Each native CLI also runs
 the encrypted-store and profile-password smoke test, which can be repeated with
 `python3 scripts/nix/smoke-cli.py result-nix/BUILD_SYSTEM/exe:simplex-chat/bin/simplex-chat`.
+
+After a failed native x86_64 Linux library build, CI tries a separate derivation
+with `-v2 -ddump-timings` on compile calls and uploads
+`native-linux-ghc-phase-trace.log`, including when that trace fails. Compiler
+queries and the original source, plan, dependency units and GHC arguments stay
+unchanged. The canonical build remains failed. The trace has one job/core and a
+two-hour wall-clock/per-derivation bound; the job's six-hour limit stays in place.
+`trace-native-ghc.nix` accepts the original component via `--arg original` for the
+same diagnostic locally.
+
 Hydra continues to consume
 the same `hydraJobs` attributes. The older application release workflow still
 uses its existing GHCup/Docker compiler settings; migrating that packaging and

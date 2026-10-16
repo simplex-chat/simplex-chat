@@ -74,7 +74,35 @@ jobs:
       # Use the compiler fork in flake.lock, including both Android ABIs.
       # Stock GHC installed by ghcup is not interchangeable with this compiler.
       - name: Build existing Haskell outputs
+        id: haskell_build
         run: make nix-build
+
+      # Diagnose the same native library after failure. Keep the canonical
+      # failure and its flags intact; this is a separate diagnostic derivation.
+      - name: Trace native Linux GHC phases after failure
+        id: ghc_phase_trace
+        if: ${{ failure() && matrix.system == 'x86_64-linux' && steps.haskell_build.outcome == 'failure' }}
+        shell: bash
+        run: |
+          if [ -d "result-nix/$NIX_SYSTEM/lib:simplex-chat" ]; then
+            echo 'Native library already built; skipping its diagnostic trace.'
+            exit 0
+          fi
+          echo 'attempted=true' >> "$GITHUB_OUTPUT"
+          flake_ref="git+file://$GITHUB_WORKSPACE?rev=$(git rev-parse HEAD)"
+          original="(builtins.getFlake \"$flake_ref\").hydraJobs.x86_64-linux.\"lib:simplex-chat\""
+          timeout --kill-after=30s 7200s nice -n 10 nix build \
+            --file scripts/nix/trace-native-ghc.nix --arg original "$original" \
+            --no-link -L --keep-failed --max-jobs 1 --cores 1 --timeout 7200 \
+            2>&1 | tee native-linux-ghc-phase-trace.log
+
+      - name: Upload native Linux GHC phase log
+        if: ${{ always() && steps.ghc_phase_trace.outputs.attempted == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nix-ghc-phase-trace-${{ github.sha }}
+          path: native-linux-ghc-phase-trace.log
+          if-no-files-found: warn
 
       - name: Check native CLI encryption and profile passwords
         run: python3 scripts/nix/smoke-cli.py "result-nix/$NIX_SYSTEM/exe:simplex-chat/bin/simplex-chat"
