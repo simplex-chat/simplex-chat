@@ -57,6 +57,7 @@ let GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE = "networkEnableKeepAlive"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE = "networkTCPKeepIdle"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL = "networkTCPKeepIntvl"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT = "networkTCPKeepCnt"
+let GROUP_DEFAULT_NETWORK_TCP_UNACKED_DATA_TIMEOUT = "networkTCPUnackedDataTimeout"
 public let GROUP_DEFAULT_INCOGNITO = "incognito"
 let GROUP_DEFAULT_STORE_DB_PASSPHRASE = "storeDBPassphrase"
 public let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
@@ -90,6 +91,7 @@ public let groupAppDefaults: [String: Any] = [
     GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE: KeepAliveOpts.defaults.keepIdle,
     GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL: KeepAliveOpts.defaults.keepIntvl,
     GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT: KeepAliveOpts.defaults.keepCnt,
+    GROUP_DEFAULT_NETWORK_TCP_UNACKED_DATA_TIMEOUT: KeepAliveOpts.defaults.unackedDataTimeout == true,
     GROUP_DEFAULT_INCOGNITO: false,
     GROUP_DEFAULT_STORE_DB_PASSPHRASE: true,
     GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
@@ -383,7 +385,8 @@ public func getNetCfg() -> NetCfg {
         let keepIdle = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE)
         let keepIntvl = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL)
         let keepCnt = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT)
-        tcpKeepAlive = KeepAliveOpts(keepIdle: keepIdle, keepIntvl: keepIntvl, keepCnt: keepCnt)
+        let unackedDataTimeout = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_TCP_UNACKED_DATA_TIMEOUT)
+        tcpKeepAlive = KeepAliveOpts(keepIdle: keepIdle, keepIntvl: keepIntvl, keepCnt: keepCnt, unackedDataTimeout: unackedDataTimeout)
     } else {
         tcpKeepAlive = nil
     }
@@ -427,6 +430,7 @@ public func setNetCfg(_ cfg: NetCfg, networkProxy: NetworkProxy?) {
         groupDefaults.set(tcpKeepAlive.keepIdle, forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE)
         groupDefaults.set(tcpKeepAlive.keepIntvl, forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL)
         groupDefaults.set(tcpKeepAlive.keepCnt, forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT)
+        groupDefaults.set(tcpKeepAlive.unackedDataTimeout == true, forKey: GROUP_DEFAULT_NETWORK_TCP_UNACKED_DATA_TIMEOUT)
     } else {
         groupDefaults.set(false, forKey: GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE)
     }
