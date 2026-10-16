@@ -7,7 +7,7 @@ Model: simplexmq at `e91711c7`:
 - `scripts/ci/source-timestamps.sh`
 - `scripts/ci/prune-old-builds.sh`
 
-Repository cache limit: 100 GB.
+Repository cache limit: 80 GB.
 
 ## Files
 
@@ -53,9 +53,21 @@ deps
 - restore key 2: `deps-<target>-`
 - saved when the store hash differs from the matched key
 
+src
+- jobs: build-linux, build-macos, build-windows
+- path: `dist-newstyle/src`
+- key: `src-<runner OS>-<hash of cabal.project>`
+- restore key: `src-<runner OS>-`
+- saved when the matched key differs from the key, by:
+  - build-linux: ubuntu-22.04 x86_64, GHC 9.6.3
+  - build-macos: x86_64
+  - build-windows
+
 dist
 - jobs: build-linux, build-macos, build-windows
-- path: `dist-newstyle`
+- path:
+  - `dist-newstyle/*`
+  - `!dist-newstyle/src`
 - key: `dist-<target>-<opt>-<branch>-<sha>`
 - restore key 1: `dist-<target>-<opt>-<branch>-`
 - restore key 2: `dist-<target>-<opt>-`
@@ -64,7 +76,9 @@ dist
 
 dist-lib
 - job: build-linux
-- path: `dist-lib`
+- path:
+  - `dist-lib/*`
+  - `!dist-lib/src`
 - key: `dist-lib-<target>-<branch>-<sha>`
 - restore key 1: `dist-lib-<target>-<branch>-`
 - restore key 2: `dist-lib-<target>-`
@@ -107,26 +121,29 @@ Container
 Steps after "Start container":
 1. Compute cache keys.
 2. Restore deps.
-3. Restore dist.
-4. Restore dist-lib.
-5. GHC 8.10.7, dist restored: `scripts/ci/source-timestamps.sh restore dist-newstyle/sources.sha256`.
-6. Prepare cabal.project.local: unchanged.
-7. Build CLI:
+3. Restore src.
+4. Restore dist.
+5. Restore dist-lib.
+6. GHC 8.10.7, dist restored: `scripts/ci/source-timestamps.sh restore dist-newstyle/sources.sha256`.
+7. Prepare cabal.project.local: unchanged.
+8. Build CLI:
    - `scripts/ci/prune-old-builds.sh dist-newstyle`
    - `cabal update`
    - `cabal build -j --enable-tests <ghc_options>`
    - binaries copied to `/out`
    - `cabal clean` removed
-8. Build library:
+9. Build library:
    - `scripts/ci/prune-old-builds.sh dist-lib`
+   - `dist-lib/src`: symlink to `../dist-newstyle/src`
    - `DIST_DIR=dist-lib`
-9. GHC 8.10.7: `scripts/ci/source-timestamps.sh record dist-newstyle/sources.sha256`.
-10. Save deps.
-11. Save dist.
-12. Save dist-lib.
-13. Release and test steps: unchanged.
-14. -O0 refresh, when `cache_o0`, the run is not cancelled and "Build CLI" succeeded:
-    - remove `dist-newstyle`
+10. GHC 8.10.7: `scripts/ci/source-timestamps.sh record dist-newstyle/sources.sha256`.
+11. Save deps.
+12. Save src.
+13. Save dist.
+14. Save dist-lib.
+15. Release and test steps: unchanged.
+16. -O0 refresh, when `cache_o0`, the run is not cancelled and "Build CLI" succeeded:
+    - remove `dist-newstyle` contents except `src`
     - restore dist with opt `O0`
     - GHC 8.10.7: restore source timestamps
     - `scripts/ci/prune-old-builds.sh dist-newstyle`
@@ -155,18 +172,21 @@ Steps:
 1. Prepare build.
 2. Compute cache keys.
 3. Restore deps.
-4. Restore dist.
-5. Build CLI:
+4. Restore src.
+5. Restore dist.
+6. Build CLI:
    - `scripts/ci/prune-old-builds.sh dist-newstyle`
    - `<ghc_options>`
-6. Save deps.
-7. Save dist.
-8. build-macos "Run tests": `cabal test` with `<ghc_options>`.
-9. Other steps: unchanged.
-10. -O0 refresh as in build-linux, after all other steps.
+7. Save deps.
+8. Save src.
+9. Save dist.
+10. build-macos "Run tests": `cabal test` with `<ghc_options>`.
+11. Other steps: unchanged.
+12. -O0 refresh as in build-linux, after all other steps.
 
 build-macos
-- step before "Prepare build": `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, `SDKROOT` from `xcrun --sdk macosx --show-sdk-path`
+- step before "Prepare build": `/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk` linked to `xcrun --sdk macosx --show-sdk-path`
+- Build CLI: `bin_path` from the last line of `cabal list-bin simplex-chat`
 
 build-windows
 - cache key and store hash steps: `msys2` shell

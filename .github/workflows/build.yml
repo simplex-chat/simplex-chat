@@ -323,12 +323,27 @@ jobs:
         if: matrix.should_run == true && env.release != 'true' && steps.restore-deps.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
 
+      - name: Restore source repositories from cache
+        id: restore-src
+        if: matrix.should_run == true && env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
+
+      - name: Warn if source repositories not in cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::src-${{ runner.os }}"
+
       - name: Restore build directory from cache
         id: restore-build
         if: matrix.should_run == true && env.release != 'true'
         uses: actions/cache/restore@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
           restore-keys: |
             ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-
@@ -343,7 +358,9 @@ jobs:
         if: env.release != 'true' && matrix.libs && needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64'
         uses: actions/cache/restore@v4
         with:
-          path: dist-lib
+          path: |
+            dist-lib/*
+            !dist-lib/src
           key: ${{ steps.keys.outputs.dist_lib }}-${{ env.branch }}-${{ github.sha }}
           restore-keys: |
             ${{ steps.keys.outputs.dist_lib }}-${{ env.branch }}-
@@ -388,6 +405,9 @@ jobs:
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/ci/prune-old-builds.sh dist-lib
+          mkdir -p dist-lib
+          rm -rf dist-lib/src
+          ln -s ../dist-newstyle/src dist-lib/src
           DIST_DIR=dist-lib SKIP_VLC=1 scripts/desktop/build-lib-linux.sh
           name=simplex-chat-libs-linux-${{ matrix.arch }}
           mkdir -p release-libs/$name/libs
@@ -412,18 +432,29 @@ jobs:
           path: ~/.cabal/store
           key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
 
+      - name: Save source repositories to cache
+        if: matrix.should_run == true && env.release != 'true' && matrix.libs && matrix.arch == 'x86_64' && steps.restore-src.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+
       - name: Save build directory to cache
         if: matrix.should_run == true && env.release != 'true' && steps.restore-build.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
 
       - name: Save library build directory to cache
         if: steps.build-lib.outcome == 'success' && env.release != 'true' && steps.restore-build-lib.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: dist-lib
+          path: |
+            dist-lib/*
+            !dist-lib/src
           key: ${{ steps.keys.outputs.dist_lib }}-${{ env.branch }}-${{ github.sha }}
 
       - name: Upload library artifact
@@ -585,14 +616,16 @@ jobs:
         id: remove-o2
         if: env.cache_o0 == 'true' && !cancelled() && steps.build-cli.outcome == 'success'
         shell: docker exec -t builder sh -eu {0}
-        run: rm -rf dist-newstyle
+        run: find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
 
       - name: Restore -O0 build directory from cache
         id: restore-build-o0
         if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
         uses: actions/cache/restore@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
           restore-keys: |
             ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-
@@ -619,7 +652,9 @@ jobs:
         if: ${{ !cancelled() && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
 # =================================
@@ -771,12 +806,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Select Xcode toolchain and SDK
+      - name: Point Command Line Tools SDK to Xcode SDK
         shell: bash
-        run: |
-          developer_dir=/Applications/Xcode.app/Contents/Developer
-          echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
-          echo "SDKROOT=$(DEVELOPER_DIR=$developer_dir xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
+        run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
       - name: Prepare build
         id: prepare
@@ -785,22 +817,6 @@ jobs:
           java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
           github_ref: ${{ github.ref }}
-
-      - name: Toolchain diagnostics
-        continue-on-error: true
-        shell: bash
-        run: |
-          note() { echo "::notice title=$1::$(printf '%s' "$2" | tr '\n' ' ' | cut -c1-900)"; }
-          note xcode-select "$(xcode-select -p)"
-          note env "DEVELOPER_DIR=$DEVELOPER_DIR SDKROOT=$SDKROOT"
-          note xcrun "sdk=$(xcrun --show-sdk-path) clang=$(xcrun -f clang) ld=$(xcrun -f ld)"
-          note clt-sdks "$(ls -l /Library/Developer/CommandLineTools/SDKs)"
-          note which "gcc=$(command -v gcc) clang=$(command -v clang) ld=$(command -v ld) ghc=$(command -v ghc)"
-          note ld-version "$(ld -v 2>&1)"
-          note ghc-info "$(ghc --info | grep -E '"(C compiler command|C compiler flags|C compiler link flags|ld command|ld flags|Merge objects command)"')"
-          note ghc-clt-refs "$(grep -rl CommandLineTools "$(ghc --print-libdir)" 2>/dev/null | head -20)"
-          note ghc-iconv "$(grep -rh -E '^(extra-libraries|library-dirs|ld-options):.*' "$(ghc --print-libdir)/package.conf.d"/base-*.conf "$(ghc --print-libdir)/package.conf.d"/rts-*.conf 2>/dev/null)"
-          note cabal-config "$(grep -H -i -E 'extra-(lib|include|prog)' ~/.cabal/config ~/.config/cabal/config 2>/dev/null)"
 
       - name: Install OpenSSL
         run: brew install openssl@3.0
@@ -843,12 +859,27 @@ jobs:
         if: env.release != 'true' && steps.restore-deps.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
 
+      - name: Restore source repositories from cache
+        id: restore-src
+        if: env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
+
+      - name: Warn if source repositories not in cache
+        if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::src-${{ runner.os }}"
+
       - name: Restore build directory from cache
         id: restore-build
         if: env.release != 'true' && !needs.maybe-release.outputs.libs_tag
         uses: actions/cache/restore@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
           restore-keys: |
             ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-
@@ -864,7 +895,7 @@ jobs:
         run: |
           scripts/ci/prune-old-builds.sh dist-newstyle
           cabal build -j --enable-tests ${{ env.ghc_options }}
-          path=$(cabal list-bin simplex-chat)
+          path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
@@ -881,11 +912,20 @@ jobs:
           path: ${{ steps.prepare.outputs.cabal-store }}
           key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
 
+      - name: Save source repositories to cache
+        if: env.release != 'true' && matrix.arch == 'x86_64' && steps.restore-src.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+
       - name: Save build directory to cache
         if: env.release != 'true' && steps.restore-build.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
 
       - name: Upload CLI
@@ -968,14 +1008,16 @@ jobs:
         id: remove-o2
         if: env.cache_o0 == 'true' && !cancelled() && steps.mac_cli_build.outcome == 'success'
         shell: bash
-        run: rm -rf dist-newstyle
+        run: find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
 
       - name: Restore -O0 build directory from cache
         id: restore-build-o0
         if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
         uses: actions/cache/restore@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
           restore-keys: |
             ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-
@@ -993,7 +1035,9 @@ jobs:
         if: ${{ !cancelled() && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
 # =========================
@@ -1075,12 +1119,27 @@ jobs:
         if: env.release != 'true' && steps.restore-deps.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
 
+      - name: Restore source repositories from cache
+        id: restore-src
+        if: env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
+
+      - name: Warn if source repositories not in cache
+        if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::src-${{ runner.os }}"
+
       - name: Restore build directory from cache
         id: restore-build
         if: env.release != 'true' && !needs.maybe-release.outputs.libs_tag
         uses: actions/cache/restore@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
           restore-keys: |
             ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-
@@ -1128,11 +1187,20 @@ jobs:
           path: ${{ steps.prepare.outputs.cabal-store }}
           key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
 
+      - name: Save source repositories to cache
+        if: env.release != 'true' && steps.restore-src.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+
       - name: Save build directory to cache
         if: env.release != 'true' && steps.restore-build.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
 
       - name: Build library
@@ -1195,14 +1263,16 @@ jobs:
         id: remove-o2
         if: env.cache_o0 == 'true' && !needs.maybe-release.outputs.libs_tag && !cancelled() && steps.windows_cli_build.outcome == 'success'
         shell: msys2 {0}
-        run: rm -rf dist-newstyle
+        run: find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
 
       - name: Restore -O0 build directory from cache
         id: restore-build-o0
         if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
         uses: actions/cache/restore@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
           restore-keys: |
             ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-
@@ -1224,7 +1294,9 @@ jobs:
         if: ${{ !cancelled() && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
-          path: dist-newstyle
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
 # =========================
