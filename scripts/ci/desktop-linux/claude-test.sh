@@ -77,4 +77,5 @@ if [ "$status" -ne 0 ]; then
   echo "error: claude exited with $status"
   exit 1
 fi
-grep -qE '^[*`]*CLAUDE-TEST: PASS' <<< "$result"
+last=$(grep -v '^[[:space:]]*$' <<< "$result" | tail -n 1 || true)
+grep -qxE '[*`]*CLAUDE-TEST: PASS[*`]*' <<< "$last"
