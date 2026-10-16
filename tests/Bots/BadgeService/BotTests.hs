@@ -193,6 +193,7 @@ badgeServiceTests = do
       it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
       it "should route each request to its lane, judging a minute ahead" testStoreRouting
       it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
+      it "should answer a renewal check while a Play purchase is with the store" testPurchaseHoldsNoRenewal
       it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
@@ -3720,10 +3721,38 @@ testRenewalHoldsNoOtherRequest ps = do
           bob <##. "expires "
           cath ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSupporterJWS})
           cath <### [StartsWith (openPurchase ""), StartsWith "1: supporter"]
+          withNewTestChatCfg ps bsClientCfg "dan" danProfile $ \dan -> do
+            dan ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+            dan <### [StartsWith (openPurchase ""), StartsWith "1: supporter"]
           putMVar release ()
           alice <##. "1: supporter"
           renewed <- waitLedgerRows (chatController alice) 4
           drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+
+testPurchaseHoldsNoRenewal :: HasCallStack => TestParams -> IO ()
+testPurchaseHoldsNoRenewal ps = do
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  hook <- newIORef $ putMVar entered () >> takeMVar release
+  let holding store = (googleVerifierWithHook hook store) {verifyTimeout = 60000000}
+  withBadgeServiceVerifier ps holding $ \env@BadgeServiceEnv {bsClientCfg, bsClock, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        (firstStart, rows) <- clientSubscribedMonthly env alice
+        let (requestAt, _) = renewalMoments rows
+            renewalStart = addMonths 1 firstStart
+        bob ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+        storePurchaseOpen bob ""
+        timeout 30000000 (takeMVar entered) `shouldReturn` Just ()
+        storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 1
+        setClockAt bsClock requestAt
+        alice ##> "/_app activate"
+        alice <## "ok"
+        alice <##. "1: supporter"
+        renewed <- waitLedgerRows (chatController alice) 4
+        drop 2 (rowChanges renewed) `shouldBe` [(1, 1, renewalStart, Just "charge"), (-1, 0, addMonths 1 renewalStart, Just "badge")]
+        putMVar release ()
+        expectLinesWithin 60 bob ["1: supporter"] []
 
 testAppleSubscriptionHoldsNoOtherRequest :: HasCallStack => TestParams -> IO ()
 testAppleSubscriptionHoldsNoOtherRequest ps = do

@@ -308,18 +308,20 @@ issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} =
 processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
 processQueuedRequests key trackerQ_ env = do
   cc <- atomically $ readTMVar $ serviceCC env
-  -- a store call can take verifyTimeout, and a Play hand-over two, so every request that may make one waits on a lane of its own
-  storeQ <- newTQueueIO
+  -- a store call can take verifyTimeout, and a Play hand-over two, so a request that may make one waits on a lane of its own, and renewal checks on one no purchase can fill
+  purchaseQ <- newTQueueIO
+  renewalQ <- newTQueueIO
   checks <- newPurchaseChecks
   let answer (u, reqId, sigKey, reqData) = handleServiceRequest key (storeVerifier env) checks cc trackerQ_ u reqId sigKey reqData
       route req@(_, _, sigKey, reqData) =
         requestLane cc sigKey reqData >>= \case
           MainLane -> answer req
-          _ -> atomically $ writeTQueue storeQ req
+          PurchaseLane -> atomically $ writeTQueue purchaseQ req
+          RenewalLane -> atomically $ writeTQueue renewalQ req
       lane q act = forever $ do
         req@(_, reqId, _, _) <- atomically $ readTQueue q
         survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ act req
-  raceAny_ [lane (serviceRequestQ env) route, lane storeQ answer]
+  raceAny_ [lane (serviceRequestQ env) route, lane purchaseQ answer, lane renewalQ answer]
 
 -- | A store call can take verifyTimeout, so a request that may make one waits on a lane of its own.
 data RequestLane = MainLane | PurchaseLane | RenewalLane
