@@ -17,7 +17,7 @@ On any branch, in either of two ways:
 | `[claude-test:desktop]` | the scripted test and the Claude job, here only |
 | `[ci-backend]` | with one of the above: also the test backend and the release job |
 
-A push without these tags (or with only iOS tags) starts a run whose jobs are all skipped, and it doesn't cancel a run in progress. A newer run that was asked for cancels an older one on the same branch.
+A push without these tags (or with only iOS tags) starts a run whose jobs are all skipped, and it doesn't cancel a run in progress. A newer run that was asked for cancels an older one on the same branch. Pushes to master and stable never start it, because a squash merge's message lists the merged commits' subjects with their tags; dispatch it there instead.
 
 Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged: the core by a cache keyed on `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md` and the build scripts; the backend by an artifact of the same branch named after a hash of its sources (30 days). So a branch that changes core and app code together tests both.
 

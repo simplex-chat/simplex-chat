@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - "**"
+      # a squash merge's message lists the merged commits' subjects, with their tags
+      - "!master"
+      - "!stable"
   workflow_dispatch:
     inputs:
       claude:
