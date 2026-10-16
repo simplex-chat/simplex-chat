@@ -2,7 +2,9 @@
 
 # Test backend on the app runner: a chat relay and a directory service on the preset servers, with one group
 # and one channel registered and approved by a CLI peer, and another CLI peer that must find both by sending the
-# directory the search text. Both have profile images as large as the apps make them.
+# directory the search text, and a third that must find both with a search request, as the app does.
+# Both have profile images as large as the apps make them, so their search results don't fit in one service
+# response, and the search request must page through them.
 # For SimpleX names, an SMP server on 127.0.0.1 resolves .testing names through a local resolver, and a CLI peer
 # with an address on it claims the name seeded.testing.
 # Usage:
@@ -19,6 +21,8 @@ admin=ci_admin
 search_text="ci seed"
 # the longest profile image data URI the apps make and the core accepts (maxProfileImageSize)
 max_image_size=12500
+# the largest service response body, compressed if it has to be (maxServiceBodyLength)
+max_service_body=10737
 name_label=seeded
 resolver_port=8090
 
@@ -284,6 +288,57 @@ search_by_message() {
   echo "search for \"$search_text\" by message found ci_group and ci_channel"
 }
 
+page_summary() {
+  local resp=$1 compressed=""
+  if command -v zstd > /dev/null; then
+    compressed=", $(printf '%s' "$resp" | zstd -3 -q -c | wc -c) bytes zstd-compressed"
+  fi
+  jq -r '[.entries[] | "\(.displayName) (image: \(.image // "" | length) characters)"] | join(", ") | "entries: " + .' <<< "$resp"
+  echo "body: ${#resp} bytes$compressed, limit $max_service_body"
+}
+
+# What the app will send, from a client that never connected to the directory, following the cursor to the last page.
+# The images make the results too large for one response, so the directory must split them, and each must arrive
+# once and with its whole image.
+probe_search() {
+  local cursor="" pages=0 started resp req
+  : > "$work/probe-entries"
+  while :; do
+    pages=$((pages + 1))
+    if [ "$pages" -gt 10 ]; then
+      echo "error: the search is still returning pages after 10"
+      return 1
+    fi
+    req="{\"type\":\"search\",\"searchText\":\"$search_text\"${cursor:+,\"searchCursor\":$cursor}}"
+    started=$SECONDS
+    chat probe 1 "/_service_request 1 $directory_link timeout=30 $req" --user-display-name ci_probe
+    resp=$(sed -n 's/^service response: //p' "$work/out")
+    if [ -z "$resp" ]; then
+      echo "error: no service response for page $pages"
+      return 1
+    fi
+    echo "page $pages, in $((SECONDS - started)) s:"
+    page_summary "$resp"
+    jq -r '.entries[] | "\(.displayName) \(.image // "" | length)"' <<< "$resp" >> "$work/probe-entries"
+    cursor=$(jq -c '.searchCursor // empty' <<< "$resp")
+    [ -n "$cursor" ] || break
+  done
+  local expected="ci_channel ${#channel_image}
+ci_group ${#group_image}"
+  if [ "$(sort "$work/probe-entries")" != "$expected" ]; then
+    echo "error: expected each result once with its whole image (name, image length):"
+    echo "$expected"
+    echo "got:"
+    sort "$work/probe-entries"
+    return 1
+  fi
+  if [ "$pages" -lt 2 ]; then
+    echo "error: the results fit in one response, so the search no longer tests paging"
+    return 1
+  fi
+  echo "search for \"$search_text\" found ci_group and ci_channel with their images, in $pages pages"
+}
+
 dump_directory() {
   echo "::group::directory registrations"
   db_query directory "SELECT group_id, group_reg_status FROM sx_directory_group_regs" || true
@@ -305,6 +360,7 @@ start() {
   seed_group
   seed_channel
   search_by_message
+  probe_search
   start_names_server
   seed_name
 }
