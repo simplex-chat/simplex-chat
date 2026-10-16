@@ -1,6 +1,6 @@
 # New Chat / Connection
 
-> **Related spec:** [spec/client/navigation.md](../../spec/client/navigation.md)
+> **Related spec:** [spec/client/navigation.md](../../spec/client/navigation.md) | [spec/client/chat-list.md](../../spec/client/chat-list.md) (online search)
 
 ## Purpose
 
@@ -82,6 +82,22 @@ Group creation flow:
 | `SimpleXLinkQRCode` | Renders a QR code for a SimpleX connection link |
 | QR scanner | Platform camera scanner for reading QR codes |
 | Short link display | Compact link text with copy/share actions |
+
+### Search (New Chat Sheet)
+
+The search field of the New chat sheet filters "Your contacts" and offers the same online search as the chat list (see [Chat List, Online Search](chat-list.md#online-search-names-and-directory)):
+
+| Element | Behavior |
+|---|---|
+| "Connect to …" row | Below the field for a SimpleX name; hidden once the online search found anything for that name |
+| "Search in Directory" row | Below the field (after "Connect to …") for non-empty text that is not a SimpleX link; searches SimpleX Directory |
+| Keyboard Search key | On Android the keyboard's Search action, on desktop Enter. Searches the directory and, for a SimpleX name, resolves the name online |
+| Names and Directory sections | After the contacts, each with a section header in the style of "Your contacts". Tapping a result connects and closes the sheet, as other New chat actions do. A result for a contact already listed is not repeated. With the one-hand UI the list is reversed, and each header is still shown above its rows |
+| Contacts empty state | "No filtered contacts" is not shown while the online search runs or shows results |
+| Online search running | Progress indicator in the search bar; closing the sheet cancels the search |
+| Directory search failed | "Search failed, tap to retry" row at the end of the Directory section |
+
+The first online search asks for consent with the same alert as on the chat list. Results disappear when the text changes or the user switches profile (which also closes the sheet), and when a sheet opened from New chat covers it. Archived contacts keep their own search field without online results; their Search key does nothing.
 
 ## Source Files
 

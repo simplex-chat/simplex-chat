@@ -357,6 +357,29 @@ For channels: shows "This is your link for channel" with only "Open channel" + "
 
 For channels (`groupInfo.useRelays`): the title is "Open channel"; for groups, "Open group"; business chats keep "Open chat" / "Open new chat". Unless the chat is merely prepared (`nextConnectPrepared`) or a business chat, the alert shows an information line with the user's membership role (`memberRoleInformation`) in the secondary color: subscriber/contributor for channels, observer/member for groups, moderator/admin/owner for both.
 
+## 12. New Chat Online Search
+
+**Source:** [`Shared/Views/NewChat/NewChatMenuButton.swift`](../../Shared/Views/NewChat/NewChatMenuButton.swift)
+
+[`NewChatSheet`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L36) offers the chat list's online search (see [Chat List, Online Search](chat-list.md#11-online-search)) with its own [`OnlineSearchModel`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L46), reset on every change of `searchText` ([L187](../../Shared/Views/NewChat/NewChatMenuButton.swift#L187)) and of `currentUser?.userId` ([L190](../../Shared/Views/NewChat/NewChatMenuButton.swift#L190)). The sheet's `onDisappear` calls `cancelConnectProgress()`, which cancels a search still in flight.
+
+| Element | Where | Behavior |
+|---------|-------|----------|
+| Search key | [`ContactsListSearchBar`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L435) with `onSearch` ([L445](../../Shared/Views/NewChat/NewChatMenuButton.swift#L445)) | `.submitLabel(.search)` and `.onSubmit` run [`runOnlineSearch()`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L245): `search(text, name: connectNameCandidate)` |
+| "Connect to …" row | below the field ([L99](../../Shared/Views/NewChat/NewChatMenuButton.swift#L99)) | shown for a name candidate until name results arrive |
+| "Search in Directory" row | below the field ([L109](../../Shared/Views/NewChat/NewChatMenuButton.swift#L109)) | shown for non-empty, non-link text; runs [`runDirectorySearch()`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L239): `searchDirectory(text)` |
+| Names and Directory sections | after `ContactsList`, [`onlineSearchSections(_:)`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L195) | `Section`s with headers styled as "Your Contacts" ([`onlineSearchHeader`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L229)); the Directory section ends with the retry or "Show more" row; rows tap `planAndConnect(…, dismiss: true)` |
+
+Both triggers do nothing for empty text or a pasted link and go through `confirmDirectorySearch`. The list is `insetGrouped` and not flipped, so the sections use ordinary `Section` headers and default row backgrounds.
+
+**De-duplication against the contacts list.** Before `ContactsList(…)` the list builder computes [`ContactsList.shownChats(…)`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L392) with the same inputs `ContactsList` gets (`contactListChatPredicate`, the search state, `DEFAULT_SHOW_UNREAD_AND_FAVORITES`) and passes the ids of the shown contacts to `rows(shownChatIds:)` ([L173](../../Shared/Views/NewChat/NewChatMenuButton.swift#L173)). `shownChats` returns the contacts matching the predicate and the filtered, sorted list the section shows; `ContactsList.body` uses the same function.
+
+**Empty state.** [`ContactsList`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L303) has `showsEmptyState` (default `true`, [L314](../../Shared/Views/NewChat/NewChatMenuButton.swift#L314)); the sheet passes `!onlineSearch.searching && rows.isEmpty`, so "No filtered contacts" / "No contacts" are omitted while the online search runs or shows rows.
+
+**Archived contacts.** [`DeletedChats`](../../Shared/Views/NewChat/NewChatMenuButton.swift#L563) passes neither `onSearch` nor `showsEmptyState`: its search field keeps the `.return` label with a no-op submit, and its empty states are unchanged.
+
+[GAP] New chat does not resolve a typed name locally while typing, so a known contact whose name does not contain the typed text is not in "Your Contacts" and appears as a Names row; tapping it opens the existing chat.
+
 ---
 
 ## Source Files

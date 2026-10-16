@@ -112,7 +112,7 @@ A struct representing a relay instance for a group. Contains the relay's databas
 A struct representing a user's chat relay configuration. Contains the relay's database ID (`chatRelayId`), SMP server address, name, domains, and flags for preset/tested/enabled/deleted status. *See: `SimpleXChat/ChatTypes.swift` L2513*
 
 ### GroupShortLinkInfo
-Information about a group's short link including whether it's a direct link, associated relay hostnames, and shared group identifier. Transient data returned by `APIConnectPreparedGroup` — not persisted on GroupInfo. *See: `Shared/Model/AppAPITypes.swift` L1352*
+Information about a group's short link including whether it's a direct link, associated relay hostnames, and shared group identifier. Transient data returned by `APIConnectPreparedGroup` — not persisted on GroupInfo. *See: `Shared/Model/AppAPITypes.swift` L1494*
 
 ### CIDirection.channelRcv
 A chat item direction case for messages received via a channel relay, as opposed to `.groupRcv` for standard group messages. *See: `SimpleXChat/ChatTypes.swift` L3529*

@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [API Reference](api.md) | [State Management](state.md) | [Database](database.md)
 > Related product: [Product Overview](../product/README.md)
 
-**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L209) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L2915) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
+**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L209) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1521) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L3271) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2600) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1258) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
 
 ---
 
@@ -55,11 +55,11 @@ The app follows a strict layered model where each layer communicates only with i
 |-------|------|------|------|
 | Views | [`Shared/Views/ChatList/ChatListView.swift`](../Shared/Views/ChatList/ChatListView.swift) | Chat list rendering | |
 | Views | [`Shared/Views/Chat/ChatView.swift`](../Shared/Views/Chat/ChatView.swift) | Conversation rendering | |
-| State | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L337) | `ChatModel`, `ItemsModel`, `Chat` classes | L337, L74, L1271 |
+| State | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L412) | `ChatModel`, `ItemsModel`, `Chat` classes | L412, L74, L1418 |
 | API | [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L93) | FFI bridge functions | L93 |
-| API | [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L15) | `ChatCommand`, `ChatResponse`, `ChatEvent` enums | L15, L649, L1055 |
+| API | [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L15) | `ChatCommand`, `ChatResponse`, `ChatEvent` enums | L15, L729, L1179 |
 | FFI | [`SimpleXChat/SimpleX.h`](../SimpleXChat/SimpleX.h#L1-L49) | C header declaring Haskell exports | |
-| FFI | [`SimpleXChat/APITypes.swift`](../SimpleXChat/APITypes.swift#L27) | `APIResult<R>`, `ChatError`, `ChatCmdProtocol` | L27, L699, L17 |
+| FFI | [`SimpleXChat/APITypes.swift`](../SimpleXChat/APITypes.swift#L27) | `APIResult<R>`, `ChatError`, `ChatCmdProtocol` | L27, L765, L17 |
 | Core | `../../src/Simplex/Chat/Controller.hs` | Haskell command processor — see `processCommand` in `Controller.hs` | |
 
 ---
@@ -99,7 +99,7 @@ char *chat_encrypt_file(chat_ctrl ctl, char *fromPath, char *toPath);
 char *chat_decrypt_file(char *fromPath, char *key, char *nonce, char *toPath);
 ```
 
-### [Swift Bridge Functions (SimpleXAPI.swift)](../Shared/Model/SimpleXAPI.swift#L93-L221)
+### [Swift Bridge Functions (SimpleXAPI.swift)](../Shared/Model/SimpleXAPI.swift#L93-L229)
 
 ```swift
 // Synchronous send -- blocks calling thread
@@ -124,13 +124,13 @@ func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl?
 5. Swift decodes JSON into [`APIResult<R>`](../SimpleXChat/APITypes.swift#L27) where `R: ChatAPIResult`
 6. Result is either `.result(R)`, `.error(ChatError)`, or `.invalid(type, json)`
 
-### [Background Task Protection](../Shared/Model/SimpleXAPI.swift#L54-L79)
+### [Background Task Protection](../Shared/Model/SimpleXAPI.swift#L54-L74)
 
 All FFI calls are wrapped in [`beginBGTask()`](../Shared/Model/SimpleXAPI.swift#L54) / `endBackgroundTask()` to prevent iOS from killing the app mid-operation. The `maxTaskDuration` is 15 seconds.
 
 ---
 
-## [3. Event Streaming](../Shared/Model/SimpleXAPI.swift#L2220-L2916)
+## [3. Event Streaming](../Shared/Model/SimpleXAPI.swift#L2509-L3271)
 
 The Haskell core emits async events (new messages, connection status changes, file progress, etc.) that are not direct responses to commands. These are received via polling:
 
@@ -138,28 +138,28 @@ The Haskell core emits async events (new messages, connection status changes, fi
 Haskell Core --[chat_recv_msg_wait]--> Swift event loop --> ChatModel update --> SwiftUI re-render
 ```
 
-The event loop is implemented in [`ChatReceiver`](../Shared/Model/SimpleXAPI.swift#L2220-L2263), and events are dispatched by [`processReceivedMsg`](../Shared/Model/SimpleXAPI.swift#L2266).
+The event loop is implemented in [`ChatReceiver`](../Shared/Model/SimpleXAPI.swift#L2509-L2552), and events are dispatched by [`processReceivedMsg`](../Shared/Model/SimpleXAPI.swift#L2555).
 
-### [Event Types (ChatEvent enum)](../Shared/Model/AppAPITypes.swift#L1055-L1129)
+### [Event Types (ChatEvent enum)](../Shared/Model/AppAPITypes.swift#L1179-L1422)
 
 Key async events delivered from core to UI:
 
 | Event | Description | Line |
 |-------|-------------|------|
-| `newChatItems` | New messages received | [L1070](../Shared/Model/AppAPITypes.swift#L1070) |
-| `chatItemUpdated` | Message edited by sender | [L1072](../Shared/Model/AppAPITypes.swift#L1072) |
-| `chatItemsDeleted` | Messages deleted | [L1074](../Shared/Model/AppAPITypes.swift#L1074) |
-| `chatItemReaction` | Reaction added/removed | [L1073](../Shared/Model/AppAPITypes.swift#L1073) |
-| `contactConnected` | New contact connected | [L1062](../Shared/Model/AppAPITypes.swift#L1062) |
-| `contactUpdated` | Contact profile changed | [L1066](../Shared/Model/AppAPITypes.swift#L1066) |
-| `receivedGroupInvitation` | Group invitation received | [L1077](../Shared/Model/AppAPITypes.swift#L1077) |
-| `groupMemberUpdated` | Group member info changed | [L1067](../Shared/Model/AppAPITypes.swift#L1067) |
-| `callInvitation` | Incoming call | [L1115](../Shared/Model/AppAPITypes.swift#L1115) |
-| `chatSuspended` | Core suspended (background) | [L1056](../Shared/Model/AppAPITypes.swift#L1056) |
-| `rcvFileComplete` | File download finished | [L1099](../Shared/Model/AppAPITypes.swift#L1099) |
-| `sndFileCompleteXFTP` | File upload finished | [L1110](../Shared/Model/AppAPITypes.swift#L1110) |
+| `newChatItems` | New messages received | [L1194](../Shared/Model/AppAPITypes.swift#L1194) |
+| `chatItemUpdated` | Message edited by sender | [L1196](../Shared/Model/AppAPITypes.swift#L1196) |
+| `chatItemsDeleted` | Messages deleted | [L1198](../Shared/Model/AppAPITypes.swift#L1198) |
+| `chatItemReaction` | Reaction added/removed | [L1197](../Shared/Model/AppAPITypes.swift#L1197) |
+| `contactConnected` | New contact connected | [L1186](../Shared/Model/AppAPITypes.swift#L1186) |
+| `contactUpdated` | Contact profile changed | [L1190](../Shared/Model/AppAPITypes.swift#L1190) |
+| `receivedGroupInvitation` | Group invitation received | [L1201](../Shared/Model/AppAPITypes.swift#L1201) |
+| `groupMemberUpdated` | Group member info changed | [L1191](../Shared/Model/AppAPITypes.swift#L1191) |
+| `callInvitation` | Incoming call | [L1242](../Shared/Model/AppAPITypes.swift#L1242) |
+| `chatSuspended` | Core suspended (background) | [L1180](../Shared/Model/AppAPITypes.swift#L1180) |
+| `rcvFileComplete` | File download finished | [L1226](../Shared/Model/AppAPITypes.swift#L1226) |
+| `sndFileCompleteXFTP` | File upload finished | [L1237](../Shared/Model/AppAPITypes.swift#L1237) |
 
-Events are decoded as [`ChatEvent`](../Shared/Model/AppAPITypes.swift#L1055) enum in `Shared/Model/AppAPITypes.swift` and dispatched to update `ChatModel` / `ItemsModel` properties, triggering SwiftUI view re-renders via `@Published` property observation.
+Events are decoded as [`ChatEvent`](../Shared/Model/AppAPITypes.swift#L1179) enum in `Shared/Model/AppAPITypes.swift` and dispatched to update `ChatModel` / `ItemsModel` properties, triggering SwiftUI view re-renders via `@Published` property observation.
 
 ---
 
@@ -203,15 +203,15 @@ See [Database & Storage specification](database.md) for full details.
               ┌──────────┐
               │ DB Setup  │ chat_migrate_init_key()
               └─────┬─────┘
-                    │ startChat()                                    SimpleXAPI.swift L2098
+                    │ startChat()                                    SimpleXAPI.swift L2360
                     v
               ┌──────────┐
-              │  Active   │ apiActivateChat()                        SimpleXAPI.swift L358
+              │  Active   │ apiActivateChat()                        SimpleXAPI.swift L366
               └─────┬─────┘
                     │ scenePhase == .background
                     v
               ┌──────────┐
-              │Background │ apiSuspendChat(timeoutMicroseconds:)     SimpleXAPI.swift L368
+              │Background │ apiSuspendChat(timeoutMicroseconds:)     SimpleXAPI.swift L376
               └─────┬─────┘
                     │ scenePhase == .active
                     v
@@ -259,8 +259,8 @@ The Share Extension (`SimpleX SE/`) allows sharing content (text, images, files)
 Optional desktop pairing allows controlling the mobile app from a desktop client:
 
 - **Pairing**: Encrypted QR code scanned by desktop client establishes a session
-- **Commands**: [`connectRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1613), [`findKnownRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1620), [`confirmRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1624), [`verifyRemoteCtrlSession`](../Shared/Model/SimpleXAPI.swift#L1630), [`listRemoteCtrls`](../Shared/Model/SimpleXAPI.swift#L1636), [`stopRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1642), [`deleteRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1646)
-- **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L395)`: RemoteCtrlSession?` tracks the active session
+- **Commands**: [`connectRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1766), [`findKnownRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1773), [`confirmRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1777), [`verifyRemoteCtrlSession`](../Shared/Model/SimpleXAPI.swift#L1783), [`listRemoteCtrls`](../Shared/Model/SimpleXAPI.swift#L1789), [`stopRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1795), [`deleteRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1799)
+- **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L474)`: RemoteCtrlSession?` tracks the active session
 - **Transport**: Encrypted reverse HTTP transport between mobile and desktop
 - **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L545), see `Remote.hs` in `../../src/Simplex/Chat/`
 
@@ -324,7 +324,7 @@ Chat relays are SMP servers that forward messages to channel subscribers. They a
 | Root view | [`Shared/ContentView.swift`](../Shared/ContentView.swift#L24) | L24 |
 | FFI bridge | [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L93) | L93 |
 | Low-level FFI | [`SimpleXChat/API.swift`](../SimpleXChat/API.swift#L115) | L115 |
-| App state | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L337) | L337 |
+| App state | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L412) | L412 |
 | API types | [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L15) | L15 |
 | Shared types | [`SimpleXChat/APITypes.swift`](../SimpleXChat/APITypes.swift#L27) | L27 |
 | C header | [`SimpleXChat/SimpleX.h`](../SimpleXChat/SimpleX.h#L1-L49) | |

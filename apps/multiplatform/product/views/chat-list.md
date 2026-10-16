@@ -51,6 +51,26 @@ Behavior:
 - Filters chat list in real-time by contact/group name via `filteredChats()`
 - Detects pasted SimpleX links (`strHasSingleSimplexLink`) and triggers `planAndConnect()` connection dialogue
 - In one-hand UI mode, search bar appears below tag filters with IME spacer; in standard mode, above tag filters
+- For non-empty text that is not a link, offers "Search in Directory"; the keyboard Search key (Enter on desktop) searches online (see below)
+
+### Online Search (Names and Directory)
+
+Searching beyond the user's own chats happens only when the user asks, and the results are never saved: they disappear when the search text changes or the user switches profile. On Android, rotating the screen also drops them while the search text stays.
+
+| Element | Behavior |
+|---|---|
+| "Search in Directory" row | Shown for non-empty text that is not a SimpleX link. On Android with the one-hand UI it takes the place of the tags above the search field; with the top bar the tags stay and the row follows them below the field. On desktop the tags always stay and the row is shown next to them, on the search field's side. Searches SimpleX Directory for public groups and channels |
+| Keyboard Search key | On Android the keyboard's Search action, on desktop Enter. Searches the directory and, when the text is a SimpleX name (e.g. `alice` or `#news.testing`), resolves the name online. For a bare name both the contact (`@`) and the channel (`#`) form are tried |
+| "Connect to …" row | Shown for a SimpleX name, as before (on Android with the top bar it takes the tags' place); hidden once the online search found anything for that name |
+| First-search alert | Before the first online search: "Search in Directory?" — the text goes to SimpleX Directory, and a SimpleX name also to the user's server that resolves names; no contact is created and the profile is not sent. Search / Search and don't show again / Cancel ("Reset all hints" brings it back) |
+| Names part | Below the local chats, headed "Names": avatar, profile name, the SimpleX name in parentheses, description. Tapping connects (or opens the chat if it is already known) |
+| Directory part | Below the Names part, headed "Directory": avatar, `#` name, the directory's SimpleX name, description, member or subscriber count, and "Join channel" / "Join group". Tapping connects; "Show more" loads the next page; a failed request shows "Search failed, tap to retry" |
+
+A result is not shown twice: a name or directory entry for a chat already shown in the list is hidden, and a directory entry is hidden when the name search found the same channel (matched by its link). A group the user joined through a link other than the directory's still appears in the Directory part. Directory entries that are not group or channel links are ignored. Looking up a name never shows an error; a name that is not found simply gives no row, and "Connect to …" stays.
+
+While an online search runs or has results, the list shows no banner, no one-hand UI card and no connect cards. Typing alone, which only filters the chats, keeps them; they come back when the results go (the text changes or is cleared) or when a search is cancelled before showing anything.
+
+With no conversations yet (onboarding), the search bar is shown above the onboarding pages (below them with the one-hand UI) on Android, and the online results replace the pages while a search runs or has results. On desktop the onboarding pages are in the centre pane, so the chat list pane shows the search bar and the results only. Once a result is joined and the onboarding state ends, the search is cleared.
 
 ### Chat Filter Tags (`TagsView`)
 
@@ -112,19 +132,22 @@ Each chat type provides specific dropdown menu items:
 
 | Element | Condition | Description |
 |---|---|---|
-| One-hand UI card (`ToggleChatListCard`) | `oneHandUICardShown == false` | Dismissible card introducing bottom toolbar mode with toggle switch |
-| Address creation card (`AddressCreationCard`) | `addressCreationCardShown == false` | Prompts user to create a SimpleX address; tappable card opens `UserAddressLearnMore` |
+| One-hand UI card (`ToggleChatListCard`) | `oneHandUICardShown == false`, and no online search results shown | Dismissible card introducing bottom toolbar mode with toggle switch |
+| Connect cards (`ChatListFeatureCards`, `ConnectBannerCard`) | `addressCreationCardShown == false`, the user has conversations, and no online search results shown | Two cards, "New 1-time link" and "Paste link" ("Paste link / Scan" on Android), each opening `NewChatView`; the X sets `addressCreationCardShown` |
 | FAB (new chat button) | Standard mode, search empty, chat running | `FloatingActionButton` at bottom-right, pencil icon, opens `NewChatSheet` |
-| Crowdfunding banner (`GetStakeBanner`) | `crowdfundingAvailable()` and not dismissed | Gradient card above the chats, and below the onboarding cards when there are no conversations; opens `GetStakeView`. The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset |
+| Crowdfunding banner (`GetStakeBanner`) | `crowdfundingAvailable()`, not dismissed, and, in the chat list, no online search results shown | Gradient card above the chats, and below the onboarding cards when there are no conversations; opens `GetStakeView`. The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset |
 
 ### Empty States
 
 | State | Display |
 |---|---|
 | Loading | "Loading chats..." centered text |
-| No chats | "You have no chats" centered text |
+| No chats | "You have no chats" centered text, unless an online search runs or shows results |
 | No filtered chats | "No chats in list [tag name]" or "No unread chats" with clickable filter reset |
-| No search results | "No chats found" centered text |
+| No search results | "No chats found" centered text, unless an online search is running or shows results |
+| Online search running | Progress indicator in the toolbar (after about a second); tapping a result or clearing the search cancels it |
+| Directory search failed | "Search failed, tap to retry" row at the end of the Directory part |
+| Online search found nothing | No Names or Directory part; "No chats found" when no local chat matches either (in onboarding, a "No chats found" row) |
 
 ## Source Files
 
@@ -136,3 +159,5 @@ Each chat type provides specific dropdown menu items:
 | `UserPicker.kt` | `views/chatlist/UserPicker.kt` |
 | `TagListView.kt` | `views/chatlist/TagListView.kt` |
 | `GetStakeBanner.kt` | `views/chatlist/GetStakeBanner.kt` |
+| `DirectorySearchView.kt` | `views/chatlist/DirectorySearchView.kt` |
+| `DirectorySearch.kt` | `model/DirectorySearch.kt` |

@@ -12,6 +12,7 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 4. [File Transfer (RULE-14 through RULE-15)](#4-file-transfer)
 5. [Notification Delivery (RULE-16 through RULE-17)](#5-notification-delivery)
 6. [Call Integrity (RULE-18)](#6-call-integrity)
+7. [Online Search (RULE-19 through RULE-23)](#7-online-search)
 
 ---
 
@@ -251,3 +252,74 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 - `common/src/commonMain/kotlin/chat/simplex/common/views/call/WebRTC.kt`
 - Android: `android/src/main/java/chat/simplex/app/CallService.kt`, `android/src/main/java/chat/simplex/app/views/call/CallActivity.kt`
 - Desktop: `common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt`
+
+---
+
+## 7. Online Search
+
+### RULE-19: Online Results Are Never Saved
+
+**Invariant:** Name and directory results MUST NOT be stored, and MUST live only as long as the search text and the active profile: any text change or profile switch clears them, and a reply that arrives after that (or after the search was cancelled) MUST NOT be shown.
+
+**Enforcement:** `OnlineSearchModel.reset()` bumps `generation`, and every publish in `resolveNames` and `request` checks it; `cancelRequest()` bumps it too. `ChatListSearchBar` and `NewChatSheetLayout` call `reset()` from `KeyChangeEffect`s on the search text and on `chatModel.currentUser.value?.userId`. The model is kept in Compose `remember` only, so it is also dropped when its screen leaves composition (e.g. an Android rotation).
+
+**Location:**
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt` -- `ChatListSearchBar`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt` -- `NewChatSheetLayout`
+
+**Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+
+---
+
+### RULE-20: Only Group and Channel Links Are Accepted from the Directory
+
+**Invariant:** A directory entry MUST be shown only when its link is exactly one SimpleX link of type group or channel; any other entry (no link, an invitation or contact link, text around the link) MUST be dropped while the rest of the page is kept. Such a link is never passed to the core, which would fetch an invitation link from its server even in a store-only plan.
+
+**Enforcement:** `DirectorySearchEntry.link` is a `@Transient` property whose initializer, run by the decoder, takes `groupLink.connShortLink ?: groupLink.connFullLink` and throws `SerializationException` unless `simplexLinkType(link)` is `SimplexLinkType.group` or `SimplexLinkType.channel`; being `@Transient`, it cannot be set from the JSON. `parseDirectorySearchResponse` decodes entries one at a time inside `runCatching`, so a rejected entry is dropped alone.
+
+**Location:** `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `DirectorySearchEntry`, `simplexLinkType()`, `parseDirectorySearchResponse()`
+
+**Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+
+---
+
+### RULE-21: Online Lookups Never Show Alerts
+
+**Invariant:** Resolving a SimpleX name online and looking up directory entries locally MUST NOT show any alert, including the network retry alert; a failure gives no row.
+
+**Enforcement:** Every lookup of the online search calls `apiConnectPlan(…, inProgress = mutableStateOf(false), onFailure = ConnectPlanFailure.Log)`: `Log` only logs the failure, and a false `inProgress` also keeps `sendCmdWithRetry` from showing its retry alert.
+
+**Location:**
+- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` -- `ChatController.apiConnectPlan()`, `ConnectPlanFailure`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel.resolveNames()`, `OnlineSearchModel.request()`
+
+**Spec:** [spec/api.md](../spec/api.md#7-directory-search-and-connection-plans)
+
+---
+
+### RULE-22: Nothing Is Shown Twice
+
+**Invariant:** A name result whose chat is shown in the local list MUST be hidden. A directory result MUST be hidden when its link refers, in the local store, to a chat shown in the local list or found by name, or when its link is the link a name was resolved through. Only store-derived chat ids and links resolved by the core may hide a row. Limit: a regular group joined through another link (or the directory's full link) is not found by the lookup and still appears as a directory result (GAP-08).
+
+**Enforcement:** `OnlineSearchModel.rows(shownChatIds)` filters at render time with the ids of the chats each screen shows; `planLocalChatId` derives a result's local chat id from the connection plan, and `NameSearchResult.resolvedLink` is the link the core resolved.
+
+**Location:**
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel.rows()`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `planLocalChatId()`, `NameSearchResult`
+
+**Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+
+---
+
+### RULE-23: Consent Before the First Online Search
+
+**Invariant:** The search text MUST NOT be sent online until the user has confirmed the first-search alert, which names both recipients (SimpleX Directory and, for a SimpleX name, the server that resolves names), unless the user chose not to be asked again.
+
+**Enforcement:** Both triggers (the "Search in Directory" row and the Search key / Enter) on the chat list and in New chat go through `confirmDirectorySearch()`, which runs the search at once only when `AppPreferences.directorySearchAlertShown` is set and otherwise shows the alert. The preference is in `AppPreferences.hintPreferences`, so "Reset all hints" asks again.
+
+**Location:**
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `confirmDirectorySearch()`, `showDirectorySearchAlert()`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` -- `AppPreferences.directorySearchAlertShown`
+
+**Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)

@@ -15,6 +15,7 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (470 lines)
 7. [Authentication Gate](#7-authentication-gate)
 8. [Onboarding Flow](#8-onboarding-flow)
 9. [Source Files](#9-source-files)
+10. [New Chat Online Search](#10-new-chat-online-search)
 
 ---
 
@@ -27,10 +28,10 @@ SimpleX Chat navigation is a platform-adaptive system implemented in `App.kt`. T
 ## 1. Overview
 
 ```
-AppScreen (line 46)
+AppScreen (line 48)
 +-- SimpleXTheme
     +-- Surface
-        +-- MainScreen (line 82)
+        +-- MainScreen (line 85)
             |-- [Migration in progress]     -> DefaultProgressView
             |-- [Database opening]          -> DefaultProgressView
             |-- [Database error]            -> DatabaseErrorView
@@ -39,11 +40,11 @@ AppScreen (line 46)
             |-- [Onboarding complete]
             |   |-- [Android]
             |   |   +-- AndroidWrapInCallLayout
-            |   |       +-- AndroidScreen (line 293)
+            |   |       +-- AndroidScreen (line 313)
             |   |           |-- StartPartOfScreen (ChatListView)
             |   |           +-- ChatView (slide-in panel)
             |   +-- [Desktop]
-            |       +-- DesktopScreen (line 406)
+            |       +-- DesktopScreen (line 429)
             |           |-- StartPartOfScreen + UserPicker (left column)
             |           |-- ModalManager.start (overlay on left)
             |           |-- CenterPartOfScreen / ChatView (center column)
@@ -59,7 +60,7 @@ AppScreen (line 46)
 
 ## 2. AppScreen Composable
 
-**Location:** [`App.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L47)
+**Location:** [`App.kt#L48`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L48)
 
 ```kotlin
 @Composable
@@ -79,7 +80,7 @@ fun AppScreen()
 
 ## 3. MainScreen
 
-**Location:** [`App.kt#L84`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L84)
+**Location:** [`App.kt#L85`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L85)
 
 ```kotlin
 @Composable
@@ -100,7 +101,7 @@ fun MainScreen()
 | 6 | `onboarding == OnboardingComplete` | Platform-specific main screen |
 | 7 | Other onboarding stages | `AnimatedContent` with stage-specific views |
 
-### Onboarding Complete Branch (line ~156)
+### Onboarding Complete Branch (line ~157)
 
 When onboarding is complete:
 
@@ -126,7 +127,7 @@ When onboarding is complete:
 
 ## 4. Android Layout
 
-**Location:** [`App.kt#L296`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L296)
+**Location:** [`App.kt#L313`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L313)
 
 ```kotlin
 @Composable
@@ -157,7 +158,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ### Call Layout Wrapper
 
-`AndroidWrapInCallLayout` (line ~279) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
+`AndroidWrapInCallLayout` (line ~298) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
 
 ---
 
@@ -165,7 +166,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ## 5. Desktop Layout
 
-**Location:** [`App.kt#L410`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L410)
+**Location:** [`App.kt#L429`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L429)
 
 ```kotlin
 @Composable
@@ -188,11 +189,11 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>)
 
 ### Click-to-Dismiss Overlay
 
-When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~428). Clicking it closes start modals and hides the UserPicker.
+When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~451). Clicking it closes start modals and hides the UserPicker.
 
 ### CenterPartOfScreen
 
-**Location:** [`App.kt#L373`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L373)
+**Location:** [`App.kt#L390`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L390)
 
 - When `chatId` is null and no center modals: shows "No selected chat" placeholder.
 - When `chatId` is null and center modals open: shows `ModalManager.center`.
@@ -201,7 +202,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 ### StartPartOfScreen
 
-**Location:** [`App.kt#L352`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L352)
+**Location:** [`App.kt#L369`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L369)
 
 Routes between:
 - `SetDeliveryReceiptsView` (if `chatModel.setDeliveryReceipts` is true)
@@ -212,7 +213,7 @@ Routes between:
 
 ## 6. ModalManager
 
-**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 92)
+**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 97)
 
 ```kotlin
 class ModalManager(private val placement: ModalPlacement?)
@@ -294,7 +295,7 @@ object AppLock {
 
 ### Authentication Flow
 
-1. **MainScreen** checks `unauthorized` (derived: `userAuthorized.value != true`) at line ~135.
+1. **MainScreen** checks `unauthorized` (derived: `userAuthorized.value != true`) at line ~138.
 2. If unauthorized, including during an active call:
    - Launches `AppLock.runAuthenticate()` which triggers platform-specific biometric/passcode prompt.
    - On Android with system auth finishing during activity destruction, authentication is skipped.
@@ -303,7 +304,7 @@ object AppLock {
 
 ### Lock Delay
 
-The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~270) to prevent unnecessary re-auth. A call counts as activity: `recheckAuthState()` is a no-op while `showCallView` is true, and `CallManager.endCall()` resets `enteredBackground`, so the delay is counted from the end of the call. When a call is accepted from a notification or from the Android lock screen, `recheckAuthState()` is called before `acceptIncomingCall()`, so an expired delay still locks the app.
+The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~265) to prevent unnecessary re-auth. A call counts as activity: `recheckAuthState()` is a no-op while `showCallView` is true, and `CallManager.endCall()` resets `enteredBackground`, so the delay is counted from the end of the call. When a call is accepted from a notification or from the Android lock screen, `recheckAuthState()` is called before `acceptIncomingCall()`, so an expired delay still locks the app.
 
 ### Lock Modes
 
@@ -312,7 +313,7 @@ The `laLockDelay` preference controls how long after backgrounding the app requi
 
 ### First-Time Lock Notice
 
-`showLANotice` (line ~33 in `AppLock.kt`) prompts users to enable SimpleX Lock when they have more than 3 chats, have not yet been shown the notice, and have not enabled lock. On Android, it offers a choice between system auth and passcode.
+`showLANotice` (line ~34 in `AppLock.kt`) prompts users to enable SimpleX Lock when they have more than 3 chats, have not yet been shown the notice, and have not enabled lock. On Android, it offers a choice between system auth and passcode.
 
 ---
 
@@ -377,3 +378,31 @@ The stage value is stored in `appPrefs.onboardingStage` and persisted across app
 | `views/SplashView.kt` | Splash / loading screen |
 | `views/call/CallView.kt` | In-call fullscreen view (ActiveCallView) |
 | `views/localauth/PasswordEntry.kt` | Column divider utility (contains VerticalDivider) |
+| `views/newchat/NewChatSheet.kt` | New chat sheet: action buttons, contacts list, online search sections; Archived contacts (`DeletedContactsView`) |
+
+---
+
+<a id="NewChatOnlineSearch"></a>
+
+## 10. New Chat Online Search
+
+**Location:** [`NewChatSheetLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L110-L540)
+
+`NewChatSheetLayout` offers the chat list's online search (see [Chat List, Online Search](chat-list.md#11-online-search)) with its own [`OnlineSearchModel`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L141) (`remember`), reset from a `KeyChangeEffect` on `searchText.value.text` and another on `chatModel.currentUser.value?.userId` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L182-L187)). A profile switch also closes all modals on Kotlin, so the sheet is disposed anyway. The sheet's `DisposableEffect` `onDispose` ([`NewChatSheet`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L42-L48)) calls `cancelConnectProgress()`, which cancels a search still in flight. The model is also dropped while a modal opened from the sheet covers it (`ModalManager` composes only the top modal) and on an Android rotation.
+
+| Element | Where | Behavior |
+|---------|-------|----------|
+| Search key | [`ContactsSearchBar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L560-L662) with `onSearch` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L568)), passed to `SearchTextField` | the keyboard's Search action (Android) or Enter (desktop) runs [`runOnlineSearch()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L242-L247): `search(text, name = connectNameCandidate.value)` |
+| "Connect to …" row | the sticky header, below the field, in both `OneHandLazyColumn` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L392-L396)) and `NonOneHandLazyColumn` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L490-L494)) | shown for a name candidate until name results arrive (`candidate != null && onlineSearch.names.isEmpty()`) |
+| "Search in Directory" row | after the "Connect to …" row, behind a `Divider` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L397-L400), [source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L495-L498)) | shown for non-empty, non-link text; runs [`runDirectorySearch()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L236-L240): `searchDirectory(text)` |
+| Names and Directory sections | after `itemsIndexed(filteredContactChats)` in both columns, [`onlineSearchSections(rows)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L196-L232) | each part starts with a `SectionDividerSpaced` item, then the chat list's `searchPart` places its [`OnlineSearchHeader`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L189-L192) item (the `SectionView` title, not upper-cased), styled as "Your contacts"; rows are `items` keyed by `id`; the Directory part ends with the retry or "Show more" row; rows tap `hideKeyboard(view)` then `withBGApi { planAndConnect(rhId, …, close = close, cleanup = null) }`, which closes the sheet once connected |
+
+Both triggers do nothing for empty text or a pasted link ([`searchTrimmed()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L234), `searchShowingSimplexLink`) and go through `confirmDirectorySearch`, launching the model with `withApi`. `onlineSearchSections`, `OnlineSearchHeader`, `searchTrimmed`, `runDirectorySearch` and `runOnlineSearch` are local functions of `NewChatSheetLayout`. The one-hand column is reversed, so there `searchPart` puts each header after its rows and it is drawn above them, as in the chat list. A reversed list also reverses the nodes inside an item, so the divider is an item of its own: drawn below its part's rows there, it separates the parts, where in the header's item it would fall between the header and its rows. The contacts header shows only while the search text is empty, so it is never next to online results.
+
+**De-duplication against the contacts list.** `filteredContactChats` (the contacts the list shows, computed in the layout's scope) gives the shown ids: `rows = onlineSearch.rows(shownChatIds = filteredContactChats.map { it.id }.toSet())` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L180)), so no extra helper is needed.
+
+**Empty state.** `showsEmptyState = !onlineSearch.searching && rows.isEmpty` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L181)); [`NoFilteredContactsItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L329-L343) shows "No filtered contacts" only when it holds. Kotlin has no "No contacts" state.
+
+**Archived contacts.** [`DeletedContactsView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L755-L869) passes no `onSearch` to `ContactsSearchBar`: its field keeps the Search IME label (every `SearchTextField` uses `ImeAction.Search`), the key does nothing, and it shows no online rows; its empty state is unchanged.
+
+[GAP] New chat does not resolve a typed name locally while typing (the `ContactsSearchBar` collector resolves a name only when its "Connect to …" row is tapped), so a known contact whose name does not contain the typed text is not in "Your contacts" and appears as a Names row; tapping it opens the existing chat. See [GAP-10](../../product/gaps.md#gap-10-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing).

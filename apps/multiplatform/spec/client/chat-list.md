@@ -1,6 +1,6 @@
 # Chat List Specification
 
-Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt`
+Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt`, `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt`, `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt`
 
 ---
 
@@ -16,12 +16,13 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatLis
 8. [UserPicker](#8-userpicker)
 9. [Source Files](#9-source-files)
 10. [Crowdfunding Banner](#10-crowdfunding-banner)
+11. [Online Search](#11-online-search)
 
 ---
 
 ## Executive Summary
 
-The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 179 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
+The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 218 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
 
 ---
 
@@ -54,7 +55,7 @@ ChatListView
 
 ## 2. ChatListView Composable
 
-**Location:** [`ChatListView.kt#L179`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L179)
+**Location:** [`ChatListView.kt#L218`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L218)
 
 ```kotlin
 fun ChatListView(
@@ -67,8 +68,8 @@ fun ChatListView(
 
 ### Initialization
 
-- Shows "What's New" modal on first launch after update (line ~185), with a 1-second delay.
-- On desktop, closing a chat resets audio/video players (line ~193).
+- Shows "What's New" modal on first launch after update (line ~224), with a 1-second delay.
+- On desktop, closing a chat resets audio/video players (line ~232).
 
 ### Layout Modes
 
@@ -89,8 +90,8 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Android-specific
 
-- `SetNotificationsModeAdditions`: Notification permission setup (line ~243).
-- `UserPicker`: Overlay side panel for user switching (line ~247).
+- `SetNotificationsModeAdditions`: Notification permission setup (line ~286).
+- `UserPicker`: Overlay side panel for user switching (line ~290).
 
 ---
 
@@ -114,7 +115,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Active Filter Types
 
-Defined as sealed class `ActiveFilter` (line ~59):
+Defined as sealed class `ActiveFilter` (line ~63):
 
 ```kotlin
 sealed class ActiveFilter {
@@ -137,7 +138,7 @@ sealed class ActiveFilter {
 
 ### Search Filtering
 
-The `filteredChats` function (line ~1474) applies filters in this order:
+The `filteredChats` function (line ~1689) applies filters in this order:
 
 1. **SimpleX link match:** If a pasted link resolved to a known contact/group, show only that chat.
 2. **Text search:** Case-insensitive match against `chat.chatInfo.chatViewName`, `chat.chatInfo.fullName`, and `chat.chatInfo.localAlias`.
@@ -148,10 +149,11 @@ The `filteredChats` function (line ~1474) applies filters in this order:
 
 ### Search Bar
 
-`ChatListSearchBar` (line ~765) provides:
+`ChatListSearchBar` (line ~866) provides:
 - Text input with search icon.
 - SimpleX link detection: When a pasted string contains a single SimpleX link, it triggers `planAndConnect` for connection, suppressing normal search.
 - Unread filter toggle button (right side, when search is empty).
+- Searching SimpleX Directory and resolving SimpleX names online happen only on request, below the local results: see [Online Search](#11-online-search).
 
 ---
 
@@ -225,7 +227,7 @@ On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) re
 
 ### TagsView
 
-**Location:** [`ChatListView.kt#L1214`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1214)
+**Location:** [`ChatListView.kt#L1451`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1451)
 
 Renders a horizontally scrollable row of tag chips (via `TagsRow`, which is a platform-specific `expect` composable).
 
@@ -317,6 +319,8 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 | `TagListView.kt` | Tag management and assignment view |
 | `UserPicker.kt` | User switching side panel |
 | `GetStakeBanner.kt` | Crowdfunding banner and the shared banner card chrome |
+| `DirectorySearchView.kt` | Online search model, Names and Directory rows, first-search alert |
+| `model/DirectorySearch.kt` | Directory response parsing and online result types |
 
 ---
 
@@ -324,7 +328,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 
 ## 10. Crowdfunding Banner
 
-**Location:** [`GetStakeBanner.kt#L31`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L31)
+**Location:** [`GetStakeBanner.kt#L35`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L35)
 
 ```kotlin
 fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)
@@ -339,7 +343,7 @@ Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfun
 | Chat list | in `ChatList`'s `LazyColumn`, after `ToggleChatListCard` and before the chats | `Box(Modifier.zIndex(1f).padding(16.dp))` |
 | Onboarding | inside `ConnectOnboardingView` (`views/newchat/OnboardingCards.kt`), below the pager, so it shares the pages' width limit on desktop and their dimming while a start modal is open; opens the page in `ModalManager.center` on desktop, `ModalManager.start` on Android | `padding(start/end = DEFAULT_PADDING, bottom = 8.dp)`, in a `Column` where the pager takes `weight(1f)` |
 
-The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded()`), the renewal-failure alert (`badgeIssueFailed()`), the pitch, then the Wefunder banner. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeExpired`, `BadgeIssueFailed`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alerts have no such check: an alert takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`.
+The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded()`), the renewal-failure alert (`badgeIssueFailed()`), the pitch, then the Wefunder banner. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeExpired`, `BadgeIssueFailed`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alerts have no such check: an alert takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`. While online search results are shown (`showsCards` is `!onlineSearch.showResults`, false after "Search in Directory" or the Search key) the slot stays empty, and `ToggleChatListCard` and `ChatListFeatureCards` are left out too; typing alone, which only filters the chats, keeps them, and they return when the search is cleared or cancelled before showing anything.
 
 `crowdfundingAvailable()` launches an effect to load the store country, so both call sites read it in the composable body rather than inside the `LazyColumn` builder.
 
@@ -361,3 +365,121 @@ Tapping the card runs `openGetStake()`, which opens `GetStakeView(showFirstImage
 ### Shared card chrome
 
 `Modifier.bannerCard(onTap)` (size state, gradient brush, `heightIn`, `clip`, `background`, `clickable`) and `BannerDismissButton` are declared separately from `GetStakeBanner` so other banners can adopt the same chrome; the paddings stay with the caller. The gradient reuses `gradientPoints`, `lightStops` and `darkStops` from `views/newchat/OnboardingCards.kt`.
+
+---
+
+<a id="OnlineSearch"></a>
+
+## 11. Online Search
+
+**Files:** `views/chatlist/DirectorySearchView.kt` (model and rows), `model/DirectorySearch.kt` (response and result types), `views/chatlist/ChatListView.kt` (triggers and rendering), `views/helpers/SearchTextField.kt` (Search key)
+
+The search text can be sent online on request: to SimpleX Directory, to find public groups and channels, and, when the text is a SimpleX name, to the user's name-resolving server. Results are shown below the local chats in two parts, Names then Directory. They are never saved and live only as long as the search text and the active profile: [`ChatListSearchBar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L887-L991) calls `reset()` from a `KeyChangeEffect` on `searchText.value.text` and another on `chatModel.currentUser.value?.userId` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L932-L937)). The model is a plain `remember` in [`ChatListView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L246), so an Android rotation (which recreates the Activity) drops the results while the `rememberSaveable` search text stays. The New chat sheet uses the same model and rows (see [Navigation, New Chat Online Search](navigation.md#10-new-chat-online-search)).
+
+### Triggers
+
+| Trigger | Handler | Runs |
+|---------|---------|------|
+| Search key: the keyboard's Search action on Android, Enter (key up) on desktop, through [`SearchTextField`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/SearchTextField.kt#L33-L43)`(onSearch)` | [`runOnlineSearch()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1016-L1021) | `search(text, name = connectNameCandidate.value)`: the directory's first page, and name resolution when the text is a name candidate |
+| "Search in Directory" row ([`SearchInDirectoryRow`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L203-L218)) | [`runDirectorySearch()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1009-L1014) | `searchDirectory(text)`: the directory only |
+
+`SearchTextField` handles the key per platform: on Android through `KeyboardActions(onSearch)` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/SearchTextField.kt#L116-L121)), on desktop through `onPreviewKeyEvent` for `Key.Enter` / `Key.NumPadEnter` on `KeyUp` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/SearchTextField.kt#L95-L102)), so one key press runs the search once. Every caller keeps `ImeAction.Search`; a caller without `onSearch` gets no handler.
+
+Both triggers do nothing for empty (trimmed) text or a pasted SimpleX link ([`searchTrimmed`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1006-L1007), `searchShowingSimplexLink`), and both go through [`confirmDirectorySearch()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L328-L334), which runs the search at once when `appPrefs.directorySearchAlertShown` is set and otherwise shows the three-button alert ([`showDirectorySearchAlert`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L336-L364), `showAlertDialogButtonsColumn` with `parseHtml = false` so the paragraph break shows): Search / Search and don't show again / Cancel. Its message names both recipients: the directory, and, for a SimpleX name, the server that resolves names. The preference is in `hintPreferences`, so "Reset all hints" brings the alert back. Each trigger launches the model method with `withApi`.
+
+The rows next to the search field share one slot with the tags, laid out by [`TagsOrConnectByName`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1320-L1374) and [`ChatListSearchBarWithTags`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1241-L1266):
+
+| Search text | Android, one-hand UI (slot above the field) | Android, top bar (slot below the field) | Desktop (either mode) |
+|-------------|-----------------------------------|------------------------------|------|
+| Empty | Tags | Tags | Tags |
+| Plain text | "Search in Directory" | Tags, then "Search in Directory" | Tags and "Search in Directory" |
+| Name candidate, no name results yet | "Connect to …" and "Search in Directory" | "Connect to …" (in the tags' place), then "Search in Directory" | Tags, "Connect to …" and "Search in Directory" |
+| Name candidate with name results | "Search in Directory" | Tags, then "Search in Directory" | Tags and "Search in Directory" |
+| Pasted SimpleX link | Tags | Tags | Tags |
+
+On desktop the rows are passed to the caller's `desktopView`, which places them between the tags and the field: above the field with the bottom toolbar, below it with the top toolbar.
+
+<a id="OnlineSearchModel"></a>
+
+### OnlineSearchModel
+
+**Location:** [`OnlineSearchModel`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L32-L200)
+
+A plain class holding Compose state, owned by `ChatListView` as `remember { OnlineSearchModel() }` and passed through `ChatListWithLoadingScreen` to `ChatList`, `ChatListSearchBarWithTags`, `ChatListSearchBar` and `TagsOrConnectByName`. Every method runs on the main thread: the triggers and rows launch them with `withApi` (`Dispatchers.Main`), and the spinner's `onCancel` hops back with `withApi { cancelRequest() }`; the API calls move the FFI work to `Dispatchers.IO` themselves. This keeps every read and write of `generation` on one thread.
+
+| State | Description |
+|-------|-------------|
+| `names: List<NameSearchResult>` | Name results for the current text |
+| `directory: List<DirectoryResult>` | Directory entries shown so far, each with the local chat its link refers to |
+| `loading` | A directory request is in flight |
+| `resolvingNames` | Name resolution is in flight |
+| `failed` | The last directory request failed |
+| `searched` | A directory request for the current text completed, successfully or not (tells "not searched" from "found nothing") |
+| `cursor` (private) | Opaque `JsonObject?` from the last page, echoed back for the next one; null when there are no more. Snapshot state, because `footer` reads it |
+| `generation` (private) | Bumped by `reset()` and `cancelRequest()`; a reply whose captured generation differs never writes model state |
+
+The public state has private setters; `searchedText`, `generation` and `spinnerShown` are plain fields.
+
+| Computed | Definition |
+|----------|------------|
+| [`searching`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L57) | `loading \|\| resolvingNames` |
+| [`showResults`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L58) | `searching \|\| searched \|\| names.isNotEmpty()` |
+| [`footer`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L59) | `DirectoryFooter.Retry` when `failed`, else `ShowMore` when a cursor exists, else null |
+
+| Method | Description |
+|--------|-------------|
+| [`reset()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L61-L71) | Clears all results and flags, bumps `generation` (text change, profile switch) |
+| [`cancelRequest()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L74-L78) | The spinner's `onCancel`: bumps `generation` and clears `loading` and `resolvingNames`; results already shown stay |
+| [`search(text, name)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L80-L97) | Search key: ignored for empty text or while `searching` for the same text; otherwise `reset()`, then the first directory page and, with a name, name resolution concurrently (`coroutineScope { async { resolveNames(name, gen) } }`, with the generation captured before the child coroutine starts) |
+| [`searchDirectory(text)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L99-L112) | The row: ignored while `loading` for the same text; for the same text it clears only the directory state (name results stay), for new text it resets; then the first page |
+| [`loadMore()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L114-L117) | "Show more": the next page, appended |
+| [`retry()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L120-L126) | The retry row: resumes the page when a cursor exists, else repeats the first page; no reset |
+| [`rows(shownChatIds)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L128-L140) | The rows to render, given the ids of the local chats shown (see De-duplication) |
+
+**Spinner.** The private setters of `loading` and `resolvingNames` call [`updateSpinner()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L186-L199) on every write, which starts the "Searching directory…" progress with owner `ConnectProgressOwner.DirectorySearch` when `searching` becomes true and stops it when it becomes false (`spinnerShown` keeps the last state, so repeated writes do nothing). The chat list shows it in the toolbar ([`ChatListToolbar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L660-L666)) once it has run for a second, not in the search field. The spinner is shared with connections: [`ConnectProgressOwner`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L50) records whose it is, [`startConnectProgress`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L60-L69) does not let a search take it from a running connection, and [`stopConnectProgress`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L72-L78) ignores a stop from another owner. Tapping a result calls [`planAndConnect`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/ConnectPlan.kt#L24-L55), whose `cancelConnectProgress()` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L81-L88)) cancels the search through its `onCancel` before the connection takes the spinner. Clearing the search text does the same through the typing path.
+
+### Directory requests
+
+[`request(append)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L160-L184) reads `chatModel.remoteHostId()` and calls [`apiSearchDirectory`](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1645-L1652), which sends `APISendServiceRequest` to [`DIRECTORY_SERVICE_LINK`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L16) with a [10-second timeout](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L19) and the request built by [`directorySearchRequest`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L71-L75) (`searchText`, and `searchCursor` for later pages). [`parseDirectorySearchResponse`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L79-L88) accepts only a `searchResults` response and decodes its entries one at a time inside `runCatching`, so an entry the app cannot decode is dropped and the rest of the page is kept.
+
+[`DirectorySearchEntry`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L33-L58) keeps the wire field `groupLink` private; its [`link`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L47-L57) is a `@Transient` property whose initializer, run by the generated decoder, takes `groupLink.connShortLink ?: groupLink.connFullLink` and throws `SerializationException` unless [`simplexLinkType`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L60-L63) classifies it as `SimplexLinkType.group` or `SimplexLinkType.channel`. Being `@Transient`, `link` cannot be set by a `link` key in the JSON. `simplexLinkType` returns the link type only when [`strConnectTarget`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatView.kt#L834) finds exactly one SimpleX link whose text is the whole string. `link` is also the entry's `id`. The directory sends only the short link when an entry has one.
+
+For each new entry of a page (not already shown, not repeated in the page), the request looks up the local chat its link refers to with `apiConnectPlan(rh, entry.link, resolveMode = PRMNever, inProgress = mutableStateOf(false), onFailure = ConnectPlanFailure.Log)` and [`planLocalChatId`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L90-L110), building a [`DirectoryResult`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L173-L178). The link-type check makes this lookup store-only: the core plans contact-mode links under `PRMNever` from the store, but would fetch an invitation link from its server. The page is published, appended or replacing, only if the generation did not change.
+
+### Name resolution
+
+[`resolveNames(name, gen)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L142-L158) resolves `[name]` for a candidate starting with `@` or `#`, else `["@$name", "#$name"]` (the candidate comes from [`nameSearchCandidate`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1283-L1294), as on the typing path). Each target is planned with `apiConnectPlan(rh, target, resolveMode = PRMUnknown, inProgress = mutableStateOf(false), onFailure = ConnectPlanFailure.Log)`; it stops before a target once the generation changed, so a cancelled or replaced search sends no further names. [`NameSearchResult(target, result)`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L112-L171) (a private constructor behind a companion `operator fun invoke` that returns null for no row) maps the plan with one exhaustive `when`: a contact address or group link gives a row (profile from the link data or the known chat), the user's own contact address, an invitation link and an error give none. `simplexName` is the plan's `planSimplexName?.shortStr`, `localChatId` comes from `planLocalChatId`, `iconName` is an `ImageResource`, and for a group link `resolvedLink` is the link the core resolved (`connLink.connShortLink`). Failures are logged at debug level and never shown as alerts; the false `inProgress` also keeps `sendCmdWithRetry` from showing its network retry alert.
+
+### De-duplication
+
+[`rows(shownChatIds)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L128-L140) returns an [`OnlineSearchRows`](../../common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt#L180-L186) at composition time, so pages added by "Show more" are filtered too:
+
+- a name result is hidden when its `localChatId` is among the shown local chats;
+- a directory result is hidden when its `localChatId` is among the shown local chats or any name result's `localChatId`, or when its `entry.link` equals any name result's `resolvedLink` (all name results, shown or not);
+- `footer` passes through.
+
+Only store-derived chat ids and the link the core resolved can hide a row, never a field the directory or a name's owner wrote. A mismatch in link encoding can only produce a duplicate row.
+
+[GAP] A regular group the user joined through a different link, or through the directory's full link, is not found by the store lookup and still appears as a Directory row; tapping it goes through `planAndConnect`. See [GAP-08](../../product/gaps.md#gap-08-online-search-groups-joined-through-another-link-still-appear-as-directory-results).
+
+### Rendering
+
+| Where | Rows | Empty state |
+|-------|------|-------------|
+| [`ChatList`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1066-L1239) | `rows(shownChatIds)` with the ids of the shown chats ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1109)); after the local chats and before `ChatListFeatureCards`, [`nameRows`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L517-L532) then [`directoryRows`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L534-L554) | `NoChatsView` overlay only when no chat is shown, the model is not `searching` and `rows.isEmpty` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1217-L1222)); the `you_have_no_chats` overlay of `ChatListWithLoadingScreen` (no chats at all) is hidden while `showResults` |
+| Onboarding branch of [`ChatListWithLoadingScreen`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L459-L506) | A `Column` with `ChatListSearchBarWithTags` first (top bar) or last (one-hand UI), and between them a `Box(Modifier.weight(1f))` holding, while `showResults`, a `LazyColumnWithScrollBarNoAppBar` of the same parts with `shownChatIds = emptySet()` (reversed in one-hand mode, `imePadding()` in top-bar mode), otherwise `ConnectOnboardingView()` on Android | A centred "No chats found" item when not searching and `rows.isEmpty` |
+
+The onboarding `Column` takes the toolbar and navigation-bar paddings and consumes the navigation-bar insets, so the results list's `imePadding()` does not count them twice. On desktop the onboarding pages are drawn in the centre pane, so the chat list pane shows only the search bar and the results. When a joined result adds a chat and the onboarding state ends, `ChatList` enters composition and its `LaunchedEffect(activeFilter.value)` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1236-L1238)) clears the search text, which resets the model; the iOS app keeps the search there.
+
+Each part renders only when it has rows: the Names part when `rows.names` is not empty, the Directory part when `rows.directory` is not empty or `rows.footer` is set. `nameRows` and `directoryRows` are `LazyListScope` builders; each part has a header `item` ([`SearchPartHeader`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L567-L575): `body2`, secondary colour, `semantics { heading() }`) rather than a `stickyHeader`, and its rows are `items` keyed by `id`. [`searchPart`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L556-L565) emits the header before the part's rows with the top bar and after them in the one-hand UI, so it is drawn above them in both layouts, the one-hand list being reversed. Its header defaults to `SearchPartHeader`; the New chat sheet passes its own ([Navigation, New Chat Online Search](navigation.md#10-new-chat-online-search)). A lazy list keeps its first visible item in place by key, so in the reversed onboarding list, whose first item is then a keyed row, names arriving after the directory page can end up out of view: that list scrolls to its first item when name results arrive in one-hand mode ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L474-L480)). The `ChatList` branch starts with a keyless spacer, which stays the anchor.
+
+| Row | View | Tap |
+|-----|------|-----|
+| Name | [`NameSearchRow`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L267-L295): avatar, profile name in bold, the SimpleX name in parentheses (secondary, one `AnnotatedString`, one line), description (2 lines) | `planAndConnect(rhId, result.target, close = null, cleanup = null)` |
+| Directory entry | [`DirectorySearchRow`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L220-L265): avatar, `#` + name, the directory's SimpleX name claim as plain text (truncates first), description (2 lines), member or subscriber count (`body2`, secondary colour), and the verb "Join channel" / "Join group" (one line, never wrapped) | `planAndConnect(rhId, result.entry.link, close = null, cleanup = null)` |
+| Retry | [`DirectoryRetryRow`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L314-L326): "Search failed, tap to retry" | `withApi { retry() }` |
+| Show more | [`DirectoryShowMoreRow`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt#L297-L312): "Show more", disabled (secondary colour) while `loading` | `withApi { loadMore() }` |
+
+A name or directory row tap first hides the keyboard (`hideKeyboard(view)`), then runs `planAndConnect` with `withBGApi`. Text from the directory and from name owners is rendered with `Text(String)` (never parsed as markdown) with line limits.
+
+[GAP] Resolving a SimpleX name with `PRMUnknown` also loads the resolved address's link data from the server that hosts it; the alert names only the directory and the name-resolving server. See [GAP-09](../../product/gaps.md#gap-09-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address).

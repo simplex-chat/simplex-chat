@@ -152,7 +152,7 @@ The NSE uses a subset of the chat API:
 - If main app is `.active`, NSE may skip processing (main app handles notifications directly)
 - NSE uses `chat_close_store` / `chat_reopen_store` for safe concurrent access
 
-### [Preview Modes](../../SimpleXChat/APITypes.swift#L664)
+### [Preview Modes](../../SimpleXChat/APITypes.swift#L686)
 
 `NotificationPreviewMode` controls what the NSE shows:
 

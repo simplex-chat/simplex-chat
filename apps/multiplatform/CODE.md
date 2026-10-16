@@ -224,6 +224,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/AppLock.kt | spec/architecture.md | product/views/settings.md |
 | common/.../common/model/ChatModel.kt | spec/state.md | product/concepts.md |
 | common/.../common/model/SimpleXAPI.kt | spec/api.md, spec/architecture.md | product/concepts.md |
+| common/.../common/model/DirectorySearch.kt | spec/client/chat-list.md, spec/api.md | product/views/chat-list.md, product/rules.md |
 | common/.../common/model/CryptoFile.kt | spec/services/files.md | product/flows/file-transfer.md |
 | common/.../common/platform/Core.kt | spec/architecture.md | product/concepts.md |
 | common/.../common/platform/AppCommon.kt | spec/architecture.md | product/flows/onboarding.md |
@@ -245,6 +246,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/views/chatlist/ChatPreviewView.kt | spec/client/chat-list.md | product/views/chat-list.md |
 | common/.../common/views/chatlist/UserPicker.kt | spec/client/chat-list.md | product/views/chat-list.md |
 | common/.../common/views/chatlist/TagListView.kt | spec/client/chat-list.md | product/views/chat-list.md |
+| common/.../common/views/chatlist/DirectorySearchView.kt | spec/client/chat-list.md | product/views/chat-list.md, product/views/new-chat.md |
 | common/.../common/views/chat/ChatView.kt | spec/client/chat-view.md | product/views/chat.md |
 | common/.../common/views/chat/ComposeView.kt | spec/client/compose.md | product/views/chat.md |
 | common/.../common/views/chat/SendMsgView.kt | spec/client/compose.md | product/views/chat.md |
@@ -256,6 +258,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/views/call/WebRTC.kt | spec/services/calls.md | product/flows/calling.md |
 | common/.../common/views/newchat/NewChatView.kt | spec/client/navigation.md | product/views/new-chat.md |
 | common/.../common/views/newchat/AddGroupView.kt | spec/client/navigation.md | product/views/new-chat.md |
+| common/.../common/views/newchat/NewChatSheet.kt | spec/client/navigation.md | product/views/new-chat.md |
 | common/.../common/views/usersettings/SettingsView.kt | spec/client/navigation.md | product/views/settings.md |
 | common/.../common/views/usersettings/Appearance.kt | spec/services/theme.md | product/views/settings.md |
 | common/.../common/views/usersettings/PrivacySettings.kt | spec/client/navigation.md | product/views/settings.md |

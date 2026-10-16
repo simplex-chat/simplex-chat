@@ -33,6 +33,24 @@ The toolbar supports two layout modes:
 - When active, `searchMode = true` hides the navigation bar and shows inline search
 - Filters chat list in real-time by contact/group name and message content
 - Detects pasted SimpleX links (`searchShowingSimplexLink`) and offers to connect
+- For non-empty text that is not a link, offers "Search in Directory"; the keyboard Search key searches online (see below)
+
+### Online Search (Names and Directory)
+
+Searching beyond the user's own chats happens only when the user asks, and the results are never saved: they disappear when the search text changes or the user switches profile.
+
+| Element | Behavior |
+|---|---|
+| "Search in Directory" row | Shown for non-empty text that is not a SimpleX link. With the one-hand UI it takes the place of the tags above the search field; with the top bar it is below the field. Searches SimpleX Directory for public groups and channels |
+| Keyboard Search key | Searches the directory and, when the text is a SimpleX name (e.g. `alice` or `#news.testing`), resolves the name online. For a bare name both the contact (`@`) and the channel (`#`) form are tried |
+| "Connect to …" row | Shown for a SimpleX name, as before; hidden once the online search found anything for that name |
+| First-search alert | Before the first online search: "Search in Directory?" — the text goes to SimpleX Directory, and a SimpleX name also to the user's server that resolves names; no contact is created and the profile is not sent. Cancel / Search / Search and don't show again ("Reset all hints" brings it back) |
+| Names part | Below the local chats, headed "Names": avatar, profile name, the SimpleX name in parentheses, description. Tapping connects (or opens the chat if it is already known) |
+| Directory part | Below the Names part, headed "Directory": avatar, `#` name, the directory's SimpleX name, description, member or subscriber count, and "Join channel" / "Join group". Tapping connects; "Show more" loads the next page; a failed request shows "Search failed, tap to retry" |
+
+A result is not shown twice: a name or directory entry for a chat already shown in the list is hidden, and a directory entry is hidden when the name search found the same channel (matched by its link). A group the user joined through a link other than the directory's still appears in the Directory part. Directory entries that are not group or channel links are ignored. Looking up a name never shows an error; a name that is not found simply gives no row, and "Connect to …" stays.
+
+With no conversations yet (onboarding), the online results replace the onboarding pages while a search runs or has results. With conversations, while an online search runs or after it has run, even one that found nothing, the list hides the banner (Wefunder or badges), the one-hand UI card and the "New 1-time link" / "Paste link / Scan" cards; filtering the chats by typing keeps them, and they come back when the search text is cleared (× or Cancel).
 
 ### Chat Filter Tabs (Tags)
 
@@ -106,7 +124,10 @@ Triggers `reconnectAllServers()` after user confirmation alert ("Reconnect serve
 | Chat database not started | Settings row shows exclamation icon; chat running == false disables interactions |
 | No conversations yet | `ConnectOnboardingView` pages replace the list, with the crowdfunding banner below them where it applies |
 | Connection in progress | `ConnectProgressManager` overlay with connecting text |
-| Search with no results | Empty list with no special empty-state view |
+| Search with no results | "No chats found" in the middle of the list, unless an online search is running or shows results |
+| Online search running | Progress indicator in the search field (after about a second); tapping a result or clearing the search cancels it |
+| Directory search failed | "Search failed, tap to retry" row at the end of the Directory part |
+| Online search found nothing | No Names or Directory part; "No chats found" when no local chat matches either (in onboarding, a "No chats found" row) |
 
 ## Related Specs
 
@@ -130,3 +151,5 @@ Triggers `reconnectAllServers()` after user confirmation alert ("Reconnect serve
 - `Shared/Views/ChatList/OneHandUICard.swift` -- One-hand UI introduction card
 - `Shared/Views/ChatList/GetStakeBanner.swift` -- Wefunder crowdfunding banner and shared banner card chrome
 - `Shared/Views/ChatList/ServersSummaryView.swift` -- Server subscription summary
+- `Shared/Views/ChatList/DirectorySearchView.swift` -- Online search model, Names and Directory rows, first-search alert
+- `Shared/Model/DirectorySearch.swift` -- Directory response parsing and online result types

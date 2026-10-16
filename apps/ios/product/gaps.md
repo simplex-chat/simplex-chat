@@ -62,3 +62,25 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ---
 
+## Online Search
+
+### GAP: Groups joined through another link still appear as directory results
+**Source:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+A directory entry is matched to a local chat by a store-only lookup of its link. A regular group's entry carries the directory's own group link (short link only), so a group the user joined through a different link, through the directory's full link, or by invitation is not found and is shown again in the Directory part. Tapping it goes through `planAndConnect`, which handles the known group.
+
+**REC:** Have the directory send a stable group identifier the core can match locally, or let the core match a directory short link against groups joined through the corresponding full link.
+
+### GAP: First-search alert does not mention the server hosting a resolved address
+**Source:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
+Resolving a SimpleX name with `PlanResolveMode.unknown` also loads the resolved address's link data from the SMP server that hosts it. The search text itself is not sent there, and the alert names only SimpleX Directory and the name-resolving server.
+
+**REC:** Decide whether the alert copy should also say that the address a name points to is loaded.
+
+### GAP: New chat does not narrow contacts by name while typing
+**Source:** [spec/client/navigation.md](../spec/client/navigation.md#12-new-chat-online-search)
+The chat list resolves a typed SimpleX name locally on each keystroke to narrow the list to the matching chat; New chat does not. A known contact whose display name does not contain the typed name is therefore not in "Your Contacts" and appears as a Names result instead (tapping it opens the existing chat).
+
+**REC:** Reuse the chat list's local name resolution in `ContactsListSearchBar` if this proves confusing.
+
+---
+
