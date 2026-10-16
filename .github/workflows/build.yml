@@ -586,7 +586,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          # The CLT 27 SDK on macos-latest breaks GHC 9.6 hsc2hs linking.
+          - os: macos-15
             arch: aarch64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-aarch64
