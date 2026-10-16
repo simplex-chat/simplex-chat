@@ -135,6 +135,11 @@ these names against the target archive and the `ghc-internal` consumer; the
 Bionic API35 object stays byte-identical. ARM32 source is patched before Cabal
 planning, removing false missing-function stubs that shadow real static Bionic
 startup routines. Android links libffi through the RTS package dependency.
+Android preplanning patches remove the separate `pthread` library declarations
+from crypton and direct-sqlcipher. Bionic supplies these functions in `libc`;
+the NDK has no `libpthread`. Other targets retain their original declarations,
+and compiler `-pthread` flags and the threaded RTS remain enabled. Repeat the
+scope regression with `nix eval --json --file scripts/nix/check-android-pthread-scope.nix`.
 The minimum Android API stays at 26.
 For Android below API28, SplitMix's initializer uses Bionic's existing
 `arc4random_buf` rather than the newer `getentropy` API. The dependency patch
@@ -192,8 +197,9 @@ outputs once: x86_64 Linux runs `native`, `android`, `windows`, and `linux-stati
 separately; ARM64 Linux runs `native`; both Darwin hosts run `all`. A failed
 native Linux build therefore leaves the cross-build jobs running. PRs, pushes,
 and default manual runs retain that complete matrix. A manual dispatch can
-select only the existing three `linux-static` outputs with
-`gh workflow run nix.yml --ref BRANCH -f group=linux-static`. The registered
+select the existing three `linux-static` outputs with
+`gh workflow run nix.yml --ref BRANCH -f group=linux-static`, or the four Android
+outputs with `gh workflow run nix.yml --ref BRANCH -f group=android`. The registered
 workflow can run on a branch containing this workflow file; it does not require
 that file on the default branch. New runs for the same workflow/ref queue
 without canceling its active run. Legacy PR build jobs also preserve running

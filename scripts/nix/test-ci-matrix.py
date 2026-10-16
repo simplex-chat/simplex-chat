@@ -36,6 +36,14 @@ class Matrix(unittest.TestCase):
             "hydraJobs.x86_64-linux.aarch64-linux-static:exe:simplex-chat",
         ])
 
+    def test_android_dispatch_is_exactly_the_existing_four_outputs(self):
+        self.assertEqual(outputs("android"), [
+            "hydraJobs.x86_64-linux.aarch64-android:lib:simplex-chat",
+            "hydraJobs.x86_64-linux.aarch64-android:lib:support",
+            "hydraJobs.x86_64-linux.armv7a-android:lib:simplex-chat",
+            "hydraJobs.x86_64-linux.armv7a-android:lib:support",
+        ])
+
     def test_legacy_pr_jobs_do_not_cancel_active_runs(self):
         source = (HERE.parent.parent / ".github/workflows/build.yml").read_text()
         expressions = re.findall(r"^      cancel-in-progress: \$\{\{ (.*) \}\}$", source, re.MULTILINE)

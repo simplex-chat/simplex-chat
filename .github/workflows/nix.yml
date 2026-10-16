@@ -8,7 +8,7 @@ on:
         type: choice
         required: true
         default: all
-        options: [all, linux-static]
+        options: [all, linux-static, android]
   push:
     branches: [master, stable, build/stable-ghc-9.14]
     paths:
@@ -96,7 +96,9 @@ jobs:
       - name: Check Android iserv overlay scope
         if: ${{ matrix.target == 'android' }}
         timeout-minutes: 1
-        run: nix eval --json --file scripts/nix/check-android-iserv-scope.nix
+        run: |
+          nix eval --json --file scripts/nix/check-android-iserv-scope.nix
+          nix eval --json --file scripts/nix/check-android-pthread-scope.nix
 
       - name: Check musl interpreter link policy scope
         if: ${{ matrix.target == 'linux-static' }}

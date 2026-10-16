@@ -60,12 +60,17 @@
       let
         # v2 restores Hackage description overrides after package patches.
         # Plan Windows x509 from its patched local source to retain crypt32.
+        androidPthreads = import ./scripts/nix/android-pthread-libraries.nix {
+          pkgs = config.evalPackages;
+          hostPlatform = pkgs'.stdenv.hostPlatform;
+        };
         patchedPackageSources = pkgs.lib.optional (
           config.compiler-nix-name == "ghc914-sh"
           && pkgs'.stdenv.buildPlatform.config != pkgs'.stdenv.hostPlatform.config
         ) (import ./scripts/nix/composition-source.nix { pkgs = config.evalPackages; })
         ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows
-          (import ./scripts/nix/windows-x509-source.nix { pkgs = config.evalPackages; inherit haskellNix; });
+          (import ./scripts/nix/windows-x509-source.nix { pkgs = config.evalPackages; inherit haskellNix; })
+        ++ androidPthreads.packageSources;
       in {
         compiler-nix-name = "ghc914-sh";
         inherit compilerSelection;
@@ -127,6 +132,7 @@
               else [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ]
                 ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid
                   ./scripts/nix/direct-sqlcipher-android-log.patch
+                ++ androidPthreads.directSqlcipherPatches
                 ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isMusl
                   ./scripts/nix/direct-sqlcipher-static-libraries.patch;
           } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isDarwin {

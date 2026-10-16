@@ -15,7 +15,7 @@ ROWS = (
 
 
 def select(group):
-    if group not in ("all", "linux-static"):
+    if group not in ("all", "linux-static", "android"):
         raise ValueError(f"unknown Nix CI group: {group}")
     rows = ROWS if group == "all" else tuple(row for row in ROWS if row[2] == group)
     return {"include": [dict(system=system, runner=runner, target=target)
@@ -24,5 +24,5 @@ def select(group):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--group", choices=["all", "linux-static"], default="all")
+    parser.add_argument("--group", choices=["all", "linux-static", "android"], default="all")
     print(json.dumps(select(parser.parse_args().group), separators=(",", ":")))
