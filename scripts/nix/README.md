@@ -63,6 +63,12 @@ Windows patches Basement's `INVALID_HANDLE_VALUE` expression to `INT_PTR`, so
 hsc2hs receives the signed pointer-sized integer expected by the Haskell API.
 The generated constant converts through Haskell `Int` with `Prelude.fromIntegral`;
 Basement's `RebindableSyntax` has no `HasNegation IntPtr` instance.
+Windows also plans the already selected `crypton-x509-system-1.6.8` as a local
+patched source, so its Cabal metadata names `crypt32` before source packaging.
+The pinned v2 builder otherwise replaces a package's patched Cabal file with its
+original description override and copies that override into the slice index.
+The source producer applies the existing haskell.nix patch once; its later
+package patch list is empty to prevent a second application.
 
 Run these commands from the repository root:
 

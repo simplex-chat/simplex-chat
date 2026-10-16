@@ -56,7 +56,17 @@
       projectPkgs = if mobile && pkgs'.stdenv.hostPlatform.isDarwin
         then pkgs'.appendOverlays [ (import ./scripts/nix/cabal-tool-overlay.nix) ]
         else pkgs';
-      in projectPkgs.haskell-nix.project ({ config, ... }: {
+      in projectPkgs.haskell-nix.project ({ config, ... }:
+      let
+        # v2 restores Hackage description overrides after package patches.
+        # Plan Windows x509 from its patched local source to retain crypt32.
+        patchedPackageSources = pkgs.lib.optional (
+          config.compiler-nix-name == "ghc914-sh"
+          && pkgs'.stdenv.buildPlatform.config != pkgs'.stdenv.hostPlatform.config
+        ) (import ./scripts/nix/composition-source.nix { pkgs = config.evalPackages; })
+        ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows
+          (import ./scripts/nix/windows-x509-source.nix { pkgs = config.evalPackages; inherit haskellNix; });
+      in {
         compiler-nix-name = "ghc914-sh";
         inherit compilerSelection;
         # We need this, to specify we want the cabal project.
@@ -80,12 +90,11 @@
           -- The compiler's ghc-internal package omits iconv's library directory.
           package *
             extra-lib-dirs: ${pkgs'.libiconv}/lib
-        '' + pkgs.lib.optionalString (config.compiler-nix-name == "ghc914-sh"
-          && pkgs'.stdenv.buildPlatform.config != pkgs'.stdenv.hostPlatform.config) ''
+        '' + pkgs.lib.optionalString (patchedPackageSources != []) ''
           -- composition deliberately avoids base, but GHC 9.14's wired-in
           -- function types still need ghc-internal in a cross slice's DB.
           -- Patch before planning so the v2 slice declares the same dependency.
-          packages: ${import ./scripts/nix/composition-source.nix { pkgs = config.evalPackages; }}
+          packages: ${pkgs.lib.concatStringsSep " " (map toString patchedPackageSources)}
         '' + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
           -- Keep every app C/C++ stub compatible with the same iOS ARM baseline.
           package *
@@ -144,13 +153,9 @@
           )
 
           ] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows ({ lib, ... }: {
-            # Remove when the pin includes https://github.com/input-output-hk/haskell.nix/pull/2586.
-            packages.crypton-x509-system.patches = lib.mkForce [
-              ({ version }:
-                if builtins.compareVersions version "1.6.8" < 0
-                then "${haskellNix}/overlays/patches/crypton-x509-system-1.6.patch"
-                else "${haskellNix}/overlays/patches/crypton-x509-system.patch")
-            ];
+            # The preplanned local source already applies the modern patch.
+            # Avoid applying it again after v2 source packaging.
+            packages.crypton-x509-system.patches = lib.mkForce [];
             # HANDLE needs a signed pointer-width constant. Convert via Int:
             # Basement's RebindableSyntax has no HasNegation IntPtr instance.
             packages.basement.patches = lib.mkAfter [ ./scripts/nix/basement-windows-intptr.patch ];
