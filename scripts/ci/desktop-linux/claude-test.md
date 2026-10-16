@@ -34,7 +34,7 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 
 - "seeded notes" is still listed;
 - the search field is at the top of the left pane (y under 200), and "Add list" is just below it;
-- nothing is cut off, overlapping or garbled.
+- nothing is cut off, overlapping or garbled. The pencil is now a floating button at the bottom right of the left pane, drawn over whatever the list shows there: note what it covers, but that alone is not a failure.
 
 You have at most 60 turns, and the whole test fits in about 25 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
 
