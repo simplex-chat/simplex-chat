@@ -179,24 +179,26 @@ reported when comparing diagnostics.
 
 When the pinned Intel Darwin `ghc-boot` component fails, CI captures a separate
 Setup diagnostic. It preserves the newly linked Setup executable's bytes and
-runs its actual configure arguments under the runner's Apple LLDB. The probe
+runs its actual configure arguments with an explicit capture mode. LLDB mode
 records bounded thread backtraces, registers, instructions and loaded images;
 compiler queries and other Setup commands pass through. Child failures remain
 failures, and the canonical job stays failed. The diagnostic has a two-hour
 step/per-derivation limit and one five-minute deadline for LLDB plus any fallback.
 Its log is
 uploaded as `intel-setup-lldb-trace.log`, including after failure. Only this probe
-disables the Nix sandbox to reach the host debugger; it records that runtime
-difference and the debugger version. If LLDB explicitly denies permission before
-launching a child, the probe records that denial and runs the same Setup bytes
-with a diagnostic abort interposer built by the runner's existing Apple Clang.
+disables the Nix sandbox to reach host tools; it records that runtime
+difference and the debugger version. Hosted Intel uses `direct-abort` mode:
+LLDB hosts the Python command without attempting debugger attachment, and the
+probe invokes Setup once with a diagnostic abort interposer built by the
+runner's existing Apple Clang. LLDB mode also retains a fallback for an explicit
+permission denial before a child PID is assigned.
 It reports up to 80 current-thread unwind frames, available callee-saved
 registers and image addresses. It symbolicates mapped register addresses without
 dereferencing them, then forwards to real `abort`. Its constructor
 restores the original loader environment before Setup starts compiler children
-and disables core output for the fallback process tree. This adds a loaded image
+and disables core output for the traced process tree. This adds a loaded image
 to Setup; it changes no debugger permissions or security settings. Nonzero
-exits and terminating signals remain failures. The Intel GHC fallback runtime
+exits and terminating signals remain failures. The Intel GHC abort-tracer runtime
 is unverified until CI executes it; native ARM64 and Rosetta/x86 C controls
 cover the helper.
 A successful probe is diagnostic evidence.

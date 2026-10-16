@@ -18,7 +18,7 @@ def permission_denied_before_launch(error, process):
     return error.Fail() and denied in str(error) and pid == 0
 
 
-def abort_fallback(executable, argv, environment, tracer, deadline):
+def abort_fallback(executable, argv, environment, tracer, deadline, direct=False):
     keys = ("SIMPLEX_SETUP_ABORT_DYLD_PRESENT", "SIMPLEX_SETUP_ABORT_DYLD_VALUE")
     child_environment = dict(item.split("=", 1) for item in environment)
     if any(key in child_environment for key in keys):
@@ -33,7 +33,10 @@ def abort_fallback(executable, argv, environment, tracer, deadline):
     if remaining <= 0:
         raise TimeoutError("Intel Setup overall diagnostic deadline expired")
     digest = hashlib.sha256(executable.read_bytes()).hexdigest()
-    print("Intel Setup fallback: original LLDB permission denial retained; "
+    label = "direct-abort" if direct else "fallback"
+    reason = ("explicit capture mode; no debugger launch attempted" if direct else
+              "original LLDB permission denial retained")
+    print("Intel Setup " + label + ": " + reason + "; "
           "diagnostic-only abort dylib inserted into unchanged Setup; "
           "constructor restores child loader environment; no core output", flush=True)
     result = subprocess.run(argv, executable=str(executable), env=child_environment,
@@ -41,7 +44,7 @@ def abort_fallback(executable, argv, environment, tracer, deadline):
     if hashlib.sha256(executable.read_bytes()).hexdigest() != digest:
         raise RuntimeError("compiler-produced Setup bytes changed during fallback")
     code = 128 - result.returncode if result.returncode < 0 else result.returncode
-    print("Intel Setup fallback result: " + json.dumps({
+    print("Intel Setup " + label + " result: " + json.dumps({
         "returncode": result.returncode, "shell_status": code,
         "executable_sha256": digest, "unchanged": True,
     }), flush=True)
@@ -118,10 +121,13 @@ def run(debugger, command, _result, _internal_dict):
     deadline = time.monotonic() + 300
     try:
         arguments = shlex.split(command)
-        if len(arguments) not in (1, 2):
-            raise ValueError("expected argv-capture pathname and optional abort dylib")
+        if len(arguments) not in (1, 2, 3):
+            raise ValueError("expected argv-capture pathname, optional abort dylib and capture mode")
         capture = Path(arguments[0])
-        tracer = Path(arguments[1]) if len(arguments) == 2 else None
+        tracer = Path(arguments[1]) if len(arguments) >= 2 else None
+        capture_mode = arguments[2] if len(arguments) == 3 else "lldb"
+        if capture_mode not in ("lldb", "direct-abort"):
+            raise ValueError("unknown Intel Setup capture mode: " + capture_mode)
         argv = nul_entries(capture)
         environment_file = Path(str(capture) + ".env")
         environment_bytes = environment_file.read_bytes()
@@ -132,11 +138,21 @@ def run(debugger, command, _result, _internal_dict):
         executable_path = Path(executable.fullpath)
         print("Intel Setup launch: " + json.dumps({
             "executable": str(executable_path), "argv": argv,
+            "capture_mode": capture_mode,
             "cwd": os.getcwd(),
             "executable_sha256": hashlib.sha256(executable_path.read_bytes()).hexdigest(),
             "environment_sha256": hashlib.sha256(environment_bytes).hexdigest(),
             "environment_entries": len(environment),
         }), flush=True)
+
+        # Hosted Intel denies debugger attachment after assigning a PID. Use
+        # an explicit ordinary launch there, rather than infer whether its
+        # failed debugger launch executed any Setup code and risk repeating it.
+        # LLDB only hosts this Python command; no debug process is launched.
+        if capture_mode == "direct-abort":
+            code = abort_fallback(executable_path, argv, environment, tracer,
+                                  deadline, direct=True)
+            return
 
         # Supplying the executable separately leaves argv[0] equal to Cabal's
         # original Setup pathname, rather than the retained sibling's name.

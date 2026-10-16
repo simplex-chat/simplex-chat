@@ -181,10 +181,14 @@ jobs:
           NIX
           )
           # The failed canonical build already produced this component's inputs.
-          # Only this diagnostic permits host LLDB access outside the Nix sandbox.
+          # Hosted Intel denies LLDB attach even with a nonzero inferior PID.
+          # Use LLDB's Python runner without attempting a debug launch; invoke
+          # the unchanged Setup once with the abort tracer instead.
+          # Only this diagnostic permits host tool access outside the Nix sandbox.
           exec nix build --file scripts/nix/trace-intel-setup.nix \
             --arg original "$original" --argstr expectedDrv "$expected_drv" \
             --argstr abortTracerPath "$abort_tracer" \
+            --argstr captureMode direct-abort \
             --argstr lldbPath "$lldb_path" --option sandbox false \
             --no-link -L --keep-failed --max-jobs 1 --timeout 7200
           TRACE
