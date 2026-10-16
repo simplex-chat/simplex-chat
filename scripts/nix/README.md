@@ -119,8 +119,11 @@ After a failed native x86_64 Linux library build, CI tries a separate derivation
 with `-v2 -ddump-timings` on compile calls and uploads
 `native-linux-ghc-phase-trace.log`, including when that trace fails. Compiler
 queries and the original source, plan, dependency units and GHC arguments stay
-unchanged. The canonical build remains failed. The trace has one job/core and a
-two-hour wall-clock/per-derivation bound; the job's six-hour limit stays in place.
+unchanged. The canonical build remains failed. The trace runs one derivation at
+a time and inherits the canonical Nix core setting, preserving Setup's job count
+and the compiler job arguments. It has a two-hour wall-clock/per-derivation
+bound; the job's six-hour limit stays in place. A local `--cores` override also
+changes those job arguments and must be reported when comparing diagnostics.
 `trace-native-ghc.nix` accepts the original component via `--arg original` for the
 same diagnostic locally.
 
