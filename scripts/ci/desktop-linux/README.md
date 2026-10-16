@@ -6,7 +6,7 @@
 
 On any branch, in either of two ways:
 
-- **Dispatch:** Actions → desktop-linux → Run workflow, with the `claude` and `backend` checkboxes (both off by default).
+- **Dispatch:** Actions → desktop-linux → Run workflow, with the `claude`, `backend` and `release` checkboxes (all off by default).
 - **Push** with a tag in the head commit's message, which is how agents in push sessions ask for a run:
 
 | Tag | Runs |
@@ -15,7 +15,8 @@ On any branch, in either of two ways:
 | `[app-ci:desktop]` | the scripted test, here only |
 | `[claude-test]` | the scripted test and the Claude job, here and in the iOS app's workflow where the branch has it |
 | `[claude-test:desktop]` | the scripted test and the Claude job, here only |
-| `[ci-backend]` | with one of the above: also the test backend and the release job |
+| `[ci-backend]` | with one of the above: also the test backend |
+| `[ci-release]` | with one of the above: also the release job |
 
 A push without these tags (or with only iOS tags) starts a run whose jobs are all skipped, and it doesn't cancel a run in progress. A newer run that was asked for cancels an older one on the same branch. Pushes to master and stable never start it, because a squash merge's message lists the merged commits' subjects with their tags; dispatch it there instead.
 

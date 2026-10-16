@@ -15,7 +15,11 @@ on:
         type: boolean
         default: false
       backend:
-        description: Also start the test backend and test the released app
+        description: Also start the test backend
+        type: boolean
+        default: false
+      release:
+        description: Also test the latest released app, to tell a branch's failure from the runner's
         type: boolean
         default: false
 
@@ -50,6 +54,7 @@ jobs:
     outputs:
       run-claude: ${{ steps.jobs.outputs.claude }}
       run-backend: ${{ steps.jobs.outputs.backend }}
+      run-release: ${{ steps.jobs.outputs.release }}
       core: ${{ steps.names.outputs.core }}
       core-run: ${{ steps.core.outputs.run-id }}
       backend: ${{ steps.names.outputs.backend }}
@@ -60,9 +65,11 @@ jobs:
         env:
           CLAUDE: ${{ inputs.claude || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:desktop]') }}
           BACKEND: ${{ inputs.backend || contains(github.event.head_commit.message, '[ci-backend]') }}
+          RELEASE: ${{ inputs.release || contains(github.event.head_commit.message, '[ci-release]') }}
         run: |
           echo "claude=$CLAUDE" | tee -a "$GITHUB_OUTPUT"
           echo "backend=$BACKEND" | tee -a "$GITHUB_OUTPUT"
+          echo "release=$RELEASE" | tee -a "$GITHUB_OUTPUT"
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -423,7 +430,7 @@ jobs:
   release:
     name: released app under Xvfb
     needs: plan
-    if: needs.plan.outputs.run-backend == 'true'
+    if: needs.plan.outputs.run-release == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
