@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, then the chat list with the toolbar at the bottom (the default) and at the top.
+# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
-# "setup" then creates a local group and makes the test SMP server (backend.sh) the one that resolves SimpleX names,
-# and stops; "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
+# "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
+# "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
 # Both need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
@@ -184,6 +184,8 @@ use_top_toolbar() {
 check_layout() {
   local layout=$1 field
   field=$(y_of "Search or paste SimpleX link") || field=""
+  "$ui" shot "$layout-layout"
+  check "$layout: \"$local_chat\" listed" on_screen "$local_chat"
   if [ "$layout" = bottom ]; then
     check "bottom: the search field is at the bottom" [ "${field:-0}" -gt 600 ]
     check "bottom: \"Add list\" above the search field" above "Add list" "Search or paste SimpleX link"
@@ -193,7 +195,7 @@ check_layout() {
   fi
 }
 
-# A group of the user's own, so the chat list has a chat.
+# A group of the user's own: without chats the chat list shows no search field.
 create_local_chat() {
   local y
   # the pencil at the right of the bottom toolbar opens New chat
@@ -329,9 +331,9 @@ if [ "$cases" = onboarding ]; then
   exit 0
 fi
 
+create_local_chat
 if [ "$cases" = setup ] || [ "$cases" = backend ]; then
   : "${NAMES_SERVER:?NAMES_SERVER must be the test SMP server address}"
-  create_local_chat
   use_names_server
   if [ "$cases" = setup ]; then
     echo "smoke test setup done: \"$local_chat\" created, $NAMES_SERVER resolves names"
@@ -347,4 +349,4 @@ check_layout top
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
 fi
-echo "smoke test passed: onboarding reached the chat list, shown with the toolbar at the bottom and at the top"
+echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"
