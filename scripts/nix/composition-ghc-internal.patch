@@ -1,0 +1,6 @@
+--- a/composition.cabal
++++ b/composition.cabal
+@@ -19,2 +19,3 @@
+   exposed-modules:     Data.Composition
++  build-depends:       ghc-internal
+   default-extensions:  NoImplicitPrelude

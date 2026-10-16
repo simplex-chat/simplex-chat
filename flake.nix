@@ -79,6 +79,12 @@
           -- The compiler's ghc-internal package omits iconv's library directory.
           package *
             extra-lib-dirs: ${pkgs'.libiconv}/lib
+        '' + pkgs.lib.optionalString (config.compiler-nix-name == "ghc914-sh"
+          && pkgs'.stdenv.buildPlatform.config != pkgs'.stdenv.hostPlatform.config) ''
+          -- composition deliberately avoids base, but GHC 9.14's wired-in
+          -- function types still need ghc-internal in a cross slice's DB.
+          -- Patch before planning so the v2 slice declares the same dependency.
+          packages: ${import ./scripts/nix/composition-source.nix { pkgs = config.evalPackages; }}
         '' + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
           -- Keep every app C/C++ stub compatible with the same iOS ARM baseline.
           package *

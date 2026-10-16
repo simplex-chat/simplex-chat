@@ -9,6 +9,12 @@ platform; Android ARMv7 does not require a separate branch or tag.
 build context, including auxiliary iserv projects, so the pinned compiler can use
 its existing cache. Application dependencies keep the project's current packages.
 
+Cross projects add `ghc-internal` to the Cabal dependencies of the pinned
+`composition-1.0.2.2` source. This preserves its deliberate avoidance of `base`
+while making GHC 9.14's wired-in types available in isolated target package
+databases. The patch runs before planning and source packaging. Native builds
+and the Mac-to-iOS conversion projects keep the original package metadata.
+
 Run these commands from the repository root:
 
 ```sh
