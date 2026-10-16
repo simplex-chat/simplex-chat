@@ -262,7 +262,13 @@
     "navbar-token": "Token",
     "index-hero-h1": "<div class=\"small\">Žijte<br>svobodně</dev>",
     "index-hero-h2": "Ve Své Síti",
-    "index-hero-p1": "První síť bez uživatelských ID.<br>Vaše kontakty, skupiny a kanály patří vám.",
+    "index-hero-p1": "<span class=\"nowrap\">Jediná síť pro zasílání zpráv</span> <span class=\"nowrap\">bez jakýchkoli uživatelských identifikátorů.</span><br>Vaše kontakty, skupiny a kanály patří vám.",
+    "index-hero-own-part": "Vlastněte její část.",
+    "index-hero-invest": "Investujte do SimpleX Chat.",
+    "index-hero-downloads": "Stažení",
+    "index-hero-monthly-users": "Uživatelů měsíčně",
+    "index-hero-countdown-lead": "Spuštění domén SimpleX",
+    "index-hero-countdown-done": "Získejte doménu SimpleX",
     "index-hero-download-desktop-btn-title": "Stáhněte si desktopovou aplikaci SimpleX",
     "index-testflight-title": "Beta verze SimpleX pro iOS na TestFlight",
     "index-f-droid-title": "Stáhnout aplikaci SimpleX přes F-Droid",
@@ -300,7 +306,7 @@
     "index-roadmap-3-title": "Pomozte své komunitě růst",
     "index-roadmap-3-desc": "Nástroje na podporu vašich komunit",
     "index-directory-h2": "Zapojte se do komunit SimpleX",
-    "index-directory-p1": "Více než 2 miliony lidí si stáhly aplikace SimpleX.",
+    "index-directory-p1": "Více než 3 miliony lidí si stáhly aplikace SimpleX.",
     "index-directory-p2": "Najděte své kanály a komunity v katalogu a vytvořte si vlastní!",
     "index-directory-cta": "Zobrazit katalog SimpleX",
     "index-directory-users-group-title": "Uživatelské skupiny SimpleX",
@@ -375,5 +381,6 @@
     "send-file": "Odeslat soubor",
     "links": "Odkazy",
     "links-title": "Komunitní odkazy",
-    "links-all-languages": "Všechny jazyky"
+    "links-all-languages": "Všechny jazyky",
+    "why-film": "Podívejte se na 2minutový film na YouTube"
 }

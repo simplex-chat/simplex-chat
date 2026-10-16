@@ -261,7 +261,13 @@
     "about-and-contact-us": "概要・お問い合わせ",
     "index-hero-h1": "自由で<br>あれ",
     "index-hero-h2": "あなたのネットワークで",
-    "index-hero-p1": "ユーザーIDのない世界初のネットワーク。<br>連絡先、グループ、チャンネルはあなたのものです。",
+    "index-hero-p1": "<span class=\"nowrap\">ユーザー識別子を一切持たない</span><span class=\"nowrap\">唯一のメッセージングネットワーク。</span><br>連絡先、グループ、チャンネルはあなたのものです。",
+    "index-hero-own-part": "その一部を所有しよう。",
+    "index-hero-invest": "SimpleX Chatに投資しよう。",
+    "index-hero-downloads": "ダウンロード",
+    "index-hero-monthly-users": "月間ユーザー",
+    "index-hero-countdown-lead": "SimpleXドメイン公開",
+    "index-hero-countdown-done": "SimpleXドメインを取得",
     "index-hero-download-desktop-btn-title": "SimpleX デスクトップアプリをダウンロード",
     "index-security-assessment-title": "セキュリティ監査",
     "index-security-review-2022-title": "セキュリティ監査 2022",
@@ -291,7 +297,7 @@
     "index-roadmap-3-title": "コミュニティの成長",
     "index-roadmap-3-desc": "コミュニティを広げるツール",
     "index-directory-h2": "SimpleXコミュニティに参加する",
-    "index-directory-p1": "200万人以上がSimpleXアプリをダウンロードしました。",
+    "index-directory-p1": "300万人以上がSimpleXアプリをダウンロードしました。",
     "index-directory-p2": "ディレクトリでチャンネルやコミュニティを見つけて、あなた自身のものを作成しましょう！",
     "index-directory-cta": "SimpleXディレクトリを見る",
     "index-directory-users-group-title": "SimpleXユーザグループ",
@@ -308,5 +314,7 @@
     "how-secure-forward-secrecy": "前方秘匿性",
     "how-secure-two-factor-key-exchange": "2ファクタ鍵交換",
     "how-secure-post-quantum-hybrid-crypto": "ポスト量子ハイブリッド暗号",
-    "messengers-comparison-section-list-point-2": "否認可能性の対象には、クライアントとサーバー間の接続は含まれません。"
+    "messengers-comparison-section-list-point-2": "否認可能性の対象には、クライアントとサーバー間の接続は含まれません。",
+    "why-footer-link": "私たちがこれを作る理由",
+    "index-testflight-title": "TestFlight の SimpleX iOS ベータ版"
 }

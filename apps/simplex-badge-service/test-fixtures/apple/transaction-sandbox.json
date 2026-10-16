@@ -1,0 +1,19 @@
+{
+  "transactionId": "2000000812345673",
+  "originalTransactionId": "2000000812345673",
+  "bundleId": "chat.simplex.app",
+  "productId": "BADGE_LEGEND_01",
+  "purchaseDate": 1790000000000,
+  "originalPurchaseDate": 1790000000000,
+  "quantity": 1,
+  "type": "Consumable",
+  "appAccountToken": "4d2c9a61-8e3b-4f70-a1c5-6b0e9d2f3a47",
+  "inAppOwnershipType": "PURCHASED",
+  "signedDate": 1790000001000,
+  "environment": "Sandbox",
+  "transactionReason": "PURCHASE",
+  "storefront": "USA",
+  "storefrontId": "143441",
+  "price": 70000,
+  "currency": "USD"
+}

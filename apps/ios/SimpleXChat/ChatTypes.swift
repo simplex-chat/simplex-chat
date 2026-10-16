@@ -369,6 +369,24 @@ public enum BadgeIssueFailure: Decodable, Hashable {
         }
     }
 
+    public var purchaseText: String {
+        switch self {
+        case let .serviceError(code, _):
+            badgeServiceErrorText(code)
+                ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the purchase: %@", comment: "badge purchase error"), code.text)
+        case .invalidCredential: NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        case .serviceTimeout, .network, .unexpected: text
+        }
+    }
+
+    public var purchaseAlertTitle: String {
+        switch self {
+        case .serviceError(.testPurchase, _):
+            NSLocalizedString("Sandbox purchase", comment: "alert title")
+        default: NSLocalizedString("Purchase error", comment: "alert title")
+        }
+    }
+
     // the stored form, for support
     public var tag: String {
         switch self {
@@ -3255,7 +3273,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var relayLink: String?
     public var memberVerifiedCode: SecurityCode?
 
-    public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var id: String { groupMemberEntityId(groupId, groupMemberId) }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var sendMsgEnabled: Bool { get {
@@ -3442,6 +3460,10 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         activeConn: Connection.sampleData,
         memberChatVRange: VersionRange(2, 12)
     )
+}
+
+public func groupMemberEntityId(_ groupId: Int64, _ groupMemberId: Int64) -> String {
+    "#\(groupId) @\(groupMemberId)"
 }
 
 public struct GroupSupportChat: Codable, Hashable {
@@ -4217,6 +4239,10 @@ public enum CIDirection: Decodable, Hashable {
         }
     }
 
+    public var groupMemberId: Int64? {
+        if case let .groupRcv(groupMember) = self { groupMember.groupMemberId } else { nil }
+    }
+
     public func sameDirection(_ dir: CIDirection) -> Bool {
         switch (self, dir) {
         case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
@@ -4242,6 +4268,7 @@ public struct CIMeta: Decodable, Hashable {
     public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
+    public var forwardedByMember: Int64?
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
 

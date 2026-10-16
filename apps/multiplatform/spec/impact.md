@@ -111,6 +111,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chat/ChatView.kt` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11 | High | Core conversation UI — most messaging features |
 | `views/chat/ComposeView.kt` | PC4, PC6, PC9, PC10, PC11 | High | Message composition — send path for all messages |
 | `views/chat/SendMsgView.kt` | PC4, PC9 | Medium | Send button and voice record toggle |
+| `views/chat/ComposeEmojiPicker.kt` | PC4 | Low | Emoji button expect declaration, emoji insertion |
 | `views/chat/ComposeVoiceView.kt` | PC9 | Medium | Voice message recording UI |
 | `views/chat/ComposeFileView.kt` | PC10 | Low | File attachment preview in compose area |
 | `views/chat/ComposeImageView.kt` | PC10 | Low | Image attachment preview in compose area |
@@ -365,6 +366,7 @@ Path prefix: `common/src/androidMain/kotlin/chat/simplex/common/`
 | `views/call/CallAudioDeviceManager.kt` | PC17 | Medium | Android audio routing (speaker, earpiece, bluetooth) |
 | `views/chat/ComposeView.android.kt` | PC4, PC10 | Low | Android compose view extensions |
 | `views/chat/SendMsgView.android.kt` | PC4 | Low | Android send button extensions |
+| `views/chat/ComposeEmojiPicker.android.kt` | PC4 | Low | Empty emoji button actual (no picker on Android) |
 | `views/chat/item/ChatItemView.android.kt` | PC2, PC3 | Low | Android chat item extensions |
 | `views/chat/item/CIImageView.android.kt` | PC10 | Low | Android image rendering extensions |
 | `views/chat/item/CIVideoView.android.kt` | PC10 | Low | Android video rendering extensions |
@@ -416,6 +418,10 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `DesktopApp.kt` | PC1, PC2, PC3 | High | Desktop Compose window — window lifecycle, crash recovery |
 | `StoreWindowState.kt` | — | Low | Window position/size persistence |
+| `AppLinks.kt` | — | Medium | `simplexchat:` and `simplex:` links from launch arguments and macOS Apple Events |
+| `SingleInstance.kt` | — | Medium | Single-instance lock; forwards a second launch and its link to the running app |
+| `WindowActivation.kt` | — | Low | `_NET_ACTIVE_WINDOW` request that raises the window on X11 and XWayland |
+| `platform/AppLinkScheme.desktop.kt` | — | Medium | Runtime `simplexchat:` and `simplex:` scheme registration (Windows HKCU, AppImage desktop entry) |
 | `model/NtfManager.desktop.kt` | PC18 | Medium | Desktop system tray notification display |
 | `platform/AppCommon.desktop.kt` | PC1 through PC31 | Medium | Desktop app initialization actual declarations |
 | `platform/SimplexService.desktop.kt` | PC18 | Low | Desktop background receiver (no foreground service) |
@@ -439,6 +445,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `views/call/CallView.desktop.kt` | PC17 | Medium | Desktop WebView-based WebRTC call |
 | `views/chat/ComposeView.desktop.kt` | PC4, PC10 | Low | Desktop compose view (drag-and-drop, paste) |
 | `views/chat/SendMsgView.desktop.kt` | PC4 | Low | Desktop send shortcut (Enter key handling) |
+| `views/chat/ComposeEmojiPicker.desktop.kt` | PC4 | Low | Desktop emoji picker popup (data from `resources/emoji/emoji.txt`, search) |
 | `views/chat/item/ChatItemView.desktop.kt` | PC2, PC3 | Low | Desktop chat item extensions |
 | `views/chat/item/CIImageView.desktop.kt` | PC10 | Low | Desktop image rendering |
 | `views/chat/item/CIVideoView.desktop.kt` | PC10 | Low | Desktop video rendering |

@@ -260,7 +260,12 @@
     "directory": "Csoportjegyzék",
     "about-and-contact-us": "Névjegy és kapcsolat",
     "index-hero-h1": "<div class=\"medium\">Legyen<br>szabad</div>",
-    "index-hero-p1": "Az első hálózat felhasználói azonosítók nélkül.<br>A saját partnerei, csoportjai és csatornái felett Ön rendelkezik.",
+    "index-hero-p1": "<span class=\"nowrap\">Az egyetlen üzenetküldő hálózat</span> <span class=\"nowrap\">semmilyen felhasználói azonosító nélkül.</span><br>A saját partnerei, csoportjai és csatornái felett Ön rendelkezik.",
+    "index-hero-own-part": "Legyen résztulajdonos.",
+    "index-hero-downloads": "Letöltés",
+    "index-hero-monthly-users": "Havi felhasználó",
+    "index-hero-countdown-lead": "A SimpleX domainek indulása",
+    "index-hero-countdown-done": "Szerezzen SimpleX domaint",
     "index-hero-download-desktop-btn-title": "SimpleX számítógépes alkalmazásának letöltése",
     "index-security-assessment-title": "Biztonsági auditok",
     "index-security-review-2022-title": "Biztonsági audit 2022",
@@ -299,7 +304,7 @@
     "index-roadmap-3-title": "Közösségek növelése",
     "index-roadmap-3-desc": "Eszközök biztosítása a közösségek népszerűsítéséhez",
     "index-directory-h2": "Csatlakozzon a SimpleX közösségekhez",
-    "index-directory-p1": "Több mint 2 millió ember töltötte le a SimpleX alkalmazások egyikét.",
+    "index-directory-p1": "Több mint 3 millió ember töltötte le a SimpleX alkalmazások egyikét.",
     "index-directory-p2": "Találja meg a kedvenc csatornáit és közösségeit a csoportjegyzékben, vagy hozza létre a sajátját!",
     "index-directory-cta": "SimpleX-csoportjegyzék megtekintése",
     "index-directory-users-group-title": "SimpleX felhasználók csoportja",
@@ -378,5 +383,6 @@
     "links-all-languages": "Összes nyelv",
     "docs-dropdown-16": "Csevegési átjátszó üzemeltetése",
     "index-hero-invest": "Fektessen be a SimpleX Chatbe.",
-    "index-hero-invest-cta": "Bővebben a Wefunderen."
+    "index-hero-invest-cta": "Bővebben a Wefunderen.",
+    "why-film": "Nézze meg a 2 perces filmet a YouTube-on"
 }

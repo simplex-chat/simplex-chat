@@ -9,15 +9,9 @@
 import SwiftUI
 import SimpleXChat
 
-struct BadgeUserPreview<Trailing: View>: View {
+struct BadgeUserPreview: View {
     @EnvironmentObject var chatModel: ChatModel
     let level: BadgeLevel
-    let trailing: () -> Trailing
-
-    init(level: BadgeLevel, @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }) {
-        self.level = level
-        self.trailing = trailing
-    }
 
     var body: some View {
         let user = chatModel.currentUser
@@ -29,12 +23,9 @@ struct BadgeUserPreview<Trailing: View>: View {
         )
         return VStack(spacing: 12) {
             ProfileImage(imageStr: user?.image, size: 128)
-            HStack(alignment: .center, spacing: 6) {
-                NameWithBadge(Text(displayName).font(.largeTitle), previewBadge, .largeTitle)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                trailing()
-            }
+            NameWithBadge(Text(displayName).font(.largeTitle), previewBadge, .largeTitle)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         }
     }
 }

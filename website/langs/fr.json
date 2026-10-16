@@ -263,7 +263,12 @@
     "about-and-contact-us": "À propos & Contactez-nous",
     "index-hero-h1": "Soyez<br>Libre",
     "index-hero-h2": "Dans Votre Réseau",
-    "index-hero-p1": "Le premier réseau sans identifiants d'utilisateur.<br>Vos contacts, groupes et canaux vous appartiennent.",
+    "index-hero-p1": "<span class=\"nowrap\">Le seul réseau de messagerie</span> <span class=\"nowrap\">sans aucun identifiant d'utilisateur.</span><br>Vos contacts, groupes et canaux vous appartiennent.",
+    "index-hero-own-part": "Possédez-en une part.",
+    "index-hero-downloads": "Téléchargements",
+    "index-hero-monthly-users": "Utilisateurs mensuels",
+    "index-hero-countdown-lead": "Lancement des domaines SimpleX",
+    "index-hero-countdown-done": "Obtenez un domaine SimpleX",
     "index-hero-download-desktop-btn-title": "Téléchargez l’application de bureau SimpleX",
     "index-testflight-title": "Version bêta de SimpleX pour iOS sur TestFlight",
     "index-f-droid-title": "Application SimpleX via F-Droid",
@@ -301,7 +306,7 @@
     "index-token-cta-cf": "Investir dans SimpleX Chat",
     "index-token-p2": "Cela couvrira l'infrastructure, le développement logiciel et la gouvernance du réseau.",
     "index-directory-h2": "Rejoindre les communautés SimpleX",
-    "index-directory-p1": "Plus de 2 millions de personnes ont téléchargé les applications SimpleX.",
+    "index-directory-p1": "Plus de 3 millions de personnes ont téléchargé les applications SimpleX.",
     "index-directory-p2": "Trouvez vos chaînes et communautés dans l'annuaire et créez-en les vôtres !",
     "index-directory-cta": "Afficher l’annuaire SimpleX",
     "index-directory-users-group-title": "Groupe d'utilisateurs SimpleX",
@@ -378,5 +383,6 @@
     "file-proto-spec": "Lire la spécification du protocole XFTP →",
     "links": "Communauté",
     "links-title": "Liens de la communauté",
-    "links-all-languages": "Toutes les langues"
+    "links-all-languages": "Toutes les langues",
+    "why-film": "Regardez le film de 2 minutes sur YouTube"
 }

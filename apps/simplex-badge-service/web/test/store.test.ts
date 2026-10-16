@@ -190,6 +190,27 @@ storeTest("store: the two facts only this browser holds survive a write that omi
   assert.equal(s.order("1")!.submitted, true);
 });
 
+storeTest("store: the app that opened the page round-trips the session, and a value outside the contract reads as none", () => {
+  const mem = new MemoryStorage();
+  const s = new Store(mem);
+  s.saveSession({ app: "mobile" });
+  s.saveSession({ step: "months", priceId: "price_legend" });
+  assert.equal(new Store(mem).session().app, "mobile", "a later step and a reload keep it");
+  mem.setItem("sb.session.v1", JSON.stringify({ step: "tier", app: "true" }));
+  assert.equal(s.session().app, undefined, "the stored value is the page's own word, never the URL's");
+});
+
+storeTest("store: an order keeps the app it was bought from through a write that omits it and a reload", () => {
+  const mem = new MemoryStorage();
+  const s = new Store(mem);
+  s.saveOrder(order("1", { app: "desktop" }));
+  s.saveOrder(order("1", { status: "paid" }));
+  assert.equal(s.order("1")!.app, "desktop", "the service never sends it, so its answer cannot clear it");
+  assert.equal(new Store(mem).order("1")!.app, "desktop");
+  s.saveOrder(order("2"));
+  assert.equal(s.order("2")!.app, undefined, "and it is not a page-wide flag");
+});
+
 storeTest("store: markSubmitted is per order, sticky, and survives everything but Forget", () => {
   const mem = new MemoryStorage();
   const s = new Store(mem);
