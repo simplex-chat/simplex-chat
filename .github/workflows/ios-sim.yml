@@ -3,15 +3,25 @@ name: ios-sim
 on:
   push:
     branches:
-      - f/ci-ios-sim
+      - '**'
   workflow_dispatch:
+    inputs:
+      claude:
+        description: Also run the Claude session (f/* branches only)
+        type: boolean
+        default: false
+      backend:
+        description: Start the test backend
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: ios-sim-${{ github.ref }}
+  # a push that asks for no run must not cancel one that does
+  group: ios-sim-${{ github.ref }}-${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[app-ci]') || contains(github.event.head_commit.message, '[app-ci:ios]') || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]')) && 'requested' || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -27,6 +37,12 @@ env:
 jobs:
   plan:
     name: find earlier builds
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[app-ci]') ||
+      contains(github.event.head_commit.message, '[app-ci:ios]') ||
+      contains(github.event.head_commit.message, '[claude-test]') ||
+      contains(github.event.head_commit.message, '[claude-test:ios]')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -34,6 +50,9 @@ jobs:
       backend: ${{ steps.names.outputs.backend }}
       core-run: ${{ steps.core.outputs.run-id }}
       backend-run: ${{ steps.backend.outputs.run-id }}
+      # the environment that holds the Claude token admits only f/* branches
+      claude: ${{ startsWith(github.ref, 'refs/heads/f/') && (inputs.claude || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]')) }}
+      start-backend: ${{ inputs.backend || contains(github.event.head_commit.message, '[ci-backend]') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -133,7 +152,7 @@ jobs:
   backend:
     name: test backend for the app
     needs: plan
-    if: needs.plan.outputs.backend-run == ''
+    if: needs.plan.outputs.start-backend == 'true' && needs.plan.outputs.backend-run == ''
     runs-on: macos-latest
     timeout-minutes: 240
     steps:
@@ -196,15 +215,16 @@ jobs:
   app:
     name: app in the iOS simulator
     needs: [plan, core, backend]
-    # core and backend are skipped when an earlier run built them
-    if: ${{ !cancelled() && !failure() }}
+    # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
     runs-on: macos-latest
     environment:
-      name: app-sim-claude
+      name: ${{ needs.plan.outputs.claude == 'true' && 'app-sim-claude' || '' }}
       deployment: false
     timeout-minutes: 330
     env:
-      CLAUDE_RUN: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[claude-test]') }}
+      CLAUDE_RUN: ${{ needs.plan.outputs.claude }}
+      START_BACKEND: ${{ needs.plan.outputs.start-backend }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -235,6 +255,7 @@ jobs:
           scripts/ios/update-pbxproj.sh
 
       - name: Download backend
+        if: env.START_BACKEND == 'true'
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.plan.outputs.backend }}
@@ -243,6 +264,7 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Start test backend
+        if: env.START_BACKEND == 'true'
         timeout-minutes: 30
         run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
@@ -280,7 +302,7 @@ jobs:
         timeout-minutes: 240
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          BACKEND_DIR: ${{ runner.temp }}/backend
+          BACKEND_DIR: ${{ env.START_BACKEND == 'true' && format('{0}/backend', runner.temp) || '' }}
         run: scripts/ci/ios-sim/claude-test.sh "$RUNNER_TEMP/claude-test"
 
       - name: Report Claude usage
@@ -288,7 +310,7 @@ jobs:
         run: scripts/ci/ios-sim/claude-usage.sh "$RUNNER_TEMP/claude-test"
 
       - name: Stop test backend
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
         run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
 
       - name: Upload smoke test results
@@ -301,7 +323,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload backend logs
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ios-sim-backend-logs
