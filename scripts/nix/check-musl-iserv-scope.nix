@@ -1,13 +1,9 @@
-# Pure policy regression: nix eval --json --file scripts/nix/check-musl-iserv-scope.nix
+# Use the pinned nixpkgs lib; no compiler, VM, or project IFD is evaluated.
+# nix eval --impure --json --file scripts/nix/check-musl-iserv-scope.nix \
+#   --apply 'f: f { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }'
+{ lib, overlay ? import ./musl-iserv-overlay.nix }:
 let
-  overlay = import ./musl-iserv-overlay.nix;
-  lib = {
-    optionalAttrs = condition: attrs: if condition then attrs else {};
-    mkIf = condition: attrs: if condition then attrs else {};
-    mkAfter = value: value;
-    mkForce = value: value;
-  };
-  apply = { musl ? true, linux ? true, compiler ? "ghc914-sh", name ? "iserv-proxy", builderVersion ? 2, i386 ? true }:
+  apply = { musl ? true, linux ? true, compiler ? "ghc914-sh", name ? "iserv-proxy", builderVersion ? 2, i386 ? true, profiling ? false }:
     let
       prev = {
         inherit lib;
@@ -19,27 +15,45 @@ let
         };
       };
       result = overlay prev prev;
-    in if result ? haskell-nix then
-      (builtins.head (result.haskell-nix.cabalProject' [])) {
-        inherit lib;
-        pkgs = prev;
-        config = { inherit name builderVersion; compiler-nix-name = compiler; };
-      }
-    else {};
+      modules = if result ? haskell-nix then result.haskell-nix.cabalProject' [] else [];
+      evaluated = lib.evalModules {
+        modules = [ {
+          options = {
+            name = lib.mkOption { type = lib.types.str; };
+            compiler-nix-name = lib.mkOption { type = lib.types.str; };
+            builderVersion = lib.mkOption { type = lib.types.int; };
+            profiling = lib.mkOption { type = lib.types.bool; };
+            cabalProjectLocal = lib.mkOption { type = lib.types.lines; default = ""; };
+            src = lib.mkOption { type = lib.types.anything; default = null; };
+          };
+          config = {
+            inherit name builderVersion profiling;
+            compiler-nix-name = compiler;
+            # Real cabalProject' supplies this through the module fixed point,
+            # not specialArgs. Eager optionalAttrs on pkgs recurses here.
+            _module.args.pkgs = prev;
+          };
+        } ] ++ modules;
+      };
+    in {
+      inherit (evaluated.config) cabalProjectLocal src;
+    };
   selected = apply {};
+  disabled = { cabalProjectLocal = ""; src = null; };
 in
-assert builtins.attrNames selected == [ "cabalProjectLocal" "src" ];
 assert selected.src.src == "original-iserv-proxy-source";
 assert selected.src.patches == [ ./musl-iserv-public-libc.patch ];
 assert builtins.match ".*executable-static: False.*" (builtins.replaceStrings [ "\n" ] [ " " ] selected.cabalProjectLocal) != null;
-assert builtins.attrNames (apply { i386 = false; }) == [ "cabalProjectLocal" ];
+assert apply { profiling = true; } == selected;
+assert (apply { i386 = false; }).src == null;
 assert (apply { i386 = false; }).cabalProjectLocal == selected.cabalProjectLocal;
-assert apply { name = "simplex-chat"; } == {};
-assert apply { musl = false; } == {};
-assert apply { linux = false; } == {};
-assert apply { compiler = "ghc963"; } == {};
-assert apply { builderVersion = 1; } == {};
+assert apply { name = "simplex-chat"; } == disabled;
+assert apply { musl = false; } == disabled;
+assert apply { linux = false; } == disabled;
+assert apply { compiler = "ghc963"; } == disabled;
+assert apply { builderVersion = 1; } == disabled;
 {
+  moduleArgumentFixedPointEvaluated = true;
   muslInterpreterCLoadingEnabled = true;
   i386SharedLibcSourcePatchedBeforePlanning = true;
   otherMuslSymbolTablesUnchanged = true;

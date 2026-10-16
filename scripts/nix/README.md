@@ -56,8 +56,9 @@ and profiling selection stay unchanged, and the final CLI remains fully static.
 An i386-only preplanning source patch omits the private `__aio_close` symbol
 registration: shared musl exposes `close`, which calls its hidden AIO hook
 internally, rather than exporting that implementation detail.
-The pure scope check runs in the Linux static CI group:
-`nix eval --json --file scripts/nix/check-musl-iserv-scope.nix`.
+The scope check uses the real Nix module fixed point in the Linux static CI
+group, including `pkgs` supplied through `_module.args`. Repeat it with
+`nix eval --impure --json --file scripts/nix/check-musl-iserv-scope.nix --apply 'f: f { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }'`.
 
 Windows patches Basement's `INVALID_HANDLE_VALUE` expression to `INT_PTR`, so
 hsc2hs receives the signed pointer-sized integer expected by the Haskell API.
