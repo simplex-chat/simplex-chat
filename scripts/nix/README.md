@@ -195,6 +195,23 @@ host, target group, and source SHA. Each native CLI also runs
 the encrypted-store and profile-password smoke test, which can be repeated with
 `python3 scripts/nix/smoke-cli.py result-nix/BUILD_SYSTEM/exe:simplex-chat/bin/simplex-chat`.
 
+The Windows job first prepares only the named direct input outputs of the
+canonical `wai-app-static` component from the same Windows CLI project, using
+the normal 7,200-second per-derivation limit. It then builds that exact component
+with a 300-second limit; success is reused by the full Windows build. A failure
+keeps the job red and skips the full outputs. CI replays only that failed
+component in a separate diagnostic derivation, with `ISERV_ARGS=-v` and
+`strace -f -tt -T -s 80` around compiler calls. Compiler queries, original GHC
+arguments, the Wine/DLL wrapper and its normal/profile selection stay unchanged.
+The trace has a 15-minute step bound and a 300-second per-derivation limit;
+strace is fetched from caches only. Logs and the selected derivation/input
+metadata are uploaded even on failure. Repeat the canonical gate on Linux with
+`python3 scripts/nix/windows-th-gate.py prepare` followed by
+`python3 scripts/nix/windows-th-gate.py build`; use `trace` only after a failed
+canonical attempt. These commands use the committed checkout and preserve the
+canonical Nix core setting. The diagnostic changes its derivation and process
+environment; it does not qualify a Windows artifact or change the failed result.
+
 After a failed native x86_64 Linux library build, CI tries a separate derivation
 with `-v2 -ddump-timings` and GDB on compile calls and uploads
 `native-linux-ghc-phase-trace.log`, including when that trace fails. Compiler

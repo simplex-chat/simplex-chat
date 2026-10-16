@@ -108,6 +108,22 @@ jobs:
         timeout-minutes: 120
         run: nix build .#checks.x86_64-linux.ghc-elf-alignment --no-link -L --max-jobs 1 --timeout "$NIX_BUILD_TIMEOUT"
 
+      # Prepare only the exact TH component's direct inputs with the normal
+      # budget. Its own canonical build then gets five minutes, not two hours.
+      - name: Prepare canonical Windows TH inputs
+        id: windows_th_inputs
+        if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'windows' }}
+        timeout-minutes: 240
+        shell: bash
+        run: python3 scripts/nix/windows-th-gate.py prepare 2>&1 | tee windows-th-inputs.log
+
+      - name: Check canonical Windows TH component
+        id: windows_th_gate
+        if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'windows' }}
+        timeout-minutes: 6
+        shell: bash
+        run: python3 scripts/nix/windows-th-gate.py build 2>&1 | tee windows-th-gate.log
+
       # Use the compiler fork in flake.lock, including both Android ABIs.
       # Stock GHC installed by ghcup is not interchangeable with this compiler.
       - name: Build existing Haskell outputs
@@ -119,6 +135,27 @@ jobs:
         if: ${{ matrix.system == 'x86_64-darwin' && matrix.target == 'all' }}
         timeout-minutes: 10
         run: nix build .#checks.x86_64-darwin.ghc-macho-info-tables --no-link -L --max-jobs 1 --timeout 300
+
+      - name: Trace failed canonical Windows TH component
+        id: windows_th_trace
+        if: ${{ failure() && matrix.system == 'x86_64-linux' && matrix.target == 'windows' && steps.windows_th_inputs.outcome == 'success' && steps.windows_th_gate.outcome == 'failure' && steps.windows_th_gate.outputs.attempted == 'true' }}
+        timeout-minutes: 15
+        shell: bash
+        run: |
+          timeout --kill-after=30s 840s nice -n 10 \
+            python3 scripts/nix/windows-th-gate.py trace 2>&1 | tee windows-th-trace.log
+
+      - name: Upload Windows TH gate and diagnostic
+        if: ${{ always() && matrix.system == 'x86_64-linux' && matrix.target == 'windows' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nix-windows-th-${{ github.sha }}
+          path: |
+            windows-th-gate.json
+            windows-th-inputs.log
+            windows-th-gate.log
+            windows-th-trace.log
+          if-no-files-found: warn
 
       # Diagnose the same native library after failure. Keep the canonical
       # failure and its flags intact; this is a separate diagnostic derivation.
