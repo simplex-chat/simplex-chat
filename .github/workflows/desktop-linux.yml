@@ -96,25 +96,10 @@ jobs:
           df -h /
 
       - name: Setup Haskell
-        id: haskell
         uses: simplex-chat/setup-haskell-action@v2
         with:
           ghc-version: ${{ env.GHC_VER }}
           cabal-version: ${{ env.CABAL_VER }}
-
-      # before the first backend store exists, the core library's has most of the same Hackage dependencies
-      - name: Restore cabal store
-        id: cabal-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            ${{ steps.haskell.outputs.cabal-store }}
-            dist-newstyle
-          key: desktop-linux-backend-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-${{ github.run_id }}
-          restore-keys: |
-            desktop-linux-backend-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
-            desktop-linux-backend-store-ghc${{ env.GHC_VER }}-
-            desktop-linux-core-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
 
       - name: Install libraries
         run: |
@@ -123,15 +108,6 @@ jobs:
 
       - name: Build backend
         run: scripts/ci/desktop-linux/build-backend.sh ~/backend/${{ env.BACKEND_PKG }}
-
-      - name: Save cabal store
-        if: ${{ !cancelled() }}
-        uses: actions/cache/save@v5
-        with:
-          path: |
-            ${{ steps.haskell.outputs.cabal-store }}
-            dist-newstyle
-          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
 
       - name: Upload backend
         uses: actions/upload-artifact@v6
@@ -166,25 +142,11 @@ jobs:
           key: desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/ci/desktop-linux/build-core.sh') }}
 
       - name: Setup Haskell
-        id: haskell
         if: steps.core-cache.outputs.cache-hit != 'true'
         uses: simplex-chat/setup-haskell-action@v2
         with:
           ghc-version: ${{ env.GHC_VER }}
           cabal-version: ${{ env.CABAL_VER }}
-
-      - name: Restore cabal store
-        id: cabal-cache
-        if: steps.core-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            ${{ steps.haskell.outputs.cabal-store }}
-            dist-newstyle
-          key: desktop-linux-core-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-${{ github.run_id }}
-          restore-keys: |
-            desktop-linux-core-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
-            desktop-linux-core-store-ghc${{ env.GHC_VER }}-
 
       - name: Install libraries
         if: steps.core-cache.outputs.cache-hit != 'true'
@@ -195,15 +157,6 @@ jobs:
       - name: Build core library
         if: steps.core-cache.outputs.cache-hit != 'true'
         run: scripts/ci/desktop-linux/build-core.sh ~/core/${{ env.CORE_PKG }}
-
-      - name: Save cabal store
-        if: ${{ !cancelled() && steps.core-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v5
-        with:
-          path: |
-            ${{ steps.haskell.outputs.cabal-store }}
-            dist-newstyle
-          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
 
       - name: Save core library
         if: steps.core-cache.outputs.cache-hit != 'true'
@@ -281,7 +234,6 @@ jobs:
         with:
           distribution: corretto
           java-version: ${{ env.JAVA_VER }}
-          cache: gradle
 
       - name: Build app
         id: build
@@ -407,7 +359,6 @@ jobs:
         with:
           distribution: corretto
           java-version: ${{ env.JAVA_VER }}
-          cache: gradle
 
       - name: Build app
         working-directory: apps/multiplatform
