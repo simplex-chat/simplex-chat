@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # Test backend on the app runner: a chat relay and a directory service on the preset servers, with one group
-# and one channel registered and approved by a CLI peer, and a search request that must find both.
-# Both have profile images as large as the apps make them, so their search results don't fit in one service
-# response, and the search must page through them.
+# and one channel registered and approved by a CLI peer, and another CLI peer that must find both by sending the
+# directory the search text. Both have profile images as large as the apps make them.
 # For SimpleX names, an SMP server on 127.0.0.1 resolves .testing names through a local resolver, and a CLI peer
 # with an address on it claims the name seeded.testing.
 # Usage:
@@ -20,8 +19,6 @@ admin=ci_admin
 search_text="ci seed"
 # the longest profile image data URI the apps make and the core accepts (maxProfileImageSize)
 max_image_size=12500
-# the largest service response body, compressed if it has to be (maxServiceBodyLength)
-max_service_body=10737
 name_label=seeded
 resolver_port=8090
 
@@ -51,15 +48,19 @@ expect_out() {
 }
 
 # Each run keeps the client online for a few seconds, which also lets the handshakes it waits for progress.
-admin_until() {
-  local pattern=$1 secs=$2 cmd=$3
+until_shown() {
+  local client=$1 pattern=$2 secs=$3 cmd=$4
   local deadline=$((SECONDS + secs))
-  until admin 5 "$cmd" && grep -qE "$pattern" "$work/out"; do
+  until "$client" 5 "$cmd" && grep -qE "$pattern" "$work/out"; do
     if [ "$SECONDS" -ge "$deadline" ]; then
       echo "error: \"$pattern\" not shown by \"$cmd\" after $secs s"
       return 1
     fi
   done
+}
+
+admin_until() {
+  until_shown admin "$@"
 }
 
 db_query() {
@@ -266,55 +267,21 @@ seed_name() {
   echo "@$name_label.testing resolves to ci_contact's address"
 }
 
-page_summary() {
-  local resp=$1 compressed=""
-  if command -v zstd > /dev/null; then
-    compressed=", $(printf '%s' "$resp" | zstd -3 -q -c | wc -c) bytes zstd-compressed"
-  fi
-  jq -r '[.entries[] | "\(.displayName) (image: \(.image // "" | length) characters)"] | join(", ") | "entries: " + .' <<< "$resp"
-  echo "body: ${#resp} bytes$compressed, limit $max_service_body"
+searcher() {
+  chat searcher "$1" "$2" --user-display-name ci_searcher
 }
 
-# What the app will send, from a client that never connected to the directory, following the cursor to the last page.
-# The images make the results too large for one response, so the directory must split them, and each must arrive
-# once and with its whole image.
-probe_search() {
-  local cursor="" pages=0 started resp req
-  : > "$work/probe-entries"
-  while :; do
-    pages=$((pages + 1))
-    if [ "$pages" -gt 10 ]; then
-      echo "error: the search is still returning pages after 10"
-      return 1
-    fi
-    req="{\"type\":\"search\",\"searchText\":\"$search_text\"${cursor:+,\"searchCursor\":$cursor}}"
-    started=$SECONDS
-    chat probe 1 "/_service_request 1 $directory_link timeout=30 $req" --user-display-name ci_probe
-    resp=$(sed -n 's/^service response: //p' "$work/out")
-    if [ -z "$resp" ]; then
-      echo "error: no service response for page $pages"
-      return 1
-    fi
-    echo "page $pages, in $((SECONDS - started)) s:"
-    page_summary "$resp"
-    jq -r '.entries[] | "\(.displayName) \(.image // "" | length)"' <<< "$resp" >> "$work/probe-entries"
-    cursor=$(jq -c '.searchCursor // empty' <<< "$resp")
-    [ -n "$cursor" ] || break
-  done
-  local expected="ci_channel ${#channel_image}
-ci_group ${#group_image}"
-  if [ "$(sort "$work/probe-entries")" != "$expected" ]; then
-    echo "error: expected each result once with its whole image (name, image length):"
-    echo "$expected"
-    echo "got:"
-    sort "$work/probe-entries"
-    return 1
-  fi
-  if [ "$pages" -lt 2 ]; then
-    echo "error: the results fit in one response, so the search no longer tests paging"
-    return 1
-  fi
-  echo "search for \"$search_text\" found ci_group and ci_channel with their images, in $pages pages"
+# A new user connects to the directory and sends the search text; it replies with the count, then one message per
+# group or channel found, with its image.
+search_by_message() {
+  searcher 10 "/c $directory_link"
+  expect_out "connection request sent!"
+  until_shown searcher "Welcome to $directory_name" 180 "/tail @'$directory_name' 10"
+  searcher 5 "@'$directory_name' $search_text"
+  until_shown searcher "Found 2 group\(s\)" 120 "/tail @'$directory_name' 10"
+  until_shown searcher "ci_group" 60 "/tail @'$directory_name' 10"
+  until_shown searcher "ci_channel" 60 "/tail @'$directory_name' 10"
+  echo "search for \"$search_text\" by message found ci_group and ci_channel"
 }
 
 dump_directory() {
@@ -337,7 +304,7 @@ start() {
   connect_admin
   seed_group
   seed_channel
-  probe_search
+  search_by_message
   start_names_server
   seed_name
 }
