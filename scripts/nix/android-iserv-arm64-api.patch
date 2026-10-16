@@ -1,0 +1,14 @@
+--- a/cbits/symbols.aarch64-android.c
++++ b/cbits/symbols.aarch64-android.c
+@@ -171,8 +171,11 @@
+     SYM(htonl),
+     SYM(ntohl),
+     // sys/random.h
++    // These public Bionic APIs are declared only from API level 28.
++#if __ANDROID_API__ >= 28
+     SYM(getentropy),
+     SYM(getrandom),
++#endif
+     // sys/auxv.h
+     SYM(getauxval),
+     // sys/mman.h
