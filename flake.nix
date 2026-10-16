@@ -150,7 +150,8 @@
                 then "${haskellNix}/overlays/patches/crypton-x509-system-1.6.patch"
                 else "${haskellNix}/overlays/patches/crypton-x509-system.patch")
             ];
-            # HANDLE is a pointer; hsc2hs constants need a pointer-sized integer.
+            # HANDLE needs a signed pointer-width constant. Convert via Int:
+            # Basement's RebindableSyntax has no HasNegation IntPtr instance.
             packages.basement.patches = lib.mkAfter [ ./scripts/nix/basement-windows-intptr.patch ];
           }) ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid mobileRuntime.androidModule ++ extra-modules;
       }); in
