@@ -20,6 +20,9 @@ module BadgeService.Service
     newPurchaseChecks,
     purchaseCheckWait,
     maxPurchaseChecks,
+    PlayReads,
+    playReadWait,
+    maxPlayPurchaseReads,
     badgeErrorRetryAfter,
     shownServiceRequest,
     survive,
@@ -46,7 +49,7 @@ import BadgeService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot
 import BadgeService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
 import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import BadgeService.Waiters (Waiters, newWaiters)
-import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
+import BadgeService.Web.Server (Bucket, exportWebapp, newWebEnv, runWebListener, takeFrom)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
 import Control.Monad
@@ -540,9 +543,12 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
     -- the store is asked about a claim at most once an interval on this path, whoever presents it
     purchaseSubscription product_ credit = do
       now <- badgeNow cc
-      atomically (purchaseCheckWait claimChecks now providerRef) >>= \case
-        Just remaining -> pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just (ceiling remaining)}
-        Nothing ->
+      atomically (subscriptionAsk now) >>= \case
+        ClaimHeld remaining -> pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just (ceiling remaining)}
+        NoPlayRead wait -> do
+          logWarn "Play subscription read refused: the purchase path's reads for this minute are used"
+          pure BSPError {code = BSERateLimited, message = Nothing, retryAfter = Just (ceiling wait)}
+        AskStore ->
           checkStoreSubscription verifier subscriptionRef product_ >>= \case
             -- no store was asked, so the claim is not held off
             Left SRNotConfigured -> atomically (modifyTVar' claimChecks $ M.delete providerRef) >> storeRefusalResponse SRNotConfigured
@@ -550,9 +556,17 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
             Right checked -> atLeastCheckInterval <$> case credit of
               Uncredited -> newSubscription checked
               _ -> answerCredit credit
-    claimChecks = case subscriptionRef of
-      SubscriptionApple _ -> appleChecks checks
-      SubscriptionGoogle _ -> googleChecks checks
+    subscriptionAsk now =
+      purchaseCheckWait claimChecks now providerRef >>= \case
+        Just remaining -> pure $ ClaimHeld remaining
+        Nothing ->
+          maybe (pure Nothing) (`playReadWait` now) playReads_ >>= \case
+            Nothing -> pure AskStore
+            -- a claim refused a read is not held, as Play was not asked
+            Just wait -> modifyTVar' claimChecks (M.delete providerRef) $> NoPlayRead wait
+    (claimChecks, playReads_) = case subscriptionRef of
+      SubscriptionApple _ -> (appleChecks checks, Nothing)
+      SubscriptionGoogle _ -> (googleChecks checks, Just $ playReads checks)
     newSubscription checked@SubscriptionCheck {subscriptionState} = do
       now <- badgeNow cc
       case grantableCharge provider Nothing now checked >>= fundsMonthNow now Nothing of
@@ -797,13 +811,17 @@ atLeastCheckInterval = \case
   resp -> resp
 
 -- | The subscription claims the purchase path asked a store about, one map per store: the App Store's by original
--- transaction id, Play's by the token's hash, so Play tokens, which cost nothing to make up, cannot fill the App Store's.
-data PurchaseChecks = PurchaseChecks {appleChecks :: ClaimChecks, googleChecks :: ClaimChecks}
+-- transaction id, Play's by the token's hash, so Play tokens, which cost nothing to make up, cannot fill the App Store's;
+-- and the minute's allowance of Play reads.
+data PurchaseChecks = PurchaseChecks {appleChecks :: ClaimChecks, googleChecks :: ClaimChecks, playReads :: PlayReads}
 
 type ClaimChecks = TVar (M.Map T.Text UTCTime)
 
+-- | The Play subscription reads the purchase path took in the current minute, counted as the web listener counts requests.
+type PlayReads = TVar (Maybe Bucket)
+
 newPurchaseChecks :: IO PurchaseChecks
-newPurchaseChecks = PurchaseChecks <$> newTVarIO M.empty <*> newTVarIO M.empty
+newPurchaseChecks = PurchaseChecks <$> newTVarIO M.empty <*> newTVarIO M.empty <*> newTVarIO Nothing
 
 -- | How long a claim waits before its store is asked again; Nothing records a check at now. A claim that finds
 -- the table full of checks inside the interval is asked without being recorded, so a full table refuses no one.
@@ -820,3 +838,14 @@ purchaseCheckWait checks now ref = stateTVar checks $ \m ->
 -- while Play keys cost nothing to make up, so a full Play map only stops recording Play claims.
 maxPurchaseChecks :: Int
 maxPurchaseChecks = 10000
+
+data SubscriptionAsk = AskStore | ClaimHeld NominalDiffTime | NoPlayRead NominalDiffTime
+
+-- | How long until the purchase path may read Play again; Nothing takes one of this minute's reads.
+playReadWait :: PlayReads -> UTCTime -> STM (Maybe NominalDiffTime)
+playReadWait taken now = stateTVar taken $ \b_ -> either (\wait -> (Just wait, b_)) (\b -> (Nothing, Just b)) (takeFrom maxPlayPurchaseReads now b_)
+
+-- | A tenth of Play's default Subscriptions quota of 3,000 reads a minute, which renewal checks share: any token in the
+-- accepted grammar costs a read, so this caps what made-up tokens can spend; far above a minute of genuine purchases.
+maxPlayPurchaseReads :: Int
+maxPlayPurchaseReads = 300

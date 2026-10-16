@@ -226,6 +226,8 @@ badgeServiceTests = do
     it "should ask the App Store about a subscription claim at most once an hour, whoever presents it and as any of its transactions" testApplePurchaseChecksBounded
     it "should ask Play about a subscription token at most once an hour, whoever presents it, credited to another key or not" testPlayPurchaseChecksBounded
     it "should keep at most the maximum of purchase checks, asking without recording once full, and drop expired ones" testPurchaseChecksBounded
+    it "should allow the purchase path at most the maximum of Play reads in a minute, counted from its first read" testPlayReadsBounded
+    it "should answer a Play subscription rate_limited without asking Play once the minute's reads are used, and not hold it off" testPlayPurchaseReadsLimited
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
     it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
     it "should answer an App Store subscription provider_not_configured every time when only Play's subscriptions are checked" testAppleSubscriptionWithPlayChecker
@@ -3000,6 +3002,50 @@ testPurchaseChecksBounded _ = do
   M.size <$> readTVarIO googleChecks `shouldReturn` 1
   waitAt (addUTCTime 3600 now) "new" `shouldReturn` Nothing
   size `shouldReturn` 1
+
+testPlayReadsBounded :: HasCallStack => TestParams -> IO ()
+testPlayReadsBounded _ = do
+  PurchaseChecks {playReads = taken} <- newPurchaseChecks
+  now <- getCurrentTime
+  let readAt t = atomically $ playReadWait taken t
+      nextMinute = addUTCTime 60 now
+  forM_ [1 .. maxPlayPurchaseReads] $ \_ -> readAt now `shouldReturn` Nothing
+  readAt now `shouldReturn` Just 60
+  readAt (addUTCTime 30 now) `shouldReturn` Just 30
+  readAt nextMinute `shouldReturn` Nothing
+  forM_ [2 .. maxPlayPurchaseReads] $ \_ -> readAt nextMinute `shouldReturn` Nothing
+  readAt nextMinute `shouldReturn` Just 60
+
+testPlayPurchaseReadsLimited :: HasCallStack => TestParams -> IO ()
+testPlayPurchaseReadsLimited ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsPurchaseChecks = PurchaseChecks {playReads = taken}, bsStore = store@FakeStore {appleSubscriptionJWS}} -> do
+    let token n = "fake-play-token-reads-" <> n <> ".AO-J1Om8l3biV8pPk4"
+        play = googlePayment "subscr_badge_supporter_01" . token
+        present (purchaseKey, masterKey) payment = refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey payment)
+        heldOff (code, retryAfter) = code == BSEPaymentPending && maybe False (\s -> s > 3540 && s <= 3600) retryAfter
+        readRefused (code, retryAfter) = code == BSERateLimited && maybe False (\s -> s >= 1 && s <= 60) retryAfter
+        useUpReads = do
+          wait_ <- testClockTime bsClock >>= atomically . playReadWait taken
+          when (isNothing wait_) useUpReads
+    now <- serviceNow env
+    setSubscription store (SubscriptionGoogle $ token "A") $ subscriptionCheck SSBillingRetry Nothing
+    setSubscription store (SubscriptionGoogle $ token "B") $ subscriptionCheck SSBillingRetry Nothing
+    setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ subscriptionCheck SSEnded $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) now) 1
+    keys <- newPurchaseKeys
+    checks <- subscriptionChecks store
+    present keys (play "A") `shouldReturn` (BSEPaymentPending, Just 86400)
+    firstReadAfter <- testClockTime bsClock
+    subscriptionChecks store `shouldReturn` checks + 1
+    useUpReads
+    present keys (play "A") >>= (`shouldSatisfy` heldOff)
+    present keys (play "B") >>= (`shouldSatisfy` readRefused)
+    subscriptionChecks store `shouldReturn` checks + 1
+    present keys SPApple {jws = appleSubscriptionJWS} `shouldReturn` (BSEPaymentPending, Just 86400)
+    subscriptionChecks store `shouldReturn` checks + 2
+    setClockAt bsClock $ addUTCTime 61 firstReadAfter
+    present keys (play "B") `shouldReturn` (BSEPaymentPending, Just 86400)
+    subscriptionChecks store `shouldReturn` checks + 3
+    nothingPurchased cc
 
 -- | Apple's production host answers 404 for a Sandbox transaction, so the offline check refuses it first.
 testAppleSandboxSubscriptionNotAsked :: HasCallStack => TestParams -> IO ()
