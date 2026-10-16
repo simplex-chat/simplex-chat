@@ -39,8 +39,8 @@ The channel's link data lives on one SMP server, the link server, which already 
 | Optional parts | left out: invitation cancel, field-by-field profile merge, equal-version tie-break, retiring the root key |
 | Server command | sends only the new user data and keys (room for about 50 owners) |
 | Relays and owner actions | as today, not checked against the link: owners are trusted, and relays cannot forge their actions |
-| A removal at the moment of a promotion | the removal wins everywhere |
-| Blocking and unblocking | not ordered, as in groups today |
+| A removal at the moment of a promotion | the removal wins everywhere (recommended; open question 6) |
+| Blocking and unblocking | not ordered, as in groups today (recommended; open question 7) |
 
 ## Trade-offs users notice
 
@@ -65,10 +65,6 @@ None of these is a race between honest parties:
 - **Blocking and unblocking a member is not ordered**, as today.
 - **Downgrades.** A downgraded server loses link data written since its last start (owner keys are kept), and multi-owner writes stop until it is upgraded. A creator downgraded to an older app cannot change the link.
 
-## Not verified
+## Not verified, size
 
-App code is not compiled and Postgres tests do not run in this environment (both on the host). The 50-owner headroom is computed from the encoders (the first slices test it); catch-up for 100,000 members (about 2,000 messages) is an estimate.
-
-## Size
-
-About 2,290 lines of production Haskell (~490 in simplexmq, ~1,800 in chat) and about 380 per app platform. Five new chat events and one changed; five optional link-data fields; nine columns and no new table; one SMP command and one SMP error.
+App code and Postgres tests run only on the host. The 50-owner headroom is computed from the encoders (the first slices test it); catch-up for 100,000 members (about 2,000 messages) is an estimate. About 2,290 lines of production Haskell (~490 simplexmq, ~1,800 chat) and 380 per app platform; five new chat events and one changed; five optional link-data fields; nine columns, no new table; one SMP command and one error.
