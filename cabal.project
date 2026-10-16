@@ -48,7 +48,7 @@ allow-newer:
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: cba13823567d7cd564d8a1f354046174fba375d8
+    tag: 12d25eb91f288e5edbc09c063a21c3bd4d23c640
 
 source-repository-package
     type: git
