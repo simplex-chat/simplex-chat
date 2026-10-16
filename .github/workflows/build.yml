@@ -786,6 +786,22 @@ jobs:
           ghc_ver: ${{ matrix.ghc }}
           github_ref: ${{ github.ref }}
 
+      - name: Toolchain diagnostics
+        continue-on-error: true
+        shell: bash
+        run: |
+          note() { echo "::notice title=$1::$(printf '%s' "$2" | tr '\n' ' ' | cut -c1-900)"; }
+          note xcode-select "$(xcode-select -p)"
+          note env "DEVELOPER_DIR=$DEVELOPER_DIR SDKROOT=$SDKROOT"
+          note xcrun "sdk=$(xcrun --show-sdk-path) clang=$(xcrun -f clang) ld=$(xcrun -f ld)"
+          note clt-sdks "$(ls -l /Library/Developer/CommandLineTools/SDKs)"
+          note which "gcc=$(command -v gcc) clang=$(command -v clang) ld=$(command -v ld) ghc=$(command -v ghc)"
+          note ld-version "$(ld -v 2>&1)"
+          note ghc-info "$(ghc --info | grep -E '"(C compiler command|C compiler flags|C compiler link flags|ld command|ld flags|Merge objects command)"')"
+          note ghc-clt-refs "$(grep -rl CommandLineTools "$(ghc --print-libdir)" 2>/dev/null | head -20)"
+          note ghc-iconv "$(grep -rh -E '^(extra-libraries|library-dirs|ld-options):.*' "$(ghc --print-libdir)/package.conf.d"/base-*.conf "$(ghc --print-libdir)/package.conf.d"/rts-*.conf 2>/dev/null)"
+          note cabal-config "$(grep -H -i -E 'extra-(lib|include|prog)' ~/.cabal/config ~/.config/cabal/config 2>/dev/null)"
+
       - name: Install OpenSSL
         run: brew install openssl@3.0
 
