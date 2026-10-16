@@ -142,6 +142,17 @@ optional pinned GDB derivation via `--arg debugger`. Omitting `debugger` retains
 the phase-only trace. GDB leaves ASLR enabled; its host/runtime effects must be
 reported when comparing diagnostics.
 
+When the pinned Intel Darwin `ghc-boot` component fails, CI captures a separate
+Setup diagnostic. It preserves the newly linked Setup executable's bytes and
+runs its actual configure arguments under the runner's Apple LLDB. The probe
+records bounded thread backtraces, registers, instructions and loaded images;
+compiler queries and other Setup commands pass through. Child failures remain
+failures, and the canonical job stays failed. The diagnostic has a two-hour
+step/per-derivation limit and a five-minute limit for LLDB itself. Its log is
+uploaded as `intel-setup-lldb-trace.log`, including after failure. Only this probe
+disables the Nix sandbox to reach the host debugger; it records that runtime
+difference and the debugger version. A successful probe is diagnostic evidence.
+
 Hydra continues to consume
 the same `hydraJobs` attributes. The older application release workflow still
 uses its existing GHCup/Docker compiler settings; migrating that packaging and

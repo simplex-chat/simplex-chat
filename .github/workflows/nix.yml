@@ -91,7 +91,8 @@ jobs:
       # Stock GHC installed by ghcup is not interchangeable with this compiler.
       - name: Build existing Haskell outputs
         id: haskell_build
-        run: make nix-build
+        shell: bash
+        run: make nix-build 2>&1 | tee nix-build.log
 
       # Diagnose the same native library after failure. Keep the canonical
       # failure and its flags intact; this is a separate diagnostic derivation.
@@ -127,6 +128,52 @@ jobs:
         with:
           name: nix-ghc-phase-trace-${{ matrix.system }}-${{ matrix.target }}-${{ github.sha }}
           path: native-linux-ghc-phase-trace.log
+          if-no-files-found: warn
+
+      - name: Capture Intel Darwin ghc-boot Setup failure
+        id: intel_setup_trace
+        if: ${{ failure() && matrix.system == 'x86_64-darwin' && matrix.target == 'all' && steps.haskell_build.outcome == 'failure' }}
+        timeout-minutes: 120
+        shell: bash
+        run: |
+          expected_drv=/nix/store/vghjgkr64qjigddh3gnf3c103wbvpxmz-ghc-boot-lib-ghc-boot-9.14.drv
+          if ! grep -F "error: Cannot build '$expected_drv'" nix-build.log >/dev/null &&
+             ! grep -F "builder for '$expected_drv' failed" nix-build.log >/dev/null; then
+            echo 'Skipping Intel Setup diagnostic: the pinned ghc-boot component did not fail.'
+            exit 0
+          fi
+          echo 'attempted=true' >> "$GITHUB_OUTPUT"
+          export expected_drv
+          bash -euo pipefail 2>&1 <<'TRACE' | tee intel-setup-lldb-trace.log
+          lldb_path=$(xcrun --find lldb)
+          printf 'Intel Setup host debugger: %s\n' "$lldb_path"
+          "$lldb_path" --version
+          flake_ref="git+file://$GITHUB_WORKSPACE?rev=$(git rev-parse HEAD)"
+          original=$(cat <<NIX
+          let
+            flake = builtins.getFlake "$flake_ref";
+            inherit (flake.inputs) haskellNix;
+            nativePackages = import (flake.outPath + "/scripts/nix/native-packages.nix") { inherit haskellNix; };
+            nativeCompilers = ((nativePackages "x86_64-darwin").appendOverlays [
+              (import (haskellNix + "/test/overlay.nix"))
+            ]).haskell-nix.compiler;
+          in nativeCompilers.ghc914-sh.stage2Project.hsPkgs.ghc-boot.components.library
+          NIX
+          )
+          # The failed canonical build already produced this component's inputs.
+          # Only this diagnostic permits host LLDB access outside the Nix sandbox.
+          exec nix build --file scripts/nix/trace-intel-setup.nix \
+            --arg original "$original" --argstr expectedDrv "$expected_drv" \
+            --argstr lldbPath "$lldb_path" --option sandbox false \
+            --no-link -L --keep-failed --max-jobs 1 --timeout 7200
+          TRACE
+
+      - name: Upload Intel Darwin Setup diagnostic
+        if: ${{ always() && steps.intel_setup_trace.outputs.attempted == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nix-intel-setup-trace-${{ matrix.system }}-${{ matrix.target }}-${{ github.sha }}
+          path: intel-setup-lldb-trace.log
           if-no-files-found: warn
 
       - name: Check native CLI encryption and profile passwords
