@@ -304,6 +304,7 @@ jobs:
       group: ios-sim-claude-${{ github.ref }}
       cancel-in-progress: true
     env:
+      # the same in both app workflows; Haiku 5.5's token counts are right from 2.1.296
       CLAUDE_CODE_VERSION: 2.1.300
       # true when the device test plan uses the test backend, which then starts when the run asks for it
       CLAUDE_BACKEND: "false"

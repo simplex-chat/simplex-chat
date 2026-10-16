@@ -325,8 +325,8 @@ jobs:
       group: desktop-linux-claude-${{ github.ref }}
       cancel-in-progress: true
     env:
-      # the first release with Haiku 5.5's token counts right (2.1.293 added the model, 2.1.296 fixed its counts)
-      CLAUDE_CODE_VERSION: 2.1.296
+      # the same in both app workflows; Haiku 5.5's token counts are right from 2.1.296
+      CLAUDE_CODE_VERSION: 2.1.300
       CLAUDE_MODEL: claude-haiku-5-5
       # true when claude-test.md uses the test backend, which then starts when the run asks for it
       CLAUDE_BACKEND: "false"
