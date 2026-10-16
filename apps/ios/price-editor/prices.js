@@ -10,16 +10,22 @@ const { stringify } = require('csv-stringify/sync');
 const APP_ID = '1605771084'; // your numeric app ID
 // =======================================
 
+function usage() {
+  console.log(`Usage:
+  node prices.js export <issuer_id> <path/to/AuthKey_XXXX.p8> [-o <file>]
+  node prices.js points <issuer_id> <path/to/AuthKey_XXXX.p8> [-o <file>]
+  node prices.js import <issuer_id> <path/to/AuthKey_XXXX.p8> [--start-date YYYY-MM-DD] [--preserve true|false] [--dry-run]
+
+export writes prices.csv and points writes apple-price-points.csv unless -o is given; neither overwrites an existing file.
+import reads prices.csv and changes the prices that differ from the current App Store prices.
+`);
+  process.exit(1);
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   const cmd = args[0];
-  if (!cmd || !['export', 'import'].includes(cmd)) {
-    console.log(`Usage:
-  node prices.js export <issuer_id> <path/to/AuthKey_XXXX.p8>
-  node prices.js import <issuer_id> <path/to/AuthKey_XXXX.p8> [--start-date YYYY-MM-DD] [--preserve true|false] [--dry-run]
-`);
-    process.exit(1);
-  }
+  if (!cmd || !['export', 'points', 'import'].includes(cmd)) usage();
 
   const issuerId = args[1];
   const p8Path = args[2];
@@ -35,21 +41,26 @@ function parseArgs() {
     process.exit(1);
   }
 
+  let output = { export: 'prices.csv', points: 'apple-price-points.csv' }[cmd];
   let startDate = null;
   let preserveCurrent = true;
   let dryRun = false;
 
   for (let i = 3; i < args.length; i++) {
-    if (args[i] === '--start-date' && args[i + 1]) startDate = args[++i];
-    else if (args[i] === '--preserve' && args[i + 1]) preserveCurrent = args[++i] === 'true';
+    if (args[i] === '-o' && cmd !== 'import' && args[i + 1]) output = args[++i];
+    else if (args[i] === '--start-date' && /^\d{4}-\d{2}-\d{2}$/.test(args[i + 1])) startDate = args[++i];
+    else if (args[i] === '--preserve' && ['true', 'false'].includes(args[i + 1])) preserveCurrent = args[++i] === 'true';
     else if (args[i] === '--dry-run') dryRun = true;
+    else usage();
   }
 
-  return { cmd, issuerId, keyId, p8Path, startDate, preserveCurrent, dryRun };
+  return { cmd, issuerId, keyId, p8Path, output, startDate, preserveCurrent, dryRun };
 }
 
-const { cmd, issuerId, keyId, p8Path, startDate, preserveCurrent, dryRun } = parseArgs();
+const { cmd, issuerId, keyId, p8Path, output, startDate, preserveCurrent, dryRun } = parseArgs();
 const privateKey = fs.readFileSync(p8Path, 'utf8');
+const today = new Date().toISOString().slice(0, 10);
+const RATE_LIMIT_RETRIES = 6;
 
 function getToken() {
   return jwt.sign(
@@ -59,21 +70,41 @@ function getToken() {
   );
 }
 
-async function api(endpoint, options = {}) {
-  const token = getToken();
-  const res = await fetch(`https://api.appstoreconnect.apple.com${endpoint}`, {
+async function api(endpoint, options = {}, retry = 0) {
+  const url = new URL(endpoint, 'https://api.appstoreconnect.apple.com').href;
+  const res = await fetch(url, {
     ...options,
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${getToken()}`,
+      Accept: 'application/json',
       'Content-Type': 'application/json',
       ...options.headers,
     },
   });
   const text = await res.text();
+  if (res.status === 429 && retry < RATE_LIMIT_RETRIES) {
+    const minutes = 2 ** retry;
+    console.warn(`Rate limit exceeded, retrying in ${minutes} min: ${url}`);
+    await sleep(minutes * 60 * 1000);
+    return api(endpoint, options, retry + 1);
+  }
   if (!res.ok) {
-    throw new Error(`${res.status} ${endpoint}: ${text}`);
+    throw new Error(`${res.status} ${url}: ${text}`);
   }
   return text ? JSON.parse(text) : {};
+}
+
+async function apiList(endpoint) {
+  const data = [];
+  const included = [];
+  let next = endpoint;
+  while (next) {
+    const res = await api(next);
+    data.push(...res.data);
+    included.push(...(res.included ?? []));
+    next = res.links?.next;
+  }
+  return { data, included };
 }
 
 async function sleep(ms) {
@@ -81,207 +112,317 @@ async function sleep(ms) {
 }
 
 // ====================== EXPORT ======================
+async function readProducts() {
+  const products = [];
+
+  const groups = await apiList(`/v1/apps/${APP_ID}/subscriptionGroups?limit=200`);
+  for (const group of groups.data) {
+    const subs = await apiList(`/v1/subscriptionGroups/${group.id}/subscriptions?limit=200`);
+    for (const sub of subs.data) {
+      console.log(`Reading subscription ${sub.attributes.productId}`);
+      products.push({
+        type: 'subscription',
+        id: sub.id,
+        productId: sub.attributes.productId,
+        pricePointsPath: `/v1/subscriptions/${sub.id}/pricePoints`,
+        prices: await readSubscriptionPrices(sub),
+      });
+    }
+  }
+
+  const iaps = await apiList(`/v1/apps/${APP_ID}/inAppPurchasesV2?limit=200`);
+  for (const iap of iaps.data) {
+    console.log(`Reading IAP ${iap.attributes.productId}`);
+    products.push({
+      type: 'iap',
+      id: iap.id,
+      productId: iap.attributes.productId,
+      pricePointsPath: `/v2/inAppPurchases/${iap.id}/pricePoints`,
+      prices: await readIapPrices(iap),
+    });
+  }
+
+  return products;
+}
+
+async function readSubscriptionPrices(sub) {
+  const res = await apiList(`/v1/subscriptions/${sub.id}/prices?include=subscriptionPricePoint,territory&limit=200`);
+  const records = priceRecords(res, 'subscriptionPricePoint');
+  const monthly = records
+    .filter(r => r.planType === 'MONTHLY')
+    .map(r => `  ${r.territory} ${r.startDate ?? '-'} ${r.point.customerPrice} ${r.currency}`);
+  if (monthly.length > 0) {
+    throw new Error(`${sub.attributes.productId} has MONTHLY plan prices:\n${monthly.join('\n')}`);
+  }
+  return territoryPrices(sub.attributes.productId, records);
+}
+
+async function readIapPrices(iap) {
+  const records = [];
+  for (const kind of ['manualPrices', 'automaticPrices']) {
+    const res = await apiList(`/v1/inAppPurchasePriceSchedules/${iap.id}/${kind}?include=inAppPurchasePricePoint,territory&limit=200`);
+    records.push(...priceRecords(res, 'inAppPurchasePricePoint'));
+  }
+  return territoryPrices(iap.attributes.productId, records);
+}
+
+function priceRecords({ data, included }, pricePointRelationship) {
+  const find = ({ type, id }) => included.find(i => i.type === type && i.id === id);
+  return data.map(({ attributes, relationships }) => {
+    const territory = find(relationships.territory.data);
+    const point = find(relationships[pricePointRelationship].data);
+    return {
+      territory: territory.id,
+      currency: territory.attributes.currency,
+      startDate: attributes.startDate,
+      endDate: attributes.endDate,
+      planType: attributes.planType,
+      point: { id: point.id, customerPrice: point.attributes.customerPrice },
+    };
+  });
+}
+
+function territoryPrices(productId, records) {
+  const territories = [...new Set(records.map(r => r.territory))];
+  return territories.map(territory => {
+    const history = records
+      .filter(r => r.territory === territory)
+      .sort((a, b) => (a.startDate ?? '').localeCompare(b.startDate ?? ''));
+    const current = history.findLast(r => (r.startDate ?? '') <= today && (!r.endDate || r.endDate > today));
+    if (!current) {
+      throw new Error(`${productId} ${territory}: no current price`);
+    }
+    return {
+      territory,
+      current,
+      scheduled: history.find(r => (r.startDate ?? '') > today),
+    };
+  });
+}
+
+async function readPricePoints(product, territory) {
+  const { data } = await apiList(`${product.pricePointsPath}?filter[territory]=${territory}&limit=8000`);
+  return data
+    .map(p => ({ id: p.id, customerPrice: p.attributes.customerPrice }))
+    .sort((a, b) => Number(a.customerPrice) - Number(b.customerPrice));
+}
+
 async function exportPrices() {
+  if (fs.existsSync(output)) throw new Error(`${output} already exists`);
+  const products = await readProducts();
+  const rows = products.flatMap(product => product.prices.map(({ territory, current, scheduled }) => ({
+    type: product.type,
+    product_id: product.productId,
+    territory,
+    currency: current.currency,
+    current_price: current.point.customerPrice,
+    scheduled_price: scheduled?.point.customerPrice ?? '',
+    scheduled_date: scheduled?.startDate ?? '',
+    price: current.point.customerPrice,
+  })));
+
+  fs.writeFileSync(output, stringify(rows, { header: true }), { flag: 'wx' });
+  console.log(`\nExported ${rows.length} rows → ${output}`);
+}
+
+async function exportPricePoints() {
+  if (fs.existsSync(output)) throw new Error(`${output} already exists`);
+  const products = await readProducts();
   const rows = [];
-
-  // Subscriptions
-  const groups = await api(`/v1/apps/${APP_ID}/subscriptionGroups?limit=50`);
-  for (const group of groups.data || []) {
-    const subs = await api(`/v1/subscriptionGroups/${group.id}/subscriptions?limit=200`);
-    for (const sub of subs.data || []) {
-      console.log(`Exporting subscription ${sub.attributes.productId}`);
-      let next = `/v1/subscriptions/${sub.id}/prices?include=subscriptionPricePoint,territory&limit=200`;
-      while (next) {
-        const res = await api(next);
-        const points = (res.included || []).filter(i => i.type === 'subscriptionPricePoints');
-        const territories = (res.included || []).filter(i => i.type === 'territories');
-
-        for (const price of res.data || []) {
-          const ppId = price.relationships?.subscriptionPricePoint?.data?.id;
-          const terrId = price.relationships?.territory?.data?.id;
-          const pp = points.find(p => p.id === ppId);
-          const terr = territories.find(t => t.id === terrId);
-          if (!pp) continue;
-
-          rows.push({
-            type: 'subscription',
-            id: sub.id,
-            product_id: sub.attributes.productId,
-            name: sub.attributes.name || '',
-            territory: terrId || '',
-            customer_price: pp.attributes.customerPrice || '',
-            currency: pp.attributes.currency || terr?.attributes?.currency || '',
-            price_point_id: pp.id,
-            source: price.attributes?.startDate ? 'scheduled' : 'current',
-            desired_price: pp.attributes.customerPrice || '',
-          });
-        }
-        next = res.links?.next || null;
+  for (const type of ['subscription', 'iap']) {
+    const product = products.find(p => p.type === type);
+    console.log(`Reading price points of ${type} ${product.productId}`);
+    for (const { territory, current } of product.prices) {
+      for (const point of await readPricePoints(product, territory)) {
+        rows.push({ type, territory, currency: current.currency, customer_price: point.customerPrice });
       }
     }
   }
 
-  // IAPs
-  const iaps = await api(`/v1/apps/${APP_ID}/inAppPurchasesV2?limit=200`);
-  for (const iap of iaps.data || []) {
-    console.log(`Exporting IAP ${iap.attributes.productId}`);
-
-    for (const kind of ['manualPrices', 'automaticPrices']) {
-      try {
-        let next = `/v1/inAppPurchasePriceSchedules/${iap.id}/${kind}?include=inAppPurchasePricePoint,territory&limit=200`;
-        while (next) {
-          const res = await api(next);
-          const points = (res.included || []).filter(i => i.type === 'inAppPurchasePricePoints');
-          const territories = (res.included || []).filter(i => i.type === 'territories');
-
-          for (const price of res.data || []) {
-            const ppId = price.relationships?.inAppPurchasePricePoint?.data?.id;
-            const terrId = price.relationships?.territory?.data?.id;
-            const pp = points.find(p => p.id === ppId);
-            const terr = territories.find(t => t.id === terrId);
-            if (!pp) continue;
-
-            rows.push({
-              type: 'iap',
-              id: iap.id,
-              product_id: iap.attributes.productId,
-              name: iap.attributes.name || '',
-              territory: terrId || '',
-              customer_price: pp.attributes.customerPrice || '',
-              currency: pp.attributes.currency || terr?.attributes?.currency || '',
-              price_point_id: pp.id,
-              source: kind === 'manualPrices' ? 'manual' : 'automatic',
-              desired_price: pp.attributes.customerPrice || '',
-            });
-          }
-          next = res.links?.next || null;
-        }
-      } catch (e) {
-        console.warn(`  ${kind} skipped: ${e.message.split('\n')[0]}`);
-      }
-    }
-  }
-
-  fs.writeFileSync('prices.csv', stringify(rows, { header: true }));
-  console.log(`\nExported ${rows.length} rows → prices.csv`);
+  fs.writeFileSync(output, stringify(rows, { header: true }), { flag: 'wx' });
+  console.log(`\nExported ${rows.length} price points → ${output}`);
 }
 
 // ====================== IMPORT ======================
-async function findPricePoint(resourceId, territory, desiredPrice, type) {
-  const endpoint = type === 'subscription'
-    ? `/v1/subscriptions/${resourceId}/pricePoints?filter[territory]=${territory}&limit=200`
-    : `/v2/inAppPurchases/${resourceId}/pricePoints?filter[territory]=${territory}&limit=200`;
+async function findPricePoint(product, territory, value) {
+  if (Number.isNaN(value)) return {};
+  const points = await readPricePoints(product, territory);
+  return {
+    point: points.find(p => Number(p.customerPrice) === value),
+    lower: points.findLast(p => Number(p.customerPrice) < value),
+    higher: points.find(p => Number(p.customerPrice) > value),
+  };
+}
 
-  const data = await api(endpoint);
-  const match = (data.data || []).find(p => p.attributes.customerPrice === String(desiredPrice));
-  return match?.id || null;
+async function matchRows(products, rows) {
+  const problems = [];
+  const rowsByKey = new Map();
+  for (const row of rows) {
+    const key = `${row.product_id} ${row.territory}`;
+    if (rowsByKey.has(key)) problems.push(`${key}: duplicate row`);
+    rowsByKey.set(key, row);
+  }
+
+  const lines = [];
+  for (const product of products) {
+    console.log(`Checking prices of ${product.type} ${product.productId}`);
+    for (const price of product.prices) {
+      const key = `${product.productId} ${price.territory}`;
+      const row = rowsByKey.get(key);
+      rowsByKey.delete(key);
+      if (!row) {
+        problems.push(`${key}: missing row`);
+        continue;
+      }
+      const value = Number(row.price);
+      const changed = value !== Number(price.current.point.customerPrice);
+      const { point, lower, higher } = changed
+        ? await findPricePoint(product, price.territory, value)
+        : { point: price.current.point };
+      if (!point) {
+        problems.push(`${key}: "${row.price}" ${price.current.currency} is not a price point, nearest are ${lower?.customerPrice ?? 'none'} and ${higher?.customerPrice ?? 'none'}`);
+        continue;
+      }
+      lines.push({
+        product,
+        territory: price.territory,
+        currency: price.current.currency,
+        current: price.current.point,
+        point,
+        changed,
+      });
+    }
+  }
+  for (const key of rowsByKey.keys()) problems.push(`${key}: not an App Store product territory`);
+
+  if (problems.length > 0) {
+    throw new Error(`${problems.length} invalid rows, nothing was changed:\n${problems.join('\n')}`);
+  }
+  return lines;
+}
+
+function describeLine({ territory, currency, current, point, changed }) {
+  return changed
+    ? `${territory} ${current.customerPrice} -> ${point.customerPrice} ${currency}`
+    : `${territory} ${point.customerPrice} ${currency}`;
+}
+
+function subscriptionChanges(lines) {
+  return lines
+    .filter(line => line.product.type === 'subscription' && line.changed)
+    .map(line => {
+      const increase = Number(line.point.customerPrice) > Number(line.current.customerPrice);
+      return {
+        label: `subscription ${line.product.productId} ${describeLine(line)}${increase ? ', increase' : ''}`,
+        details: [],
+        path: '/v1/subscriptionPrices',
+        body: {
+          data: {
+            type: 'subscriptionPrices',
+            attributes: increase ? { startDate, preserveCurrentPrice: preserveCurrent } : { startDate },
+            relationships: {
+              subscription: { data: { type: 'subscriptions', id: line.product.id } },
+              subscriptionPricePoint: { data: { type: 'subscriptionPricePoints', id: line.point.id } },
+            },
+          },
+        },
+      };
+    });
+}
+
+function manualPrice(product, point, from, until) {
+  return {
+    type: 'inAppPurchasePrices',
+    attributes: { startDate: from, endDate: until },
+    relationships: {
+      inAppPurchaseV2: { data: { type: 'inAppPurchases', id: product.id } },
+      inAppPurchasePricePoint: { data: { type: 'inAppPurchasePricePoints', id: point.id } },
+    },
+  };
+}
+
+async function iapScheduleChanges(products, lines) {
+  const changes = [];
+  for (const product of products.filter(p => p.type === 'iap')) {
+    const productLines = lines.filter(line => line.product === product);
+    if (!productLines.some(line => line.changed)) continue;
+
+    const baseTerritory = (await api(`/v1/inAppPurchasePriceSchedules/${product.id}/baseTerritory`)).data.id;
+    const manualPrices = productLines
+      .flatMap(line => startDate && line.changed
+        ? [manualPrice(product, line.current, null, startDate), manualPrice(product, line.point, startDate, null)]
+        : [manualPrice(product, line.point, null, null)])
+      .map((price, i) => ({ ...price, id: `\${price-${i}}` }));
+
+    changes.push({
+      label: `iap ${product.productId} price schedule, base territory ${baseTerritory}, ${productLines.length} territories`,
+      details: productLines.map(describeLine),
+      path: '/v1/inAppPurchasePriceSchedules',
+      body: {
+        data: {
+          type: 'inAppPurchasePriceSchedules',
+          relationships: {
+            inAppPurchase: { data: { type: 'inAppPurchases', id: product.id } },
+            baseTerritory: { data: { type: 'territories', id: baseTerritory } },
+            manualPrices: { data: manualPrices.map(({ type, id }) => ({ type, id })) },
+          },
+        },
+        included: manualPrices,
+      },
+    });
+  }
+  return changes;
+}
+
+function printChange({ label, details }) {
+  console.log(label);
+  for (const detail of details) console.log(`  ${detail}`);
+}
+
+async function applyChanges(changes) {
+  for (const [i, change] of changes.entries()) {
+    try {
+      await api(change.path, { method: 'POST', body: JSON.stringify(change.body) });
+    } catch (e) {
+      throw new Error([
+        `Failed: ${change.label}`,
+        e.message,
+        `Applied ${i} changes:`,
+        ...changes.slice(0, i).map(c => `  ${c.label}`),
+        `Not applied ${changes.length - i} changes:`,
+        ...changes.slice(i).map(c => `  ${c.label}`),
+      ].join('\n'));
+    }
+    printChange(change);
+    await sleep(300);
+  }
 }
 
 async function importPrices() {
-  const records = parse(fs.readFileSync('prices.csv', 'utf8'), {
+  const rows = parse(fs.readFileSync('prices.csv', 'utf8'), {
     columns: true,
     skip_empty_lines: true,
+    bom: true,
   });
+  const products = await readProducts();
+  const lines = await matchRows(products, rows);
+  const changes = [
+    ...await iapScheduleChanges(products, lines),
+    ...subscriptionChanges(lines),
+  ];
 
-  const changes = records.filter(r => r.desired_price && r.desired_price !== r.customer_price);
-  console.log(`Found ${changes.length} price changes (dry-run=${dryRun})`);
-
-  // Group IAP changes by product
-  const iapGroups = {};
-  for (const row of changes) {
-    if (row.type === 'iap') {
-      if (!iapGroups[row.id]) iapGroups[row.id] = [];
-      iapGroups[row.id].push(row);
-    }
+  console.log(`\n${changes.length} changes, start date ${startDate ?? 'immediate'}, preserve current price on increases ${preserveCurrent} (dry-run=${dryRun})`);
+  if (dryRun) {
+    changes.forEach(printChange);
+    return;
   }
-
-  // Subscriptions (one territory at a time)
-  for (const row of changes.filter(r => r.type === 'subscription')) {
-    console.log(`[SUB] ${row.product_id} ${row.territory}: ${row.customer_price} → ${row.desired_price}`);
-    const ppId = await findPricePoint(row.id, row.territory, row.desired_price, 'subscription');
-    if (!ppId) {
-      console.warn('  No exact price point found');
-      continue;
-    }
-    if (dryRun) continue;
-
-    const attributes = { preserveCurrentPrice: preserveCurrent };
-    if (startDate) attributes.startDate = startDate;
-
-    await api('/v1/subscriptionPrices', {
-      method: 'POST',
-      body: JSON.stringify({
-        data: {
-          type: 'subscriptionPrices',
-          attributes,
-          relationships: {
-            subscription: { data: { type: 'subscriptions', id: row.id } },
-            subscriptionPricePoint: { data: { type: 'subscriptionPricePoints', id: ppId } },
-          },
-        },
-      }),
-    });
-    await sleep(300);
-  }
-
-  // IAPs (one schedule per product)
-  for (const [iapId, rows] of Object.entries(iapGroups)) {
-    const productId = rows[0].product_id;
-    console.log(`[IAP] ${productId} — ${rows.length} territories`);
-
-    const manualPrices = [];
-    const included = [];
-    let baseTerritory = 'USA';
-
-    for (const row of rows) {
-      const ppId = await findPricePoint(iapId, row.territory, row.desired_price, 'iap');
-      if (!ppId) {
-        console.warn(`  No price point for ${row.territory} ${row.desired_price}`);
-        continue;
-      }
-      const tempId = `\${price-${row.territory}}`;
-      manualPrices.push({ type: 'inAppPurchasePrices', id: tempId });
-      included.push({
-        type: 'inAppPurchasePrices',
-        id: tempId,
-        attributes: { startDate: startDate || null, endDate: null },
-        relationships: {
-          inAppPurchaseV2: { data: { type: 'inAppPurchases', id: iapId } },
-          inAppPurchasePricePoint: { data: { type: 'inAppPurchasePricePoints', id: ppId } },
-        },
-      });
-      if (row.territory === 'USA') baseTerritory = 'USA';
-    }
-
-    if (manualPrices.length === 0) continue;
-
-    const payload = {
-      data: {
-        type: 'inAppPurchasePriceSchedules',
-        relationships: {
-          inAppPurchase: { data: { type: 'inAppPurchases', id: iapId } },
-          baseTerritory: { data: { type: 'territories', id: baseTerritory } },
-          manualPrices: { data: manualPrices },
-        },
-      },
-      included,
-    };
-
-    if (dryRun) {
-      console.log('  (dry-run) would POST schedule');
-      continue;
-    }
-
-    await api('/v1/inAppPurchasePriceSchedules', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-    await sleep(500);
-  }
-
+  await applyChanges(changes);
   console.log('Import finished');
 }
 
 // ====================== RUN ======================
-if (cmd === 'export') exportPrices().catch(console.error);
-else importPrices().catch(console.error);
+const commands = { export: exportPrices, points: exportPricePoints, import: importPrices };
+commands[cmd]().catch(e => {
+  console.error(e);
+  process.exitCode = 1;
+});

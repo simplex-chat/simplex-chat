@@ -1,0 +1,4 @@
+node_modules/
+*.json
+!package.json
+*.csv
