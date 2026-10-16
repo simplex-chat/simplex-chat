@@ -95,7 +95,7 @@ jobs:
 
       # Diagnose the same native library after failure. Keep the canonical
       # failure and its flags intact; this is a separate diagnostic derivation.
-      - name: Trace native Linux GHC phases after failure
+      - name: Trace native Linux GHC and capture faults after failure
         id: ghc_phase_trace
         if: ${{ failure() && matrix.system == 'x86_64-linux' && matrix.target == 'native' && steps.haskell_build.outcome == 'failure' }}
         shell: bash
@@ -107,10 +107,19 @@ jobs:
           echo 'attempted=true' >> "$GITHUB_OUTPUT"
           flake_ref="git+file://$GITHUB_WORKSPACE?rev=$(git rev-parse HEAD)"
           original="(builtins.getFlake \"$flake_ref\").hydraJobs.x86_64-linux.\"lib:simplex-chat\""
-          timeout --kill-after=30s 7200s nice -n 10 nix build \
+          export flake_ref original
+          timeout --kill-after=30s 7200s nice -n 10 bash -euo pipefail \
+            2>&1 <<'TRACE' | tee native-linux-ghc-phase-trace.log
+          debugger="(import ((builtins.getFlake \"$flake_ref\").inputs.nixpkgs) { system = \"x86_64-linux\"; }).gdb"
+          # Fetch the pinned debugger only from caches. Never compile it locally
+          # or remotely while diagnosing the already-failed application build.
+          nix build --expr "$debugger" --no-link --max-jobs 0 --builders '' \
+            --option external-builders '[]'
+          exec nix build \
             --file scripts/nix/trace-native-ghc.nix --arg original "$original" \
-            --no-link -L --keep-failed --max-jobs 1 --timeout 7200 \
-            2>&1 | tee native-linux-ghc-phase-trace.log
+            --arg debugger "$debugger" \
+            --no-link -L --keep-failed --max-jobs 1 --timeout 7200
+          TRACE
 
       - name: Upload native Linux GHC phase log
         if: ${{ always() && steps.ghc_phase_trace.outputs.attempted == 'true' }}

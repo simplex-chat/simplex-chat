@@ -116,16 +116,25 @@ the encrypted-store and profile-password smoke test, which can be repeated with
 `python3 scripts/nix/smoke-cli.py result-nix/BUILD_SYSTEM/exe:simplex-chat/bin/simplex-chat`.
 
 After a failed native x86_64 Linux library build, CI tries a separate derivation
-with `-v2 -ddump-timings` on compile calls and uploads
+with `-v2 -ddump-timings` and GDB on compile calls and uploads
 `native-linux-ghc-phase-trace.log`, including when that trace fails. Compiler
 queries and the original source, plan, dependency units and GHC arguments stay
-unchanged. The canonical build remains failed. The trace runs one derivation at
+unchanged. GDB follows the compiler's shell wrapper into the actual ELF program,
+preserving its injected package DB and `-B` arguments. On a stopped fault it
+records up to 80 frames per thread, registers, the PC symbol and disassembly,
+shared libraries and memory mappings. It does not dump the environment or a core
+file. Normal compiler exit codes propagate; faults and debugger errors fail the
+diagnostic. The canonical build remains failed. The trace runs one derivation at
 a time and inherits the canonical Nix core setting, preserving Setup's job count
 and the compiler job arguments. It has a two-hour wall-clock/per-derivation
-bound; the job's six-hour limit stays in place. A local `--cores` override also
+bound, including cache-only debugger setup; a debugger cache miss fails visibly
+without compiling GDB locally or remotely. The job's six-hour limit stays in
+place. A local `--cores` override also
 changes those job arguments and must be reported when comparing diagnostics.
-`trace-native-ghc.nix` accepts the original component via `--arg original` for the
-same diagnostic locally.
+`trace-native-ghc.nix` accepts the original component via `--arg original` and an
+optional pinned GDB derivation via `--arg debugger`. Omitting `debugger` retains
+the phase-only trace. GDB leaves ASLR enabled; its host/runtime effects must be
+reported when comparing diagnostics.
 
 Hydra continues to consume
 the same `hydraJobs` attributes. The older application release workflow still
