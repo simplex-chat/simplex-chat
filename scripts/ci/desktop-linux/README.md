@@ -27,7 +27,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 |---|---|---|
 | `plan` | chooses the jobs, finds an earlier backend build | 10 s |
 | `core` | `scripts/desktop/build-lib-linux.sh` via `build-core.sh` | 15 s cached, about 23 min not |
-| `app` | the app (`:desktop:createDistributable`), desktopTest, `smoke-test.sh` | about 10 min: build 4.5, desktopTest 0.5, smoke test 3.5 |
+| `app` | the app (`:desktop:createDistributable`), desktopTest, `smoke-test.sh` | about 10 min: build 4.5, desktopTest 0.5, smoke test 3.5 (about 20 with the backend's searches) |
 | `claude` (opt-in) | the app at its first screen, or with the backend set up at the chat list, then Claude Code drives it | about 7 min, Claude 2.5 |
 | `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, and `smp-server` from the simplexmq commit `cabal.project` pins | about 27 min, skipped when reused |
 | `release` (opt-in) | the latest release's .deb for this Ubuntu, onboarding only, to tell a branch's failure from the runner's | 1.5 min |
