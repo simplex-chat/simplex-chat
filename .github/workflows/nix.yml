@@ -98,6 +98,11 @@ jobs:
         timeout-minutes: 1
         run: nix eval --json --file scripts/nix/check-musl-iserv-scope.nix
 
+      - name: Check Intel Setup failure selection
+        if: ${{ matrix.system == 'x86_64-darwin' && matrix.target == 'all' }}
+        timeout-minutes: 1
+        run: python3 -B scripts/nix/test-select-intel-setup.py
+
       - name: Check native Linux GHC ELF section alignment
         if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'native' }}
         timeout-minutes: 120
@@ -157,10 +162,9 @@ jobs:
         timeout-minutes: 120
         shell: bash
         run: |
-          expected_drv=/nix/store/vghjgkr64qjigddh3gnf3c103wbvpxmz-ghc-boot-lib-ghc-boot-9.14.drv
-          if ! grep -F "error: Cannot build '$expected_drv'" nix-build.log >/dev/null &&
-             ! grep -F "builder for '$expected_drv' failed" nix-build.log >/dev/null; then
-            echo 'Skipping Intel Setup diagnostic: the pinned ghc-boot component did not fail.'
+          # Compiler patches change this derivation. Select one actual failed
+          # component; trace-intel-setup.nix still checks its exact drvPath.
+          if ! expected_drv=$(python3 scripts/nix/select-intel-setup.py nix-build.log); then
             exit 0
           fi
           echo 'attempted=true' >> "$GITHUB_OUTPUT"

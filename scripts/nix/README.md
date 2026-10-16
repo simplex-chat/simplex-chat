@@ -211,7 +211,11 @@ the phase-only trace. GDB leaves ASLR enabled; its host/runtime effects must be
 reported when comparing diagnostics.
 
 When the pinned Intel Darwin `ghc-boot` component fails, CI captures a separate
-Setup diagnostic. It preserves the newly linked Setup executable's bytes and
+Setup diagnostic. It selects one exact failed `ghc-boot` derivation from the
+canonical log and checks it against the selected compiler project; a rebuilt
+compiler therefore does not leave a stale diagnostic path. Multiple matching
+failed components cause the probe to skip. It preserves the newly linked Setup
+executable's bytes and
 runs its actual configure arguments with an explicit capture mode. LLDB mode
 records bounded thread backtraces, registers, instructions and loaded images;
 compiler queries and other Setup commands pass through. Child failures remain
