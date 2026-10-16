@@ -44,6 +44,33 @@ class Matrix(unittest.TestCase):
             "hydraJobs.x86_64-linux.armv7a-android:lib:support",
         ])
 
+    def test_manual_groups_have_distinct_queues_without_changing_pr_or_push_keys(self):
+        source = (HERE.parent.parent / ".github/workflows/nix.yml").read_text()
+        groups = re.findall(r"^  group: (.*)$", source, re.MULTILINE)
+        self.assertEqual(len(groups), 1)
+        prefix = "nix-${{ github.workflow }}-${{ github.ref }}"
+        self.assertTrue(groups[0].startswith(prefix))
+        suffix = groups[0][len(prefix):]
+        self.assertEqual(suffix,
+                         "${{ github.event_name == 'workflow_dispatch' && format('-{0}', inputs.group || 'all') || '' }}")
+        expression = suffix[4:-3].replace("github.event_name", "event").replace("inputs.group", "group")
+        expression = expression.replace("&&", "and").replace("||", "or")
+
+        def queue_key(event, group):
+            suffix_value = eval(expression, {"__builtins__": {}}, {
+                "event": event, "group": group,
+                "format": lambda template, value: template.format(value),
+            })
+            return "nix-Nix Haskell builds-refs/heads/branch" + suffix_value
+
+        for event in ["pull_request", "push"]:
+            for group in [None, "all", "linux-static", "android"]:
+                self.assertEqual(queue_key(event, group), "nix-Nix Haskell builds-refs/heads/branch")
+        keys = [queue_key("workflow_dispatch", group) for group in ["all", "linux-static", "android"]]
+        self.assertEqual(len(set(keys)), 3)
+        self.assertEqual(queue_key("workflow_dispatch", ""), keys[0])
+        self.assertEqual(queue_key("workflow_dispatch", None), keys[0])
+
     def test_legacy_pr_jobs_do_not_cancel_active_runs(self):
         source = (HERE.parent.parent / ".github/workflows/build.yml").read_text()
         expressions = re.findall(r"^      cancel-in-progress: \$\{\{ (.*) \}\}$", source, re.MULTILINE)

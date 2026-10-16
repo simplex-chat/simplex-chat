@@ -201,8 +201,8 @@ select the existing three `linux-static` outputs with
 `gh workflow run nix.yml --ref BRANCH -f group=linux-static`, or the four Android
 outputs with `gh workflow run nix.yml --ref BRANCH -f group=android`. The registered
 workflow can run on a branch containing this workflow file; it does not require
-that file on the default branch. New runs for the same workflow/ref queue
-without canceling its active run. Legacy PR build jobs also preserve running
+that file on the default branch. Runs for the same workflow/ref queue without
+canceling an active run; manual groups have separate queues. Legacy PR build jobs also preserve running
 jobs; their cancellation policy for other events and release tags is unchanged.
 A two-minute planning job selects these
 existing groups; it does not evaluate or build Nix outputs. Each build job

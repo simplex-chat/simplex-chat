@@ -37,7 +37,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: nix-${{ github.workflow }}-${{ github.ref }}
+  group: nix-${{ github.workflow }}-${{ github.ref }}${{ github.event_name == 'workflow_dispatch' && format('-{0}', inputs.group || 'all') || '' }}
   cancel-in-progress: false
 
 jobs:
