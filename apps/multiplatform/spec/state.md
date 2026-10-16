@@ -300,6 +300,8 @@ data class ChatStats(
 | `ChatInfo.ContactConnection` | `"contactConnection"` | `contactConnection: PendingContactConnection` |
 | `ChatInfo.InvalidJSON` | `"invalidJSON"` | `json: String` |
 
+[`ChatInfo.activeChatLayout`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1872) is `activeChatLayout` of the contact or group, computed by the core: `userChatLayout`, else `defaultChatLayout` (the chat's `chatLayout`, else `User.chatLayout`, else the global value set with `apiSetGlobalChatLayout`, else `ChatLayout.Classic`); `ChatLayout.Classic` for other chats. `userChatLayout` is set by [`setChatLayout()`](../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L1007).
+
 ### RelayStatus (Channels)
 
 `RelayStatus` is an `enum class` at [`ChatModel.kt line 2288`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L2288) modelling a relay's lifecycle for a channel on the owner's side. Serialized as a lowercase string via `@SerialName`.

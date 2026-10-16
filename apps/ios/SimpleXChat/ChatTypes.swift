@@ -45,6 +45,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var autoAcceptGroupInvitations: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
+    public var chatLayout: ChatLayout?
     public var userChatRelay: Bool
 
     public var id: Int64 { userId }
@@ -248,6 +249,43 @@ extension ChatPeerType: Codable {
         case "business": self = .business
         case let s: self = .unknown(s)
         }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
+    }
+}
+
+public enum ChatLayout: Hashable {
+    case classic
+    case terminal
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .classic: "classic"
+        case .terminal: "terminal"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension ChatLayout: RawRepresentable {
+    public init(rawValue: String) {
+        switch rawValue {
+        case "classic": self = .classic
+        case "terminal": self = .terminal
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    public var rawValue: String { text }
+}
+
+extension ChatLayout: Codable {
+    public init(from decoder: Decoder) throws {
+        self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -2302,6 +2340,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var activeChatLayout: ChatLayout {
+        switch self {
+        case let .direct(contact): contact.activeChatLayout
+        case let .group(groupInfo, _): groupInfo.activeChatLayout
+        default: .classic
+        }
+    }
+
     public var chatTags: [Int64]? {
         switch self {
         case let .direct(contact): return contact.chatTags
@@ -2468,6 +2514,10 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
+    public var chatLayout: ChatLayout?
+    public var userChatLayout: ChatLayout?
+    public var defaultChatLayout: ChatLayout = .classic
+    public var activeChatLayout: ChatLayout = .classic
     public var chatDeleted: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -2871,6 +2921,10 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     public var preparedGroup: PreparedGroup?
     public var uiThemes: ThemeModeOverrides?
+    public var chatLayout: ChatLayout?
+    public var userChatLayout: ChatLayout?
+    public var defaultChatLayout: ChatLayout = .classic
+    public var activeChatLayout: ChatLayout = .classic
     public var groupSummary: GroupSummary
     public var membersRequireAttention: Int
 
@@ -3040,6 +3094,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var publicGroup: PublicGroupProfile?
     public var groupPreferences: GroupPreferences?
     public var memberAdmission: GroupMemberAdmission?
+    public var chatLayout: ChatLayout?
     public var localAlias: String { "" }
 
     public var memberAdmission_: GroupMemberAdmission {
@@ -3087,6 +3142,7 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: MsgContent?
     public var business: Bool
+    public var chatLayout: ChatLayout?
     // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
     public var localBadge: LocalBadge?
 }

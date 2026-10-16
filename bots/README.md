@@ -84,6 +84,16 @@ A useful scenario would be when bot is used to accept requests to bot's business
 
 Business chat is a special group chat under the hood, but the connected customer sees business avatar, and all users that bot would add to the group later see customer' avatar. This chat will inherits preferences from the bot profile, so if you want to allow customers to send files, you need to allow them in the bot. And if bot has any commands configured, they will also be available to customers in the menu.
 
+### Chat layout
+
+Bot can choose the layout of the chats that users create by connecting to its address: `classic` or `terminal`. To do that, read the address settings with [APIShowMyAddress](./api/COMMANDS.md#apishowmyaddress), set `chatLayout` property and write the whole settings object back with [APISetAddressSettings](./api/COMMANDS.md#apisetaddresssettings). The settings object replaces the stored settings, so the other properties must be written back as they were read. For a business address this layout is used for business chats.
+
+The layout is stored with the contact when the user's app prepares the chat from the address link data before connecting. A contact created by connecting to the address without this step, for example with `/connect` CLI command or [APIConnect](./api/COMMANDS.md#apiconnect), is created without the address layout.
+
+`/auto_accept on [business|incognito=on|off] [layout=classic|terminal|default] [text <welcome message>]` and `/auto_accept off [layout=classic|terminal|default]` CLI commands are deprecated, use [APISetAddressSettings](./api/COMMANDS.md#apisetaddresssettings) instead. These commands keep the stored layout unless `layout=` is given, and `layout=default` removes it.
+
+For groups, set `chatLayout` property in the group profile with [APIUpdateGroupProfile](./api/COMMANDS.md#apiupdategroupprofile) or with `/set layout #<group> classic|terminal|default` CLI command. This layout is used by the members who join the group after it is set.
+
 ## How to create a bot
 
 [SimpleX Chat CLI](../docs/CLI.md) can be run as a local WebSockets server on any port:

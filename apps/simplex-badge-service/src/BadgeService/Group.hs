@@ -76,7 +76,8 @@ buildGroupProfile GroupConfig {gDisplayName, gDescription} =
       image = Nothing,
       publicGroup = Nothing,
       groupPreferences = Just (emptyGroupPrefs {commands = Just groupCommands} :: GroupPreferences),
-      memberAdmission = Nothing
+      memberAdmission = Nothing,
+      chatLayout = Nothing
     }
 
 ensureManagedGroup :: ChatController -> GroupConfig -> IO (Maybe GroupId)

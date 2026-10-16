@@ -231,7 +231,7 @@ newWebPreviewState = do
 -- | Builds the read-only context threaded through store functions from chat config.
 -- The single construction point, so new store-wide config (e.g. server keys) is added in one place.
 storeCxt :: ChatController -> StoreCxt
-storeCxt ChatController {config = ChatConfig {chatVRange, badgePublicKeys}, random} = StoreCxt chatVRange badgePublicKeys random
+storeCxt ChatController {config = ChatConfig {chatVRange, badgePublicKeys}, random} = StoreCxt chatVRange badgePublicKeys random Nothing
 {-# INLINE storeCxt #-}
 
 data RandomAgentServers = RandomAgentServers
@@ -340,6 +340,7 @@ data ChatController = ChatController
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
+    globalChatLayout :: TVar (Maybe ChatLayout),
     tempDirectory :: TVar (Maybe FilePath),
     assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
@@ -387,6 +388,7 @@ data ChatCommand
   | SetRemoteHostsFolder FilePath
   | APISetAppFilePaths AppFilePathsConfig
   | APISetEncryptLocalFiles Bool
+  | APISetGlobalChatLayout (Maybe ChatLayout)
   | SetContactMergeEnabled Bool
 #if !defined(dbPostgres)
   | APIExportArchive ArchiveConfig
@@ -455,6 +457,8 @@ data ChatCommand
   | APISetConnectionAlias {connectionId :: Int64, localAlias :: LocalAlias}
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
+  | APISetUserChatLayout UserId (Maybe ChatLayout)
+  | APISetChatLayout ChatRef (Maybe ChatLayout)
   | APISetGroupCustomData {groupId :: GroupId, customData :: Maybe CustomData}
   | APISetContactCustomData {contactId :: ContactId, customData :: Maybe CustomData}
   | APIGetNtfToken
@@ -589,7 +593,7 @@ data ChatCommand
   | APISetProfileAddress {userId :: UserId, enable :: Bool}
   | SetProfileAddress Bool
   | APISetAddressSettings {userId :: UserId, pqRatchet :: Maybe Bool, settings :: AddressSettings}
-  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings}
+  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings, chatLayout :: Maybe (Maybe ChatLayout)}
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName Bool
   | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}
@@ -673,6 +677,7 @@ data ChatCommand
   | SetGroupFeature AGroupFeatureNoRole GroupName GroupFeatureEnabled
   | SetGroupFeatureRole AGroupFeatureRole GroupName GroupFeatureEnabled (Maybe GroupMemberRole)
   | SetGroupMemberAdmissionReview GroupName (Maybe MemberCriteria)
+  | SetGroupChatLayout GroupName (Maybe ChatLayout)
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)

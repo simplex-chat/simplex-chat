@@ -1152,6 +1152,16 @@ object ChatModel {
     currentUser.value = updated
   }
 
+  fun updateCurrentUserChatLayout(rhId: Long?, chatLayout: ChatLayout?) {
+    val current = currentUser.value ?: return
+    val updated = current.copy(chatLayout = chatLayout)
+    val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
+    if (i != -1) {
+      users[i] = users[i].copy(user = updated)
+    }
+    currentUser.value = updated
+  }
+
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withContext(Dispatchers.Main) {
@@ -1347,6 +1357,7 @@ data class User(
   val autoAcceptGroupInvitations: Boolean,
   val viewPwdHash: UserPwdHash?,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayout? = null,
   val userChatRelay: Boolean,
 ): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
@@ -1858,6 +1869,12 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> emptyList()
   }
 
+  val activeChatLayout: ChatLayout get() = when (this) {
+    is Direct -> contact.activeChatLayout
+    is Group -> groupInfo.activeChatLayout
+    else -> ChatLayout.Classic
+  }
+
   val contactCard: Boolean
     get() = when (this) {
       is Direct -> contact.isContactCard
@@ -1898,6 +1915,10 @@ data class Contact(
   val chatItemTTL: Long?,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayout? = null,
+  val userChatLayout: ChatLayout? = null,
+  val defaultChatLayout: ChatLayout = ChatLayout.Classic,
+  val activeChatLayout: ChatLayout = ChatLayout.Classic,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -2186,6 +2207,34 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
       else -> ChatPeerType.Unknown(v)
     }
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
+}
+
+@Serializable(with = ChatLayoutSerializer::class)
+sealed class ChatLayout {
+  @Serializable @SerialName("classic") object Classic: ChatLayout()
+  @Serializable @SerialName("terminal") object Terminal: ChatLayout()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatLayout()
+
+  val text: String
+    get() = when (this) {
+      is Classic -> "classic"
+      is Terminal -> "terminal"
+      is Unknown -> type
+    }
+
+  companion object {
+    fun fromText(text: String): ChatLayout = when (text) {
+      "classic" -> Classic
+      "terminal" -> Terminal
+      else -> Unknown(text)
+    }
+  }
+}
+
+object ChatLayoutSerializer : KSerializer<ChatLayout> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatLayout", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatLayout = ChatLayout.fromText(decoder.decodeString())
+  override fun serialize(encoder: Encoder, value: ChatLayout) = encoder.encodeString(value.text)
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
@@ -2501,6 +2550,10 @@ data class GroupInfo (
   val chatTs: Instant?,
   val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayout? = null,
+  val userChatLayout: ChatLayout? = null,
+  val defaultChatLayout: ChatLayout = ChatLayout.Classic,
+  val activeChatLayout: ChatLayout = ChatLayout.Classic,
   val groupSummary: GroupSummary,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,
@@ -2669,7 +2722,8 @@ data class GroupProfile (
   val publicGroup: PublicGroupProfile? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
-  val memberAdmission: GroupMemberAdmission? = null
+  val memberAdmission: GroupMemberAdmission? = null,
+  val chatLayout: ChatLayout? = null
 ): NamedChat {
   val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
 
@@ -2708,6 +2762,7 @@ data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
   val business: Boolean,
+  val chatLayout: ChatLayout? = null,
   // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
   val localBadge: LocalBadge? = null
 )

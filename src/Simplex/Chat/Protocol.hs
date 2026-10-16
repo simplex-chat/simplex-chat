@@ -1612,6 +1612,7 @@ data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
     message :: Maybe MsgContent,
     business :: Bool,
+    chatLayout :: Maybe ChatLayout,
     -- set by the receiving client for the UI: the link profile's badge, verified and crypto-free.
     -- never part of the published link data (the link carries the proof inside profile).
     localBadge :: Maybe LocalBadge

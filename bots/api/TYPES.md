@@ -49,6 +49,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatLayout](#chatlayout)
 - [ChatListQuery](#chatlistquery)
 - [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
@@ -268,6 +269,7 @@ This file is generated automatically.
 **Record type**:
 - businessAddress: bool
 - autoAccept: [AutoAccept](#autoaccept)?
+- chatLayout: [ChatLayout](#chatlayout)?
 - autoReply: [MsgContent](#msgcontent)?
 
 
@@ -1518,6 +1520,15 @@ Message deletion result.
 
 ---
 
+## ChatLayout
+
+**Enum type**:
+- "classic"
+- "terminal"
+
+
+---
+
 ## ChatListQuery
 
 **Discriminated union type**:
@@ -1906,6 +1917,10 @@ Error:
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- chatLayout: [ChatLayout](#chatlayout)?
+- userChatLayout: [ChatLayout](#chatlayout)?
+- defaultChatLayout: [ChatLayout](#chatlayout)
+- activeChatLayout: [ChatLayout](#chatlayout)
 - chatDeleted: bool
 - customData: JSONObject?
 
@@ -1948,6 +1963,7 @@ ContactViaAddress:
 - profile: [Profile](#profile)
 - message: [MsgContent](#msgcontent)?
 - business: bool
+- chatLayout: [ChatLayout](#chatlayout)?
 - localBadge: [LocalBadge](#localbadge)?
 
 
@@ -2489,6 +2505,10 @@ MemberSupport:
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- chatLayout: [ChatLayout](#chatlayout)?
+- userChatLayout: [ChatLayout](#chatlayout)?
+- defaultChatLayout: [ChatLayout](#chatlayout)
+- activeChatLayout: [ChatLayout](#chatlayout)
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
 - rosterVersion: int64?
@@ -2703,6 +2723,7 @@ UpdateRequired:
 - publicGroup: [PublicGroupProfile](#publicgroupprofile)?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---
@@ -4525,6 +4546,7 @@ Handshake:
 - userChatRelay: bool
 - clientService: bool
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---

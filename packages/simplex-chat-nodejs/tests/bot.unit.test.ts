@@ -127,4 +127,22 @@ describe("run", () => {
     await runBot("calc.simplex", {updateAddress: false})
     expect(chat.apiSetUserDomain).not.toHaveBeenCalled()
   })
+
+  it("updates the address settings when they changed", async () => {
+    const chat = fakeChat()
+    await runBot(undefined, {addressSettings: {welcomeMessage: "hello"}})
+    expect(chat.apiSetAddressSettings).toHaveBeenCalledWith(1, {autoAccept: true, welcomeMessage: {type: "text", text: "hello"}, businessAddress: false})
+  })
+})
+
+describe("apiSetAddressSettings", () => {
+  it("keeps the stored settings that are not bot address settings", async () => {
+    const sendChatCmd = jest.fn().mockResolvedValue({type: "userContactLinkUpdated"})
+    const stored = {businessAddress: true, autoReply: {type: "text", text: "old"}, chatLayout: "terminal"} as unknown as T.AddressSettings
+    const apiGetUserAddress = jest.fn().mockResolvedValue({addressSettings: stored})
+    await api.ChatApi.prototype.apiSetAddressSettings.call({sendChatCmd, apiGetUserAddress} as unknown as api.ChatApi, 1, {autoAccept: true})
+    expect(apiGetUserAddress).toHaveBeenCalledWith(1)
+    const cmd: string = sendChatCmd.mock.calls[0][0]
+    expect(JSON.parse(cmd.slice(cmd.indexOf("{")))).toEqual({businessAddress: false, autoAccept: {acceptIncognito: false}, chatLayout: "terminal"})
+  })
 })

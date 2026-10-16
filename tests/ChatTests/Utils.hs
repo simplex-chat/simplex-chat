@@ -33,6 +33,7 @@ import Simplex.Chat.Store.Direct (getContact, getContactIdByName, getContactRequ
 import Simplex.Chat.Store.Groups (getGroupIdByName, getGroupMember, getGroupMemberIdByName)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
+import Simplex.Chat.Store.Shared (getGroupInfo)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -728,6 +729,26 @@ getTestCCContact cc contactId = do
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
       runExceptT (getContact db (storeCxt chatController) user contactId) >>= either (fail . show) pure
+
+contactChatLayout :: TestCC -> ContactName -> IO (Maybe ChatLayout, Maybe ChatLayout)
+contactChatLayout cc cName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (getContact db (storeCxt $ chatController cc) user =<< getContactIdByName db user cName)
+        >>= either (fail . show) (\Contact {chatLayout, userChatLayout} -> pure (chatLayout, userChatLayout))
+
+groupChatLayout :: TestCC -> GroupName -> IO (Maybe ChatLayout, Maybe ChatLayout)
+groupChatLayout cc gName = (\GroupInfo {chatLayout, userChatLayout} -> (chatLayout, userChatLayout)) <$> getTestCCGroup cc gName
+
+groupProfileChatLayout :: TestCC -> GroupName -> IO (Maybe ChatLayout)
+groupProfileChatLayout cc gName = (\GroupInfo {groupProfile = GroupProfile {chatLayout}} -> chatLayout) <$> getTestCCGroup cc gName
+
+getTestCCGroup :: TestCC -> GroupName -> IO GroupInfo
+getTestCCGroup cc gName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (getGroupInfo db (storeCxt $ chatController cc) user =<< getGroupIdByName db user gName)
+        >>= either (fail . show) pure
 
 contactBadgeHeader :: TestCC -> ContactName -> IO (Maybe (String, BadgeStatus))
 contactBadgeHeader cc cName =

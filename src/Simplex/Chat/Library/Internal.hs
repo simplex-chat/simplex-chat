@@ -997,7 +997,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
       (connId, binding) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
       (ct, conn) <- withStore' $ \db ->
-        createContactFromRequest db user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
+        createContactFromRequest db cxt user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile, pure $ Just $ directPresHeader binding)
     Just contactId -> do
       ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -1125,10 +1125,11 @@ acceptGroupJoinSendRejectAsync
     agentAcceptContactAsync cmdId acId False cReqInvId msg PQSupportOff subMode
     pure m
 
-acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfoKeys -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
+acceptBusinessJoinRequestAsync :: User -> Int64 -> Maybe ChatLayout -> GroupInfoKeys -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
   user
   uclId
+  chatLayout
   (GIK gInfo@GroupInfo {membership = GroupMember {memberRole = userRole, memberId = userMemberId}} gks)
   clientMember@GroupMember {groupMemberId, memberId}
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
@@ -1143,7 +1144,7 @@ acceptBusinessJoinRequestAsync
                 fromMemberName = displayName,
                 fromMemberKey = Just $ groupMemberKey gks,
                 invitedMember = MemberIdRole memberId GRMember,
-                groupProfile = businessGroupProfile userProfile groupPreferences,
+                groupProfile = businessGroupProfile userProfile groupPreferences chatLayout,
                 accepted = Just GAAccepted,
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
@@ -1213,9 +1214,9 @@ rejectRelayInvitationAsync user uclId cxt groupRelayInv presHeader_ invId reqCha
     createJoiningMemberConnection db user uclId (cmdId, acId) chatV reqChatVRange groupMemberId subMode
   agentAcceptContactAsync cmdId acId False invId msg PQSupportOff subMode
 
-businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
-businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences =
-  GroupProfile {displayName, fullName, description, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+businessGroupProfile :: Profile -> GroupPreferences -> Maybe ChatLayout -> GroupProfile
+businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences chatLayout =
+  GroupProfile {displayName, fullName, description, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing, chatLayout}
 
 introduceToModerators :: StoreCxt -> User -> GroupInfoKeys -> GroupMember -> CM ()
 introduceToModerators cxt user gInfo@(GIK g@GroupInfo {groupId} _) m@GroupMember {memberRole, memberId} = do
@@ -3361,7 +3362,7 @@ createChatItems ::
 createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
-  cxt <- asks storeCxt
+  cxt <- chatStoreCxt'
   void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
   withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
   where
@@ -3459,8 +3460,14 @@ waitChatStartedAndActivated = do
     unless (isJust started && activated) retry
 
 chatStoreCxt :: CM StoreCxt
-chatStoreCxt = asks storeCxt
+chatStoreCxt = lift chatStoreCxt'
 {-# INLINE chatStoreCxt #-}
+
+chatStoreCxt' :: CM' StoreCxt
+chatStoreCxt' = do
+  cc@ChatController {globalChatLayout} <- ask
+  globalLayout <- readTVarIO globalChatLayout
+  pure (storeCxt cc) {globalLayout}
 
 chatVersionRange :: CM VersionRangeChat
 chatVersionRange = lift chatVersionRange'

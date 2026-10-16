@@ -616,6 +616,7 @@ struct MigrateToDevice: View {
                 appSettings.importIntoApp()
             }
             do {
+                try apiSetGlobalChatLayout(chatLayoutGroupDefault.get())
                 try SimpleX.startChat(refreshInvitations: true)
                 AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
             } catch let error {

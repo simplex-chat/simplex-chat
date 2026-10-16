@@ -56,7 +56,8 @@ CREATE TABLE users(
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
   client_service INTEGER NOT NULL DEFAULT 0,
   auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0,
-  shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL, -- 1 for active user
+  shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL,
+  chat_layout TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -108,6 +109,8 @@ CREATE TABLE contacts(
   grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
+  chat_layout TEXT,
+  user_chat_layout TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -148,7 +151,8 @@ CREATE TABLE group_profiles(
   domain_web_page INTEGER,
   allow_embedding INTEGER,
   group_domain_proof TEXT,
-  preferences_json TEXT
+  preferences_json TEXT,
+  chat_layout TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -212,7 +216,9 @@ CREATE TABLE groups(
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
   applied_complete_roster_version INTEGER,
-  relay_request_public_group_id BLOB, -- received
+  relay_request_public_group_id BLOB,
+  chat_layout TEXT,
+  user_chat_layout TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -416,6 +422,7 @@ CREATE TABLE user_contact_links(
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
   short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
   link_priv_sig_key BLOB,
+  chat_layout TEXT,
   UNIQUE(user_id, local_display_name)
 ) STRICT;
 CREATE TABLE contact_requests(

@@ -275,6 +275,10 @@ class AppPreferences {
 
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
   val chatBottomBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_BAR, true)
+  val chatLayout = SharedPreference(
+    get = fun() = ChatLayout.fromText(settings.getString(SHARED_PREFS_CHAT_LAYOUT, ChatLayout.Classic.text)),
+    set = fun(value: ChatLayout) = settings.putString(SHARED_PREFS_CHAT_LAYOUT, value.text)
+  )
 
   val hintPreferences: List<HintPref> = listOf(
     hintPref(laNoticeShown, false),
@@ -497,6 +501,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_ONE_HAND_UI = "OneHandUI"
     private const val SHARED_PREFS_CHAT_BOTTOM_BAR = "ChatBottomBar"
+    private const val SHARED_PREFS_CHAT_LAYOUT = "ChatLayout"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
@@ -1498,6 +1503,22 @@ object ChatController {
     Log.e(TAG, "apiSetSettings bad response: ${r.responseType} ${r.details}")
     return false
   }
+
+  suspend fun apiSetChatLayout(rh: Long?, type: ChatType, id: Long, layout: ChatLayout?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetChatLayout(type, id, layout))
+    if (r.result is CR.CmdOk) return true
+    Log.e(TAG, "apiSetChatLayout bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
+  suspend fun apiSetUserChatLayout(rh: Long?, userId: Long, layout: ChatLayout?): Boolean {
+    val r = sendCmd(rh, CC.ApiSetUserChatLayout(userId, layout))
+    if (r.result is CR.CmdOk) return true
+    Log.e(TAG, "apiSetUserChatLayout bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
+  suspend fun apiSetGlobalChatLayout(layout: ChatLayout) = sendCommandOkResp(null, CC.ApiSetGlobalChatLayout(layout))
 
   suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo): Boolean =
     sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
@@ -4029,6 +4050,9 @@ sealed class CC {
   class ReconnectServer(val userId: Long, val server: String): CC()
   class ReconnectAllServers: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
+  class ApiSetChatLayout(val type: ChatType, val id: Long, val layout: ChatLayout?): CC()
+  class ApiSetUserChatLayout(val userId: Long, val layout: ChatLayout?): CC()
+  class ApiSetGlobalChatLayout(val layout: ChatLayout): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class ApiGetUpdatedGroupLinkData(val groupId: Long): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -4244,6 +4268,9 @@ sealed class CC {
     is ReconnectServer -> "/reconnect $userId $server"
     is ReconnectAllServers -> "/reconnect"
     is APISetChatSettings -> "/_settings ${chatRef(type, id, scope = null)} ${json.encodeToString(chatSettings)}"
+    is ApiSetChatLayout -> "/_layout ${chatRef(type, id, scope = null)} ${layout?.text ?: "default"}"
+    is ApiSetUserChatLayout -> "/_layout user $userId ${layout?.text ?: "default"}"
+    is ApiSetGlobalChatLayout -> "/_layout global ${layout.text}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is ApiGetUpdatedGroupLinkData -> "/_get group link data #$groupId"
     is APIContactInfo -> "/_info @$contactId"
@@ -4439,6 +4466,9 @@ sealed class CC {
     is ReconnectServer -> "reconnectServer"
     is ReconnectAllServers -> "reconnectAllServers"
     is APISetChatSettings -> "apiSetChatSettings"
+    is ApiSetChatLayout -> "apiSetChatLayout"
+    is ApiSetUserChatLayout -> "apiSetUserChatLayout"
+    is ApiSetGlobalChatLayout -> "apiSetGlobalChatLayout"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is ApiGetUpdatedGroupLinkData -> "apiGetUpdatedGroupLinkData"
     is APIContactInfo -> "apiContactInfo"
@@ -7690,7 +7720,8 @@ data class UserContactLinkRec(
 data class AddressSettings(
   val businessAddress: Boolean,
   val autoAccept: AutoAccept?,
-  val autoReply: MsgContent?
+  val autoReply: MsgContent?,
+  val chatLayout: ChatLayout? = null
 )
 
 @Serializable
@@ -8646,7 +8677,8 @@ data class AppSettings(
   var uiCurrentThemeIds: Map<String, String>? = null,
   var uiThemes: List<ThemeOverrides>? = null,
   var oneHandUI: Boolean? = null,
-  var chatBottomBar: Boolean? = null
+  var chatBottomBar: Boolean? = null,
+  var uiChatLayout: ChatLayout? = null
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -8684,6 +8716,7 @@ data class AppSettings(
     if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     if (oneHandUI != def.oneHandUI) { empty.oneHandUI = oneHandUI }
     if (chatBottomBar != def.chatBottomBar) { empty.chatBottomBar = chatBottomBar }
+    if (uiChatLayout != def.uiChatLayout) { empty.uiChatLayout = uiChatLayout }
     return empty
   }
 
@@ -8732,6 +8765,7 @@ data class AppSettings(
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
     oneHandUI?.let { def.oneHandUI.set(it) }
     chatBottomBar?.let { if (appPlatform.isAndroid) def.chatBottomBar.set(it) else def.chatBottomBar.set(true) }
+    uiChatLayout?.let { def.chatLayout.set(it) }
   }
 
   companion object {
@@ -8770,6 +8804,7 @@ data class AppSettings(
         uiThemes = null,
         oneHandUI = true,
         chatBottomBar = true,
+        uiChatLayout = ChatLayout.Classic,
       )
 
     val current: AppSettings
@@ -8808,7 +8843,8 @@ data class AppSettings(
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
           oneHandUI = def.oneHandUI.get(),
-          chatBottomBar = def.chatBottomBar.get()
+          chatBottomBar = def.chatBottomBar.get(),
+          uiChatLayout = def.chatLayout.get()
         )
     }
   }

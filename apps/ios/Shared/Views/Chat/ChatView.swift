@@ -3259,6 +3259,29 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
     }
 }
 
+func setChatLayout(_ chat: Chat, layout: ChatLayout?) {
+    Task {
+        do {
+            try await apiSetChatLayout(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, layout: layout)
+            await MainActor.run {
+                switch chat.chatInfo {
+                case var .direct(contact):
+                    contact.userChatLayout = layout
+                    contact.activeChatLayout = layout ?? contact.defaultChatLayout
+                    ChatModel.shared.updateContact(contact)
+                case var .group(groupInfo, _):
+                    groupInfo.userChatLayout = layout
+                    groupInfo.activeChatLayout = layout ?? groupInfo.defaultChatLayout
+                    ChatModel.shared.updateGroup(groupInfo)
+                default: ()
+                }
+            }
+        } catch let error {
+            logger.error("apiSetChatLayout error \(responseError(error))")
+        }
+    }
+}
+
 // Spec: spec/client/chat-view.md#ContentFilter
 enum ContentFilter: CaseIterable {
     case images
