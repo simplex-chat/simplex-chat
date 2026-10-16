@@ -286,7 +286,7 @@ jobs:
             PROVISIONING_PROFILE_SPECIFIER=
 
       - name: Install AXe
-        run: brew install cameroncooke/axe/axe
+        run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
