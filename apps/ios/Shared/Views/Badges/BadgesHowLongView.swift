@@ -72,8 +72,13 @@ struct BadgesHowLongView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
-    @State private var selectedPeriod: BadgePeriod = badgePeriodsForSale.contains(.monthly) ? .monthly : .oneMonth
+    @State private var chosenPeriod: BadgePeriod? = nil
     @State private var continueActive = false
+
+    // monthly once subscriptions turn out to be for sale, unless a period was chosen before that
+    private var selectedPeriod: BadgePeriod {
+        chosenPeriod ?? (store.forSale(.monthly) ? .monthly : .oneMonth)
+    }
 
     var body: some View {
         GeometryReader { g in
@@ -104,6 +109,14 @@ struct BadgesHowLongView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
+                    if store.subscribedBefore == true {
+                        Text("This Apple ID subscribed before. Subscribing again is not available in the app yet.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     Spacer(minLength: 20)
 
                     VStack(spacing: 10) {
@@ -126,9 +139,9 @@ struct BadgesHowLongView: View {
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
-        let forSale = badgePeriodsForSale.contains(period)
+        let forSale = store.forSale(period)
         return Button {
-            selectedPeriod = period
+            chosenPeriod = period
         } label: {
             VStack(spacing: 12) {
                 Image(systemName: period.icon)
@@ -170,6 +183,7 @@ struct BadgesHowLongView: View {
     private func continueButton() -> some View {
         ZStack {
             Button {
+                chosenPeriod = selectedPeriod
                 continueActive = true
             } label: {
                 Text("Continue")

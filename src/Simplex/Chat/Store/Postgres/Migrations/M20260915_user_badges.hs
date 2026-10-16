@@ -152,19 +152,7 @@ DROP TABLE @badge_prices;
 |]
 
 {- TODO [badges] deferred draft schema for paid purchases, subscriptions, upgrades and transfers.
-The service added @badge_purchases.payment_id and @badge_ledger.payment_id in its 20260925_badge_store_receipts, so they left this draft; the client's stay deferred with the rest, as nothing writes its @payments yet.
-
-CREATE TABLE @subscription_charges(
-  charge_id TEXT NOT NULL PRIMARY KEY,
-  payment_id TEXT NOT NULL REFERENCES @payments ON DELETE CASCADE,
-  provider_charge_ref TEXT NOT NULL,
-  period_start TIMESTAMPTZ NOT NULL,
-  period_end TIMESTAMPTZ NOT NULL,
-  amount BIGINT NOT NULL,
-  currency TEXT NOT NULL,
-  charged_at TIMESTAMPTZ NOT NULL,
-  UNIQUE(payment_id, provider_charge_ref)
-);
+The service added @badge_purchases.payment_id and @badge_ledger.payment_id in its 20260925_badge_store_receipts, and @subscription_charges and @badge_ledger.charge_id in its 20261012_badge_subscriptions, so they left this draft; the client's stay deferred with the rest, as nothing writes its @payments yet.
 
 CREATE TABLE @badge_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
@@ -197,23 +185,17 @@ CREATE TABLE @badge_subscription_changes(
 
 CREATE INDEX @idx_badge_subscription_changes_purchase ON @badge_subscription_changes(badge_purchase_id);
 
-ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
-
 ALTER TABLE @badge_ledger ADD COLUMN from_purchase_id BIGINT REFERENCES @badge_purchases;
 
 ALTER TABLE @badge_ledger ADD COLUMN to_purchase_id BIGINT REFERENCES @badge_purchases;
-
-CREATE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id);
 
 CREATE INDEX @idx_badge_ledger_from_purchase ON @badge_ledger(from_purchase_id);
 
 CREATE INDEX @idx_badge_ledger_to_purchase ON @badge_ledger(to_purchase_id);
 
 -- down
-DROP INDEX @idx_badge_ledger_charge;
 DROP INDEX @idx_badge_ledger_from_purchase;
 DROP INDEX @idx_badge_ledger_to_purchase;
-ALTER TABLE @badge_ledger DROP COLUMN charge_id;
 ALTER TABLE @badge_ledger DROP COLUMN from_purchase_id;
 ALTER TABLE @badge_ledger DROP COLUMN to_purchase_id;
 DROP INDEX @idx_badge_subscription_changes_purchase;
@@ -222,7 +204,6 @@ DROP INDEX @idx_badge_invoices_purchase;
 DROP INDEX @idx_badge_invoices_offer;
 DROP INDEX @idx_badge_invoices_price;
 DROP TABLE @badge_invoices;
-DROP TABLE @subscription_charges;
 -}
 
 m20260915_user_badges :: Text

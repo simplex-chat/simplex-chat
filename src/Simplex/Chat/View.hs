@@ -46,7 +46,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
 import Simplex.Chat.Badges.Service (StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..), OpenStorePurchase (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -194,6 +194,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   -- the badge is only shown when it is the one now on the profile; a replayed code's badge may not be
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
   CRBadgeInvoice u invoiceId -> ttyUser u ["badge invoice: " <> plain invoiceId]
+  CRStoreReceiptNotRecorded u -> ttyUser u ["store purchase not recorded"]
   CRBadgeState u st storePurchases -> ttyUser u $ viewUserBadgeState st <> map viewOpenStorePurchase storePurchases
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
@@ -1846,7 +1847,7 @@ viewContactBadge = maybe [] $ \lb ->
 viewUserBadgeState :: Maybe BadgeState -> [StyledString]
 viewUserBadgeState = maybe [] viewBadge
   where
-    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, alert, issueError, nextWakeAt} =
+    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, alert, issueError, nextWakeAt, subscription} =
       plain
         ( tshow badgePurchaseId
             <> ": "
@@ -1855,10 +1856,12 @@ viewUserBadgeState = maybe [] viewBadge
             <> tshow monthsLeft
             <> " months left, paid through "
             <> day paidThrough
+            <> maybe "" viewSubscription subscription
             <> maybe "" ((", next check " <>) . dayTime) nextWakeAt
         )
         : maybe [] viewBadgeIssueError issueError
           <> maybe [] viewBadgeAlert alert
+    viewSubscription BadgeSubscription {status} = ", subscription" <> maybe "" ((" " <>) . textEncode) status
 
 viewBadgeIssueError :: BadgeIssueError -> [StyledString]
 viewBadgeIssueError BadgeIssueError {failedSince, lastAttemptAt, reason} =
@@ -2883,6 +2886,7 @@ viewChatError isCmd logLevel testView = \case
             BREInvalidReceipt -> "invalid store receipt"
             BREServiceNotConfigured -> "badge service not configured"
             BREBadgeActive -> "badge already active"
+            BREStorePurchaseOpen -> "store purchase open"
             BREServiceError code -> "badge service error: " <> T.unpack (badgeServiceErrorText code)
             BREInvalidResponse m -> "invalid service response: " <> m
             BREUnknownKeyIndex -> "credential names an unknown badge key index"

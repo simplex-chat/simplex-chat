@@ -11,6 +11,7 @@ module BadgeService.Config
     speedPolicyName,
     PollConfig (..),
     AppleStoreConfig (..),
+    AppleServerApi (..),
     PlayStoreConfig (..),
     BadgeIssuerKey (..),
     GroupConfig (..),
@@ -24,7 +25,7 @@ where
 
 import qualified Control.Exception as E
 import BadgeService.Log (logWarn)
-import Control.Monad (mfilter, when)
+import Control.Monad (mfilter, unless, when)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
@@ -97,7 +98,17 @@ data PollConfig = PollConfig {pWaitingSeconds :: Int, pIdleSeconds :: Int}
 
 data AppleStoreConfig = AppleStoreConfig
   { aBundleId :: Text,
-    aRootCertificates :: NonEmpty FilePath
+    aRootCertificates :: NonEmpty FilePath,
+    aServerApi :: Maybe AppleServerApi -- without it, App Store subscriptions are not verified
+  }
+  deriving (Eq, Show)
+
+-- | The App Store Server API key, which subscription checks sign their requests with.
+data AppleServerApi = AppleServerApi
+  { aKeyId :: Text,
+    aIssuerId :: Text,
+    aPrivateKeyFile :: FilePath,
+    aApiHost :: Text
   }
   deriving (Eq, Show)
 
@@ -151,6 +162,10 @@ defaultSessionMinutes = 60
 defaultPlayApiHost :: Text
 defaultPlayApiHost = "https://androidpublisher.googleapis.com"
 
+-- | Production: it answers 404 for a Sandbox transaction, which a test deployment reaches through api_host.
+defaultAppleApiHost :: Text
+defaultAppleApiHost = "https://api.storekit.itunes.apple.com"
+
 defaultPlayTokenUrl :: Text
 defaultPlayTokenUrl = "https://oauth2.googleapis.com/token"
 
@@ -192,7 +207,7 @@ knownSettings =
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
-    ("apple", ["bundle_id", "root_certificates"]),
+    ("apple", ["bundle_id", "root_certificates", "api_key_id", "api_issuer_id", "api_private_key_file", "api_host"]),
     ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
     ("dev", ["accept_unverified_store_receipts"]),
@@ -339,11 +354,20 @@ parseConfig ini = do
       | otherwise = do
           aBundleId <- required "apple" "bundle_id"
           aRootCertificates <- rootCertificates
-          pure (Just AppleStoreConfig {aBundleId, aRootCertificates})
+          aServerApi <- appleServerApi
+          pure (Just AppleStoreConfig {aBundleId, aRootCertificates, aServerApi})
     rootCertificates = do
       v <- required "apple" "root_certificates"
       maybe (Left "apple.root_certificates must list at least one file") Right $
         L.nonEmpty $ map T.unpack $ filter (not . T.null) $ map T.strip $ T.splitOn "," v
+    -- the key is three settings, and one or two of them would leave subscriptions silently unverified
+    appleServerApi = case (present "apple" "api_key_id", present "apple" "api_issuer_id", present "apple" "api_private_key_file") of
+      (Nothing, Nothing, Nothing) -> Right Nothing
+      (Just aKeyId, Just aIssuerId, Just keyFile) -> do
+        aApiHost <- optional "apple" "api_host" defaultAppleApiHost
+        unless ("https://" `T.isPrefixOf` aApiHost) $ Left "apple.api_host must be an absolute https URL"
+        pure (Just AppleServerApi {aKeyId, aIssuerId, aPrivateKeyFile = T.unpack keyFile, aApiHost})
+      _ -> Left "apple.api_key_id, apple.api_issuer_id and apple.api_private_key_file are required together"
     googleSection
       | not (hasSection "google") = Right Nothing
       | otherwise = do

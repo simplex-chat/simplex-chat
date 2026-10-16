@@ -18,6 +18,7 @@ module Simplex.Chat.Badges.Service
     BadgeUpgrade (..),
     BadgeServiceResponse (..),
     BadgeServiceErrorCode (..),
+    SubscriptionState (..),
     BadgeCatalog (..),
     BadgePrice (..),
     BadgeOffer (..),
@@ -121,7 +122,8 @@ data BadgeServiceResponse
   | BSPBadgeCredential
       { credential :: Maybe BadgeCredential, -- Nothing when no balance to issueBadge or no current credential for pause
         receipt :: Maybe Text, -- not provided for lifetime badges
-        statement :: BadgeStatement
+        statement :: BadgeStatement,
+        subscription :: Maybe SubscriptionState -- present exactly when a store subscription funds the purchase
       }
   | BSPError
       { code :: BadgeServiceErrorCode,

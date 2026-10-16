@@ -85,7 +85,7 @@ import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyM
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
 import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeIssueFailure, BadgeState (..), OpenStorePurchase (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeIssueFailure, BadgeState (..), OpenStorePurchase (..), StoreReceiptOrigin, SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -666,7 +666,8 @@ data ChatCommand
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
-  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
+  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, origin :: StoreReceiptOrigin, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
+  | APISetBadgeSubscriptionStatus {status :: SubscriptionState, payment :: ServicePayment} -- the device store's view of a credited subscription, which changes only what is shown and alerted
   | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
   | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
@@ -879,6 +880,7 @@ data ChatResponse
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
   | CRBadgeInvoice {user :: User, invoiceId :: Text}
+  | CRStoreReceiptNotRecorded {user :: User}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState, storePurchases :: [OpenStorePurchase]}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
@@ -1500,6 +1502,7 @@ data BadgeRedeemError
   | BREInvalidReceipt -- names no transaction, or is not a store payment
   | BREServiceNotConfigured
   | BREBadgeActive
+  | BREStorePurchaseOpen -- a store receipt held for this profile may still be credited
   | BREServiceError {serviceError :: BadgeServiceErrorCode}
   | BREInvalidResponse {message :: String}
   | BREUnknownKeyIndex

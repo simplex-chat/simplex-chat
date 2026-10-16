@@ -221,6 +221,9 @@ account key, or either section beside
 [apple]
 bundle_id = chat.simplex.app
 root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
+api_key_id = 2X9R4HXF34
+api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
+api_private_key_file = /etc/simplex-badge-service/AuthKey_2X9R4HXF34.p8
 
 [google]
 package_name = chat.simplex.app
@@ -237,9 +240,19 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   under a new root, list it beside the old one rather than in its place: a purchase signed under the
   old root still verifies, and one answered `internal` meanwhile is credited when the app presents
   it again.
-- `[google]` asks the Google Play Developer API about each purchase, and acknowledges it before
-  crediting it, as the service account whose JSON key `service_account_file` holds. The account
-  needs both Play Console permissions Google's
+- With `api_key_id`, `api_issuer_id` and `api_private_key_file`, `[apple]` also verifies
+  subscriptions: it asks the App Store Server API for a subscription's status, with a token signed
+  by the in-app purchase key App Store Connect issued (the `.p8` file, its key id and the
+  account's issuer id), and checks what Apple signed in the answer against the same roots. Without
+  them, one-time purchases verify as before and every subscription is answered
+  `provider_not_configured`. The three are set together or not at all. `api_host` defaults to the
+  production host, `https://api.storekit.itunes.apple.com`, which answers nothing about a Sandbox
+  transaction; a test deployment sets `https://api.storekit-sandbox.itunes.apple.com`. A 401 or 403
+  from Apple, the key refused, is answered `internal` and logged. Keep the key file readable by this
+  service alone.
+- `[google]` asks the Google Play Developer API about each purchase and subscription, and
+  acknowledges it before crediting it, as the service account whose JSON key
+  `service_account_file` holds. The account needs both Play Console permissions Google's
   [getting started](https://developers.google.com/android-publisher/getting_started) lists for its
   billing APIs: "View financial data, orders, and cancellation survey responses" to read a
   purchase, and "Manage orders and subscriptions" to acknowledge it. Without the second, a Play
@@ -247,8 +260,13 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   error naming the acknowledgement, and the app presents it again once the permission is granted,
   which must be within three days, before Play refunds it. The key signs in
   for an access token, so keep the file readable by this service alone.
-  Play purchases are verified on a lane of their own, so a slow or unreachable Play delays only
-  other Play purchases, not code redemptions, renewals or App Store purchases.
+  A request that may ask a store waits on a lane of its own: Play purchases and App Store
+  subscription purchases on one, and issue requests for a subscription due its hourly store check
+  on another. A slow or unreachable store therefore delays only those, not code redemptions,
+  App Store one-time purchases or other renewals; and no purchase, genuine or made up, delays a
+  renewal check. The purchase path asks Play about at most 300 subscriptions a minute (a purchase
+  it credits is read once more to acknowledge it), so made-up tokens can spend at most a tenth of
+  the quota renewal checks share.
 
 Which answers are terminal for a purchase and which leave it to be presented again is listed per
 store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
@@ -266,6 +284,19 @@ the `transactionId` and `productId` its payload names, unsigned or not, and a Pl
 token as given. It applies to both run modes, since `--run-cli` answers service requests too, and
 the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
 parse. The service refuses to start with it on beside an `[apple]` or `[google]` section.
+
+It answers subscriptions too, each as renewing, charged from a minute before the check for the
+length of its plan:
+
+- an App Store subscription: the plan its product names;
+- a Play subscription: the base plan a test token `test.<basePlanId>.<uuid>` names (the apps'
+  test products sign their tokens so), or else the product's monthly base plan, so a licence
+  tester's purchase is credited too;
+- a renewal: a new charge for the plan it first charged. It keeps that plan in memory only, so after
+  a restart it answers a renewal of a subscription it credited before as ended.
+
+It acknowledges nothing, so Play refunds a licence tester's subscription it credited once Play's
+acknowledgement window lapses.
 
 With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
 That is harmless only while this deployment signs with an issuer key released apps do not carry, so

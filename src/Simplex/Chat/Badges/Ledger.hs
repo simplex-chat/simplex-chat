@@ -8,6 +8,7 @@ module Simplex.Chat.Badges.Ledger
     lapseEntry,
     grantEntry,
     issueEntry,
+    chargeEntries,
     paidThrough,
     balanceChecked,
     addMonths,
@@ -19,7 +20,7 @@ module Simplex.Chat.Badges.Ledger
   )
 where
 
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text)
 import Data.Time.Calendar (addDays, addGregorianMonthsClip, toGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
@@ -115,6 +116,17 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
             entryType = SEDebit SDBadge
           }
 
+-- | A store charge's rows, dated to its billing period start so coverage follows the store's periods:
+-- a lapse to the period start, the grant, and a lapse to now; the caller issues at now. createdAt stays
+-- non-decreasing as long as the period does not start before the tip was written.
+chargeEntries :: UTCTime -> UTCTime -> Int -> Text -> (Text, Text, Text) -> StatementEntry -> [StatementEntry]
+chargeEntries periodStart now months chargeId (lapseBeforeId, grantId, lapseSinceId) tip =
+  maybeToList lapsedBefore <> [granted] <> maybeToList lapsedSince
+  where
+    lapsedBefore = lapseEntry periodStart lapseBeforeId tip
+    granted = grantEntry periodStart grantId months (SCCharge chargeId) $ fromMaybe tip lapsedBefore
+    lapsedSince = lapseEntry now lapseSinceId granted
+
 -- Generous because postdating only writes off a month by crossing a month boundary, which takes
 -- days, while a device clock a few minutes slow would otherwise leave every row unverified.
 maxCreatedAtSkew :: NominalDiffTime
@@ -205,15 +217,16 @@ debitTypeTag = \case
   SDLapse -> "lapse"
   SDUnknown {tag} -> tag
 
--- | Rebuilds only what the columns determine: constructors with no fields, and a payment credit.
+-- | Rebuilds only what the columns determine: constructors with no fields, a payment credit and a charge credit.
 -- payment_ is Nothing when the row references no payment, and Just Nothing when that payment had no
 -- invoice, as a store purchase has none. The rest answer Nothing rather than invent a payload.
 -- The client stores each type's JSON and reads that first, so this is its fallback; the service has none.
--- TODO [badges] rebuild charge, transferIn, upgrade and transferOut from their reference columns,
+-- TODO [badges] rebuild transferIn, upgrade and transferOut from their reference columns,
 -- without which the service cannot re-emit a statement carrying one.
-entryTypeFromColumns :: Maybe (Maybe InvoiceId) -> Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
-entryTypeFromColumns payment_ entryType credit_ debit_ = case (entryType, credit_, debit_) of
+entryTypeFromColumns :: Maybe (Maybe InvoiceId) -> Maybe Text -> Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
+entryTypeFromColumns payment_ chargeId_ entryType credit_ debit_ = case (entryType, credit_, debit_) of
   ("credit", Just "payment", _) -> SECredit . SCPayment <$> payment_
+  ("credit", Just "charge", _) -> SECredit . SCCharge <$> chargeId_
   ("credit", Just t, _) -> SECredit <$> creditType t
   ("debit", _, Just t) -> SEDebit <$> debitType t
   _ -> Nothing

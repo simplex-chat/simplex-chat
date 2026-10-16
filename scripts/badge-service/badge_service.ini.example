@@ -40,9 +40,15 @@ idle_seconds = 60
 ; root_certificates lists, comma-separated, the roots trusted to sign receipts, each in DER and placed
 ; in config/. Today that is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer.
 ; When Apple adds a root, list it beside the old one rather than in its place.
+; the api_ keys, set together, verify subscriptions with the in-app purchase key App Store Connect
+; issues; without them every App Store subscription is answered provider_not_configured. Place the .p8
+; in config/; it must be readable by the service's user alone. api_host defaults to production.
 ;[apple]
 ;bundle_id = chat.simplex.app
 ;root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
+;api_key_id = 2X9R4HXF34
+;api_issuer_id = 57246542-96fe-1a63-e053-0824d011072a
+;api_private_key_file = /etc/simplex-badge-service/AuthKey_2X9R4HXF34.p8
 
 ; optional; without it every Play receipt is answered provider_not_configured, which the app retries later.
 ; service_account_file is the JSON key of a service account with the Play Console permissions "View
@@ -73,5 +79,9 @@ private_key = replace-me
 ; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
 ; with this on beside an [apple] or [google] section.
+; A subscription is answered renewing and charged for its plan: the App Store product's, the base
+; plan a Play test token test.<basePlanId>.<uuid> names, or the Play product's monthly one. The
+; plans are kept in memory, so a restart answers later renewals as ended. Nothing is acknowledged,
+; so Play refunds a licence tester's subscription once its acknowledgement window lapses.
 [dev]
 accept_unverified_store_receipts = off
