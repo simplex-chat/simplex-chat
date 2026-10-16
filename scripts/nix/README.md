@@ -172,10 +172,22 @@ runs its actual configure arguments under the runner's Apple LLDB. The probe
 records bounded thread backtraces, registers, instructions and loaded images;
 compiler queries and other Setup commands pass through. Child failures remain
 failures, and the canonical job stays failed. The diagnostic has a two-hour
-step/per-derivation limit and a five-minute limit for LLDB itself. Its log is
+step/per-derivation limit and one five-minute deadline for LLDB plus any fallback.
+Its log is
 uploaded as `intel-setup-lldb-trace.log`, including after failure. Only this probe
 disables the Nix sandbox to reach the host debugger; it records that runtime
-difference and the debugger version. A successful probe is diagnostic evidence.
+difference and the debugger version. If LLDB explicitly denies permission before
+launching a child, the probe records that denial and runs the same Setup bytes
+with a diagnostic abort interposer built by the runner's existing Apple Clang.
+It reports up to 80 current-thread unwind frames, available callee-saved
+registers and image addresses. It symbolicates mapped register addresses without
+dereferencing them, then forwards to real `abort`. Its constructor
+restores the original loader environment before Setup starts compiler children
+and disables core output for the fallback process tree. This adds a loaded image
+to Setup; it changes no debugger permissions or security settings. Child
+exits/signals remain failures. The Intel fallback runtime is
+unverified until CI executes it; native ARM64 C controls cover the helper.
+A successful probe is diagnostic evidence.
 
 Hydra continues to consume
 the same `hydraJobs` attributes. The older application release workflow still

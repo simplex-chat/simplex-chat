@@ -5,8 +5,47 @@ import json
 import os
 from pathlib import Path
 import shlex
+import subprocess
+import time
 
 import lldb
+
+
+def permission_denied_before_launch(error, process):
+    # Never repeat a process that LLDB launched, even if it already exited.
+    denied = "this is a non-interactive debug session, cannot get permission to debug processes."
+    pid = process.GetProcessID() if process.IsValid() else 0
+    return error.Fail() and denied in str(error) and pid == 0
+
+
+def abort_fallback(executable, argv, environment, tracer, deadline):
+    keys = ("SIMPLEX_SETUP_ABORT_DYLD_PRESENT", "SIMPLEX_SETUP_ABORT_DYLD_VALUE")
+    child_environment = dict(item.split("=", 1) for item in environment)
+    if any(key in child_environment for key in keys):
+        raise ValueError("abort tracer private environment key already exists")
+    original_dyld = child_environment.get("DYLD_INSERT_LIBRARIES")
+    child_environment[keys[0]] = "0" if original_dyld is None else "1"
+    if original_dyld is not None:
+        child_environment[keys[1]] = original_dyld
+    child_environment["DYLD_INSERT_LIBRARIES"] = str(tracer) + (
+        ":" + original_dyld if original_dyld else "")
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError("Intel Setup overall diagnostic deadline expired")
+    digest = hashlib.sha256(executable.read_bytes()).hexdigest()
+    print("Intel Setup fallback: original LLDB permission denial retained; "
+          "diagnostic-only abort dylib inserted into unchanged Setup; "
+          "constructor restores child loader environment; no core output", flush=True)
+    result = subprocess.run(argv, executable=str(executable), env=child_environment,
+                            timeout=remaining, check=False)
+    if hashlib.sha256(executable.read_bytes()).hexdigest() != digest:
+        raise RuntimeError("compiler-produced Setup bytes changed during fallback")
+    code = 128 - result.returncode if result.returncode < 0 else result.returncode
+    print("Intel Setup fallback result: " + json.dumps({
+        "returncode": result.returncode, "shell_status": code,
+        "executable_sha256": digest, "unchanged": True,
+    }), flush=True)
+    return code
 
 
 def nul_entries(path):
@@ -76,11 +115,13 @@ def stopped_signals(process):
 def run(debugger, command, _result, _internal_dict):
     process = None
     code = 1
+    deadline = time.monotonic() + 300
     try:
         arguments = shlex.split(command)
-        if len(arguments) != 1:
-            raise ValueError("expected one argv-capture pathname")
+        if len(arguments) not in (1, 2):
+            raise ValueError("expected argv-capture pathname and optional abort dylib")
         capture = Path(arguments[0])
+        tracer = Path(arguments[1]) if len(arguments) == 2 else None
         argv = nul_entries(capture)
         environment_file = Path(str(capture) + ".env")
         environment_bytes = environment_file.read_bytes()
@@ -113,6 +154,14 @@ def run(debugger, command, _result, _internal_dict):
         error = lldb.SBError()
         process = target.Launch(launch, error)
         if error.Fail() or not process.IsValid():
+            print("Intel Setup LLDB launch failure: " + json.dumps({
+                "error": str(error), "valid": process.IsValid(),
+                "pid": process.GetProcessID() if process.IsValid() else 0,
+                "state": process.GetState() if process.IsValid() else None,
+            }), flush=True)
+            if tracer is not None and permission_denied_before_launch(error, process):
+                code = abort_fallback(executable_path, argv, environment, tracer, deadline)
+                return
             raise RuntimeError("LLDB launch failed: " + str(error))
 
         unix_signals = process.GetUnixSignals()

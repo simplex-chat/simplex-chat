@@ -154,6 +154,15 @@ jobs:
           lldb_path=$(xcrun --find lldb)
           printf 'Intel Setup host debugger: %s\n' "$lldb_path"
           "$lldb_path" --version
+          clang_path=$(xcrun --find clang)
+          sdk_path=$(xcrun --sdk macosx --show-sdk-path)
+          printf 'Intel Setup abort tracer compiler: %s\n' "$clang_path"
+          "$clang_path" --version
+          abort_tracer="$GITHUB_WORKSPACE/intel-setup-abort.dylib"
+          "$clang_path" -isysroot "$sdk_path" -arch x86_64 \
+            -std=c11 -Werror=vla -pedantic -Wall -Wextra -Werror \
+            -dynamiclib -O0 -g -fno-omit-frame-pointer \
+            scripts/nix/trace_intel_setup_abort.c -o "$abort_tracer"
           flake_ref="git+file://$GITHUB_WORKSPACE?rev=$(git rev-parse HEAD)"
           original=$(cat <<NIX
           let
@@ -170,6 +179,7 @@ jobs:
           # Only this diagnostic permits host LLDB access outside the Nix sandbox.
           exec nix build --file scripts/nix/trace-intel-setup.nix \
             --arg original "$original" --argstr expectedDrv "$expected_drv" \
+            --argstr abortTracerPath "$abort_tracer" \
             --argstr lldbPath "$lldb_path" --option sandbox false \
             --no-link -L --keep-failed --max-jobs 1 --timeout 7200
           TRACE

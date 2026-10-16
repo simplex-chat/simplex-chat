@@ -1,10 +1,12 @@
 # Failure-only diagnostic for the pinned Intel Darwin compiler's ghc-boot Setup.
 # Resolve lldbPath with xcrun on the runner before evaluation. Only this
 # diagnostic build may use `--option sandbox false` to reach Apple's debugger.
-{ original, lldbPath
+{ original, lldbPath, abortTracerPath
 , expectedDrv ? "/nix/store/vghjgkr64qjigddh3gnf3c103wbvpxmz-ghc-boot-lib-ghc-boot-9.14.drv"
 }:
 let
+  # Track the runner-compiled dylib's bytes, not a mutable host-path reference.
+  abortTracer = builtins.path { path = abortTracerPath; name = "intel-setup-abort.dylib"; };
   shellQuote = value: "'" + builtins.replaceStrings [ "'" ] [ "'\\''" ] value + "'";
   needle = "    printf '#!/bin/sh\\nexec %s \"$@\"\\n' \"$g\" > \"$wrapBin/$gName\"";
   replacement = ''
@@ -56,7 +58,7 @@ let
     ${shellQuote lldbPath} --version
     exec timeout --kill-after=10s 300s ${shellQuote lldbPath} --batch --no-lldbinit \
       -o "command script import \"$driverDir/trace_intel_setup_lldb.py\"" \
-      -o "intel-setup-run \"$argvFile\"" -- "$realSetup"
+      -o "intel-setup-run \"$argvFile\" ${shellQuote (toString abortTracer)}" -- "$realSetup"
     SIMPLEX_SETUP_EXECUTION
           chmod +x "$setupOutput"
         fi
@@ -74,6 +76,7 @@ assert original.system == "x86_64-darwin";
 assert original.identifier.name == "ghc-boot";
 assert original.drvPath == expectedDrv;
 assert builtins.isString lldbPath && builtins.substring 0 1 lldbPath == "/";
+assert builtins.isString abortTracerPath && builtins.substring 0 1 abortTracerPath == "/";
 original.overrideAttrs (old:
   assert occurrences old.buildPhase == 1; {
     buildPhase = builtins.replaceStrings [ needle ] [ replacement ] old.buildPhase + ''
