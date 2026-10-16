@@ -44,6 +44,8 @@ The pure scope check runs in the Linux static CI group:
 
 Windows patches Basement's `INVALID_HANDLE_VALUE` expression to `INT_PTR`, so
 hsc2hs receives the signed pointer-sized integer expected by the Haskell API.
+The generated constant converts through Haskell `Int` with `Prelude.fromIntegral`;
+Basement's `RebindableSyntax` has no `HasNegation IntPtr` instance.
 
 Run these commands from the repository root:
 
@@ -256,11 +258,23 @@ and four on each Darwin architecture. This includes both Android ABIs, Windows,
 and all three static Linux targets. This establishes derivation evaluation;
 the completed artifact builds are listed below.
 
-GitHub integration merge `3ad3fb6843a3acdab17299613f5cd5680263fb17` also passed
-the native ARM64 Linux library/CLI and all four ARM64 Darwin outputs, including
-CLI smoke checks. That run predates the Linux ELF loader, Android API table,
-static-link metadata, and Windows Basement fixes described above. Their focused
-reproducers pass, but full builds with the integrated fixes remain pending.
+GitHub run `38919765819` tested head `7d045945a` as integration merge
+`71f314a3c42dc68d9eb2aa65bd585d46725f332a`. Both native Linux library/CLI groups
+and all four ARM64 Darwin outputs passed, including encrypted-store and
+profile-password CLI smoke checks. The actual production x86_64 Linux compiler
+also passed the ELF alignment regression. The x86_64 musl CLI linked and installed;
+its group subsequently failed during i686 Template Haskell because the fully
+static interpreter used musl's `dlopen` stub.
+
+That run also exposed an ARM64 Android source-module routing gap, a Windows
+`HasNegation IntPtr` error after the signed C cast, and the recurring Intel Darwin
+`ghc-boot` Setup GC abort. The routing and Windows follow-ups pass their focused
+reproducers. Normal and profiling musl interpreter plans retain all 95 record
+identities: only three iserv configure arguments disable executable-static;
+the other 92 records are byte-identical. The changed project skeleton rebuilds
+auxiliary boot derivations. An actual i686/QEMU C control reproduces the static
+loader error and loads the same `libz.so` with dynamic C linkage. Production helper
+ELF/TH execution and the corrected target builds remain for the next CI run.
 
 The native ARM64 Darwin library and CLI built with Nix at `f26dbbc0d` and
 passed `python3 scripts/nix/smoke-cli.py /path/to/simplex-chat`, covering encrypted
@@ -277,14 +291,15 @@ SQLCipher component also built with Nix and registered both Apple frameworks.
 The replacement RTS and `text` built with Nix and passed ABI,
 instruction-baseline, UTF-8, and GC checks.
 
-Both full Nix ARM64 iOS library ZIPs, Swift JSON and tagged JSON, built at
-`f26dbbc0d93a5c359427307b4c57f7f5e2123d69`. Each ZIP contained its five expected
-archive entries with valid CRCs and 3,630 Mach-O members tagged ARM64/iOS. Their
-Hydra product markers pointed to the actual ZIPs. The production FFI archive
-previously passed an instruction-baseline check with unchanged inputs. The
-package uses the full Cabal v2 unit ID in its archive filenames; the existing
-Xcode project updater accepts those names. This verifies the packaged library,
-not execution after retagging.
+Both full Nix ARM64 iOS library ZIPs, Swift JSON and tagged JSON, built in that
+GitHub run. The downloaded artifact matched its published SHA256, outer/inner
+ZIP CRCs, and all ten archive hashes recorded in CI. Each ZIP contained its five
+expected archive entries and 3,632 ARM64 Mach-O members with iOS platform markers.
+The earlier `f26dbbc0d` ZIPs contained 3,630 members and valid Hydra product markers.
+The production FFI archive previously passed an instruction-baseline check with
+unchanged inputs. The package uses the full Cabal v2 unit ID in its archive
+filenames; the existing Xcode project updater accepts those names. This verifies
+the packaged library, not execution after retagging.
 
 The Android API26 ARMv7 `ghc-internal` built with all 292 Haskell modules and
 C sources. Its unit ID and ABI match the earlier build, and GNU iconv is retained
@@ -315,10 +330,10 @@ the earlier `b4a1cdd54` compiler context: each contains 283 ELF32 ARM objects,
 with profiling objects in the profiling archive. Their installed registration
 retains GNU iconv paths. This does not qualify the later native RTS compiler
 change or the profiling interpreter's final link and execution.
-Profiling execution, final Linux/Windows and Intel Darwin outputs, complete
-Android libraries/applications, device tests, and an Xcode application build
-remain unverified. Derivation evaluation and the normal trial do not establish
-that those builds and runtime checks pass.
+Profiling interpreter execution, corrected Android/Windows builds, the complete
+static Linux group, Intel Darwin outputs, Android devices/APKs, and an Xcode
+application build remain unverified. Derivation evaluation and the normal trial
+do not establish that those builds and runtime checks pass.
 
 ## Updating package hashes
 
