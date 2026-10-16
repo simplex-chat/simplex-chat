@@ -226,8 +226,11 @@ jobs:
       CLAUDE_RUN: ${{ needs.plan.outputs.claude }}
       START_BACKEND: ${{ needs.plan.outputs.start-backend }}
     steps:
+      # the job later holds the Claude token, so the checkout's GitHub token is not left in .git/config
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Show runner
         run: |
