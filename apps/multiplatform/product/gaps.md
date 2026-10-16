@@ -14,6 +14,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
+9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
 
 ---
 
@@ -322,3 +323,29 @@ A stale registration or an unregistered Flatpak sends the user back to a link th
 
 1. Remove the registration in an uninstaller where one exists (MSI), and on AppImage when the entry's file is gone.
 2. Removing the command-line exposure needs the page to encrypt the code to a key the app passes in the URL fragment.
+
+---
+
+## GAP-09: Desktop: Emoji Picker Without Skin Tones and Localized Search
+
+**Severity:** Low
+**Category:** Feature / Platform
+**Platform:** Desktop only
+
+### Description
+
+The desktop compose emoji picker lists emoji without skin tone variants, and its search matches English Unicode emoji names only.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/views/chat/ComposeEmojiPicker.desktop.kt`
+- `scripts/desktop/generate-emoji-data.py` (`../../scripts/desktop/` relative to `apps/multiplatform/`) -- drops skin tone variants
+
+### Impact
+
+Desktop users cannot pick a skin tone in the picker, and search in other languages finds nothing.
+
+### Recommendation
+
+1. Keep the skin tone variants in the generated data, grouped by base emoji, and add a skin tone choice to the picker.
+2. Add localized names (CLDR annotations) to the generated data for search.
