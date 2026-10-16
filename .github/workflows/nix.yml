@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   build:
-    name: ${{ matrix.system }} / pinned Haskell compiler
+    name: ${{ matrix.system }} / ${{ matrix.target }} / pinned Haskell compiler
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 360
     strategy:
@@ -44,14 +44,28 @@ jobs:
         include:
           - system: x86_64-linux
             runner: ubuntu-24.04
+            target: native
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+            target: android
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+            target: windows
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+            target: linux-static
           - system: aarch64-linux
             runner: ubuntu-24.04-arm
+            target: native
           - system: aarch64-darwin
             runner: macos-15
+            target: all
           - system: x86_64-darwin
             runner: macos-15-intel
+            target: all
     env:
       NIX_SYSTEM: ${{ matrix.system }}
+      NIX_TARGET: ${{ matrix.target }}
       NIX_BUILD_TIMEOUT: 7200
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +95,7 @@ jobs:
       # failure and its flags intact; this is a separate diagnostic derivation.
       - name: Trace native Linux GHC phases after failure
         id: ghc_phase_trace
-        if: ${{ failure() && matrix.system == 'x86_64-linux' && steps.haskell_build.outcome == 'failure' }}
+        if: ${{ failure() && matrix.system == 'x86_64-linux' && matrix.target == 'native' && steps.haskell_build.outcome == 'failure' }}
         shell: bash
         run: |
           if [ -d "result-nix/$NIX_SYSTEM/lib:simplex-chat" ]; then
@@ -100,11 +114,12 @@ jobs:
         if: ${{ always() && steps.ghc_phase_trace.outputs.attempted == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: nix-ghc-phase-trace-${{ github.sha }}
+          name: nix-ghc-phase-trace-${{ matrix.system }}-${{ matrix.target }}-${{ github.sha }}
           path: native-linux-ghc-phase-trace.log
           if-no-files-found: warn
 
       - name: Check native CLI encryption and profile passwords
+        if: ${{ matrix.target == 'native' || matrix.target == 'all' }}
         run: python3 scripts/nix/smoke-cli.py "result-nix/$NIX_SYSTEM/exe:simplex-chat/bin/simplex-chat"
 
       - name: Collect library ZIPs and CLIs
@@ -124,6 +139,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: nix-${{ matrix.system }}-${{ github.sha }}
+          name: nix-${{ matrix.system }}-${{ matrix.target }}-${{ github.sha }}
           path: artifacts/
           if-no-files-found: error

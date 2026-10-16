@@ -106,8 +106,12 @@ make nix-native NIX_ARGS=--dry-run
 ```
 
 `.github/workflows/nix.yml` runs these same outputs on Linux ARM64/x86_64 and
-Darwin ARM64/x86_64, with a six-hour job limit. It uploads the existing library ZIPs
-and CLIs under an artifact named for the source SHA. Each native CLI also runs
+Darwin ARM64/x86_64, with a six-hour limit per job. Its seven jobs cover all 21
+outputs once: x86_64 Linux runs `native`, `android`, `windows`, and `linux-static`
+separately; ARM64 Linux runs `native`; both Darwin hosts run `all`. A failed
+native Linux build therefore leaves the cross-build jobs running. Each job
+uploads its existing library ZIPs and CLIs under an artifact named for the build
+host, target group, and source SHA. Each native CLI also runs
 the encrypted-store and profile-password smoke test, which can be repeated with
 `python3 scripts/nix/smoke-cli.py result-nix/BUILD_SYSTEM/exe:simplex-chat/bin/simplex-chat`.
 
