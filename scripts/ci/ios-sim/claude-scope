@@ -3,9 +3,9 @@
 # entries-<layout> (optional) tells that session which directory entries and names its cases use, so none meets an entry already known.
 model: claude-haiku-5-5
 layouts: reachable top
-cases-reachable: the SimpleX names setup, then N1-N11, W4 with names, W7, W8, G1 and the full search (chat list and New chat)
-cases-top: N1 and N4 (this layout places the "Connect to …" row and the Names and Directory parts differently) and the full search on the chat list only (New chat looks the same in both layouts); the names setup is already done
-entries-reachable: N7 uses a second profile you add (the first profile has no other); N10 connects to @cialice.testing, which N5, W7 and G1 then use; W8 first connects to @cibobby.testing (Robert) from its Names row; the full search joins the group cinews_digest
-entries-top: the earlier session joined cinews_digest and connected to cialice and Robert; N1 and N4 join nothing
+cases-reachable: C1-C9, D1-D15, U1-U3, W1-W11 and G1-G4 (no names setup: the N cases and the full search run in another session)
+cases-top: C1-C4 (this layout places the tags and the search rows differently), D1, D2, D4, D7 and D8 (the header, the page order and "Show more" in this layout's list) and D15 (the onboarding pages swap with the results); the rest look the same in both layouts
+entries-reachable: D6 joins the channel ci_channel (search "ci seed"), which U1 and U2 then use; W6 opens the channel ci_avatar_c1 from New chat (search "ci avatar"); D14 and D15 use a second profile you add, which has no conversations; ci_cards, which the smoke test joined, is for no case
+entries-top: the earlier session joined ci_channel and may have opened ci_avatar_c1 and added a second profile; the top-bar cases join nothing
 max-turns: 900
 max-budget-usd: 5
