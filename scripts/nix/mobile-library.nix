@@ -4,7 +4,12 @@
 # the normal install phase. The compiler is the exact slice/TH wrapper.
 let withComponentPhases = component: change: component.overrideAttrs (old:
   change old // {
-    passthru = (old.passthru or {}) // {
+    # overrideAttrs drops the project/package handles that haskell.nix adds
+    # outside the derivation. Keep them for focused component diagnostics.
+    passthru = (old.passthru or {}) // (pkgs.lib.intersectAttrs {
+      project = null;
+      package = null;
+    } component) // {
       inherit (component) checkAgainstPlan;
       isSlice = true;
     };
