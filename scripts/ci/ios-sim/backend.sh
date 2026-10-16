@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Test backend on the app runner: a chat relay and a directory service on the preset servers, with groups and
-# channels registered and approved by a CLI peer, and a search that must find them; and for SimpleX names,
-# a local SMP server with a name resolver, names claimed by channels and by contacts that accept connections.
+# channels registered and approved by a CLI peer, and searches that must find them, sent as a message and as the
+# app sends them; and for SimpleX names, a local SMP server with a name resolver, names claimed by channels and by
+# contacts that accept connections.
 # Usage:
 #   scripts/ci/ios-sim/backend.sh start <backend zip> <work dir>   writes the directory's short address to <work dir>/directory-link,
 #                                                                  the names server's address to <work dir>/names-server
@@ -20,6 +21,8 @@ admin=ci_admin
 search_text="ci seed"
 avatar_search_text="ci avatar"
 long_name=ci_long_name_entry_for_layout_truncation_checks
+# maxServiceBodyLength in src/Simplex/Chat/Protocol.hs
+max_service_body=10737
 names_resolver_port=18080
 
 # Runs one chat command in a CLI client that stays online for <secs> after it; the output is in $work/out.
@@ -366,6 +369,61 @@ probe_search() {
   echo "search for \"$search_text\" found ci_group and ci_channel"
 }
 
+# What the app will send, from a client that never connected to the directory.
+probe_service_search() {
+  chat probe 1 "/_service_request 1 $directory_link timeout=30 {\"type\":\"search\",\"searchText\":\"$search_text\"}" --user-display-name ci_probe
+  expect_out '"displayName":"ci_group"'
+  expect_out '"displayName":"ci_channel"'
+  echo "search request for \"$search_text\" found ci_group and ci_channel"
+}
+
+# Follows the search cursor to the end, recording what each response carried and its size against the limit.
+probe_pages() {
+  local text=$1 expected=$2
+  local page=0 cursor=null req resp names=""
+  {
+    echo "## Search \"$text\", page by page"
+    echo
+    echo "Responses must fit $max_service_body bytes, as JSON or zstd-compressed (the zstd size is measured with the zstd CLI at level 3, a few bytes off the core's framing)."
+    echo
+    echo "| Page | Entries (avatar characters) | JSON bytes | zstd -3 bytes | More |"
+    echo "|---|---|---|---|---|"
+  } >> "$work/seed.md"
+  while [ "$cursor" != end ]; do
+    page=$((page + 1))
+    if [ "$page" -gt 20 ]; then
+      echo "error: more than 20 pages"
+      return 1
+    fi
+    req=$(jq -cn --arg t "$text" --argjson c "$cursor" '{type: "search", searchText: $t} + (if $c == null then {} else {searchCursor: $c} end)')
+    chat probe 1 "/_service_request 1 $directory_link timeout=30 $req" --user-display-name ci_probe
+    resp=$(sed -n 's/^service response: //p' "$work/out")
+    if [ -z "$resp" ]; then
+      echo "error: no service response for page $page"
+      return 1
+    fi
+    if jq -e '.searchCursor != null' <<< "$resp" > /dev/null; then
+      cursor=$(jq -c '.searchCursor' <<< "$resp")
+    else
+      cursor=end
+    fi
+    names="$names$(jq -r '.entries[].displayName' <<< "$resp")"$'\n'
+    echo "| $page | $(jq -r '[.entries[] | "\(.displayName) (\(.image // "" | length))"] | join(", ")' <<< "$resp") | $(printf '%s' "$resp" | wc -c | tr -d ' ') | $(printf '%s' "$resp" | zstd -3 -q -c --no-check | wc -c | tr -d ' ') | $([ "$cursor" = end ] && echo no || echo yes) |" >> "$work/seed.md"
+  done
+  local found repeated
+  found=$(grep -c . <<< "$names" || true)
+  repeated=$({ grep . <<< "$names" || true; } | sort | uniq -d | paste -sd ' ' -)
+  {
+    echo
+    echo "$found entries in $page pages, $expected expected; repeated: ${repeated:-none}."
+    echo
+  } >> "$work/seed.md"
+  echo "search for \"$text\": $found entries in $page pages, $expected expected, repeated: ${repeated:-none}"
+  if [ "$found" -ne "$expected" ] || [ -n "$repeated" ]; then
+    echo "::warning::search for \"$text\" returned $found entries ($expected expected), repeated: ${repeated:-none}"
+  fi
+}
+
 write_seed() {
   {
     echo "# Test directory"
@@ -376,12 +434,12 @@ write_seed() {
     echo
     echo "| Search with | Entries | Seeded for |"
     echo "|---|---|---|"
-    echo "| \`$search_text\` | ci_group (group), ci_channel (channel), each with a small avatar (64 px) | a group and a channel to find |"
-    echo "| \`ci cards\` | ci_cards (channel, with a small avatar) | a channel to join, so that the profile has a conversation |"
-    echo "| \`$avatar_search_text\` | ci_avatar_g1…3 (groups), ci_avatar_c1…3 (channels), each with an avatar the size the app makes | images at the size limit |"
-    echo "| \`ci long\` | $long_name (group): a long name and a two-line description | truncation |"
-    echo "| \`ci markdown\` | ci_markdown (group): markdown in the description | markdown shown literally |"
-    echo "| \`cinews\` | cinews (channel, with the name cinews.testing), cinews_digest and cinews_weekly (groups) | a search that matches a SimpleX name and listed entries |"
+    echo "| \`$search_text\` | ci_group (group), ci_channel (channel), each with a small avatar (64 px) | the smoke test; results on one page |"
+    echo "| \`ci cards\` | ci_cards (channel, with a small avatar) | the smoke test joins it, so that the chat list shows its cards |"
+    echo "| \`$avatar_search_text\` | ci_avatar_g1…3 (groups), ci_avatar_c1…3 (channels), each with an avatar the size the app makes | avatars and the response size limit: about one entry per page |"
+    echo "| \`ci long\` | $long_name (group): a long name and a two-line description | D3 |"
+    echo "| \`ci markdown\` | ci_markdown (group): markdown in the description | D5 |"
+    echo "| \`cinews\` | cinews (channel, with the name cinews.testing), cinews_digest and cinews_weekly (groups) | a search that shows local chats, Names and Directory |"
     echo
     sqlite3 -markdown "$work/directory_chat.db" "$listings_query"
     echo
@@ -431,7 +489,10 @@ start() {
   seed_names
   probe_search
   probe_names
+  probe_service_search
   write_seed
+  probe_pages "$search_text" 2
+  probe_pages "$avatar_search_text" 6
 }
 
 stop() {
