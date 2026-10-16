@@ -28,11 +28,11 @@ on:
       - ".github/**"
 
 env:
-  opt: O2
-  ghc_options: ''
+  opt: ${{ github.event_name == 'pull_request' && 'O0' || 'O2' }}
+  ghc_options: ${{ github.event_name == 'pull_request' && '--ghc-options=-O0' || '' }}
   release: ${{ startsWith(github.ref, 'refs/tags/v') }}
   branch: ${{ github.base_ref || github.ref_name }}
-  cache_o0: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable')) }}
+  cache_o0: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') }}
   ZSTD_CLEVEL: 9
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
@@ -276,7 +276,7 @@ jobs:
             USER_UID=${{ steps.ids.outputs.uid }}
             USER_GID=${{ steps.ids.outputs.gid }}
           cache-from: ${{ env.release != 'true' && format('type=registry,ref={0}-{1}', env.image_cache, steps.week.outputs.week) || '' }}
-          cache-to: ${{ (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master')) && format('type=registry,ref={0}-{1},mode=max,ignore-error=true', env.image_cache, steps.week.outputs.week) || '' }}
+          cache-to: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && format('type=registry,ref={0}-{1},mode=max,ignore-error=true', env.image_cache, steps.week.outputs.week) || '' }}
 
       # Docker needs these flags for AppImage build:
       # --device /dev/fuse
@@ -770,6 +770,13 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Select Xcode toolchain and SDK
+        shell: bash
+        run: |
+          developer_dir=/Applications/Xcode.app/Contents/Developer
+          echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
+          echo "SDKROOT=$(DEVELOPER_DIR=$developer_dir xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
 
       - name: Prepare build
         id: prepare

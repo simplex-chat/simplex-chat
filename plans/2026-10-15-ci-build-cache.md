@@ -165,6 +165,9 @@ Steps:
 9. Other steps: unchanged.
 10. -O0 refresh as in build-linux, after all other steps.
 
+build-macos
+- step before "Prepare build": `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, `SDKROOT` from `xcrun --sdk macosx --show-sdk-path`
+
 build-windows
 - cache key and store hash steps: `msys2` shell
 - store hash: store path converted with `cygpath -u`
