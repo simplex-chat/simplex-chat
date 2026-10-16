@@ -186,7 +186,7 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>)
 |---|---|---|
 | **Left** | `DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier` (fixed) | `StartPartOfScreen` (ChatListView) + `UserPicker` overlay |
 | **Left overlay** | Same as left column | `ModalManager.start` modals + `SwitchingUsersView` |
-| **Center** | `min = DEFAULT_MIN_CENTER_MODAL_WIDTH`, `weight = 1f` (flexible) | `CenterPartOfScreen` (ChatView or "no selected chat" placeholder, or `ModalManager.center`) |
+| **Center** | `min = DEFAULT_MIN_CENTER_MODAL_WIDTH`, `weight = 1f` (flexible) | `CenterPartOfScreen` (ChatView with `ModalManager.center` over it; without a chat: `ModalManager.center` or "no selected chat" placeholder) |
 | **Right** | `max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier` (flexible, 0 when empty) | `ModalManager.end` (ChatInfoView, GroupChatInfoView, ChatItemInfoView, etc.) |
 
 ### Column Separators
@@ -204,7 +204,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 - When `chatId` is null and no center modals: shows "No selected chat" placeholder.
 - When `chatId` is null and center modals open: shows `ModalManager.center`.
-- When `chatId` is set: shows `ChatView`.
+- When `chatId` is set: shows `ChatView`, and `ModalManager.center` over it.
 - Automatically closes center modals when a chat is selected.
 
 ### StartPartOfScreen
@@ -231,7 +231,7 @@ class ModalManager(private val placement: ModalPlacement?)
 | Zone | Android Behavior | Desktop Behavior |
 |---|---|---|
 | `start` | Shared (same as all others) | Left column overlay, slides from start |
-| `center` | Shared | Center column overlay, replaces ChatView |
+| `center` | Shared | Center column overlay, drawn over ChatView |
 | `end` | Shared | Right column, slides from end |
 | `fullscreen` | Shared | Fullscreen overlay |
 
@@ -264,6 +264,7 @@ Each `ModalManager` maintains a stack of `ModalViewHolder` objects with:
 | `closeModals` | Pop all modals from the stack |
 | `closeModalsExceptFirst` | Pop all but the bottom modal |
 | `hasModalsOpen()` | Check if any modals are on the stack |
+| `isLastModal(data)` | Check if the modal with this `ModalData` is the top modal not being removed |
 | `showInView` | Render the current modal stack into the composable tree |
 
 ### Usage Pattern

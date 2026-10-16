@@ -266,6 +266,23 @@ export namespace APIAddMember {
   }
 }
 
+// Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+// Network usage: interactive.
+export interface APIAddMemberViaGroup {
+  groupId: number // int64
+  viaGroupId: number // int64
+  groupMemberId: number // int64
+  memberRole: T.GroupMemberRole
+}
+
+export namespace APIAddMemberViaGroup {
+  export type Response = CR.SentGroupInvitationViaGroup | CR.ChatCmdError
+
+  export function cmdString(self: APIAddMemberViaGroup): string {
+    return '/_add #' + self.groupId + ' #' + self.viaGroupId + ' ' + self.groupMemberId + ' ' + self.memberRole
+  }
+}
+
 // Join group.
 // Network usage: interactive.
 export interface APIJoinGroup {

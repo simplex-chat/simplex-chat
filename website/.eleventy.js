@@ -172,6 +172,17 @@ fs.readdir(translationsDirectoryPath, (err, files) => {
 
 const translations = require("./translations.json")
 
+const translatedPages = {
+  "": "src/index.html",
+  why: "src/why.html",
+  downloads: "src/_includes/downloads_hero.html",
+}
+
+const translatedPageKeys = Object.fromEntries(Object.entries(translatedPages).map(([route, file]) => {
+  const template = fs.readFileSync(path.resolve(__dirname, file), "utf8")
+  return [route, [...new Set(Array.from(template.matchAll(/["']([\w-]+)["']\s*\|\s*i18n/g), (match) => match[1]))]]
+}))
+
 const outputDir = '_site'
 
 module.exports = function (ty) {
@@ -402,6 +413,12 @@ module.exports = function (ty) {
     return strings[locale] ?? strings.en ?? key
   })
 
+  ty.addFilter("translated", (lang, url) => {
+    const [first, second] = url.split("/").slice(1)
+    const keys = translatedPageKeys[supportedLangs.includes(first) ? second : first]
+    return !keys || keys.every((key) => translations[key]?.[lang] !== undefined)
+  })
+
   ty.on("eleventy.before", () => unknownStrings.clear())
 
   ty.on("eleventy.after", () => {
@@ -413,6 +430,20 @@ module.exports = function (ty) {
       console.warn(`[i18n] Untranslated of ${allStrings.length} strings, English used: ${untranslated.map(([lang, count]) => `${lang} ${count}`).join(", ")}`)
     }
     if (unknownStrings.size > 0) console.warn(`[i18n] Missing in en.json: ${Array.from(unknownStrings).join(", ")}`)
+    const hiddenTranslations = supportedLangs.filter((lang) => lang !== "en").sort()
+      .flatMap((lang) => Object.entries(translatedPageKeys).map(([route, keys]) =>
+        ({ lang, page: route || "home", keys, missing: keys.filter((key) => translations[key]?.[lang] === undefined) })))
+      .filter(({ keys, missing }) => missing.length > 0 && missing.length <= keys.length / 4)
+    if (hiddenTranslations.length > 0) {
+      const banner = "!".repeat(100)
+      console.warn([
+        banner,
+        "[i18n] LANGUAGES HIDDEN FROM PAGE LANGUAGE MENUS - translate the missing strings:",
+        ...hiddenTranslations.map(({ lang, page, keys, missing }) =>
+          `[i18n]   ${page} page, ${lang}: ${keys.length - missing.length}/${keys.length} strings, missing ${missing.join(", ")}`),
+        banner,
+      ].join("\n"))
+    }
   })
 
   // Keeps the same directory structure.

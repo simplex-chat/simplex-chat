@@ -1,12 +1,24 @@
 ---
 templateEngineOverride: njk
 eleventyExcludeFromCollections: true
+destinationURI: "https://wefunder.com/simplex.chat"
 ---
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <script>location.replace('https://wefunder.com/simplex.chat' + location.search);</script>
+        <script type="module">
+            {% include "node_modules/@plausible-analytics/tracker/plausible.js" %}
+            {% include "events.js" %}
+            try {
+                pageEvents.autoCapturePageviews = false;
+                init(pageEvents);
+                track('pageview');
+            } finally {
+                location.replace('{{ destinationURI }}' + location.search);
+            }
+        </script>
+        <script nomodule>location.replace('{{ destinationURI }}' + location.search);</script>
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Invest in SimpleX Chat</title>
@@ -18,7 +30,7 @@ eleventyExcludeFromCollections: true
         <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg"/>
         <meta name="twitter:card" content="summary"/>
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
-        <noscript><meta http-equiv="refresh" content="0; url=https://wefunder.com/simplex.chat" /></noscript>
+        <noscript><meta http-equiv="refresh" content="0; url={{ destinationURI }}" /></noscript>
     </head>
     <body></body>
 </html>
