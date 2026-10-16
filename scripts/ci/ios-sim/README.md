@@ -18,9 +18,9 @@ Results: the job log, the job summary (Claude's usage) and the artifacts `ios-si
 - `plan` (ubuntu, 15 s) names the core library and the backend after their sources, `hashFiles` over the Haskell sources, `cabal.project`, `simplex-chat.cabal` and the build script, and reuses an artifact of the same name that an earlier run of the same branch uploaded (30 days). So every run builds the core library, and the backend when asked, from the branch's own Haskell code, and rebuilds only when those sources change.
 - `core` (macOS, 35–45 min when not reused): `build-core.sh` builds `lib:simplex-chat` with cabal and the iOS flags, as the Nix iOS build does, into the package `scripts/ios/prepare.sh` expects, and `prepare-libs.sh` marks it for the simulator (`mac2ios`).
 - `backend` (macOS, 20–30 min when not reused, only when asked): `build-backend.sh` builds `simplex-chat`, `simplex-directory-service` and `smp-server`.
-- `app` (macOS): the Xcode build 8–22 min, the smoke test about 5 min, the backend start about 10 min when asked, Claude as long as its plan needs.
+- `app` (macOS): the Xcode build 8–22 min, the smoke test about 10 min, the backend start about 10 min when asked, Claude as long as its plan needs.
 
-A run with reused builds and no extras takes about 25 minutes plus the wait for a macOS runner. Hosted minutes are free for this public repository; the limit is the repository's five concurrent macOS jobs, shared with PR builds (each `build.yml` run takes two), so queue waits can be long. Caches are evicted within hours (the repository is over its cache limit); the artifacts are what make runs fast.
+A run with reused builds and no extras takes about 26 minutes plus the wait for a macOS runner. Hosted minutes are free for this public repository; the limit is the repository's five concurrent macOS jobs, shared with PR builds (each `build.yml` run takes two), so queue waits can be long. Caches are evicted within hours (the repository is over its cache limit); the artifacts are what make runs fast.
 
 ## The Claude session
 
