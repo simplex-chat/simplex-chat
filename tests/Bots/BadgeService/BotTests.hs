@@ -191,7 +191,7 @@ badgeServiceTests = do
       it "should credit a held receipt after the app restarts" testStoreReceiptAfterRestart
     describe "the store lane" $ do
       it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
-      it "should route exactly the requests that may ask a store to the store lane, judging a minute ahead" testStoreRouting
+      it "should route each request to its lane, judging a minute ahead" testStoreRouting
       it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
       it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest
   describe "subscriptions" $ do
@@ -3648,24 +3648,24 @@ testPlayHoldsNoOtherRequest ps = do
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleSupporterJWS}} -> do
-    let routedAs signer key cmd = mayAskStore cc (Just signer) (requestObject key cmd)
+    let routedAs signer key cmd = requestLane cc (Just signer) (requestObject key cmd)
         routed key = routedAs key key
     (purchaseKey, masterKey) <- newPurchaseKeys
     let purchase payment = routed purchaseKey $ purchaseCmd masterKey payment
-    purchase supporterPlay `shouldReturn` True
-    purchase subscriptionPlay `shouldReturn` True
-    purchase SPApple {jws = appleSubscriptionJWS} `shouldReturn` True
-    purchase SPApple {jws = appleSupporterJWS} `shouldReturn` False
+    purchase supporterPlay `shouldReturn` PurchaseLane
+    purchase subscriptionPlay `shouldReturn` PurchaseLane
+    purchase SPApple {jws = appleSubscriptionJWS} `shouldReturn` PurchaseLane
+    purchase SPApple {jws = appleSupporterJWS} `shouldReturn` MainLane
     g <- C.newRandom
     (fromPurchaseKey, fromPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
     now <- getCurrentTime
     let upgrade = BadgeUpgrade {fromPurchaseKey, receipt = "receipt", receiptSignature = C.sign' fromPriv "receipt", balance = BadgeBalance {lastEntry = emptyEntry now BTSupporter}}
-    routed purchaseKey BSCPurchaseBadge {masterKey, payment = supporterPlay, upgrade = Just upgrade} `shouldReturn` False
+    routed purchaseKey BSCPurchaseBadge {masterKey, payment = supporterPlay, upgrade = Just upgrade} `shouldReturn` MainLane
     code <- issueCode cc BTSupporter 1
     codeKeys@(codeKey, codeMasterKey) <- newPurchaseKeys
-    routed codeKey BSCRedeemBadgeCode {masterKey = codeMasterKey, code = badgeCodeText code} `shouldReturn` False
+    routed codeKey BSCRedeemBadgeCode {masterKey = codeMasterKey, code = badgeCodeText code} `shouldReturn` MainLane
     redeemed <- redeemWithKeys env codeKeys code
-    routed codeKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last $ fst $ statementOf redeemed}} `shouldReturn` False
+    routed codeKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last $ fst $ statementOf redeemed}} `shouldReturn` MainLane
     (subscriberKey, firstStart, purchased) <- subscribedMonthly env
     let issue = BSCIssueBadge {balance = BadgeBalance {lastEntry = last purchased}}
         coverageEnd = addMonths 1 firstStart
@@ -3674,22 +3674,22 @@ testStoreRouting ps =
           checks <- subscriptionChecks store
           _ <- assertBalance env subscriberKey (last purchased)
           subscriptionChecks store `shouldReturn` checks
-    routedAt (addUTCTime (-90) coverageEnd) `shouldReturn` False
-    routedAt (addUTCTime (-30) coverageEnd) `shouldReturn` True
+    routedAt (addUTCTime (-90) coverageEnd) `shouldReturn` MainLane
+    routedAt (addUTCTime (-30) coverageEnd) `shouldReturn` RenewalLane
     answeredWithoutStore
     storeReports store $ subscriptionCheck SSBillingRetry Nothing
-    routedAt (addUTCTime 60 coverageEnd) `shouldReturn` True
+    routedAt (addUTCTime 60 coverageEnd) `shouldReturn` RenewalLane
     checks <- subscriptionChecks store
     _ <- assertBalance env subscriberKey (last purchased)
     subscriptionChecks store `shouldReturn` checks + 1
     [Just lastCheck] <- subscriptionCheckedAt cc
-    routedAt (addUTCTime 3530 lastCheck) `shouldReturn` False
-    routedAt (addUTCTime 3550 lastCheck) `shouldReturn` True
+    routedAt (addUTCTime 3530 lastCheck) `shouldReturn` MainLane
+    routedAt (addUTCTime 3550 lastCheck) `shouldReturn` RenewalLane
     answeredWithoutStore
-    routedAt (addUTCTime 3700 lastCheck) `shouldReturn` True
-    routedAs purchaseKey subscriberKey issue `shouldReturn` False
+    routedAt (addUTCTime 3700 lastCheck) `shouldReturn` RenewalLane
+    routedAs purchaseKey subscriberKey issue `shouldReturn` MainLane
     (unknownKey, _) <- newPurchaseKeys
-    routed unknownKey issue `shouldReturn` False
+    routed unknownKey issue `shouldReturn` MainLane
 
 testRenewalHoldsNoOtherRequest :: HasCallStack => TestParams -> IO ()
 testRenewalHoldsNoOtherRequest ps = do

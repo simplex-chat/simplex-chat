@@ -13,7 +13,8 @@ module BadgeService.Service
     badgeService,
     badgeServiceCLI,
     badgeServiceResponse,
-    mayAskStore,
+    RequestLane (..),
+    requestLane,
     PurchaseChecks (..),
     ClaimChecks,
     newPurchaseChecks,
@@ -312,32 +313,37 @@ processQueuedRequests key trackerQ_ env = do
   checks <- newPurchaseChecks
   let answer (u, reqId, sigKey, reqData) = handleServiceRequest key (storeVerifier env) checks cc trackerQ_ u reqId sigKey reqData
       route req@(_, _, sigKey, reqData) =
-        mayAskStore cc sigKey reqData >>= \case
-          True -> atomically $ writeTQueue storeQ req
-          False -> answer req
+        requestLane cc sigKey reqData >>= \case
+          MainLane -> answer req
+          _ -> atomically $ writeTQueue storeQ req
       lane q act = forever $ do
         req@(_, reqId, _, _) <- atomically $ readTQueue q
         survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ act req
   raceAny_ [lane (serviceRequestQ env) route, lane storeQ answer]
 
--- | Store calls wait on the store lane, so appends to one ledger come from both lanes: each write's tip
+-- | A store call can take verifyTimeout, so a request that may make one waits on a lane of its own.
+data RequestLane = MainLane | PurchaseLane | RenewalLane
+  deriving (Eq, Show)
+
+-- | Store calls wait off the main lane, so appends to one ledger come from more than one lane: each write's tip
 -- re-read guards them while transactions run one at a time (SQLite; Postgres at --pool-size 1).
-mayAskStore :: ChatController -> Maybe C.PublicKeyEd25519 -> J.Object -> IO Bool
-mayAskStore cc sigKey reqData = case J.fromJSON (J.Object reqData) of
-  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> pure True
-  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPApple {jws}, upgrade = Nothing}} ->
-    pure $ maybe False autoRenewable (appleTransactionFacts jws)
+requestLane :: ChatController -> Maybe C.PublicKeyEd25519 -> J.Object -> IO RequestLane
+requestLane cc sigKey reqData = case J.fromJSON (J.Object reqData) of
+  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> pure PurchaseLane
+  J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPApple {jws}, upgrade = Nothing}}
+    | maybe False autoRenewable (appleTransactionFacts jws) -> pure PurchaseLane
   J.Success BadgeServiceRequest {purchaseKey = Just k, request = BSCIssueBadge {}}
     | sigKey == Just k -> do
         now <- badgeNow cc
-        withDB' "mayAskStore" cc (\db -> getIssuePurchase db k) <&> \case
-          Right (Just (_, Just tip, Just subscription)) -> subscriptionCheckDue (addUTCTime routeLookahead now) tip subscription
-          Right _ -> False
+        withDB' "requestLane" cc (\db -> getIssuePurchase db k) <&> \case
+          Right (Just (_, Just tip, Just subscription))
+            | subscriptionCheckDue (addUTCTime routeLookahead now) tip subscription -> RenewalLane
+          Right _ -> MainLane
           -- a read that failed may hide a due check, and the main lane is what must not wait on a store
-          Left _ -> True
-  _ -> pure False
+          Left _ -> RenewalLane
+  _ -> pure MainLane
 
--- | The router judges a minute ahead, so a handler reading the clock moments later finds due only what the router routed to the store lane.
+-- | The router judges a minute ahead, so a handler reading the clock moments later finds due only what the router routed off the main lane.
 routeLookahead :: NominalDiffTime
 routeLookahead = 60
 
