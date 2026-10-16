@@ -140,8 +140,12 @@ operations. This checkout opts `ghc914-sh` Android ARM32 out of that restriction
 on Linux with patched QEMU 9.1–11, after passing normal target TH under emulation.
 Other target/compiler package sets retain the upstream guard, which also covers
 cross-compiler stalls without QEMU. Advertise the marker on a native x86_64 Linux
-builder for those jobs; keep it off Rosetta slots. The GitHub workflow sets it
-only for its native x86_64 Linux runner. The upstream fixes and regression jobs
+builder for those jobs; keep it off Rosetta slots. Nix also requires the
+[`recursive-nix` experimental feature](https://nix.dev/manual/nix/2.35/development/experimental-features.html#xp-feature-recursive-nix)
+when building derivations with this reserved marker. Enable both
+`extra-experimental-features = recursive-nix` and
+`extra-system-features = recursive-nix` on that builder. The GitHub workflow
+sets both only for its native x86_64 Linux runner. The upstream fixes and regression jobs
 are in [haskell.nix PR #2585](https://github.com/input-output-hk/haskell.nix/pull/2585).
 
 To build both Android APK ABIs from the current checkout, preserving the same
