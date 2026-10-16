@@ -32,7 +32,8 @@ unset CLAUDE_CODE_OAUTH_TOKEN
 
 bundle_id=chat.simplex.app
 app_group=group.chat.simplex.app
-search_placeholder="Search or paste SimpleX link"
+# the toolbar's new chat button: shown with and without conversations, unlike the search field
+toolbar_button=Compose
 
 # Elements below the screen, such as the keyboard's keys, are counted rather than listed.
 compact_tree() {
@@ -115,11 +116,11 @@ launch() {
   xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true
   "$@"
   xcrun simctl launch "$SIM_UDID" "$bundle_id" > /dev/null
-  wait_for "$search_placeholder" 90
+  wait_for "$toolbar_button" 90
 }
 
-search_field_y() {
-  tree | grep -F "value=\"$search_placeholder\"" | sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1/' | head -n 1
+toolbar_y() {
+  tree | grep -F "Button \"$toolbar_button\" " | sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1/' | head -n 1
 }
 
 # The preference is set in the app group's defaults while the app is not running; Settings shows the same switch.
@@ -137,12 +138,12 @@ layout() {
   prefs=$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" "$app_group")/Library/Preferences/$app_group
   launch xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" oneHandUI -bool "$one_hand"
   local y
-  y=$(search_field_y)
+  y=$(toolbar_y)
   if { [ "$one_hand" = true ] && [ "$y" -lt 437 ]; } || { [ "$one_hand" = false ] && [ "$y" -ge 437 ]; }; then
-    echo "error: the search field is at y=$y, not where the $1 layout puts it"
+    echo "error: the toolbar is at y=$y, not where the $1 layout puts it"
     return 1
   fi
-  echo "layout $1: the search field is at y=$y"
+  echo "layout $1: the toolbar is at y=$y"
 }
 
 text_size() {
