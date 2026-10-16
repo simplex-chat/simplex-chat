@@ -8,6 +8,8 @@ The iOS app is a SwiftUI application that interfaces with the Haskell core libra
 
 ## Build & Development
 
+Before the first build, build the Haskell core library and place it in `apps/ios/Libraries` - see [building the core library](../../docs/contributing/CORE-LIBS.md).
+
 Open `SimpleX.xcodeproj` in Xcode. The project has five targets:
 - **SimpleX (iOS)** - Main app (Bundle ID: `chat.simplex.app`)
 - **SimpleXChat** - Framework containing FFI bridge and shared types
