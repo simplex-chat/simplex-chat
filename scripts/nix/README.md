@@ -112,8 +112,8 @@ the older `postBuild` and `postInstall` hooks.
 Mobile builds keep the RTS's small-address-space setting. On Darwin, the final
 link uses ABI-checked replacement RTS registrations, plus a replacement `text`
 on ARM64. These boot libraries and all ARM64 mobile app C/C++ code target the
-Apple A7 instruction baseline before `mac2ios` retags the archives. The cached
-Darwin compiler itself stays unchanged. Android applies the RTS source patch
+Apple A7 instruction baseline before `mac2ios` retags the archives. These mobile replacements use the cached ARM64
+Darwin compiler; the Intel compiler receives the info-table patch described above. Android applies the RTS source patch
 when building its boot libraries. The Android overlay also supplies GNU iconv
 headers and a static PIC archive to `ghc-internal`, including the separate
 iserv projects. The `ghc-internal` system dependency propagates GNU iconv to
@@ -238,7 +238,10 @@ A successful probe is diagnostic evidence.
 Hydra continues to consume
 the same `hydraJobs` attributes. The older application release workflow still
 uses its existing GHCup/Docker compiler settings; migrating that packaging and
-release path is separate from this Nix build lane.
+release path is separate from this Nix build lane. The legacy GHC 8.10 Linux job
+now reports container memory counters and kernel OOM records after a failed CLI
+build, with a one-minute diagnostic limit. Its observed SIGKILL alone does not
+establish an out-of-memory cause.
 
 Hydra needs builders advertising `aarch64-darwin` and `x86_64-darwin` to run the
 corresponding Mac/iOS jobs. Check its [builder pool](https://ci.zw3rk.com/machines)
@@ -279,23 +282,39 @@ and four on each Darwin architecture. This includes both Android ABIs, Windows,
 and all three static Linux targets. This establishes derivation evaluation;
 the completed artifact builds are listed below.
 
-GitHub run `38919765819` tested head `7d045945a` as integration merge
-`71f314a3c42dc68d9eb2aa65bd585d46725f332a`. Both native Linux library/CLI groups
+GitHub run `38939062012` tested head `c5b7a04fe` as integration merge
+`582e88ccf07d5da06cfb0e9d7e99d9133f2f56af`. Both native Linux library/CLI groups
 and all four ARM64 Darwin outputs passed, including encrypted-store and
-profile-password CLI smoke checks. The actual production x86_64 Linux compiler
-also passed the ELF alignment regression. The x86_64 musl CLI linked and installed;
-its group subsequently failed during i686 Template Haskell because the fully
-static interpreter used musl's `dlopen` stub.
+profile-password CLI smoke checks. The production x86_64 Linux compiler also
+passed the ELF alignment regression. The x86_64 musl CLI linked with
+`-fully-static`, installed, and completed fixup. These qualify nine built outputs;
+the static group subsequently failed, and its artifact upload did not run.
 
-That run also exposed an ARM64 Android source-module routing gap, a Windows
-`HasNegation IntPtr` error after the signed C cast, and the recurring Intel Darwin
-`ghc-boot` Setup GC abort. The routing and Windows follow-ups pass their focused
-reproducers. Normal and profiling musl interpreter plans retain all 95 record
-identities: only three iserv configure arguments disable executable-static;
-the other 92 records are byte-identical. The changed project skeleton rebuilds
-auxiliary boot derivations. An actual i686/QEMU C control reproduces the static
-loader error and loads the same `libz.so` with dynamic C linkage. Production helper
-ELF/TH execution and the corrected target builds remain for the next CI run.
+The ARM64 Android normal and profiling interpreters compiled and linked with the
+API-aware symbol table. The next Android failure is SplitMix 0.1.3.2 calling
+`getentropy` at API26. The local fallback described above passes exact-source
+compilation and shared linking for both ABIs with native Clang21/LLD21 and the
+actual NDK headers/libraries. API35 objects remain byte-identical. The ARM32
+interpreter table also compiles with its real `arc4random_buf` registration and
+remains byte-identical at API35. An earlier source variant passed actual NDK
+Clang18; the final Clang18 fixture and production package-tar evaluation were
+blocked before compilation by the local Linux VM/frontier. The final Android
+interpreter runtime and application builds still need CI.
+
+The new dynamically C-linked i686 interpreter reaches its link step but fails
+because `symbols.i386-musl.o` references private musl `__aio_close`. Its real GHC
+arguments retain static Haskell libraries and omit `-fully-static`. This proves
+the link-policy change reached the component; the helper ELF and TH execution
+remain unqualified. Normal and profiling plans retain all 95 record identities:
+only three iserv configure arguments disable executable-static; the other 92
+records are byte-identical. The changed project skeleton rebuilds auxiliary boot
+derivations. An i686/QEMU C control reproduces the old static-loader error and
+loads the same `libz.so` with dynamic C linkage.
+
+Intel Darwin reproduced its Setup GC abort and produced the direct-abort trace
+used for the info-table diagnosis above. The local renderer regression passes,
+while the patched compiler bootstrap and full Intel outputs await CI. Windows
+is still building; its Basement follow-up passes the focused reproducer.
 
 The native ARM64 Darwin library and CLI built with Nix at `f26dbbc0d` and
 passed `python3 scripts/nix/smoke-cli.py /path/to/simplex-chat`, covering encrypted
