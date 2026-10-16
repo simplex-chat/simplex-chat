@@ -2,6 +2,8 @@
 final: prev:
 let
   lib = prev.lib;
+  androidArm = prev.stdenv.hostPlatform.isAndroid
+    && (prev.stdenv.hostPlatform.isAarch32 || prev.stdenv.hostPlatform.isAarch64);
   androidArm32 = prev.stdenv.hostPlatform.isAndroid
     && prev.stdenv.hostPlatform.isAarch32;
   supportedEmulator = androidArm32
@@ -28,7 +30,7 @@ let
       inherit (interpreterExes)
         iserv-proxy iserv-proxy-interpreter iserv-proxy-interpreter-prof;
     };
-in lib.optionalAttrs androidArm32 {
+in lib.optionalAttrs androidArm {
   haskell-nix = prev.haskell-nix // {
     # Static-library symbol corrections do not depend on the emulator version.
     cabalProject' = projectModule: prev.haskell-nix.cabalProject' (

@@ -88,6 +88,11 @@ jobs:
       - name: Show outputs from this checkout
         run: make nix-list
 
+      - name: Check Android iserv overlay scope
+        if: ${{ matrix.target == 'android' }}
+        timeout-minutes: 1
+        run: nix eval --json --file scripts/nix/check-android-iserv-scope.nix
+
       - name: Check native Linux GHC ELF section alignment
         if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'native' }}
         timeout-minutes: 120

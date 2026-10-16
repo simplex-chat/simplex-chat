@@ -104,6 +104,9 @@ The minimum Android API stays at 26.
 The ARM64 interpreter registers `getentropy` and `getrandom` only from API28,
 matching the NDK headers and versioned shared-library exports. API26 builds omit
 those entries; API35 retains them.
+The interpreter source patch applies to both Android ABIs; only ARM32 replaces
+the emulator. The Android CI group runs the pure overlay-scope regression with
+`nix eval --json --file scripts/nix/check-android-iserv-scope.nix`.
 
 Android ARM32's QEMU wrapper preserves the guest's `PER_LINUX32` execution
 domain when an ARM64 host kernel rejects that domain. Upper personality flags
