@@ -154,6 +154,10 @@
             # HANDLE needs a signed pointer-width constant. Convert via Int:
             # Basement's RebindableSyntax has no HasNegation IntPtr instance.
             packages.basement.patches = lib.mkAfter [ ./scripts/nix/basement-windows-intptr.patch ];
+          }) ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid ({ lib, ... }: {
+            # SplitMix's Unix initializer uses getentropy, available from API 28.
+            # Keep API 26 builds on Bionic's established arc4random_buf API.
+            packages.splitmix.patches = lib.mkAfter [ ./scripts/nix/splitmix-android-api.patch ];
           }) ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid mobileRuntime.androidModule ++ extra-modules;
       }); in
       # by defualt we don't need to pass extra-modules.

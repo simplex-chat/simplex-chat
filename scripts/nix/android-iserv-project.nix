@@ -20,6 +20,7 @@ lib.mkIf (
       # The API26 project declares GNU libiconv for ghc-internal. Its real
       # definitions need explicit registration in the static interpreter.
       ./android-iserv-gnu-iconv.patch
+      ./android-iserv-arm32-entropy.patch
     ] else [
       ./android-iserv-arm64-api.patch
     ];

@@ -126,6 +126,11 @@ Bionic API35 object stays byte-identical. ARM32 source is patched before Cabal
 planning, removing false missing-function stubs that shadow real static Bionic
 startup routines. Android links libffi through the RTS package dependency.
 The minimum Android API stays at 26.
+For Android below API28, SplitMix's initializer uses Bionic's existing
+`arc4random_buf` rather than the newer `getentropy` API. The dependency patch
+preserves the OS entropy source; API28 and later keep the original initializer.
+The ARM32 interpreter registers the real `arc4random_buf` address for loaded
+objects on that route; the ARM64 interpreter already contains that registration.
 The ARM64 interpreter registers `getentropy` and `getrandom` only from API28,
 matching the NDK headers and versioned shared-library exports. API26 builds omit
 those entries; API35 retains them.
