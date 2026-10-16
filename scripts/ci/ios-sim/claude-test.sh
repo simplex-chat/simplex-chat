@@ -4,7 +4,7 @@
 # as claude-scope says. A session drives the app only through the ui helper, and reads and writes only its
 # own directory <output dir>/<layout>: prompt.md, report.md, shots/, transcript.jsonl (stream-json).
 # Usage: scripts/ci/ios-sim/claude-test.sh <output dir>
-# Needs CLAUDE_CODE_OAUTH_TOKEN, SIM_UDID (the booted simulator with the app) and BACKEND_DIR (the running test backend).
+# Needs CLAUDE_CODE_OAUTH_TOKEN, SIM_UDID (the booted simulator with the app) and, when the test backend runs, BACKEND_DIR.
 
 set -euo pipefail
 
@@ -16,7 +16,7 @@ mkdir -p "$1"
 out=$(cd "$1" && pwd)
 dir=$(cd "$(dirname "$0")" && pwd)
 : "${SIM_UDID:?SIM_UDID must be the simulator UDID}"
-: "${BACKEND_DIR:?BACKEND_DIR must be the work dir of the test backend}"
+BACKEND_DIR=${BACKEND_DIR:-}
 
 scope() {
   sed -n "s/^$1: *//p" "$dir/claude-scope"
@@ -28,7 +28,9 @@ max_turns=$(scope max-turns)
 max_budget=$(scope max-budget-usd)
 
 export PATH="$dir:$PATH" BACKEND_DIR APP_LOG=$out/app.log CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-cp "$BACKEND_DIR/seed.md" "$out/seed.md"
+if [ -n "$BACKEND_DIR" ]; then
+  cp "$BACKEND_DIR/seed.md" "$out/seed.md"
+fi
 settings=$out/settings.json
 cat > "$settings" << EOF
 {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "$dir/claude-guard.py"}]}]}}
@@ -59,18 +61,28 @@ write_prompt() {
   echo
   echo "- Layout: $(layout_name "$layout")."
   echo "- Cases: $(scope "cases-$layout")."
-  echo "- Entries to use: $(scope "entries-$layout")."
-  echo "- Link to paste (C4, W3): $(cat "$BACKEND_DIR/directory-link") (the test directory's address)."
-  echo "- Names server to add in the app: $(cat "$BACKEND_DIR/names-server")."
+  local entries
+  entries=$(scope "entries-$layout")
+  if [ -n "$entries" ]; then
+    echo "- Entries to use: $entries."
+  fi
+  if [ -n "$BACKEND_DIR" ]; then
+    echo "- The test directory's address: $(cat "$BACKEND_DIR/directory-link")."
+    echo "- Names server to add in the app: $(cat "$BACKEND_DIR/names-server")."
+  else
+    echo "- No test backend runs in this session."
+  fi
   if [ -z "$previous" ]; then
-    echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name), searched the directory in both layouts, choosing \"Search\" in the alert each time, and joined the channel ci_cards, which no case uses; it is the profile's only conversation."
+    echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name) and checked the chat list in both layouts; the profile has no conversations."
   else
     echo "- At the start: an earlier session ran the cases in $(layout_name "$previous") on this app, so the profile may have chats, other profiles may exist and hints may be changed; look at the state first."
   fi
   echo "- Limits: $max_turns turns and \$$max_budget (estimated at API prices). Keep report.md current as you go."
   echo
-  cat "$out/seed.md"
-  echo
+  if [ -n "$BACKEND_DIR" ]; then
+    cat "$out/seed.md"
+    echo
+  fi
   cat "$dir/device-test-plan.md"
 }
 

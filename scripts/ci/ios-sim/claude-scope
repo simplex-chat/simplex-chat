@@ -1,11 +1,8 @@
 # What claude-test.sh runs: one Claude session per layout (reachable, top), each with its cases, and each session's bounds.
 # A case runs in both layouts only when the layouts render it differently; the rest run in one.
-# entries-<layout> tells that session which directory entries and names its cases use, so none meets an entry already known.
+# entries-<layout> (optional) tells that session which directory entries and names its cases use, so none meets an entry already known.
 model: claude-haiku-5-5
-layouts: reachable top
-cases-reachable: the SimpleX names setup, then N1-N11, W4 with names, W7, W8, G1 and the full search (chat list and New chat)
-cases-top: N1 and N4 (this layout places the "Connect to …" row and the Names and Directory parts differently) and the full search on the chat list only (New chat looks the same in both layouts); the names setup is already done
-entries-reachable: N7 uses a second profile you add (the first profile has no other); N10 connects to @cialice.testing, which N5, W7 and G1 then use; W8 first connects to @cibobby.testing (Robert) from its Names row; the full search joins the group cinews_digest
-entries-top: the earlier session joined cinews_digest and connected to cialice and Robert; N1 and N4 join nothing
-max-turns: 900
-max-budget-usd: 10
+layouts: reachable
+cases-reachable: S1-S3
+max-turns: 60
+max-budget-usd: 3
