@@ -105,7 +105,7 @@ for layout in $layouts; do
       --effort high \
       --restricted \
       --tools Bash,Read,Write,Edit \
-      --allowedTools "Bash(ui)" "Bash(ui *)" Read Write Edit \
+      --allowedTools "Bash(ui)" "Bash(ui *)" "Read(/$session/**)" "Edit(/$session/**)" \
       --permission-mode dontAsk \
       --permission-prompts none \
       --strict-mcp-config \
