@@ -415,7 +415,10 @@ fun CenterPartOfScreen() {
         }
       }
     }
-    else -> ChatView(chatsCtx = chatModel.chatsContext, currentChatId) {}
+    else -> {
+      ChatView(chatsCtx = chatModel.chatsContext, currentChatId) {}
+      ModalManager.center.showInView()
+    }
   }
 }
 

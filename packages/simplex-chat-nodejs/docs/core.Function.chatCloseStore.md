@@ -8,7 +8,7 @@
 
 > **chatCloseStore**(`ctrl`): `Promise`\<`void`\>
 
-Defined in: [src/core.ts:20](../src/core.ts#L20)
+Defined in: [src/core.ts:42](../src/core.ts#L42)
 
 Close chat store
 

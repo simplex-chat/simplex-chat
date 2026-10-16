@@ -3266,7 +3266,7 @@ processChatCommand cxt nm = \case
         withFastStore' $ \db -> do
           deleteGroupDeliveryTasks db gInfo
           deleteGroupDeliveryJobs db gInfo
-          createMsgDeliveryJob db gInfo (DJSGroup {jobSpec = DJRelayRemoved}) [] body
+          createMsgDeliveryJob db gInfo (DJSGroup {jobSpec = DJRelayRemoved}) [] (hasNotification XGrpLeave_) body
         lift . void $ getDeliveryJobWorker True (groupId, DWSGroup)
         pure msg
       leaveGroupSendMsg user g@(GIK gInfo _) = do

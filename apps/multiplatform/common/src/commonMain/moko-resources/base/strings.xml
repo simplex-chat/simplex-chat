@@ -597,6 +597,17 @@
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
+  <string name="icon_descr_emoji">Emoji</string>
+  <string name="emoji_category_smileys">Smileys &amp; emotion</string>
+  <string name="emoji_category_people">People &amp; body</string>
+  <string name="emoji_category_animals">Animals &amp; nature</string>
+  <string name="emoji_category_food">Food &amp; drink</string>
+  <string name="emoji_category_travel">Travel &amp; places</string>
+  <string name="emoji_category_activities">Activities</string>
+  <string name="emoji_category_objects">Objects</string>
+  <string name="emoji_category_symbols">Symbols</string>
+  <string name="emoji_category_flags">Flags</string>
+  <string name="no_emoji_found">No emoji found</string>
   <string name="icon_descr_context">Context icon</string>
   <string name="icon_descr_cancel_image_preview">Cancel image preview</string>
   <string name="icon_descr_cancel_file_preview">Cancel file preview</string>
@@ -697,6 +708,9 @@
   <string name="file_saved">File saved</string>
   <string name="file_not_found">File not found</string>
   <string name="error_saving_file">Error saving file</string>
+  <string name="markdown_formatted_view">Formatted view</string>
+  <string name="markdown_text_view">Text view</string>
+  <string name="markdown_file_bidi_warning">This file has text direction characters. The text can be shown in a different order than it is written.</string>
   <string name="loading_remote_file_title">Loading the file </string>
   <string name="loading_remote_file_desc">Please, wait while the file is being loaded from the linked mobile</string>
   <string name="file_error">File error</string>

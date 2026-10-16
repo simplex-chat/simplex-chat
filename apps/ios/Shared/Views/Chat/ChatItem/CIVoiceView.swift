@@ -303,6 +303,11 @@ struct VoiceMessagePlayer: View {
     private func downloadButton(_ recordingFile: CIFile, _ icon: String) -> some View {
         playPauseIcon(icon, theme.colors.primary)
             .simultaneousGesture(TapGesture().onEnded {
+                chatModel.openWhenReceived(recordingFile) { file in
+                    if let recordingSource = getLoadedFileSource(file) {
+                        startPlayback(recordingSource)
+                    }
+                }
                 Task {
                     if let user = chatModel.currentUser {
                         await receiveFile(user: user, fileId: recordingFile.fileId)

@@ -490,6 +490,7 @@ func messageText(
                     attrs[webLinkAttrKey] = true
                     handleTaps = true
                 }
+                t = displayedUri(t)
             case let .hyperLink(text, uri):
                 attrs = linkAttrs()
                 if let text { t = text }

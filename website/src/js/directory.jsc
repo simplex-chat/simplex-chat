@@ -338,6 +338,7 @@ function displayEntries(entries) {
         imgLinkElement.href = groupLinkUri;
       }
       imgLinkElement.target = "_blank";
+      imgLinkElement.rel = "noopener";
       imgLinkElement.title = `Join ${displayName}`;
 
       const imgElement = document.createElement('img');

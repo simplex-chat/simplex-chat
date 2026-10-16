@@ -281,6 +281,9 @@ fun UserPicker(
 - **Android:** Renders as a slide-up overlay panel on the chat list, triggered by tapping the user profile button in the toolbar.
 - **Desktop:** Rendered inline in the left column of `DesktopScreen`, always accessible.
 - Closes automatically when any `ModalManager.start` modal opens.
+- On Desktop, when there is no active user and no mobile is in use (`desktopNoUserNoRemote`), the SimpleX address and Chat preferences rows and the divider below them are hidden.
+- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal draws nothing and closes itself when it is the top modal (`ModalManager.start.isLastModal`); if another screen covers it, it closes when the user goes back to it.
+- The Chat preferences row closes its modal the same way when there is no active user.
 
 ### Content
 
@@ -457,7 +460,7 @@ For each new entry of a page (not already shown, not repeated in the page), the 
 
 Only store-derived chat ids and the link the core resolved can hide a row, never a field the directory or a name's owner wrote. A mismatch in link encoding can only produce a duplicate row.
 
-[GAP] A regular group the user joined through a different link, or through the directory's full link, is not found by the store lookup and still appears as a Directory row; tapping it goes through `planAndConnect`. See [GAP-08](../../product/gaps.md#gap-08-online-search-groups-joined-through-another-link-still-appear-as-directory-results).
+[GAP] A regular group the user joined through a different link, or through the directory's full link, is not found by the store lookup and still appears as a Directory row; tapping it goes through `planAndConnect`. See [GAP-09](../../product/gaps.md#gap-09-online-search-groups-joined-through-another-link-still-appear-as-directory-results).
 
 ### Rendering
 
@@ -479,4 +482,4 @@ Each part renders only when it has rows: the Names part when `rows.names` is not
 
 A name or directory row tap first hides the keyboard (`hideKeyboard(view)`), then runs `planAndConnect` with `withBGApi`. Text from the directory and from name owners is rendered with `Text(String)` (never parsed as markdown) with line limits.
 
-[GAP] Resolving a SimpleX name with `PRMUnknown` also loads the resolved address's link data from the server that hosts it; the alert names only the directory and the name-resolving server. See [GAP-09](../../product/gaps.md#gap-09-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address).
+[GAP] Resolving a SimpleX name with `PRMUnknown` also loads the resolved address's link data from the server that hosts it; the alert names only the directory and the name-resolving server. See [GAP-10](../../product/gaps.md#gap-10-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address).

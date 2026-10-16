@@ -13,9 +13,10 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
-8. [Online Search: Groups Joined Through Another Link Still Appear as Directory Results](#gap-08-online-search-groups-joined-through-another-link-still-appear-as-directory-results)
-9. [Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address](#gap-09-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address)
-10. [Online Search: New Chat Does Not Narrow Contacts by Name While Typing](#gap-10-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing)
+8. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-08-desktop-emoji-picker-without-skin-tones-and-localized-search)
+9. [Online Search: Groups Joined Through Another Link Still Appear as Directory Results](#gap-09-online-search-groups-joined-through-another-link-still-appear-as-directory-results)
+10. [Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address](#gap-10-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address)
+11. [Online Search: New Chat Does Not Narrow Contacts by Name While Typing](#gap-11-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing)
 
 ---
 
@@ -295,7 +296,33 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 ---
 
-## GAP-08: Online Search: Groups Joined Through Another Link Still Appear as Directory Results
+## GAP-08: Desktop: Emoji Picker Without Skin Tones and Localized Search
+
+**Severity:** Low
+**Category:** Feature / Platform
+**Platform:** Desktop only
+
+### Description
+
+The desktop compose emoji picker lists emoji without skin tone variants, and its search matches English Unicode emoji names only.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/views/chat/ComposeEmojiPicker.desktop.kt`
+- `scripts/desktop/generate-emoji-data.py` (`../../scripts/desktop/` relative to `apps/multiplatform/`) -- drops skin tone variants
+
+### Impact
+
+Desktop users cannot pick a skin tone in the picker, and search in other languages finds nothing.
+
+### Recommendation
+
+1. Keep the skin tone variants in the generated data, grouped by base emoji, and add a skin tone choice to the picker.
+2. Add localized names (CLDR annotations) to the generated data for search.
+
+---
+
+## GAP-09: Online Search: Groups Joined Through Another Link Still Appear as Directory Results
 
 **Severity:** Low
 **Category:** UI / UX
@@ -321,7 +348,7 @@ Have the directory send a stable group identifier the core can match locally, or
 
 ---
 
-## GAP-09: Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address
+## GAP-10: Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address
 
 **Severity:** Low
 **Category:** Privacy / UX
@@ -347,7 +374,7 @@ Decide whether the alert copy should also say that the address a name points to 
 
 ---
 
-## GAP-10: Online Search: New Chat Does Not Narrow Contacts by Name While Typing
+## GAP-11: Online Search: New Chat Does Not Narrow Contacts by Name While Typing
 
 **Severity:** Low
 **Category:** UI / UX

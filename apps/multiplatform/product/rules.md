@@ -300,7 +300,7 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 ### RULE-22: Nothing Is Shown Twice
 
-**Invariant:** A name result whose chat is shown in the local list MUST be hidden. A directory result MUST be hidden when its link refers, in the local store, to a chat shown in the local list or found by name, or when its link is the link a name was resolved through. Only store-derived chat ids and links resolved by the core may hide a row. Limit: a regular group joined through another link (or the directory's full link) is not found by the lookup and still appears as a directory result (GAP-08).
+**Invariant:** A name result whose chat is shown in the local list MUST be hidden. A directory result MUST be hidden when its link refers, in the local store, to a chat shown in the local list or found by name, or when its link is the link a name was resolved through. Only store-derived chat ids and links resolved by the core may hide a row. Limit: a regular group joined through another link (or the directory's full link) is not found by the lookup and still appears as a directory result (GAP-09).
 
 **Enforcement:** `OnlineSearchModel.rows(shownChatIds)` filters at render time with the ids of the chats each screen shows; `planLocalChatId` derives a result's local chat id from the connection plan, and `NameSearchResult.resolvedLink` is the link the core resolved.
 
