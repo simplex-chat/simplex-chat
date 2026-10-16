@@ -15,6 +15,7 @@
 #   ui shot <name>                  save UI_OUT/NN-<name>.png, a smaller NN-<name>-view.jpg and NN-<name>.json, and print the tree
 #   ui tree                         print the tree, one element per line: type, label, value, top-left corner and size in points,
 #                                   and "disabled" for a disabled element
+#   ui point <x> <y>                print the element at this point, also when it belongs to a system alert that the tree misses
 #   ui layout <reachable|top>       restart the app with the one-hand UI (reachable toolbar) or the top bar
 #   ui relaunch                     restart the app
 #   ui text-size <category>         set Dynamic Type: medium (the default), large, extra-large, extra-extra-large,
@@ -35,17 +36,36 @@ app_group=group.chat.simplex.app
 # the toolbar's new chat button: shown with and without conversations, unlike the search field
 toolbar_button=Compose
 
-# Elements below the screen, such as the keyboard's keys, are counted rather than listed.
+# Elements below the screen, such as the keyboard's keys, are counted rather than listed; the screen is the first
+# element's frame, or the given height.
 compact_tree() {
-  jq -r '(.[0].frame.height // 100000) as $h
+  jq -r --argjson screen "${1:-null}" '($screen // .[0].frame.height // 100000) as $h
     | [.. | objects | select(.AXLabel or .AXValue)]
     | (.[] | select((.frame.y // 0) < $h)
         | "\(.type) \(.AXLabel | tojson) value=\(.AXValue | tojson) at \(.frame.x // 0 | round),\(.frame.y // 0 | round) size \(.frame.width // 0 | round)x\(.frame.height // 0 | round)\(if .enabled == false then " disabled" else "" end)"),
       (map(select((.frame.y // 0) >= $h)) | length | select(. > 0) | "(\(.) elements below the screen not listed, such as keyboard keys)")'
 }
 
+# describe-ui failed once while a system alert was appearing, and read the tree a few seconds later (run 38895987656)
+describe() {
+  local attempt
+  for attempt in 1 2 3 4; do
+    if axe describe-ui --udid "$SIM_UDID" "$@"; then
+      return
+    fi
+    sleep 2
+  done
+  axe describe-ui --udid "$SIM_UDID" "$@"
+}
+
 tree() {
-  axe describe-ui --udid "$SIM_UDID" | compact_tree
+  describe | compact_tree
+}
+
+point() {
+  number "$1"
+  number "$2"
+  describe --point "$1,$2" | compact_tree 100000
 }
 
 wait_for() {
@@ -81,7 +101,7 @@ shot() {
   f=$(printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1")
   xcrun simctl io "$SIM_UDID" screenshot "$f.png" > /dev/null
   sips -Z 1000 -s format jpeg -s formatOptions 70 "$f.png" --out "$f-view.jpg" > /dev/null
-  axe describe-ui --udid "$SIM_UDID" > "$f.json"
+  describe > "$f.json"
   echo "::group::accessibility tree: $1"
   echo "saved $f.png, and $f-view.jpg to look at"
   compact_tree < "$f.json"
@@ -203,6 +223,7 @@ case "${1:-}" in
   find) find_text "$2" ;;
   shot) shot "$2" ;;
   tree) tree ;;
+  point) point "$2" "$3" ;;
   layout) layout "$2" ;;
   relaunch) launch true ;;
   text-size) text_size "$2" ;;
@@ -210,7 +231,7 @@ case "${1:-}" in
   listings) backend listings ;;
   requests) requests ;;
   *)
-    sed -n '3,25s/^# \{0,1\}//p' "$0"
+    sed -n '3,26s/^# \{0,1\}//p' "$0"
     exit 1
     ;;
 esac
