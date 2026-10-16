@@ -109,9 +109,10 @@ object NtfManager {
     val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(MR.strings.notification_preview_somebody) else displayName
     val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(MR.strings.notification_preview_new_message) else msgText
     val largeIcon = when {
-      actions.isEmpty() -> null
-      image == null || previewMode == NotificationPreviewMode.HIDDEN.name -> BitmapFactory.decodeResource(context.resources, R.drawable.icon)
-      else -> base64ToBitmap(image).asAndroidBitmap()
+      // no avatar to show - keep the app icon for notifications with actions, and no large icon otherwise
+      image == null || previewMode == NotificationPreviewMode.HIDDEN.name ->
+        if (actions.isEmpty()) null else BitmapFactory.decodeResource(context.resources, R.drawable.icon)
+      else -> base64ToBitmap(image).asAndroidBitmap().clipToCircle()
     }
     val builder = NotificationCompat.Builder(context, MessageChannel)
       .setContentTitle(title)
