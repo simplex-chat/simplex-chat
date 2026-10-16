@@ -58,6 +58,24 @@ expect_in_tree() {
   fi
 }
 
+# iOS asks once whether the app may send notifications. The tree sometimes shows the app under this alert rather than
+# the alert (run 38895987656), so its Allow button is also looked for at its place.
+allow_notifications() {
+  local deadline=$((SECONDS + 30)) element
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    if "$ui" tap Allow 1; then
+      return
+    fi
+    element=$("$ui" point 275 518 || true)
+    if grep -qF '"Allow"' <<< "$element"; then
+      "$ui" tap-xy 275 518
+      return
+    fi
+    sleep 2
+  done
+  echo "no notifications alert to allow"
+}
+
 # a profile without conversations sees the onboarding pages in place of the list
 expect_chat_list() {
   expect_in_tree -F '"Talk to someone"'
@@ -91,7 +109,8 @@ xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
 sleep 5
 "$ui" shot after-onboarding
-"$ui" tap "Allow" 20 || echo "no notifications alert to allow"
+allow_notifications
+"$ui" shot notifications-allowed
 
 "$ui" wait "Talk to someone" 60
 "$ui" shot chat-list
