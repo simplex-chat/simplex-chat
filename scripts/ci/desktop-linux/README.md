@@ -28,7 +28,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `plan` | chooses the jobs, finds an earlier backend build | 10 s |
 | `core` | `scripts/desktop/build-lib-linux.sh` via `build-core.sh` | 15 s cached, about 23 min not |
 | `app` | the app (`:desktop:createDistributable`), desktopTest, `smoke-test.sh` | about 10 min: build 4.5, desktopTest 0.5, smoke test 3.5 |
-| `claude` (opt-in) | the app at its first screen, then Claude Code drives it | about 9 min |
+| `claude` (opt-in) | the app at its first screen, then Claude Code drives it | about 7 min, Claude 2.5 |
 | `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, and `smp-server` from the simplexmq commit `cabal.project` pins | about 27 min, skipped when reused |
 | `release` (opt-in) | the latest release's .deb for this Ubuntu, onboarding only, to tell a branch's failure from the runner's | 1.5 min |
 
@@ -58,4 +58,4 @@ It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OA
 
 ## Cost
 
-The runners are free for this public repository. A Claude run spends the subscription's usage limits, which interactive sessions share: Haiku 5.5 drove the lane's longer search test in 22 turns, about 0.015 USD estimated at API prices (Claude Code's estimate, not a bill on a subscription).
+The runners are free for this public repository. A Claude run spends the subscription's usage limits, which interactive sessions share: Haiku 5.5 does this smoke path in 15 to 17 turns, about 0.008 USD estimated at API prices (Claude Code's estimate, not a bill on a subscription).
