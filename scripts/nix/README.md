@@ -187,10 +187,19 @@ make nix-native NIX_ARGS=--dry-run
 ```
 
 `.github/workflows/nix.yml` runs these same outputs on Linux ARM64/x86_64 and
-Darwin ARM64/x86_64, with a six-hour limit per job. Its seven jobs cover all 21
+Darwin ARM64/x86_64, with a six-hour limit per build job. Its seven build jobs cover all 21
 outputs once: x86_64 Linux runs `native`, `android`, `windows`, and `linux-static`
 separately; ARM64 Linux runs `native`; both Darwin hosts run `all`. A failed
-native Linux build therefore leaves the cross-build jobs running. Each job
+native Linux build therefore leaves the cross-build jobs running. PRs, pushes,
+and default manual runs retain that complete matrix. A manual dispatch can
+select only the existing three `linux-static` outputs with
+`gh workflow run nix.yml --ref BRANCH -f group=linux-static`. The registered
+workflow can run on a branch containing this workflow file; it does not require
+that file on the default branch. New runs for the same workflow/ref queue
+without canceling its active run. Legacy PR build jobs also preserve running
+jobs; their cancellation policy for other events and release tags is unchanged.
+A two-minute planning job selects these
+existing groups; it does not evaluate or build Nix outputs. Each build job
 uploads its existing library ZIPs and CLIs under an artifact named for the build
 host, target group, and source SHA. Each native CLI also runs
 the encrypted-store and profile-password smoke test, which can be repeated with

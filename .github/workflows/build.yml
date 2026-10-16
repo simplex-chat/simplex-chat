@@ -164,7 +164,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -603,7 +603,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-macos-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -746,7 +746,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-windows-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
     strategy:
       fail-fast: false
       matrix:

@@ -2,6 +2,13 @@ name: Nix Haskell builds
 
 on:
   workflow_dispatch:
+    inputs:
+      group:
+        description: Existing build groups to run
+        type: choice
+        required: true
+        default: all
+        options: [all, linux-static]
   push:
     branches: [master, stable, build/stable-ghc-9.14]
     paths:
@@ -31,38 +38,36 @@ permissions:
 
 concurrency:
   group: nix-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  plan:
+    name: Select Nix build groups
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select existing build groups
+        id: select
+        env:
+          # PRs and pushes always retain all seven build groups.
+          NIX_CI_GROUP: ${{ github.event_name == 'workflow_dispatch' && inputs.group || 'all' }}
+        shell: bash
+        run: |
+          python3 -B scripts/nix/test-ci-matrix.py
+          matrix=$(python3 scripts/nix/ci-matrix.py --group "$NIX_CI_GROUP")
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: plan
     name: ${{ matrix.system }} / ${{ matrix.target }} / pinned Haskell compiler
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 360
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - system: x86_64-linux
-            runner: ubuntu-24.04
-            target: native
-          - system: x86_64-linux
-            runner: ubuntu-24.04
-            target: android
-          - system: x86_64-linux
-            runner: ubuntu-24.04
-            target: windows
-          - system: x86_64-linux
-            runner: ubuntu-24.04
-            target: linux-static
-          - system: aarch64-linux
-            runner: ubuntu-24.04-arm
-            target: native
-          - system: aarch64-darwin
-            runner: macos-15
-            target: all
-          - system: x86_64-darwin
-            runner: macos-15-intel
-            target: all
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       NIX_SYSTEM: ${{ matrix.system }}
       NIX_TARGET: ${{ matrix.target }}
