@@ -3,6 +3,7 @@
 # Runs the device test plan with Claude Code on this runner after the smoke test, one session per layout,
 # as claude-scope says. A session drives the app only through the ui helper, and reads and writes only its
 # own directory <output dir>/<layout>: prompt.md, report.md, shots/, transcript.jsonl (stream-json).
+# It passes when every session's final message ends with "CLAUDE-TEST: PASS".
 # Usage: scripts/ci/ios-sim/claude-test.sh <output dir>
 # Needs CLAUDE_CODE_OAUTH_TOKEN, SIM_UDID (the booted simulator with the app) and, when the test backend runs, BACKEND_DIR.
 
@@ -120,9 +121,11 @@ for layout in $layouts; do
   ) || session_status=$?
   echo "claude exited with $session_status"
   # the token must never be printed or uploaded, whatever the session did; grep reads it from a pipe, not from its arguments
-  if grep -rqF -f <(printf '%s\n' "$token") "$session" "$CLAUDE_GUARD_LOG"; then
+  leak=0
+  grep -rqF -f <(printf '%s\n' "$token") "$session" "$CLAUDE_GUARD_LOG" || leak=$?
+  if [ "$leak" -ne 1 ]; then
     rm -rf "$session" "$CLAUDE_GUARD_LOG"
-    echo "::error::the $layout session's files contained the token, so they were deleted before the upload"
+    echo "::error::the $layout session's files contain the token, or checking for it failed (grep exited $leak), so they were deleted before the upload"
     session_status=1
   else
     tail -n 20 "$session/stderr.log"
@@ -133,6 +136,14 @@ for layout in $layouts; do
     fi
     echo "guard hook: $(grep -c '^allow' "$CLAUDE_GUARD_LOG" || true) allowed, $(grep -c '^refuse' "$CLAUDE_GUARD_LOG" || true) refused"
     grep '^refuse' "$CLAUDE_GUARD_LOG" || true
+    result=$(jq -r -R 'fromjson? | select(.type == "result") | .result // empty' "$session/transcript.jsonl" | tail -n 20 || true)
+    echo "final message, last lines:"
+    echo "$result"
+    last=$(grep -v '^[[:space:]]*$' <<< "$result" | tail -n 1 || true)
+    if ! grep -qxE '[*`]*CLAUDE-TEST: PASS[*`]*' <<< "$last"; then
+      echo "::error::the $layout session's final message does not end with CLAUDE-TEST: PASS"
+      session_status=1
+    fi
   fi
   echo "::endgroup::"
   if [ "$session_status" -ne 0 ]; then
