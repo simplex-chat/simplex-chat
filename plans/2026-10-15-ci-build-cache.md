@@ -39,6 +39,9 @@ branch
 cache_o0
 - push to master or stable: `true`
 
+ZSTD_CLEVEL
+- `9`: zstd level of cache archives
+
 ## Cache entries
 
 deps
