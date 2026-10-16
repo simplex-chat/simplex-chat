@@ -39,7 +39,8 @@ env:
 
 jobs:
   plan:
-    name: find earlier builds
+    name: choose jobs, find earlier builds
+    # the concurrency group repeats this test, as it can't read job outputs
     if: >-
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.head_commit.message, '[app-ci]') ||
@@ -49,13 +50,22 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
+      run-claude: ${{ steps.jobs.outputs.claude }}
+      run-backend: ${{ steps.jobs.outputs.backend }}
       core: ${{ steps.names.outputs.core }}
-      backend: ${{ steps.names.outputs.backend }}
       core-run: ${{ steps.core.outputs.run-id }}
+      backend: ${{ steps.names.outputs.backend }}
       backend-run: ${{ steps.backend.outputs.run-id }}
-      claude: ${{ inputs.claude || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]') }}
-      start-backend: ${{ inputs.backend || contains(github.event.head_commit.message, '[ci-backend]') }}
     steps:
+      - name: Choose jobs
+        id: jobs
+        env:
+          CLAUDE: ${{ inputs.claude || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]') }}
+          BACKEND: ${{ inputs.backend || contains(github.event.head_commit.message, '[ci-backend]') }}
+        run: |
+          echo "claude=$CLAUDE" | tee -a "$GITHUB_OUTPUT"
+          echo "backend=$BACKEND" | tee -a "$GITHUB_OUTPUT"
+
       - name: Checkout code
         uses: actions/checkout@v6
 
@@ -74,6 +84,7 @@ jobs:
 
       - name: Find backend
         id: backend
+        if: steps.jobs.outputs.backend == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.backend }}"
@@ -128,7 +139,7 @@ jobs:
   backend:
     name: test backend for the app
     needs: plan
-    if: needs.plan.outputs.start-backend == 'true' && needs.plan.outputs.backend-run == ''
+    if: needs.plan.outputs.run-backend == 'true' && needs.plan.outputs.backend-run == ''
     runs-on: macos-26
     timeout-minutes: 240
     steps:
@@ -170,12 +181,12 @@ jobs:
     if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
     runs-on: macos-26
     environment:
-      name: ${{ needs.plan.outputs.claude == 'true' && 'app-sim-claude' || '' }}
+      name: ${{ needs.plan.outputs.run-claude == 'true' && 'app-sim-claude' || '' }}
       deployment: false
     timeout-minutes: 330
     env:
-      CLAUDE_RUN: ${{ needs.plan.outputs.claude }}
-      START_BACKEND: ${{ needs.plan.outputs.start-backend }}
+      CLAUDE_RUN: ${{ needs.plan.outputs.run-claude }}
+      START_BACKEND: ${{ needs.plan.outputs.run-backend }}
     steps:
       # the job later holds the Claude token, so the checkout's GitHub token is not left in .git/config
       - name: Checkout code

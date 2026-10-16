@@ -24,8 +24,8 @@ permissions:
   actions: read
 
 concurrency:
-  # a push that asks for no run doesn't cancel one that does
-  group: desktop-linux-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[app-ci]') || contains(github.event.head_commit.message, '[app-ci:desktop]') || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:desktop]') }}
+  # a push that asks for no run must not cancel one that does
+  group: desktop-linux-${{ github.ref }}-${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[app-ci]') || contains(github.event.head_commit.message, '[app-ci:desktop]') || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:desktop]')) && 'requested' || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -38,6 +38,7 @@ env:
 jobs:
   plan:
     name: choose jobs, find earlier builds
+    # the concurrency group repeats this test, as it can't read job outputs
     if: >-
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.head_commit.message, '[app-ci]') ||
