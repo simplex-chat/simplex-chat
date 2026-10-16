@@ -48,7 +48,7 @@ The channel's link data lives on one SMP server, the link server, which already 
 - **Edits over a changed profile are refused**, and the current profile is shown.
 - **A new owner's device connects to the link server directly**, revealing its IP address to that server's operator; the invitation says so, and private-routing settings need an explicit confirmation. Link reads stay private.
 - **The link server learns when owners act and how many there are.**
-- **An admin's removal wins over a promotion at the same moment**: it is applied if it reached the relays within a day of the promotion.
+- **An admin's removal wins over a promotion at the same moment**: owners apply it if it reached them within a day of the promotion, and every device follows the link. If the promoting owner leaves within seconds, before the removal reaches it, the channel can be left without a working owner.
 - **Old apps and servers.** Promotion needs every relay and the link server upgraded; subscribers on older apps reject a new owner's actions until they upgrade.
 - **A new owner's profile reaches every subscriber**; the member is told before it accepts.
 
@@ -63,8 +63,9 @@ None of these is a race between honest parties:
 - **A role change can be abandoned** when no relay serves it: its author's device is lost in the second after recording it, its author is removed before any relay got it, or only a relay that then failed got it. While a lost author is an owner the others cannot change roles until they remove it; then they wait up to a day, and devices that applied part of the lost version return to the abandoning owner's roster. An owner that also missed that author's earlier changes drops them too.
 - **A remover crashing right after its removal landed** sends no announcement; devices apply it at their next link read, relays at their next check.
 - **Blocking and unblocking a member is not ordered**, as today.
+- **A creator restored from a backup older than its first promotion** acts as the single owner until it leaves or destroys the channel, and its role changes can collide with another owner's.
 - **Downgrades.** A downgraded server loses link data written since its last start (owner keys are kept), and multi-owner writes stop until it is upgraded. A creator downgraded to an older app cannot change the link.
 
 ## Not verified, size
 
-App code and Postgres tests run only on the host. The 50-owner headroom is computed from the encoders (the first slices test it); catch-up for 100,000 members (about 2,000 messages) is an estimate. About 2,290 lines of production Haskell (~490 simplexmq, ~1,800 chat) and 380 per app platform; five new chat events and one changed; five optional link-data fields; nine columns, no new table; one SMP command and one error.
+App code and Postgres tests run only on the host. The 50-owner headroom is computed from the encoders (the first slices test it); catch-up for 100,000 members (about 2,000 messages) is an estimate. Five new chat events and one changed; five optional link-data fields; nine columns, no new table; one SMP command and one error.
