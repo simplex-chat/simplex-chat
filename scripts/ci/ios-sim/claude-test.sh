@@ -2,7 +2,7 @@
 
 # Runs the device test plan with Claude Code on this runner after the smoke test, one session per layout,
 # as claude-scope says. A session drives the app only through the ui helper, and reads and writes only its
-# own directory <output dir>/<layout>: prompt.md, report.md, shots/, transcript.jsonl (stream-json).
+# own directory, which ends up in <output dir>/<layout>: prompt.md, report.md, shots/, transcript.jsonl (stream-json).
 # It passes when every session's final message ends with "CLAUDE-TEST: PASS".
 # Usage: scripts/ci/ios-sim/claude-test.sh <output dir>
 # Needs CLAUDE_CODE_OAUTH_TOKEN, SIM_UDID (the booted simulator with the app) and, when the test backend runs, BACKEND_DIR.
@@ -15,6 +15,9 @@ unset CLAUDE_CODE_OAUTH_TOKEN
 
 mkdir -p "$1"
 out=$(cd "$1" && pwd)
+# sessions run here and move to the output dir, which is uploaded, only after their files are checked for the token
+staging=$out.sessions
+mkdir -p "$staging"
 dir=$(cd "$(dirname "$0")" && pwd)
 : "${SIM_UDID:?SIM_UDID must be the simulator UDID}"
 BACKEND_DIR=${BACKEND_DIR:-}
@@ -90,14 +93,14 @@ write_prompt() {
 status=0
 previous=""
 for layout in $layouts; do
-  session=$out/$layout
+  session=$staging/$layout
   mkdir -p "$session/shots"
   ui layout "$layout"
   write_prompt "$layout" "$previous" > "$session/prompt.md"
   echo "::group::Claude session: $layout, $model, $max_turns turns, \$$max_budget"
   session_status=0
   # outside the session's directory, so the session cannot change it
-  export CLAUDE_GUARD_LOG=$out/$layout-guard.log
+  export CLAUDE_GUARD_LOG=$staging/$layout-guard.log
   : > "$CLAUDE_GUARD_LOG"
   (
     cd "$session"
@@ -128,6 +131,9 @@ for layout in $layouts; do
     echo "::error::the $layout session's files contain the token, or checking for it failed (grep exited $leak), so they were deleted before the upload"
     session_status=1
   else
+    mv "$session" "$CLAUDE_GUARD_LOG" "$out/"
+    session=$out/$layout
+    CLAUDE_GUARD_LOG=$out/$layout-guard.log
     tail -n 20 "$session/stderr.log"
     if [ -f "$session/report.md" ]; then
       cat "$session/report.md"
