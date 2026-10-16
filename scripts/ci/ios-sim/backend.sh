@@ -57,13 +57,6 @@ expect_out() {
   fi
 }
 
-expect_no_error() {
-  if grep -qiE "error" "$work/out"; then
-    echo "error: the command failed"
-    return 1
-  fi
-}
-
 # Each run keeps the client online for a few seconds, which also lets the handshakes it waits for progress.
 admin_until() {
   local pattern=$1 secs=$2 cmd=$3
@@ -299,7 +292,7 @@ start_contact() {
   expect_out "^auto_accept on"
   register_name "$name" "$address" ""
   named "$db" "$display_name" 5 "/_set domain 1 $name"
-  expect_no_error
+  expect_out "^new contact address set$"
   # --headless is for relays only; a command with a long -t keeps the client online, accepting contacts, for 6 hours
   nohup "$bin/simplex-chat" -d "$work/$db" -e "/auto_accept on" -t 21600 --user-display-name "$display_name" < /dev/null > "$work/$db.log" 2>&1 &
   echo $! > "$work/$db.pid"
@@ -323,7 +316,7 @@ seed_names() {
   link=$(channel_link ciboth)
   register_name ciboth.testing "$address" "$link"
   named "$admin" "$admin" 5 "/_set domain 1 ciboth.testing"
-  expect_no_error
+  expect_out "^new contact address set$"
   named "$admin" "$admin" 5 "/public group access #ciboth domain=ciboth.testing"
   expect_out "updated public group access: domain=ciboth.testing"
 
@@ -334,6 +327,8 @@ seed_names() {
 # What the app will resolve, from a client that knows none of the names' owners.
 probe_names() {
   local target pattern
+  # -s gives its server the names role only for users that exist when the client starts
+  chat probe 1 "/user" --user-display-name ci_probe
   for target in "#cinews.testing|ok to connect via relays" "@cialice.testing|contact address: ok to connect" "@cibobby.testing|contact address: ok to connect" "ciboth.testing|You can also connect to @ciboth"; do
     pattern=${target#*|}
     target=${target%%|*}
