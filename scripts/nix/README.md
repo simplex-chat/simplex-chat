@@ -141,17 +141,18 @@ their historical build scripts.
 
 ## Migration validation
 
-On 2026-10-15, all 21 existing Hydra derivations evaluated successfully at
-`52cbb2c7f796bfeca0824bd3e2168e344ce84774`: 11 on x86_64 Linux, two on ARM64 Linux,
+On 2026-10-16, all 21 existing Hydra derivations evaluated successfully at
+`f26dbbc0d93a5c359427307b4c57f7f5e2123d69`: 11 on x86_64 Linux, two on ARM64 Linux,
 and four on each Darwin architecture. This includes both Android ABIs, Windows,
-and all three static Linux targets.
+and all three static Linux targets. This establishes derivation evaluation;
+the completed artifact builds are listed below.
 
-The native ARM64 Darwin library and CLI built with Nix at `e1d2f1ebc` and
+The native ARM64 Darwin library and CLI built with Nix at `f26dbbc0d` and
 passed `python3 scripts/nix/smoke-cli.py /path/to/simplex-chat`, covering encrypted
-stores and profile passwords. Native BBS checks also passed. The later Android
-iconv commit leaves the native Haskell/C/Cabal sources, compiler, flags, and
-other dependencies unchanged. It changes the overall source tarball and hence
-the native derivation paths; those later native derivations have not been rebuilt.
+stores and profile passwords. Their actual outputs contain ARM64 macOS objects
+and the expected library registration or CLI executable. Earlier native BBS
+checks also passed; the relevant native source, compiler, flags, and dependencies
+remain unchanged.
 
 A native build with the iOS Swift/CommonCrypto flags passed mobile C API checks
 using the rolled archive produced by `link-mobile-library.sh`: Swift JSON,
@@ -162,13 +163,13 @@ The replacement RTS and `text` built with Nix and passed ABI,
 instruction-baseline, UTF-8, and GC checks.
 
 Both full Nix ARM64 iOS library ZIPs, Swift JSON and tagged JSON, built at
-`ef3a3b0b78aa108f9ab192278e4dae9a3d978d07`. Each ZIP contained its five expected
+`f26dbbc0d93a5c359427307b4c57f7f5e2123d69`. Each ZIP contained its five expected
 archive entries with valid CRCs and 3,630 Mach-O members tagged ARM64/iOS. Their
 Hydra product markers pointed to the actual ZIPs. The production FFI archive
-passed an instruction-baseline check. The package uses the full Cabal v2 unit ID
-in its archive filenames; the existing Xcode project updater accepts those names.
-The later Android-only changes leave these build inputs unchanged. This verifies
-the packaged library, not execution after retagging.
+previously passed an instruction-baseline check with unchanged inputs. The
+package uses the full Cabal v2 unit ID in its archive filenames; the existing
+Xcode project updater accepts those names. This verifies the packaged library,
+not execution after retagging.
 
 The Android API26 ARMv7 `ghc-internal` built with all 292 Haskell modules and
 C sources. Its unit ID and ABI match the earlier build, and GNU iconv is retained
