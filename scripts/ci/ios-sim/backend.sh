@@ -334,6 +334,8 @@ seed_names() {
 # What the app will resolve, from a client that knows none of the names' owners.
 probe_names() {
   local target pattern
+  # -s gives its server the names role only to users that exist when the client starts
+  chat probe 1 "/u" --user-display-name ci_probe
   for target in "#cinews.testing|ok to connect via relays" "@cialice.testing|contact address: ok to connect" "@cibobby.testing|contact address: ok to connect" "ciboth.testing|You can also connect to @ciboth"; do
     pattern=${target#*|}
     target=${target%%|*}
