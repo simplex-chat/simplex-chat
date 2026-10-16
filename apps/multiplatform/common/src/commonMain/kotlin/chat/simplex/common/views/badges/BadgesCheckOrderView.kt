@@ -1,6 +1,7 @@
 package chat.simplex.common.views.badges
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -8,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -17,6 +19,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.common.views.usersettings.networkAndServers.defaultConditionsLink
 import chat.simplex.res.*
 
 @Composable
@@ -55,13 +58,43 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
       OrderRow(MR.strings.badges_order_total, period.priceText(BadgeStore.price(level, period, compact = false)))
     }
 
+    val price = BadgeStore.price(level, period, compact = false)
+    if (price is BadgePrice.Price) {
+      when (period) {
+        BadgePeriod.Monthly -> Footnote(String.format(stringResource(MR.strings.badges_subscription_disclosure_monthly), price.price))
+        BadgePeriod.Annual -> Footnote(String.format(stringResource(MR.strings.badges_subscription_disclosure_annual), price.price))
+        BadgePeriod.OneMonth -> {}
+      }
+    }
+
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, period, purchasing)
       BadgeBillingFooter(period)
+      val uriHandler = LocalUriHandler.current
+      Text(
+        stringResource(MR.strings.badges_privacy_policy),
+        Modifier.clickable { uriHandler.openUriCatching(defaultConditionsLink) },
+        style = MaterialTheme.typography.body2,
+        color = MaterialTheme.colors.primary
+      )
+      if (badgeStoreLane) {
+        RestorePurchasesButton(Modifier.padding(top = 10.dp))
+        Footnote(stringResource(MR.strings.badges_restore_purchases_footnote))
+      }
     }
   }
+}
+
+@Composable
+private fun Footnote(text: String) {
+  Text(
+    text,
+    style = MaterialTheme.typography.body2,
+    color = MaterialTheme.colors.secondary,
+    textAlign = TextAlign.Center
+  )
 }
 
 @Composable
@@ -103,5 +136,39 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
           else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
       )
     }
+  }
+}
+
+// the store rows act on this device's store, which a profile on a remote host cannot use
+val badgeStoreLane: Boolean get() = badgeStoreAvailable && chatModel.remoteHostId() == null
+
+@Composable
+fun RestorePurchasesButton(modifier: Modifier = Modifier) {
+  val restoring = remember { mutableStateOf(false) }
+  TextButton({ restoreBadgePurchases(restoring) }, modifier, enabled = !restoring.value) {
+    Text(stringResource(MR.strings.badges_restore_purchases))
+  }
+}
+
+fun restoreBadgePurchases(restoring: MutableState<Boolean>) {
+  restoring.value = true
+  withLongRunningApi {
+    try {
+      val found = BadgeStore.restorePurchases()
+      if (!found) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.badges_nothing_to_restore),
+          text = generalGetString(MR.strings.badges_nothing_to_restore_desc)
+        )
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "RestorePurchasesButton: ${e.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.badges_restore_failed),
+        text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
+          else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+      )
+    }
+    restoring.value = false
   }
 }

@@ -760,6 +760,7 @@ test-suite simplex-chat-test
       Bots.BadgeService.BotTests
       Bots.BadgeService.CatalogTests
       Bots.BadgeService.ConfigTests
+      Bots.BadgeService.FakeAppStore
       Bots.BadgeService.FakeBTCPay
       Bots.BadgeService.FakePlay
       Bots.BadgeService.FakeStore

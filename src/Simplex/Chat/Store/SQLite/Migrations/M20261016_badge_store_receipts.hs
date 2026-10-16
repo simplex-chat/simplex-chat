@@ -35,11 +35,25 @@ CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
 ALTER TABLE badge_purchases ADD COLUMN badge_store_receipt_id INTEGER REFERENCES badge_store_receipts;
 
 CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(badge_store_receipt_id);
+
+ALTER TABLE badge_purchases ADD COLUMN subscription_status TEXT;
+
+ALTER TABLE badge_purchases ADD COLUMN unrenewed_since TEXT;
+
+ALTER TABLE badge_purchases ADD COLUMN last_unrenewed_at TEXT;
 |]
 
 down_m20261016_badge_store_receipts :: Query
 down_m20261016_badge_store_receipts =
   [sql|
+UPDATE badge_purchases SET alert_acked_kind = NULL, alert_acked_episode = NULL, alert_snooze_until = NULL WHERE alert_acked_kind = 'subscription_cancelled';
+
+ALTER TABLE badge_purchases DROP COLUMN last_unrenewed_at;
+
+ALTER TABLE badge_purchases DROP COLUMN unrenewed_since;
+
+ALTER TABLE badge_purchases DROP COLUMN subscription_status;
+
 DROP INDEX idx_badge_purchases_store_receipt;
 
 ALTER TABLE badge_purchases DROP COLUMN badge_store_receipt_id;

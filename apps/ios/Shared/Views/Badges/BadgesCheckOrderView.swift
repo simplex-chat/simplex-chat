@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import StoreKit
 import SimpleXChat
 
 struct BadgesCheckOrderView: View {
@@ -44,12 +45,32 @@ struct BadgesCheckOrderView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .padding(.top, 20)
 
+                    if case let .price(p) = store.price(level, period, compact: false) {
+                        switch period {
+                        case .monthly: footnote("Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at \(p) per month unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.")
+                        case .annual: footnote("Payment is charged to your Apple ID when you confirm the purchase. The subscription renews automatically at \(p) per year unless you cancel it at least 24 hours before the end of the current period. You can manage and cancel it in your App Store account settings.")
+                        case .oneMonth: EmptyView()
+                        }
+                    }
+
+                    if !store.forSale(period) && store.subscribedBefore == true {
+                        footnote("This Apple ID subscribed before. Subscribing again is not available in the app yet.")
+                    }
+
                     Spacer(minLength: 20)
 
                     VStack(spacing: 10) {
                         payButton()
                             .padding(.vertical, 10)
                         BadgeBillingFooter(period: period)
+                        HStack(spacing: 20) {
+                            Link("Terms of use", destination: appleStandardEULAURL)
+                            Link("Privacy policy", destination: conditionsURL)
+                        }
+                        .font(.footnote)
+                        RestorePurchasesButton()
+                            .padding(.top, 10)
+                        footnote("Adds an App Store purchase of this Apple ID that no profile here has yet. A purchase still being added on another device may be added here instead.")
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -63,6 +84,14 @@ struct BadgesCheckOrderView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.load() }
         .alert(item: $alert) { $0.alert }
+    }
+
+    private func footnote(_ text: LocalizedStringKey) -> some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundColor(theme.colors.secondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func orderRow(_ title: LocalizedStringKey, _ value: Text) -> some View {
@@ -79,7 +108,7 @@ struct BadgesCheckOrderView: View {
 
     private func payButton() -> some View {
         let price = store.price(level, period, compact: false)
-        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId)
+        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(period)
         return Button {
             purchase()
         } label: {
@@ -117,6 +146,44 @@ struct BadgesCheckOrderView: View {
                         id: "badgePurchaseError"
                     )
                 }
+            }
+        }
+    }
+}
+
+// Apple's standard licence agreement, which an app selling subscriptions links as its terms of use
+let appleStandardEULAURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+
+struct RestorePurchasesButton: View {
+    @State private var restoring = false
+
+    var body: some View {
+        Button("Restore purchases") {
+            restoring = true
+            Task {
+                await restore()
+                await MainActor.run { restoring = false }
+            }
+        }
+        .disabled(restoring)
+    }
+
+    private func restore() async {
+        do {
+            let found = try await BadgeStore.shared.restorePurchases()
+            if !found {
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Nothing to restore", comment: "alert title"),
+                        message: NSLocalizedString("No App Store purchase waiting to be added was found.", comment: "alert message")
+                    )
+                }
+            }
+        } catch let error {
+            logger.error("RestorePurchasesButton: \(String(describing: error))")
+            if case .userCancelled? = error as? StoreKitError { return }
+            await MainActor.run {
+                showAlert(NSLocalizedString("Restore failed", comment: "alert title"), message: redeemErrorText(error, purchase: true))
             }
         }
     }

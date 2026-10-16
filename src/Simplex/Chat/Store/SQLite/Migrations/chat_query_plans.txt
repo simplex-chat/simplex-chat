@@ -4124,7 +4124,12 @@ Query:
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
                p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
-               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at,
+               (SELECT l.change_months FROM badge_ledger l
+                WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
+                ORDER BY l.entry_id DESC
+                LIMIT 1),
+               p.subscription_status, p.unrenewed_since, p.last_unrenewed_at
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
@@ -4132,6 +4137,8 @@ Query:
 Plan:
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH l USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
 
 Query: 
         SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.msg_chat_binding, m.msg_signatures
@@ -5272,7 +5279,7 @@ SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
       UPDATE badge_store_receipts
       SET retry_delay = ?, next_attempt_at = ?, retry_count = retry_count + 1, credit_error = ?
-      WHERE badge_store_receipt_id = ? AND payment IS NOT NULL
+      WHERE badge_store_receipt_id = ? AND payment = ?
     
 Plan:
 SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
@@ -7464,6 +7471,10 @@ Query: SELECT 1 FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 
+Query: SELECT COUNT(*) FROM badge_code_redemptions
+Plan:
+SCAN badge_code_redemptions USING COVERING INDEX idx_badge_code_redemptions_user
+
 Query: SELECT COUNT(*) FROM badge_store_receipts
 Plan:
 SCAN badge_store_receipts USING COVERING INDEX idx_badge_store_receipts_user
@@ -7826,6 +7837,10 @@ Query: SELECT index_in_group, member_relations_vector FROM group_members WHERE l
 Plan:
 SCAN group_members
 
+Query: SELECT issue_error_at FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT issue_failed_since, issue_error FROM badge_purchases
 Plan:
 SCAN badge_purchases
@@ -7914,6 +7929,10 @@ Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_member
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT next_wake_at FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT next_wake_at, badge_purchase_id FROM badge_purchases
 Plan:
 SCAN badge_purchases
@@ -7929,6 +7948,14 @@ SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 Query: SELECT notification FROM delivery_jobs ORDER BY delivery_job_id DESC LIMIT 1
 Plan:
 SCAN delivery_jobs
+
+Query: SELECT payment, credit_error FROM badge_store_receipts WHERE user_id = ? AND payment IS NOT NULL
+Plan:
+SEARCH badge_store_receipts USING INDEX idx_badge_store_receipts_user (user_id=?)
+
+Query: SELECT payment, next_attempt_at FROM badge_store_receipts WHERE payment IS NOT NULL
+Plan:
+SCAN badge_store_receipts
 
 Query: SELECT purchase_key FROM badge_code_redemptions
 Plan:
@@ -8014,9 +8041,17 @@ Query: SELECT stored_roster_version FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT subscription_status FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT summary_current_members_count FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT unrenewed_since, last_unrenewed_at FROM badge_purchases
+Plan:
+SCAN badge_purchases
 
 Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?
 Plan:
@@ -8054,7 +8089,19 @@ Query: UPDATE badge_purchases SET issue_failed_since = NULL, issue_error_at = NU
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE badge_purchases SET next_wake_at = ?
+Plan:
+SCAN badge_purchases
+
 Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET unrenewed_since = ?, last_unrenewed_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -8062,7 +8109,7 @@ Query: UPDATE badge_store_receipts SET payment = ?
 Plan:
 SCAN badge_store_receipts
 
-Query: UPDATE badge_store_receipts SET payment = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL
+Query: UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment = ?
 Plan:
 SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
 

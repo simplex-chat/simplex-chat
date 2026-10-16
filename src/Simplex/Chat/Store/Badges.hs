@@ -10,20 +10,26 @@ module Simplex.Chat.Store.Badges
   ( BadgeStash (..),
     BadgeStashRef (..),
     UserBadgePurchase (..),
+    UnrenewedRun (..),
+    PurchaseKind (..),
     getUserBadgePurchase,
     getBadgePurchase,
+    setBadgeSubscriptionStatus,
     userHasBadge,
     setBadgeAlertAcked,
     setBadgeIssueError,
     setBadgeNextWake,
+    setBadgeUnrenewedRun,
     clearShownBadge,
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
     BadgeReceiptRecord (..),
     BadgeReceiptStatus (..),
     holdStoreReceipt,
+    getReceiptRecord,
     createBadgeStoreReceipt,
     getOpenStorePurchases,
+    getPendingStoreReceipts,
     getNextHeldStoreReceipt,
     recordStoreReceiptFailure,
     refuseStoreReceipt,
@@ -53,8 +59,8 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), OpenStorePurchase (..))
-import Simplex.Chat.PaymentService (ServicePayment)
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState)
+import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (StoreError, insertedRowId)
 import Simplex.Chat.Types
@@ -127,13 +133,21 @@ data BadgeReceiptStatus
 -- concurrent hand-over of the same transaction may win either write. It stays with the record that already has
 -- it, whose keys the service may have credited; failing that it joins the record Buy created; and when no record
 -- can take it - the store echoed no invoice, or the one it echoed is already held by another transaction - the
--- presenting profile gets a new one, nothing else saying who paid.
-holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe BadgeReceiptRecord)
-holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
+-- presenting profile gets a new one, nothing else saying who paid, unless the app found the transaction in the
+-- store's list: then it may be another device's, and nothing is recorded.
+holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> StoreReceiptOrigin -> Maybe Text -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO (Maybe BadgeReceiptRecord)
+holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
   getReceiptRecord db txRef >>= \case
-    Just r@BadgeReceiptRecord {receiptId} -> do
+    Just r@BadgeReceiptRecord {receiptId, status} -> do
       -- a resolved record stays resolved, so a hand-over landing just after its credit cannot hold it again
-      DB.execute db "UPDATE badge_store_receipts SET payment = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL" (paymentJSON, receiptId)
+      case status of
+        RSHeld {payment = held}
+          | laterAppleTransaction payment held ->
+              DB.execute
+                db
+                "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment = ?"
+                (paymentJSON, now, receiptId, held)
+        _ -> pure ()
       pure $ Just r
     Nothing -> do
       forM_ invoiceId_ $ \invoiceId ->
@@ -143,9 +157,11 @@ holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provid
           (provider, transactionRef, paymentJSON, now, invoiceId)
       getReceiptRecord db txRef >>= \case
         Just r -> pure $ Just r
-        Nothing -> do
-          insertReceipt
-          getReceiptRecord db txRef
+        Nothing -> case origin of
+          SROPurchased -> do
+            insertReceipt
+            getReceiptRecord db txRef
+          SROListed -> pure Nothing
   where
     paymentJSON = safeDecodeUtf8 . LB.toStrict $ J.encode payment
     insertReceipt = do
@@ -164,6 +180,18 @@ holdStoreReceipt db g User {userId} invoiceId_ txRef@StoreTransactionRef {provid
           ON CONFLICT DO NOTHING
         |]
         ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, now))
+
+-- | Whether a held Apple record presents this payment next: another transaction of its subscription, bought
+-- later and not revoked. The core decides which is newest, since the app's store listener races its sweep, and a
+-- re-delivered or re-signed copy of the held transaction changes nothing, so it cannot cost another store check.
+laterAppleTransaction :: ServicePayment -> Text -> Bool
+laterAppleTransaction payment held = case (payment, decodeJSON held) of
+  (SPApple {jws}, Just SPApple {jws = heldJws}) -> case (appleTransactionFacts jws, appleTransactionFacts heldJws) of
+    ( Just AppleTransactionFacts {transactionId, purchaseDate = Just purchasedAt, revoked = False},
+      Just AppleTransactionFacts {transactionId = heldId, purchaseDate = Just heldPurchasedAt}
+      ) -> transactionId /= heldId && purchasedAt > heldPurchasedAt
+    _ -> False
+  _ -> False
 
 getReceiptRecord :: DB.Connection -> StoreTransactionRef -> IO (Maybe BadgeReceiptRecord)
 getReceiptRecord db StoreTransactionRef {provider, transactionRef} =
@@ -215,6 +243,11 @@ getOpenStorePurchases db User {userId} =
   where
     toOpenStorePurchase (invoiceId, transactionRef, creditError) = OpenStorePurchase {invoiceId, transactionRef, creditError}
 
+-- | Each held receipt's payment and its last attempt's failure, if any.
+getPendingStoreReceipts :: DB.Connection -> User -> IO [(Text, Maybe BadgeIssueFailure)]
+getPendingStoreReceipts db User {userId} =
+  DB.query db "SELECT payment, credit_error FROM badge_store_receipts WHERE user_id = ? AND payment IS NOT NULL" (Only userId)
+
 getNextHeldStoreReceipt :: DB.Connection -> UserId -> IO (Either StoreError (Maybe BadgeReceiptRecord))
 getNextHeldStoreReceipt db userId =
   fmap Right . maybeFirstRow toHeld $
@@ -233,16 +266,17 @@ getNextHeldStoreReceipt db userId =
     toHeld (stashRow@(receiptId, _, _, _) :. (invoiceId, payment, nextAttemptAt, retryDelay)) =
       BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, invoiceId, payment, nextAttemptAt, retryDelay}}
 
-recordStoreReceiptFailure :: DB.Connection -> Int64 -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
-recordStoreReceiptFailure db receiptId retryDelay nextAttemptAt failure =
+-- | Only while the record still holds the payment that failed: one adopted meanwhile is due at once.
+recordStoreReceiptFailure :: DB.Connection -> Int64 -> Text -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
+recordStoreReceiptFailure db receiptId payment retryDelay nextAttemptAt failure =
   DB.execute
     db
     [sql|
       UPDATE badge_store_receipts
       SET retry_delay = ?, next_attempt_at = ?, retry_count = retry_count + 1, credit_error = ?
-      WHERE badge_store_receipt_id = ? AND payment IS NOT NULL
+      WHERE badge_store_receipt_id = ? AND payment = ?
     |]
-    (retryDelay, nextAttemptAt, failure, receiptId)
+    (retryDelay, nextAttemptAt, failure, receiptId, payment)
 
 -- | Kept rather than deleted, so that a later hand-over of the same transaction is answered from the record.
 refuseStoreReceipt :: DB.Connection -> Int64 -> BadgeIssueFailure -> IO ()
@@ -390,8 +424,18 @@ data UserBadgePurchase = UserBadgePurchase
     alertAcked :: Maybe (BadgeAlertKind, Text),
     alertSnoozeUntil :: Maybe UTCTime,
     issueError :: Maybe BadgeIssueError,
-    nextWakeAt :: Maybe UTCTime
+    nextWakeAt :: Maybe UTCTime,
+    unrenewedRun :: Maybe UnrenewedRun,
+    purchaseKind :: PurchaseKind
   }
+
+data UnrenewedRun = UnrenewedRun {unrenewedSince :: UTCTime, lastUnrenewedAt :: UTCTime}
+  deriving (Eq)
+
+-- | A subscription's months come from store charges, so reaching paidThrough does not end it: the
+-- service says when it has. Derived from the replica, which holds a charge credit exactly for a subscription.
+data PurchaseKind = PKPrepaid | PKSubscription BadgeSubscription
+  deriving (Eq)
 
 -- | Newest, not the one shown_badge_id points at - retirement clears that, and the support ended
 -- alert is recomputed from this purchase after the badge stops being shown.
@@ -420,14 +464,19 @@ getBadgePurchase db purchaseId =
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
                p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
-               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at,
+               (SELECT l.change_months FROM badge_ledger l
+                WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
+                ORDER BY l.entry_id DESC
+                LIMIT 1),
+               p.subscription_status, p.unrenewed_since, p.last_unrenewed_at
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
       |]
       (Only purchaseId)
   where
-    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt)) =
+    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt, planMonths_, status, since_, lastAt_)) =
       UserBadgePurchase
         { badgePurchaseId,
           purchaseKey,
@@ -438,8 +487,14 @@ getBadgePurchase db purchaseId =
           alertAcked = (,) <$> ackedKind_ <*> ackedEpisode_,
           alertSnoozeUntil,
           issueError = BadgeIssueError <$> failedSince_ <*> lastAttemptAt_ <*> reason_,
-          nextWakeAt
+          nextWakeAt,
+          unrenewedRun = UnrenewedRun <$> since_ <*> lastAt_,
+          purchaseKind = maybe PKPrepaid (\planMonths -> PKSubscription BadgeSubscription {planMonths, status}) planMonths_
         }
+
+setBadgeSubscriptionStatus :: DB.Connection -> Int64 -> SubscriptionState -> IO ()
+setBadgeSubscriptionStatus db badgePurchaseId state =
+  DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
 
 -- | Whether a badge is on the profile now: set when a redemption stores one, cleared when it is
 -- retired. Read as the id rather than as a comparison, which in Postgres would be a boolean.
@@ -477,6 +532,13 @@ setBadgeIssueError db badgePurchaseId now failure =
 setBadgeNextWake :: DB.Connection -> Int64 -> Maybe UTCTime -> IO ()
 setBadgeNextWake db badgePurchaseId at_ =
   DB.execute db "UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?" (at_, badgePurchaseId)
+
+setBadgeUnrenewedRun :: DB.Connection -> Int64 -> Maybe UnrenewedRun -> IO ()
+setBadgeUnrenewedRun db badgePurchaseId run_ =
+  DB.execute
+    db
+    "UPDATE badge_purchases SET unrenewed_since = ?, last_unrenewed_at = ? WHERE badge_purchase_id = ?"
+    (unrenewedSince <$> run_, lastUnrenewedAt <$> run_, badgePurchaseId)
 
 -- | Stop showing a badge that has expired unrenewed; the profile update is broadcast by the caller.
 clearShownBadge :: DB.Connection -> User -> Int64 -> IO ()
@@ -551,7 +613,7 @@ getBadgeLedger db User {userId} badgePurchaseId =
 toStatementEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType) :. (Maybe UTCTime, UTCTime, Text, Maybe Text, Maybe Text, Maybe Text) -> Maybe StatementEntry
 toStatementEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
-    <$> maybe (entryTypeFromColumns Nothing entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
+    <$> maybe (entryTypeFromColumns Nothing Nothing entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
 
 -- | Decodes the stored JSON rather than rebuilding from the tag, so a version that has since
 -- learnt the type reads it with its fields, and one that has not still gets it back verbatim.

@@ -2,23 +2,37 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module BadgeService.StoreReceipts
   ( VerifiedStoreTransaction (..),
     StoreRefusal (..),
     StoreVerifier (..),
     StoreReceipt (..),
+    SubscriptionRef (..),
+    SubscriptionCheck (..),
+    StoreCharge (..),
+    StoreVerifierFailure (..),
     noStoreVerifier,
     toStoreReceipt,
+    checkStoreSubscription,
+    storeRequest,
   )
 where
 
-import Control.Exception (evaluate)
+import Control.Exception (Exception, catch, evaluate, try)
+import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, isDigit, isPrint, isSpace)
+import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
+import Data.Time.Clock (UTCTime)
+import Network.HTTP.Client (HttpException (..), Manager, Request, Response (..), brReadSome, parseRequest, withResponse)
+import Network.HTTP.Types (Status (..))
+import Simplex.Chat.Badges.Service (SubscriptionState)
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Messaging.Util (catchOwn', tshow)
 import System.Timeout (timeout)
@@ -27,7 +41,7 @@ import System.Timeout (timeout)
 -- TODO [badges] PaymentFunding's PFApple and PFGoogle sketch the same thing and have no producer;
 -- delete them, or build them out and reconcile.
 data VerifiedStoreTransaction = VerifiedStoreTransaction
-  { transactionRef :: Text, -- from what was verified: Apple's transactionId, googlePurchaseRef of the token asked about
+  { transactionRef :: Text, -- from what was verified: applePayloadRef of Apple's payload, googlePurchaseRef of the token asked about
     productId :: Text,
     quantity :: Int, -- as the store reported it; the service refuses any but 1, as the apps never buy more
     -- costs the buyer nothing: Apple's Sandbox, which a public TestFlight build buys in, and Google's license testers
@@ -49,13 +63,16 @@ data StoreRefusal
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
 
--- | Apple signs its receipt and ships the certificate chain in it, so it is verified with no network
--- call; a Play token is opaque and must be asked about, which is why only the Play fields are in IO.
+-- | Apple's receipt is verified offline, from the certificate chain it ships; a Play token is opaque
+-- and must be asked about, and a subscription's charges are known only to its store, so those fields are in IO.
 data StoreVerifier = StoreVerifier
   { -- the JWS
     verifyApple :: Maybe (Text -> Either StoreRefusal VerifiedStoreTransaction),
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token
     acknowledgeGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
+    acknowledgeGoogleSubscription :: Maybe (Text -> Text -> IO (Either StoreRefusal ())),
+    -- with the product the presented receipt names, absent on a renewal
+    checkSubscription :: Maybe (SubscriptionRef -> Maybe Text -> IO (Either StoreRefusal SubscriptionCheck)),
     -- microseconds; a lane answers one request at a time, so a verifier that does not finish holds up the rest of its lane
     verifyTimeout :: Int
   }
@@ -63,20 +80,54 @@ data StoreVerifier = StoreVerifier
 -- | A store payment, named by the store's own reference before anything is verified.
 data StoreReceipt = StoreReceipt
   { txRef :: StoreTransactionRef,
+    receiptProductId :: Maybe Text, -- named by a Play receipt; Apple's is known only once its JWS is verified
+    subscriptionRef :: SubscriptionRef,
     verifyReceipt :: IO (Either StoreRefusal VerifiedStoreTransaction),
-    acknowledgeReceipt :: Maybe (VerifiedStoreTransaction -> IO (Either StoreRefusal ()))
+    acknowledgeReceipt :: Maybe (VerifiedStoreTransaction -> IO (Either StoreRefusal ())),
+    acknowledgeSubscription :: Maybe (IO (Either StoreRefusal ()))
   }
 
+-- | What a store is asked about a subscription by: Apple's original transaction id, or Play's token.
+-- The token is a bearer secret, so this has no Show.
+data SubscriptionRef = SubscriptionApple Text | SubscriptionGoogle Text
+
+data SubscriptionCheck = SubscriptionCheck
+  { subscriptionState :: SubscriptionState,
+    testSubscription :: Bool, -- costs the buyer nothing, as a testPurchase does
+    latestCharge :: Maybe StoreCharge -- the latest paid period, if the store charged at all
+  }
+  deriving (Show)
+
+data StoreCharge = StoreCharge
+  { chargeRef :: Text, -- Apple's transactionId, a hash of Play's order id
+    planId :: Text, -- Apple's product id, Play's base plan
+    periodStart :: UTCTime,
+    periodEnd :: UTCTime,
+    chargePaid :: Maybe (CurrencyAmount, Text), -- in minor units; Play reports no price
+    revoked :: Bool, -- refunded or revoked
+    offer :: Bool -- in a free trial or an introductory price
+  }
+  deriving (Show)
+
 noStoreVerifier :: StoreVerifier
-noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, verifyTimeout = 10000000}
+noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 10000000}
 
 -- | Nothing for a payment no store made. Exceptions are not logged, since they can quote the receipt
 -- or, from Google, a URL holding the token.
 toStoreReceipt :: StoreVerifier -> ServicePayment -> Maybe (Either StoreRefusal StoreReceipt)
-toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, verifyTimeout} = \case
-  SPApple {jws} -> Just $ case appleTransactionId jws of
+toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, acknowledgeGoogleSubscription, verifyTimeout} = \case
+  SPApple {jws} -> Just $ case appleTransactionRef jws of
     Nothing -> Left $ SRInvalid "names no transaction"
-    Just ref -> Right $ StoreReceipt (StoreTransactionRef PPApple ref) (maybe unconfigured (\verify -> offline $ verify jws) verifyApple) Nothing
+    Just ref ->
+      Right
+        StoreReceipt
+          { txRef = StoreTransactionRef PPApple ref,
+            receiptProductId = Nothing,
+            subscriptionRef = SubscriptionApple ref,
+            verifyReceipt = maybe unconfigured (\verify -> offline $ verify jws) verifyApple,
+            acknowledgeReceipt = Nothing,
+            acknowledgeSubscription = Nothing
+          }
   SPGoogle {productId, token}
     -- the claim is the token's hash, so neither string may name any purchase but the one it claims,
     -- whatever path a verifier builds from them
@@ -84,11 +135,16 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
     -- Play documents no token grammar, so this is our guess, and refusing to ask Play is not its verdict
     | not (googleToken token) -> Just $ Left $ SRUnreachable $ "a Play token this service will not send: " <> tokenShape token
     | otherwise ->
-        Just $ Right $
-          StoreReceipt
-            (StoreTransactionRef PPGoogle (googlePurchaseRef token))
-            (maybe unconfigured (\verify -> online "google verifier" $ verify productId token) verifyGoogle)
-            ((\acknowledge VerifiedStoreTransaction {alreadyAcknowledged} -> if alreadyAcknowledged then pure (Right ()) else online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle)
+        Just $
+          Right
+            StoreReceipt
+              { txRef = StoreTransactionRef PPGoogle (googlePurchaseRef token),
+                receiptProductId = Just productId,
+                subscriptionRef = SubscriptionGoogle token,
+                verifyReceipt = maybe unconfigured (\verify -> online "google verifier" $ verify productId token) verifyGoogle,
+                acknowledgeReceipt = (\acknowledge VerifiedStoreTransaction {alreadyAcknowledged} -> if alreadyAcknowledged then pure (Right ()) else online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogle,
+                acknowledgeSubscription = (\acknowledge -> online "acknowledging: google" $ acknowledge productId token) <$> acknowledgeGoogleSubscription
+              }
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
   where
@@ -97,11 +153,53 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, veri
     offline verdict =
       (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))
         `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
-    online what call =
-      (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout verifyTimeout (call >>= forced))
-        `catchOwn'` \_ -> pure $ Left $ SRUnreachable $ what <> " threw"
-    -- a verdict holding a thunk that throws would otherwise throw later, outside these handlers
-    forced = either (fmap Left . evaluate) (fmap Right . evaluate)
+    online = askStore verifyTimeout
+
+-- | Both stores are asked online about a subscription, so a throw or an overrun is no verdict. A test
+-- purchase is refused here, for a first purchase and a renewal alike.
+checkStoreSubscription :: StoreVerifier -> SubscriptionRef -> Maybe Text -> IO (Either StoreRefusal SubscriptionCheck)
+checkStoreSubscription StoreVerifier {checkSubscription, verifyTimeout} ref product_ = case checkSubscription of
+  Nothing -> pure $ Left SRNotConfigured
+  Just check -> (>>= notTest) <$> askStore verifyTimeout "subscription check" (check ref product_)
+  where
+    notTest = \case
+      SubscriptionCheck {testSubscription = True} -> Left SRTestPurchase
+      checked -> Right checked
+
+-- | Thrown by a verifier that cannot place what the store signed: its own failure, never the store's answer or silence.
+newtype StoreVerifierFailure = StoreVerifierFailure Text
+  deriving (Show)
+
+instance Exception StoreVerifierFailure
+
+askStore :: Int -> Text -> IO (Either StoreRefusal a) -> IO (Either StoreRefusal a)
+askStore limit what call =
+  (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout limit ((call >>= forced) `catch` verifierFailed))
+    `catchOwn'` \_ -> pure $ Left $ SRUnreachable $ what <> " threw"
+  where
+    verifierFailed (StoreVerifierFailure reason) = pure $ Left $ SRVerifierFailed reason
+
+-- | A request to a store: its status and a body of at most a mebibyte. http-client's exceptions show
+-- the request, whose URL can hold a purchase token, so only their kind is kept.
+storeRequest :: Manager -> Text -> (Request -> Request) -> Text -> IO (Either StoreRefusal (Int, LB.ByteString))
+storeRequest manager store prepare url =
+  try (parseRequest (T.unpack url) >>= \req -> withResponse (prepare req) manager readBody) >>= \case
+    Left (e :: HttpException) -> pure $ Left $ SRUnreachable $ "request to " <> store <> " failed: " <> failureKind e
+    Right (code, body)
+      | LB.length body > maxStoreBytes -> pure $ Left $ SRVerifierFailed $ store <> " answered HTTP " <> tshow code <> " with over " <> tshow maxStoreBytes <> " bytes"
+      | otherwise -> pure $ Right (code, body)
+  where
+    readBody resp = (statusCode (responseStatus resp),) <$> brReadSome (responseBody resp) (fromIntegral maxStoreBytes + 1)
+    failureKind = \case
+      HttpExceptionRequest _ content -> T.pack $ takeWhile (/= ' ') $ show content
+      InvalidUrlException _ _ -> "InvalidUrlException"
+
+maxStoreBytes :: Int64
+maxStoreBytes = 1024 * 1024
+
+-- | A verdict holding a thunk that throws would otherwise throw later, outside the handlers.
+forced :: Either StoreRefusal a -> IO (Either StoreRefusal a)
+forced = either (fmap Left . evaluate) (fmap Right . evaluate)
 
 googleProductId :: Text -> Bool
 googleProductId pid = case T.uncons pid of

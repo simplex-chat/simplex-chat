@@ -64,6 +64,23 @@ sealed class ActiveFilter {
   data object Unread: ActiveFilter()
 }
 
+private fun renewalPrice(): String? {
+  val badgeState = BadgeModel.badgeState.value ?: return null
+  val subscription = badgeState.subscription ?: return null
+  return BadgeStore.subscriptionPrice(badgeState.badgeType, subscription.planMonths)
+}
+
+@Composable
+private fun BadgeAlertBanner(title: String, subtitle: String, warning: Boolean = false) {
+  SupportSimpleXBanner(
+    title = title,
+    subtitle = subtitle,
+    warning = warning,
+    onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
+    onDismiss = { showBadgeAlertDismissAlert(title) }
+  )
+}
+
 private fun showBadgeAlertDismissAlert(title: String) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = title,
@@ -1072,31 +1089,33 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ToggleChatListCard()
       }
     }
-    // one slot: a badge the user paid for ending outranks the pitch to get one
-    val alert = BadgeModel.alert.value
-    if (supportEnded() && alert != null) {
+    // one slot: an alert about a badge the user paid for outranks the pitch to get one
+    val alert = bannerBadgeAlert()
+    if (alert != null) {
       item {
-        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeAlert }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
-          SupportSimpleXBanner(
-            title = stringResource(MR.strings.badges_support_ended),
-            subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
-            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
-            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_support_ended)) }
-          )
-        }
-      }
-    } else if (badgeIssueFailed()) {
-      item {
-        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
-        Box(Modifier.zIndex(1f).padding(16.dp)) {
-          SupportSimpleXBanner(
-            title = stringResource(MR.strings.badges_renewal_failed),
-            subtitle = stringResource(MR.strings.badges_tap_for_details),
-            warning = true,
-            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
-            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_renewal_failed)) }
-          )
+          when (alert.kind) {
+            is BadgeAlertKind.SupportEnded ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_support_ended), String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText))
+            is BadgeAlertKind.IssueFailed ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_renewal_failed), stringResource(MR.strings.badges_tap_for_details), warning = true)
+            is BadgeAlertKind.SubscriptionEnded ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_subscription_ended_title), String.format(stringResource(MR.strings.badges_subscription_ended_on), alert.dateText))
+            is BadgeAlertKind.PaymentIssue ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_payment_problem_title), stringResource(MR.strings.badges_tap_for_details), warning = true)
+            is BadgeAlertKind.SubscriptionCancelled ->
+              BadgeAlertBanner(stringResource(MR.strings.badges_subscription_cancelled_title), String.format(stringResource(MR.strings.badges_stays_until), alert.dateText))
+            is BadgeAlertKind.RenewalApproaching -> {
+              val price = renewalPrice()
+              if (price != null) {
+                BadgeAlertBanner(stringResource(MR.strings.badges_renews_soon), String.format(stringResource(MR.strings.badges_renews_on_for), alert.dateText, price))
+              } else {
+                BadgeAlertBanner(stringResource(MR.strings.badges_renews_soon), String.format(stringResource(MR.strings.badges_renews_on), alert.dateText))
+              }
+            }
+            is BadgeAlertKind.PrepaidEnding, is BadgeAlertKind.Unknown -> {}
+          }
         }
       }
     } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {

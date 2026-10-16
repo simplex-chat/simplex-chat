@@ -5,6 +5,7 @@
 module Bots.BadgeService.ConfigTests where
 
 import BadgeService.Config
+import Control.Monad (forM_)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.Ini (readIniFile)
@@ -56,6 +57,8 @@ badgeConfigTests = describe "badge service config" $ do
   it "configures no store verifier when [apple] and [google] are absent" testStoresAbsent
   it "reads [apple] and [google], defaulting Google's endpoints" testStoresRead
   it "refuses an incomplete [apple] or [google], naming the key" testStoresIncomplete
+  it "reads the App Store Server API key, defaulting to the production host" testAppleServerApi
+  it "refuses an App Store Server API key missing a setting, or an http host" testAppleServerApiIncomplete
   it "refuses accept_unverified_store_receipts beside a real store verifier" testDevUnverifiedBesideVerifier
   groupConfigTests
 
@@ -399,7 +402,7 @@ testStoresAbsent = withIni fullIni $ \p -> do
 testStoresRead :: IO ()
 testStoresRead = withIni (fullIni <> appleIni <> googleIni) $ \p -> do
   Right cfg <- readServiceConfig p
-  appleStore cfg `shouldBe` Just AppleStoreConfig {aBundleId = "chat.simplex.app", aRootCertificates = "/etc/badges/AppleRootCA-G3.cer" :| ["/etc/badges/AppleRootCA-G4.cer"]}
+  appleStore cfg `shouldBe` Just AppleStoreConfig {aBundleId = "chat.simplex.app", aRootCertificates = "/etc/badges/AppleRootCA-G3.cer" :| ["/etc/badges/AppleRootCA-G4.cer"], aServerApi = Nothing}
   playStore cfg
     `shouldBe` Just
       PlayStoreConfig
@@ -420,6 +423,37 @@ testStoresIncomplete = do
       withIni (fullIni <> section) readServiceConfig >>= \case
         Left e -> e `shouldContain` key
         Right _ -> expectationFailure ("an incomplete section must fail at boot, naming " <> key)
+
+appleApiIni :: T.Text
+appleApiIni = "api_key_id = 2X9R4HXF34\napi_issuer_id = 57246542-96fe-1a63-e053-0824d011072a\napi_private_key_file = /etc/badges/AuthKey_2X9R4HXF34.p8\n"
+
+testAppleServerApi :: IO ()
+testAppleServerApi = do
+  withIni (fullIni <> appleIni <> appleApiIni) $ \p -> do
+    Right cfg <- readServiceConfig p
+    (appleStore cfg >>= aServerApi)
+      `shouldBe` Just
+        AppleServerApi
+          { aKeyId = "2X9R4HXF34",
+            aIssuerId = "57246542-96fe-1a63-e053-0824d011072a",
+            aPrivateKeyFile = "/etc/badges/AuthKey_2X9R4HXF34.p8",
+            aApiHost = "https://api.storekit.itunes.apple.com"
+          }
+  withIni (fullIni <> appleIni <> appleApiIni <> "api_host = https://api.storekit-sandbox.itunes.apple.com\n") $ \p -> do
+    Right cfg <- readServiceConfig p
+    (aApiHost <$> (appleStore cfg >>= aServerApi)) `shouldBe` Just "https://api.storekit-sandbox.itunes.apple.com"
+
+-- | One or two of the key's settings would leave subscriptions unverified without a word, so they are refused.
+testAppleServerApiIncomplete :: IO ()
+testAppleServerApiIncomplete = do
+  forM_ ["api_key_id", "api_issuer_id", "api_private_key_file"] $ \key ->
+    refused (T.unlines $ filter (not . (key `T.isPrefixOf`)) $ T.lines appleApiIni) "apple.api_key_id, apple.api_issuer_id and apple.api_private_key_file"
+  refused (appleApiIni <> "api_host = http://api.storekit.itunes.apple.com\n") "apple.api_host"
+  where
+    refused keys message =
+      withIni (fullIni <> appleIni <> keys) readServiceConfig >>= \case
+        Left e -> e `shouldContain` message
+        Right _ -> expectationFailure ("an incomplete API key must fail at boot, naming " <> message)
 
 testDevUnverifiedBesideVerifier :: IO ()
 testDevUnverifiedBesideVerifier =

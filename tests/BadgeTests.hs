@@ -11,13 +11,14 @@ module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
 import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
-import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
+import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically)
 import Control.Exception (SomeAsyncException, SomeException, catch, fromException, throwIO)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
+import qualified Data.ByteString.Lazy as LB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -34,12 +35,15 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
-import Simplex.Chat.Badges.Types (BadgeIssueFailure (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeSubscription (..))
+import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, storeTransactionRef)
-import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, storeTransactionRef)
+import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts, appleTransactionRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
+import qualified Simplex.Chat.Store.Badges as SB
+import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
@@ -91,6 +95,7 @@ badgeTests = do
     it "leaves an entry ahead of the clock unjudged, and rejects one behind the entry it follows" testChecksTimestamps
     it "leaves an entry type it cannot derive unchecked, its months still checked" testChecksUnknownType
     it "rejects an entry it cannot rebuild whose coverage or months contradict the ledger" testChecksUncheckedInvariants
+    it "accepts every row a store charge adds, on each path a subscription renews by" testChargeRowsVerify
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
     it "backs off to the cap" testRetryBackoff
@@ -105,10 +110,16 @@ badgeTests = do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
     it "purchaseBadge request matches the schema" testPurchaseRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
+    it "badgeCredential carries a subscription's state, and reads one it does not know as unknown" testCredentialSubscriptionJSON
     it "error response matches the schema" testErrorResponseJSON
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
+  describe "badge state" $ do
+    it "carries a subscription's plan and last seen state, renewing only when it was seen renewing, and bounds a state it does not know" testBadgeSubscriptionJSON
+    it "derives one alert for a subscription in order of urgency, dated paidThrough, and leaves prepaid alerts as they were" testSubscriptionAlertDerivation
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
+    it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
+    it "reads an Apple transaction's id, purchase date, revocation and type from its unverified payload" testAppleTransactionFacts
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
@@ -683,6 +694,94 @@ testChecksUncheckedInvariants = do
   verdicts start (Just issued) [owing] `shouldBe` [Just False]
   bMonths owing `shouldBe` bMonths issued - 3
 
+-- the service's step for a charge it grants: the planner's rows, then the issue at now
+charged :: UTCTime -> UTCTime -> Int -> StatementEntry -> [StatementEntry]
+charged periodStart now months tip = rows <> maybeToList (issue now $ finalBalance tip rows)
+  where
+    rows = chargeEntries periodStart now months "ch1" ("", "", "") tip
+
+rowKind :: StatementEntry -> T.Text
+rowKind StatementEntry {entryType} = case entryType of
+  SECredit c -> creditTypeTag c
+  SEDebit d -> debitTypeTag d
+
+rowAt :: StatementEntry -> UTCTime
+rowAt StatementEntry {createdAt} = createdAt
+
+bAnchor :: StatementEntry -> UTCTime
+bAnchor StatementEntry {balanceAnchorTs} = balanceAnchorTs
+
+-- the client checks a statement from the first row the service wrote, as a new purchase receives it
+allVerify :: HasCallStack => [StatementEntry] -> Expectation
+allVerify rows = verdicts (rowAt $ last rows) Nothing rows `shouldBe` map (const $ Just True) rows
+
+-- A grant dated to the store's period start is checked by re-running it at that start, after rows
+-- written earlier and before the lapses and issue written at the request: each path a subscription
+-- renews by must keep both the dates in order and the recompute exact.
+testChargeRowsVerify :: IO ()
+testChargeRowsVerify = do
+  let p0 = at 2026 3 10
+      days n = addUTCTime (n * nominalDay)
+      firstCharge = charged p0 (addUTCTime 600 p0) 1 (newBalance p0)
+      afterFirst = finalBalance (newBalance p0) firstCharge
+  -- a first charge, granted onto the seed the service starts a purchase from
+  map rowKind firstCharge `shouldBe` ["charge", "badge"]
+  allVerify firstCharge
+  -- monthly renewals, each charged at the store's period start and asked about some days after it
+  let renew (tip, rows) (k, late) =
+        let periodStart = addMonths k p0
+            new = charged periodStart (days late periodStart) 1 tip
+         in (finalBalance tip new, rows <> new)
+      (_, monthly) = foldl renew (afterFirst, firstCharge) [(1, 3), (2, 6), (3, 1)]
+  map rowKind monthly `shouldBe` concat (replicate 4 ["charge", "badge"])
+  allVerify monthly
+  -- a period start equal to the balance start continues the run on its anchor
+  let sameStart = charged (bStart afterFirst) (days 4 $ bStart afterFirst) 1 afterFirst
+  map rowKind sameStart `shouldBe` ["charge", "badge"]
+  map bAnchor (take 1 sameStart) `shouldBe` [p0]
+  allVerify (firstCharge <> sameStart)
+  -- and a store clock a minute either side of it still verifies, whichever branch the grant takes
+  mapM_
+    ( \offset -> do
+        let rows = charged (addUTCTime offset $ bStart afterFirst) (days 4 $ bStart afterFirst) 1 afterFirst
+        map rowKind rows `shouldBe` ["charge", "badge"]
+        allVerify (firstCharge <> rows)
+    )
+    [-60, 60]
+  -- a renewal after billing retry: the store's new period starts when the charge recovered, and the
+  -- run restarts there, so coverage follows the store's new renewal date
+  let recoveredAt = days 9 (addMonths 1 p0)
+      recovered = charged recoveredAt (days 1 recoveredAt) 1 afterFirst
+  map rowKind recovered `shouldBe` ["charge", "badge"]
+  map bStart (take 1 recovered) `shouldBe` [recoveredAt]
+  map paidThrough (take 1 recovered) `shouldBe` [addMonths 1 recoveredAt]
+  allVerify (firstCharge <> recovered)
+  -- annual: the first month issued at purchase, then one at each month's start
+  let annualFirst = charged p0 p0 12 (newBalance p0)
+      annualTip = finalBalance (newBalance p0) annualFirst
+      yearEnd = addMonths 12 p0
+      monthsIssued n = take n (issueAll annualTip)
+      -- the device was offline for the year's last month, which is still unissued at the renewal
+      tenMore = monthsIssued 10
+      monthLeft = finalBalance annualTip tenMore
+      renewedAnnual = charged yearEnd (days 3 yearEnd) 12 monthLeft
+  bMonths monthLeft `shouldBe` 1
+  map rowKind renewedAnnual `shouldBe` ["lapse", "charge", "badge"]
+  allVerify (annualFirst <> tenMore <> renewedAnnual)
+  -- the same, with the store's year starting an hour before the ledger's: that month has not run out
+  -- at the period start, so it is carried and lapses after the grant
+  let earlyAnnual = charged (addUTCTime (-3600) yearEnd) (days 3 yearEnd) 12 monthLeft
+  map rowKind earlyAnnual `shouldBe` ["charge", "lapse", "badge"]
+  allVerify (annualFirst <> tenMore <> earlyAnnual)
+  -- away from month nine until 45 days past the year end, while the renewal failed and recovered
+  -- inside the store's grace period, which keeps the original period start
+  let eightMore = monthsIssued 8
+      awayTip = finalBalance annualTip eightMore
+      graced = charged yearEnd (days 45 yearEnd) 12 awayTip
+  bMonths awayTip `shouldBe` 3
+  map rowKind graced `shouldBe` ["lapse", "charge", "lapse", "badge"]
+  allVerify (annualFirst <> eightMore <> graced)
+
 -- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
 -- left running can be days - long enough for a funded badge to lapse.
 testRetryClassification :: IO ()
@@ -816,17 +915,19 @@ testEntryTypeColumns = do
   mapM_ (\c -> wireTag (J.toJSON (SECredit c)) "credit" `shouldBe` Just (creditTypeTag c)) credits
   mapM_ (\d -> wireTag (J.toJSON (SEDebit d)) "debit" `shouldBe` Just (debitTypeTag d)) debits
   -- the types this version writes survive a round trip through the columns, a payment credit
-  -- through the payment its row references
+  -- through the payment its row references, and a charge credit through its charge
   mapM_
-    (\t -> uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
+    (\t -> uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
     [SECredit SCCode, SEDebit SDBadge, SEDebit SDLapse]
   let storeCredit = SECredit (SCPayment Nothing)
       invoiceCredit = SECredit (SCPayment (Just (InvoiceId "inv1")))
-  uncurry3 (entryTypeFromColumns (Just Nothing)) (entryTypeColumns storeCredit) `shouldSatisfy` sameEntryType storeCredit
-  uncurry3 (entryTypeFromColumns (Just (Just (InvoiceId "inv1")))) (entryTypeColumns invoiceCredit) `shouldSatisfy` sameEntryType invoiceCredit
+      chargeCredit = SECredit (SCCharge "ch1")
+  uncurry3 (entryTypeFromColumns (Just Nothing) Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` sameEntryType storeCredit
+  uncurry3 (entryTypeFromColumns (Just (Just (InvoiceId "inv1"))) Nothing) (entryTypeColumns invoiceCredit) `shouldSatisfy` sameEntryType invoiceCredit
+  uncurry3 (entryTypeFromColumns Nothing (Just "ch1")) (entryTypeColumns chargeCredit) `shouldSatisfy` sameEntryType chargeCredit
   -- a type that needs a reference column is not silently read back as something else
-  uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` isNothing
-  uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns (SECredit (SCCharge "ch1"))) `shouldSatisfy` isNothing
+  uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` isNothing
+  uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns chargeCredit) `shouldSatisfy` isNothing
   -- which is why every type is stored as its own JSON as well, and read from that first: the
   -- columns alone would answer a row naming an invoice or a purchase as no row at all
   mapM_ roundTrips credits
@@ -897,6 +998,35 @@ testStoreTransactionRef = do
   google `shouldBe` storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
   storeTransactionRef SPInvoice {invoiceId = InvoiceId "inv"} `shouldBe` Nothing
 
+-- every renewal of a subscription is a new transaction with a new id, and must still find the purchase its first charge made
+testAppleTransactionRef :: IO ()
+testAppleTransactionRef = do
+  let jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
+      part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      ids = ["transactionId" J..= ("2000000900000002" :: T.Text), "originalTransactionId" J..= ("2000000900000001" :: T.Text)]
+      ofType t = ("type" J..= (t :: T.Text)) : ids
+  appleTransactionRef (jws $ ofType "Auto-Renewable Subscription") `shouldBe` Just "2000000900000001"
+  appleTransactionRef (jws $ ofType "Consumable") `shouldBe` Just "2000000900000002"
+  appleTransactionRef (jws ids) `shouldBe` Just "2000000900000002"
+  -- a subscription is never claimed by its own transaction id, which the next renewal would not share
+  appleTransactionRef (jws $ take 2 (ofType "Auto-Renewable Subscription")) `shouldBe` Nothing
+
+testAppleTransactionFacts :: IO ()
+testAppleTransactionFacts = do
+  let jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
+      part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      renewal = ["transactionId" J..= ("2000000900000002" :: T.Text), "type" J..= ("Auto-Renewable Subscription" :: T.Text)]
+      facts purchaseDate revoked autoRenewable = Just AppleTransactionFacts {transactionId = "2000000900000002", purchaseDate, revoked, autoRenewable}
+  appleTransactionFacts (jws $ ("purchaseDate" J..= (1769904000000 :: Int)) : renewal) `shouldBe` facts (Just 1769904000000) False True
+  -- the service reads a null revocationDate as not revoked, and so does the client
+  appleTransactionFacts (jws $ ("revocationDate" J..= J.Null) : renewal) `shouldBe` facts Nothing False True
+  appleTransactionFacts (jws $ ("revocationDate" J..= (1770000000000 :: Int)) : renewal) `shouldBe` facts Nothing True True
+  -- a date that does not read is absent, and leaves the rest of the payload readable
+  appleTransactionFacts (jws $ ("purchaseDate" J..= ("yesterday" :: T.Text)) : renewal) `shouldBe` facts Nothing False True
+  appleTransactionFacts (jws $ take 1 renewal <> ["type" J..= ("Consumable" :: T.Text)]) `shouldBe` facts Nothing False False
+  appleTransactionFacts (jws $ drop 1 renewal) `shouldBe` Nothing
+  appleTransactionFacts "not.a-jws" `shouldBe` Nothing
+
 testShownServiceRequest :: IO ()
 testShownServiceRequest = do
   drg <- C.newRandom
@@ -927,13 +1057,14 @@ testGoogleTokenPath = do
   mapM_ (\t -> unsent t `shouldBe` True) ["a/b", "../x", "t?x", "t#x", "t x", ""]
 
 uncalledVerifier :: StoreVerifier
-uncalledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", acknowledgeGoogle = Nothing, verifyTimeout = 500000}
+uncalledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 500000}
 
 validPlayToken :: T.Text
 validPlayToken = "fake-play-token.AO-J1Oz9x2kqE7wYt3"
 
 testMockVouchesForClaim :: IO ()
 testMockVouchesForClaim = do
+  mockStoreVerifier <- newMockStoreVerifier getCurrentTime
   let part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
       signed = T.intercalate "." [part "{\"alg\":\"ES256\"}", part "{\"transactionId\":\"2000000812345671\",\"productId\":\"BADGE_SUPPORTER_01\"}", "c2lnbmVk"]
       vouchesForClaim payment = case toStoreReceipt mockStoreVerifier payment of
@@ -965,7 +1096,7 @@ testCredentialResponseJSON = do
   mk <- generateMasterKey drg
   let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry = futureTime, badgeExtra = ""}
   Right cred <- issueBadge testKeyIdx sk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = info})
-  let resp = BSPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}}
+  let resp = BSPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Nothing}
   J.toJSON resp
     `shouldBe` J.object
       [ "type" J..= ("badgeCredential" :: T.Text),
@@ -973,6 +1104,104 @@ testCredentialResponseJSON = do
         "statement" J..= J.object ["entries" J..= ([] :: [J.Value])]
       ]
   roundTrips resp
+
+testCredentialSubscriptionJSON :: IO ()
+testCredentialSubscriptionJSON = do
+  let states = [(SSRenewing, "renewing"), (SSCancelled, "cancelled"), (SSBillingRetry, "billingRetry"), (SSEnded, "ended")]
+  mapM_ (\(s, t) -> (J.toJSON s, J.fromJSON (J.String t)) `shouldBe` (J.String t, J.Success s)) states
+  let response subscription_ = J.object $ ["type" J..= ("badgeCredential" :: T.Text), "statement" J..= J.object ["entries" J..= ([] :: [J.Value])]] <> maybe [] (\s -> ["subscription" J..= (s :: T.Text)]) subscription_
+      subscriptionOf v = case J.fromJSON v of
+        J.Success BSPBadgeCredential {subscription} -> Right subscription
+        J.Success _ -> Left "not a badgeCredential"
+        J.Error e -> Left e
+  subscriptionOf (response Nothing) `shouldBe` Right Nothing
+  subscriptionOf (response (Just "billingRetry")) `shouldBe` Right (Just SSBillingRetry)
+  -- a state added by a newer service does not fail the response, and is not read as ended
+  subscriptionOf (response (Just "paused")) `shouldBe` Right (Just (SSUnknown "paused"))
+  J.toJSON (SSUnknown "paused") `shouldBe` J.String "paused"
+  let resp = BSPBadgeCredential {credential = Nothing, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}, subscription = Just SSRenewing}
+  J.toJSON resp `shouldBe` response (Just "renewing")
+  roundTrips resp
+
+testBadgeSubscriptionJSON :: IO ()
+testBadgeSubscriptionJSON = do
+  drg <- C.newRandom
+  (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  let badgeState subscription =
+        BT.BadgeState {badgePurchaseId = 1, purchaseKey = k, badgeType = BTSupporter, shown = BoolDef True, monthsLeft = 0, paidThrough = futureTime, renewsAt = Nothing, willRenew = False, alert = Nothing, issueError = Nothing, nextWakeAt = Nothing, subscription}
+      subscriptionField v = case J.toJSON v of
+        J.Object o -> KM.lookup "subscription" o
+        _ -> Nothing
+  subscriptionField (badgeState Nothing) `shouldBe` Nothing
+  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 12, status = Just SSCancelled})
+    `shouldBe` Just (J.object ["planMonths" J..= (12 :: Int), "status" J..= ("cancelled" :: T.Text)])
+  -- not yet observed: the field is left out rather than sent as null
+  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 1, status = Nothing})
+    `shouldBe` Just (J.object ["planMonths" J..= (1 :: Int)])
+  let renewal status = badgeRenewal futureTime $ Just BadgeSubscription {planMonths = 1, status}
+  renewal (Just SSRenewing) `shouldBe` (Just futureTime, True)
+  mapM_ (\s -> renewal s `shouldBe` (Nothing, False)) [Nothing, Just SSCancelled, Just SSBillingRetry, Just SSEnded, Just (SSUnknown "renewing soon")]
+  badgeRenewal futureTime Nothing `shouldBe` (Nothing, False)
+  boundedSubscriptionState SSBillingRetry `shouldBe` SSBillingRetry
+  boundedSubscriptionState (SSUnknown "onHold") `shouldBe` SSUnknown "onHold"
+  boundedSubscriptionState (SSUnknown "Visit evil.example.com!\ESC[2J") `shouldBe` SSUnknown "Visitevilexamplecom2J"
+  boundedSubscriptionState (SSUnknown (T.replicate 100 "a")) `shouldBe` SSUnknown (T.replicate 32 "a")
+  boundedSubscriptionState (SSUnknown "") `shouldBe` SSUnknown "unknown"
+
+testSubscriptionAlertDerivation :: IO ()
+testSubscriptionAlertDerivation = do
+  drg <- C.newRandom
+  (k, pk) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  mk <- generateMasterKey drg
+  let start = at 2026 3 10
+      ends = addMonths 1 start
+      balance = grant start 1 (newBalance start)
+      failedAt = at 2026 3 20
+      failure = BadgeIssueError {failedSince = failedAt, lastAttemptAt = failedAt, reason = BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False}}
+      early = addUTCTime (-10 * nominalDay) ends
+      soon = addUTCTime (-nominalDay) ends
+      past = addUTCTime nominalDay ends
+      subscription months st = SB.PKSubscription BadgeSubscription {planMonths = months, status = st}
+      alertOf t kind' isShown err =
+        let p = SB.UserBadgePurchase {badgePurchaseId = 1, purchaseKey = k, purchasePrivKey = pk, masterKey = mk, badgeType = BTSupporter, shown = isShown, alertAcked = Nothing, alertSnoozeUntil = Nothing, issueError = err, nextWakeAt = Nothing, unrenewedRun = Nothing, purchaseKind = kind'}
+         in (\BT.BadgeAlert {kind, date} -> (kind, date)) <$> derivedBadgeAlert t p Nothing balance
+      renewing = Just SSRenewing
+      cancelled = Just SSCancelled
+      billingRetry = Just SSBillingRetry
+  mapM_
+    (\(t, kind', isShown, err, expected) -> alertOf t kind' isShown err `shouldBe` expected)
+    [ -- retired at or after paidThrough, whatever else holds
+      (past, subscription 1 renewing, False, Nothing, Just (BASubscriptionEnded, ends)),
+      (past, subscription 12 billingRetry, False, Just failure, Just (BASubscriptionEnded, ends)),
+      (past, subscription 1 cancelled, False, Nothing, Just (BASubscriptionEnded, ends)),
+      -- still shown past paidThrough: waiting for the store to charge
+      (past, subscription 1 renewing, True, Nothing, Nothing),
+      (past, subscription 12 Nothing, True, Nothing, Nothing),
+      (past, subscription 1 cancelled, True, Nothing, Nothing),
+      -- billing retry before and after paidThrough, over a renewal failure
+      (early, subscription 12 billingRetry, True, Nothing, Just (BAPaymentIssue, ends)),
+      (past, subscription 1 billingRetry, True, Just failure, Just (BAPaymentIssue, ends)),
+      -- a renewal failure over a cancellation and a reminder
+      (soon, subscription 1 cancelled, True, Just failure, Just (BAIssueFailed, failedAt)),
+      (soon, subscription 12 renewing, True, Just failure, Just (BAIssueFailed, failedAt)),
+      (early, subscription 1 cancelled, True, Nothing, Just (BASubscriptionCancelled, ends)),
+      (soon, subscription 12 cancelled, True, Nothing, Just (BASubscriptionCancelled, ends)),
+      -- reminded only for a renewing annual plan, and only in the last three days
+      (soon, subscription 12 renewing, True, Nothing, Just (BARenewalApproaching, ends)),
+      (early, subscription 12 renewing, True, Nothing, Nothing),
+      (soon, subscription 1 renewing, True, Nothing, Nothing),
+      (soon, subscription 12 Nothing, True, Nothing, Nothing),
+      (soon, subscription 12 (Just $ SSUnknown "paused"), True, Nothing, Nothing),
+      (soon, subscription 1 (Just SSEnded), True, Nothing, Nothing),
+      -- prepaid, as before
+      (past, SB.PKPrepaid, True, Nothing, Just (BASupportEnded, ends)),
+      (past, SB.PKPrepaid, False, Just failure, Just (BASupportEnded, ends)),
+      (soon, SB.PKPrepaid, True, Just failure, Just (BAIssueFailed, failedAt)),
+      (soon, SB.PKPrepaid, True, Nothing, Nothing)
+    ]
+  -- the reminder starts exactly three days before paidThrough
+  alertOf (addUTCTime (-3 * nominalDay) ends) (subscription 12 renewing) True Nothing `shouldBe` Just (BARenewalApproaching, ends)
+  alertOf (addUTCTime (-3 * nominalDay - 1) ends) (subscription 12 renewing) True Nothing `shouldBe` Nothing
 
 testErrorResponseJSON :: IO ()
 testErrorResponseJSON = do

@@ -20,7 +20,8 @@ schemaMigrations :: [(String, Query, Maybe Query)]
 schemaMigrations =
   [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
-    ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts)
+    ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
+    ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -190,6 +191,66 @@ ALTER TABLE @badge_purchases DROP COLUMN payment_id;
 DROP INDEX @idx_payments_provider_ref;
 
 CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
+|]
+
+m20261012_badge_subscriptions :: Query
+m20261012_badge_subscriptions =
+  withPrefix
+    servicePrefix
+    -- provider_token is a Play purchase token, a bearer secret: it is kept only for a subscription, which Play is asked about again.
+    [sql|
+CREATE TABLE @subscription_charges(
+  charge_id TEXT NOT NULL PRIMARY KEY,
+  payment_id TEXT NOT NULL REFERENCES @payments ON DELETE CASCADE,
+  provider_charge_ref TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  period_start TEXT NOT NULL,
+  period_end TEXT NOT NULL,
+  amount INTEGER,
+  currency TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(payment_id, provider_charge_ref)
+) STRICT;
+
+ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
+
+CREATE UNIQUE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id);
+
+ALTER TABLE @payments ADD COLUMN subscription_state TEXT;
+
+ALTER TABLE @payments ADD COLUMN subscription_checked_at TEXT;
+
+ALTER TABLE @payments ADD COLUMN provider_token TEXT;
+
+ALTER TABLE @payments DROP COLUMN subscription_renews_at;
+
+ALTER TABLE @payments DROP COLUMN grace_until;
+
+ALTER TABLE @payments DROP COLUMN cancelled;
+|]
+
+down_m20261012_badge_subscriptions :: Query
+down_m20261012_badge_subscriptions =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @payments ADD COLUMN subscription_renews_at TEXT;
+
+ALTER TABLE @payments ADD COLUMN grace_until TEXT;
+
+ALTER TABLE @payments ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @payments DROP COLUMN provider_token;
+
+ALTER TABLE @payments DROP COLUMN subscription_checked_at;
+
+ALTER TABLE @payments DROP COLUMN subscription_state;
+
+DROP INDEX @idx_badge_ledger_charge;
+
+ALTER TABLE @badge_ledger DROP COLUMN charge_id;
+
+DROP TABLE @subscription_charges;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

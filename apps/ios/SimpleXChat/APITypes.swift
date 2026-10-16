@@ -830,6 +830,7 @@ public enum BadgeRedeemError: Decodable, Hashable {
     case invalidReceipt
     case serviceNotConfigured
     case badgeActive
+    case storePurchaseOpen
     case serviceError(serviceError: BadgeServiceErrorCode)
     case invalidResponse(message: String)
     case unknownKeyIndex

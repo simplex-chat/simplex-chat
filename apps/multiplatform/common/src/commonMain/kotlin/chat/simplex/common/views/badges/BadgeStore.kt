@@ -42,15 +42,11 @@ val badgeStoreProductIds: List<BadgeStoreProductId> = BadgeLevel.entries.flatMap
   BadgePeriod.entries.map { badgeStoreProductId(level, it) }
 }
 
-// the only products sent to the badge service: nothing delivers a subscription yet
+val badgeProductIds: Set<String> = badgeStoreProductIds.map { it.productId }.toSet()
+
+// a one-time product is acknowledged when core holds it and consumed when finished; a subscription is
+// neither, as the service acknowledges it when it credits it, and Play refunds it if it never does
 val badgeOneTimeProductIds: Set<String> = badgeStoreProductIds.filter { it.basePlanId == null }.map { it.productId }.toSet()
-
-// subscriptions are for sale once renewals are delivered
-val badgePeriodsForSale: List<BadgePeriod> = listOf(BadgePeriod.OneMonth)
-
-// A subscription's id only: core mints a one-time purchase's, and a subscription is never sent to core.
-// Sent to Play as obfuscatedAccountId and echoed back on the purchase.
-fun newBadgeInvoiceId(): String = UUID.randomUUID().toString()
 
 // the page's app flag rides in the fragment, which never reaches the service
 fun badgePageUrl(linkReturns: Boolean): String =
@@ -95,7 +91,9 @@ data class BadgeStoreReceipt(
   val token: String,
   val productId: String,
   val invoiceId: String?,
-  val acknowledged: Boolean = false
+  val acknowledged: Boolean = false,
+  // a subscription's, as Play lists it; null for a one-time product
+  val autoRenewing: Boolean? = null
 )
 
 // TODO [badges] Play Billing has no offline product configuration. Set to true to price the screens
@@ -191,6 +189,10 @@ object BadgeStore {
     return if (rhId == chatModel.remoteHostId() && readFor == userId) purchases else emptyList()
   }
 
+  // Play gives a subscription bought again a new token, and refuses to sell one the account still has
+  @Suppress("UNUSED_PARAMETER")
+  fun forSale(period: BadgePeriod): Boolean = true
+
   fun price(level: BadgeLevel, period: BadgePeriod, compact: Boolean = true): BadgePrice = when (state.value) {
     LoadState.NotLoaded, LoadState.Loading -> BadgePrice.Loading
     LoadState.Loaded, LoadState.Failed -> {
@@ -230,16 +232,10 @@ object BadgeStore {
     }
   }
 
-  // A one-time purchase has its core record before the store charges, and every store outcome reaches it.
+  // A purchase has its core record before the store charges, and every store outcome reaches it.
   suspend fun purchase(level: BadgeLevel, period: BadgePeriod): BadgePurchaseOutcome {
     val id = badgeStoreProductId(level, period)
     if (!products.value.containsKey(id)) throw BadgeStoreError.ProductUnavailable(id.productId)
-    // a subscription is never sent to core, so nothing would ever finish it later
-    if (id.productId !in badgeOneTimeProductIds) {
-      val outcome = storePurchase(id, newBadgeInvoiceId())
-      if (outcome is BadgePurchaseOutcome.Purchased) finish(outcome.receipt)
-      return outcome
-    }
     val rhId = chatModel.remoteHostId()
     val userId = chatModel.currentUser.value?.userId ?: throw BadgeStoreError.NoActiveProfile
     val invoiceId = chatModel.controller.apiCreateBadgeInvoice(rhId, userId)
@@ -248,7 +244,7 @@ object BadgeStore {
     try {
       val outcome = storePurchase(id, invoiceId)
       if (outcome is BadgePurchaseOutcome.Purchased) {
-        handOver(outcome.receipt)
+        handOver(outcome.receipt, listed = false)
       }
       return outcome
     } finally {
@@ -260,7 +256,8 @@ object BadgeStore {
     val outcome = if (useBadgeTestProducts) {
       BadgePurchaseOutcome.Purchased(
         BadgeStoreReceipt(
-          token = "test-${UUID.randomUUID()}",
+          // the dev service's mock reads a subscription's plan from its token, as Play's real ones name none
+          token = if (id.basePlanId != null) "test.${id.basePlanId}.${UUID.randomUUID()}" else "test-${UUID.randomUUID()}",
           productId = id.productId,
           invoiceId = invoiceId
         )
@@ -274,13 +271,14 @@ object BadgeStore {
 
   // Core holds the receipt and credits it; the purchase stays unfinished until core answers it credited
   // or refused, as an unfinished purchase is what the store re-delivers if anything is lost on the way.
-  private suspend fun handOver(receipt: BadgeStoreReceipt) {
+  private suspend fun handOver(receipt: BadgeStoreReceipt, listed: Boolean) {
     val rhId = chatModel.remoteHostId()
     val userId = chatModel.currentUser.value?.userId ?: return
-    when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, ServicePayment.Google(receipt.productId, receipt.token))) {
+    when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, listed, ServicePayment.Google(receipt.productId, receipt.token))) {
       is BadgePurchaseResult.Held -> {
-        // core holds it durably now, so Play must not refund it after three days unacknowledged
-        acknowledge(receipt)
+        // core holds it durably now, so Play must not refund it after three days unacknowledged;
+        // a subscription is acknowledged by the service when it credits it
+        if (receipt.productId in badgeOneTimeProductIds) acknowledge(receipt)
         withContext(Dispatchers.Main) {
           // the answer is the owner's, which may be another profile and a hidden one
           if (chatModel.controller.activeUser(rhId, r.user)) {
@@ -298,6 +296,9 @@ object BadgeStore {
           }
         }
         finish(receipt)
+      }
+      is BadgePurchaseResult.NotRecorded -> {
+        // left unfinished, for the device that bought it, or for Restore to claim it here
       }
       // a refusal is announced from core's event for it, so only an unexpected answer reaches the buyer
       is BadgePurchaseResult.Failed ->
@@ -358,7 +359,7 @@ object BadgeStore {
           val purchases = platform.androidUnfinishedBadgePurchases()
           // Play lists a purchase awaiting payment, so unlike on iOS the waiting state is re-found here
           withContext(Dispatchers.Main) { waitingForApproval.value = purchases.mapNotNull { (it as? BadgePurchaseOutcome.Pending)?.invoiceId }.toSet() }
-          purchases.forEach { reconcile(it) }
+          purchases.forEach { reconcileListed(it) }
         } catch (e: Exception) {
           if (e is CancellationException) throw e
           Log.e(TAG, "BadgeStore.presentUnfinished: ${e.message}")
@@ -368,33 +369,107 @@ object BadgeStore {
     } finally {
       withContext(Dispatchers.Main + NonCancellable) { reconciledOnce.value = true }
     }
+    reportSubscriptionStates()
   }
 
-  suspend fun reconcile(outcome: BadgePurchaseOutcome) {
+  // Play lists a Google account's purchases on every device signed into it, so these are handed over as listed
+  suspend fun reconcileListed(outcome: BadgePurchaseOutcome) {
+    // the purchase stays unfinished, so the next sweep hands it over again
+    try {
+      reconcile(outcome, listed = true)
+    } catch (e: Exception) {
+      if (e is CancellationException) throw e
+      Log.e(TAG, "BadgeStore.reconcile: ${e.stackTraceToString()}")
+      withContext(Dispatchers.Main) {
+        if (!sweepFailureShown) {
+          sweepFailureShown = true
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.badges_purchase_error),
+            text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
+              else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+          )
+        }
+      }
+    }
+  }
+
+  private suspend fun reconcile(outcome: BadgePurchaseOutcome, listed: Boolean) {
     when (outcome) {
       is BadgePurchaseOutcome.Purchased ->
-        if (outcome.receipt.productId !in badgeOneTimeProductIds) finish(outcome.receipt)
-        // the purchase stays unfinished, so the next sweep hands it over again
-        else try {
-          handOver(outcome.receipt)
-        } catch (e: Exception) {
-          if (e is CancellationException) throw e
-          Log.e(TAG, "BadgeStore.reconcile: ${e.stackTraceToString()}")
-          withContext(Dispatchers.Main) {
-            if (!sweepFailureShown) {
-              sweepFailureShown = true
-              AlertManager.shared.showAlertMsg(
-                title = generalGetString(MR.strings.badges_purchase_error),
-                text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
-                  else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
-              )
-            }
-          }
-        }
+        if (outcome.receipt.productId !in badgeProductIds) finish(outcome.receipt)
+        else handOver(outcome.receipt, listed)
       is BadgePurchaseOutcome.Pending ->
         if (outcome.invoiceId != null) withContext(Dispatchers.Main) { waitingForApproval.value += outcome.invoiceId }
       is BadgePurchaseOutcome.Cancelled -> {}
     }
+  }
+
+  // The service asks the store only once the paid period ends, so a cancellation or a failed charge before
+  // then is seen only here. Play lists no subscription on hold or expired, so it tells renewing or cancelled only.
+  suspend fun reportSubscriptionStates() {
+    // the store's purchases are this device's, so they are told to its own core
+    if (chatModel.remoteHostId() != null || useBadgeTestProducts || !platform.androidHasPlatformStore) return
+    try {
+      val purchases = platform.androidUnfinishedBadgePurchases()
+      if (purchases.none { (it as? BadgePurchaseOutcome.Purchased)?.receipt?.autoRenewing != null }) return
+      load()
+      for (outcome in purchases) {
+        val receipt = (outcome as? BadgePurchaseOutcome.Purchased)?.receipt ?: continue
+        val state = when (receipt.autoRenewing) {
+          true -> BadgeSubscriptionState.Renewing
+          false -> BadgeSubscriptionState.Cancelled
+          null -> null
+        }
+        if (state != null) {
+          chatModel.controller.apiSetBadgeSubscriptionStatus(null, state, ServicePayment.Google(receipt.productId, receipt.token))
+        }
+      }
+    } catch (e: Exception) {
+      if (e is CancellationException) throw e
+      Log.e(TAG, "BadgeStore.reportSubscriptionStates: ${e.message}")
+    }
+  }
+
+  // Play's page opens over the app, so the foreground sweep re-reads the subscription on return
+  fun manageSubscriptions(badgeType: BadgeType) {
+    val level = BadgeLevel.entries.firstOrNull { it.badgeType == badgeType } ?: return
+    platform.androidManageBadgeSubscription(badgeStoreProductId(level, BadgePeriod.Monthly).productId)
+  }
+
+  // Hands over as the device's own whatever the store lists, so a purchase no record here has is claimed by this profile.
+  // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
+  suspend fun restorePurchases(): Boolean {
+    var handOverError: Exception? = null
+    val purchases = if (useBadgeTestProducts) emptyList() else platform.androidUnfinishedBadgePurchases()
+    for (outcome in purchases) {
+      try {
+        reconcile(outcome, listed = false)
+      } catch (e: Exception) {
+        if (e is CancellationException) throw e
+        Log.e(TAG, "BadgeStore.restorePurchases: ${e.stackTraceToString()}")
+        if (handOverError == null) handOverError = e
+      }
+    }
+    reportSubscriptionStates()
+    val rhId = chatModel.remoteHostId()
+    chatModel.controller.loadBadgeState(rhId)
+    if (handOverError != null) throw handOverError
+    return withContext(Dispatchers.Main) {
+      val userId = chatModel.currentUser.value?.userId
+      val badgeShown = BadgeModel.isCurrent(rhId, userId) && BadgeModel.badgeState.value?.shown == true
+      badgeShown || purchaseState(userId) != null
+    }
+  }
+
+  fun subscriptionPrice(badgeType: BadgeType, planMonths: Int): String? {
+    val period = when (planMonths) {
+      1 -> BadgePeriod.Monthly
+      12 -> BadgePeriod.Annual
+      else -> null
+    }
+    val level = BadgeLevel.entries.firstOrNull { it.badgeType == badgeType }
+    if (period == null || level == null) return null
+    return products.value[badgeStoreProductId(level, period)]?.displayPrice
   }
 
   private suspend fun acknowledge(receipt: BadgeStoreReceipt) {
