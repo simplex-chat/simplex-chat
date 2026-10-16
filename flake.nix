@@ -130,7 +130,15 @@
             }
           )
 
-          ] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid mobileRuntime.androidModule ++ extra-modules;
+          ] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows ({ lib, ... }: {
+            # Remove when the pin includes https://github.com/input-output-hk/haskell.nix/pull/2586.
+            packages.crypton-x509-system.patches = lib.mkForce [
+              ({ version }:
+                if builtins.compareVersions version "1.6.8" < 0
+                then "${haskellNix}/overlays/patches/crypton-x509-system-1.6.patch"
+                else "${haskellNix}/overlays/patches/crypton-x509-system.patch")
+            ];
+          }) ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid mobileRuntime.androidModule ++ extra-modules;
       }); in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
