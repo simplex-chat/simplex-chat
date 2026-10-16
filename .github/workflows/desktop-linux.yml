@@ -274,6 +274,15 @@ jobs:
         timeout-minutes: 30
         run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
+      - name: Point the app at the test directory
+        id: link
+        if: steps.backend.outcome == 'success'
+        run: |
+          link=$(cat "$RUNNER_TEMP/backend/directory-link")
+          file=apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt
+          sed -i "s|^const val DIRECTORY_SERVICE_LINK = \".*\"$|const val DIRECTORY_SERVICE_LINK = \"$link\"|" "$file"
+          grep -F "const val DIRECTORY_SERVICE_LINK = \"$link\"" "$file"
+
       # the app and its tests are still built when the backend fails
       - name: Setup Java
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
@@ -304,13 +313,13 @@ jobs:
         run: scripts/ci/desktop-linux/test-summary.py apps/multiplatform/common/build/test-results/desktopTest
 
       - name: Run smoke test
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' && steps.link.outcome != 'failure' }}
         env:
           BACKEND: ${{ steps.backend.outcome }}
         run: |
           if [ "$BACKEND" = success ]; then
             export NAMES_SERVER=$(cat "$RUNNER_TEMP/backend/names-server")
-            cases=backend
+            cases=search
           fi
           scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/smoke-test" ${cases:-}
 
