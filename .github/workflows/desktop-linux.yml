@@ -64,7 +64,7 @@ jobs:
           echo "backend=$BACKEND" | tee -a "$GITHUB_OUTPUT"
 
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded
       - name: Artifact names
@@ -94,7 +94,7 @@ jobs:
     timeout-minutes: 150
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Show runner
         run: |
@@ -118,7 +118,7 @@ jobs:
         run: scripts/ci/desktop-linux/build-backend.sh ~/backend/${{ env.BACKEND_PKG }}
 
       - name: Upload backend
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.plan.outputs.backend }}
           path: ~/backend/${{ env.BACKEND_PKG }}
@@ -134,7 +134,7 @@ jobs:
     timeout-minutes: 150
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Show runner
         run: |
@@ -158,7 +158,7 @@ jobs:
         run: scripts/ci/desktop-linux/build-core.sh ~/core/${{ env.CORE_PKG }}
 
       - name: Upload core library
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.plan.outputs.core }}
           path: ~/core/${{ env.CORE_PKG }}
@@ -175,7 +175,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -195,7 +195,7 @@ jobs:
           dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
 
       - name: Download core library
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.core }}
           path: ~/core
@@ -208,7 +208,7 @@ jobs:
 
       - name: Download backend
         if: needs.plan.outputs.run-backend == 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.backend }}
           path: ~/backend
@@ -266,7 +266,7 @@ jobs:
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-smoke-test
           path: ${{ runner.temp }}/smoke-test
@@ -275,7 +275,7 @@ jobs:
 
       - name: Upload desktop test report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-test-report
           path: |
@@ -286,7 +286,7 @@ jobs:
 
       - name: Upload backend logs
         if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-backend-logs
           path: ${{ runner.temp }}/backend/*.log
@@ -314,7 +314,7 @@ jobs:
       CLAUDE_MODEL: claude-haiku-5-5
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           persist-credentials: false
@@ -326,7 +326,7 @@ jobs:
           dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
 
       - name: Download core library
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.core }}
           path: ~/core
@@ -338,7 +338,7 @@ jobs:
 
       - name: Download backend
         if: needs.plan.outputs.run-backend == 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.backend }}
           path: ~/backend
@@ -390,7 +390,7 @@ jobs:
 
       - name: Upload Claude test results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-claude-test
           path: |
@@ -404,7 +404,7 @@ jobs:
 
       - name: Upload backend logs
         if: ${{ !cancelled() && needs.plan.outputs.run-backend == 'true' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-claude-backend-logs
           path: ${{ runner.temp }}/backend/*.log
@@ -420,7 +420,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           filter: tree:0
@@ -439,7 +439,7 @@ jobs:
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-release-smoke-test
           path: ${{ runner.temp }}/smoke-test

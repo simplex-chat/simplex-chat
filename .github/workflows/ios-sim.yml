@@ -46,7 +46,7 @@ jobs:
       contains(github.event.head_commit.message, '[app-ci:ios]') ||
       contains(github.event.head_commit.message, '[claude-test]') ||
       contains(github.event.head_commit.message, '[claude-test:ios]')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
       core: ${{ steps.names.outputs.core }}
@@ -57,7 +57,7 @@ jobs:
       start-backend: ${{ inputs.backend || contains(github.event.head_commit.message, '[ci-backend]') }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded
       - name: Artifact names
@@ -86,7 +86,7 @@ jobs:
     timeout-minutes: 240
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Show runner
         run: |
@@ -117,7 +117,7 @@ jobs:
         run: scripts/ci/ios-sim/prepare-libs.sh
 
       - name: Upload core library
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.plan.outputs.core }}
           path: ~/Downloads/${{ env.CORE_PKG }}
@@ -133,7 +133,7 @@ jobs:
     timeout-minutes: 240
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Show runner
         run: |
@@ -155,7 +155,7 @@ jobs:
         run: scripts/ci/ios-sim/build-backend.sh ~/Downloads/${{ env.BACKEND_PKG }}
 
       - name: Upload backend
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.plan.outputs.backend }}
           path: ~/Downloads/${{ env.BACKEND_PKG }}
@@ -179,7 +179,7 @@ jobs:
     steps:
       # the job later holds the Claude token, so the checkout's GitHub token is not left in .git/config
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
@@ -196,7 +196,7 @@ jobs:
         run: scripts/ci/ios-sim/use-macos26-sdk.sh
 
       - name: Download core library
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.core }}
           path: ~/Downloads
@@ -210,7 +210,7 @@ jobs:
 
       - name: Download backend
         if: env.START_BACKEND == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.backend }}
           path: ~/Downloads
@@ -269,7 +269,7 @@ jobs:
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios-sim-smoke-test
           path: ${{ runner.temp }}/smoke-test
@@ -278,7 +278,7 @@ jobs:
 
       - name: Upload backend logs
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios-sim-backend-logs
           path: |
@@ -289,7 +289,7 @@ jobs:
 
       - name: Upload Claude test results
         if: ${{ always() && env.CLAUDE_RUN == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios-sim-claude-test
           path: ${{ runner.temp }}/claude-test
