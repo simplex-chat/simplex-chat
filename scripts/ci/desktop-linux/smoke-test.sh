@@ -5,7 +5,8 @@
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" then creates a local group and makes the test SMP server (backend.sh) the one that resolves SimpleX names,
-# and stops; "backend" does the same and goes on to both layouts. Both need NAMES_SERVER, the test SMP server's address.
+# and stops; "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
+# Both need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
 # checks.txt and the job summary, and the test fails at the end if any failed. The app keeps running for later
@@ -16,6 +17,8 @@ set -euo pipefail
 app_dir=$1
 export UI_OUT=$2
 cases=${3:-layouts}
+# backend.sh registered seeded.testing for ci_contact
+name_label=seeded
 local_chat="seeded notes"
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
@@ -268,6 +271,21 @@ use_names_server() {
   back_to_chat_list || fail "no chat list after saving the servers"
 }
 
+# A bare name in the search field is offered with the .testing domain; the test SMP server resolves it to ci_contact's
+# address, and the app shows that profile before connecting.
+connect_by_name() {
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$name_label"
+  "$ui" wait "Connect to $name_label.testing" 15
+  "$ui" shot name-typed
+  "$ui" click-text "Connect to $name_label.testing"
+  check "$name_label.testing resolves to ci_contact" "$ui" wait ci_contact 60
+  check "the app offers to open a new chat with ci_contact" "$ui" wait "Open new chat" 10
+  "$ui" shot name-resolved
+  "$ui" click-text Cancel 10 || "$ui" key Escape
+  back_to_chat_list || fail "no chat list after the name's alert"
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
@@ -319,6 +337,7 @@ if [ "$cases" = setup ] || [ "$cases" = backend ]; then
     echo "smoke test setup done: \"$local_chat\" created, $NAMES_SERVER resolves names"
     exit 0
   fi
+  connect_by_name
 fi
 
 check_layout bottom
