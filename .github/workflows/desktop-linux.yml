@@ -411,6 +411,14 @@ jobs:
         timeout-minutes: 30
         run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
+      - name: Point the app at the test directory
+        if: needs.plan.outputs.run-backend == 'true'
+        run: |
+          link=$(cat "$RUNNER_TEMP/backend/directory-link")
+          file=apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt
+          sed -i "s|^const val DIRECTORY_SERVICE_LINK = \".*\"$|const val DIRECTORY_SERVICE_LINK = \"$link\"|" "$file"
+          grep -F "const val DIRECTORY_SERVICE_LINK = \"$link\"" "$file"
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -431,7 +439,14 @@ jobs:
           sudo chmod +x /usr/local/bin/ui
 
       - name: Start the app
-        run: scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/claude-test/screens" start
+        env:
+          BACKEND: ${{ needs.plan.outputs.run-backend }}
+        run: |
+          if [ "$BACKEND" = true ]; then
+            export NAMES_SERVER=$(cat "$RUNNER_TEMP/backend/names-server")
+            cases=setup
+          fi
+          scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/claude-test/screens" ${cases:-start}
 
       # Claude's Bash is limited to single ui commands by the guard hook in claude-test.sh. Claude Code's credential
       # scrub stays off: on Linux it forces its whole Bash sandbox (bubblewrap, socat), which ui isn't set up for.
@@ -440,7 +455,8 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1
-        run: scripts/ci/desktop-linux/claude-test.sh "$RUNNER_TEMP/claude-test" "$RUNNER_TEMP/claude-transcript.jsonl"
+          TEST_PROMPT: scripts/ci/desktop-linux/${{ needs.plan.outputs.run-backend == 'true' && 'claude-search.md' || 'claude-test.md' }}
+        run: scripts/ci/desktop-linux/claude-test.sh "$RUNNER_TEMP/claude-test" "$RUNNER_TEMP/claude-transcript.jsonl" "$TEST_PROMPT"
 
       - name: Report Claude usage
         if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}

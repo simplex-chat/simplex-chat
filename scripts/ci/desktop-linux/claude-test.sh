@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Runs Claude Code to repeat the smoke test with the ui helper, as claude-test.md describes, and passes when
-# its final message ends with "CLAUDE-TEST: PASS".
-# Usage: scripts/ci/desktop-linux/claude-test.sh <output dir> <transcript .jsonl>
-# Expects the app started (smoke-test.sh ... start) with UI_OUT under <output dir>, claude and ui on PATH,
+# Runs Claude Code to repeat the smoke test with the ui helper, as claude-test.md describes, or to run the test the
+# given prompt describes, and passes when its final message ends with "CLAUDE-TEST: PASS".
+# Usage: scripts/ci/desktop-linux/claude-test.sh <output dir> <transcript .jsonl> [prompt .md]
+# Expects the app started as the prompt says (smoke-test.sh ... start for claude-test.md, ... setup for
+# claude-search.md) with UI_OUT under <output dir>, claude and ui on PATH,
 # CLAUDE_MODEL and CLAUDE_CODE_OAUTH_TOKEN. Claude works in <output dir>: the screenshots, its report.md and the
 # prompt it was given end up there. The transcript, Claude Code's stderr (<transcript>.stderr) and the guard hook's
 # log (<transcript>.guard.log) are kept outside it, where Claude can't write. If any of them holds the token, all are
@@ -15,13 +16,14 @@ set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 out=$(cd "$1" && pwd)
 transcript=$2
+test_prompt=${3:-$here/claude-test.md}
 stderr=$transcript.stderr
 settings=$(mktemp)
 export CLAUDE_GUARD_LOG=$transcript.guard.log
 : > "$CLAUDE_GUARD_LOG"
 
 {
-  cat "$here/claude-test.md"
+  cat "$test_prompt"
   echo
   echo '```'
   "$here/ui" || true
