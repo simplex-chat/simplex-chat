@@ -55,6 +55,7 @@ jobs:
       run-claude: ${{ steps.jobs.outputs.claude }}
       run-backend: ${{ steps.jobs.outputs.backend }}
       run-release: ${{ steps.jobs.outputs.release }}
+      claude-backend: ${{ steps.scope.outputs.backend }}
       core: ${{ steps.names.outputs.core }}
       core-run: ${{ steps.core.outputs.run-id }}
       backend: ${{ steps.names.outputs.backend }}
@@ -73,6 +74,19 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v6
+
+      - name: Claude scope
+        id: scope
+        if: steps.jobs.outputs.claude == 'true'
+        env:
+          BACKEND: ${{ steps.jobs.outputs.backend }}
+        run: |
+          backend=$(sed -n 's/^backend: *//p' scripts/ci/desktop-linux/claude-scope)
+          echo "backend=$backend" | tee -a "$GITHUB_OUTPUT"
+          if [ "$backend" = yes ] && [ "$BACKEND" != true ]; then
+            echo "::error::claude-scope says the Claude session uses the test backend: ask for it too"
+            exit 1
+          fi
 
       # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded
       - name: Artifact names
@@ -335,8 +349,6 @@ jobs:
       # the same in both app workflows; Haiku 5.5's token counts are right from 2.1.296
       CLAUDE_CODE_VERSION: 2.1.300
       CLAUDE_MODEL: claude-haiku-5-5
-      # true when claude-test.md uses the test backend, which then starts when the run asks for it
-      CLAUDE_BACKEND: "false"
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -361,7 +373,7 @@ jobs:
           tar -xzf "$RUNNER_TEMP/desktop-app.tar.gz" -C "$RUNNER_TEMP/app"
 
       - name: Download backend
-        if: needs.plan.outputs.run-backend == 'true' && env.CLAUDE_BACKEND == 'true'
+        if: needs.plan.outputs.claude-backend == 'yes'
         uses: actions/download-artifact@v8
         with:
           name: ${{ needs.plan.outputs.backend }}
@@ -371,7 +383,7 @@ jobs:
 
       - name: Start test backend
         id: backend
-        if: needs.plan.outputs.run-backend == 'true' && env.CLAUDE_BACKEND == 'true'
+        if: needs.plan.outputs.claude-backend == 'yes'
         timeout-minutes: 30
         run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
