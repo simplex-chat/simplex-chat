@@ -93,6 +93,11 @@ jobs:
         timeout-minutes: 1
         run: nix eval --json --file scripts/nix/check-android-iserv-scope.nix
 
+      - name: Check musl interpreter link policy scope
+        if: ${{ matrix.target == 'linux-static' }}
+        timeout-minutes: 1
+        run: nix eval --json --file scripts/nix/check-musl-iserv-scope.nix
+
       - name: Check native Linux GHC ELF section alignment
         if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'native' }}
         timeout-minutes: 120

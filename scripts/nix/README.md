@@ -33,6 +33,15 @@ Musl projects declare OpenSSL in Cabal's `extra-libraries-static` field for
 `direct-sqlcipher` and `simplexmq`. GHC's fully static link path reads that field,
 so an ordinary `extra-libraries` entry alone does not supply `libcrypto`. These
 source metadata patches run before planning and require Cabal specification 3.8.
+
+Linux-built musl `ghc914-sh` iserv projects use a package-specific
+`executable-static: False` policy before Cabal v2 planning. The build-time
+interpreter needs musl's dynamic C loader for Template Haskell dependencies;
+a fully static musl executable has a `dlopen` stub. Its Haskell library ways
+and profiling selection stay unchanged, and the final CLI remains fully static.
+The pure scope check runs in the Linux static CI group:
+`nix eval --json --file scripts/nix/check-musl-iserv-scope.nix`.
+
 Windows patches Basement's `INVALID_HANDLE_VALUE` expression to `INT_PTR`, so
 hsc2hs receives the signed pointer-sized integer expected by the Haskell API.
 
