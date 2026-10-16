@@ -85,8 +85,9 @@ normalise() {
   tr -cd '[:alnum:]' <<< "$1" | tr '[:upper:]' '[:lower:]' | tr l i
 }
 
-# Prints "x y" of the text in the chat list pane, left of x 390: a phrase equal to it, else the first containing it.
-# The chats, results and Settings are there; the right pane shows the open chat, which can have the same names.
+# Prints "x y" of the text in the chat list pane, left of x 390: a phrase equal to it, else, unless the second argument
+# is "exact", the first containing it. The chats, results and Settings are there; the right pane shows the open chat,
+# which can have the same names.
 left_pane_position() {
   local target line x y found=""
   target=$(normalise "$1")
@@ -105,7 +106,7 @@ left_pane_position() {
         ;;
     esac
   done < <("$ui" text)
-  [ -n "$found" ] || return 1
+  [ -n "$found" ] && [ "${2:-}" != exact ] || return 1
   echo "$found"
 }
 
@@ -223,6 +224,19 @@ create_local_chat() {
   "$ui" shot local-chat
 }
 
+# Clicks a server role's value until its dropdown shows. The menu is open when an item reads exactly "yes", which no
+# role's value does ("default (yes)", "default (no)", "no"); it can take longer to show than OCR takes to read the screen.
+open_role_menu() {
+  for _ in 1 2 3; do
+    "$ui" click-text "$1" 10 || return 1
+    for _ in 1 2 3; do
+      left_pane_position yes exact > /dev/null && return 0
+      sleep 1
+    done
+  done
+  return 1
+}
+
 # Settings > Network & servers: the test SMP server added with the names role, and names off for the preset
 # operators, so that only the test server resolves names.
 use_names_server() {
@@ -249,12 +263,13 @@ use_names_server() {
   scroll_to "To resolve names" || fail "no \"To resolve names\" in the test server's settings"
   # A dropdown opens from its value; a custom server's roles default to yes, yes and no, so the first "default (yes)"
   # is the receiving one. A directory service can't reply to queues on this server, so it only resolves names.
-  "$ui" click-text "default (yes)"
+  open_role_menu "default (yes)" || fail "no menu for the test server's \"To receive\""
   # OCR misreads the short "no", the item after "yes"
-  read -r x y < <(left_pane_position "yes") || fail "no menu for the test server's \"To receive\""
+  read -r x y < <(left_pane_position yes exact) || fail "the \"To receive\" menu closed"
   "$ui" click "$x" $((y + 48))
-  "$ui" click-text "default (no)"
-  "$ui" click-text "yes" 10
+  open_role_menu "default (no)" || fail "no menu for the test server's \"To resolve names\""
+  read -r x y < <(left_pane_position yes exact) || fail "the \"To resolve names\" menu closed"
+  "$ui" click "$x" "$y"
   "$ui" shot names-server-roles
   # the first "default (yes)" and the first "yes" are on the lines after "To receive", so it is no
   in_line_with "default (yes)" "For private routing" || fail "the test server's \"To receive\" is still its default"
