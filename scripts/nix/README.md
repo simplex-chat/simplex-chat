@@ -14,14 +14,28 @@ loader to honor section alignment even when its file offset is unaligned.
 The stage2 RTS package patch preserves the configured source, stage1 compiler,
 plan, and package IDs, but rebuilds the final compiler and its dependent slices.
 Native, auxiliary, and cross compiler selection share this patched compiler.
-Darwin and ARM compiler configurations are unchanged. This native compiler fix
-does not patch target RTS sources or target iserv runtimes, including musl.
+The ELF fix does not patch target RTS sources or target iserv runtimes,
+including musl.
 
 The focused regression runs before the native x86_64 Linux CI build. To run it
 from this checkout, use `nix build .#checks.x86_64-linux.ghc-elf-alignment -L`.
 It loads the same 8192-byte C object with aligned and deliberately packed section
 file offsets, requiring both to retain 64-byte memory alignment and their data.
 It is a flake check, separate from the 21 existing Hydra artifact outputs.
+
+On Intel Darwin, `darwin-info-table-project.nix` patches the GHC x86 backend in
+both compiler stages. It marks info-table entry symbols as Mach-O alternate
+entries, keeping each table and its code in the same linker subsection. The
+observed Setup GC abort reads closure type zero because LLD inserts eight bytes
+between a valid `FUN_STATIC` table and its entry. Relinking the actual cached
+`directory` object reproduces that layout error; changing only alternate-entry
+symbol flags preserves the table's original 24-byte distance and closure type 14.
+The patched compiler rebuild and full Intel outputs still require CI validation.
+
+Run `nix build .#checks.x86_64-darwin.ghc-macho-info-tables -L` to compile a Haskell
+fixture with the selected compiler and check its table placement after a real
+LLD link. CI runs this check after the Intel artifact builds. It checks object
+metadata, table distances, and closure types without executing the fixture.
 
 Cross projects add `ghc-internal` to the Cabal dependencies of the pinned
 `composition-1.0.2.2` source. This preserves its deliberate avoidance of `base`
@@ -209,9 +223,11 @@ dereferencing them, then forwards to real `abort`. Its constructor
 restores the original loader environment before Setup starts compiler children
 and disables core output for the traced process tree. This adds a loaded image
 to Setup; it changes no debugger permissions or security settings. Nonzero
-exits and terminating signals remain failures. The Intel GHC abort-tracer runtime
-is unverified until CI executes it; native ARM64 and Rosetta/x86 C controls
-cover the helper.
+exits and terminating signals remain failures. The hosted Intel replay captured
+14 frames through `evacuate1` and `scavenge_loop1`. A local Setup built with the
+same cached compiler and target dependency IDs reproduces the panic in 1.55
+seconds, and its traced replay matches nine cloud frame offsets. Native ARM64
+and Rosetta/x86 C controls also cover the helper.
 A successful probe is diagnostic evidence.
 
 Hydra continues to consume

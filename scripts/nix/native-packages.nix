@@ -11,4 +11,6 @@ let
 in
 if system == "x86_64-linux"
 then native.appendOverlays [ (import ./native-rts-overlay.nix) ]
+else if system == "x86_64-darwin"
+then native.appendOverlays [ (import ./darwin-info-table-overlay.nix) ]
 else native

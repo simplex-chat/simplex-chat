@@ -1,0 +1,17 @@
+diff --git a/GHC/CmmToAsm/X86/Ppr.hs b/GHC/CmmToAsm/X86/Ppr.hs
+--- a/GHC/CmmToAsm/X86/Ppr.hs
++++ b/GHC/CmmToAsm/X86/Ppr.hs
+@@ -180,6 +180,13 @@ pprBasicBlock config info_env (BasicBlock blockid instrs)
+            pprAlignForSection platform Text $$
+            infoTableLoc $$
+            vcat (map (pprData config) info) $$
++           -- The entry point is inside the info table's Mach-O subsection.
++           -- Giving it a separate subsection lets the linker insert padding
++           -- between the table and the code, breaking tables-next-to-code.
++           -- Keep the ordinary dead-strip-preventer label as the atom start.
++           ppWhen (platformHasSubsectionsViaSymbols platform)
++             (line (text "\t.alt_entry " <> pprAsmLabel platform infoLbl)) $$
++
+            pprLabel platform infoLbl $$
+            c $$
+            ppWhen (ncgDwarfEnabled config) (line (pprBlockEndLabel platform infoLbl))

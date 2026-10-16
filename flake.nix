@@ -660,6 +660,11 @@
             inherit pkgs;
             compiler = (compilerSelection pkgs).ghc914-sh;
           };
+        } // pkgs.lib.optionalAttrs (system == "x86_64-darwin") {
+          ghc-macho-info-tables = import ./scripts/nix/check-macho-info-tables.nix {
+            inherit pkgs;
+            compiler = (compilerSelection pkgs).ghc914-sh;
+          };
         };
 
         devShell = let
