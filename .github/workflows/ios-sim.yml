@@ -180,19 +180,12 @@ jobs:
     # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
     if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
     runs-on: macos-26
-    environment:
-      name: ${{ needs.plan.outputs.run-claude == 'true' && 'app-sim-claude' || '' }}
-      deployment: false
-    timeout-minutes: 330
+    timeout-minutes: 120
     env:
-      CLAUDE_RUN: ${{ needs.plan.outputs.run-claude }}
       START_BACKEND: ${{ needs.plan.outputs.run-backend }}
     steps:
-      # the job later holds the Claude token, so the checkout's GitHub token is not left in .git/config
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          persist-credentials: false
 
       - name: Show runner
         run: |
@@ -250,29 +243,26 @@ jobs:
             DEVELOPMENT_TEAM= \
             PROVISIONING_PROFILE_SPECIFIER=
 
+      # for the Claude job; a tarball keeps the app's file modes, which an artifact drops
+      - name: Pack app
+        if: needs.plan.outputs.run-claude == 'true'
+        run: tar -czf "$RUNNER_TEMP/SimpleX.app.tar.gz" -C "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator" SimpleX.app
+
+      - name: Upload app
+        if: needs.plan.outputs.run-claude == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-app
+          path: ${{ runner.temp }}/SimpleX.app.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Install AXe
         run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
-
-      - name: Install Claude Code
-        if: env.CLAUDE_RUN == 'true'
-        run: |
-          npm install -g @anthropic-ai/claude-code@2.1.300
-          claude --version
-
-      - name: Run the device test plan with Claude
-        if: env.CLAUDE_RUN == 'true'
-        timeout-minutes: 240
-        env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          BACKEND_DIR: ${{ env.START_BACKEND == 'true' && format('{0}/backend', runner.temp) || '' }}
-        run: scripts/ci/ios-sim/claude-test.sh "$RUNNER_TEMP/claude-test"
-
-      - name: Report Claude usage
-        if: ${{ always() && env.CLAUDE_RUN == 'true' }}
-        run: scripts/ci/ios-sim/claude-usage.sh "$RUNNER_TEMP/claude-test"
 
       - name: Stop test backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
@@ -298,11 +288,107 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
+  # Claude Code runs the device test plan with the ui helper, on the app job's build in a simulator of its own. Each
+  # run spends the Claude subscription's usage limits, so it runs only when asked for. The app-sim-claude environment's
+  # branch rule decides which branches may use the token.
+  claude:
+    name: Claude tests the iOS app
+    needs: [plan, app]
+    if: ${{ !cancelled() && needs.plan.outputs.run-claude == 'true' && needs.app.result == 'success' }}
+    runs-on: macos-26
+    timeout-minutes: 330
+    environment:
+      name: app-sim-claude
+      deployment: false
+    concurrency:
+      group: ios-sim-claude-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      CLAUDE_CODE_VERSION: 2.1.300
+      # true when the device test plan uses the test backend, which then starts when the run asks for it
+      CLAUDE_BACKEND: "false"
+    steps:
+      # the job holds the Claude token, so the checkout's GitHub token is not left in .git/config
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Show runner
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun simctl list runtimes
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      - name: Download app
+        uses: actions/download-artifact@v8
+        with:
+          name: ios-sim-app
+          path: ${{ runner.temp }}
+
+      - name: Unpack app
+        run: tar -xzf "$RUNNER_TEMP/SimpleX.app.tar.gz" -C "$RUNNER_TEMP"
+
+      - name: Download backend
+        if: needs.plan.outputs.run-backend == 'true' && env.CLAUDE_BACKEND == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/Downloads
+          run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Start test backend
+        id: backend
+        if: needs.plan.outputs.run-backend == 'true' && env.CLAUDE_BACKEND == 'true'
+        timeout-minutes: 30
+        run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+
+      - name: Install AXe
+        run: scripts/ci/ios-sim/install-axe.sh
+
+      - name: Run smoke test
+        run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/SimpleX.app" "$RUNNER_TEMP/claude-test/smoke-test"
+
+      - name: Install Claude Code
+        run: |
+          npm install -g "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
+          claude --version
+
+      - name: Run the device test plan with Claude
+        timeout-minutes: 240
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          BACKEND_DIR: ${{ steps.backend.outcome == 'success' && format('{0}/backend', runner.temp) || '' }}
+        run: scripts/ci/ios-sim/claude-test.sh "$RUNNER_TEMP/claude-test"
+
+      - name: Report Claude usage
+        if: ${{ always() }}
+        run: scripts/ci/ios-sim/claude-usage.sh "$RUNNER_TEMP/claude-test"
+
+      - name: Stop test backend
+        if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
+        run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
+
       - name: Upload Claude test results
-        if: ${{ always() && env.CLAUDE_RUN == 'true' }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
           name: ios-sim-claude-test
           path: ${{ runner.temp }}/claude-test
           retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload backend logs
+        if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-sim-claude-backend-logs
+          path: |
+            ${{ runner.temp }}/backend/*.log
+            ${{ runner.temp }}/backend/seed.md
+          retention-days: 3
           if-no-files-found: warn
