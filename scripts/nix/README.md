@@ -61,7 +61,11 @@ native compiler itself stays unchanged. Android applies the RTS source patch
 when building its boot libraries. The Android overlay also supplies GNU iconv
 headers and a static PIC archive to `ghc-internal`, including the separate
 iserv projects. The `ghc-internal` system dependency propagates GNU iconv to
-interpreter consumers as well. The minimum Android API stays at 26.
+interpreter consumers as well. The ARM32 interpreter registers the GNU iconv
+function addresses for runtime object loading. Its source is patched before Cabal
+planning, removing false missing-function stubs that shadow real static Bionic
+startup routines. Android links libffi through the RTS package dependency.
+The minimum Android API stays at 26.
 
 Android ARM32's QEMU wrapper preserves the guest's `PER_LINUX32` execution
 domain when an ARM64 host kernel rejects that domain. Upper personality flags
@@ -113,11 +117,15 @@ release path is separate from this Nix build lane.
 
 Hydra needs builders advertising `aarch64-darwin` and `x86_64-darwin` to run the
 corresponding Mac/iOS jobs. Check its [builder pool](https://ci.zw3rk.com/machines)
-when jobs remain queued. For cross builds, the pinned haskell.nix also uses
-`recursive-nix` as a scheduling marker for slices that require a real x86_64
-Linux host. Advertise that feature on a native x86_64 Linux builder; keep it off
-x86_64 Linux slots running through Rosetta on Apple Silicon. The GitHub workflow
-sets it only for its native x86_64 Linux runner.
+when jobs remain queued. For cross builds, the pinned haskell.nix uses
+`recursive-nix` as a scheduling marker; these builds do not need recursive Nix
+operations. This checkout opts `ghc914-sh` Android ARM32 out of that restriction
+on Linux with patched QEMU 9.1–11, after passing normal target TH under emulation.
+Other target/compiler package sets retain the upstream guard, which also covers
+cross-compiler stalls without QEMU. Advertise the marker on a native x86_64 Linux
+builder for those jobs; keep it off Rosetta slots. The GitHub workflow sets it
+only for its native x86_64 Linux runner. The upstream fixes and regression jobs
+are in [haskell.nix PR #2585](https://github.com/input-output-hk/haskell.nix/pull/2585).
 
 To build both Android APK ABIs from the current checkout, preserving the same
 compiler and source, use the existing builder's source/skip-checkout flags:
@@ -162,25 +170,34 @@ in its archive filenames; the existing Xcode project updater accepts those names
 The later Android-only changes leave these build inputs unchanged. This verifies
 the packaged library, not execution after retagging.
 
-The Android API26 ARMv7 `ghc-internal` built at
-`52cbb2c7f796bfeca0824bd3e2168e344ce84774`, including all 292 Haskell modules and
+The Android API26 ARMv7 `ghc-internal` built with all 292 Haskell modules and
 C sources. Its unit ID and ABI match the earlier build, and GNU iconv is retained
-in its installed paths and consumer dependencies. The production interpreter
-build stopped before startup because this local external-builder backend rejects
-its `recursive-nix` scheduling requirement. The upstream native-x86 guard stays
-in place; the full interpreter and cross-TH checks still need a suitable builder.
+in installed paths and consumer dependencies. Canonical `base` and the complete
+normal interpreter dependency closure also built under Rosetta.
 
-A diagnostic build of ARMv7 `base`, with only that scheduling metadata relaxed,
-completed all 241 modules under Rosetta. A small GHC 9.14 Haskell program using
-that diagnostic `base` and the production core libraries then passed on both
-Rosetta QEMU and native ARM64 Linux QEMU. The same static ARM32 executable checked
-32-bit `Int`, arithmetic, `forkIO`, and GC; it needed no TLS adjustment. This
-proves basic Haskell execution under software emulation, not the full TH path or
-qualification for removing the production scheduling guard.
+On 2026-10-16, the normal ARM32 TH trial passed with the production compiler,
+interpreter, and all 40 target-library outputs. A target-side splice asserted
+`System.Info.arch == "arm"` and a 32-bit `Int`, then emitted `42`. The resulting
+shared ELF32 ARM library exported the test function; a static C caller initialized
+the Haskell RTS and received `42` from the same compiled object. This inspects the
+shared library and executes a static caller, rather than loading the shared
+library on an Android device. The byte-identical upstream annotation test also
+compiled through the target interpreter.
 
-The final Linux/Windows and Intel Darwin outputs, ARMv7 cross-TH, Android device
-tests, and an Xcode application build remain unverified. Derivation evaluation
-and native mobile checks do not establish that those builds and runtime checks pass.
+The identical production interpreter reached Haskell `main` with both x86_64
+QEMU under Rosetta and native ARM64 Linux QEMU. It has no `PT_TLS` segment and
+needed no TLS adjustment. The separate C caller retains the API26 CRT alignment
+fixture used by the C regression. The final QEMU version guard preserves the
+exact compiler, core, base, interpreter, and wrapper identities from this trial.
+These functional changes are integrated at `748becda3eac5173bdbf34ef4eec476a9215326f`.
+
+The trial used a normal-only diagnostic wrapper around the real production
+vanilla interpreter. The full mobile wrapper also references a profiling
+interpreter, so normal application builds can still compile profiling dependencies.
+Profiling execution, final Linux/Windows and Intel Darwin outputs, complete
+Android libraries/applications, device tests, and an Xcode application build
+remain unverified. Derivation evaluation and the normal trial do not establish
+that those builds and runtime checks pass.
 
 ## Updating package hashes
 
