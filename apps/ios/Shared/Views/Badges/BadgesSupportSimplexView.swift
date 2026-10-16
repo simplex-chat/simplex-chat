@@ -45,15 +45,25 @@ struct BadgesSupportSimplexView: View {
 
                 Spacer(minLength: 0)
 
+                // In-app purchase is not released: the badge is chosen on the site, and the code
+                // redeemed here. Revert this commit to restore the block below.
+                // VStack(spacing: 10) {
+                //     chooseLevelButton()
+                //         .padding(.vertical, 10)
+                //     Group {
+                //         if badgeBrowserAllowed {
+                //             buyInBrowserButton()
+                //         } else {
+                //             RedeemCodeButton()
+                //         }
+                //     }
+                //     .frame(height: 22)
+                // }
                 VStack(spacing: 10) {
-                    chooseLevelButton()
+                    chooseBadgeOnSiteButton()
                         .padding(.vertical, 10)
                     Group {
-                        if badgeBrowserAllowed {
-                            buyInBrowserButton()
-                        } else {
-                            RedeemCodeButton()
-                        }
+                        RedeemCodeButton()
                     }
                     .frame(height: 22)
                 }
@@ -129,6 +139,16 @@ struct BadgesSupportSimplexView: View {
             .frame(width: 1, height: 1)
             .hidden()
         }
+    }
+
+    // In-app purchase is not released: delete with the commented block above to restore it.
+    private func chooseBadgeOnSiteButton() -> some View {
+        Button {
+            UIApplication.shared.open(URL(string: badgePageUrl)!)
+        } label: {
+            Text("Choose your badge")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
     private func buyInBrowserButton() -> some View {
