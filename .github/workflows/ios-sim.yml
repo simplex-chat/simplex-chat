@@ -1,0 +1,348 @@
+name: ios-sim
+
+on:
+  push:
+    branches:
+      - '**'
+      # a squash merge's message lists the merged commits' subjects, with their tags
+      - '!master'
+      - '!stable'
+  workflow_dispatch:
+    inputs:
+      claude:
+        description: Also run the Claude session
+        type: boolean
+        default: false
+      backend:
+        description: Start the test backend
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  # a push that asks for no run must not cancel one that does
+  group: ios-sim-${{ github.ref }}-${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[app-ci]') || contains(github.event.head_commit.message, '[app-ci:ios]') || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]')) && 'requested' || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  GHC_VER: 9.6.3
+  CABAL_VER: 3.10.2.0
+  CORE_PKG: pkg-ios-aarch64-swift-json.zip
+  BACKEND_PKG: ios-sim-backend.zip
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+  # newer images add Command Line Tools whose macOS SDK the default Xcode's linker cannot read
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+
+jobs:
+  plan:
+    name: find earlier builds
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[app-ci]') ||
+      contains(github.event.head_commit.message, '[app-ci:ios]') ||
+      contains(github.event.head_commit.message, '[claude-test]') ||
+      contains(github.event.head_commit.message, '[claude-test:ios]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      core: ${{ steps.names.outputs.core }}
+      backend: ${{ steps.names.outputs.backend }}
+      core-run: ${{ steps.core.outputs.run-id }}
+      backend-run: ${{ steps.backend.outputs.run-id }}
+      claude: ${{ inputs.claude || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]') }}
+      start-backend: ${{ inputs.backend || contains(github.event.head_commit.message, '[ci-backend]') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded
+      - name: Artifact names
+        id: names
+        run: |
+          echo "core=ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "backend=ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: core
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.core }}"
+
+      - name: Find backend
+        id: backend
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.backend }}"
+
+  core:
+    name: core library for the iOS simulator
+    needs: plan
+    if: needs.plan.outputs.core-run == ''
+    runs-on: macos-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show runner
+        run: |
+          sw_vers
+          sysctl -n hw.ncpu hw.memsize
+          df -h /
+          xcodebuild -version
+          xcrun --show-sdk-path
+          ls /Library/Developer/CommandLineTools/SDKs || true
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      # without ~/.cabal, cabal 3.10 keeps its store in XDG directories, not where setup-haskell reports it
+      - name: Use ~/.cabal for cabal
+        run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
+
+      - name: Setup Haskell
+        id: haskell
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: ${{ env.GHC_VER }}
+          cabal-version: ${{ env.CABAL_VER }}
+
+      - name: Restore cabal store
+        id: cabal-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ steps.haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: ios-sim-core-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-${{ github.run_id }}
+          restore-keys: |
+            ios-sim-core-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
+            ios-sim-core-store-ghc${{ env.GHC_VER }}-
+
+      - name: Install libraries
+        run: brew install openssl@3 libffi gmp
+
+      - name: Build core library
+        id: build
+        run: scripts/ci/ios-sim/build-core.sh ~/Downloads/${{ env.CORE_PKG }}
+
+      - name: Save cabal store
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ steps.haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
+
+      - name: Patch core library for the simulator
+        run: scripts/ci/ios-sim/prepare-libs.sh
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.plan.outputs.core }}
+          path: ~/Downloads/${{ env.CORE_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  backend:
+    name: test backend for the app
+    needs: plan
+    if: needs.plan.outputs.start-backend == 'true' && needs.plan.outputs.backend-run == ''
+    runs-on: macos-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show runner
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun --show-sdk-path
+          ls /Library/Developer/CommandLineTools/SDKs || true
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      - name: Use ~/.cabal for cabal
+        run: echo "CABAL_DIR=$HOME/.cabal" >> "$GITHUB_ENV"
+
+      - name: Setup Haskell
+        id: haskell
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: ${{ env.GHC_VER }}
+          cabal-version: ${{ env.CABAL_VER }}
+
+      - name: Restore cabal store
+        id: cabal-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ steps.haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: ios-sim-backend-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-${{ github.run_id }}
+          restore-keys: |
+            ios-sim-backend-store-ghc${{ env.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}-
+            ios-sim-backend-store-ghc${{ env.GHC_VER }}-
+
+      - name: Build backend
+        run: scripts/ci/ios-sim/build-backend.sh ~/Downloads/${{ env.BACKEND_PKG }}
+
+      - name: Save cabal store
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ steps.haskell.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
+
+      - name: Upload backend
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/Downloads/${{ env.BACKEND_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  app:
+    name: app in the iOS simulator
+    needs: [plan, core, backend]
+    # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
+    runs-on: macos-latest
+    environment:
+      name: ${{ needs.plan.outputs.claude == 'true' && 'app-sim-claude' || '' }}
+      deployment: false
+    timeout-minutes: 330
+    env:
+      CLAUDE_RUN: ${{ needs.plan.outputs.claude }}
+      START_BACKEND: ${{ needs.plan.outputs.start-backend }}
+    steps:
+      # the job later holds the Claude token, so the checkout's GitHub token is not left in .git/config
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Show runner
+        run: |
+          sw_vers
+          df -h /
+          xcodebuild -version
+          xcrun --show-sdk-path
+          ls /Library/Developer/CommandLineTools/SDKs || true
+          xcrun simctl list runtimes
+
+      - name: Use the macOS 26 SDK
+        run: scripts/ci/ios-sim/use-macos26-sdk.sh
+
+      - name: Download core library
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.plan.outputs.core }}
+          path: ~/Downloads
+          run-id: ${{ needs.plan.outputs.core-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Prepare libraries
+        run: |
+          scripts/ci/ios-sim/prepare-libs.sh
+          scripts/ios/update-pbxproj.sh
+
+      - name: Download backend
+        if: env.START_BACKEND == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/Downloads
+          run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Start test backend
+        if: env.START_BACKEND == 'true'
+        timeout-minutes: 30
+        run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+
+      - name: Build app
+        run: |
+          xcodebuild build -quiet \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX (iOS)" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            ARCHS=arm64 \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= \
+            PROVISIONING_PROFILE_SPECIFIER=
+
+      - name: Install AXe
+        run: scripts/ci/ios-sim/install-axe.sh
+
+      - name: Run smoke test
+        run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
+
+      - name: Install Claude Code
+        if: env.CLAUDE_RUN == 'true'
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.300
+          claude --version
+
+      - name: Run the device test plan with Claude
+        if: env.CLAUDE_RUN == 'true'
+        timeout-minutes: 240
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          BACKEND_DIR: ${{ env.START_BACKEND == 'true' && format('{0}/backend', runner.temp) || '' }}
+        run: scripts/ci/ios-sim/claude-test.sh "$RUNNER_TEMP/claude-test"
+
+      - name: Report Claude usage
+        if: ${{ always() && env.CLAUDE_RUN == 'true' }}
+        run: scripts/ci/ios-sim/claude-usage.sh "$RUNNER_TEMP/claude-test"
+
+      - name: Stop test backend
+        if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
+        run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
+
+      - name: Upload smoke test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-sim-smoke-test
+          path: ${{ runner.temp }}/smoke-test
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Upload backend logs
+        if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-sim-backend-logs
+          path: |
+            ${{ runner.temp }}/backend/*.log
+            ${{ runner.temp }}/backend/seed.md
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Upload Claude test results
+        if: ${{ always() && env.CLAUDE_RUN == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-sim-claude-test
+          path: ${{ runner.temp }}/claude-test
+          retention-days: 14
+          if-no-files-found: warn
