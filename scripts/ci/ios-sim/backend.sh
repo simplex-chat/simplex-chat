@@ -107,22 +107,28 @@ create_directory() {
 }
 
 start_directory() {
+  local pid deadline=$((SECONDS + 60))
   # -y: the service adds its own tables to the database the CLI created, and would otherwise ask on stdin
   nohup "$bin/simplex-directory-service" -d "$work/directory" -y --super-users "$1" < /dev/null >> "$work/directory.log" 2>&1 &
-  echo $! > "$work/directory.pid"
+  pid=$!
+  echo "$pid" > "$work/directory.pid"
   echo "$1" > "$work/super-user"
-  sleep 5
-  if ! kill -0 "$(cat "$work/directory.pid")" 2> /dev/null; then
-    echo "error: the directory service exited"
-    cat "$work/directory.log"
-    return 1
-  fi
+  # its output is block-buffered, so it shows that its chat has started by connecting to its servers
+  until lsof -a -p "$pid" -iTCP -sTCP:ESTABLISHED > /dev/null 2>&1; do
+    if ! kill -0 "$pid" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: the directory service did not start"
+      cat "$work/directory.log"
+      return 1
+    fi
+    sleep 1
+  done
 }
 
-stop_directory() {
+# Waits for the process to exit, which completes its output, and kills it after 30 s.
+stop_process() {
   local pid deadline
-  pid=$(cat "$work/directory.pid")
-  kill -INT "$pid" 2> /dev/null || true
+  pid=$(cat "$work/$1.pid")
+  kill "-$2" "$pid" 2> /dev/null || true
   deadline=$((SECONDS + 30))
   while kill -0 "$pid" 2> /dev/null; do
     if [ "$SECONDS" -ge "$deadline" ]; then
@@ -140,7 +146,7 @@ connect_admin() {
   admin_until "Welcome to $directory_name" 180 "/tail @'$directory_name' 10"
   local id
   id=$(db_query directory "SELECT contact_id FROM contacts WHERE local_display_name = '$admin'")
-  stop_directory
+  stop_process directory INT
   start_directory "$id:$admin"
   echo "directory restarted with super user $id:$admin"
 }
@@ -428,14 +434,17 @@ start() {
 }
 
 stop() {
-  local p processes="directory relay ci_alice ci_robert smp-server names-resolver"
+  local p processes="directory relay ci_alice ci_robert smp-server"
   for p in $processes; do
     if [ -f "$work/$p.pid" ]; then
-      kill -INT "$(cat "$work/$p.pid")" 2> /dev/null || true
+      stop_process "$p" INT
     fi
   done
-  sleep 3
-  for p in $processes; do
+  # Python, started in the background by a script, ignores SIGINT
+  if [ -f "$work/names-resolver.pid" ]; then
+    stop_process names-resolver TERM
+  fi
+  for p in $processes names-resolver; do
     echo "::group::$p log"
     cat "$work/$p.log" 2> /dev/null || true
     echo "::endgroup::"
@@ -454,7 +463,7 @@ case "${1:-}" in
     ;;
   directory-stop)
     work=$2
-    stop_directory
+    stop_process directory INT
     ;;
   directory-start)
     work=$2
