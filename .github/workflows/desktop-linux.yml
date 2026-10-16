@@ -49,6 +49,8 @@ jobs:
     outputs:
       run-claude: ${{ steps.jobs.outputs.claude }}
       run-backend: ${{ steps.jobs.outputs.backend }}
+      core: ${{ steps.names.outputs.core }}
+      core-run: ${{ steps.core.outputs.run-id }}
       backend: ${{ steps.names.outputs.backend }}
       backend-run: ${{ steps.backend.outputs.run-id }}
     steps:
@@ -62,14 +64,20 @@ jobs:
           echo "backend=$BACKEND" | tee -a "$GITHUB_OUTPUT"
 
       - name: Checkout code
-        if: steps.jobs.outputs.backend == 'true'
         uses: actions/checkout@v5
 
       # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded
       - name: Artifact names
         id: names
-        if: steps.jobs.outputs.backend == 'true'
-        run: echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "core=desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/ci/desktop-linux/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: core
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.core }}"
 
       - name: Find backend
         id: backend
@@ -121,6 +129,7 @@ jobs:
   core:
     name: core library for Linux
     needs: plan
+    if: needs.plan.outputs.core-run == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -134,50 +143,33 @@ jobs:
           free -h
           df -h /
 
-      - name: Restore core library
-        id: core-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: ~/core/${{ env.CORE_PKG }}
-          key: desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/ci/desktop-linux/build-core.sh') }}
-
       - name: Setup Haskell
-        if: steps.core-cache.outputs.cache-hit != 'true'
         uses: simplex-chat/setup-haskell-action@v2
         with:
           ghc-version: ${{ env.GHC_VER }}
           cabal-version: ${{ env.CABAL_VER }}
 
       - name: Install libraries
-        if: steps.core-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev patchelf
 
       - name: Build core library
-        if: steps.core-cache.outputs.cache-hit != 'true'
         run: scripts/ci/desktop-linux/build-core.sh ~/core/${{ env.CORE_PKG }}
-
-      - name: Save core library
-        if: steps.core-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
-        with:
-          path: ~/core/${{ env.CORE_PKG }}
-          key: ${{ steps.core-cache.outputs.cache-primary-key }}
 
       - name: Upload core library
         uses: actions/upload-artifact@v6
         with:
-          name: desktop-core-linux-x86_64
+          name: ${{ needs.plan.outputs.core }}
           path: ~/core/${{ env.CORE_PKG }}
           compression-level: 0
-          retention-days: 3
+          retention-days: 30
           if-no-files-found: error
 
   app:
     name: desktop app under Xvfb
     needs: [plan, core, backend]
-    # backend is skipped when it isn't asked for or an earlier run built it
+    # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
     if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -205,8 +197,10 @@ jobs:
       - name: Download core library
         uses: actions/download-artifact@v7
         with:
-          name: desktop-core-linux-x86_64
+          name: ${{ needs.plan.outputs.core }}
           path: ~/core
+          run-id: ${{ needs.plan.outputs.core-run || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Install core library
         id: core
@@ -334,8 +328,10 @@ jobs:
       - name: Download core library
         uses: actions/download-artifact@v7
         with:
-          name: desktop-core-linux-x86_64
+          name: ${{ needs.plan.outputs.core }}
           path: ~/core
+          run-id: ${{ needs.plan.outputs.core-run || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Install core library
         run: scripts/ci/desktop-linux/install-core.sh ~/core/${{ env.CORE_PKG }}
