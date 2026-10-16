@@ -6306,6 +6306,8 @@ testGroupHistoryGroupLink =
       bob #> "#team hey!"
       alice <# "#team bob> hey!"
 
+      threadDelay 1000000
+
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
 
