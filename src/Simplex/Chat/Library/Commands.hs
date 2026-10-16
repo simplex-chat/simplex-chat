@@ -59,7 +59,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), ProofPresHeader (..), badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), ProofPresHeader (..), badgeGraceInterval, badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -5674,14 +5674,14 @@ updateUserBadge userId emitted now = do
   user <- withStore $ \db -> getUser db userId
   withStore' (`getUserBadgePurchase` user) >>= \case
     Nothing -> pure Nothing
-    Just p@UserBadgePurchase {badgePurchaseId, purchaseKind, nextWakeAt} ->
+    Just p@UserBadgePurchase {badgePurchaseId, purchaseKind, nextWakeAt, unrenewedRun} ->
       withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= \case
         Nothing -> pure Nothing
         Just balance -> do
           -- No months come after a prepaid purchase's paidThrough, so it is retired before asking, as
           -- retirement needs no service and an unbounded retry would not return before it. A subscription's come
-          -- from the store, so it is asked about first, and retired once the service says it ended, or once, after
-          -- any answer, the coverage it holds ends more than the stores' recovery window ago.
+          -- from the store, so it is asked about first, and retired once the service says it ended, or once the
+          -- window has passed since the first answer after which nothing was covered.
           retiredBefore <- case purchaseKind of
             PKPrepaid -> retireExpiredBadge user p now balance
             PKSubscription _ -> pure False
@@ -5695,10 +5695,19 @@ updateUserBadge userId emitted now = do
             if requestDue
               then fromMaybe (balance, Nothing) <$> requestBadgeIssue userId p now
               else pure (balance, Nothing)
+          let -- the answers after which nothing was covered, each within a window of the one before: an absence or an outage that
+              -- long may hide a renewal, so the next such answer starts a new run
+              unrenewedRun'
+                | L.paidThrough balance' > now = Nothing
+                | requestDue = Just $ case unrenewedRun of
+                    Just run@UnrenewedRun {lastUnrenewedAt} | not (windowPassedSince lastUnrenewedAt) -> run {lastUnrenewedAt = now}
+                    _ -> UnrenewedRun {unrenewedSince = now, lastUnrenewedAt = now}
+                | otherwise = unrenewedRun
+              windowPassedSince t = subscriptionRecoveryWindow `addUTCTime` t <= now
+          when (unrenewedRun' /= unrenewedRun) $ withStore' $ \db -> setBadgeUnrenewedRun db badgePurchaseId unrenewedRun'
           retired <-
-            -- after an answer only: the client's paidThrough moves only when it asks, so an app closed for months
-            -- would otherwise retire a subscription its store kept charging
-            if subscription_ == Just SSEnded || requestDue && subscriptionRecoveryWindow `addUTCTime` L.paidThrough balance' <= now
+            -- after an answer only: a renewal since the run started is known only from an answer
+            if subscription_ == Just SSEnded || requestDue && maybe False (windowPassedSince . unrenewedSince) unrenewedRun'
               then retireExpiredBadge user p now balance'
               else pure retiredBefore
           -- presenting broadcasts the record it is handed, and the request above can block for the
@@ -5832,10 +5841,11 @@ badgeRenewal paidThrough = \case
 badgeStalledInterval :: NominalDiffTime
 badgeStalledInterval = nominalDay
 
--- | Apple retries a failed renewal for up to 60 days, the longest either store recovers a subscription with Play's pause off
--- (its grace and hold default to 60 days together); a week more covers a day between requests and Play's clipped period start.
+-- | Counted from the first answer after which the ledger covered nothing. Apple retries a failed renewal for up to 60 days, the
+-- longest either store recovers one with Play's pause off (its grace and hold default to 60 days together); a week more, the grace
+-- contacts give an expired credential, covers Play's period ending days after the ledger's and the daily request that finds a charge.
 subscriptionRecoveryWindow :: NominalDiffTime
-subscriptionRecoveryWindow = 67 * nominalDay
+subscriptionRecoveryWindow = 60 * nominalDay + badgeGraceInterval
 
 -- | The wait after a service refusal, floored at initialInterval so answering 0 cannot spin the
 -- worker, and uncapped above it.

@@ -944,6 +944,8 @@ CREATE TABLE badge_purchases(
   next_wake_at TEXT,
   badge_store_receipt_id INTEGER REFERENCES badge_store_receipts,
   subscription_status TEXT,
+  unrenewed_since TEXT,
+  last_unrenewed_at TEXT,
   UNIQUE(purchase_key)
 ) STRICT;
 CREATE TABLE badge_ledger(

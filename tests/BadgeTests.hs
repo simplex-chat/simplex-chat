@@ -1163,7 +1163,7 @@ testSubscriptionAlertDerivation = do
       past = addUTCTime nominalDay ends
       subscription months st = SB.PKSubscription BadgeSubscription {planMonths = months, status = st}
       alertOf t kind' isShown err =
-        let p = SB.UserBadgePurchase {badgePurchaseId = 1, purchaseKey = k, purchasePrivKey = pk, masterKey = mk, badgeType = BTSupporter, shown = isShown, alertAcked = Nothing, alertSnoozeUntil = Nothing, issueError = err, nextWakeAt = Nothing, purchaseKind = kind'}
+        let p = SB.UserBadgePurchase {badgePurchaseId = 1, purchaseKey = k, purchasePrivKey = pk, masterKey = mk, badgeType = BTSupporter, shown = isShown, alertAcked = Nothing, alertSnoozeUntil = Nothing, issueError = err, nextWakeAt = Nothing, unrenewedRun = Nothing, purchaseKind = kind'}
          in (\BT.BadgeAlert {kind, date} -> (kind, date)) <$> derivedBadgeAlert t p Nothing balance
       renewing = Just SSRenewing
       cancelled = Just SSCancelled

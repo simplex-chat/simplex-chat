@@ -4129,7 +4129,7 @@ Query:
                 WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
                 ORDER BY l.entry_id DESC
                 LIMIT 1),
-               p.subscription_status
+               p.subscription_status, p.unrenewed_since, p.last_unrenewed_at
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
@@ -8049,6 +8049,10 @@ Query: SELECT summary_current_members_count FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT unrenewed_since, last_unrenewed_at FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
@@ -8094,6 +8098,10 @@ Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET unrenewed_since = ?, last_unrenewed_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 

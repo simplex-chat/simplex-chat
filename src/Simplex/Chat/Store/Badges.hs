@@ -10,6 +10,7 @@ module Simplex.Chat.Store.Badges
   ( BadgeStash (..),
     BadgeStashRef (..),
     UserBadgePurchase (..),
+    UnrenewedRun (..),
     PurchaseKind (..),
     getUserBadgePurchase,
     getBadgePurchase,
@@ -18,6 +19,7 @@ module Simplex.Chat.Store.Badges
     setBadgeAlertAcked,
     setBadgeIssueError,
     setBadgeNextWake,
+    setBadgeUnrenewedRun,
     clearShownBadge,
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
@@ -423,8 +425,12 @@ data UserBadgePurchase = UserBadgePurchase
     alertSnoozeUntil :: Maybe UTCTime,
     issueError :: Maybe BadgeIssueError,
     nextWakeAt :: Maybe UTCTime,
+    unrenewedRun :: Maybe UnrenewedRun,
     purchaseKind :: PurchaseKind
   }
+
+data UnrenewedRun = UnrenewedRun {unrenewedSince :: UTCTime, lastUnrenewedAt :: UTCTime}
+  deriving (Eq)
 
 -- | A subscription's months come from store charges, so reaching paidThrough does not end it: the
 -- service says when it has. Derived from the replica, which holds a charge credit exactly for a subscription.
@@ -463,14 +469,14 @@ getBadgePurchase db purchaseId =
                 WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
                 ORDER BY l.entry_id DESC
                 LIMIT 1),
-               p.subscription_status
+               p.subscription_status, p.unrenewed_since, p.last_unrenewed_at
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
       |]
       (Only purchaseId)
   where
-    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt, planMonths_, status)) =
+    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt, planMonths_, status, since_, lastAt_)) =
       UserBadgePurchase
         { badgePurchaseId,
           purchaseKey,
@@ -482,6 +488,7 @@ getBadgePurchase db purchaseId =
           alertSnoozeUntil,
           issueError = BadgeIssueError <$> failedSince_ <*> lastAttemptAt_ <*> reason_,
           nextWakeAt,
+          unrenewedRun = UnrenewedRun <$> since_ <*> lastAt_,
           purchaseKind = maybe PKPrepaid (\planMonths -> PKSubscription BadgeSubscription {planMonths, status}) planMonths_
         }
 
@@ -525,6 +532,13 @@ setBadgeIssueError db badgePurchaseId now failure =
 setBadgeNextWake :: DB.Connection -> Int64 -> Maybe UTCTime -> IO ()
 setBadgeNextWake db badgePurchaseId at_ =
   DB.execute db "UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?" (at_, badgePurchaseId)
+
+setBadgeUnrenewedRun :: DB.Connection -> Int64 -> Maybe UnrenewedRun -> IO ()
+setBadgeUnrenewedRun db badgePurchaseId run_ =
+  DB.execute
+    db
+    "UPDATE badge_purchases SET unrenewed_since = ?, last_unrenewed_at = ? WHERE badge_purchase_id = ?"
+    (unrenewedSince <$> run_, lastUnrenewedAt <$> run_, badgePurchaseId)
 
 -- | Stop showing a badge that has expired unrenewed; the profile update is broadcast by the caller.
 clearShownBadge :: DB.Connection -> User -> Int64 -> IO ()
