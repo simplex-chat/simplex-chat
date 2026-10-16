@@ -429,9 +429,8 @@
               }).simplex-chat.components.library {
                 kind = "android";
                 # Link the threaded RTS only at final link, outside TH/iserv.
-                linkOptions = [
-                  "-optl-lffi"
-                ] ++ map (sym: "-optl-Wl,-u,${sym}") chatExports;
+                # GHC 9.14's RTS package declares its bundled libffi archive.
+                linkOptions = map (sym: "-optl-Wl,-u,${sym}") chatExports;
                 postInstall = ''
                   set -x
                   ${pkgs.tree}/bin/tree $out
@@ -503,8 +502,8 @@
               }).simplex-chat.components.library {
                 kind = "android";
                 # Link the threaded RTS only at final link, outside TH/iserv.
+                # GHC 9.14's RTS package declares its bundled libffi archive.
                 linkOptions = [
-                  "-optl-lffi"
                   "-optl-Wl,-z,max-page-size=16384"
                 ] ++ map (sym: "-optl-Wl,-u,${sym}") chatExports;
                 postInstall = ''
