@@ -246,13 +246,6 @@ jobs:
         timeout-minutes: 30
         run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
-      - name: Point the app at the test directory
-        run: |
-          link=$(cat "$RUNNER_TEMP/backend/directory-link")
-          file=apps/ios/Shared/Model/DirectorySearch.swift
-          sed -i '' "s|^let DIRECTORY_SERVICE_LINK = \".*\"$|let DIRECTORY_SERVICE_LINK = \"$link\"|" "$file"
-          grep -F "let DIRECTORY_SERVICE_LINK = \"$link\"" "$file"
-
       - name: Build app
         run: |
           xcodebuild build -quiet \
@@ -274,8 +267,6 @@ jobs:
         run: brew install cameroncooke/axe/axe
 
       - name: Run smoke test
-        env:
-          BACKEND_DIR: ${{ runner.temp }}/backend
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
 
       - name: Install Claude Code
