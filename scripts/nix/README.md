@@ -88,8 +88,12 @@ Darwin compiler itself stays unchanged. Android applies the RTS source patch
 when building its boot libraries. The Android overlay also supplies GNU iconv
 headers and a static PIC archive to `ghc-internal`, including the separate
 iserv projects. The `ghc-internal` system dependency propagates GNU iconv to
-interpreter consumers as well. The ARM32 interpreter registers the GNU iconv
-function addresses for runtime object loading. Its source is patched before Cabal
+interpreter consumers as well. Both Android interpreters register the GNU iconv
+function addresses for runtime object loading. The ARM64 table uses the selected
+`iconv.h` to distinguish GNU and Bionic, preserving plain lookup names alongside
+GNU names when GNU supplies the definitions. Actual API26/API35 C controls check
+these names against the target archive and the `ghc-internal` consumer; the
+Bionic API35 object stays byte-identical. ARM32 source is patched before Cabal
 planning, removing false missing-function stubs that shadow real static Bionic
 startup routines. Android links libffi through the RTS package dependency.
 The minimum Android API stays at 26.
@@ -184,9 +188,10 @@ registers and image addresses. It symbolicates mapped register addresses without
 dereferencing them, then forwards to real `abort`. Its constructor
 restores the original loader environment before Setup starts compiler children
 and disables core output for the fallback process tree. This adds a loaded image
-to Setup; it changes no debugger permissions or security settings. Child
-exits/signals remain failures. The Intel fallback runtime is
-unverified until CI executes it; native ARM64 C controls cover the helper.
+to Setup; it changes no debugger permissions or security settings. Nonzero
+exits and terminating signals remain failures. The Intel GHC fallback runtime
+is unverified until CI executes it; native ARM64 and Rosetta/x86 C controls
+cover the helper.
 A successful probe is diagnostic evidence.
 
 Hydra continues to consume
@@ -287,6 +292,11 @@ These functional changes are integrated at `748becda3eac5173bdbf34ef4eec476a9215
 The trial used a normal-only diagnostic wrapper around the real production
 vanilla interpreter. The full mobile wrapper also references a profiling
 interpreter, so normal application builds can still compile profiling dependencies.
+Both normal and profiling ARMv7 `ghc-internal` archives subsequently built in
+the earlier `b4a1cdd54` compiler context: each contains 283 ELF32 ARM objects,
+with profiling objects in the profiling archive. Their installed registration
+retains GNU iconv paths. This does not qualify the later native RTS compiler
+change or the profiling interpreter's final link and execution.
 Profiling execution, final Linux/Windows and Intel Darwin outputs, complete
 Android libraries/applications, device tests, and an Xcode application build
 remain unverified. Derivation evaluation and the normal trial do not establish
