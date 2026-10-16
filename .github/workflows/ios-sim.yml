@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       claude:
-        description: Also run the Claude session (f/* branches only)
+        description: Also run the Claude session
         type: boolean
         default: false
       backend:
@@ -50,8 +50,7 @@ jobs:
       backend: ${{ steps.names.outputs.backend }}
       core-run: ${{ steps.core.outputs.run-id }}
       backend-run: ${{ steps.backend.outputs.run-id }}
-      # the environment that holds the Claude token admits only f/* branches
-      claude: ${{ startsWith(github.ref, 'refs/heads/f/') && (inputs.claude || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]')) }}
+      claude: ${{ inputs.claude || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]') }}
       start-backend: ${{ inputs.backend || contains(github.event.head_commit.message, '[ci-backend]') }}
     steps:
       - name: Checkout code
