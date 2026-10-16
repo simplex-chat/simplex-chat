@@ -345,11 +345,12 @@ jobs:
           if-no-files-found: warn
 
   # Claude Code repeats the smoke test with the ui helper. Each run spends the Claude subscription's usage
-  # limits, so it runs only when asked for. The app-sim-claude environment admits only f/* branches.
+  # limits, so it runs only when asked for. The app-sim-claude environment's branch rule decides which branches
+  # may use the token.
   claude:
     name: Claude tests the desktop app
     needs: [plan, core, backend]
-    if: ${{ !cancelled() && !failure() && needs.plan.outputs.run-claude == 'true' && startsWith(github.ref_name, 'f/') }}
+    if: ${{ !cancelled() && !failure() && needs.plan.outputs.run-claude == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment:
