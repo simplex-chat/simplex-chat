@@ -116,10 +116,16 @@
               then [ ./scripts/nix/direct-sqlcipher-2.3.27-win.patch ]
               else [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ]
                 ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isAndroid
-                  ./scripts/nix/direct-sqlcipher-android-log.patch;
+                  ./scripts/nix/direct-sqlcipher-android-log.patch
+                ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isMusl
+                  ./scripts/nix/direct-sqlcipher-static-libraries.patch;
           } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isDarwin {
             "https://github.com/simplex-chat/simplexmq.git" =
               [ ./scripts/nix/simplexmq-blst-darwin-extern.patch ];
+          } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isMusl {
+            # -fully-static uses each producer's registered static C libraries.
+            "https://github.com/simplex-chat/simplexmq.git" =
+              [ ./scripts/nix/simplexmq-static-libraries.patch ];
           };
         };
         modules = [
