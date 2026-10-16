@@ -12,6 +12,7 @@ import SimpleXChat
 struct BadgesView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject private var badgeModel = BadgeModel.shared
+    @ObservedObject private var store = BadgeStore.shared
     var showsAsSheet: Bool = false
 
     private var shownBadge: BadgeState? {
@@ -25,14 +26,27 @@ struct BadgesView: View {
             if let badgeState = shownBadge {
                 BadgesYourBadgeView(badgeState: badgeState, showsAsSheet: showsAsSheet)
                     .transition(.opacity)
+            } else if let purchaseState = store.purchaseState(chatModel.currentUser?.userId) {
+                // holds the purchase screens' slot, so a consumable cannot be bought twice
+                BadgesPurchaseStateView(title: purchaseState.title, message: purchaseState.message, failure: store.creditError(chatModel.currentUser?.userId), showsAsSheet: showsAsSheet)
+                    .transition(.opacity)
+            } else if store.checkingPurchases {
+                BadgesPurchaseStateView(title: "Checking your purchases", showsAsSheet: showsAsSheet)
+                    .transition(.opacity)
             } else {
                 BadgesSupportSimplexView(showsAsSheet: showsAsSheet)
                     .transition(.opacity)
             }
         }
         .animation(.default, value: shownBadge != nil)
+        .animation(.default, value: store.purchaseState(chatModel.currentUser?.userId))
+        .animation(.default, value: store.checkingPurchases)
+        .onAppear { badgesViewShown = true }
+        .onDisappear { badgesViewShown = false }
     }
 }
+
+private(set) var badgesViewShown = false
 
 var supportSimpleXAlertAction: UIAlertAction {
     UIAlertAction(title: NSLocalizedString("Support SimpleX", comment: "alert button"), style: .default) { _ in

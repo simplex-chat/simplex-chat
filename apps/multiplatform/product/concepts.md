@@ -101,6 +101,7 @@ Key files that exist only on one platform, grouped by concern.
 | `desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt` | JVM entry point, Haskell/VLC init, PlatformInterface setup |
 | `common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt` | Compose Desktop window creation and lifecycle |
 | `common/src/desktopMain/kotlin/chat/simplex/common/StoreWindowState.kt` | Window position/size persistence |
+| `common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt` | Deep link handling from launch arguments and macOS |
 | `common/src/desktopMain/kotlin/chat/simplex/common/views/helpers/AppUpdater.kt` | In-app update checker |
 | `common/src/desktopMain/kotlin/chat/simplex/common/platform/Videos.desktop.kt` | VLC-based video detection |
 | `common/src/desktopMain/kotlin/chat/simplex/common/platform/VideoPlayer.desktop.kt` | VLC video player implementation |

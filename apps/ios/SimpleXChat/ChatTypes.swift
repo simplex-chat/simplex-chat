@@ -369,6 +369,24 @@ public enum BadgeIssueFailure: Decodable, Hashable {
         }
     }
 
+    public var purchaseText: String {
+        switch self {
+        case let .serviceError(code, _):
+            badgeServiceErrorText(code)
+                ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the purchase: %@", comment: "badge purchase error"), code.text)
+        case .invalidCredential: NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        case .serviceTimeout, .network, .unexpected: text
+        }
+    }
+
+    public var purchaseAlertTitle: String {
+        switch self {
+        case .serviceError(.testPurchase, _):
+            NSLocalizedString("Sandbox purchase", comment: "alert title")
+        default: NSLocalizedString("Purchase error", comment: "alert title")
+        }
+    }
+
     // the stored form, for support
     public var tag: String {
         switch self {

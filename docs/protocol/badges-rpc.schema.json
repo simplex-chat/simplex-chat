@@ -95,7 +95,7 @@
           "properties": {"jws": {"type": "string"}}
         },
         "google": {
-          "properties": {"token": {"type": "string"}}
+          "properties": {"productId": {"type": "string"}, "token": {"type": "string"}}
         },
         "invoice": {
           "properties": {"invoiceId": {"type": "string"}}
@@ -309,7 +309,7 @@
         },
         "purchaseBadge": {
           "properties": {
-            "badgeRequest": {"ref": "badgeRequest"},
+            "masterKey": {"ref": "base64url"},
             "payment": {"ref": "payment"}
           },
           "optionalProperties": {
@@ -321,7 +321,10 @@
         },
         "upgradeBadgeSubscription": {
           "properties": {
-            "badgeRequest": {"ref": "badgeRequest"},
+            "badgeRequest": {
+              "ref": "badgeRequest",
+              "metadata": {"comment": "known wrong: to be dropped when implemented, see badges-rpc.md"}
+            },
             "payment": {
               "ref": "payment",
               "metadata": {"comment": "store payments only"}
