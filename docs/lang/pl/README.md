@@ -6,11 +6,11 @@
 
 | 30/03/2023 | PL, [EN](/README.md), [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md) |
 
-<img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
+<img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - pierwszy komunikator bez jakichkolwiek identyfikatorów użytkowników - w 100% prywatny z założenia!
 
-[<img src="./images/trail-of-bits.jpg" height="100">](http://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) &nbsp;&nbsp;&nbsp; [<img src="./images/privacy-guides.jpg" height="80">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp;&nbsp;&nbsp; [<img src="./images/kuketz-blog.jpg" height="80">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
+[<img src="/images/trail-of-bits.jpg" height="100">](http://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) &nbsp;&nbsp;&nbsp; [<img src="/images/privacy-guides.jpg" height="80">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp;&nbsp;&nbsp; [<img src="/images/kuketz-blog.jpg" height="80">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
 
 ## Witamy w SimpleX Chat!
 
@@ -263,7 +263,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/inst
 
 Po pobraniu klienta czatu można go uruchomić za pomocą polecenia `simplex-chat`.
 
-![simplex-chat](./images/connection.gif)
+![simplex-chat](/images/connection.gif)
 
 Przeczytaj więcej o [instalowaniu i używaniu terminalowej wersji czatu](./CLI.md).
 
@@ -317,8 +317,8 @@ Planujemy dodać:
 Możesz:
 
 - korzystać z biblioteki SimpleX Chat w celu zintegrowania funkcji czatu z aplikacjami mobilnymi.
-- tworzyć boty i usługi czatu w języku Haskell - zobacz [prosty](./apps/simplex-bot/) i bardziej [zaawansowany przykład bota czatu](./apps/simplex-bot-advanced/).
-- tworzenie chat botów i usług w dowolnym języku z wykorzystaniem terminala CLI SimpleX Chat jako lokalnego serwera WebSocket. Zobacz [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) i [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
+- tworzyć boty i usługi czatu w języku Haskell - zobacz [prosty](/apps/simplex-bot/) i bardziej [zaawansowany przykład bota czatu](/apps/simplex-bot-advanced/).
+- tworzenie chat botów i usług w dowolnym języku z wykorzystaniem terminala CLI SimpleX Chat jako lokalnego serwera WebSocket. Zobacz [TypeScript SimpleX Chat client](/packages/simplex-chat-client/) i [JavaScript chat bot example](/packages/simplex-chat-client/typescript/examples/squaring-bot.js).
 - uruchomić [simplex-chat w terminal ](./CLI.md), aby wykonywać poszczególne polecenia czatu, np. wysyłać wiadomości w ramach wykonywania skryptu powłoki.
 
 Jeśli chcesz rozwijać platformę SimpleX, skontaktuj się z nami, aby uzyskać porady i wsparcie.
@@ -409,7 +409,7 @@ Nigdy nie udostępnialiśmy ani nie byliśmy proszeni o dostęp do naszych serwe
 
 Nie rejestrujemy adresów IP użytkowników i nie przeprowadzamy żadnej korelacji ruchu na naszych serwerach. Jeśli bezpieczeństwo na poziomie transportu jest krytyczne, musisz użyć Tor lub innej podobnej sieci, aby uzyskać dostęp do serwerów wiadomości. Będziemy ulepszać aplikacje klienckie, aby zmniejszyć możliwości korelacji ruchu.
 
-Więcej informacji można znaleźć w [Warunkach i polityce prywatności](./PRIVACY.md).
+Więcej informacji można znaleźć w [Warunkach i polityce prywatności](/PRIVACY.md).
 
 ## Kontakt w sprawie bezpieczeństwa
 
@@ -419,7 +419,7 @@ Prosimy o traktowanie wszelkich ustaleń dotyczących możliwych ataków korelac
 
 ## Licencja
 
-[AGPL v3](./LICENSE)
+[AGPL v3](/LICENSE)
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
