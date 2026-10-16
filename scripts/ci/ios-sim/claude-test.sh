@@ -146,7 +146,7 @@ for layout in $layouts; do
     echo "final message, last lines:"
     echo "$result"
     last=$(grep -v '^[[:space:]]*$' <<< "$result" | tail -n 1 || true)
-    if ! grep -qxE '[*`]*CLAUDE-TEST: PASS[*`]*' <<< "$last"; then
+    if ! grep -qxE '[*`]*CLAUDE-TEST: PASS[*`.]*[[:space:]]*' <<< "$last"; then
       echo "::error::the $layout session's final message does not end with CLAUDE-TEST: PASS"
       session_status=1
     fi

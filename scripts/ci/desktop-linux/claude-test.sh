@@ -82,4 +82,4 @@ if [ "$status" -ne 0 ]; then
   exit 1
 fi
 last=$(grep -v '^[[:space:]]*$' <<< "$result" | tail -n 1 || true)
-grep -qxE '[*`]*CLAUDE-TEST: PASS[*`]*' <<< "$last"
+grep -qxE '[*`]*CLAUDE-TEST: PASS[*`.]*[[:space:]]*' <<< "$last"
