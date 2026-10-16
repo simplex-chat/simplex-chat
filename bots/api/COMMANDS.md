@@ -25,6 +25,7 @@ This file is generated automatically.
 
 [Group commands](#group-commands)
 - [APIAddMember](#apiaddmember)
+- [APIAddMemberViaGroup](#apiaddmemberviagroup)
 - [APIJoinGroup](#apijoingroup)
 - [APIAcceptMember](#apiacceptmember)
 - [APIMembersRole](#apimembersrole)
@@ -757,6 +758,52 @@ SentGroupInvitation: Group invitation sent.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIAddMemberViaGroup
+
+Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- viaGroupId: int64
+- groupMemberId: int64
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+
+**Syntax**:
+
+```
+/_add #<groupId> #<viaGroupId> <groupMemberId> relay|observer|author|member|moderator|admin|owner
+```
+
+```javascript
+'/_add #' + groupId + ' #' + viaGroupId + ' ' + groupMemberId + ' ' + memberRole // JavaScript
+```
+
+```python
+'/_add #' + str(groupId) + ' #' + str(viaGroupId) + ' ' + str(groupMemberId) + ' ' + str(memberRole) # Python
+```
+
+**Responses**:
+
+SentGroupInvitationViaGroup: Group invitation sent to member of another group.
+- type: "sentGroupInvitationViaGroup"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+- viaGroupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- viaMember: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- PeerChatVRangeIncompatible: Member's client version is older than required.
 
 ---
 

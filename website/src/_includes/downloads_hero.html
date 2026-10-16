@@ -1,0 +1,53 @@
+<section class="dl-hero">
+    <div class="dl-wrap dl-intro">
+        <h1>{{ "downloads-h1" | i18n({}, lang) }}</h1>
+        <p class="dl-lead"><span class="dl-lead-intro">{{ "downloads-lead-1" | i18n({}, lang) }}<br></span><span class="dl-nowrap">{{ "downloads-lead-2" | i18n({}, lang) }}</span><br class="dl-br-mobile"> <span class="dl-nowrap dl-lead-device">{{ "downloads-lead-device" | i18n({}, lang) }}</span><span class="dl-nowrap dl-lead-phone">{{ "downloads-lead-phone" | i18n({}, lang) }}</span></p>
+    </div>
+
+    <div class="dl-wrap dl-devices">
+        <div class="dl-device" data-device="desktop">
+            <div class="dl-shot dl-shot-desktop">
+                <img class="dark:hidden" src="/img/downloads/desktop-light.webp" alt="SimpleX Chat desktop app" width="1311" height="880">
+                <img class="hidden dark:block" src="/img/downloads/desktop-dark.webp" alt="SimpleX Chat desktop app" width="1311" height="880">
+            </div>
+            <a class="dl-primary dl-os dl-os-mac" href="{{ release }}simplex-desktop-macos-aarch64.dmg">{{ "downloads-for-mac" | i18n({}, lang) }}</a>
+            <a class="dl-primary dl-os dl-os-windows" href="{{ release }}simplex-desktop-windows-x86_64.msi">{{ "downloads-for-windows" | i18n({}, lang) }}</a>
+            <a class="dl-primary dl-os dl-os-linux" href="{{ release }}simplex-desktop-x86_64.AppImage">{{ "downloads-for-linux" | i18n({}, lang) }}</a>
+            <p class="dl-alt dl-os dl-os-mac">Apple Silicon · <a href="{{ release }}simplex-desktop-macos-x86_64.dmg">Intel</a> · <a href="#dl-all">{{ "downloads-more" | i18n({}, lang) }}</a></p>
+            <p class="dl-alt dl-os dl-os-windows">x86_64 · <a href="#dl-all">{{ "downloads-more" | i18n({}, lang) }}</a></p>
+            <p class="dl-alt dl-os dl-os-linux">AppImage x86_64 · <a href="https://flathub.org/apps/chat.simplex.simplex" target="_blank" rel="noopener">Flatpak</a> · <a href="#dl-all">{{ "downloads-more" | i18n({}, lang) }}</a></p>
+        </div>
+
+        <div class="dl-device" data-device="iphone">
+            <div class="dl-shot dl-shot-phone">
+                <img src="/img/crowdfunding/phone.png" alt="SimpleX Chat on iPhone" width="504" height="1020">
+            </div>
+            <a class="dl-badge" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank" rel="noopener"><img src="/img/new/apple_store.svg" alt="Download on the App Store"></a>
+            <p class="dl-alt">{{ "downloads-beta" | i18n({}, lang) }}: <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank" rel="noopener">TestFlight</a></p>
+        </div>
+
+        <div class="dl-device" data-device="android">
+            <div class="dl-shot dl-shot-phone">
+                <img class="dark:hidden" src="/img/downloads/android-light.webp" alt="SimpleX Chat on Android" width="440" height="965">
+                <img class="hidden dark:block" src="/img/downloads/android-dark.webp" alt="SimpleX Chat on Android" width="440" height="965">
+            </div>
+            <a class="dl-badge" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" rel="noopener"><img src="/img/new/google_play.svg" alt="Get it on Google Play"></a>
+            <p class="dl-alt"><a href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid">F-Droid</a> · APK <a href="{{ release }}simplex-aarch64.apk">aarch64</a> · <a href="{{ release }}simplex-armv7a.apk">armv7</a></p>
+        </div>
+    </div>
+    <p class="dl-wrap dl-other"><a href="#dl-all">{{ "downloads-other-devices" | i18n({}, lang) }}</a></p>
+
+    <div class="dl-wrap dl-proof">
+        <div class="dl-stat"><b>3M</b> <span>{{ "index-hero-downloads" | i18n({}, lang) }}</span></div>
+        <div class="dl-stat"><b>600K</b> <span>{{ "index-hero-monthly-users" | i18n({}, lang) }}</span></div>
+        <div class="dl-audits">
+            <a href="https://www.trailofbits.com/about" target="_blank" rel="noopener" title="{{ 'index-security-assessment-title' | i18n({}, lang) }}">
+                <img class="dark:hidden" src="/img/trail-of-bits-light.png" alt="Trail of Bits">
+                <img class="hidden dark:block" src="/img/design_3/publications/trail-of-bits.png" alt="Trail of Bits">
+            </a>
+            <a class="box-btn btn-1" href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html" title="{{ 'index-security-review-2022-title' | i18n({}, lang) }}">2022</a>
+            <a class="box-btn gold-gradient" href="/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html" title="{{ 'index-security-review-2024-title' | i18n({}, lang) }}">2024</a>
+            <p>{{ "index-security-audits-label" | i18n({}, lang) | safe }}</p>
+        </div>
+    </div>
+</section>

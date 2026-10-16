@@ -144,6 +144,7 @@ class AppPreferences {
   val appearanceBarsBlurRadius = mkIntPreference(SHARED_PREFS_APPEARANCE_BARS_BLUR_RADIUS, if (deviceSupportsBlur) 50 else 0)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
+  val markdownFileTextView = mkBoolPreference(SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
@@ -431,6 +432,7 @@ class AppPreferences {
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
+    private const val SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW = "MarkdownFileTextView"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
@@ -3170,6 +3172,13 @@ object ChatController {
             chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           }
           // TODO NtfManager.shared.notifyGroupInvitation
+        }
+      }
+      is CR.ReceivedGroupInvitationViaGroup -> {
+        if (active(r.user)) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
+          }
         }
       }
       is CR.UserAcceptedGroupSent -> {
@@ -6899,6 +6908,7 @@ sealed class CR {
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val user: UserRef, val group: Group): CR()
   @Serializable @SerialName("receivedGroupInvitation") class ReceivedGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("receivedGroupInvitationViaGroup") class ReceivedGroupInvitationViaGroup(val user: UserRef, val groupInfo: GroupInfo, val viaGroupInfo: GroupInfo, val viaMember: GroupMember, val memberRole: GroupMemberRole): CR()
   @Serializable @SerialName("groupDeletedUser") class GroupDeletedUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
   @Serializable @SerialName("memberAccepted") class MemberAccepted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
@@ -7103,6 +7113,7 @@ sealed class CR {
     is LeftMemberUser -> "leftMemberUser"
     is GroupMembers -> "groupMembers"
     is ReceivedGroupInvitation -> "receivedGroupInvitation"
+    is ReceivedGroupInvitationViaGroup -> "receivedGroupInvitationViaGroup"
     is GroupDeletedUser -> "groupDeletedUser"
     is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
     is MemberAccepted -> "memberAccepted"
@@ -7298,6 +7309,7 @@ sealed class CR {
     is LeftMemberUser -> withUser(user, json.encodeToString(groupInfo))
     is GroupMembers -> withUser(user, json.encodeToString(group))
     is ReceivedGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmemberRole: $memberRole")
+    is ReceivedGroupInvitationViaGroup -> withUser(user, "groupInfo: $groupInfo\nviaGroupInfo: $viaGroupInfo\nviaMember: $viaMember\nmemberRole: $memberRole")
     is GroupDeletedUser -> withUser(user, json.encodeToString(groupInfo))
     is JoinedGroupMemberConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member")
     is MemberAccepted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")

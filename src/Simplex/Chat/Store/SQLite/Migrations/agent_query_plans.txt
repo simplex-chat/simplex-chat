@@ -615,15 +615,6 @@ Plan:
 SEARCH address_ratchet_keys USING INDEX idx_address_ratchet_keys (conn_id=? AND ratchet_key_id=?)
 
 Query: 
-        UPDATE rcv_messages
-        SET receive_attempts = receive_attempts + 1
-        WHERE conn_id = ? AND internal_id = ?
-        RETURNING receive_attempts
-      
-Plan:
-SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
-
-Query: 
       DELETE FROM address_ratchet_keys
       WHERE conn_id = ?
         AND address_ratchet_key_id NOT IN (
@@ -1393,7 +1384,7 @@ SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 
 Query: SELECT conn_id FROM rcv_queues WHERE switch_status = ? AND deleted = 0
 Plan:
-SCAN rcv_queues
+SEARCH rcv_queues USING INDEX idx_rcv_queues_switch_status (switch_status=?)
 
 Query: SELECT conn_id, rc_verify_code_ad, rc_verify_code_pq, CASE WHEN rc_verify_code_ad IS NULL THEN ratchet_state END FROM ratchets WHERE conn_id = ?
 Plan:
@@ -1430,6 +1421,10 @@ SEARCH servers USING PRIMARY KEY (host=? AND port=?)
 Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
+
+Query: SELECT msg_flags FROM messages WHERE conn_id = ? AND internal_snd_id IS NOT NULL AND msg_type = ? ORDER BY internal_id DESC LIMIT ?
+Plan:
+SEARCH messages USING PRIMARY KEY (conn_id=?)
 
 Query: SELECT ratchet_state FROM ratchets WHERE conn_id = ?
 Plan:

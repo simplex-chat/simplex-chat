@@ -57,10 +57,8 @@ interface EventSubscriber<K extends CEvt.Tag> {
 }
 
 /**
- * Database configuration. The native library is built against exactly one
- * backend (see `simplex_backend` / `SIMPLEX_BACKEND` at install time); this
- * type makes the caller state which one they are targeting so field names
- * can't lie about their meaning.
+ * Database configuration. `type` selects the libsimplex backend loaded by
+ * `ChatApi.init`; one backend per process.
  */
 export type DbConfig =
   | {
@@ -79,6 +77,11 @@ export type DbConfig =
       /** PostgreSQL connection string (e.g. `postgres://user:pass@host/db`). */
       connectionString: string
     }
+
+function chatErrorEvent(err: unknown): ChatEvent {
+  if (err instanceof core.ChatAPIError && err.chatError) return {type: "chatError", chatError: err.chatError}
+  throw err
+}
 
 function dbConfigToMigrateArgs(db: DbConfig): [string, string] {
   switch (db.type) {
@@ -103,7 +106,7 @@ export class ChatApi {
   private constructor(protected ctrl_: bigint | undefined) {}
 
   /**
-   * Initializes the ChatApi.
+   * Initializes the ChatApi, loading libsimplex for `db.type` (downloaded on first use).
    * @param {DbConfig} db - Database configuration (sqlite or postgres).
    * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
    * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
@@ -114,6 +117,7 @@ export class ChatApi {
     queueSize?: number
   ): Promise<ChatApi> {
     const [path, key] = dbConfigToMigrateArgs(db)
+    await core.loadLibrary(db.type)
     const ctrl = await core.chatMigrateInit(path, key, confirm, queueSize)
     return new ChatApi(ctrl)
   }
@@ -171,7 +175,7 @@ export class ChatApi {
   private async runEventsLoop(): Promise<void> {
     while (this.receiveEvents) {
       try {
-        const event = await this.recvChatEvent()
+        const event = await this.recvChatEvent().catch(chatErrorEvent)
         if (!event) continue
         const subs = this.subscribers[event.type]
         if (subs) {
@@ -194,12 +198,7 @@ export class ChatApi {
           }
         }
       } catch(err) {
-        const e = err as core.ChatAPIError
-        if ("chatError" in e) {
-          console.log("Chat error", e.chatError)
-        } else {
-          console.log("Invalid event", e)
-        }
+        console.log("Invalid event", err)
       }
     }
   }
@@ -561,6 +560,16 @@ export class ChatApi {
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     const r = await this.sendChatCmd(CC.APIAddMember.cmdString({groupId, contactId, memberRole}))
     if (r.type === "sentGroupInvitation") return r.member
+    throw new ChatCommandError("error adding member", r)
+  }
+
+  /**
+   * Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+   * Network usage: interactive.
+   */
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    const r = await this.sendChatCmd(CC.APIAddMemberViaGroup.cmdString({groupId, viaGroupId, groupMemberId, memberRole}))
+    if (r.type === "sentGroupInvitationViaGroup") return r.member
     throw new ChatCommandError("error adding member", r)
   }
 

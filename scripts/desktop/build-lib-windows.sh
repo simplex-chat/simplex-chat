@@ -61,7 +61,7 @@ mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp dist-newstyle/openssl-3.0.15/libcrypto-3-x64.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp libsimplex.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
-scripts/desktop/prepare-vlc-windows.sh
+[ -n "$SKIP_VLC" ] || scripts/desktop/prepare-vlc-windows.sh
 
 links_dir=apps/multiplatform/build/links
 mkdir -p $links_dir

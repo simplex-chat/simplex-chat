@@ -48,6 +48,7 @@ import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
 import System.Mem.Weak (deRefWeak)
+import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))

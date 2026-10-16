@@ -132,6 +132,8 @@ object BadgeModel {
 
 enum class ChatListBanner { BadgeAlert, BadgePitch, GetStake }
 
+data class FileToOpen(val fileId: Long, val inChatList: Boolean)
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -205,7 +207,20 @@ object ChatModel {
   // another in its place; only the badge alert shows regardless. Set while rendering, so not a state.
   var chatListBanner: ChatListBanner? = null
 
+  var fileToOpen: FileToOpen? = null
+
   fun bannerSlotFree(banner: ChatListBanner): Boolean = chatListBanner == null || chatListBanner == banner
+
+  fun openWhenReceived(file: CIFile, inChatList: Boolean) {
+    fileToOpen = FileToOpen(file.fileId, inChatList)
+  }
+
+  fun receivedFileToOpen(file: CIFile, inChatList: Boolean): Boolean {
+    val f = fileToOpen
+    if (f == null || f.fileId != file.fileId || f.inChatList != inChatList || !file.loaded) return false
+    fileToOpen = null
+    return !inChatList || appPlatform.isDesktop || chatId.value == null
+  }
 
   // preferences
   val notificationPreviewMode by lazy {

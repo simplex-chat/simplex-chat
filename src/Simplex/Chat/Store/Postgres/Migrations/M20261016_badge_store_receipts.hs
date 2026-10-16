@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_store_receipts where
+module Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts where
 
 import Data.Text (Text)
 import Text.RawString.QQ (r)
@@ -10,8 +10,8 @@ import Text.RawString.QQ (r)
 -- creditable, and its reference identifies it. provider and transaction_ref are null until a receipt
 -- arrives, and distinct NULLs let several rows await one at once. payment is held from the receipt's
 -- arrival until the service credits or refuses it; a refused row keeps its refusal in credit_error.
-m20260925_badge_store_receipts :: Text
-m20260925_badge_store_receipts =
+m20261016_badge_store_receipts :: Text
+m20261016_badge_store_receipts =
   [r|
 CREATE TABLE badge_store_receipts(
   badge_store_receipt_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -40,8 +40,8 @@ CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(badge_s
 ALTER TABLE badge_purchases ADD COLUMN subscription_status TEXT;
 |]
 
-down_m20260925_badge_store_receipts :: Text
-down_m20260925_badge_store_receipts =
+down_m20261016_badge_store_receipts :: Text
+down_m20261016_badge_store_receipts =
   [r|
 UPDATE badge_purchases SET alert_acked_kind = NULL, alert_acked_episode = NULL, alert_snooze_until = NULL WHERE alert_acked_kind = 'subscription_cancelled';
 
