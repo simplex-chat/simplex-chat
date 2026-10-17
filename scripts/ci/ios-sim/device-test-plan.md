@@ -50,7 +50,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | D12 | Start a search, change the text before it returns | Results and spinner clear at once; the old reply never appears |
 | D13 | Start a search, clear the field | The spinner stops; nothing appears later |
 | D14 | With results shown, switch profile | Results disappear |
-| D15 | Profile with no conversations (onboarding pages shown) | The search bar is above the onboarding pages. A search replaces them with the results while it runs or shows rows; a search that finds nothing shows a "No chats found" row; clearing the text brings the onboarding pages back |
+| D15 | Profile with no conversations (onboarding pages shown) | The search bar is shown with the onboarding pages (below them with the one-hand UI, above them with the top bar). A search replaces them with the results while it runs or shows rows; a search that finds nothing shows a "No chats found" row; clearing the text brings the onboarding pages back |
 
 ## Chat list: no duplicates (AC6)
 
@@ -83,7 +83,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | W1 | Open New chat (pencil), type text | "Search in Directory" below the field; the action rows (1-time link, scan, create group/channel) hide as before |
 | W2 | Type a 5+ letter word | "Connect to … " and "Search in Directory" below the field |
 | W3 | Paste a link | No "Search in Directory"; the link connects as before |
-| W4 | Press the keyboard **Search** key | "Names" and "Directory" sections after "Your Contacts", with uppercase grey headers like it; first time, the same consent alert |
+| W4 | Press the keyboard **Search** key | "Names" and "Directory" sections after "Your Contacts" (which shows only while a contact matches), with uppercase grey headers like it; first time, the same consent alert |
 | W5 | Search with no contact matching | "No filtered contacts" is hidden while searching and when there are results; shown when nothing is found anywhere |
 | W6 | Tap a Directory or Names result | The sheet closes and the join or connect flow runs |
 | W7 | Name of a contact listed in "Your Contacts" | No Names row for it |
