@@ -5200,6 +5200,10 @@ sealed class Format {
   }
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
+  @Serializable @SerialName("blockStart") class BlockStart(val block: MarkdownBlock): Format()
+  @Serializable @SerialName("blockEnd") class BlockEnd: Format()
+  @Serializable @SerialName("lineBreak") class LineBreak: Format()
+  @Serializable @SerialName("cellBreak") class CellBreak: Format()
   @Serializable @SerialName("unknown") class Unknown: Format()
 
   val style: SpanStyle @Composable get() = when (this) {
@@ -5219,14 +5223,111 @@ sealed class Format {
     is Email -> linkStyle
     is Phone -> linkStyle
     is Modal -> linkStyle
+    is BlockStart -> SpanStyle()
+    is BlockEnd -> SpanStyle()
+    is LineBreak -> SpanStyle()
+    is CellBreak -> SpanStyle()
     is Unknown -> SpanStyle()
   }
 
   val isSimplexLink = this is SimplexLink
 
+  val isMarker: Boolean get() = this is BlockStart || this is BlockEnd || this is LineBreak || this is CellBreak
+
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
   }
+}
+
+@Serializable
+sealed class MarkdownBlock {
+  @Serializable @SerialName("paragraph") object Paragraph: MarkdownBlock()
+  @Serializable @SerialName("heading") class Heading(val level: Int): MarkdownBlock()
+  @Serializable @SerialName("codeBlock") class CodeBlock(val language: String? = null): MarkdownBlock()
+  @Serializable @SerialName("quote") object Quote: MarkdownBlock()
+  @Serializable @SerialName("listItem") class ListItem(val number: String? = null, val indent: Int): MarkdownBlock()
+  @Serializable @SerialName("table") class Table(val columns: List<TableAlign>): MarkdownBlock()
+  @Serializable @SerialName("rule") object Rule: MarkdownBlock()
+}
+
+@Serializable
+enum class TableAlign {
+  @SerialName("none") None,
+  @SerialName("left") Left,
+  @SerialName("center") Center,
+  @SerialName("right") Right
+}
+
+fun markdownSegments(fts: List<FormattedText>?): List<FormattedText>? {
+  if (fts == null || fts.none { it.format is Format.BlockStart }) return fts
+  val segments = mutableListOf<FormattedText>()
+  var i = 0
+  while (i < fts.size) {
+    val format = fts[i].format
+    if (format is Format.BlockStart) {
+      var end = i + 1
+      while (end < fts.size && fts[end].format !is Format.BlockEnd && fts[end].format !is Format.BlockStart) end++
+      segments += blockSegments(format.block, splitByMarker<Format.LineBreak>(fts.subList(i + 1, end)))
+      i = if (end < fts.size && fts[end].format is Format.BlockEnd) end + 1 else end
+    } else {
+      if (format?.isMarker != true) segments += fts[i]
+      i++
+    }
+  }
+  return segments
+}
+
+private inline fun <reified M: Format> splitByMarker(fts: List<FormattedText>): List<List<FormattedText>> {
+  val parts = mutableListOf(mutableListOf<FormattedText>())
+  for (ft in fts) {
+    if (ft.format is M) parts += mutableListOf<FormattedText>() else parts.last() += ft
+  }
+  return parts
+}
+
+private fun blockSegments(block: MarkdownBlock, lines: List<List<FormattedText>>): List<FormattedText> = when (block) {
+  is MarkdownBlock.Paragraph -> joinLines(lines, "\n")
+  is MarkdownBlock.Heading -> joinLines(lines, "\n").map { if (it.format == null) FormattedText(it.text, Format.Bold()) else it }
+  is MarkdownBlock.ListItem -> listOf(FormattedText(" ".repeat(4 * block.indent) + (block.number ?: "•") + " ")) + joinLines(lines, "\n")
+  is MarkdownBlock.Quote -> listOf(FormattedText("│ ")) + joinLines(lines, "\n│ ")
+  is MarkdownBlock.CodeBlock ->
+    lines.flatMapIndexed { i, line ->
+      (if (i == 0) emptyList() else listOf(FormattedText("\n", Format.Snippet()))) + line.map { FormattedText(it.text, Format.Snippet()) }
+    }
+  is MarkdownBlock.Table -> {
+    val rows = lines.map { line ->
+      val cells = splitByMarker<Format.CellBreak>(line)
+      block.columns.indices.map { cells.getOrElse(it) { emptyList() } }
+    }
+    tableSegments(block.columns, rows)
+  }
+  is MarkdownBlock.Rule -> listOf(FormattedText("———"))
+}
+
+private fun joinLines(lines: List<List<FormattedText>>, hardBreak: String): List<FormattedText> =
+  lines.flatMapIndexed { i, line ->
+    if (i == 0) line
+    else listOf(FormattedText(if (line.isNotEmpty() && lines[i - 1].isNotEmpty()) " " else hardBreak)) + line
+  }
+
+private fun tableSegments(columns: List<TableAlign>, rows: List<List<List<FormattedText>>>): List<FormattedText> {
+  fun snippet(text: String) = FormattedText(text, Format.Snippet())
+  fun cellLength(cell: List<FormattedText>) = cell.sumOf { it.text.codePointCount(0, it.text.length) }
+  val widths = columns.indices.map { c -> rows.maxOf { cellLength(it[c]) } }
+  fun rowSegments(row: List<List<FormattedText>>): List<FormattedText> =
+    row.flatMapIndexed { c, cell ->
+      val padding = widths[c] - cellLength(cell)
+      val before = when (columns[c]) {
+        TableAlign.Right -> padding
+        TableAlign.Center -> padding / 2
+        TableAlign.None, TableAlign.Left -> 0
+      }
+      val separator = if (c == 0) "" else " │ "
+      val content = cell.map { if (it.format == null) snippet(it.text) else it }
+      listOf(snippet(separator + " ".repeat(before))) + content + snippet(" ".repeat(padding - before))
+    }.filter { it.text.isNotEmpty() }
+  val underline = snippet("\n" + widths.joinToString("─┼─") { "─".repeat(it) })
+  return rowSegments(rows.first()) + underline + rows.drop(1).flatMap { listOf(snippet("\n")) + rowSegments(it) }
 }
 
 @Serializable

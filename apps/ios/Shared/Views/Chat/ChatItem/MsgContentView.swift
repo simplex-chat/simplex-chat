@@ -408,7 +408,8 @@ func messageText(
     stripLink: String? = nil
 ) -> MsgTextResult {
     let text = if let stripLink { stripTextLink(text, stripLink) } else { text }
-    let formattedText = if let stripLink { stripFormattedTextLink(formattedText, stripLink) } else { formattedText }
+    let segments = markdownSegments(formattedText)
+    let formattedText = if let stripLink { stripFormattedTextLink(segments, stripLink) } else { segments }
     let res = NSMutableAttributedString()
     let descr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle)
     let font = UIFont.preferredFont(forTextStyle: textStyle)
@@ -563,6 +564,7 @@ func messageText(
                     attrs[modalAttrKey] = Format.modal(modalName: modalName, text: text)
                     handleTaps = true
                 }
+            case .blockStart, .blockEnd, .lineBreak, .cellBreak: ()
             case .unknown: ()
             case .none: ()
             }

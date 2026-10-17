@@ -252,6 +252,7 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
+    it "should reject a mention only in code" testMentionOnlyInCode
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -8303,6 +8304,17 @@ testMemberMention =
           bob <# "#team cath> [edited] hello @alice @bob"
         ]
 
+testMentionOnlyInCode :: HasCallStack => TestParams -> IO ()
+testMentionOnlyInCode =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      alice ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"```\\n@bob\\n```\"}, \"mentions\": {\"bob\": " <> show bobId <> "}}]")
+      alice <## "chat db error: SEInvalidMention"
+      (bob </)
+      (cath </)
+
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -8441,6 +8453,12 @@ testUpdatedMentionNames = do
       `shouldBe` "hello @'Alice Jones' @robert"
     test (mm [("alice", Just "alice"), ("cath", Just "alice")]) "hello @alice @cath"
       `shouldBe` "hello @alice @alice_1"
+  it "replace changed names outside code" $ \_ -> do
+    let t = "- hello\n| x | @bob |\n|---|---|\n```\n@bob\n```"
+        t' = "- hello\n| x | @robert |\n|---|---|\n```\n@bob\n```"
+        (mc', ft', _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) (mm [("bob", Just "robert")])
+    msgContentText mc' `shouldBe` t'
+    ft' `shouldBe` parseMaybeMarkdownList t'
   where
     test mentionsMap t =
       let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentionsMap

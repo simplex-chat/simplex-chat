@@ -42,7 +42,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Library.Commands (badgeServiceErrorText, maxImageSize)
-import Simplex.Chat.Markdown
+import Simplex.Chat.Markdown hiding (indent)
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
 import Simplex.Chat.Badges.Service (StatementEntry (..), StatementEntryType (..))

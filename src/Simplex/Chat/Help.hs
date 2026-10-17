@@ -20,7 +20,7 @@ where
 import Data.List (intersperse)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Chat.Markdown
+import Simplex.Chat.Markdown hiding (indent)
 import Simplex.Chat.Styled
 import Simplex.Chat.Types (LocalProfile (..), User (..))
 import System.Console.ANSI.Types

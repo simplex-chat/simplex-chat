@@ -267,7 +267,7 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
     if (sel.first < prefix.length) {
         sb.append(prefix, sel.first, minOf(prefix.length, sel.last + 1))
     }
-    val formattedText = ci.formattedText ?: run {
+    val formattedText = markdownSegments(ci.formattedText) ?: run {
         val start = (sel.first - prefix.length).coerceAtLeast(0).coerceAtMost(ci.text.length)
         val end = (sel.last + 1 - prefix.length).coerceAtMost(ci.text.length)
         if (start < end) sb.append(ci.text, start, end)
@@ -293,7 +293,7 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
 
 // Snaps a boundary offset to include full transformed segments.
 private fun snapOffset(ci: ChatItem, offset: Int, linkMode: SimplexLinkMode, expandRight: Boolean): Int {
-    val formattedText = ci.formattedText ?: return offset
+    val formattedText = markdownSegments(ci.formattedText) ?: return offset
     var displayOffset = itemPrefixText(ci).length
     for (ft in formattedText) {
         val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)

@@ -149,7 +149,8 @@ fun MarkdownText (
   onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
   val text = if (stripLink != null) stripTextLink(text.toString(), stripLink) else text
-  val formattedText = if (stripLink != null) stripFormattedTextLink(formattedText, stripLink) else formattedText
+  val segments = remember(formattedText) { markdownSegments(formattedText) }
+  val formattedText = if (stripLink != null) stripFormattedTextLink(segments, stripLink) else segments
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
@@ -338,6 +339,10 @@ fun MarkdownText (
                 withStyle(ftStyle) { append(ft.text) }
               }
             }
+            is Format.BlockStart -> append(ft.text)
+            is Format.BlockEnd -> append(ft.text)
+            is Format.LineBreak -> append(ft.text)
+            is Format.CellBreak -> append(ft.text)
             is Format.Unknown -> append(ft.text)
           }
         }

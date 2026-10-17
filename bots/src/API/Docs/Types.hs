@@ -285,7 +285,7 @@ chatTypesDocsData =
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
     (sti @FileType, STEnum' (consLower "FT"), "", [], "", ""),
-    (sti @Format, STUnion, "", ["Unknown"], "", ""),
+    (sti @Format, STUnion, "", ["Unknown"], "", "The formats blockStart, blockEnd, lineBreak and cellBreak mark Markdown blocks, their lines and table cells. Their text is the Markdown syntax at these boundaries."),
     (sti @FormattedText, STRecord, "", [], "", ""),
     (sti @FullGroupPreferences, STRecord, "", [], "", ""),
     (sti @FullPreferences, STRecord, "", [], "", ""),
@@ -323,6 +323,7 @@ chatTypesDocsData =
     (sti @LinkPreview, STRecord, "", [], "", ""),
     (sti @BadgeInfo, STRecord, "", [], "", ""),
     (sti @LocalProfile, STRecord, "", [], "", ""),
+    (sti @MarkdownBlock, STUnion, "", ["UnknownBlock"], "", ""),
     (sti @MemberCriteria, STEnum1, "MC", [], "", ""),
     (sti @MsgChatLink, STUnion, "MCL", [], "", "Connection link sent in a message - only short links are allowed."),
     (sti @MsgContent, STUnion, "MC", [], "", ""),
@@ -391,6 +392,7 @@ chatTypesDocsData =
     (sti @SubscriptionStatus, STUnion, "SS", [], "", ""),
     (sti @SupportGroupPreference, STRecord, "", [], "", ""),
     (sti @SwitchPhase, STEnum, "SP", [], "", ""),
+    (sti @TableAlign, STEnum, "TA", [], "", ""),
     (sti @TimedMessagesGroupPreference, STRecord, "", [], "", ""),
     (sti @TimedMessagesPreference, STRecord, "", [], "", ""),
     (sti @TransportError, STUnion, "TE", [], "", ""),
@@ -563,6 +565,7 @@ deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
 deriving instance Generic BadgeInfo
 deriving instance Generic LocalProfile
+deriving instance Generic MarkdownBlock
 deriving instance Generic MemberCriteria
 deriving instance Generic MsgChatLink
 deriving instance Generic MsgContent
@@ -629,6 +632,7 @@ deriving instance Generic StoreError
 deriving instance Generic SubscriptionStatus
 deriving instance Generic SupportGroupPreference
 deriving instance Generic SwitchPhase
+deriving instance Generic TableAlign
 deriving instance Generic TimedMessagesGroupPreference
 deriving instance Generic TimedMessagesPreference
 deriving instance Generic TransportError

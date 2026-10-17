@@ -54,7 +54,75 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank" rel="noopener"'
 }
 
+function markerType(ft) {
+  const type = ft.format && ft.format.type;
+  return type === 'blockStart' || type === 'blockEnd' || type === 'lineBreak' || type === 'cellBreak' ? type : null;
+}
+
+function splitByMarker(fts, type) {
+  const parts = [[]];
+  for (const ft of fts) {
+    if (markerType(ft) === type) parts.push([]);
+    else parts[parts.length - 1].push(ft);
+  }
+  return parts;
+}
+
+function renderLines(lines) {
+  return lines.map((line, i) =>
+    (i === 0 ? '' : line.length > 0 && lines[i - 1].length > 0 ? ' ' : '<br>') + renderMarkdown(line)
+  ).join('');
+}
+
+function renderTable(columns, lines) {
+  const aligns = columns.map((a) => (a === 'center' || a === 'right' ? a : 'left'));
+  const rows = lines.map((line) => splitByMarker(line, 'cellBreak'));
+  const row = (cells, tag) =>
+    '<tr>' + aligns.map((a, c) => `<${tag} style="text-align: ${a}; border: 1px solid; padding: 0 0.4em;">${renderMarkdown(cells[c] || [])}</${tag}>`).join('') + '</tr>';
+  return '<div style="overflow-x: auto;"><table style="border-collapse: collapse;">' + row(rows[0], 'th') + rows.slice(1).map((r) => row(r, 'td')).join('') + '</table></div>';
+}
+
+function renderBlock(block, lines) {
+  switch (block.type) {
+    case 'heading':
+      return `<div style="font-weight: bold;">${renderLines(lines)}</div>`;
+    case 'listItem': {
+      const indent = Math.min(6, Math.max(0, Number.parseInt(block.indent, 10) || 0));
+      return `<div style="padding-left: ${1.5 * indent}em;">${escapeHtml(String(block.number || '•'))} ${renderLines(lines)}</div>`;
+    }
+    case 'quote':
+      return `<div style="border-left: 3px solid; padding-left: 0.5em;">${renderLines(lines)}</div>`;
+    case 'codeBlock':
+      return '<pre style="font-family: monospace; white-space: pre-wrap;">' + lines.map((line) => line.map((ft) => escapeHtml(ft.text)).join('')).join('\n') + '</pre>';
+    case 'table':
+      return renderTable(Array.isArray(block.columns) ? block.columns : [], lines);
+    case 'rule':
+      return '<hr>';
+    default:
+      return `<div>${renderLines(lines)}</div>`;
+  }
+}
+
+function renderBlocks(fts) {
+  let html = '';
+  let i = 0;
+  while (i < fts.length) {
+    if (markerType(fts[i]) === 'blockStart') {
+      let end = i + 1;
+      while (end < fts.length && markerType(fts[end]) !== 'blockEnd' && markerType(fts[end]) !== 'blockStart') end++;
+      html += renderBlock(fts[i].format.block || {}, splitByMarker(fts.slice(i + 1, end), 'lineBreak'));
+      i = end < fts.length && markerType(fts[end]) === 'blockEnd' ? end + 1 : end;
+    } else {
+      if (!fts[i].format) html += '<br>'.repeat(Math.max(0, (fts[i].text.match(/\n/g) || []).length - 1));
+      else if (!markerType(fts[i])) html += renderMarkdown([fts[i]]);
+      i++;
+    }
+  }
+  return html;
+}
+
 function renderMarkdown(fts) {
+  if (fts.some((ft) => markerType(ft) === 'blockStart')) return renderBlocks(fts);
   let html = '';
   for (const ft of fts) {
     const { format, text } = ft;

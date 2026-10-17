@@ -432,9 +432,6 @@ prohibitedSimplexLinks gInfo m mc ft =
       MCChat {} -> True
       _ -> False
 
-ftIsSimplexLink :: FormattedText -> Bool
-ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format
-
 roundedFDCount :: Int -> Int
 roundedFDCount n
   | n <= 0 = 4

@@ -132,7 +132,7 @@ abstract class NtfManager {
   }
 
   private fun hideSecrets(cItem: ChatItem, isChannel: Boolean = false): String {
-    val md = cItem.formattedText
+    val md = markdownSegments(cItem.formattedText)
     return if (md != null) {
       var res = ""
       for (ft in md) {

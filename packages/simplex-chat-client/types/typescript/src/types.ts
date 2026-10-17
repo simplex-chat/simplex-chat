@@ -2569,6 +2569,7 @@ export enum FileType {
   Normal = "normal",
   Roster = "roster",
 }
+// The formats blockStart, blockEnd, lineBreak and cellBreak mark Markdown blocks, their lines and table cells. Their text is the Markdown syntax at these boundaries.
 
 export type Format = 
   | Format.Bold
@@ -2586,6 +2587,10 @@ export type Format =
   | Format.Mention
   | Format.Email
   | Format.Phone
+  | Format.BlockStart
+  | Format.BlockEnd
+  | Format.LineBreak
+  | Format.CellBreak
 
 export namespace Format {
   export type Tag = 
@@ -2604,6 +2609,10 @@ export namespace Format {
     | "mention"
     | "email"
     | "phone"
+    | "blockStart"
+    | "blockEnd"
+    | "lineBreak"
+    | "cellBreak"
 
   interface Interface {
     type: Tag
@@ -2677,6 +2686,23 @@ export namespace Format {
 
   export interface Phone extends Interface {
     type: "phone"
+  }
+
+  export interface BlockStart extends Interface {
+    type: "blockStart"
+    block: MarkdownBlock
+  }
+
+  export interface BlockEnd extends Interface {
+    type: "blockEnd"
+  }
+
+  export interface LineBreak extends Interface {
+    type: "lineBreak"
+  }
+
+  export interface CellBreak extends Interface {
+    type: "cellBreak"
   }
 }
 
@@ -3161,6 +3187,56 @@ export interface LocalProfile {
   localAlias: string
   contactDomain?: SimplexDomainClaim
   contactDomainVerified?: boolean
+}
+
+export type MarkdownBlock = 
+  | MarkdownBlock.Paragraph
+  | MarkdownBlock.Heading
+  | MarkdownBlock.CodeBlock
+  | MarkdownBlock.Quote
+  | MarkdownBlock.ListItem
+  | MarkdownBlock.Table
+  | MarkdownBlock.Rule
+
+export namespace MarkdownBlock {
+  export type Tag = "paragraph" | "heading" | "codeBlock" | "quote" | "listItem" | "table" | "rule"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Paragraph extends Interface {
+    type: "paragraph"
+  }
+
+  export interface Heading extends Interface {
+    type: "heading"
+    level: number // int
+  }
+
+  export interface CodeBlock extends Interface {
+    type: "codeBlock"
+    language?: string
+  }
+
+  export interface Quote extends Interface {
+    type: "quote"
+  }
+
+  export interface ListItem extends Interface {
+    type: "listItem"
+    number?: string
+    indent: number // int
+  }
+
+  export interface Table extends Interface {
+    type: "table"
+    columns: TableAlign[]
+  }
+
+  export interface Rule extends Interface {
+    type: "rule"
+  }
 }
 
 export enum MemberCriteria {
@@ -5129,6 +5205,13 @@ export enum SwitchPhase {
   Confirmed = "confirmed",
   Secured = "secured",
   Completed = "completed",
+}
+
+export enum TableAlign {
+  None = "none",
+  Left = "left",
+  Center = "center",
+  Right = "right",
 }
 
 export interface TimedMessagesGroupPreference {

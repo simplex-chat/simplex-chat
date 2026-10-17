@@ -1,29 +1,31 @@
-# Block Markdown: rendering in the apps
+# Block Markdown: rendering in the apps and on the web
 
-Date: 2026-10-13. Revised: 2026-10-16, for master.
+Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, block markers in the flat list.
 
-The apps decode the blocks of `formattedText` (`2026-10-13-block-markdown.md`). The blocks are drawn as one text: the one-text form of section 3, with the present inline formats.
+The apps and the web page script draw the marker form of `formattedText` (`2026-10-13-block-markdown.md`, section 3). The apps draw one text per item: the one-text form of section 3, with the present inline formats. The web page script draws HTML blocks.
 
-References are to master 41f0c429b.
+References are to ep/markdown 382dc7480.
 
 ```
 K/   apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/
 I/   apps/ios/Shared/Views/
+S/   apps/ios/SimpleXChat/
+W/   website/src/js/
 ```
 
 ## 1. Scope
 
 ```
-one-text form   every place where the text of an item is drawn: section 4
-                every place where the text of a quote is drawn
-                every place where the text of an item version is drawn
-source form     chatParseMarkdown, as now
-                  compose field
-                  edit of a sent item
-                  profile descriptions
-                  welcome messages
-drawing         MarkdownText (K/views/chat/item/TextItemView.kt:125-424), unchanged
-                messageText (I/Chat/ChatItem/MsgContentView.swift:396-585), unchanged
+one-text form   every list drawn by MarkdownText (K/views/chat/item/TextItemView.kt:125)
+                every list drawn by messageText (I/Chat/ChatItem/MsgContentView.swift:396)
+                desktop selection (K/views/chat/TextSelection.kt:264-307)
+                  a selection copies the one-text form of the selected range: markers, padding, separators
+                  the Copy action of an item copies its source text, as now
+                notification texts (K/platform/NtfManager.kt:135, S/Notifications.swift:201)
+marker form     compose state: parsedMessage, links, mentions, link sanitizing, as now
+                  K/views/chat/ComposeView.kt:111, 130, 1024-1070
+                  I/Chat/ComposeMessage/ComposeView.swift:560, 1240, 1990
+HTML blocks     renderMarkdown (W/simplex-lib.jsc:57-128)
 ```
 
 - One text per item, as now:
@@ -36,169 +38,199 @@ drawing         MarkdownText (K/views/chat/item/TextItemView.kt:125-424), unchan
   - the meta reserve
   - text direction
 - Lines are wrapped.
-- Code blocks are scrolled with the chat.
-- Tables are scrolled with the chat.
+- Code blocks and tables are scrolled with the chat.
+- Horizontal scrolling belongs to the terminal layout (ep/llm-ux).
 
 ## 2. Types
 
-Kotlin, `K/model/ChatModel.kt`, next to `FormattedText` (`:5146-5158`):
+Kotlin, `K/model/ChatModel.kt`:
 
 ```
-MarkdownBlock      @Serializable sealed class
-                   @SerialName: the JSON tags of the block Markdown plan
-                     Paragraph(content: List<FormattedText>)
-                     Heading(level: Int, content: List<FormattedText>)
-                     CodeBlock(language: String?, code: String)
-                     Quote(content: List<FormattedText>)
-                     ListItem(number: String?, indent: Int, content: List<FormattedText>)
-                     Table(columns: List<TableAlign>, rows: List<List<List<FormattedText>>>)
-                     Rule
+Format (:5177)     @Serializable @SerialName("blockStart") class BlockStart(val block: MarkdownBlock): Format()
+                   @Serializable @SerialName("blockEnd") class BlockEnd: Format()
+                   @Serializable @SerialName("lineBreak") class LineBreak: Format()
+                   @Serializable @SerialName("cellBreak") class CellBreak: Format()
+                   style of the four: SpanStyle()
+MarkdownBlock      @Serializable sealed class, next to Format
+                     @SerialName("paragraph") object Paragraph
+                     @SerialName("heading") class Heading(val level: Int)
+                     @SerialName("codeBlock") class CodeBlock(val language: String? = null)
+                     @SerialName("quote") object Quote
+                     @SerialName("listItem") class ListItem(val number: String? = null, val indent: Int)
+                     @SerialName("table") class Table(val columns: List<TableAlign>)
+                     @SerialName("rule") object Rule
 TableAlign         @Serializable enum class: none, left, center, right
-formattedText      List<MarkdownBlock>?
-                     ChatItem (:3393)
-                     CIQuote (:4399)
-                     ChatItemVersion (:5700)
-markdownSegments   (blocks: List<MarkdownBlock>?) -> List<FormattedText>?
+markdownSegments   (fts: List<FormattedText>?) -> List<FormattedText>?
                    section 3
-                   null for null
 ```
 
-iOS, `apps/ios/SimpleXChat/ChatTypes.swift`, next to `FormattedText` (`:5624-5650`):
+iOS, `S/ChatTypes.swift`:
 
 ```
-MarkdownBlock      enum: Decodable, Hashable
-                   cases as the Kotlin classes
-                   associated values as the fields of the Kotlin classes
+Format (:5681)     case blockStart(block: MarkdownBlock)
+                   case blockEnd
+                   case lineBreak
+                   case cellBreak
+MarkdownBlock      enum: Decodable, Equatable, Hashable
+                   cases as the Kotlin classes, associated values as their fields
 TableAlign         enum: String, Decodable, Hashable
-formattedText      [MarkdownBlock]?
-                     ChatItem (:3781, init :3767)
-                     CIQuote (:4832)
-                     ChatItemVersion (:6371)
-markdownSegments   (_ blocks: [MarkdownBlock]?) -> [FormattedText]?
+markdownSegments   public func (_ fts: [FormattedText]?) -> [FormattedText]?
                    section 3
-                   public: called from the Shared call sites of section 4
 ```
 
-- An unknown block tag makes the item invalid, as an unknown `Format` tag.
 - `FormattedText` is unchanged.
-- `Format` is unchanged.
+- `formattedText` fields are unchanged: lists of `FormattedText`.
+- An unknown block tag makes the item invalid, as an unknown `Format` tag.
+- Each exhaustive dispatch on `Format` draws a marker as its text.
 
 ## 3. One-text form
 
+`markdownSegments`:
+
 ```
-block            segments
-paragraph        content
-heading          content
-                 segments without format: Bold
-list item        a segment without format
-                   4 spaces per indent
-                   "•", or the number
-                   a space
-                 then content
-quote            a segment without format: "│ "
-                 then content, with "│ " after each line break of its segments without format
-code block       code: one Snippet segment
-table            each row: the cells, padded with spaces to the column width
-                 " │ " between cells
-                 padding by the column alignment
-                   none         after the text
-                   left         after the text
-                   right        before the text
-                   center       half before, rounded down
-                                the rest after
-                 column width: the largest length of a cell of the column
-                 under the header row: a run of "─" of the column width per column
-                 "─┼─" between runs
-                 a line break between rows
-                 Snippet
-                   the separators
-                   the padding
-                   the line under the header
-                   the line breaks between rows
-                   the segments without format
-rule             "———", without format
-between blocks   one segment without format
-                   "\n\n"
-                   "\n" between two list items
-length           the number of Unicode code points
-                   Kotlin: String.codePointCount
-                   Swift: String.unicodeScalars.count
-                 of the texts of the segments of a cell
+null                 null
+no BlockStart        the list, unchanged
+blocks               the segments outside blocks, except markers: unchanged
+                       the core puts white space there; an app appends other segments after a list (Format.Modal, K/views/chat/ChatInfoView.kt:811, I/Chat/ChatItem/MsgContentView.swift:380)
+                     each block: the segments below
+                     the text of a marker is not drawn
+```
+
+Lines and cells of a block:
+
+```
+line         the content segments between two markers of the block
+             LineBreak divides lines
+             a line without content segments: an empty line
+cells        in a Table: CellBreak divides the cells of a line
+soft break   a LineBreak between two lines with content: " "
+hard break   any other LineBreak: "\n"
+```
+
+Blocks:
+
+```
+Paragraph    the lines with soft and hard breaks
+Heading      the line; its segments without format: Bold
+ListItem     a segment without format: 4 spaces per indent, "•" or the number, a space
+             then the lines with soft and hard breaks
+Quote        a segment without format: "│ "
+             then the lines with soft and hard breaks, each hard break "\n│ "
+CodeBlock    each line: one Snippet segment
+             each LineBreak: "\n", Snippet
+Table        each row: the cells, padded with spaces to the column width
+             " │ " between cells
+             padding by the column alignment
+               none         after the text
+               left         after the text
+               right        before the text
+               center       half before, rounded down
+                            the rest after
+             column width: the largest length of a cell of the column
+             under the header row: a run of "─" of the column width per column
+             "─┼─" between runs
+             a line break between rows
+             Snippet
+               the separators
+               the padding
+               the line under the header
+               the line breaks between rows
+               the segments without format
+Rule         "———", without format
+length       the number of Unicode code points
+               Kotlin: String.codePointCount
+               Swift: String.unicodeScalars.count
+             of the texts of the segments of a cell
 ```
 
 - Adjacent segments are not joined.
-- Cells drawn with display texts, with columns aligned by the texts of their segments:
+- Columns are aligned by the code point counts of the segment texts. Not aligned:
 
 ```
-a cell with a mention
-a cell with a link
-a cell with a command
+a cell with a format other than Snippet: proportional font
+a cell with a mention, a link or a command: display text differs from its text
+a character drawn wider than one column: CJK, emoji
+a row wider than the bubble: wrapped
 ```
-- Kotlin, `CIMarkdownText` (`K/views/chat/item/FramedItemView.kt:445-477`): `remember(ci.formattedText) { markdownSegments(ci.formattedText) }`.
 
 ## 4. Call sites
 
-Each site passes `markdownSegments` of the field in place of the field:
-
 ```
-place                       Kotlin                                    iOS
-chat item                   K/views/chat/item/FramedItemView.kt:464   I/Chat/ChatItem/FramedItemView.swift:362
-quote in an item            K/views/chat/item/FramedItemView.kt:63    I/Chat/ChatItem/FramedItemView.swift:337
-chat list preview           K/views/chatlist/ChatPreviewView.kt:264   I/ChatList/ChatPreviewView.swift:315
-compose context item        K/views/chat/ContextItemView.kt:60        I/Chat/ComposeMessage/ContextItemView.swift:74
-item info: version          K/views/chat/ChatItemInfoView.kt:88       I/Chat/ChatItemInfoView.swift:270
-item info: quote            K/views/chat/ChatItemInfoView.kt:140      I/Chat/ChatItemInfoView.swift:345
-notification text           K/platform/NtfManager.kt:135              apps/ios/SimpleXChat/Notifications.swift:201
-desktop selection           K/views/chat/TextSelection.kt:270         -
-desktop selection           K/views/chat/TextSelection.kt:296         -
-preview of MsgContentView   -                                         I/Chat/ChatItem/MsgContentView.swift:624
+Kotlin MarkdownText (K/views/chat/item/TextItemView.kt:125)
+  formattedText    remember(formattedText) { markdownSegments(formattedText) }, before stripFormattedTextLink
+iOS messageText (I/Chat/ChatItem/MsgContentView.swift:396)
+  formattedText    markdownSegments(formattedText), before stripFormattedTextLink
+desktop selection
+  K/views/chat/TextSelection.kt:270, 296    markdownSegments(ci.formattedText)
+notifications
+  K/platform/NtfManager.kt:135              markdownSegments(cItem.formattedText)
+  S/Notifications.swift:201                 markdownSegments of the item's formattedText
 ```
-
-Edit of a sent item:
-
-```
-Kotlin   K/views/chat/ComposeView.kt:130                    parseToMarkdown(editingItem.content.text) ?: FormattedText.plain(editingItem.content.text)
-iOS      I/Chat/ComposeMessage/ComposeView.swift:83         parseSimpleXMarkdown(text) ?? FormattedText.plain(text)
-```
-
-Chat link items, the segment before the link:
-
-```
-Kotlin   stripFormattedTextLink (K/views/chat/item/TextItemView.kt:622-632)    every line break at its end removed
-iOS      stripFormattedTextLink (I/Chat/ChatItem/MsgContentView.swift:608-616)  every line break at its end removed
-```
-
-- A link after an open code fence is code text.
 
 Unchanged:
 
 ```
 K/views/chat/item/FramedItemView.kt:349        short emoji test: formattedText == null
 I/Chat/ChatItem/FramedItemView.swift:145       short emoji test: formattedText == nil
-K/views/usersettings/Appearance.kt:302         sample quote of the theme preview
+K/views/chat/ComposeView.kt:130                edit of a sent item: the marker form, for links and mentions
+stripFormattedTextLink (K/views/chat/item/TextItemView.kt:622-632, I/Chat/ChatItem/MsgContentView.swift:608-616)
+                                               chat link items: applied to the one-text form
 K/views/usersettings/MarkdownHelpView.kt       inline formats
-apps/ios/Shared/Views/UserSettings/MarkdownHelp.swift   inline formats
+I/UserSettings/MarkdownHelp.swift              inline formats
 ```
 
-Removed: `itemDisplayText` (`K/views/chat/item/TextItemView.kt:110-114`).
+## 5. Web
 
-## 5. Desktop selection
-
-- `selectedItemCopiedText` (`K/views/chat/TextSelection.kt:264-292`) reads `markdownSegments(ci.formattedText)`.
-- `snapOffset` (`K/views/chat/TextSelection.kt:295-307`) reads `markdownSegments(ci.formattedText)`.
-- The copied text of a selection has these parts of the one-text form:
+`renderMarkdown` (`W/simplex-lib.jsc:57-128`):
 
 ```
-markers
-padding
-separators
+no blockStart   as now
+blocks          the segments outside blocks without format: a <br> for each line break after the first
+                other segments outside blocks, except markers: drawn as now
+                each block: one element below
+                the text of a marker is not drawn
+lines           the lines with soft and hard breaks of section 3, a hard break as <br>
+Paragraph       <div>: the lines
+Heading         <div style="font-weight: bold;">: the lines, all segments bold
+ListItem        <div style="padding-left: Nem;">: "•" or the number, a space, then the lines
+                N: 1.5 × indent
+Quote           <div style="border-left: 3px solid; padding-left: 0.5em;">: the lines
+CodeBlock       <pre style="font-family: monospace; white-space: pre-wrap;">: the lines with "\n"
+Table           <div style="overflow-x: auto;"><table style="border-collapse: collapse;">: the header row in <th>, the body rows in <td>
+                each cell: style="text-align: A; border: 1px solid; padding: 0 0.4em;"
+                A: the column alignment, none as left, any other value as left
+Rule            <hr>
+other blocks    as Paragraph
+content         each segment drawn as now
+values          indent: an integer from 0 to 6; number: escaped text
 ```
+
+Script functions, `W/simplex-lib.jsc`, before `renderMarkdown`:
+
+```
+markerType      the marker type of a segment, or null
+splitByMarker   lines of a block, cells of a line
+renderLines     the lines with soft breaks " " and hard breaks <br>
+renderTable     a Table block
+renderBlock     one block
+renderBlocks    the marker form
+```
+
+Call sites, unchanged:
+
+```
+W/channel-preview.jsc:990, 1522
+W/directory.jsc:251-255
+```
+
+- The meta span after a message that ends with a block (`W/channel-preview.jsc:1522`) is drawn on its own line.
+- Differences from the apps: a Heading is bold with its formats; a table is an HTML table, scrolled sideways when wider than the message.
 
 ## 6. Docs
 
 ```
-apps/multiplatform/spec/client/chat-view.md:319   TextItemView.kt: blocks drawn in the one-text form
-apps/ios/spec/client/chat-view.md:192             MsgContentView: the same
+apps/multiplatform/spec/client/chat-view.md   TextItemView.kt: blocks drawn in the one-text form
+apps/ios/spec/client/chat-view.md             MsgContentView: the same
 ```
 
 ## 7. Tests
@@ -206,16 +238,19 @@ apps/ios/spec/client/chat-view.md:192             MsgContentView: the same
 `apps/multiplatform/common/src/commonTest/kotlin/chat/simplex/app/MarkdownBlocksTest.kt`:
 
 ```
-decoding           each block value in the JSON of the core
+decoding           each marker in the JSON of the core
+                   each block value
                    each TableAlign value
-                   with language
-                   without language
-                   with number
-                   without number
-markdownSegments   each block kind
+                   with and without language
+                   with and without number
+markdownSegments   no markers: the list
+                   each block kind
+                   soft and hard breaks in a paragraph, a list item and a quote
+                   an empty code line
                    a table with each alignment
+                   a table with an empty cell
                    a table with emoji in a cell
-                   the separators between blocks
+                   the segments outside blocks
 comparison         the text of each segment
                    the format class of each segment
 ```
@@ -238,20 +273,33 @@ blocks         a heading
                a table cell
 ```
 
-5. A message with blocks in each place of section 4, except the chat item and the preview of MsgContentView.
+5. A message with blocks in a quote, the chat list preview, the compose context, item info and a notification.
 6. Edit of a sent message with blocks: the compose field has the source text.
-7. Desktop: selection inside a block, and its copy.
-8. Desktop: selection across blocks, and its copy.
-9. Desktop: selection across items, and its copy.
-10. Live message with an open code fence.
-11. Live message with a growing table.
-12. Chat link item with text ending with a heading: no empty line at the end of the text.
-13. iOS: the cases of `MarkdownBlocksTest.kt` drawn equal to Android.
+7. Desktop: selection inside a block, across blocks, across items, and its copy.
+8. Live message with an open code fence.
+9. Live message with a growing table.
+10. Chat link item with text ending with a heading: no empty line at the end of the text.
+11. A profile description and a welcome message with a list.
+12. iOS: the cases of `MarkdownBlocksTest.kt` drawn equal to Android.
+
+Web:
+
+13. A channel page with a message of each block kind.
+14. A directory entry with a welcome message with a list.
+15. Relay JSON with hostile block values: `number` with markup, `columns` with markup, `indent` not a number, an unknown block type.
+
+Not automated:
+
+```
+iOS          the Swift markdownSegments: check 12 only
+web script   checks 13-15 only
+```
 
 ## Interfaces
 
 ```
-app types   MarkdownBlock
+app types   Format: BlockStart, BlockEnd, LineBreak, CellBreak
+            MarkdownBlock
             TableAlign
 functions   markdownSegments
 files       MarkdownBlocksTest.kt
@@ -260,9 +308,7 @@ files       MarkdownBlocksTest.kt
 ## Depends on
 
 ```
-block Markdown plan, "Types"                constructors
-                                            fields
-                                            JSON tags
-block Markdown plan, "Rendering contract"   the parser output
-release                                     both plans together
+block Markdown plan, "Types"         constructors, fields, JSON tags
+block Markdown plan, "Marker form"   the parser output
+release                              both plans together
 ```

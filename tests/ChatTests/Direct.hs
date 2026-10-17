@@ -77,6 +77,7 @@ chatDirectTests = do
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
+    it "should show a message with blocks as source lines" testBlockMarkdownMessage
     it "send large message" testLargeMessage
     it "initial chat pagination" testChatPaginationInitial
   describe "batch send messages" $ do
@@ -1008,6 +1009,17 @@ testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bo
   bob <## "there"
   cath <# "alice> hello"
   cath <## "there"
+
+testBlockMarkdownMessage :: HasCallStack => TestParams -> IO ()
+testBlockMarkdownMessage = testChat2 aliceProfile bobProfile $ \alice bob -> do
+  connectUsers alice bob
+  alice `send` "@bob \"# Title\\n- item\\n| a | b |\\n|---|---|\\n```\\ncode\\n```\""
+  alice <# "@bob # Title"
+  mapM_ (alice <##) blockLines
+  bob <# "alice> # Title"
+  mapM_ (bob <##) blockLines
+  where
+    blockLines = ["- item", "| a | b |", "|---|---|", "```", "code", "```"]
 
 testLargeMessage :: HasCallStack => TestParams -> IO ()
 testLargeMessage =

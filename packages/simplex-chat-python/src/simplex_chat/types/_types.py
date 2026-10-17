@@ -1795,6 +1795,8 @@ class FileTransferMeta(TypedDict):
 
 FileType = Literal["normal", "roster"]
 
+# The formats blockStart, blockEnd, lineBreak and cellBreak mark Markdown blocks, their lines and table cells. Their text is the Markdown syntax at these boundaries.
+
 class Format_bold(TypedDict):
     type: Literal["bold"]
 
@@ -1850,6 +1852,19 @@ class Format_email(TypedDict):
 class Format_phone(TypedDict):
     type: Literal["phone"]
 
+class Format_blockStart(TypedDict):
+    type: Literal["blockStart"]
+    block: "MarkdownBlock"
+
+class Format_blockEnd(TypedDict):
+    type: Literal["blockEnd"]
+
+class Format_lineBreak(TypedDict):
+    type: Literal["lineBreak"]
+
+class Format_cellBreak(TypedDict):
+    type: Literal["cellBreak"]
+
 Format = (
     Format_bold
     | Format_italic
@@ -1866,9 +1881,13 @@ Format = (
     | Format_mention
     | Format_email
     | Format_phone
+    | Format_blockStart
+    | Format_blockEnd
+    | Format_lineBreak
+    | Format_cellBreak
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone", "blockStart", "blockEnd", "lineBreak", "cellBreak"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
@@ -2209,6 +2228,44 @@ class LocalProfile(TypedDict):
     localAlias: str
     contactDomain: NotRequired["SimplexDomainClaim"]
     contactDomainVerified: NotRequired[bool]
+
+class MarkdownBlock_paragraph(TypedDict):
+    type: Literal["paragraph"]
+
+class MarkdownBlock_heading(TypedDict):
+    type: Literal["heading"]
+    level: int  # int
+
+class MarkdownBlock_codeBlock(TypedDict):
+    type: Literal["codeBlock"]
+    language: NotRequired[str]
+
+class MarkdownBlock_quote(TypedDict):
+    type: Literal["quote"]
+
+class MarkdownBlock_listItem(TypedDict):
+    type: Literal["listItem"]
+    number: NotRequired[str]
+    indent: int  # int
+
+class MarkdownBlock_table(TypedDict):
+    type: Literal["table"]
+    columns: list["TableAlign"]
+
+class MarkdownBlock_rule(TypedDict):
+    type: Literal["rule"]
+
+MarkdownBlock = (
+    MarkdownBlock_paragraph
+    | MarkdownBlock_heading
+    | MarkdownBlock_codeBlock
+    | MarkdownBlock_quote
+    | MarkdownBlock_listItem
+    | MarkdownBlock_table
+    | MarkdownBlock_rule
+)
+
+MarkdownBlock_Tag = Literal["paragraph", "heading", "codeBlock", "quote", "listItem", "table", "rule"]
 
 MemberCriteria = Literal["all"]
 
@@ -3572,6 +3629,8 @@ class SupportGroupPreference(TypedDict):
     enable: "GroupFeatureEnabled"
 
 SwitchPhase = Literal["started", "confirmed", "secured", "completed"]
+
+TableAlign = Literal["none", "left", "center", "right"]
 
 class TimedMessagesGroupPreference(TypedDict):
     enable: "GroupFeatureEnabled"

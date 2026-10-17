@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module JSONTests where
@@ -13,6 +14,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU)
 import JSONFixtures
+import Simplex.Chat.Markdown (Format (BlockEnd, BlockStart, Bold, CellBreak, LineBreak), FormattedText (FormattedText), MarkdownBlock (CodeBlock, Heading, ListItem, Paragraph, Quote, Rule, Table, UnknownBlock), MarkdownList, TableAlign (..))
 import Simplex.Chat.Remote.Protocol (owsf2tagged)
 import Simplex.Messaging.Parsers
 import Test.Hspec
@@ -27,6 +29,7 @@ owsf2TaggedJSONTest = do
   chatStartedSwift `to` chatStartedTagged
   connectionsDiffSwift `to` connectionsDiffTagged
   parsedMarkdownSwift `to` parsedMarkdownTagged
+  markdownMarkersSwift `to` markdownMarkersTagged
   where
     to :: LB.ByteString -> LB.ByteString -> IO ()
     owsf `to` tagged =
@@ -77,7 +80,37 @@ owsf2TaggedSomeTypeTests = modifyMaxSuccess (const 10000) $ do
   it "should convert to tagged via TH encoding" $ property $ \x ->
     (join . fmap (JT.parseMaybe thParseJSON . owsf2tagged) . J.decode . toLazyByteString . J.fromEncoding . thToEncoding) x == Just (x :: SomeType)
 
+markdownMarkersJSONTests :: Spec
+markdownMarkersJSONTests = do
+  it "should encode and decode each marker and block" $ do
+    J.eitherDecode markdownMarkersTagged `shouldBe` Right markers
+    J.encode markers `shouldBe` markdownMarkersTagged
+  it "should decode an unknown block" $
+    J.eitherDecode "{\"type\":\"blockStart\",\"block\":{\"type\":\"future\"}}"
+      `shouldBe` Right (BlockStart $ UnknownBlock $ J.object ["type" J..= ("future" :: String)])
+  where
+    markers :: MarkdownList
+    markers =
+      [ marker (BlockStart Paragraph) "",
+        FormattedText (Just Bold) "p",
+        marker BlockEnd "",
+        FormattedText Nothing "\n",
+        marker (BlockStart $ Heading 2) "## ",
+        marker (BlockStart $ CodeBlock $ Just "bash") "```bash\n",
+        marker (BlockStart $ CodeBlock Nothing) "```\n",
+        marker LineBreak "\n",
+        marker (BlockStart Quote) "> ",
+        marker (BlockStart $ ListItem (Just "2.") 1) "  2. ",
+        marker (BlockStart $ ListItem Nothing 0) "- ",
+        marker (BlockStart $ Table [TANone, TACenter]) "| ",
+        marker CellBreak " | ",
+        marker (BlockStart Rule) "---"
+      ]
+    marker = FormattedText . Just
+
 jsonTests :: Spec
-jsonTests = describe "owsf2tagged" $ do
-  it "should convert chat types" owsf2TaggedJSONTest
-  describe "SomeType" owsf2TaggedSomeTypeTests
+jsonTests = do
+  describe "owsf2tagged" $ do
+    it "should convert chat types" owsf2TaggedJSONTest
+    describe "SomeType" owsf2TaggedSomeTypeTests
+  describe "Markdown markers" markdownMarkersJSONTests

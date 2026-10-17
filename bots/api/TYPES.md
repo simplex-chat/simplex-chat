@@ -133,6 +133,7 @@ This file is generated automatically.
 - [LinkPreview](#linkpreview)
 - [LocalBadge](#localbadge)
 - [LocalProfile](#localprofile)
+- [MarkdownBlock](#markdownblock)
 - [MemberCriteria](#membercriteria)
 - [MsgChatLink](#msgchatlink)
 - [MsgContent](#msgcontent)
@@ -201,6 +202,7 @@ This file is generated automatically.
 - [SubscriptionStatus](#subscriptionstatus)
 - [SupportGroupPreference](#supportgrouppreference)
 - [SwitchPhase](#switchphase)
+- [TableAlign](#tablealign)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
 - [TransportError](#transporterror)
@@ -2283,6 +2285,8 @@ NO_FILE:
 
 ## Format
 
+The formats blockStart, blockEnd, lineBreak and cellBreak mark Markdown blocks, their lines and table cells. Their text is the Markdown syntax at these boundaries.
+
 **Discriminated union type**:
 
 Bold:
@@ -2339,6 +2343,19 @@ Email:
 
 Phone:
 - type: "phone"
+
+BlockStart:
+- type: "blockStart"
+- block: [MarkdownBlock](#markdownblock)
+
+BlockEnd:
+- type: "blockEnd"
+
+LineBreak:
+- type: "lineBreak"
+
+CellBreak:
+- type: "cellBreak"
 
 
 ---
@@ -2904,6 +2921,39 @@ Unknown:
 - localAlias: string
 - contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 - contactDomainVerified: bool?
+
+
+---
+
+## MarkdownBlock
+
+**Discriminated union type**:
+
+Paragraph:
+- type: "paragraph"
+
+Heading:
+- type: "heading"
+- level: int
+
+CodeBlock:
+- type: "codeBlock"
+- language: string?
+
+Quote:
+- type: "quote"
+
+ListItem:
+- type: "listItem"
+- number: string?
+- indent: int
+
+Table:
+- type: "table"
+- columns: [[TableAlign](#tablealign)]
+
+Rule:
+- type: "rule"
 
 
 ---
@@ -4406,6 +4456,17 @@ NoSub:
 - "confirmed"
 - "secured"
 - "completed"
+
+
+---
+
+## TableAlign
+
+**Enum type**:
+- "none"
+- "left"
+- "center"
+- "right"
 
 
 ---
