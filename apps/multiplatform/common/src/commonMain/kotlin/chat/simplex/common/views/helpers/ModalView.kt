@@ -119,6 +119,8 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
 
+  fun isTopModalOpen(id: ModalViewId): Boolean = modalViews.getOrNull(modalViews.size - toRemove.size - 1)?.id == id
+
   fun isLastModal(data: ModalData): Boolean = modalViews.getOrNull(modalViews.size - toRemove.size - 1)?.data === data
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
