@@ -129,7 +129,7 @@ struct NameSearchResult: Identifiable {
     let descr: String?
     let image: String?
     let iconName: String
-    let localChatId: ChatId?
+    var localChatId: ChatId?
     // the link the core resolved the name to, never a profile field the name's owner wrote
     let resolvedLink: String?
 
@@ -172,7 +172,7 @@ struct NameSearchResult: Identifiable {
 
 struct DirectoryResult: Identifiable {
     let entry: DirectorySearchEntry
-    let localChatId: ChatId?
+    var localChatId: ChatId?
 
     var id: String { entry.id }
 }

@@ -489,7 +489,7 @@ struct ChatListView: View {
                         .listRowBackground(Color.clear)
                         .onTapGesture {
                             searchFocussed = false
-                            planAndConnect(result.target, theme: theme, dismiss: false, cleanup: nil)
+                            planAndConnect(result.target, theme: theme, dismiss: false, cleanup: { Task { await onlineSearch.refreshLocalChatIds() } })
                         }
                 }
             }
@@ -505,7 +505,7 @@ struct ChatListView: View {
                         .listRowBackground(Color.clear)
                         .onTapGesture {
                             searchFocussed = false
-                            planAndConnect(result.entry.link, theme: theme, dismiss: false, cleanup: nil)
+                            planAndConnect(result.entry.link, theme: theme, dismiss: false, cleanup: { Task { await onlineSearch.refreshLocalChatIds() } })
                         }
                 }
                 switch rows.footer {

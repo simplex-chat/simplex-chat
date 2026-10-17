@@ -114,6 +114,35 @@ class OnlineSearchModel: ObservableObject {
         )
     }
 
+    // a chat opened from a result exists only once its connection flow ends, so rows without a chat look again then
+    func refreshLocalChatIds() async {
+        let gen = generation
+        var nameChatIds: [String: ChatId] = [:]
+        for result in names where result.localChatId == nil {
+            nameChatIds[result.id] = await localChatId(result.target)
+        }
+        var directoryChatIds: [String: ChatId] = [:]
+        for result in directory where result.localChatId == nil {
+            directoryChatIds[result.id] = await localChatId(result.entry.link)
+        }
+        guard gen == generation else { return }
+        names = names.map { result in
+            var r = result
+            r.localChatId = r.localChatId ?? nameChatIds[r.id]
+            return r
+        }
+        directory = directory.map { result in
+            var r = result
+            r.localChatId = r.localChatId ?? directoryChatIds[r.id]
+            return r
+        }
+    }
+
+    private func localChatId(_ link: String) async -> ChatId? {
+        let plan = await apiConnectPlan(connLink: link, resolveMode: .never, inProgress: BoxedValue(false), onFailure: .log)
+        return plan.flatMap { planLocalChatId($0.connectionPlan) }
+    }
+
     private func resolveNames(_ name: String, generation gen: Int) async {
         let targets = name.hasPrefix("@") || name.hasPrefix("#") ? [name] : ["@" + name, "#" + name]
         var results: [NameSearchResult] = []
@@ -140,8 +169,7 @@ class OnlineSearchModel: ObservableObject {
             var seen = Set(directory.map { $0.id })
             for entry in r.entries {
                 guard seen.insert(entry.id).inserted else { continue }
-                let plan = await apiConnectPlan(connLink: entry.link, resolveMode: .never, inProgress: BoxedValue(false), onFailure: .log)
-                page.append(DirectoryResult(entry: entry, localChatId: plan.flatMap { planLocalChatId($0.connectionPlan) }))
+                page.append(DirectoryResult(entry: entry, localChatId: await localChatId(entry.link)))
             }
         }
         guard gen == generation else { return }
