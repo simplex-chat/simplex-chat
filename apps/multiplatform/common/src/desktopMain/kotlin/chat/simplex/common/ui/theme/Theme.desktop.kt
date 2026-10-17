@@ -8,7 +8,13 @@ import com.jthemedetecor.OsThemeDetector
 private val detector: OsThemeDetector = OsThemeDetector.getDetector()
   .apply {
     registerListener(::reactOnDarkThemeChanges)
+    Runtime.getRuntime().addShutdownHook(Thread(::stopGsettingsMonitor))
   }
+
+private fun stopGsettingsMonitor() =
+  ProcessHandle.current().children()
+    .filter { it.info().command().orElse("").contains("gsettings") }
+    .forEach { it.destroy() }
 
 // TODO: explore possibility to use
 //@Composable
