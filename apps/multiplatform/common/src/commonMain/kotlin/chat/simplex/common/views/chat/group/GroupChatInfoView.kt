@@ -545,9 +545,10 @@ fun ModalData.GroupChatInfoLayout(
     scope.launch { listState.scrollToItem(0) }
   }
   val searchText = remember(chat.id) { stateGetOrPut("searchText:${chat.id}") { TextFieldValue() } }
+  val showMemberSearch = activeSortedMembers.size > 8
   val filteredMembers = remember(activeSortedMembers, searchText) {
     derivedStateOf {
-      val s = searchText.value.text.trim().lowercase()
+      val s = if (showMemberSearch) searchText.value.text.trim().lowercase() else ""
       if (s.isEmpty()) activeSortedMembers else activeSortedMembers.filter { m -> m.anyNameContains(s) }
     }
   }
@@ -762,7 +763,7 @@ fun ModalData.GroupChatInfoLayout(
             }
             AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
           }
-          if (activeSortedMembers.size > 8) {
+          if (showMemberSearch) {
             SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
               MemberListSearchRowView(searchText)
             }
