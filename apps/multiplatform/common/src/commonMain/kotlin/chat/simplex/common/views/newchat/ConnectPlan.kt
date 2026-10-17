@@ -717,9 +717,7 @@ fun showPrepareContactAlert(
         image = contactShortLinkData.profile.image,
         icon =
           if (contactShortLinkData.business) MR.images.ic_work_filled_padded
-          else if (contactShortLinkData.profile.peerType == ChatPeerType.Bot) MR.images.ic_cube
-          else if (contactShortLinkData.profile.peerType == ChatPeerType.Agent) MR.images.ic_agent
-          else MR.images.ic_account_circle_filled
+          else peerTypeIcon(contactShortLinkData.profile.peerType)
       )
     },
     profileBadge = if (contactShortLinkData.localBadge?.status == BadgeStatus.ExpiredOld) null else contactShortLinkData.localBadge,

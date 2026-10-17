@@ -259,6 +259,14 @@ extension ChatPeerType: Codable {
     }
 }
 
+public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
+    switch peerType {
+    case .bot: Image(systemName: "cube.fill")
+    case .agent: Image("agent")
+    default: Image(systemName: "person.crop.circle.fill")
+    }
+}
+
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
 // Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
 public enum BadgeType: Hashable {
@@ -2513,17 +2521,12 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         profile.peerType == .bot
     }
 
-    @inline(__always)
-    public var isAgent: Bool {
-        profile.peerType == .agent
-    }
-
     public var contactConnIncognito: Bool {
         activeConn?.customUserProfileId != nil
     }
 
-    public var chatIconName: String {
-        isBot ? "cube.fill" : isAgent ? "agent" : "person.crop.circle.fill"
+    public var chatIcon: Image {
+        peerTypeIcon(profile.peerType)
     }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {

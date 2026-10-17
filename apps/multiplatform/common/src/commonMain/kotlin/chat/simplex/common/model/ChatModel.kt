@@ -1950,13 +1950,11 @@ data class Contact(
 
   val isBot: Boolean get() = profile.peerType == ChatPeerType.Bot
 
-  val isAgent: Boolean get() = profile.peerType == ChatPeerType.Agent
-
   val contactConnIncognito: Boolean get() =
     activeConn?.customUserProfileId != null
 
   val chatIconName: ImageResource get() =
-    if (isBot) MR.images.ic_cube else if (isAgent) MR.images.ic_agent else MR.images.ic_account_circle_filled
+    peerTypeIcon(profile.peerType)
 
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
@@ -2192,6 +2190,13 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
     }
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
+
+fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
+  when (peerType) {
+    ChatPeerType.Bot -> MR.images.ic_cube
+    ChatPeerType.Agent -> MR.images.ic_agent
+    else -> MR.images.ic_account_circle_filled
+  }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
 // Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
