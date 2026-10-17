@@ -165,7 +165,7 @@
             }
           )
 
-          ] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows ({ lib, ... }: {
+          ] ++ darwinBitvec.modules ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows ({ lib, ... }: {
             # The preplanned local source already applies the modern patch.
             # Avoid applying it again after v2 source packaging.
             packages.crypton-x509-system.patches = lib.mkForce [];

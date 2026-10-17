@@ -43,6 +43,14 @@ planning. GHC's object linker needs the selected C compiler's
 unresolved during Template Haskell. The SIMD implementation remains enabled.
 The patch declares both ordinary and static C libraries for TH and rolled archives.
 The patched local dependency keeps its tests and benchmarks disabled.
+Its package-local Nix dependency map treats `clang_rt.osx` as provided by that
+selected compiler resource directory; all other library mappings stay intact.
+The resolver regression exercises the pinned HN plan/package/component modules:
+
+```sh
+nix eval --impure --json --file scripts/nix/check-darwin-bitvec-resolver.nix \
+  --apply 'test: let f = builtins.getFlake (toString ./.); in test { lib = f.inputs.haskellNix.inputs.nixpkgs.lib; haskellNix = f.inputs.haskellNix; }'
+```
 
 Cross projects add `ghc-internal` to the Cabal dependencies of the pinned
 `composition-1.0.2.2` source. This preserves its deliberate avoidance of `base`

@@ -20,4 +20,9 @@ in {
       benchmarks: False
       extra-lib-dirs: ${cc}/resource-root/lib/darwin
   '' else "";
+  modules = pkgs.lib.optional intelDarwin ({ lib, pkgs, ... }: {
+    # This name belongs to the selected CC resource directory above, rather
+    # than a top-level Nixpkgs package. Keep all other dependency mappings.
+    packages.bitvec._module.args.pkgs = lib.mkForce (pkgs // { "clang_rt.osx" = null; });
+  });
 }

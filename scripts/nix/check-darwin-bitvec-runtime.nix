@@ -26,13 +26,14 @@ assert source.name == "bitvec-1.1.6.0-darwin-source";
 assert source.src.url == "https://hackage.haskell.org/package/bitvec-1.1.6.0/bitvec-1.1.6.0.tar.gz";
 assert source.src.hash == "sha256-GkLTPONBlz9OTz8OENAHYAVqCsoOKlcYCZS/KsJsTis=";
 assert source.patches == [ ./bitvec-darwin-compiler-rt.patch ];
+assert builtins.length intel.modules == 1;
 assert intel.cabalProjectLocal == ''
   package bitvec
     tests: False
     benchmarks: False
     extra-lib-dirs: /selected-target-clang/resource-root/lib/darwin
 '';
-assert builtins.all (p: other p == { packageSources = []; cabalProjectLocal = ""; }) [
+assert builtins.all (p: other p == { packageSources = []; cabalProjectLocal = ""; modules = []; }) [
   { isDarwin = true; isx86_64 = false; }
   { isDarwin = false; isx86_64 = true; }
   { isDarwin = false; isx86_64 = false; }
