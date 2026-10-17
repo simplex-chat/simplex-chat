@@ -32,12 +32,12 @@ You are testing the SimpleX Chat iOS app in an iPhone 17 simulator (iOS 26.5, sc
 
 When "This session" gives the test directory's address, the runner also runs a test backend: a chat relay, a SimpleX Directory with the groups and channels listed under "Test directory" below, a server that resolves SimpleX names, and contacts that accept connections. `ui directory stop|start` stops and starts the directory (after `ui directory start`, wait about 15 s before using it), and `ui listings` prints what it lists. Stop the directory instead of turning networking off (D8, D9; the simulator shares the runner's network): while it is stopped, searches fail after 10 s.
 
-**SimpleX names**: the names server's address is under "This session"; the names it knows are under "Test directory" → "SimpleX names" (all end in `.testing`; a bare word of 5 or more letters is completed with `.testing`, so `cinews` is `cinews.testing`). Set the app up for it once, before the first case that needs names (if an earlier session in this run did it, check it instead: the server is listed under "Your servers"):
+**SimpleX names**: the names server's address is under "This session"; the names it knows are under "Test directory" → "SimpleX names" (all end in `.testing`; a bare word of 5 or more letters is completed with `.testing`, so `cinews` is `cinews.testing`). Set the app up for it once, before the first case that needs names (if an earlier session in this run did it, check it instead: the server is listed under "Your servers" and "To resolve names" is "yes" on it; finish step 4 on that server if not, rather than adding it again, as a second copy of an address is an error):
 
 1. Open the picker (your profile image), "Settings", "Network & servers".
 2. Under "Preset servers", open each operator ("SimpleX Chat", "Flux"), turn "To resolve names" off, and go back. Otherwise the app may ask the real servers, which do not know the test names.
 3. "Your servers" → "Add server" → "Enter server manually". Put the names server's address in the address field by pasting it (`ui clipboard "<address>"`, tap the field twice, tap the menu's "Paste"; typing it would let the keyboard capitalize it), check it in the tree, and go back.
-4. In "Your servers", open the new server and set "To receive" to "no", "For private routing" to "no" and "To resolve names" to "yes" (each is a picker), then go back.
+4. In "Your servers", open the new server and turn "Use for new connections" on: only then does the server show its pickers "To receive", "For private routing" and "To resolve names". Set them to "no", "no" and "yes", then go back.
 5. On "Network & servers", tap "Save servers" (and "Save" if asked). Close Settings.
 6. Check: type `cinews`, press the Search key: a "Names" part with a row for the channel cinews must appear. If it does not, record what you see and look at the steps again before running the N cases.
 
