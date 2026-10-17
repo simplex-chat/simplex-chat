@@ -37,4 +37,4 @@ Android (Waydroid, core library built from this PR), fixed-outcome checks. With 
 
 The master core keeps P1 for the relay in the same checks: the second join fails through P1, and the background delivery is still not connected 240 s after the switch.
 
-In 2 random-pick Android trials, all 8 re-picks after a reported failure landed on P1 again. This is not explained yet.
+Random-pick trials (P1 and P2 both configured) recover after a few Retries, because each re-pick has a 50% chance of choosing P1 again. In 2 early Android trials all 8 re-picks landed on P1 by chance and the joins stalled after 6 Retries. Later runs gave 5 of 9 on Android, and 7 of 13 in a desktop build that logged every pick.
