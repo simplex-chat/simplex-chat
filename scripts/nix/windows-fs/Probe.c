@@ -114,6 +114,109 @@ static bool direct_open(const wchar_t *path) {
     return passed && closed == 0;
 }
 
+/* Independent real-API replay. Actual FS calls and strict results above/below
+ * remain unchanged; this only narrows the normalization failure branch. */
+static void replay_normalization(const wchar_t *path) {
+    if (wcsncmp(path, L"\\\\?\\", 4) == 0
+        || wcsncmp(path, L"\\\\.\\", 4) == 0
+        || wcsncmp(path, L"\\Device\\", 8) == 0) {
+        puts("DIAG native namespace: actual helper bypasses normalization");
+        fflush(stdout);
+        return;
+    }
+    wchar_t *current = calloc(PATH_CAPACITY, sizeof(wchar_t));
+    wchar_t *expanded = calloc(PATH_CAPACITY, sizeof(wchar_t));
+    wchar_t *joined = calloc(PATH_CAPACITY, sizeof(wchar_t));
+    if (current == NULL || expanded == NULL || joined == NULL) {
+        puts("DIAG normalization allocation unavailable");
+        goto cleanup;
+    }
+    size_t length = wcslen(path);
+    if (length >= PATH_CAPACITY) {
+        puts("DIAG normalization input exceeds probe capacity");
+        goto cleanup;
+    }
+    wmemcpy(current, path, length + 1);
+    for (size_t i = 0; i < length; ++i) {
+        if (current[i] == L'/') { current[i] = L'\\'; }
+    }
+    reset_errors();
+    DWORD query = GetLongPathNameW(current, NULL, 0);
+    DWORD error = GetLastError();
+    int saved_errno = errno;
+    printf("DIAG GetLongPathNameW query=%lu errno=%d winerror=%lu\n",
+           query, saved_errno, error);
+    if (query > 0) {
+        if (query >= PATH_CAPACITY) { goto cleanup; }
+        DWORD capacity = query + 1; /* Same extra space as the actual helper. */
+        reset_errors();
+        DWORD count = GetLongPathNameW(current, expanded, capacity);
+        error = GetLastError();
+        saved_errno = errno;
+        printf("DIAG GetLongPathNameW fill=%lu capacity=%lu errno=%d winerror=%lu\n",
+               count, capacity, saved_errno, error);
+        if (count == 0 || count >= capacity) { goto cleanup; }
+        wmemcpy(current, expanded, (size_t)count + 1);
+    }
+    reset_errors();
+    query = GetFullPathNameW(current, 0, NULL, NULL);
+    error = GetLastError();
+    saved_errno = errno;
+    printf("DIAG GetFullPathNameW query=%lu errno=%d winerror=%lu\n",
+           query, saved_errno, error);
+    if (query == 0 || query >= PATH_CAPACITY) { goto cleanup; }
+    DWORD capacity = query + 1;
+    reset_errors();
+    DWORD count = GetFullPathNameW(current, capacity, expanded, NULL);
+    error = GetLastError();
+    saved_errno = errno;
+    printf("DIAG GetFullPathNameW fill=%lu capacity=%lu errno=%d winerror=%lu\n",
+           count, capacity, saved_errno, error);
+    if (count == 0 || count >= capacity) { goto cleanup; }
+    wmemcpy(current, expanded, (size_t)count + 1);
+
+    wchar_t ns[10] = {0};
+    size_t offset = 0;
+    reset_errors();
+    int namespace_count;
+    if (wcsncmp(current, L"\\\\", 2) == 0) {
+        namespace_count = swprintf(ns, 10, L"%ls%ls", L"\\\\?\\", L"UNC\\");
+        offset = 2;
+    } else {
+        namespace_count = swprintf(ns, 10, L"%ls", L"\\\\?\\");
+    }
+    error = GetLastError();
+    saved_errno = errno;
+    printf("DIAG swprintf namespace=%d capacity=10 errno=%d winerror=%lu\n",
+           namespace_count, saved_errno, error);
+    if (namespace_count <= 0 || namespace_count >= 10) { goto cleanup; }
+    size_t namespace_length = (size_t)namespace_count;
+    size_t remaining = wcslen(current) - offset;
+    size_t expected = namespace_length + remaining;
+    if (expected + 2 >= PATH_CAPACITY) { goto cleanup; }
+    for (size_t spare = 0; spare < 2; ++spare) {
+        size_t join_capacity = expected + 1 + spare;
+        wmemset(joined, 0, join_capacity);
+        joined[join_capacity] = (wchar_t)0x5a5a;
+        reset_errors();
+        int result = swprintf(joined, join_capacity, L"%ls%ls", ns, current + offset);
+        error = GetLastError();
+        saved_errno = errno;
+        bool payload = wmemcmp(joined, ns, namespace_length) == 0
+                    && wmemcmp(joined + namespace_length, current + offset, remaining) == 0;
+        printf("DIAG swprintf final spare=%zu result=%d expected=%zu capacity=%zu"
+               " payload=%d nul=%d sentinel=%d errno=%d winerror=%lu\n",
+               spare, result, expected, join_capacity, payload,
+               joined[expected] == L'\0', joined[join_capacity] == (wchar_t)0x5a5a,
+               saved_errno, error);
+    }
+cleanup:
+    free(current);
+    free(expanded);
+    free(joined);
+    fflush(stdout);
+}
+
 static bool check_variant(const char *label, const wchar_t *path, int expected_first, bool *fs_readable) {
     *fs_readable = false;
     printf("BEGIN %s\n", label);
@@ -213,6 +316,7 @@ static bool check_variant(const char *label, const wchar_t *path, int expected_f
                            || (byte == (unsigned int)expected_first
                                && stat_buffer.st_size == 2));
     }
+    replay_normalization(path);
     printf("END %s\n", label);
     fflush(stdout);
     /* Preserve helper/swopen failures as observations. Direct read success is
