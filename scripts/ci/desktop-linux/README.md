@@ -29,7 +29,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `plan` | chooses the jobs, finds earlier core and backend builds | 10 s |
 | `core` | `scripts/desktop/build-lib-linux.sh` via `build-core.sh` | skipped when reused, about 24 min not |
 | `app` | the app (`:desktop:createDistributable`), desktopTest, `smoke-test.sh` | about 12 min: build 4.5, desktopTest 0.5, smoke test 3.5 |
-| `claude` (opt-in) | after `app` passed: its distributable at the first screen, then Claude Code drives it | about 7 min, Claude 2.5 |
+| `claude` (opt-in) | after `app` passed: its distributable at the first screen, then Claude Code drives it | about 4 min, Claude 3 |
 | `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, and `smp-server` from the simplexmq commit `cabal.project` pins | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's .deb for this Ubuntu, onboarding only, to tell a branch's failure from the runner's | 1.5 min |
 
@@ -59,4 +59,4 @@ It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OA
 
 ## Cost
 
-The runners are free for this public repository. A Claude run spends the subscription's usage limits, which interactive sessions share: Haiku 5.5 does this smoke path in 15 to 17 turns, about 0.008 USD estimated at API prices (Claude Code's estimate, not a bill on a subscription).
+The runners are free for this public repository. A Claude run spends the subscription's usage limits, which interactive sessions share: Haiku 5.5 does this smoke path in 15 to 30 turns, 0.01 to 0.02 USD estimated at API prices (Claude Code's estimate, not a bill on a subscription).

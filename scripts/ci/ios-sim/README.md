@@ -19,7 +19,7 @@ Results: the job logs, the Claude job's summary (Claude's usage) and the artifac
 - `core` (macOS, 30–45 min when not reused): `build-core.sh` builds `lib:simplex-chat` with cabal and the iOS flags, as the Nix iOS build does, into the package `scripts/ios/prepare.sh` expects, and `prepare-libs.sh` marks it for the simulator (`mac2ios`).
 - `backend` (macOS, 20–45 min when not reused, only when asked): `build-backend.sh` builds `simplex-chat`, `simplex-directory-service` and `smp-server`.
 - `app` (macOS): the Xcode build 8–22 min, the smoke test about 10 min, the backend start about 10 min when asked.
-- `claude` (macOS, only when asked, after `app` passed): a new simulator with the app job's build and the smoke test, about 12 min, then the sessions.
+- `claude` (macOS, only when asked, after `app` passed): a new simulator with the app job's build and the smoke test, about 7 min, then the sessions (the smoke plan's took 2.6 min).
 
 A run with reused builds and no extras takes about 25 minutes plus the wait for a macOS runner. Hosted minutes are free for this public repository; the limit is the repository's five concurrent macOS jobs, shared with PR builds (each `build.yml` run takes two), so queue waits can be long. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`: builds are reused only as the artifacts above, and a core or backend rebuild compiles its dependencies too.
 
