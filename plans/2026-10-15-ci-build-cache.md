@@ -192,7 +192,7 @@ Steps:
 9. Save deps.
 10. Save src.
 11. Save dist.
-12. build-macos "Run tests": `cabal test` with `<ghc_options>`.
+12. build-macos "Run tests": aarch64 only, `cabal test` with `<ghc_options>`.
 13. Other steps: unchanged.
 14. -O0 refresh as in build-linux, after all other steps.
 

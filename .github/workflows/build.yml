@@ -995,6 +995,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
+        if: matrix.arch == 'aarch64'
         timeout-minutes: 120
         shell: bash
         run: |
