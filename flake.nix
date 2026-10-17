@@ -49,10 +49,12 @@
       let packageFlags = pkgs.lib.recursiveUpdate {
         direct-sqlcipher = { openssl = true; commoncrypto = false; tomcrypt = false; };
       } package-flags;
-      packageGhcOptions = pkgs.lib.recursiveUpdate
-        (pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isAndroid {
-          simplex-chat = [ "-pie" ];
-        }) package-ghc-options;
+      projectGhcOptions = import ./scripts/nix/project-ghc-options.nix {
+        inherit (pkgs) lib;
+        hostPlatform = pkgs'.stdenv.hostPlatform;
+        packageOptions = package-ghc-options;
+      };
+      packageGhcOptions = projectGhcOptions.packages;
       # Cabal 3.17 drops repeated option names in hsc2hs arguments. The
       # Darwin archives need both -framework Security and CoreFoundation.
       projectPkgs = if mobile && pkgs'.stdenv.hostPlatform.isDarwin
@@ -159,10 +161,8 @@
           }
           ({ pkgs, lib, config, ... }:
             {
-              # Override ghcOptions for ALL packages
-              ghcOptions = lib.mkDefault [
-                "-j1"
-              ];
+              # Package-specific lists carry the same common options explicitly.
+              ghcOptions = lib.mkDefault projectGhcOptions.common;
             }
           )
 

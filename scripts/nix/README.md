@@ -4,6 +4,12 @@ The compiler and all cross-compilers come from the haskell.nix input pinned in
 `flake.lock`. The `ghc914-sh` compiler is the stable-haskell fork, not the stock
 GHC 9.14 release from GHCup. Use the same source checkout and lock file for every
 platform; Android ARMv7 does not require a separate branch or tag.
+Package-specific GHC options retain the common `-j1` default, including Darwin's
+`-DIOS` and Android's `-pie`; an explicit later parallelism option still overrides
+that default. The pure `check-project-ghc-options.nix` regression evaluates the
+pinned haskell.nix plan, package, and component modules without building a project.
+Run it with:
+`nix eval --impure --json --file scripts/nix/check-project-ghc-options.nix --apply 'test: let f = builtins.getFlake (toString ./.); in test { lib = f.inputs.nixpkgs.lib; haskellNix = f.inputs.haskellNix; }'`.
 The pinned haskell.nix includes the merged ARM32 personality, v2 Cabal metadata,
 Windows patch-selector, and i386 COMDAT fixes. The raw GHC source pin is unchanged;
 changes to v2 build scripts can still change compiler and component derivations.
