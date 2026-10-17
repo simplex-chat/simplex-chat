@@ -69,6 +69,7 @@ website/package/generated*
 website/.nyc_output/
 website/coverage/
 result
+result-nix/
 
 # Ignore API documentation
 website/api-docs/

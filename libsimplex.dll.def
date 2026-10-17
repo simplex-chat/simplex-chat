@@ -4,8 +4,10 @@ EXPORTS
     hs_init_with_rtsopts
     hs_thread_done
     chat_migrate_init
+    chat_migrate_init_key
     chat_migrate_init_queue
     chat_close_store
+    chat_reopen_store
     chat_send_cmd
     chat_send_cmd_retry
     chat_send_remote_cmd

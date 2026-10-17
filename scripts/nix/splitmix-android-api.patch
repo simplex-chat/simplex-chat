@@ -1,0 +1,21 @@
+--- a/cbits-unix/init.c
++++ b/cbits-unix/init.c
+@@ -1,8 +1,17 @@
+ #include <stdint.h>
+ #include <unistd.h>
++#if defined(__ANDROID__) && __ANDROID_API__ < 28
++#include <stdlib.h>
++#endif
+ 
+-uint64_t splitmix_init() {
++uint64_t splitmix_init(void) {
+ 	uint64_t result;
++	/* Bionic exposes getentropy from API 28; arc4random_buf exists earlier. */
++#if defined(__ANDROID__) && __ANDROID_API__ < 28
++	arc4random_buf(&result, sizeof(uint64_t));
++	int r = 0;
++#else
+ 	int r = getentropy(&result, sizeof(uint64_t));
++#endif
+ 	return r == 0 ? result : 0xfeed1000;
+ }

@@ -1,0 +1,39 @@
+BLST's C server already defines and initializes __blst_platform_cap.
+Reference that storage from Mach-O assembly instead of declaring an
+additional COMMON symbol. GHC 9.14's runtime linker rejects the strong
+C definition followed by COMMON as incompatible sizes (0 versus 4)
+when loading simplexmq for Template Haskell.
+
+Only symbol linkage changes; CPU detection and cryptographic operations
+remain in the existing BLST implementation.
+
+--- a/cbits/blst/build/mach-o/ctq_inverse_mod_384-x86_64.s
++++ b/cbits/blst/build/mach-o/ctq_inverse_mod_384-x86_64.s
+@@ -1 +1 @@
+-.comm	___blst_platform_cap,4
++.extern	___blst_platform_cap
+--- a/cbits/blst/build/mach-o/mulq_mont_256-x86_64.s
++++ b/cbits/blst/build/mach-o/mulq_mont_256-x86_64.s
+@@ -1 +1 @@
+-.comm	___blst_platform_cap,4
++.extern	___blst_platform_cap
+--- a/cbits/blst/build/mach-o/mulq_mont_384-x86_64.s
++++ b/cbits/blst/build/mach-o/mulq_mont_384-x86_64.s
+@@ -1 +1 @@
+-.comm	___blst_platform_cap,4
++.extern	___blst_platform_cap
+--- a/cbits/blst/build/mach-o/sha256-armv8.S
++++ b/cbits/blst/build/mach-o/sha256-armv8.S
+@@ -18 +18 @@
+-.comm	___blst_platform_cap,4
++.extern	___blst_platform_cap
+--- a/cbits/blst/build/mach-o/sha256-portable-x86_64.s
++++ b/cbits/blst/build/mach-o/sha256-portable-x86_64.s
+@@ -1 +1 @@
+-.comm	___blst_platform_cap,4
++.extern	___blst_platform_cap
+--- a/cbits/blst/build/mach-o/sha256-x86_64.s
++++ b/cbits/blst/build/mach-o/sha256-x86_64.s
+@@ -1 +1 @@
+-.comm	___blst_platform_cap,4
++.extern	___blst_platform_cap
