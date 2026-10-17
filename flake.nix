@@ -41,7 +41,8 @@
       let androidEmulator = import ./scripts/nix/android-emulator-overlay.nix { inherit haskellNix; }; in
       let muslIserv = import ./scripts/nix/musl-iserv-overlay.nix; in
       let windowsRts = import ./scripts/nix/windows-rts-overlay.nix; in
-      let pkgs = (nativePackages system).appendOverlays [android26 compilerCache androidEmulator muslIserv windowsRts]; in
+      let mingwStdio = import ./scripts/nix/mingw-stdio-overlay.nix; in
+      let pkgs = (nativePackages system).appendOverlays [android26 compilerCache androidEmulator muslIserv windowsRts mingwStdio]; in
       let compilerSelection = import ./scripts/nix/compiler-selection.nix { inherit haskellNix; }; in
       let mobileRuntime = import ./scripts/nix/mobile-runtime.nix { inherit pkgs compilerSelection; }; in
       let drv' = { extra-modules, pkgs', package-flags ? {}, package-ghc-options ? {}, mobile ? false, ... }:

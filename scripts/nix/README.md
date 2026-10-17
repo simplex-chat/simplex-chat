@@ -267,15 +267,26 @@ host, target group, and source SHA. Each native CLI also runs
 the encrypted-store and profile-password smoke test, which can be repeated with
 `python3 scripts/nix/smoke-cli.py result-nix/BUILD_SYSTEM/exe:simplex-chat/bin/simplex-chat`.
 
-The Windows job first runs `checks.x86_64-linux.windows-rts-fs`. This small
-real-WinAPI check compiles the locked GHC `rts-fs` source with the existing
-MinGW C toolchain and runs it with the same Wine package as the interpreter.
+The Windows job first prepares `checks.x86_64-linux.windows-rts-fs.inputs`
+under the normal 7,200-second per-derivation budget, then runs
+`checks.x86_64-linux.windows-rts-fs` with the short 300-second limit.
+Both share the existing preparation deadline. The inputs contain only the C
+payload and Wine, allowing a cold patched C toolchain to build before the
+runtime trial. This real-WinAPI check compiles the unchanged locked GHC
+`rts-fs` source with the selected MinGW C toolchain and runs it with the same
+Wine package as the interpreter.
+The Windows CRT overlay backports upstream MinGW commit `e7e21db45eaa` to the
+verified 13.0.0/14.0.0 sources. It fixes ISO `swprintf` rejecting strings that
+exactly fit with their terminator; the regression also requires a negative
+return for a too-small buffer and intact outside-buffer sentinels.
 It requires real file opens, descriptor/stat information and fixture bytes for
 short, long and archive-shaped paths, including absolute and extended variants.
 Helper results and a separate direct Win32/CRT replay remain diagnostic output.
 The owned Wine prefix has a 20-second execution window and bounded cleanup;
 missing environment/file prerequisites are distinct from an FS regression.
 Run it alone with `nix build .#checks.x86_64-linux.windows-rts-fs -L`.
+Check overlay scope with
+`nix eval --json --file scripts/nix/check-mingw-stdio-scope.nix`.
 It adds no Haskell compiler-project build or dependency to the 21 product outputs.
 
 After this check passes, the Windows job prepares only the named direct input outputs of the
