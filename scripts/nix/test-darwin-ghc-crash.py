@@ -134,6 +134,20 @@ class BuildStatus(unittest.TestCase):
         self.assertIn("hydraJobs.x86_64-darwin.exe:simplex-chat", calls[1])
         self.assertNotIn("COLLECTOR", result.stdout)
 
+    def test_failed_ios_ci_build_preserves_status_when_both_diagnostics_fail(self):
+        result, calls = self.run_driver(42, arguments=["ios"])
+        self.assertEqual(result.returncode, 42)
+        self.assertEqual(len(calls), 1)
+        self.assertIn("collect-darwin-ghc-crash.py", result.stdout)
+        self.assertIn("trace-intel-ghc.py", result.stdout)
+        self.assertIn("--attribute hydraJobs.x86_64-darwin.x86_64-darwin-ios:lib:simplex-chat", result.stdout)
+        self.assertIn("--log", result.stdout)
+
+    def test_native_failure_does_not_launch_compiler_replay(self):
+        result, _ = self.run_driver(42)
+        self.assertEqual(result.returncode, 42)
+        self.assertNotIn("trace-intel-ghc.py", result.stdout)
+
     def test_non_intel_and_non_ci_failures_keep_status_without_collection(self):
         for system, github in [("x86_64-linux", "true"), ("aarch64-darwin", "true"),
                                ("x86_64-darwin", "false")]:

@@ -93,6 +93,13 @@ for package in $packages; do
         # when the failure is outside the separate ghc-boot Setup diagnostic.
         python3 "$repo_dir/scripts/nix/collect-darwin-ghc-crash.py" \
           --since "$crash_since" || printf '%s\n' 'Darwin crash-report collection failed.' >&2
+        if [ "$attribute" = hydraJobs.x86_64-darwin.x86_64-darwin-ios:lib:simplex-chat ]; then
+          # This separate, bounded replay records an observed compiler SIGBUS.
+          # Always return the saved canonical build status below.
+          python3 "$repo_dir/scripts/nix/trace-intel-ghc.py" \
+            --repo "$repo_dir" --attribute "$attribute" --log "$repo_dir/nix-build.log" || \
+            printf '%s\n' 'Intel GHC signal diagnostic failed.' >&2
+        fi
       fi
       exit "$status"
     fi

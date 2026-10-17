@@ -374,6 +374,33 @@ change the original build's exit status. Local builds and successful CI builds
 do not invoke this collector. Run its focused regressions with
 `python3 -B scripts/nix/test-darwin-ghc-crash.py`.
 
+If that failed target is the Intel Swift iOS library and its log identifies one
+SimpleX library derivation with compiler exit code `-10` (SIGBUS), the driver
+also attempts one separate compiler replay. `trace-intel-ghc.py` pins the current
+checkout and checks the original component's exact derivation path before
+building a diagnostic copy. Its added Python input must already be available
+locally or from substitutes; a cache miss skips the replay. Existing Apple
+Clang builds a small signal recorder for the Intel runner. The normal Nix
+sandbox stays enabled. The replay has a 300-second wall-clock/per-derivation
+limit and a 360-second overall preparation-and-replay budget, plus a five-second
+termination grace. It adds no compiler flags and preserves the actual compiler
+arguments and response-file bytes. Compiler queries pass through unchanged.
+
+The recorder loads only into the selected normal SimpleX iOS compiler process.
+It reports its main executable's UUID, image base and slide, then records SIGBUS
+fault address, signal code and registers, including PC and SP, if the process
+faults. It does not unwind the signal handler or read memory at the fault
+address. It restores the loader environment before compiler children start and
+disables core output. This diagnostic adds a loaded image and a signal handler;
+its results require comparison with the canonical failure. SIGBUS still
+terminates the instrumented compiler; its enclosing shell reports status 138.
+The build driver always returns the original canonical build status. A skipped,
+failed or successful replay does not qualify a production output. Run the
+selector and launcher controls with
+`python3 -B scripts/nix/test-select-ghc-sigbus.py` and
+`python3 -B scripts/nix/test-trace-intel-ghc.py`. The recorder's owned-process
+controls are in `python3 -B scripts/nix/test-trace-ghc-sigbus.py`.
+
 When the pinned Intel Darwin `ghc-boot` component fails, CI captures a separate
 Setup diagnostic. It selects one exact failed `ghc-boot` derivation from the
 canonical log and checks it against the selected compiler project; a rebuilt
