@@ -141,6 +141,7 @@ fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit,
               is ChatController.PublicGroupCreationResult.Created -> {
                 withContext(Dispatchers.Main) {
                   chatModel.chatsContext.updateGroup(rhId = rhId, result.groupInfo)
+                  chatModel.creatingChannelMembers.value = emptyList()
                   chatModel.creatingChannelId.value = result.groupInfo.id
                   groupInfo.value = result.groupInfo
                   groupLink.value = result.groupLink
@@ -536,7 +537,7 @@ private fun ProgressStepView(
 }
 
 private fun relayMemberConnFailed(chatModel: ChatModel, relay: GroupRelay): String? {
-  return chatModel.groupMembers.value
+  return chatModel.creatingChannelMembers.value
     .firstOrNull { it.groupMemberId == relay.groupMemberId }
     ?.activeConn?.connFailedErr
 }
