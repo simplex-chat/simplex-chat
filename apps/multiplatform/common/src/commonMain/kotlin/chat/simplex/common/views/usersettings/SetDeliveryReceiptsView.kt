@@ -104,7 +104,7 @@ private fun EnableReceiptsButton(onClick: () -> Unit) {
 
 @Composable
 private fun SkipButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.dont_enable_receipts), painterResource(MR.images.ic_chevron_right), click = onClick)
+  SimpleButtonIconEnded(stringResource(MR.strings.dont_enable_receipts), painterResource(MR.images.ic_chevron_right).mirrorIfRtl(), click = onClick)
   TextBelowButton(stringResource(MR.strings.you_can_enable_delivery_receipts_later))
 }
 

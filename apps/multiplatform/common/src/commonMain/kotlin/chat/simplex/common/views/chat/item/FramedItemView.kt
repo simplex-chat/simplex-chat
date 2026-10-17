@@ -548,7 +548,7 @@ fun PriorityLayout(
     ) {
       var y = 0
       placeables.forEach {
-        it.place(0, y)
+        it.placeRelative(0, y)
         y += it.measuredHeight
       }
     }
@@ -582,7 +582,7 @@ fun DependentLayout(
     ) {
       var y = 0
       placeables.forEach {
-        it.place(0, y)
+        it.placeRelative(0, y)
         y += it.measuredHeight
       }
     }

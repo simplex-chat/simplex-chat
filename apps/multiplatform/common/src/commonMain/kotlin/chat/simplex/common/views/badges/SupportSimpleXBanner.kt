@@ -92,7 +92,7 @@ fun SupportSimpleXBanner(
     val heroPlaceable = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
     layout(cardPlaceable.width, cardPlaceable.height) {
       cardPlaceable.place(0, 0)
-      heroPlaceable.place(cardPlaceable.width - heroPlaceable.width, cardPlaceable.height - heroPlaceable.height)
+      heroPlaceable.placeRelative(cardPlaceable.width - heroPlaceable.width, cardPlaceable.height - heroPlaceable.height)
     }
   }
 }

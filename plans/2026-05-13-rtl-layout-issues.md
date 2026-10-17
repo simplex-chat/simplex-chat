@@ -7,34 +7,41 @@ Design doc for the fix shipped in PR #6908 (Fixes #5448).
 Under an RTL locale (Arabic, Persian, Hebrew) on Android and desktop:
 
 - Chat bubble tail points away from the message author's profile, with
-  the tail overflowing onto the avatar.
+  the bubble's avatar-side edge overlapping the avatar.
 - Chat header places the call + 3-dot menu on the visual right and the
   back chevron on the visual left, opposite of platform convention; the
-  3-dot dropdown opens off-screen.
-- Chat list header has the profile avatar on the visual left and the
-  signal/wifi icon + "Chats" title on the right.
+  3-dot dropdown opens at the visual left, away from the 3-dot button.
+- Chat list header has the profile avatar on the visual left, and the
+  signal icon's waves keep their LTR orientation.
 - Asymmetric directional drawables — back/forward arrows, chevrons,
   signal-strength waves, sent-via-proxy arrow — keep their LTR
   orientation everywhere they appear.
 
-iOS is unaffected — UIKit's RTL support and SwiftUI's semantic edges
-already handle these cases.
+iOS is not changed. Its bubble shape has the same defect
+(`ChatItemClipShape.swift`), but the iOS app ships no Arabic, Hebrew or
+Persian localisation, so it never runs right-to-left.
 
-## Background — three independent mechanisms
+## Background — four independent mechanisms
 
-The user-visible regressions all come from one of three roots, each
-fixed at the root rather than per call site:
+The user-visible regressions all come from one of four roots. The
+layouts and the bubble shape are fixed once where they are defined; the
+directional drawables are fixed at each call site:
 
 1. **Bubble shape mirroring** — `chatItemShape` in
    `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt`.
 2. **App-bar slot placement** — `CenteredRowLayout` in
    `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt`,
-   reached by every `DefaultAppBar` caller via `AppBarCenterAligned`
-   (≈ 11 sites: `ChatView`, `ChatListView`, `NewChatSheet` ×2,
+   reached by every centred `DefaultAppBar` (not in search mode, and
+   with a title or at the bottom in one-hand mode) via `AppBarCenterAligned`
+   (10 sites: `ChatView`, `ChatListView`, `NewChatSheet` ×2,
    `MemberSupportChatView` ×2, `GroupReportsView`, `ModalView`,
    `ShareListView`, `SelectableChatItemToolbars`).
 3. **Asymmetric directional drawables** — applied at each Icon call
    site whose vector resource is intrinsically directional.
+4. **Other custom layouts placing children at absolute x** — a short
+   text under an image, file or voice message (`PriorityLayout`), the
+   group member name row above a message (`DependentLayout`) and the
+   supporter banner (`SupportSimpleXBanner`).
 
 ## Fix
 
@@ -68,7 +75,7 @@ automatically.
 (leading / center / trailing). It placed slots with absolute `place(x, y)`,
 which doesn't react to layout direction. Switch all three calls to
 `placeRelative(x, y)` — the standard Compose primitive that mirrors the
-x coordinate under RTL.
+child's position under RTL (it is placed at `parentWidth - width - x`).
 
 ```kotlin
 first.placeRelative(0, ...)
@@ -76,13 +83,15 @@ second.placeRelative((maxWidth - second.width) / 2, ...)
 third.placeRelative(maxWidth - third.width, ...)
 ```
 
-One source of truth, ≈ 11 call sites covered. `placeRelative` is
+One source of truth, 10 call sites covered. `placeRelative` is
 identical to `place` under LTR — bit-exact LTR preservation.
 
 `DropdownMenu` `DpOffset(-width.value, ...)` calls in `ChatView.kt`
-are intentionally untouched: `DropdownMenuPositionProvider` already
-negates the content offset under RTL, so once `CenteredRowLayout` is
-fixed the chat-header menus anchor correctly without a call-site change.
+are intentionally untouched: the menu hangs from its own anchor box,
+which already follows the layout direction, and
+`DropdownMenuPositionProvider` negates the offset under RTL. On master
+the menu already opened at the visual left; the fix moves the 3-dot
+button there.
 
 ### 3. Asymmetric directional drawables
 
@@ -98,9 +107,8 @@ fun Modifier.mirrorIfRtl(): Modifier =
 ```
 
 `Modifier.scale` is a draw-time transform: it does not change measured
-size or hit-test bounds. For the icons in question (square or
-near-square) it is visually identical to a mirrored asset and click
-areas remain correct.
+size or hit-test bounds. It flips about the centre, so it is visually
+identical to a mirrored asset and click areas remain correct.
 
 Apply at each call site whose drawable is intrinsically directional:
 
@@ -110,7 +118,7 @@ Apply at each call site whose drawable is intrinsically directional:
 - forward chevron / arrow (`NewChatView`'s share-profile chevron,
   `WhatsNewView`'s "next" pager, `CommandsMenuView`'s submenu chevron,
   `GoToItemInnerButton`'s forward variant)
-- subscription-status waves (5 variants in `SubscriptionStatusIcon`)
+- subscription-status waves (4 drawables at 5 call sites in `SubscriptionStatusIcon`)
 - sent-via-proxy arrow (`CIMetaView`, `ChatItemInfoView`)
 
 Two structural details for site-level callers:
@@ -120,13 +128,46 @@ Two structural details for site-level callers:
   (`val iconModifier = modifier.mirrorIfRtl()`) and reuse — calling
   `mirrorIfRtl()` once or five times yields the same `Modifier` value
   inside one composition.
-- **`GoToItemInnerButton`** is a private helper that renders both a
+- **`GoToItemInnerButton`** is a local helper inside `ChatItemView` that renders both a
   directional icon (`ic_arrow_forward`, "go to forwarded source") and a
   non-directional icon (`ic_search`, search-result indicator) through
   the same `Icon(painterResource(icon), ...)` call. Add a
   `mirror: Boolean = false` parameter and pass `mirror = true` only at
   the directional callsite. The `ic_search` callsite keeps its default
   and is unchanged.
+
+### 4. Icons drawn by shared helpers
+
+Two icons are drawn inside a shared helper that takes a
+`Painter` and no icon modifier: the "Don't enable" chevron on the
+delivery receipts sheet (`SimpleButtonIconEnded`) and the "Show message
+status" row in Advanced network settings (`SettingsPreferenceItem`; it
+uses the same arrow that is mirrored in the message meta, so without
+this the setting points the opposite way from the indicator it
+controls). `Painter.mirrorIfRtl()` (next to `Modifier.mirrorIfRtl()`)
+returns a painter that draws the original flipped under RTL; the
+caller's alpha and tint are applied by `Painter`'s own layer around the
+flipped drawing, so neither helper's signature changes.
+
+The member delivery status "forwarded" chevron (message menu → Info →
+Delivery) is the only directional glyph `GroupSndStatus.statusIcon()`
+returns; the info view mirrors it when the returned icon is that
+chevron, so the status is not dispatched on a second time.
+
+### 5. Other absolute placements
+
+- `PriorityLayout` (the rows of every framed message: header, quote,
+  media, file, voice, link preview and text) placed its rows at x = 0,
+  so a caption narrower than the image sat at the end edge under RTL. `placeRelative(0, y)`.
+- `DependentLayout` (group member name and role above a received
+  message) placed its rows at x = 0. Under RTL the row started at the
+  left edge of the bubble column instead of the avatar side and could
+  stick out past the pane edge on short messages. `placeRelative(0, y)`.
+- `SupportSimpleXBanner` placed the image at the absolute right of the
+  card, where the right-aligned text runs under it (the banner text is
+  not translated, so it hides the end of the English text). The image uses
+  `placeRelative`; the card fills the layout, so its position is the
+  same in both directions.
 
 ## Why this is correct under both layout directions
 
@@ -143,51 +184,57 @@ exact LTR preservation.
 `placeRelative` is identical to `place` under LTR. `mirrorIfRtl()`
 returns the receiver unchanged under LTR. No LTR location regresses.
 
-## Why a wider structural change is not in scope here
+## Not in this PR
 
-These are deliberately deferred:
-
-1. **`GroupSndStatus.Forwarded`'s `ic_chevron_right_2`** in member
-   delivery status (long-press → Info → Delivery). Cleanly mirroring it
-   requires extending `GroupSndStatus.statusIcon()`'s return type so a
-   single `when (this)` produces `(icon, color, mirror)` — a
-   consumer-side `is Forwarded` check would dispatch on `status` a
-   second time and couple the consumer to status sub-types. The proper
-   fix is a model API change, deserving its own commit.
-
-2. **Two settings rows** route their icon through
-   `SimpleButtonIconEnded` and `SettingsPreferenceItem`, which don't
-   accept a per-icon `Modifier`. Fixing them requires extending those
-   helper signatures.
-
-3. **iOS-side**: not addressed because UIKit's RTL support and SwiftUI's
-   semantic edges already handle these cases.
-
-The PR aims at the user-visible regressions called out in the issue;
-deferring the above keeps the diff focused (+35/−16 across 12 files)
-and the regression risk low.
+- **Reply, forward and "open" arrows** (22 references, mostly drawn
+  through shared helpers), and the backspace, login and logout icons.
+  Material mirrors them under RTL, but they
+  are not called out by the issue and do not point at a side of the
+  layout; a maintainer decision, listed in the PR.
+- **Selection mode** shifts received messages the wrong way under RTL
+  (`ChatView.kt`), and the **voice message progress bar** fills from the
+  left while its thumb runs from the right — different bugs, separate PR.
+- **Desktop applies the layout direction at start**: choosing an RTL
+  language in Appearance changes some strings at once and the layout
+  after a restart. Separate change.
+- `ic_search` in `GoToItemInnerButton` stays unmirrored, as everywhere
+  else in the app.
 
 ## Verification
 
-Manual (Android + desktop) — switch in-app language to Arabic / Persian /
-Hebrew (or system locale to RTL) and walk through the screens called
-out in the issue:
+Manual, Android and desktop. Switch the in-app language to Arabic,
+Persian or Hebrew (Settings → Appearance → Language). Android applies
+the layout direction at once; on desktop restart the app after each
+language change (to RTL and back). Then:
 
-- Open any chat — sent-message tails point to your profile (visual side
-  closest to your avatar in 2-pane mode); received-message tails point
-  to the contact's avatar.
-- Chat header — call + 3-dot menu on the visual left, back chevron on
-  the visual right and pointing right (`>`). Tapping the 3-dot menu
-  opens a dropdown that anchors on the left and stays on-screen.
-- Settings → Your settings — back chevron points `>` and is on the right
-  edge of the navigation header.
-- Chat list header — profile avatar on the right; "Chats" title and
-  signal/wifi icon on the left, with the signal icon's "waves" mirrored.
-- Settings → About → What's new — pagination chevrons mirror.
-- Sent-via-proxy badge in chat-item meta and message info — arrow
-  mirrors.
-- Switch back to English — every above location matches pre-PR behavior;
-  no LTR regression.
+- Open any chat — sent-message tails are on the outer (end) edge,
+  bottom-left under RTL; received-message tails point to the contact's
+  avatar, bottom-right under RTL.
+- Chat header — call + 3-dot menu on the visual left; on Android the
+  back chevron is on the visual right and points right (`>`). Tapping
+  the 3-dot menu opens a dropdown next to the button, on the left.
+- Any settings page (e.g. Settings → Appearance) — the back button
+  points `>` and is on the right edge of its bar (at the bottom with
+  the default one-hand UI).
+- Chat list header — profile avatar on the right; "Chats" title stays
+  centred, with the signal icon to its left and its "waves" mirrored.
+- Settings → Help → What's new — pagination chevrons mirror.
+- With Advanced network settings → "Show message status" on and private
+  routing used: the sent-via-proxy arrow in the message meta, and in a
+  group message's Info → Delivery, points left; the "Show message
+  status" row's own arrow is mirrored too.
+- Delivery receipts sheet (shown at start only on installations
+  upgraded from before delivery receipts) — the "Don't enable" chevron points
+  left.
+- Group chat: the member name/role row above a short received message
+  starts at the avatar side and stays inside the pane (also the channel
+  name row); an image, file or voice message with a short text has the
+  text at the start side.
+- Supporter banner on the chat list (more than 3 chats, no badge, not
+  dismissed): its image is at the end side and does not cover the
+  text.
+- Switch back to English — every above location matches pre-PR
+  behaviour; no LTR regression.
 
 ## Alternatives considered and rejected
 
@@ -195,9 +242,8 @@ out in the issue:
   the mirror policy once per asset instead of once per call site. The
   project's vector drawables are generated by moko-resources from SVGs,
   and the SVG → vector XML pipeline doesn't currently propagate that
-  flag. Per-call-site `mirrorIfRtl()` is the available alternative; if
-  moko-resources adds the flag, the per-asset approach becomes cleaner
-  and the modifier calls can be removed.
+  flag, and desktop draws the SVG files directly, with no auto-mirror
+  at all. Per-call-site `mirrorIfRtl()` works on both platforms.
 
 - **A `MirroredIcon` wrapper composable.** Each call site has different
   surrounding modifiers (`size`, `height`, `padding`), tints, and
@@ -206,15 +252,5 @@ out in the issue:
   modifier chain.
 
 - **Mirror `ic_search` inside `GoToItemInnerButton`.** Material Design
-  recommends mirroring magnifying-glass icons under RTL (handle to
-  bottom-left), but the original PR doesn't mirror search icons
-  elsewhere and the issue doesn't call them out. Out of scope; revisit
-  in a focused pass over search-icon directionality if reported.
-
-- **Fix Forwarded delivery status icon by gating on
-  `status is GroupSndStatus.Forwarded` at the consumer.** Considered
-  during review and rejected: it dispatches on `status` a second time
-  (after `statusIcon()` already did), couples the consumer to specific
-  sub-types, and risks drift if a future status sub-type adopts a
-  directional icon. The proper fix is to fuse the dispatch by extending
-  `statusIcon()`'s return — deferred to its own commit.
+  lists the search icon as a handheld object that is not mirrored under
+  RTL, and the app does not mirror `ic_search` anywhere else.

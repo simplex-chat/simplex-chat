@@ -4,8 +4,12 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntOffset
@@ -15,6 +19,20 @@ import kotlin.math.roundToInt
 @Composable
 fun Modifier.mirrorIfRtl(): Modifier =
   if (LocalLayoutDirection.current == LayoutDirection.Rtl) this.scale(scaleX = -1f, scaleY = 1f) else this
+
+@Composable
+fun Painter.mirrorIfRtl(): Painter =
+  if (LocalLayoutDirection.current == LayoutDirection.Rtl) remember(this) { MirroredPainter(this) } else this
+
+private class MirroredPainter(private val painter: Painter): Painter() {
+  override val intrinsicSize get() = painter.intrinsicSize
+
+  override fun DrawScope.onDraw() {
+    scale(scaleX = -1f, scaleY = 1f) {
+      with(painter) { draw(size) }
+    }
+  }
+}
 
 fun Modifier.badgeLayout() =
   layout { measurable, constraints ->
