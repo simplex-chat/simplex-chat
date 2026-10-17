@@ -120,6 +120,16 @@ This keeps planning and packaged Cabal metadata aligned, including the metadata
 used for native package unit IDs.
 The source producer applies the existing haskell.nix patch once; its later
 package patch list is empty to prevent a second application.
+For this Windows GHC 9.14 package, the Nix dependency resolver also recognizes
+lowercase `crypt32` as an implicit MinGW import library, matching the existing
+`Crypt32` mapping. Cabal keeps the lowercase library declaration and linker flag;
+all other package/library mappings stay intact. The focused resolver check uses
+the real haskell.nix plan and package modules without building a compiler:
+
+```sh
+nix eval --impure --json --file scripts/nix/check-windows-crypt32.nix \
+  --apply 'test: let f = builtins.getFlake (toString ./.); in test { lib = f.inputs.haskellNix.inputs.nixpkgs.lib; haskellNix = f.inputs.haskellNix; }'
+```
 
 Linux-built Win64 `ghc914-sh` v2 projects patch only the RTS DLL search-path
 caller, including normal and profiling interpreters. It resolves relative paths
