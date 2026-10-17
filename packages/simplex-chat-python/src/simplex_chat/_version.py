@@ -4,7 +4,7 @@ Written by scripts/ci/packages_release.py: the release PR bumps the version
 and pins new library releases with the SHA-256 of their assets.
 """
 
-__version__ = "7.1.0b6"  # PEP 440 — read by hatchling for wheel metadata
+__version__ = "7.1.0b6.post1"  # PEP 440 — read by hatchling for wheel metadata
 LIBS_RELEASE = "core-7.1.0.11"  # simplex-chat-libs release tag
 LIBS_SHA256 = {
     "simplex-chat-libs-linux-aarch64.zip": "d66aa1b30b9fa20225dad8ef75a9c605961e1c0adde2ba0283e2fcac4e15d260",
