@@ -82,8 +82,9 @@ fun ChatInfoView(
       currentUser,
       sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
-        val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
-        updateChatSettings(chat.remoteHostId, chat.chatInfo, chatSettings, chatModel)
+        val chatInfo = (chatModel.getChat(chat.id) ?: chat).chatInfo
+        val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+        updateChatSettings(chat.remoteHostId, chatInfo, chatSettings, chatModel)
         sendReceipts.value = sendRcpts
       },
       chatItemTTL = chatItemTTL,
@@ -916,7 +917,7 @@ fun MuteButton(
     disabled = disabled,
     disabledLook = disabled,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNtfMode, chatModel)
+      toggleNotifications(chat.remoteHostId, (chatModel.getChat(chat.id) ?: chat).chatInfo, nextNtfMode, chatModel)
     }
   )
 }
