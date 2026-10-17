@@ -48,11 +48,10 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
 **C. Joining from the results, and no duplicates.** Run it once, at the end, in the layout you are in then (the layouts draw these the same way). Clear the search field (Escape) before each step.
 
 1. Search `ci seed` with "Search in Directory" (the alert no longer asks). Click the #ci_channel row: an alert names the channel and offers "Open channel"; click it. The channel opens in the right pane with a "Join channel" button; click it and wait up to 60 s for "you are subscriber". Press Escape until the chat list shows (the channel may stay open in the right pane).
-2. Type `ci_channel` and press Enter, and wait for the search to finish: the chat list shows your chat ci_channel, and no Directory row #ci_channel (the Directory part may be absent).
-3. Type `seed` and press Enter: the local list shows "seeded notes" and not ci_channel, so the Directory part lists #ci_channel and #ci_group. Click #ci_channel: the alert now says "You are a subscriber". Close it with "Cancel" or Escape.
-4. Type `zqxvjk` and press Enter: once the search finishes, "No chats found" shows, and no "Directory" header.
+2. Type `ci_channel` and press Enter, and wait for the search to finish: the chat list shows your chat ci_channel, and no Directory row #ci_channel (the Directory part may be absent, or show only "Show more" when its page held nothing else).
+3. Type `seeded` and click "Search in Directory" (not Enter). A name narrows the chat list to the chats with that name and the chat open in the right pane, so ci_channel is not listed, and the Directory part lists #ci_channel and #ci_group (use "Show more"); there is no "Names" header, as only the Search key resolves names. Click #ci_channel: the alert now says "You are a subscriber". Close it with "Cancel" or Escape.
+4. Type `zqxvjk` and press Enter: once the search finishes, no "Directory" header and no results. On desktop the chat open in the right pane stays listed, so "No chats found" may not show.
 5. Type `cinone`: a row "Connect to cinone.testing" shows. Press Enter: no alert about the name, no "Names" header, and "Connect to cinone.testing" stays; the search finds no directory entries.
-6. Type `seeded` and click "Search in Directory" (not Enter): the Directory part lists #ci_group and #ci_channel, and there is no "Names" header, as only the Search key resolves names.
 
 You have at most 120 turns, and the whole test fits in about 70 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example, in the first layout:
 
