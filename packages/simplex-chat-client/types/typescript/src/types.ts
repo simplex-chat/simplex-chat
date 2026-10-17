@@ -1796,6 +1796,7 @@ export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
   Business = "business",
+  Agent = "agent",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 
