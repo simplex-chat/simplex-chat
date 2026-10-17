@@ -6,7 +6,7 @@ import importlib.util
 import io
 import os
 from pathlib import Path
-import shutil
+import signal
 import sys
 import tempfile
 import time
@@ -49,7 +49,8 @@ class LauncherTests(unittest.TestCase):
             return None
         argv = ["trace-intel-ghc.py", "--repo", folder, "--attribute", target or TRACE.ATTRIBUTE, "--log", str(log)]
         with patch.dict(os.environ, {"GITHUB_ACTIONS": actions}), patch.object(TRACE.platform, "system", return_value="Darwin"), \
-                patch.object(TRACE.platform, "machine", return_value=machine), patch.object(TRACE.shutil, "which", return_value="/existing/tool"), \
+                patch.object(TRACE.platform, "machine", return_value=machine), \
+                patch.object(TRACE.shutil, "which", side_effect=lambda tool: None if tool in ("timeout", "gtimeout") else "/existing/tool"), \
                 patch.object(TRACE, "run_step", side_effect=step), patch("sys.argv", argv), \
                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             result = TRACE.main()
@@ -99,15 +100,49 @@ class LauncherTests(unittest.TestCase):
             self.assertEqual(sum("--expr" in call[0] for call in calls), 1)
             self.assertFalse(any("--file" in call[0] for call in calls))
 
-    @unittest.skipUnless(shutil.which("timeout"), "GNU timeout is required")
     def test_actual_metadata_output_is_bounded(self):
         with self.assertRaises(ValueError):
             TRACE.run_step([sys.executable, "-c", "print('x' * 65536)"], time.monotonic() + 10, 5, True)
         self.assertEqual(TRACE.run_step([sys.executable, "-c", "print('revision')"],
                                         time.monotonic() + 10, 5, True), "revision")
 
+    def test_actual_timeout_kills_owned_command_and_its_child(self):
+        with tempfile.TemporaryDirectory() as folder:
+            pidfile = Path(folder) / "owned-pids"
+            grandchild = "import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); time.sleep(60)"
+            program = ("import os,signal,subprocess,sys,time; "
+                       "signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+                       "p=subprocess.Popen([sys.executable,'-c',sys.argv[2]]); "
+                       "open(sys.argv[1],'w').write(str(os.getpid())+' '+str(p.pid)); time.sleep(60)")
+            before = time.monotonic()
+            with self.assertRaisesRegex(TimeoutError, "wall-clock limit"):
+                TRACE.command_status([sys.executable, "-c", program, str(pidfile), grandchild], 1)
+            self.assertLess(time.monotonic() - before, 7)
+            parent, child = map(int, pidfile.read_text().split())
+            # The direct child is reaped. An orphaned grandchild can briefly
+            # remain a zombie on Linux; it must not be running in either case.
+            for pid in (parent, child):
+                stopped = False
+                until = time.monotonic() + 3
+                while time.monotonic() < until:
+                    try:
+                        os.kill(pid, 0)
+                    except ProcessLookupError:
+                        stopped = True
+                        break
+                    stat = Path("/proc") / str(pid) / "stat"
+                    if stat.exists() and stat.read_text().split(")", 1)[1].split()[0] == "Z":
+                        stopped = True
+                        break
+                    time.sleep(0.02)
+                self.assertTrue(stopped, "Owned fixture PID still running: " + str(pid))
+
+    def test_nonzero_actual_command_remains_a_failure(self):
+        with self.assertRaisesRegex(RuntimeError, "returned 7"):
+            TRACE.run_step([sys.executable, "-c", "raise SystemExit(7)"], time.monotonic() + 10, 5)
+
     def test_deadline_and_nix_literal(self):
-        with patch.object(TRACE.time, "monotonic", return_value=2), patch.object(TRACE.subprocess, "run") as run:
+        with patch.object(TRACE.time, "monotonic", return_value=2), patch.object(TRACE.subprocess, "Popen") as run:
             with self.assertRaises(TimeoutError):
                 TRACE.run_step(["nix", "build"], 1, 300)
             run.assert_not_called()

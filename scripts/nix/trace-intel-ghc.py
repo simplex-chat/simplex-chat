@@ -8,6 +8,7 @@ from pathlib import Path
 import platform
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -34,32 +35,50 @@ def nix_string(value):
     return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"').replace("${", "\\${") + '"'
 
 
+def command_status(arguments, seconds, **streams):
+    # A fresh session gives this command and its descendants a group owned by
+    # this launcher. macOS need not provide GNU timeout (or a Homebrew alias).
+    child = subprocess.Popen(list(map(str, arguments)), start_new_session=True, **streams)
+    try:
+        return child.wait(timeout=seconds)
+    except subprocess.TimeoutExpired:
+        # wait() has not reaped this PID, so its group cannot have been reused.
+        # Kill the whole owned group, including children that ignore SIGTERM.
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        try:
+            child.wait(timeout=5)
+        except subprocess.TimeoutExpired as error:
+            raise TimeoutError("Owned diagnostic PID " + str(child.pid)
+                               + " was not reaped within five seconds after SIGKILL") from error
+        raise TimeoutError("Diagnostic command reached its wall-clock limit") from None
+
+
 def run_step(arguments, deadline, seconds, capture=False):
     remaining = min(seconds, int(deadline - time.monotonic()))
     if remaining < 1:
         raise TimeoutError("Diagnostic wall-clock limit reached")
-    # GNU timeout owns the process group it creates. Each operation has a
-    # bounded wall clock and a five-second kill grace, including compilation.
-    command = ["timeout", "--kill-after=5s", str(remaining), *map(str, arguments)]
     if capture:
         # Keep subprocess output out of memory until its size is known. These
         # three metadata queries have tiny successful outputs; errors remain
         # visible through a bounded stderr suffix.
         with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
-            result = subprocess.run(command, stdout=output, stderr=errors, check=False)
-            if result.returncode:
+            status = command_status(arguments, remaining, stdout=output, stderr=errors)
+            if status:
                 errors.seek(0, os.SEEK_END)
                 errors.seek(max(0, errors.tell() - 4096))
                 print(errors.read(4096).decode(errors="replace"), file=sys.stderr, flush=True)
-                raise RuntimeError("Diagnostic command returned " + str(result.returncode))
+                raise RuntimeError("Diagnostic command returned " + str(status))
             output.seek(0)
             data = output.read(4097)
             if len(data) > 4096:
                 raise ValueError("Diagnostic command exceeded the metadata output limit")
             return data.decode().strip()
-    result = subprocess.run(command, check=False)
-    if result.returncode:
-        raise RuntimeError("Diagnostic command returned " + str(result.returncode))
+    status = command_status(arguments, remaining)
+    if status:
+        raise RuntimeError("Diagnostic command returned " + str(status))
     return None
 
 
@@ -85,8 +104,9 @@ def main():
         if expected is None:
             print("Skipping Intel GHC diagnostic: no unique observed SimpleX SIGBUS component.", flush=True)
             return 0
-        if not all(shutil.which(tool) for tool in ("timeout", "xcrun", "git", "nix")):
-            raise ValueError("A required existing diagnostic tool is unavailable")
+        missing = [tool for tool in ("xcrun", "git", "nix") if not shutil.which(tool)]
+        if missing:
+            raise ValueError("Required existing diagnostic tools unavailable: " + ", ".join(missing))
         repo = args.repo.resolve()
         revision = run_step(["git", "-C", repo, "rev-parse", "HEAD"], deadline, 10, True)
         if re.fullmatch(r"[0-9a-f]{40}", revision) is None:

@@ -385,6 +385,10 @@ sandbox stays enabled. The replay has a 300-second wall-clock/per-derivation
 limit and a 360-second overall preparation-and-replay budget, plus a five-second
 termination grace. It adds no compiler flags and preserves the actual compiler
 arguments and response-file bytes. Compiler queries pass through unchanged.
+Each launcher command runs in its own process group. Python enforces the
+deadline and kills only that group on expiry, with at most five seconds to reap
+the command; GNU `timeout` and Homebrew aliases are not required. Missing Apple
+or Nix tools are named explicitly.
 
 The recorder loads only into the selected normal SimpleX iOS compiler process.
 It reports its main executable's UUID, image base and slide, then records SIGBUS
