@@ -442,17 +442,19 @@ fun MuteButton(
 fun AddGroupMembersButton(
   modifier: Modifier,
   chat: Chat,
-  groupInfo: GroupInfo
+  groupInfo: GroupInfo,
+  groupLinkLoaded: Boolean,
+  manageGroupLink: () -> Unit
 ) {
   InfoViewActionButton(
     modifier = modifier,
     icon =  if (groupInfo.incognito) painterResource(MR.images.ic_add_link) else painterResource(MR.images.ic_person_add_500),
     title = stringResource(MR.strings.action_button_add_members),
-    disabled = !groupInfo.ready,
-    disabledLook = !groupInfo.ready,
+    disabled = !groupInfo.ready || (groupInfo.incognito && !groupLinkLoaded),
+    disabledLook = !groupInfo.ready || (groupInfo.incognito && !groupLinkLoaded),
     onClick = {
       if (groupInfo.incognito) {
-        openGroupLink(groupInfo = groupInfo, rhId = chat.remoteHostId)
+        manageGroupLink()
       } else {
         addGroupMembers(groupInfo = groupInfo, rhId = chat.remoteHostId)
       }
@@ -614,7 +616,7 @@ fun ModalData.GroupChatInfoLayout(
             MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
           } else if (!groupInfo.useRelays && groupInfo.canAddMembers) {
             SearchButton(modifier = Modifier.fillMaxWidth(0.33f), chat, groupInfo, close, onSearchClicked)
-            AddGroupMembersButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo)
+            AddGroupMembersButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo, groupLinkLoaded, manageGroupLink)
             MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
           } else {
             SearchButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo, close, onSearchClicked)
