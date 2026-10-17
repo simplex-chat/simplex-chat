@@ -391,8 +391,14 @@ then failed: the runtime linker rejected duplicate `__x86.get_pc_thunk.bx` and
 EOF. The scoped COMDAT candidate cross-compiles both changed C files against
 real GHC 9.14 headers with the original warning messages unchanged. Its physical
 source producer changes exactly `Linker.c`, `linker/Elf.c`, and `linker/Elf.h`.
-The runtime regression and final i686 TH/application builds remain unverified,
-including profiling execution.
+The paired native x86_64 Linux runtime script passes with the exact existing
+GHC 9.14 compiler on the Hydra host: the original RTS rejects the COMDAT fixture,
+and the patched RTS preserves relocations in both load orders while rejecting
+ordinary strong and stale archive-owner conflicts. Both explicit RTS object
+pairs come from the same configured source; their link maps exclude the original
+archive objects. This isolated direct run completes in 4.3 seconds without a Nix
+build or configuration change. The Nix check and final i686 QEMU TH/application
+builds remain CI checks, including profiling execution.
 
 Intel Darwin reproduced its Setup GC abort and produced the direct-abort trace
 used for the info-table diagnosis above. The local renderer regression passes,
