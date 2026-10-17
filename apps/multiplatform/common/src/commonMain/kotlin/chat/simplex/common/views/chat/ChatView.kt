@@ -425,8 +425,8 @@ fun ChatView(
                   ModalView(close, cardScreen = true, appBar = appBar.value) {
                     val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
-                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
-                      var code: String? by remember { mutableStateOf(preloadedCode) }
+                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedContactInfo else null) }
+                      var code: String? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedCode else null) }
                       LaunchedEffect(chatInfo.id) {
                         if (chatInfo.id == preloadedChatId) return@LaunchedEffect
                         preloadedChatId = null
@@ -440,16 +440,18 @@ fun ChatView(
                         showSearch.value = true
                       }
                     } else if (chatInfo is ChatInfo.Group) {
-                      var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
+                      var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedLink else null) }
+                      var linkLoaded by remember(chatInfo.id) { mutableStateOf(chatInfo.id == preloadedChatId) }
                       LaunchedEffect(chatInfo.id) {
                         if (chatInfo.id == preloadedChatId) return@LaunchedEffect
                         preloadedChatId = null
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
+                        linkLoaded = true
                         preloadedLink = link
                         preloadedChatId = chatInfo.id
                       }
-                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, selectedItems, appBar, scrollToItemId, {
+                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, linkLoaded, selectedItems, appBar, scrollToItemId, {
                         link = it
                         preloadedLink = it
                       }, close, { showSearch.value = true })
