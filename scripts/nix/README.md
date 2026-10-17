@@ -279,6 +279,8 @@ The Windows CRT overlay backports upstream MinGW commit `e7e21db45eaa` to the
 verified 13.0.0/14.0.0 sources. It fixes ISO `swprintf` rejecting strings that
 exactly fit with their terminator; the regression also requires a negative
 return for a too-small buffer and intact outside-buffer sentinels.
+The overlay preserves haskell.nix's existing UCRT pthread flags when rebuilding
+the Windows scope; the current SimpleX Windows targets use MSVCRT.
 It requires real file opens, descriptor/stat information and fixture bytes for
 short, long and archive-shaped paths, including absolute and extended variants.
 Helper results and a separate direct Win32/CRT replay remain diagnostic output.
