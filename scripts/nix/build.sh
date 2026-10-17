@@ -78,8 +78,23 @@ for package in $packages; do
     printf '%s\n' "$attribute"
   else
     mkdir -p "$out_dir/$system"
-    nix build --print-build-logs --timeout "${NIX_BUILD_TIMEOUT:-7200}" \
+    crash_since=
+    if [ "$system" = x86_64-darwin ] && [ "${GITHUB_ACTIONS:-}" = true ]; then
+      crash_since=$(date +%s) || crash_since=
+    fi
+    if nix build --print-build-logs --timeout "${NIX_BUILD_TIMEOUT:-7200}" \
       --out-link "$out_dir/$system/$package" \
-      "$repo_dir#$attribute" "$@"
+      "$repo_dir#$attribute" "$@"; then
+      :
+    else
+      status=$?
+      if [ -n "$crash_since" ] && command -v python3 >/dev/null 2>&1; then
+        # ReportCrash can provide a compiler fault's registers and stack even
+        # when the failure is outside the separate ghc-boot Setup diagnostic.
+        python3 "$repo_dir/scripts/nix/collect-darwin-ghc-crash.py" \
+          --since "$crash_since" || printf '%s\n' 'Darwin crash-report collection failed.' >&2
+      fi
+      exit "$status"
+    fi
   fi
 done

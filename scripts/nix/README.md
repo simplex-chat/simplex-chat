@@ -348,6 +348,20 @@ optional pinned GDB derivation via `--arg debugger`. Omitting `debugger` retains
 the phase-only trace. GDB leaves ASLR enabled; its host/runtime effects must be
 reported when comparing diagnostics.
 
+After a failed Intel Darwin GitHub CI build, `build.sh` also prints technical
+fields from recent Nix GHC `.ips` crash reports, if macOS publishes readable
+reports. The collector reads the user and system `DiagnosticReports` directories
+without a debugger or process replay. It selects reports modified since the
+failed target's build started, then reports the exception, faulting thread's
+registers and up to 80 frames with their original binary-image indexes. These
+are recent compiler reports; their PID and executable path must be correlated
+with the failed component before attributing a cause. At most three reports
+are printed, each limited to 2 MiB input and 64 KiB technical output, with a
+15-second overall deadline. Missing, inaccessible or incomplete reports do not
+change the original build's exit status. Local builds and successful CI builds
+do not invoke this collector. Run its focused regressions with
+`python3 -B scripts/nix/test-darwin-ghc-crash.py`.
+
 When the pinned Intel Darwin `ghc-boot` component fails, CI captures a separate
 Setup diagnostic. It selects one exact failed `ghc-boot` derivation from the
 canonical log and checks it against the selected compiler project; a rebuilt
