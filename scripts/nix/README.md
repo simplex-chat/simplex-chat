@@ -52,6 +52,9 @@ nix eval --impure --json --file scripts/nix/check-darwin-bitvec-resolver.nix \
   --apply 'test: let f = builtins.getFlake (toString ./.); in test { lib = f.inputs.haskellNix.inputs.nixpkgs.lib; haskellNix = f.inputs.haskellNix; }'
 ```
 
+CI checks this platform scope before the Intel builds with
+`nix eval --json --file scripts/nix/check-darwin-bitvec-runtime.nix`.
+
 Cross projects add `ghc-internal` to the Cabal dependencies of the pinned
 `composition-1.0.2.2` source. This preserves its deliberate avoidance of `base`
 while making GHC 9.14's wired-in types available in isolated target package

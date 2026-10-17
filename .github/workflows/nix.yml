@@ -114,10 +114,12 @@ jobs:
         timeout-minutes: 120
         run: nix build .#checks.x86_64-linux.ghc-elf-comdat-functions --no-link -L --max-jobs 1 --timeout "$NIX_BUILD_TIMEOUT"
 
-      - name: Check Intel Setup failure selection
+      - name: Check Intel Darwin build policies
         if: ${{ matrix.system == 'x86_64-darwin' && matrix.target == 'all' }}
         timeout-minutes: 1
-        run: python3 -B scripts/nix/test-select-intel-setup.py
+        run: |
+          python3 -B scripts/nix/test-select-intel-setup.py
+          nix eval --json --file scripts/nix/check-darwin-bitvec-runtime.nix
 
       - name: Check native Linux GHC ELF section alignment
         if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'native' }}
