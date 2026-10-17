@@ -95,6 +95,7 @@ previous=""
 for layout in $layouts; do
   session=$staging/$layout
   mkdir -p "$session/shots"
+  echo "$layout" >> "$out/sessions"
   ui layout "$layout"
   write_prompt "$layout" "$previous" > "$session/prompt.md"
   echo "::group::Claude session: $layout, $model, $max_turns turns, \$$max_budget"
