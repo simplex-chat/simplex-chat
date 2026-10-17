@@ -53,6 +53,17 @@ deps
 - restore key 2: `deps-<target>-`
 - saved when the store hash differs from the matched key
 
+toolchain
+- jobs: build-macos, build-windows
+- path:
+  - build-macos: `~/.ghcup/ghc/<ghc>`, `~/.ghcup/bin/*-<ghc>`, `~/.ghcup/bin/cabal-3.10.2.0`
+  - build-windows: `C:/ghcup/ghc/<ghc>`, `C:/ghcup/bin/*-<ghc>*`, `C:/ghcup/bin/cabal-3.10.2.0*`
+- key:
+  - build-macos: `ghcup-<os>-<arch>-ghc<ghc>-cabal3.10.2.0-<toolchain>`
+  - build-windows: `ghcup-windows-x86_64-ghc<ghc>-cabal3.10.2.0`
+- restored before "Prepare build"
+- saved after "Prepare build" when the key is not matched
+
 src
 - jobs: build-linux, build-macos, build-windows
 - path: `dist-newstyle/src`
@@ -169,20 +180,22 @@ prepare-build action
 - output `cabal-store`: output `cabal-store` of setup-haskell-action
 
 Steps:
-1. Prepare build.
-2. Compute cache keys.
-3. Restore deps.
-4. Restore src.
-5. Restore dist.
-6. Build CLI:
+1. Restore toolchain.
+2. Prepare build.
+3. Save toolchain.
+4. Compute cache keys.
+5. Restore deps.
+6. Restore src.
+7. Restore dist.
+8. Build CLI:
    - `scripts/ci/prune-old-builds.sh dist-newstyle`
    - `<ghc_options>`
-7. Save deps.
-8. Save src.
-9. Save dist.
-10. build-macos "Run tests": `cabal test` with `<ghc_options>`.
-11. Other steps: unchanged.
-12. -O0 refresh as in build-linux, after all other steps.
+9. Save deps.
+10. Save src.
+11. Save dist.
+12. build-macos "Run tests": `cabal test` with `<ghc_options>`.
+13. Other steps: unchanged.
+14. -O0 refresh as in build-linux, after all other steps.
 
 build-macos
 - step before "Prepare build": `/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk` linked to `xcrun --sdk macosx --show-sdk-path`

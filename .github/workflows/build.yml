@@ -810,6 +810,27 @@ jobs:
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
+      - name: Compute toolchain cache key
+        id: toolchain-key
+        if: env.release != 'true'
+        shell: bash
+        run: echo "key=ghcup-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-cabal3.10.2.0-$({ sw_vers -productVersion; clang --version; } | shasum -a 256 | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore toolchain from cache
+        id: restore-toolchain
+        if: env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.ghcup/ghc/${{ matrix.ghc }}
+            ~/.ghcup/bin/*-${{ matrix.ghc }}
+            ~/.ghcup/bin/cabal-3.10.2.0
+          key: ${{ steps.toolchain-key.outputs.key }}
+
+      - name: Warn if toolchain not in cache
+        if: env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
+        run: echo "::warning title=Cache miss::${{ steps.toolchain-key.outputs.key }}"
+
       - name: Prepare build
         id: prepare
         uses: ./.github/actions/prepare-build
@@ -817,6 +838,16 @@ jobs:
           java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
           github_ref: ${{ github.ref }}
+
+      - name: Save toolchain to cache
+        if: env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.ghcup/ghc/${{ matrix.ghc }}
+            ~/.ghcup/bin/*-${{ matrix.ghc }}
+            ~/.ghcup/bin/cabal-3.10.2.0
+          key: ${{ steps.toolchain-key.outputs.key }}
 
       - name: Install OpenSSL
         run: brew install openssl@3.0
@@ -1065,6 +1096,21 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Restore toolchain from cache
+        id: restore-toolchain
+        if: env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            C:/ghcup/ghc/${{ matrix.ghc }}
+            C:/ghcup/bin/*-${{ matrix.ghc }}*
+            C:/ghcup/bin/cabal-3.10.2.0*
+          key: ghcup-windows-x86_64-ghc${{ matrix.ghc }}-cabal3.10.2.0
+
+      - name: Warn if toolchain not in cache
+        if: env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
+        run: echo "::warning title=Cache miss::ghcup-windows-x86_64-ghc${{ matrix.ghc }}-cabal3.10.2.0"
+
       - name: Prepare build
         id: prepare
         uses: ./.github/actions/prepare-build
@@ -1072,6 +1118,16 @@ jobs:
           java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
           github_ref: ${{ github.ref }}
+
+      - name: Save toolchain to cache
+        if: env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            C:/ghcup/ghc/${{ matrix.ghc }}
+            C:/ghcup/bin/*-${{ matrix.ghc }}*
+            C:/ghcup/bin/cabal-3.10.2.0*
+          key: ghcup-windows-x86_64-ghc${{ matrix.ghc }}-cabal3.10.2.0
 
       - name: Configure pagefile (Windows)
         uses: simplex-chat/configure-pagefile-action@v1.4
