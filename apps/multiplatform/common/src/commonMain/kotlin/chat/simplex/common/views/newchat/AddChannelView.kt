@@ -77,7 +77,6 @@ fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit,
       },
       cancelChannelCreation = {
         chatModel.creatingChannelId.value = null
-        ChannelRelaysModel.reset()
         closeAll()
         withBGApi {
           try {
@@ -142,11 +141,11 @@ fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit,
                 withContext(Dispatchers.Main) {
                   chatModel.chatsContext.updateGroup(rhId = rhId, result.groupInfo)
                   chatModel.creatingChannelMembers.value = emptyList()
+                  chatModel.creatingChannelRelays.value = result.groupRelays
                   chatModel.creatingChannelId.value = result.groupInfo.id
                   groupInfo.value = result.groupInfo
                   groupLink.value = result.groupLink
                   groupRelays.value = result.groupRelays.sortedBy { relayDisplayName(it) }
-                  ChannelRelaysModel.set(result.groupInfo.groupId, result.groupRelays)
                   creationInProgress.value = false
                 }
               }
@@ -394,13 +393,11 @@ private fun ProgressStepView(
   }
 
   LaunchedEffect(gInfo.groupId) {
-    snapshotFlow { ChannelRelaysModel.groupRelays.toList() }
+    snapshotFlow { chatModel.creatingChannelRelays.value }
       .collect { relays ->
-        if (ChannelRelaysModel.groupId.value != gInfo.groupId) return@collect
         groupRelays.value = relays.sortedBy { relayDisplayName(it) }
         if (relays.all { it.relayStatus == RelayStatus.Active && relayMemberConnFailed(chatModel, it) == null }) {
           onLinkReady()
-          ChannelRelaysModel.reset()
         }
       }
   }

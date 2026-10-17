@@ -168,6 +168,7 @@ object ChatModel {
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val creatingChannelId = mutableStateOf<String?>(null)
   val creatingChannelMembers = mutableStateOf<List<GroupMember>>(emptyList())
+  val creatingChannelRelays = mutableStateOf<List<GroupRelay>>(emptyList())
   val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
   val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
   val membersLoaded = mutableStateOf(false)
