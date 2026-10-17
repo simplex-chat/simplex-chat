@@ -444,7 +444,7 @@ struct ChatPreviewView: View {
             smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {
                 ProfileImage(
                     imageStr: chatLink.image,
-                    iconName: chatLink.iconName,
+                    icon: Image(systemName: chatLink.iconName),
                     size: dynamicMediaSize,
                     color: Color(uiColor: .tertiaryLabel)
                 )

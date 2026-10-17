@@ -332,6 +332,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.info with empty full name" $
     "{\"v\":\"9\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing} Nothing
+  it "x.info with agent peer type" $
+    "{\"v\":\"9\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"peerType\":\"agent\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTAgent, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing} Nothing
   it "x.contact with xContactId" $
     "{\"v\":\"9\",\"event\":\"x.contact\",\"params\":{\"contactReqId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XContact testProfile Nothing (Just $ XContactId "\1\2\3\4") Nothing Nothing
