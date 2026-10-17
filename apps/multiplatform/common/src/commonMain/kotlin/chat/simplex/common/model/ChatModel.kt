@@ -1954,7 +1954,7 @@ data class Contact(
     activeConn?.customUserProfileId != null
 
   val chatIconName: ImageResource get() =
-    if (isBot) MR.images.ic_cube else MR.images.ic_account_circle_filled
+    peerTypeIcon(profile.peerType)
 
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
@@ -2165,6 +2165,7 @@ sealed class ChatPeerType {
   @Serializable @SerialName("human") object Human: ChatPeerType()
   @Serializable @SerialName("bot") object Bot: ChatPeerType()
   @Serializable @SerialName("business") object Business: ChatPeerType()
+  @Serializable @SerialName("agent") object Agent: ChatPeerType()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatPeerType()
 
   val text: String
@@ -2172,6 +2173,7 @@ sealed class ChatPeerType {
       is Human -> "human"
       is Bot -> "bot"
       is Business -> "business"
+      is Agent -> "agent"
       is Unknown -> type
     }
 }
@@ -2183,10 +2185,18 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
       "human" -> ChatPeerType.Human
       "bot" -> ChatPeerType.Bot
       "business" -> ChatPeerType.Business
+      "agent" -> ChatPeerType.Agent
       else -> ChatPeerType.Unknown(v)
     }
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
+
+fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
+  when (peerType) {
+    ChatPeerType.Bot -> MR.images.ic_cube
+    ChatPeerType.Agent -> MR.images.ic_agent
+    else -> MR.images.ic_account_circle_filled
+  }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
 // Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
@@ -2284,6 +2294,12 @@ sealed class BadgeIssueFailure {
     is Network -> generalGetString(MR.strings.badges_error_unreachable)
     is InvalidCredential -> generalGetString(MR.strings.badges_error_credential_invalid)
     is Unexpected -> String.format(generalGetString(MR.strings.badges_error_unexpected), message)
+  }
+
+  val purchaseText: String get() = when (this) {
+    is ServiceError -> badgeServiceErrorText(code) ?: String.format(generalGetString(MR.strings.badges_error_purchase_refused), code.text)
+    is InvalidCredential -> generalGetString(MR.strings.badges_error_credential_not_verified)
+    is ServiceTimeout, is Network, is Unexpected -> text
   }
 
   // the stored form, for support

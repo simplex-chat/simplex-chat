@@ -1968,7 +1968,7 @@ struct ChatView: View {
                                     .padding(.trailing, 12)
                             }
                             HStack(alignment: .top, spacing: 10) {
-                                ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                                     .simultaneousGesture(TapGesture().onEnded {
                                         showChatInfoSheet = true
                                     })
@@ -2052,7 +2052,7 @@ struct ChatView: View {
                             }
                             HStack(alignment: .top, spacing: 10) {
                                 if ci.meta.showGroupAsSender {
-                                    ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                    ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                                         .simultaneousGesture(TapGesture().onEnded {
                                             showChatInfoSheet = true
                                         })

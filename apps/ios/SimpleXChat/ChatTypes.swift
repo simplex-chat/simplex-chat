@@ -228,6 +228,7 @@ public enum ChatPeerType: Hashable {
     case human
     case bot
     case business
+    case agent
     case unknown(String)
 
     public var text: String {
@@ -235,6 +236,7 @@ public enum ChatPeerType: Hashable {
         case .human: "human"
         case .bot: "bot"
         case .business: "business"
+        case .agent: "agent"
         case let .unknown(s): s
         }
     }
@@ -246,6 +248,7 @@ extension ChatPeerType: Codable {
         case "human": self = .human
         case "bot": self = .bot
         case "business": self = .business
+        case "agent": self = .agent
         case let s: self = .unknown(s)
         }
     }
@@ -253,6 +256,14 @@ extension ChatPeerType: Codable {
     public func encode(to encoder: Encoder) throws {
         var c = encoder.singleValueContainer()
         try c.encode(text)
+    }
+}
+
+public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
+    switch peerType {
+    case .bot: Image(systemName: "cube.fill")
+    case .agent: Image("agent")
+    default: Image(systemName: "person.crop.circle.fill")
     }
 }
 
@@ -366,6 +377,24 @@ public enum BadgeIssueFailure: Decodable, Hashable {
         case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
         case let .unexpected(message):
             String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "badge renewal error"), message)
+        }
+    }
+
+    public var purchaseText: String {
+        switch self {
+        case let .serviceError(code, _):
+            badgeServiceErrorText(code)
+                ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the purchase: %@", comment: "badge purchase error"), code.text)
+        case .invalidCredential: NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        case .serviceTimeout, .network, .unexpected: text
+        }
+    }
+
+    public var purchaseAlertTitle: String {
+        switch self {
+        case .serviceError(.testPurchase, _):
+            NSLocalizedString("Sandbox purchase", comment: "alert title")
+        default: NSLocalizedString("Purchase error", comment: "alert title")
         }
     }
 
@@ -2514,8 +2543,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         activeConn?.customUserProfileId != nil
     }
 
-    public var chatIconName: String {
-        isBot ? "cube.fill" : "person.crop.circle.fill"
+    public var chatIcon: Image {
+        peerTypeIcon(profile.peerType)
     }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {

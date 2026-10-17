@@ -249,6 +249,7 @@ export interface BadgeProof {
 
 export type BadgeRedeemError = 
   | BadgeRedeemError.InvalidCode
+  | BadgeRedeemError.InvalidReceipt
   | BadgeRedeemError.ServiceNotConfigured
   | BadgeRedeemError.BadgeActive
   | BadgeRedeemError.ServiceError
@@ -259,6 +260,7 @@ export type BadgeRedeemError =
 export namespace BadgeRedeemError {
   export type Tag = 
     | "invalidCode"
+    | "invalidReceipt"
     | "serviceNotConfigured"
     | "badgeActive"
     | "serviceError"
@@ -272,6 +274,10 @@ export namespace BadgeRedeemError {
 
   export interface InvalidCode extends Interface {
     type: "invalidCode"
+  }
+
+  export interface InvalidReceipt extends Interface {
+    type: "invalidReceipt"
   }
 
   export interface ServiceNotConfigured extends Interface {
@@ -312,12 +318,14 @@ export enum BadgeServiceErrorCode {
   Payment_not_entitled = "payment_not_entitled",
   Payment_pending = "payment_pending",
   Provider_unavailable = "provider_unavailable",
+  Provider_not_configured = "provider_not_configured",
   Rate_limited = "rate_limited",
   Code_invalid = "code_invalid",
   Code_used = "code_used",
   Code_expired = "code_expired",
   Receipt_invalid = "receipt_invalid",
   Receipt_used = "receipt_used",
+  Test_purchase = "test_purchase",
   Internal = "internal",
 }
 
@@ -1788,6 +1796,7 @@ export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
   Business = "business",
+  Agent = "agent",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 

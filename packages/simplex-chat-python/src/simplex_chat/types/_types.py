@@ -188,6 +188,9 @@ class BadgeProof(TypedDict):
 class BadgeRedeemError_invalidCode(TypedDict):
     type: Literal["invalidCode"]
 
+class BadgeRedeemError_invalidReceipt(TypedDict):
+    type: Literal["invalidReceipt"]
+
 class BadgeRedeemError_serviceNotConfigured(TypedDict):
     type: Literal["serviceNotConfigured"]
 
@@ -210,6 +213,7 @@ class BadgeRedeemError_credentialNotVerified(TypedDict):
 
 BadgeRedeemError = (
     BadgeRedeemError_invalidCode
+    | BadgeRedeemError_invalidReceipt
     | BadgeRedeemError_serviceNotConfigured
     | BadgeRedeemError_badgeActive
     | BadgeRedeemError_serviceError
@@ -218,9 +222,9 @@ BadgeRedeemError = (
     | BadgeRedeemError_credentialNotVerified
 )
 
-BadgeRedeemError_Tag = Literal["invalidCode", "serviceNotConfigured", "badgeActive", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
+BadgeRedeemError_Tag = Literal["invalidCode", "invalidReceipt", "serviceNotConfigured", "badgeActive", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
 
-BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "internal"]
+BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "provider_not_configured", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "test_purchase", "internal"]
 
 BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
@@ -1243,7 +1247,7 @@ ChatListQuery = ChatListQuery_filters | ChatListQuery_search
 
 ChatListQuery_Tag = Literal["filters", "search"]
 
-ChatPeerType = Literal["human", "bot", "business"]
+ChatPeerType = Literal["human", "bot", "business", "agent"]
 
 # Used in API commands. Chat scope can only be passed with groups.
 

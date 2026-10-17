@@ -314,5 +314,7 @@
     "how-secure-forward-secrecy": "前方秘匿性",
     "how-secure-two-factor-key-exchange": "2ファクタ鍵交換",
     "how-secure-post-quantum-hybrid-crypto": "ポスト量子ハイブリッド暗号",
-    "messengers-comparison-section-list-point-2": "否認可能性の対象には、クライアントとサーバー間の接続は含まれません。"
+    "messengers-comparison-section-list-point-2": "否認可能性の対象には、クライアントとサーバー間の接続は含まれません。",
+    "why-footer-link": "私たちがこれを作る理由",
+    "index-testflight-title": "TestFlight の SimpleX iOS ベータ版"
 }

@@ -29,7 +29,7 @@ struct UserProfile: View {
 
     var body: some View {
         List {
-            EditProfileImage(profileImage: $profile.image, iconName: "person.crop.circle.fill", showChooseSource: $showChooseSource)
+            EditProfileImage(profileImage: $profile.image, icon: Image(systemName: "person.crop.circle.fill"), showChooseSource: $showChooseSource)
                 .padding(.top)
 
             Section {
@@ -221,7 +221,7 @@ struct EditProfileImage: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
     @Binding var profileImage: String?
-    var iconName: String
+    var icon: Image
     @Binding var showChooseSource: Bool
 
     var body: some View {
@@ -237,7 +237,7 @@ struct EditProfileImage: View {
                 }
             } else {
                 ZStack(alignment: .center) {
-                    ProfileImage(imageStr: profileImage, iconName: iconName, size: 160)
+                    ProfileImage(imageStr: profileImage, icon: icon, size: 160)
                     editImageButton { showChooseSource = true }
                 }
             }
