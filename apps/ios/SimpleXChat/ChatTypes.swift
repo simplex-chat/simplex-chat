@@ -228,6 +228,7 @@ public enum ChatPeerType: Hashable {
     case human
     case bot
     case business
+    case agent
     case unknown(String)
 
     public var text: String {
@@ -235,6 +236,7 @@ public enum ChatPeerType: Hashable {
         case .human: "human"
         case .bot: "bot"
         case .business: "business"
+        case .agent: "agent"
         case let .unknown(s): s
         }
     }
@@ -246,6 +248,7 @@ extension ChatPeerType: Codable {
         case "human": self = .human
         case "bot": self = .bot
         case "business": self = .business
+        case "agent": self = .agent
         case let s: self = .unknown(s)
         }
     }

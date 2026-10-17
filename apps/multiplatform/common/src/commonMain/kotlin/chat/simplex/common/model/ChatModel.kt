@@ -2165,6 +2165,7 @@ sealed class ChatPeerType {
   @Serializable @SerialName("human") object Human: ChatPeerType()
   @Serializable @SerialName("bot") object Bot: ChatPeerType()
   @Serializable @SerialName("business") object Business: ChatPeerType()
+  @Serializable @SerialName("agent") object Agent: ChatPeerType()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatPeerType()
 
   val text: String
@@ -2172,6 +2173,7 @@ sealed class ChatPeerType {
       is Human -> "human"
       is Bot -> "bot"
       is Business -> "business"
+      is Agent -> "agent"
       is Unknown -> type
     }
 }
@@ -2183,6 +2185,7 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
       "human" -> ChatPeerType.Human
       "bot" -> ChatPeerType.Bot
       "business" -> ChatPeerType.Business
+      "agent" -> ChatPeerType.Agent
       else -> ChatPeerType.Unknown(v)
     }
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
