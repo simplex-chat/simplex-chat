@@ -60,10 +60,13 @@ The scope check uses the real Nix module fixed point in the Linux static CI
 group, including `pkgs` supplied through `_module.args`. Repeat it with
 `nix eval --impure --json --file scripts/nix/check-musl-iserv-scope.nix --apply 'f: f { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }'`.
 
-The i386 musl target RTS also handles duplicate hidden global functions when
-both definitions are the whole, sole member of COMDAT groups with the same
-signature. This covers GCC's `__x86.get_pc_thunk.*` PIC helpers. Coalescing is
-checked against the current symbol owner during discovery and loading; it
+The i386 musl target RTS also handles duplicate hidden global function
+signatures at the start of a sole executable COMDAT member. A known function
+size must cover the whole member. GCC's `__x86.get_pc_thunk.*` PIC helpers use
+zero symbol size (unknown extent); that case permits only the signature plus
+local untyped labels and section metadata in the member. Additional typed or
+nonlocal definitions remain errors. Coalescing is checked against the current
+symbol owner during discovery and loading; it
 does not persist weak-symbol status or suppress ordinary strong conflicts.
 Multi-member groups remain outside this patch's scope. The source patch applies
 to application and interpreter projects, including profiling. Native compilers
@@ -397,8 +400,14 @@ and the patched RTS preserves relocations in both load orders while rejecting
 ordinary strong and stale archive-owner conflicts. Both explicit RTS object
 pairs come from the same configured source; their link maps exclude the original
 archive objects. This isolated direct run completes in 4.3 seconds without a Nix
-build or configuration change. The Nix check and final i686 QEMU TH/application
-builds remain CI checks, including profiling execution.
+build or configuration change. A real GCC15 `-m32` PIC fixture then exposed
+zero-sized thunk signatures, which the initial sized-only candidate rejected.
+The corrected paired test passes in 4.8 seconds, including zero-size and mixed
+load orders, local-label preservation, and rejection of extra functions, data,
+global/weak definitions and partial extents. Extra definitions use distinct names
+in each object so unrelated duplicate symbols cannot satisfy negative controls.
+The Nix check and final i686 QEMU TH/application builds remain CI checks,
+including profiling execution.
 
 Intel Darwin reproduced its Setup GC abort and produced the direct-abort trace
 used for the info-table diagnosis above. The local renderer regression passes,

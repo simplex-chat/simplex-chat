@@ -15,7 +15,42 @@
 comdat_function:
     mov $PROBE_VALUE, %eax
     ret
+#if defined(ZERO_SIZE_FUNCTION)
+.size comdat_function, 0
+#elif defined(PARTIAL_FUNCTION)
+.size comdat_function, 1
+#else
 .size comdat_function, .-comdat_function
+#endif
+
+#if defined(EXTRA_FUNCTION)
+.local PROBE_EXTRA
+.type PROBE_EXTRA,@function
+PROBE_EXTRA:
+    ret
+.size PROBE_EXTRA, .-PROBE_EXTRA
+#elif defined(EXTRA_OBJECT)
+.local PROBE_EXTRA
+.type PROBE_EXTRA,@object
+PROBE_EXTRA:
+    .byte 0
+.size PROBE_EXTRA, .-PROBE_EXTRA
+#elif defined(EXTRA_GLOBAL)
+.globl PROBE_EXTRA
+.type PROBE_EXTRA,@notype
+PROBE_EXTRA:
+    nop
+#elif defined(EXTRA_WEAK)
+.weak PROBE_EXTRA
+.type PROBE_EXTRA,@notype
+PROBE_EXTRA:
+    nop
+#elif defined(EXTRA_LOCAL_LABEL)
+.local PROBE_EXTRA
+.type PROBE_EXTRA,@notype
+PROBE_EXTRA:
+    nop
+#endif
 
 #if defined(OTHER_SIGNATURE)
 .globl other_signature

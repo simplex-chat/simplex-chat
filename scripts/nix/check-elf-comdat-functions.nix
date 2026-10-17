@@ -45,10 +45,17 @@ in pkgs.runCommandCC "ghc914-elf-comdat-functions-check" {} ''
   done
   for variant in a b; do
     if [ "$variant" = a ]; then value=17; addend=100; else value=29; addend=200; fi
-    common=(-DPROBE_VALUE=$value -DPROBE_READER=reader_$variant -DPROBE_ADDEND=$addend)
-    for kind in comdat strong plain-group different-signature weak; do
+    common=(-DPROBE_VALUE=$value -DPROBE_READER=reader_$variant -DPROBE_ADDEND=$addend -DPROBE_EXTRA=extra_$variant)
+    for kind in comdat zero-size zero-local-label zero-extra-function zero-extra-object zero-extra-global zero-extra-weak partial strong plain-group different-signature weak; do
       flags=(-DGROUP_SIGNATURE=comdat_function)
       case "$kind" in
+        zero-size) flags+=(-DZERO_SIZE_FUNCTION) ;;
+        zero-local-label) flags+=(-DZERO_SIZE_FUNCTION -DEXTRA_LOCAL_LABEL) ;;
+        zero-extra-function) flags+=(-DZERO_SIZE_FUNCTION -DEXTRA_FUNCTION) ;;
+        zero-extra-object) flags+=(-DZERO_SIZE_FUNCTION -DEXTRA_OBJECT) ;;
+        zero-extra-global) flags+=(-DZERO_SIZE_FUNCTION -DEXTRA_GLOBAL) ;;
+        zero-extra-weak) flags+=(-DZERO_SIZE_FUNCTION -DEXTRA_WEAK) ;;
+        partial) flags+=(-DPARTIAL_FUNCTION) ;;
         strong) flags+=(-DNO_GROUP) ;;
         plain-group) flags+=(-DPLAIN_GROUP) ;;
         different-signature) flags=(-DGROUP_SIGNATURE=other_signature -DOTHER_SIGNATURE) ;;
@@ -74,15 +81,23 @@ in pkgs.runCommandCC "ghc914-elf-comdat-functions-check" {} ''
     grep -F 'comdat_function' "$out/$name.log"
   }
   expect_failure baseline-comdat "$out/baseline" "$out/comdat-a.o" "$out/comdat-b.o"
+  expect_failure baseline-zero-size "$out/baseline" "$out/zero-size-a.o" "$out/zero-size-b.o"
   timeout 15s "$out/patched" "$out/comdat-a.o" "$out/comdat-b.o" | tee "$out/comdat.txt"
   grep -Fx '[17,117,217]' "$out/comdat.txt"
   timeout 15s "$out/patched" "$out/comdat-b.o" "$out/comdat-a.o" | tee "$out/comdat-reversed.txt"
   grep -Fx '[29,129,229]' "$out/comdat-reversed.txt"
+  for kind in zero-size zero-local-label zero-mixed; do
+    if [ "$kind" = zero-mixed ]; then first=zero-size; second=comdat; else first=$kind; second=$kind; fi
+    timeout 15s "$out/patched" "$out/$first-a.o" "$out/$second-b.o" | tee "$out/$kind.txt"
+    grep -Fx '[17,117,217]' "$out/$kind.txt"
+    timeout 15s "$out/patched" "$out/$second-b.o" "$out/$first-a.o" | tee "$out/$kind-reversed.txt"
+    grep -Fx '[29,129,229]' "$out/$kind-reversed.txt"
+  done
   for executable in baseline patched; do
     timeout 15s "$out/$executable" "$out/weak-a.o" "$out/weak-b.o" | tee "$out/$executable-weak.txt"
     grep -Fx '[17,117,217]' "$out/$executable-weak.txt"
   done
-  for kind in strong plain-group; do
+  for kind in strong plain-group partial zero-extra-function zero-extra-object zero-extra-global zero-extra-weak; do
     expect_failure "$kind" "$out/patched" "$out/$kind-a.o" "$out/$kind-b.o"
   done
   expect_failure different-signature "$out/patched" "$out/different-signature-a.o" "$out/comdat-b.o"
