@@ -44,6 +44,12 @@ class Matrix(unittest.TestCase):
             "hydraJobs.x86_64-linux.armv7a-android:lib:support",
         ])
 
+    def test_windows_dispatch_is_exactly_the_existing_two_outputs(self):
+        self.assertEqual(outputs("windows"), [
+            "hydraJobs.x86_64-linux.x86_64-windows:exe:simplex-chat",
+            "hydraJobs.x86_64-linux.x86_64-windows:lib:simplex-chat",
+        ])
+
     def test_manual_groups_have_distinct_queues_without_changing_pr_or_push_keys(self):
         source = (HERE.parent.parent / ".github/workflows/nix.yml").read_text()
         groups = re.findall(r"^  group: (.*)$", source, re.MULTILINE)
@@ -64,10 +70,10 @@ class Matrix(unittest.TestCase):
             return "nix-Nix Haskell builds-refs/heads/branch" + suffix_value
 
         for event in ["pull_request", "push"]:
-            for group in [None, "all", "linux-static", "android"]:
+            for group in [None, "all", "linux-static", "android", "windows"]:
                 self.assertEqual(queue_key(event, group), "nix-Nix Haskell builds-refs/heads/branch")
-        keys = [queue_key("workflow_dispatch", group) for group in ["all", "linux-static", "android"]]
-        self.assertEqual(len(set(keys)), 3)
+        keys = [queue_key("workflow_dispatch", group) for group in ["all", "linux-static", "android", "windows"]]
+        self.assertEqual(len(set(keys)), 4)
         self.assertEqual(queue_key("workflow_dispatch", ""), keys[0])
         self.assertEqual(queue_key("workflow_dispatch", None), keys[0])
 
@@ -99,8 +105,8 @@ class Matrix(unittest.TestCase):
 
     def test_unknown_group_rejected(self):
         with self.assertRaises(ValueError):
-            matrix.select("windows")
-        result = subprocess.run(["python3", str(HERE / "ci-matrix.py"), "--group", "windows"],
+            matrix.select("unknown")
+        result = subprocess.run(["python3", str(HERE / "ci-matrix.py"), "--group", "unknown"],
                                 capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")

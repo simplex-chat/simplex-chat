@@ -1,5 +1,6 @@
 # Failure-only replay of the exact canonical Windows TH component. Source,
-# plan, compiler arguments, Wine wrapper and normal/profile selection stay put.
+# plan and normal/profile selection stay put. A copied Wine wrapper changes
+# only its debug-channel value; the canonical component stays untouched.
 { original, strace, expectedDrv }:
 let
   needle = "    printf '#!/bin/sh\\nexec %s \"$@\"\\n' \"$g\" > \"$wrapBin/$gName\"";
@@ -21,8 +22,10 @@ let
       # PROXY_ARGS change: their positions differ from this protocol's --pipe.
       export ISERV_ARGS=-v
       : "''${NIX_BUILD_TOP:?Windows TH diagnostic requires NIX_BUILD_TOP}"
+      debugDir=$(mktemp -d "$NIX_BUILD_TOP/windows-th-wine-debug.XXXXXX") || exit 1
+      debugPgmi=$(sh ${./windows-th-wine-debug.sh} "$realGhc" "$debugDir") || exit 1
       touch "$NIX_BUILD_TOP/windows-th-trace-attempted"
-      exec timeout --kill-after=30s 300s ${strace}/bin/strace -f -tt -T -s 80 "$realGhc" "$@"
+      exec timeout --kill-after=30s 300s ${strace}/bin/strace -f -tt -T -s 80 "$realGhc" "$@" -pgmi "$debugPgmi"
     fi
     exec "$realGhc" "$@"
     SIMPLEX_WINDOWS_TH_TRACE

@@ -16,6 +16,18 @@ spec.loader.exec_module(gate)
 SELECTED = "/nix/store/" + "0" * 32 + "-" + gate.COMPONENT + ".drv"
 DEP = "/nix/store/" + "1" * 32 + "-dependency.drv"
 NEEDLE = '    printf \'#!/bin/sh\\nexec %s "$@"\\n\' "$g" > "$wrapBin/$gName"'
+WINEDEBUG = "WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag"
+
+
+def store_iserv(temp, *, normal=None, profiled=None):
+    """Import tiny script inputs, not a derivation or a compiler."""
+    source = Path(temp) / "iserv-wrapper"
+    (source / "bin").mkdir(parents=True)
+    for suffix, content in [("", normal), ("-prof", profiled)]:
+        path = source / ("bin/iserv-wrapper" + suffix)
+        path.write_text(content if content is not None else "#!/bin/sh\n" + WINEDEBUG + " true \"$@\"\n")
+        path.chmod(0o755)
+    return subprocess.check_output(["nix-store", "--add", str(source)], text=True).strip() + "/bin/iserv-wrapper"
 
 
 def document(modern=True):
@@ -135,6 +147,7 @@ class Wrapper(unittest.TestCase):
             temp = Path(temp)
             (temp / "trace/bin").mkdir(parents=True)
             (temp / "wrappers").mkdir()
+            selected_iserv = store_iserv(temp)
             fake = '''#!/usr/bin/env python3
 import json, os, sys
 kind = os.path.basename(sys.argv[0])
@@ -147,7 +160,7 @@ sys.exit(int(os.environ.get("GHC_EXIT", "0")))
 '''
             for name in ["ghc", "timeout", "trace/bin/strace"]:
                 path = temp / name
-                path.write_text(fake)
+                path.write_text(fake.replace("import json, os, sys", f"# -pgmi {selected_iserv}\nimport json, os, sys"))
                 path.chmod(0o755)
             phase = f'g={temp}/ghc\nwrapBin={temp}/wrappers\ngName=ghc\n' + NEEDLE + '\nchmod +x "$wrapBin/$gName"\nexit 0\n'
             rendered = self.render(phase, temp)
@@ -171,11 +184,77 @@ sys.exit(int(os.environ.get("GHC_EXIT", "0")))
                     self.assertEqual(actual.returncode, status)
                     records = [json.loads(line) for line in capture.read_text().splitlines()]
                     self.assertEqual([r["kind"] for r in records], ["timeout", "strace", "ghc"] if compile_call else ["ghc"])
-                    self.assertEqual(records[-1]["args"], args)
+                    ghc_args = records[-1]["args"]
+                    if compile_call:
+                        self.assertEqual(ghc_args[:-2], args)
+                        self.assertEqual(ghc_args[-2], "-pgmi")
+                        selected_debug = Path(ghc_args[-1])
+                        self.assertEqual(selected_debug.name, "iserv-wrapper")
+                        for suffix in ["", "-prof"]:
+                            copied = Path(str(selected_debug) + suffix).read_text()
+                            original = Path(selected_iserv + suffix).read_text()
+                            self.assertEqual(copied.replace(WINEDEBUG + ",+seh,+loaddll", WINEDEBUG), original)
+                    else:
+                        self.assertEqual(ghc_args, args)
                     self.assertEqual(records[-1]["iserv"], "-v" if compile_call else "ambient")
                     self.assertEqual(actual.stdout, "query-control\n")
                     if compile_call:
                         self.assertEqual(records[1]["args"][:5], ["-f", "-tt", "-T", "-s", "80"])
+
+
+class WineDebug(unittest.TestCase):
+    def run_copy(self, ghc, destination):
+        return subprocess.run(["sh", str(HERE / "windows-th-wine-debug.sh"), str(ghc), str(destination)],
+                              capture_output=True, text=True)
+
+    def test_copies_only_debug_value_for_both_interpreters(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            script = """#!/bin/sh
+unset configureFlags
+REMOTE_ISERV=unchanged
+WINEDLLOVERRIDES=unchanged WINEDEBUG_VALUE WINEPREFIX="$TMP" python3 -c 'import json,os,sys; print(json.dumps([os.environ["WINEDEBUG"],os.environ["WINEPREFIX"],sys.argv[1:]]))' "$@"
+""".replace("WINEDEBUG_VALUE", WINEDEBUG)
+            original = store_iserv(temp, normal=script, profiled=script.replace("unchanged", "profiled"))
+            ghc = temp / "ghc"
+            ghc.write_text("#!/bin/sh\n# -pgmi " + original + "\n")
+            copied = self.run_copy(ghc, temp / "debug")
+            self.assertEqual(copied.returncode, 0, copied.stderr)
+            self.assertEqual(copied.stdout.strip(), str(temp / "debug/iserv-wrapper"))
+            for suffix in ["", "-prof"]:
+                target = Path(copied.stdout.strip() + suffix)
+                subprocess.run(["sh", "-n", str(target)], check=True)
+                self.assertEqual(target.read_text().replace(WINEDEBUG + ",+seh,+loaddll", WINEDEBUG),
+                                 Path(original + suffix).read_text())
+                env = dict(os.environ, TMP="same-prefix")
+                result = subprocess.run([str(target), "a b", "quote'and\"", "-v"], env=env,
+                                        capture_output=True, text=True, check=True)
+                debug, prefix, args = json.loads(result.stdout)
+                self.assertEqual(debug, WINEDEBUG.removeprefix("WINEDEBUG=") + ",+seh,+loaddll")
+                self.assertEqual(prefix, "same-prefix")
+                self.assertEqual(args, ["a b", "quote'and\"", "-v"])
+
+    def test_rejects_changed_or_ambiguous_originals(self):
+        for case in ["missing-path", "two-paths", "missing-assignment", "two-assignments", "missing-profile"]:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temp:
+                temp = Path(temp)
+                script = "#!/bin/sh\n" + WINEDEBUG + " true\n"
+                if case == "missing-assignment": script = "#!/bin/sh\ntrue\n"
+                if case == "two-assignments": script += WINEDEBUG + " true\n"
+                selected = store_iserv(temp, normal=script)
+                if case == "missing-profile":
+                    # A valid store path without the paired script must fail,
+                    # without changing any existing store object.
+                    source = temp / "unpaired/iserv-wrapper/bin"
+                    source.mkdir(parents=True)
+                    path = source / "iserv-wrapper"
+                    path.write_text(script)
+                    path.chmod(0o755)
+                    selected = subprocess.check_output(["nix-store", "--add", str(source.parent)], text=True).strip() + "/bin/iserv-wrapper"
+                ghc = temp / "ghc"
+                ghc.write_text("none" if case == "missing-path" else selected + ("\n" + selected if case == "two-paths" else ""))
+                result = self.run_copy(ghc, temp / "debug")
+                self.assertEqual(result.returncode, 1, result.stderr)
 
 
 if __name__ == "__main__":

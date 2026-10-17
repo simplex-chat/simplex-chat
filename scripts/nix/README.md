@@ -219,7 +219,8 @@ native Linux build therefore leaves the cross-build jobs running. PRs, pushes,
 and default manual runs retain that complete matrix. A manual dispatch can
 select the existing three `linux-static` outputs with
 `gh workflow run nix.yml --ref BRANCH -f group=linux-static`, or the four Android
-outputs with `gh workflow run nix.yml --ref BRANCH -f group=android`. The registered
+outputs with `gh workflow run nix.yml --ref BRANCH -f group=android`, or the two
+Windows outputs with `gh workflow run nix.yml --ref BRANCH -f group=windows`. The registered
 workflow can run on a branch containing this workflow file; it does not require
 that file on the default branch. Runs for the same workflow/ref queue without
 canceling an active run; manual groups have separate queues. Legacy PR build jobs also preserve running
@@ -237,15 +238,20 @@ the normal 7,200-second per-derivation limit. It then builds that exact componen
 with a 300-second limit; success is reused by the full Windows build. A failure
 keeps the job red and skips the full outputs. CI replays only that failed
 component in a separate diagnostic derivation, with `ISERV_ARGS=-v` and
-`strace -f -tt -T -s 80` around compiler calls. Compiler queries, original GHC
-arguments, the Wine/DLL wrapper and its normal/profile selection stay unchanged.
+`strace -f -tt -T -s 80` around compiler calls. It copies the exact selected Wine
+scripts and appends `+seh,+loaddll` to their pinned `WINEDEBUG` value, with an
+assertion that no other script bytes change. Only compile calls receive the
+copied `-pgmi` path. Compiler queries, source/plan, original arguments, DLL
+collection, Wine prefix and normal/profile selection stay unchanged.
 The trace has a 15-minute step bound and a 300-second per-derivation limit;
 strace is fetched from caches only. Logs and the selected derivation/input
 metadata are uploaded even on failure. Repeat the canonical gate on Linux with
 `python3 scripts/nix/windows-th-gate.py prepare` followed by
 `python3 scripts/nix/windows-th-gate.py build`; use `trace` only after a failed
 canonical attempt. These commands use the committed checkout and preserve the
-canonical Nix core setting. The diagnostic changes its derivation and process
+canonical Nix core setting. A fresh Wine prefix and full syscall tracing can
+consume most of the diagnostic budget; a timeout does not identify a deadlock.
+The diagnostic changes its derivation and process
 environment; it does not qualify a Windows artifact or change the failed result.
 
 After a failed native x86_64 Linux library build, CI tries a separate derivation
