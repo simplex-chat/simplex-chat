@@ -25,6 +25,7 @@ let
             profiling = lib.mkOption { type = lib.types.bool; };
             cabalProjectLocal = lib.mkOption { type = lib.types.lines; default = ""; };
             src = lib.mkOption { type = lib.types.anything; default = null; };
+            modules = lib.mkOption { type = lib.types.listOf lib.types.anything; default = []; };
           };
           config = {
             inherit name builderVersion profiling;

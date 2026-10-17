@@ -60,6 +60,24 @@ The scope check uses the real Nix module fixed point in the Linux static CI
 group, including `pkgs` supplied through `_module.args`. Repeat it with
 `nix eval --impure --json --file scripts/nix/check-musl-iserv-scope.nix --apply 'f: f { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }'`.
 
+The i386 musl target RTS also handles duplicate hidden global functions when
+both definitions are the whole, sole member of COMDAT groups with the same
+signature. This covers GCC's `__x86.get_pc_thunk.*` PIC helpers. Coalescing is
+checked against the current symbol owner during discovery and loading; it
+does not persist weak-symbol status or suppress ordinary strong conflicts.
+Multi-member groups remain outside this patch's scope. The source patch applies
+to application and interpreter projects, including profiling. Native compilers
+and other cross targets keep their existing RTS sources.
+
+Run the native x86_64 Linux regression with
+`nix build .#checks.x86_64-linux.ghc-elf-comdat-functions --no-link -L --max-jobs 1 --timeout 7200`.
+It links the same configured RTS sources with and without the patch, verifies
+the replacement objects in both linker maps, checks relocations in both load
+orders, and rejects strong conflicts and stale archive-owner decisions. Each
+probe has a 15-second bound. Module scope is checked separately by
+`scripts/nix/check-musl-rts-scope.nix` using the same invocation as the iserv
+scope check above.
+
 Windows patches Basement's `INVALID_HANDLE_VALUE` expression to `INT_PTR`, so
 hsc2hs receives the signed pointer-sized integer expected by the Haskell API.
 The generated constant converts through Haskell `Int` with `Prelude.fromIntegral`;
@@ -358,6 +376,17 @@ only three iserv configure arguments disable executable-static; the other 92
 records are byte-identical. The changed project skeleton rebuilds auxiliary boot
 derivations. An i686/QEMU C control reproduces the old static-loader error and
 loads the same `libz.so` with dynamic C linkage.
+
+The newer focused static run `38974180411` at `43262a5c0` built and installed
+both normal and profiling i686 interpreters after the private-symbol fix. Its
+x86_64 static CLI also built. The i686 `wai-app-static` Template Haskell splice
+then failed: the runtime linker rejected duplicate `__x86.get_pc_thunk.bx` and
+`.ax` definitions before unresolved lookups, a QEMU target SIGSEGV, and proxy
+EOF. The scoped COMDAT candidate cross-compiles both changed C files against
+real GHC 9.14 headers with the original warning messages unchanged. Its physical
+source producer changes exactly `Linker.c`, `linker/Elf.c`, and `linker/Elf.h`.
+The runtime regression and final i686 TH/application builds remain unverified,
+including profiling execution.
 
 Intel Darwin reproduced its Setup GC abort and produced the direct-abort trace
 used for the info-table diagnosis above. The local renderer regression passes,

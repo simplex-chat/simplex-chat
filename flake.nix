@@ -671,6 +671,10 @@
         hydraJobs = packages;
 
         checks = pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          ghc-elf-comdat-functions = import ./scripts/nix/check-elf-comdat-functions.nix {
+            inherit pkgs;
+            compiler = (compilerSelection pkgs).ghc914-sh;
+          };
           ghc-elf-alignment = import ./scripts/nix/check-elf-alignment.nix {
             inherit pkgs;
             compiler = (compilerSelection pkgs).ghc914-sh;

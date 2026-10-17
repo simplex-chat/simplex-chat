@@ -106,6 +106,13 @@ jobs:
         run: |
           nix eval --impure --json --file scripts/nix/check-musl-iserv-scope.nix \
             --apply 'f: f { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }'
+          nix eval --impure --json --file scripts/nix/check-musl-rts-scope.nix \
+            --apply 'f: f { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }'
+
+      - name: Check scoped ELF COMDAT function coalescing
+        if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'linux-static' }}
+        timeout-minutes: 120
+        run: nix build .#checks.x86_64-linux.ghc-elf-comdat-functions --no-link -L --max-jobs 1 --timeout "$NIX_BUILD_TIMEOUT"
 
       - name: Check Intel Setup failure selection
         if: ${{ matrix.system == 'x86_64-darwin' && matrix.target == 'all' }}
