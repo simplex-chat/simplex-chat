@@ -19,17 +19,18 @@ fi
 
 root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
 cd $root_dir
-BUILD_DIR=dist-newstyle/build/$ARCH-$OS/ghc-${GHC_VERSION}/simplex-chat-*
+DIST_DIR="${DIST_DIR:-dist-newstyle}"
+BUILD_DIR=$DIST_DIR/build/$ARCH-$OS/ghc-${GHC_VERSION}/simplex-chat-*
 
 scripts/desktop/check-exports.sh
 
 #rm -rf $BUILD_DIR
 if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
     echo "Building with postgres backend..."
-    cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres'
+    cabal build --builddir="$DIST_DIR" lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres'
 else
     echo "Building with sqlite backend..."
-    cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
+    cabal build --builddir="$DIST_DIR" lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
 fi
 cd $BUILD_DIR/build
 mv libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so libsimplex.so 2> /dev/null || true

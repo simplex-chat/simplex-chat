@@ -8139,7 +8139,7 @@ sealed class StoreError {
       is UserChatRelayNotFound -> "userChatRelayNotFound $chatRelayId"
       is GroupRelayNotFound -> "groupRelayNotFound $groupRelayId"
       is GroupRelayNotFoundByMemberId -> "groupRelayNotFoundByMemberId $groupMemberId"
-      is DuplicateGroupMessage -> "duplicateGroupMessage $groupId $sharedMsgId $authorGroupMemberId $authorGroupMemberId"
+      is DuplicateGroupMessage -> "duplicateGroupMessage $groupId $sharedMsgId $authorGroupMemberId $forwardedByGroupMemberId"
       is RemoteHostNotFound -> "remoteHostNotFound $remoteHostId"
       is RemoteHostUnknown -> "remoteHostUnknown"
       is RemoteHostDuplicateCA -> "remoteHostDuplicateCA"

@@ -1247,7 +1247,7 @@ ChatListQuery = ChatListQuery_filters | ChatListQuery_search
 
 ChatListQuery_Tag = Literal["filters", "search"]
 
-ChatPeerType = Literal["human", "bot", "business"]
+ChatPeerType = Literal["human", "bot", "business", "agent"]
 
 # Used in API commands. Chat scope can only be passed with groups.
 
