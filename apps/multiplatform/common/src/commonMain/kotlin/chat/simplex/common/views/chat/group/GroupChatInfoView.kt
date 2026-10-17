@@ -77,7 +77,7 @@ fun ModalData.GroupChatInfoView(
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && chat.chatInfo is ChatInfo.Group && currentUser != null) {
     val groupInfo = chat.chatInfo.groupInfo
-    val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
+    val sendReceipts = remember(groupInfo.id) { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
     val chatItemTTL = remember(groupInfo.id) { mutableStateOf(if (groupInfo.chatItemTTL != null) ChatItemTTL.fromSeconds(groupInfo.chatItemTTL) else null) }
     val deletingItems = rememberSaveable(groupInfo.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -421,8 +421,7 @@ fun MuteButton(
   chat: Chat,
   groupInfo: GroupInfo
 ) {
-  val notificationMode = remember { mutableStateOf(groupInfo.chatSettings.enableNtfs) }
-  val nextNotificationMode by remember { derivedStateOf { notificationMode.value.nextMode(true) } }
+  val nextNotificationMode = groupInfo.chatSettings.enableNtfs.nextMode(true)
 
   InfoViewActionButton(
     modifier = modifier,
@@ -431,7 +430,7 @@ fun MuteButton(
     disabled = !groupInfo.ready,
     disabledLook = !groupInfo.ready,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNotificationMode, chatModel, notificationMode)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNotificationMode, chatModel)
     }
   )
 }
@@ -545,8 +544,8 @@ fun ModalData.GroupChatInfoLayout(
   KeyChangeEffect(chat.id) {
     scope.launch { listState.scrollToItem(0) }
   }
-  val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
-  val filteredMembers = remember(activeSortedMembers) {
+  val searchText = remember(chat.id) { stateGetOrPut("searchText:${chat.id}") { TextFieldValue() } }
+  val filteredMembers = remember(activeSortedMembers, searchText) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
       if (s.isEmpty()) activeSortedMembers else activeSortedMembers.filter { m -> m.anyNameContains(s) }
