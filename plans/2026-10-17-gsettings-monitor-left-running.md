@@ -15,13 +15,13 @@ Reproduced with the master AppImage: each launch and clean quit added one such p
 A JVM shutdown hook, registered where the listener is registered, sends SIGTERM to the app's direct child processes whose executable path contains `gsettings`.
 
 - It is installed once, when the detector is created, i.e. only when the monitor can exist.
-- The filter is needed: other children must survive the exit (on Windows the updater starts `msiexec` and exits at once). `contains` rather than `endsWith("/gsettings")`: after a glib upgrade the running binary's path is `/usr/bin/gsettings (deleted)`; NixOS wrappers are named `.gsettings-wrapped`.
+- The filter is needed: other children must survive the exit (on Linux the app also starts `notify-send`, `xdg-mime`, and `xdg-open` for the downloaded `.deb` update). `contains` rather than `endsWith("/gsettings")`: after a glib upgrade the running binary's path is `/usr/bin/gsettings (deleted)`; NixOS wrappers are named `.gsettings-wrapped`.
 - A `gsettings get` from the detector's `isDark()` that happens to run at that moment is stopped too; harmless at exit.
-- On macOS and Windows the hook finds no such child.
+- It is installed on Linux only; on macOS and Windows the library starts no child process.
 
 Alternatives considered:
 - `detector.removeListener` on exit: only interrupts the thread, which is blocked in `readLine()`; the process is not destroyed.
-- Destroying all children: kills the Windows installer and other handlers.
+- Destroying all children: kills the `.deb` installer opened by the updater and other handlers.
 - Stopping it at `exitProcess(0)` in `DesktopApp.kt`: misses SIGTERM/SIGHUP (session logout).
 - Upgrading the library: its current master still does not stop the monitor on exit.
 
