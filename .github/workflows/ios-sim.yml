@@ -77,7 +77,13 @@ jobs:
           BACKEND: ${{ steps.jobs.outputs.backend }}
         run: |
           backend=$(sed -n 's/^backend: *//p' scripts/ci/ios-sim/claude-scope)
-          echo "backend=$backend" | tee -a "$GITHUB_OUTPUT"
+          case "$backend" in
+            yes | no) echo "backend=$backend" | tee -a "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::claude-scope must say backend: yes or backend: no"
+              exit 1
+              ;;
+          esac
           if [ "$backend" = yes ] && [ "$BACKEND" != true ]; then
             echo "::error::claude-scope says the Claude sessions use the test backend: ask for it too"
             exit 1
