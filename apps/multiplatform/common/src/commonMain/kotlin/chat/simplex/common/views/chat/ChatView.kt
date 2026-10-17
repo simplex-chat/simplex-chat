@@ -453,7 +453,7 @@ fun ChatView(
                       }
                       GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, linkLoaded, selectedItems, appBar, scrollToItemId, {
                         link = it
-                        preloadedLink = it
+                        if (chatInfo.id == preloadedChatId) preloadedLink = it
                       }, close, { showSearch.value = true })
                     } else {
                       LaunchedEffect(Unit) {
