@@ -1,6 +1,6 @@
 # Desktop: notification sound
 
-Status: draft rev 10 (after review round 7). All decisions taken 2026-10-17. Windows sound is gated by verification V1. Base: `origin/master` a932c8298. Paths are relative to `apps/multiplatform`.
+Status: draft rev 11 (aligned with the Windows plan rev 12). All decisions taken 2026-10-17. Windows sound is gated by verification V1. Base: `origin/master` a932c8298. Paths are relative to `apps/multiplatform`.
 Related plans: [turn off](2026-10-17-desktop-notifications-turn-off.md), [Windows click](2026-10-17-windows-notification-click.md). Research notes: `~/ntf-research/twoslices-findings.md`, `pipeline-findings.md`, `windows-findings.md`.
 
 ## Problem
@@ -87,7 +87,7 @@ Narrative: when desktop shows a chat notification, it also plays the notificatio
    - Toggle on, with the Windows click plan: toasts carry `<audio silent="true"/>`, and the app's sound plays from the toast thread only after Windows accepted the toast (that plan's `onShown`). The result is one sound, under the in-app toggle and the 3 s limit, and none when SimpleX is off in Windows. Under Focus Assist, Windows accepts the toast without a popup, and the sound still plays (D4).
    - Toggle on, before that plan (two-slices balloon): **V1** is a test on Windows of whether the balloon makes its own sound. It runs on a fresh Windows user with default settings, with SimpleX's per-app sound switch both on and off. "Silent" means silent with the switch **on**.
      - If it is silent, ship as designed.
-     - If it sounds, there would be two sounds. Then the toggle is hidden on Windows until the Windows click plan lands, and the Settings → Notifications section footer on Windows says sound follows Windows settings. The result also sets that plan's `BALLOON_SILENT` constant.
+     - If it sounds, there would be two sounds. Then the toggle is hidden on Windows until the Windows click plan lands, and the Settings → Notifications section footer on Windows says sound follows Windows settings. The Windows click plan's toaster commit removes that hiding and the footer. The result also sets that plan's `BALLOON_SILENT` constant.
 6. **Preference**: `val desktopNotificationSound = mkBoolPreference(SHARED_PREFS_DESKTOP_NOTIFICATION_SOUND, false)` (D5: off by default), key `"DesktopNotificationSound"`, declared next to the turn-off plan's `desktopNotifications`. Not in `hintPreferences` or `AppSettings`.
 7. **UI**: in Settings → Notifications (the turn-off plan's desktop screen), on all desktop OSes (subject to V1):
 
@@ -114,7 +114,7 @@ Feature off (`desktopNotificationSound = false`, the default) = today's app, plu
 - Muted chats and muted inactive profiles never sound, because the sound runs after the same gates as the notification. Mentions-only chats sound only for mentions.
 - The active profile, including an active hidden one, sounds like any notification: the sound adds no information beyond the notification.
 - Contact requests have no mute gate, so a stranger can trigger at most one sound per 3 s by sending requests to a public address. That is the same exposure as the existing notification.
-- The microphone would record the chime into a voice message, so the app plays no sound while recording, in a call, or while a call rings. On Windows, WinRT message toasts are silenced then too. Call and error toasts are silenced while recording or in a call; a second call toast while one call rings keeps the Windows sound. A fallback balloon may still sound when `BALLOON_SILENT = false` (a Windows plan known limit).
+- The microphone would record the chime into a voice message, so the app plays no sound while recording, in a call, or while a call rings. On Windows, WinRT message and error toasts are silenced then too, and call toasts are always silent (the in-app ring plays). A fallback balloon may still sound when `BALLOON_SILENT = false` (a Windows plan known limit).
 - Bystanders hear that a message arrived. Off by default; the toggle is the control.
 - An audio failure never touches the notification path. A broken or missing asset disables the sound for the session; a device error skips only that sound.
 
