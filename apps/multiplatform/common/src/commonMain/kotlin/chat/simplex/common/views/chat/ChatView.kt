@@ -443,7 +443,7 @@ fun ChatView(
                       var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedLink else null) }
                       var linkLoaded by remember(chatInfo.id) { mutableStateOf(chatInfo.id == preloadedChatId) }
                       LaunchedEffect(chatInfo.id) {
-                        if (chatInfo.id == preloadedChatId) return@LaunchedEffect
+                        if (chatInfo.id == preloadedChatId && chatModel.membersLoaded.value) return@LaunchedEffect
                         preloadedChatId = null
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
