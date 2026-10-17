@@ -274,7 +274,7 @@ expect_avatars top
 "$ui" layout reachable
 
 # with a conversation the chat list replaces the onboarding pages, and has cards around the chats
-type_search "ci cards"
+type_search "ci_cards"
 search_directory "#ci_cards"
 "$ui" tap "#ci_cards"
 "$ui" tap "Open channel" 30
@@ -283,6 +283,15 @@ search_directory "#ci_cards"
 "$ui" wait "you are subscriber" 60
 "$ui" shot joined-channel
 "$ui" tap Back
+# the search text matches the joined channel, so the list shows it as a chat, and its Directory row must be gone
+"$ui" shot joined-channel-search
+expect_in_tree -F 'StaticText "ci_cards"'
+tree=$("$ui" tree)
+if grep -qF '"#ci_cards"' <<< "$tree"; then
+  echo "error: the Directory row #ci_cards is still shown next to the chat opened from it"
+  exit 1
+fi
+echo "after joining from its Directory row, ci_cards is a chat in the search results and its Directory row is gone"
 clear_search
 expect_cards_hidden_by_results reachable
 "$ui" layout top
