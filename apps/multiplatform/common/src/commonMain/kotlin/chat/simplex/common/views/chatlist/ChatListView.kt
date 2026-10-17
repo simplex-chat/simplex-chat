@@ -483,7 +483,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
             state = resultsState,
             reverseLayout = oneHandUI.value
           ) {
-            nameRows(rows.names, oneHandUI.value)
+            nameRows(rows.names, onlineSearch, oneHandUI.value)
             directoryRows(rows, onlineSearch, oneHandUI.value)
             if (!onlineSearch.searching && rows.isEmpty) {
               item {
@@ -514,7 +514,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
   }
 }
 
-private fun LazyListScope.nameRows(names: List<NameSearchResult>, oneHandUI: Boolean) {
+private fun LazyListScope.nameRows(names: List<NameSearchResult>, onlineSearch: OnlineSearchModel, oneHandUI: Boolean) {
   if (names.isNotEmpty()) {
     searchPart(MR.strings.online_search_names, oneHandUI) {
       items(names, key = { it.id }) { result ->
@@ -523,7 +523,7 @@ private fun LazyListScope.nameRows(names: List<NameSearchResult>, oneHandUI: Boo
           result,
           Modifier.clickable {
             hideKeyboard(view)
-            withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = null, cleanup = null) }
+            withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = null, cleanup = { withApi { onlineSearch.refreshLocalChatIds() } }) }
           }
         )
       }
@@ -540,7 +540,7 @@ private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: On
           result.entry,
           Modifier.clickable {
             hideKeyboard(view)
-            withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = null, cleanup = null) }
+            withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = null, cleanup = { withApi { onlineSearch.refreshLocalChatIds() } }) }
           }
         )
       }
@@ -1203,7 +1203,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    nameRows(rows.names, oneHandUI.value)
+    nameRows(rows.names, onlineSearch, oneHandUI.value)
     directoryRows(rows, onlineSearch, oneHandUI.value)
     if (showsCards && !addressCreationCardShown.value) {
       item {

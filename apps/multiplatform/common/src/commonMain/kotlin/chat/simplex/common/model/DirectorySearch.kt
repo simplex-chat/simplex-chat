@@ -122,6 +122,9 @@ class NameSearchResult private constructor(
 ) {
   val id: String get() = target
 
+  fun withLocalChatId(localChatId: ChatId?): NameSearchResult =
+    NameSearchResult(target, simplexName, profileName, descr, image, iconName, localChatId, resolvedLink)
+
   companion object {
     operator fun invoke(target: String, result: ConnectionPlanResult): NameSearchResult? {
       val profile: NamedChat?

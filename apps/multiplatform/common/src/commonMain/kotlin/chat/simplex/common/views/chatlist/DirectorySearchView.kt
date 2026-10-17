@@ -139,6 +139,28 @@ class OnlineSearchModel {
     )
   }
 
+  // a chat opened from a result exists only once its connection flow ends, so rows without a chat look again then
+  suspend fun refreshLocalChatIds() {
+    val rh = chatModel.remoteHostId()
+    val gen = generation
+    val nameChatIds = mutableMapOf<String, ChatId>()
+    for (result in names) {
+      if (result.localChatId == null) localChatId(rh, result.target)?.let { nameChatIds[result.id] = it }
+    }
+    val directoryChatIds = mutableMapOf<String, ChatId>()
+    for (result in directory) {
+      if (result.localChatId == null) localChatId(rh, result.entry.link)?.let { directoryChatIds[result.id] = it }
+    }
+    if (gen != generation) return
+    names = names.map { r -> r.withLocalChatId(r.localChatId ?: nameChatIds[r.id]) }
+    directory = directory.map { r -> r.copy(localChatId = r.localChatId ?: directoryChatIds[r.id]) }
+  }
+
+  private suspend fun localChatId(rh: Long?, link: String): ChatId? {
+    val plan = chatModel.controller.apiConnectPlan(rh, link, resolveMode = PlanResolveMode.PRMNever, inProgress = mutableStateOf(false), onFailure = ConnectPlanFailure.Log)
+    return plan?.let { planLocalChatId(it.connectionPlan) }
+  }
+
   private suspend fun resolveNames(name: String, gen: Int) {
     val rh = chatModel.remoteHostId()
     val targets = if (name.startsWith("@") || name.startsWith("#")) listOf(name) else listOf("@$name", "#$name")
@@ -168,8 +190,7 @@ class OnlineSearchModel {
       val seen = directory.map { it.id }.toMutableSet()
       for (entry in r.entries) {
         if (!seen.add(entry.id)) continue
-        val plan = chatModel.controller.apiConnectPlan(rh, entry.link, resolveMode = PlanResolveMode.PRMNever, inProgress = mutableStateOf(false), onFailure = ConnectPlanFailure.Log)
-        page.add(DirectoryResult(entry = entry, localChatId = plan?.let { planLocalChatId(it.connectionPlan) }))
+        page.add(DirectoryResult(entry = entry, localChatId = localChatId(rh, entry.link)))
       }
     }
     if (gen != generation) return
