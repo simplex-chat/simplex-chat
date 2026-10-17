@@ -123,8 +123,10 @@ package patch list is empty to prevent a second application.
 For this Windows GHC 9.14 package, the Nix dependency resolver also recognizes
 lowercase `crypt32` as an implicit MinGW import library, matching the existing
 `Crypt32` mapping. Cabal keeps the lowercase library declaration and linker flag;
-all other package/library mappings stay intact. The focused resolver check uses
-the real haskell.nix plan and package modules without building a compiler:
+all other package/library mappings stay intact. The external platform/compiler
+guard omits the package definition entirely from excluded projects, which may
+not contain x509 in their keyed package schema. The focused resolver check uses
+the real haskell.nix keyed plan and package modules without building a compiler:
 
 ```sh
 nix eval --impure --json --file scripts/nix/check-windows-crypt32.nix \

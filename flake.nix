@@ -46,7 +46,8 @@
       let compilerSelection = import ./scripts/nix/compiler-selection.nix { inherit haskellNix; }; in
       let mobileRuntime = import ./scripts/nix/mobile-runtime.nix { inherit pkgs compilerSelection; }; in
       let drv' = { extra-modules, pkgs', package-flags ? {}, package-ghc-options ? {}, mobile ? false, ... }:
-      let packageFlags = pkgs.lib.recursiveUpdate {
+      let compilerNixName = "ghc914-sh";
+      packageFlags = pkgs.lib.recursiveUpdate {
         direct-sqlcipher = { openssl = true; commoncrypto = false; tomcrypt = false; };
       } package-flags;
       projectGhcOptions = import ./scripts/nix/project-ghc-options.nix {
@@ -82,7 +83,7 @@
         ++ androidPthreads.packageSources
         ++ darwinBitvec.packageSources;
       in {
-        compiler-nix-name = "ghc914-sh";
+        compiler-nix-name = compilerNixName;
         inherit compilerSelection;
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
@@ -167,7 +168,10 @@
           )
 
           ] ++ darwinBitvec.modules ++ [
-            (import ./scripts/nix/windows-crypt32.nix { hostPlatform = pkgs'.stdenv.hostPlatform; })
+            (import ./scripts/nix/windows-crypt32.nix {
+              hostPlatform = pkgs'.stdenv.hostPlatform;
+              inherit compilerNixName;
+            })
           ] ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows ({ lib, ... }: {
             # The preplanned local source already applies the modern patch.
             # Avoid applying it again after v2 source packaging.
