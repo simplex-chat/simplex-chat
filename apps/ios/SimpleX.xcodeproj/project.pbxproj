@@ -269,6 +269,8 @@
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
 		E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
 		E5C0BBE92F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
+		E5C0BBEB2F82B45500EA7527 /* SharedAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */; };
+		E5C0BBEC2F82B45500EA7527 /* SharedAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */; };
 		E5DBF1932F88169800E1D7FD /* ConnectBannerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DBF1922F88169800E1D7FD /* ConnectBannerCard.swift */; };
 		E5DCF8DB2C56FAC1007928CC /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		E5DCF9712C590272007928CC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF96F2C590272007928CC /* Localizable.strings */; };
@@ -658,6 +660,7 @@
 		E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatLinkHeader.swift; sourceTree = "<group>"; };
 		E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeChatLinkView.swift; sourceTree = "<group>"; };
 		E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SimpleXAssets.xcassets; sourceTree = "<group>"; };
+		E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SharedAssets.xcassets; sourceTree = "<group>"; };
 		E5C0BBFD2F82BBC000EA7527 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		E5C0BBFE2F82BBC900EA7527 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		E5DBF1922F88169800E1D7FD /* ConnectBannerCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectBannerCard.swift; sourceTree = "<group>"; };
@@ -949,6 +952,7 @@
 				5C2E260D27A30E2400F70299 /* Views */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
 				E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */,
+				E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */,
 				D7AA2C3429A936B400737B40 /* MediaEncryption.playground */,
 				5C13730C2815740A00F43030 /* DebugJSON.playground */,
 			);
@@ -1500,6 +1504,7 @@
 				5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */,
 				5CC2C0FF2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings in Resources */,
 				E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */,
+				E5C0BBEB2F82B45500EA7527 /* SharedAssets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1532,6 +1537,7 @@
 			files = (
 				E5DCF9712C590272007928CC /* Localizable.strings in Resources */,
 				E5C0BBE92F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */,
+				E5C0BBEC2F82B45500EA7527 /* SharedAssets.xcassets in Resources */,
 				E5DCF9982C5906FF007928CC /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
