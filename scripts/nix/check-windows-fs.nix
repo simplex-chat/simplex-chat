@@ -30,6 +30,12 @@ let
   };
 in pkgs.runCommand "ghc914-windows-fs-check" {
   nativeBuildInputs = [ pkgs.coreutils ];
+  # Prepare this exact C payload and Wine under the normal input budget before
+  # applying the short runtime-check limit. This adds no Haskell project.
+  passthru.inputs = pkgs.linkFarm "ghc914-windows-fs-inputs" [
+    { name = "payload"; path = payload; }
+    { name = "wine"; path = wine; }
+  ];
 } ''
   set -euo pipefail
   mkdir -p "$out"

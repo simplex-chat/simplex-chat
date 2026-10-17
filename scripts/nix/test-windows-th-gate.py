@@ -43,45 +43,71 @@ def document(modern=True):
 
 class Inputs(unittest.TestCase):
     def test_fs_check_precedes_component_eval_and_input_build(self):
-        with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate, "call", side_effect=[None, SELECTED, json.dumps(document()), None]) as call:
+        with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate, "call", side_effect=[None, None, SELECTED, json.dumps(document()), None]) as call:
             path = Path(temp) / "state.json"
             gate.prepare(path)
             commands = [c.args[0] for c in call.call_args_list]
-            self.assertEqual(commands[0], ["nix", "build", "ref#checks.x86_64-linux.windows-rts-fs",
+            self.assertEqual(commands[0], ["nix", "build", "ref#checks.x86_64-linux.windows-rts-fs.inputs",
+                             "--no-link", "-L", "--keep-failed", "--max-jobs", "1", "--timeout", "7200"])
+            self.assertEqual(commands[1], ["nix", "build", "ref#checks.x86_64-linux.windows-rts-fs",
                              "--no-link", "-L", "--keep-failed", "--max-jobs", "1", "--timeout", "300"])
-            self.assertEqual(commands[1][:2], ["nix", "eval"])
-            self.assertEqual(commands[2], ["nix", "derivation", "show", SELECTED])
-            self.assertEqual(commands[3], ["nix", "build", DEP + "^out,dev", "--no-link",
+            self.assertEqual(commands[2][:2], ["nix", "eval"])
+            self.assertEqual(commands[3], ["nix", "derivation", "show", SELECTED])
+            self.assertEqual(commands[4], ["nix", "build", DEP + "^out,dev", "--no-link",
                              "-L", "--keep-failed", "--max-jobs", "1", "--timeout", "7200"])
             self.assertTrue(json.loads(path.read_text())["inputsReady"])
 
-    def test_failed_fs_check_never_evaluates_or_builds_haskell_inputs(self):
-        with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate, "call", side_effect=subprocess.CalledProcessError(1, "filesystem check")) as call:
+    def test_failed_c_inputs_never_run_fs_or_evaluate_haskell(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate, "call", side_effect=subprocess.CalledProcessError(1, "C inputs")) as call:
             path = Path(temp) / "state.json"
             with self.assertRaises(subprocess.CalledProcessError):
                 gate.prepare(path)
             self.assertEqual(call.call_count, 1)
+            self.assertIn("ref#checks.x86_64-linux.windows-rts-fs.inputs", call.call_args.args[0])
+            self.assertFalse(path.exists())
+
+    def test_failed_fs_check_never_evaluates_or_builds_haskell_inputs(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate, "call", side_effect=[None, subprocess.CalledProcessError(1, "filesystem check")]) as call:
+            path = Path(temp) / "state.json"
+            with self.assertRaises(subprocess.CalledProcessError):
+                gate.prepare(path)
+            self.assertEqual(call.call_count, 2)
             self.assertIn("ref#checks.x86_64-linux.windows-rts-fs", call.call_args.args[0])
             self.assertFalse(path.exists())
 
     def test_fs_check_consumes_existing_shared_preparation_deadline(self):
         now = [0]
         def run(argv, **_kwargs):
+            if "ref#checks.x86_64-linux.windows-rts-fs.inputs" in argv:
+                now[0] = 4000
+                return None
             if "ref#checks.x86_64-linux.windows-rts-fs" in argv:
-                now[0] = 100
+                now[0] = 4100
                 return None
             if argv[:2] == ["nix", "eval"]:
-                now[0] = 4100
+                now[0] = 8100
                 return SELECTED
             if argv[:3] == ["nix", "derivation", "show"]:
-                now[0] = 4600
+                now[0] = 8600
                 return json.dumps(document())
             return None
         with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate.time, "monotonic", side_effect=lambda: now[0]), patch.object(gate, "call", side_effect=run) as call:
             gate.prepare(Path(temp) / "state.json")
-            self.assertEqual(call.call_args_list[0].kwargs["timeout"], 600)
-            self.assertEqual(call.call_args_list[1].kwargs["timeout"], 14300)
-            self.assertEqual(call.call_args_list[-1].kwargs["timeout"], 9800)
+            self.assertEqual(call.call_args_list[0].kwargs["timeout"], 14400)
+            self.assertEqual(call.call_args_list[1].kwargs["timeout"], 600)
+            self.assertEqual(call.call_args_list[2].kwargs["timeout"], 10300)
+            self.assertEqual(call.call_args_list[-1].kwargs["timeout"], 5800)
+
+    def test_c_inputs_exhausting_deadline_never_run_runtime_check(self):
+        now = [0]
+        def finish_inputs(_argv, **_kwargs):
+            now[0] = 14400
+        with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate.time, "monotonic", side_effect=lambda: now[0]), patch.object(gate, "call", side_effect=finish_inputs) as call:
+            path = Path(temp) / "state.json"
+            with self.assertRaises(subprocess.TimeoutExpired):
+                gate.prepare(path)
+            self.assertEqual(call.call_count, 1)
+            self.assertFalse(path.exists())
 
     def test_both_schemas_preserve_requested_outputs(self):
         for modern in [True, False]:
@@ -121,11 +147,11 @@ class Inputs(unittest.TestCase):
     def test_empty_input_set_never_builds_default_flake(self):
         value = document()
         next(iter(value["derivations"].values()))["inputs"]["drvs"] = {}
-        with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate, "call", side_effect=[None, SELECTED, json.dumps(value)]) as call:
+        with tempfile.TemporaryDirectory() as temp, patch.object(gate, "flake_context", return_value=("a" * 40, "ref", "original")), patch.object(gate, "call", side_effect=[None, None, SELECTED, json.dumps(value)]) as call:
             state = Path(temp) / "state.json"
             gate.prepare(state)
-            self.assertEqual(call.call_count, 3)
-            initial = call.call_args_list[1]
+            self.assertEqual(call.call_count, 4)
+            initial = call.call_args_list[2]
             self.assertEqual(initial.args[0][-4:], ["--max-jobs", "1", "--timeout", "7200"])
             self.assertGreater(initial.kwargs["timeout"], 14000)
             self.assertTrue(json.loads(state.read_text())["inputsReady"])

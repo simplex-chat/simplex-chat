@@ -63,6 +63,10 @@ class ProbeDefinition(unittest.TestCase):
             bash = "/bash";
             lib.optionalString = condition: value: if condition then value else "";
             lib.escapeShellArg = value: value;
+            linkFarm = name: entries:
+              assert map (entry: entry.name) entries == [ "payload" "wine" ];
+              assert map (entry: toString entry.path) entries == [ "/C-payload" "/same-Wine" ];
+              {{ outPath = "/C-and-Wine-inputs"; inherit name; }};
             runCommand = name: attrs: script: {{ inherit name attrs script; }};
           }}; in import {HERE / 'check-windows-fs.nix'} {{ inherit pkgs; }}
         '''
@@ -76,6 +80,8 @@ class ProbeDefinition(unittest.TestCase):
         self.assertIn("/same-Wine/bin/wine", value["script"])
         self.assertIn("/C-payload/bin/windows-fs-probe.exe", value["script"])
         self.assertIn("set -euo pipefail", value["script"])
+        self.assertEqual(value["attrs"]["passthru"]["inputs"],
+                         "/C-and-Wine-inputs")
         for kwargs in [{"linux": False}, {"x64": False}, {"native": False}]:
             with self.subTest(kwargs=kwargs):
                 self.assertNotEqual(self.render(**kwargs).returncode, 0)

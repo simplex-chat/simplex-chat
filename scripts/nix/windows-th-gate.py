@@ -129,8 +129,12 @@ def prepare(path):
         return seconds
 
     revision, ref, original = flake_context()
-    # Exercise the real pinned filesystem code before any expensive Haskell
-    # planning or exact-component inputs. A failed check stops preparation.
+    # A patched C runtime can be cold. Prepare only the exact C payload and Wine
+    # first; the filesystem execution still gets its short limit. Both stages
+    # precede Haskell planning and share the existing preparation deadline.
+    call(["nix", "build", ref + "#checks.x86_64-linux.windows-rts-fs.inputs", "--no-link",
+          "-L", "--keep-failed", "--max-jobs", "1", "--timeout", "7200"],
+         timeout=remaining())
     call(["nix", "build", ref + "#checks.x86_64-linux.windows-rts-fs", "--no-link",
           "-L", "--keep-failed", "--max-jobs", "1", "--timeout", "300"],
          timeout=min(600, remaining()))
