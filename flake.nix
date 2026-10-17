@@ -149,6 +149,9 @@
           } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isDarwin {
             "https://github.com/simplex-chat/simplexmq.git" =
               [ ./scripts/nix/simplexmq-blst-darwin-extern.patch ];
+          } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isWindows {
+            "https://github.com/simplex-chat/simplexmq.git" =
+              [ ./scripts/nix/simplexmq-blst-windows-extern.patch ];
           } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isMusl {
             # -fully-static uses each producer's registered static C libraries.
             "https://github.com/simplex-chat/simplexmq.git" =
@@ -686,6 +689,7 @@
 
         checks = pkgs.lib.optionalAttrs (system == "x86_64-linux") {
           windows-rts-fs = import ./scripts/nix/check-windows-fs.nix { inherit pkgs; };
+          windows-blst-linkage = import ./scripts/nix/check-windows-blst-linkage.nix { inherit pkgs; };
           ghc-elf-comdat-functions = import ./scripts/nix/check-elf-comdat-functions.nix {
             inherit pkgs;
             compiler = (compilerSelection pkgs).ghc914-sh;

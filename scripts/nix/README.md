@@ -133,6 +133,14 @@ nix eval --impure --json --file scripts/nix/check-windows-crypt32.nix \
   --apply 'test: let f = builtins.getFlake (toString ./.); in test { lib = f.inputs.haskellNix.inputs.nixpkgs.lib; haskellNix = f.inputs.haskellNix; }'
 ```
 
+The Windows MQ source patch makes BLST's COFF assembly reference the platform
+capability storage already defined by its C server. Redundant COMMON declarations
+otherwise abort the GHC runtime linker when loading MQ for chat Template Haskell.
+`nix build .#checks.x86_64-linux.windows-blst-linkage -L` compiles the actual C
+server and original/patched assembly with the selected MinGW toolchain. It checks
+storage ownership, unchanged assembly sections/relocations, and the final PE link.
+This check executes neither Wine nor GHC; the full Windows build qualifies TH.
+
 Linux-built Win64 `ghc914-sh` v2 projects patch only the RTS DLL search-path
 caller, including normal and profiling interpreters. It resolves relative paths
 once, retains successful namespace conversion for long paths, and uses the
