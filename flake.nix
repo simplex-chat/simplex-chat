@@ -678,6 +678,7 @@
         hydraJobs = packages;
 
         checks = pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          windows-rts-fs = import ./scripts/nix/check-windows-fs.nix { inherit pkgs; };
           ghc-elf-comdat-functions = import ./scripts/nix/check-elf-comdat-functions.nix {
             inherit pkgs;
             compiler = (compilerSelection pkgs).ghc914-sh;

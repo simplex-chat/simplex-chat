@@ -129,6 +129,11 @@ def prepare(path):
         return seconds
 
     revision, ref, original = flake_context()
+    # Exercise the real pinned filesystem code before any expensive Haskell
+    # planning or exact-component inputs. A failed check stops preparation.
+    call(["nix", "build", ref + "#checks.x86_64-linux.windows-rts-fs", "--no-link",
+          "-L", "--keep-failed", "--max-jobs", "1", "--timeout", "300"],
+         timeout=min(600, remaining()))
     drv = call(["nix", "eval", "--impure", "--raw", "--expr", f"({original}).drvPath",
                 "-L", "--keep-failed", "--max-jobs", "1", "--timeout", "7200"],
                capture=True, timeout=remaining()).strip()

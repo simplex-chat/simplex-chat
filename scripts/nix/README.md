@@ -267,7 +267,18 @@ host, target group, and source SHA. Each native CLI also runs
 the encrypted-store and profile-password smoke test, which can be repeated with
 `python3 scripts/nix/smoke-cli.py result-nix/BUILD_SYSTEM/exe:simplex-chat/bin/simplex-chat`.
 
-The Windows job first prepares only the named direct input outputs of the
+The Windows job first runs `checks.x86_64-linux.windows-rts-fs`. This small
+real-WinAPI check compiles the locked GHC `rts-fs` source with the existing
+MinGW C toolchain and runs it with the same Wine package as the interpreter.
+It requires real file opens, descriptor/stat information and fixture bytes for
+short, long and archive-shaped paths, including absolute and extended variants.
+Helper results and a separate direct Win32/CRT replay remain diagnostic output.
+The owned Wine prefix has a 20-second execution window and bounded cleanup;
+missing environment/file prerequisites are distinct from an FS regression.
+Run it alone with `nix build .#checks.x86_64-linux.windows-rts-fs -L`.
+It adds no Haskell compiler-project build or dependency to the 21 product outputs.
+
+After this check passes, the Windows job prepares only the named direct input outputs of the
 canonical `wai-app-static` component from the same Windows CLI project, using
 the normal 7,200-second per-derivation limit. It then builds that exact component
 with a 300-second limit; success is reused by the full Windows build. A failure
