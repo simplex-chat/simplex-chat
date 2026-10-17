@@ -39,7 +39,7 @@ cd "$out"
 status=0
 claude -p "$(cat prompt.md)" \
   --model "$CLAUDE_MODEL" \
-  --max-turns 60 \
+  --max-turns 120 \
   --max-budget-usd 3 \
   --output-format stream-json \
   --verbose \

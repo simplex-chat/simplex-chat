@@ -45,7 +45,16 @@ Run all of A and B in the default layout, with the toolbar at the bottom. Then m
 
 **Between the layouts:** click the profile picture at the left end of the bottom toolbar (about 27,730) to open the menu, open "Settings", then "Appearance", and turn off the switch of "Reachable app toolbars", at the right end of its row (about x 335). Press Escape until the chat list shows again; its search field should now be at the top.
 
-You have at most 60 turns, and the whole test fits in about 40 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example, in the first layout:
+**C. Joining from the results, and no duplicates.** Run it once, at the end, in the layout you are in then (the layouts draw these the same way). Clear the search field (Escape) before each step.
+
+1. Search `ci seed` with "Search in Directory" (the alert no longer asks). Click the #ci_channel row: an alert names the channel and offers "Open channel"; click it. The channel opens in the right pane with a "Join channel" button; click it and wait up to 60 s for "you are subscriber". Press Escape until the chat list shows (the channel may stay open in the right pane).
+2. Type `ci_channel` and press Enter, and wait for the search to finish: the chat list shows your chat ci_channel, and no Directory row #ci_channel (the Directory part may be absent).
+3. Type `seed` and press Enter: the local list shows "seeded notes" and not ci_channel, so the Directory part lists #ci_channel and #ci_group. Click #ci_channel: the alert now says "You are a subscriber". Close it with "Cancel" or Escape.
+4. Type `zqxvjk` and press Enter: once the search finishes, "No chats found" shows, and no "Directory" header.
+5. Type `cinone`: a row "Connect to cinone.testing" shows. Press Enter: no alert about the name, no "Names" header, and "Connect to cinone.testing" stays; the search finds no directory entries.
+6. Type `seeded` and click "Search in Directory" (not Enter): the Directory part lists #ci_group and #ci_channel, and there is no "Names" header, as only the Search key resolves names.
+
+You have at most 120 turns, and the whole test fits in about 70 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example, in the first layout:
 
 - `ui do click-text "Search or paste SimpleX link" -- type "ci seed" -- wait "Search in Directory" -- shot bottom-typed`
 - `ui do click-text "Search in Directory" -- wait "Search and don't show again" -- click-text "Search" -- wait "Join" 60 -- shot bottom-directory-1`
@@ -57,6 +66,6 @@ You have at most 60 turns, and the whole test fits in about 40 if you chain step
 
 ## Report
 
-Write `report.md` in your working directory: for each layout and each of A and B, each check you ran as PASS or FAIL with its evidence, the number of pages and retries, and anything else unexpected. End your final message with one line: `CLAUDE-TEST: PASS` if every check you ran passed, otherwise `CLAUDE-TEST: FAIL` followed by the checks that failed.
+Write `report.md` in your working directory: for each layout and each of A and B, and for C, each check you ran as PASS or FAIL with its evidence, the number of pages and retries, and anything else unexpected. End your final message with one line: `CLAUDE-TEST: PASS` if every check you ran passed, otherwise `CLAUDE-TEST: FAIL` followed by the checks that failed.
 
 ## The ui helper
