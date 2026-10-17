@@ -8,6 +8,7 @@ import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import com.sshtools.twoslices.*
+import com.sshtools.twoslices.impl.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.awt.*
@@ -18,6 +19,17 @@ import javax.imageio.ImageIO
 object NtfManager {
   private val prevNtfs = arrayListOf<Pair<Pair<Long, ChatId>, Slice>>()
   private val prevNtfsMutex: Mutex = Mutex()
+  // two-slices would also pick backends that write the text into GNTP headers or an AppleScript string without full escaping
+  private val toaster: Toaster by lazy {
+    val settings = ToasterFactory.getSettings()
+    runCatching {
+      when {
+        desktopPlatform.isLinux() -> NotifySendToaster(settings)
+        desktopPlatform.isMac() -> NotificationCenterToaster(settings)
+        else -> AWTToaster(settings)
+      }
+    }.recoverCatching { AWTToaster(settings) }.getOrElse { SysOutToaster(settings) }
+  }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
     if (simplexWindowState.windowFocused.value) return false
@@ -135,7 +147,7 @@ object NtfManager {
     try {
       withBGApi {
         prevNtfsMutex.withLock {
-          prevNtfs.add(Pair(userId, chatId) to builder.toast())
+          prevNtfs.add(Pair(userId, chatId) to builder.toaster(toaster).toast())
         }
       }
     } catch (e: Throwable) {
@@ -190,4 +202,17 @@ object NtfManager {
   private fun macDisplayNotification(title: String, text: String, iconPath: String?) {
     Runtime.getRuntime().exec(arrayOf("osascript", "-e", """display notification "${text.replace("\"", "\\\"")}" with title "${title.replace("\"", "\\\"")}""""))
   }
+}
+
+// notify-send parses options anywhere in its arguments and decodes C escapes in the body; notification servers render the body as markup
+private class NotifySendToaster(settings: ToasterSettings) : NotifyToaster(settings) {
+  override fun toast(builder: ToastBuilder): Slice {
+    val exitCode = ProcessBuilder("notify-send", "-i", builder.icon() ?: "dialog-information", "-t", "${configuration.timeout * 1000}", "--", builder.title(), escapeBody(builder.content()))
+      .redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start().waitFor()
+    if (exitCode != 0) throw ToasterException("notify-send exited with $exitCode")
+    return Slice.defaultSlice()
+  }
+
+  private fun escapeBody(text: String): String =
+    text.replace("\\", "\\\\").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 }
