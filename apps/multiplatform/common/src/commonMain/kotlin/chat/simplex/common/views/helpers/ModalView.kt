@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import LocalCardScreen
@@ -223,6 +224,10 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
         runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
+      }
+      // Until the opening modal covers the page that opened it, or the view under the first modal, a second click there would open it again
+      if (transition.targetState == EnterExitState.PostExit && it < modalCount.value) {
+        Box(Modifier.fillMaxSize().pointerInput(Unit) {})
       }
     }
   }
