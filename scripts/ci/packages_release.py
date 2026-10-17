@@ -54,8 +54,6 @@ ADDON_RUNNERS = {
     "windows-x86_64": "windows-latest",
 }
 ADDON_PLATFORMS = list(ADDON_RUNNERS)
-# build.yml builds libsimplex of pull requests on this platform only
-CORE_TEST_PLATFORM = "linux-x86_64"
 ADDON_ASSETS = [f"simplex-chat-nodejs-{platform}.node" for platform in ADDON_PLATFORMS]
 SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
 RELEASES_FILE = "releases.toml"
@@ -275,12 +273,10 @@ class BuildPlan:
 
 
 def build_plan(
-    event: str, release_missing: bool, libs_artifact: bool, libs_release: str, core_changed: bool, addon_changed: bool
+    event: str, release_missing: bool, libs_release: str, core_changed: bool, addon_changed: bool
 ) -> BuildPlan:
     """Each package test runs once, against the libsimplex of the change: a pull request that changes the core
-    is tested by build.yml with its own libsimplex (libs_artifact), a new library release with that release."""
-    if libs_artifact:
-        return BuildPlan([CORE_TEST_PLATFORM], test=True)
+    is tested by build.yml with its own libsimplex, a new library release with that release."""
     if libs_release:
         return BuildPlan(ADDON_PLATFORMS, test=True)
     if event == "pull_request":
@@ -382,11 +378,10 @@ def changes(base: str) -> None:
 
 
 def print_build_plan(args: argparse.Namespace) -> None:
-    pull_request = args.event == "pull_request" and not args.libs_artifact
+    pull_request = args.event == "pull_request"
     result = build_plan(
         args.event,
         release_missing=args.release_missing,
-        libs_artifact=args.libs_artifact,
         libs_release=args.libs_release,
         core_changed=pull_request and changed_since(args.base, CORE_SOURCES),
         addon_changed=pull_request and changed_since(args.base, ADDON_SOURCES),
@@ -637,7 +632,6 @@ def main(argv: list[str]) -> None:
     build_parser.add_argument("--event", required=True, help="github.event_name")
     build_parser.add_argument("--base", default="", help="the base commit of a pull request")
     build_parser.add_argument("--release-missing", type=github_bool, default=False)
-    build_parser.add_argument("--libs-artifact", type=github_bool, default=False)
     build_parser.add_argument("--libs-release", default="")
     prepare_parser = commands.add_parser("prepare")
     for package in ["nodejs", "types", "python"]:
