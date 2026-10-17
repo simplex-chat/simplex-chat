@@ -57,10 +57,10 @@ toolchain
 - jobs: build-macos, build-windows
 - path:
   - build-macos: `~/.ghcup/ghc/<ghc>`, `~/.ghcup/bin/*-<ghc>`, `~/.ghcup/bin/cabal-3.10.2.0`
-  - build-windows: `C:/ghcup/ghc/<ghc>`, `C:/ghcup/bin/*-<ghc>*`, `C:/ghcup/bin/cabal-3.10.2.0*`
+  - build-windows: `C:/tools/ghc-<ghc>`, `C:/tools/cabal-3.10.2.0`, `C:/ProgramData/chocolatey/lib/ghc.<ghc>*`, `C:/ProgramData/chocolatey/lib/cabal.3.10.2*`
 - key:
   - build-macos: `ghcup-<os>-<arch>-ghc<ghc>-cabal3.10.2.0-<toolchain>`
-  - build-windows: `ghcup-windows-x86_64-ghc<ghc>-cabal3.10.2.0`
+  - build-windows: `choco-windows-x86_64-ghc<ghc>-cabal3.10.2.0`
 - restored before "Prepare build"
 - saved after "Prepare build" when the key is not matched
 
