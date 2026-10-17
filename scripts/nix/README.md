@@ -99,6 +99,18 @@ original description override and copies that override into the slice index.
 The source producer applies the existing haskell.nix patch once; its later
 package patch list is empty to prevent a second application.
 
+Linux-built Win64 `ghc914-sh` v2 projects patch only the RTS DLL search-path
+caller, including normal and profiling interpreters. It resolves relative paths
+once, retains successful namespace conversion for long paths, and uses the
+resolved absolute path if conversion returns NULL. Invalid paths fail without
+passing NULL to `AddDllDirectory`; its opaque cookie and Win32 errors survive
+cleanup. Other filesystem helpers and native compilers keep their sources.
+The native caller regression uses scripted APIs, not Wine or a target ABI test:
+`python3 scripts/nix/test-windows-dll-search-path.py --rts-source /path/to/configured-ghc/rts`.
+`scripts/nix/check-windows-rts-scope.nix` checks the real module fixed point using
+the same pinned-lib invocation as the musl scope check above. Production Win64
+RTS compilation and the canonical Wine TH gate remain runtime qualification.
+
 Run these commands from the repository root:
 
 ```sh
