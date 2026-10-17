@@ -487,6 +487,10 @@ private let radiusFactor = (1 - squareToCircleRatio) / 50
     }
 }
 
+public func profileIconImage(_ iconName: String) -> Image {
+    iconName == "agent" ? Image(iconName) : Image(systemName: iconName)
+}
+
 @ViewBuilder private func blurredFrame(_ img: Image, _ size: CGFloat, _ blurred: Bool) -> some View {
     let v = img.resizable().frame(width: size, height: size)
     if blurred {

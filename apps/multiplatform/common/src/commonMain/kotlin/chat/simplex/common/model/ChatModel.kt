@@ -1950,11 +1950,13 @@ data class Contact(
 
   val isBot: Boolean get() = profile.peerType == ChatPeerType.Bot
 
+  val isAgent: Boolean get() = profile.peerType == ChatPeerType.Agent
+
   val contactConnIncognito: Boolean get() =
     activeConn?.customUserProfileId != null
 
   val chatIconName: ImageResource get() =
-    if (isBot) MR.images.ic_cube else MR.images.ic_account_circle_filled
+    if (isBot) MR.images.ic_cube else if (isAgent) MR.images.ic_agent else MR.images.ic_account_circle_filled
 
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO

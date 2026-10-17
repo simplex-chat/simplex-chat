@@ -2513,12 +2513,17 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         profile.peerType == .bot
     }
 
+    @inline(__always)
+    public var isAgent: Bool {
+        profile.peerType == .agent
+    }
+
     public var contactConnIncognito: Bool {
         activeConn?.customUserProfileId != nil
     }
 
     public var chatIconName: String {
-        isBot ? "cube.fill" : "person.crop.circle.fill"
+        isBot ? "cube.fill" : isAgent ? "agent" : "person.crop.circle.fill"
     }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {

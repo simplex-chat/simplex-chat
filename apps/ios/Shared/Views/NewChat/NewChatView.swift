@@ -1133,6 +1133,8 @@ private func showPrepareContactAlert(
                             ? "briefcase.circle.fill"
                             : contactShortLinkData.profile.peerType == .bot
                             ? "cube.fill"
+                            : contactShortLinkData.profile.peerType == .agent
+                            ? "agent"
                             : "person.crop.circle.fill",
                 size: alertProfileImageSize
             ),

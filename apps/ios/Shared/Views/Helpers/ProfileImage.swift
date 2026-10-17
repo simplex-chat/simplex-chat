@@ -24,7 +24,7 @@ struct ProfileImage: View {
             clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius, blurred: blurred)
         } else {
             let c = color.asAnotherColorFromSecondaryVariant(theme)
-            Image(systemName: iconName)
+            profileIconImage(iconName)
                 .resizable()
                 .foregroundColor(c)
                 .scaledToFit()

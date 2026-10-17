@@ -213,7 +213,7 @@ struct ShareView: View {
         if let uiImage = model.profileImages[chatInfoId] {
             clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius)
         } else {
-            Image(systemName: iconName)
+            profileIconImage(iconName)
                 .resizable()
                 .foregroundColor(Color(uiColor: .tertiaryLabel))
                 .frame(width: size, height: size)
