@@ -1096,22 +1096,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Restore toolchain from cache
-        id: restore-toolchain
-        if: env.release != 'true'
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            C:/tools/ghc-${{ matrix.ghc }}
-            C:/tools/cabal-3.10.2.0
-            C:/ProgramData/chocolatey/lib/ghc.${{ matrix.ghc }}*
-            C:/ProgramData/chocolatey/lib/cabal.3.10.2*
-          key: choco-windows-x86_64-ghc${{ matrix.ghc }}-cabal3.10.2.0
-
-      - name: Warn if toolchain not in cache
-        if: env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
-        run: echo "::warning title=Cache miss::choco-windows-x86_64-ghc${{ matrix.ghc }}-cabal3.10.2.0"
-
       - name: Prepare build
         id: prepare
         uses: ./.github/actions/prepare-build
@@ -1119,17 +1103,6 @@ jobs:
           java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
           github_ref: ${{ github.ref }}
-
-      - name: Save toolchain to cache
-        if: env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            C:/tools/ghc-${{ matrix.ghc }}
-            C:/tools/cabal-3.10.2.0
-            C:/ProgramData/chocolatey/lib/ghc.${{ matrix.ghc }}*
-            C:/ProgramData/chocolatey/lib/cabal.3.10.2*
-          key: choco-windows-x86_64-ghc${{ matrix.ghc }}-cabal3.10.2.0
 
       - name: Configure pagefile (Windows)
         uses: simplex-chat/configure-pagefile-action@v1.4

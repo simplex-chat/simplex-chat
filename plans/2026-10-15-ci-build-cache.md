@@ -54,13 +54,12 @@ deps
 - saved when the store hash differs from the matched key
 
 toolchain
-- jobs: build-macos, build-windows
+- job: build-macos
 - path:
-  - build-macos: `~/.ghcup/ghc/<ghc>`, `~/.ghcup/bin/*-<ghc>`, `~/.ghcup/bin/cabal-3.10.2.0`
-  - build-windows: `C:/tools/ghc-<ghc>`, `C:/tools/cabal-3.10.2.0`, `C:/ProgramData/chocolatey/lib/ghc.<ghc>*`, `C:/ProgramData/chocolatey/lib/cabal.3.10.2*`
-- key:
-  - build-macos: `ghcup-<os>-<arch>-ghc<ghc>-cabal3.10.2.0-<toolchain>`
-  - build-windows: `choco-windows-x86_64-ghc<ghc>-cabal3.10.2.0`
+  - `~/.ghcup/ghc/<ghc>`
+  - `~/.ghcup/bin/*-<ghc>`
+  - `~/.ghcup/bin/cabal-3.10.2.0`
+- key: `ghcup-<os>-<arch>-ghc<ghc>-cabal3.10.2.0-<toolchain>`
 - restored before "Prepare build"
 - saved after "Prepare build" when the key is not matched
 
@@ -180,9 +179,9 @@ prepare-build action
 - output `cabal-store`: output `cabal-store` of setup-haskell-action
 
 Steps:
-1. Restore toolchain.
+1. build-macos: restore toolchain.
 2. Prepare build.
-3. Save toolchain.
+3. build-macos: save toolchain.
 4. Compute cache keys.
 5. Restore deps.
 6. Restore src.
