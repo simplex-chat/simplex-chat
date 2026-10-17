@@ -14,7 +14,10 @@ let
     crossSystem = buildPkgs.lib.systems.examples.armv7a-android-prebuilt
       // { androidSdkVersion = "26"; };
   };
-  emulator = import ./android-arm32-qemu.nix { inherit haskellNix pkgs; };
+  emulator = import ./android-arm32-qemu.nix {
+    inherit haskellNix pkgs;
+    hostPlatform = target.stdenv.hostPlatform;
+  };
   payload = buildPkgs.runCommand "android-arm32-personality-payload" {} ''
     mkdir -p "$out"
     # API 26's crtbegin predates Bionic's aligned TLS input. Add the same

@@ -4,7 +4,7 @@ prev.lib.optionalAttrs (
 ) {
   haskell-nix = prev.haskell-nix // {
     cabalProject' = projectModule: prev.haskell-nix.cabalProject' (
-      [ ./musl-rts-project.nix ({ config, lib, pkgs, ... }:
+      [ ({ config, lib, pkgs, ... }:
         lib.mkIf (
           pkgs.stdenv.hostPlatform.isMusl
           && pkgs.stdenv.buildPlatform.isLinux

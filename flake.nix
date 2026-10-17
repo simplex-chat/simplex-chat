@@ -1,7 +1,7 @@
 {
   description = "nix flake for simplex-chat";
   # hkm/stable-haskell: use the same compiler and boot libraries on every target.
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/54c49b7badca29e8b746fe8681d9bd70086e308a";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/fd96dff55bcf6f81ccb96872f16a2ec3970edab0";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs";
   inputs.mac2ios.url = "github:zw3rk/mobile-core-tools";
   inputs.hackage = {
@@ -60,8 +60,8 @@
         else pkgs';
       in projectPkgs.haskell-nix.project ({ config, ... }:
       let
-        # v2 restores Hackage description overrides after package patches.
-        # Plan Windows x509 from its patched local source to retain crypt32.
+        # Keep the patched Windows x509 metadata in the original plan too;
+        # post-plan Cabal edits can change native package unit IDs.
         androidPthreads = import ./scripts/nix/android-pthread-libraries.nix {
           pkgs = config.evalPackages;
           hostPlatform = pkgs'.stdenv.hostPlatform;
@@ -683,6 +683,7 @@
           ghc-elf-comdat-functions = import ./scripts/nix/check-elf-comdat-functions.nix {
             inherit pkgs;
             compiler = (compilerSelection pkgs).ghc914-sh;
+            patch = haskellNix + "/overlays/patches/ghc914-rts-elf-comdat-functions.patch";
           };
           ghc-elf-alignment = import ./scripts/nix/check-elf-alignment.nix {
             inherit pkgs;

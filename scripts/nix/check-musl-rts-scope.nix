@@ -1,5 +1,9 @@
 # Use the pinned lib and the real project module; no compiler or project IFD.
-{ lib, projectModule ? import ./musl-rts-project.nix }:
+{ lib
+, haskellNix ? builtins.fetchTree
+    (builtins.fromJSON (builtins.readFile ../../flake.lock)).nodes.haskellNix.locked
+, projectModule ? import (haskellNix + "/modules/stable-haskell-rts-comdat.nix")
+}:
 let
   apply = { musl ? true, i386 ? true, linux ? true,
     compiler ? "ghc914-sh", builderVersion ? 2,
@@ -37,9 +41,9 @@ let
           config.packages.rts.patches = [ ./musl-iserv-public-libc.patch ];
         } ] ++ project.config.modules;
       };
-    in package.config.packages.rts.patches;
-  unchanged = [ ./musl-iserv-public-libc.patch ];
-  selected = unchanged ++ [ ./ghc914-rts-elf-comdat-functions.patch ];
+    in map toString package.config.packages.rts.patches;
+  unchanged = map toString [ ./musl-iserv-public-libc.patch ];
+  selected = unchanged ++ [ (toString (haskellNix + "/overlays/patches/ghc914-rts-elf-comdat-functions.patch")) ];
 in
 assert apply {} == selected;
 assert apply { name = "iserv-proxy"; } == selected;

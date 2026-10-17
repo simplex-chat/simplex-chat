@@ -1,10 +1,10 @@
-{ pkgs, compiler }:
+{ pkgs, compiler, patch }:
 assert pkgs.stdenv.hostPlatform.isLinux && pkgs.stdenv.hostPlatform.isx86_64;
 let
   source = pkgs.applyPatches {
     name = "ghc914-rts-single-function-comdat";
     src = compiler.configured-src + "/rts";
-    patches = [ ./ghc914-rts-elf-comdat-functions.patch ];
+    patches = [ patch ];
   };
 in pkgs.runCommandCC "ghc914-elf-comdat-functions-check" {} ''
   set -euo pipefail

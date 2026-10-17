@@ -4,6 +4,9 @@ The compiler and all cross-compilers come from the haskell.nix input pinned in
 `flake.lock`. The `ghc914-sh` compiler is the stable-haskell fork, not the stock
 GHC 9.14 release from GHCup. Use the same source checkout and lock file for every
 platform; Android ARMv7 does not require a separate branch or tag.
+The pinned haskell.nix includes the merged ARM32 personality, v2 Cabal metadata,
+Windows patch-selector, and i386 COMDAT fixes. The raw GHC source pin is unchanged;
+changes to v2 build scripts can still change compiler and component derivations.
 
 `compiler-selection.nix` and `compiler-cache-overlay.nix` match Hydra's compiler
 build context, including auxiliary iserv projects, so the pinned compiler can use
@@ -89,6 +92,8 @@ does not persist weak-symbol status or suppress ordinary strong conflicts.
 Multi-member groups remain outside this patch's scope. The source patch applies
 to application and interpreter projects, including profiling. Native compilers
 and other cross targets keep their existing RTS sources.
+This production patch now comes from haskell.nix's project module. The scope and
+native runtime regressions consume that same pinned upstream module and patch.
 
 Run the native x86_64 Linux regression with
 `nix build .#checks.x86_64-linux.ghc-elf-comdat-functions --no-link -L --max-jobs 1 --timeout 7200`.
@@ -105,8 +110,8 @@ The generated constant converts through Haskell `Int` with `Prelude.fromIntegral
 Basement's `RebindableSyntax` has no `HasNegation IntPtr` instance.
 Windows also plans the already selected `crypton-x509-system-1.6.8` as a local
 patched source, so its Cabal metadata names `crypt32` before source packaging.
-The pinned v2 builder otherwise replaces a package's patched Cabal file with its
-original description override and copies that override into the slice index.
+This keeps planning and packaged Cabal metadata aligned, including the metadata
+used for native package unit IDs.
 The source producer applies the existing haskell.nix patch once; its later
 package patch list is empty to prevent a second application.
 
@@ -212,6 +217,9 @@ still go through the host, and queries and setters retain the previous guest
 value. This QEMU patch applies only to the Android ARM32 emulator;
 the other emulator targets stay unchanged. Android's libc initializes
 this state again at startup after an exec.
+The shared helper passes the actual Android guest platform to the pinned
+haskell.nix selector, which applies the personality patch once. The explicit
+local Linux scheduling opt-out remains restricted to supported ARM32 emulators.
 
 A standalone C regression checks startup, full personality values, the host's
 `UNAME26` effect, and independent thread/fork state. Run it from this checkout
@@ -376,13 +384,14 @@ establish an out-of-memory cause.
 
 Hydra needs builders advertising `aarch64-darwin` and `x86_64-darwin` to run the
 corresponding Mac/iOS jobs. Check its [builder pool](https://ci.zw3rk.com/machines)
-when jobs remain queued. For cross builds, the pinned haskell.nix uses
-`recursive-nix` as a scheduling marker; these builds do not need recursive Nix
-operations. This checkout opts `ghc914-sh` Android ARM32 out of that restriction
-on Linux with patched QEMU 9.1–11, after passing normal target TH under emulation.
-Other target/compiler package sets retain the upstream guard, which also covers
-cross-compiler stalls without QEMU. Advertise the marker on a native x86_64 Linux
-builder for those jobs; keep it off Rosetta slots. Nix also requires the
+when jobs remain queued. The pinned haskell.nix now defaults
+`emulatorSystemFeatures` to `[]`; its own CI opts back into `recursive-nix` as a
+native-builder scheduling marker. This changes scheduling defaults for cross
+targets independently of this checkout's explicit `ghc914-sh` Android ARM32
+opt-out on Linux with patched QEMU 9.1–11, where normal target TH passed under
+emulation. The marker also covers cross-compiler stalls without QEMU. If a job
+requires it, advertise it on a native x86_64 Linux builder and keep it off
+Rosetta slots. Nix also requires the
 [`recursive-nix` experimental feature](https://nix.dev/manual/nix/2.35/development/experimental-features.html#xp-feature-recursive-nix)
 when building derivations with this reserved marker. Enable both
 `extra-experimental-features = recursive-nix` and

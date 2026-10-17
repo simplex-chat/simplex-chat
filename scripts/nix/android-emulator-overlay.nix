@@ -15,6 +15,7 @@ let
   emulator = import ./android-arm32-qemu.nix {
     inherit haskellNix;
     pkgs = prev.pkgsBuildBuild;
+    inherit (prev.stdenv) hostPlatform;
   };
   exes = prev.haskell-nix.iserv-proxy-exes.ghc914-sh;
   mkTemplateHaskell = interpreterExes:
@@ -39,8 +40,8 @@ in lib.optionalAttrs androidArm {
     );
   } // lib.optionalAttrs supportedEmulator {
     # Use the patched ARM32 emulator on local Linux builders too. This is the
-    # supported haskell.nix opt-out from its native-builder scheduling marker;
-    # other target package sets keep their existing restrictions.
+    # explicit supported haskell.nix scheduling opt-out. The pinned upstream
+    # default is also empty; its CI opts back into the native-builder marker.
     emulatorSystemFeatures = [];
     templateHaskell = prev.haskell-nix.templateHaskell // {
       ghc914-sh = mkTemplateHaskell exes // {
