@@ -14,11 +14,14 @@ let
     strictDeps = true;
     buildInputs = [ cross.windows.mcfgthreads ];
     buildPhase = ''
-      set -euo pipefail
-      echo '3a2926cd85ed7379700fe62485998a7fe26a9ba09824c370aa5b74e3d5508e5e  ${source}/rts-fs/fs.c' | sha256sum -c -
-      $CC -std=c11 -Werror=vla -pedantic -Wall -Wextra -O1 -static \
-        -DFS_NAMESPACE=rts -I${source}/rts-fs \
-        ${./windows-fs/Probe.c} ${source}/rts-fs/fs.c -o probe.exe
+      # Keep strict options local: standard fixup hooks do not use nounset.
+      (
+        set -euo pipefail
+        echo '3a2926cd85ed7379700fe62485998a7fe26a9ba09824c370aa5b74e3d5508e5e  ${source}/rts-fs/fs.c' | sha256sum -c -
+        $CC -std=c11 -Werror=vla -pedantic -Wall -Wextra -O1 -static \
+          -DFS_NAMESPACE=rts -I${source}/rts-fs \
+          ${./windows-fs/Probe.c} ${source}/rts-fs/fs.c -o probe.exe
+      )
     '';
     installPhase = ''
       mkdir -p "$out/bin"

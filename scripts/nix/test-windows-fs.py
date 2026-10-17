@@ -11,6 +11,34 @@ HERE = Path(__file__).resolve().parent
 
 
 class ProbeDefinition(unittest.TestCase):
+    def test_build_phase_does_not_leak_nounset_into_fixup(self):
+        text = (HERE / "check-windows-fs.nix").read_text()
+        self.assertEqual(text.count("buildPhase = ''\n"), 1)
+        phase = text.split("buildPhase = ''\n", 1)[1].split("\n    '';", 1)[0]
+        phase = phase.replace("${source}", "/locked-source").replace(
+            "${./windows-fs/Probe.c}", "/unused-probe.c")
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            for name, body in [("sha256sum", "cat >/dev/null"),
+                               ("fake-cc", "touch probe.exe")]:
+                path = temp / name
+                path.write_text("#!/usr/bin/env bash\n" + body + "\n")
+                path.chmod(0o755)
+            # Standard fixup hooks read optional variables without nounset.
+            suffix = '\n[ -f probe.exe ]\n[ -z "$exit_code" ]\n'
+            env = dict(os.environ, CC=str(temp / "fake-cc"),
+                       PATH=str(temp) + os.pathsep + os.environ["PATH"])
+            passed = subprocess.run(["bash", "-c", "set -e\n" + phase + suffix],
+                                    cwd=temp, env=env, capture_output=True, text=True, timeout=10)
+            self.assertEqual(passed.returncode, 0, passed.stderr)
+            # The same phase without its option-isolating subshell reproduces
+            # the real packaging failure, independently of the C compiler.
+            unscoped = phase.replace("      (\n", "", 1).rsplit("      )", 1)[0]
+            failed = subprocess.run(["bash", "-c", "set -e\n" + unscoped + suffix],
+                                    cwd=temp, env=env, capture_output=True, text=True, timeout=10)
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertIn("exit_code: unbound variable", failed.stderr)
+
     def render(self, *, linux=True, x64=True, native=True):
         # Use throwing compiler-project attributes: this C check must not
         # accidentally grow a GHC planning/bootstrap dependency.
