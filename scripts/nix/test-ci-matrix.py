@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check CI selections against the actual Make/build.sh output lists."""
 import importlib.util
+import json
 import os
 import re
 from pathlib import Path
@@ -50,6 +51,20 @@ class Matrix(unittest.TestCase):
             "hydraJobs.x86_64-linux.x86_64-windows:lib:simplex-chat",
         ])
 
+    def test_intel_dispatch_retains_all_four_existing_outputs(self):
+        selected = matrix.select("x86_64-darwin")
+        self.assertEqual(selected, {"include": [dict(
+            system="x86_64-darwin", runner="macos-15-intel", target="all")]})
+        self.assertEqual(outputs("x86_64-darwin"), [
+            "hydraJobs.x86_64-darwin.lib:simplex-chat",
+            "hydraJobs.x86_64-darwin.exe:simplex-chat",
+            "hydraJobs.x86_64-darwin.x86_64-darwin-ios:lib:simplex-chat",
+            "hydraJobs.x86_64-darwin.x86_64-darwin:lib:simplex-chat",
+        ])
+        cli = subprocess.check_output([
+            "python3", str(HERE / "ci-matrix.py"), "--group", "x86_64-darwin"], text=True)
+        self.assertEqual(json.loads(cli), selected)
+
     def test_manual_groups_have_distinct_queues_without_changing_pr_or_push_keys(self):
         source = (HERE.parent.parent / ".github/workflows/nix.yml").read_text()
         groups = re.findall(r"^  group: (.*)$", source, re.MULTILINE)
@@ -70,10 +85,11 @@ class Matrix(unittest.TestCase):
             return "nix-Nix Haskell builds-refs/heads/branch" + suffix_value
 
         for event in ["pull_request", "push"]:
-            for group in [None, "all", "linux-static", "android", "windows"]:
+            for group in [None, "all", "linux-static", "android", "windows", "x86_64-darwin"]:
                 self.assertEqual(queue_key(event, group), "nix-Nix Haskell builds-refs/heads/branch")
-        keys = [queue_key("workflow_dispatch", group) for group in ["all", "linux-static", "android", "windows"]]
-        self.assertEqual(len(set(keys)), 4)
+        keys = [queue_key("workflow_dispatch", group)
+                for group in ["all", "linux-static", "android", "windows", "x86_64-darwin"]]
+        self.assertEqual(len(set(keys)), 5)
         self.assertEqual(queue_key("workflow_dispatch", ""), keys[0])
         self.assertEqual(queue_key("workflow_dispatch", None), keys[0])
 

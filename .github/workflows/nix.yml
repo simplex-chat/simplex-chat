@@ -8,7 +8,7 @@ on:
         type: choice
         required: true
         default: all
-        options: [all, linux-static, android, windows]
+        options: [all, linux-static, android, windows, x86_64-darwin]
   push:
     branches: [master, stable, build/stable-ghc-9.14]
     paths:
