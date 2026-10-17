@@ -37,6 +37,13 @@ fixture with the selected compiler and check its table placement after a real
 LLD link. CI runs this check after the Intel artifact builds. It checks object
 metadata, table distances, and closure types without executing the fixture.
 
+Intel Darwin projects also declare bitvec's Clang runtime dependency before
+planning. GHC's object linker needs the selected C compiler's
+`libclang_rt.osx.a` for `__builtin_cpu_supports`; its CPU model is otherwise
+unresolved during Template Haskell. The SIMD implementation remains enabled.
+The patch declares both ordinary and static C libraries for TH and rolled archives.
+The patched local dependency keeps its tests and benchmarks disabled.
+
 Cross projects add `ghc-internal` to the Cabal dependencies of the pinned
 `composition-1.0.2.2` source. This preserves its deliberate avoidance of `base`
 while making GHC 9.14's wired-in types available in isolated target package

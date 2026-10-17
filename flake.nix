@@ -64,13 +64,19 @@
           pkgs = config.evalPackages;
           hostPlatform = pkgs'.stdenv.hostPlatform;
         };
+        darwinBitvec = import ./scripts/nix/darwin-bitvec-runtime.nix {
+          pkgs = config.evalPackages;
+          hostPlatform = pkgs'.stdenv.hostPlatform;
+          cc = pkgs'.stdenv.cc;
+        };
         patchedPackageSources = pkgs.lib.optional (
           config.compiler-nix-name == "ghc914-sh"
           && pkgs'.stdenv.buildPlatform.config != pkgs'.stdenv.hostPlatform.config
         ) (import ./scripts/nix/composition-source.nix { pkgs = config.evalPackages; })
         ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isWindows
           (import ./scripts/nix/windows-x509-source.nix { pkgs = config.evalPackages; inherit haskellNix; })
-        ++ androidPthreads.packageSources;
+        ++ androidPthreads.packageSources
+        ++ darwinBitvec.packageSources;
       in {
         compiler-nix-name = "ghc914-sh";
         inherit compilerSelection;
@@ -100,7 +106,7 @@
           -- function types still need ghc-internal in a cross slice's DB.
           -- Patch before planning so the v2 slice declares the same dependency.
           packages: ${pkgs.lib.concatStringsSep " " (map toString patchedPackageSources)}
-        '' + androidPthreads.cabalProjectLocal + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
+        '' + androidPthreads.cabalProjectLocal + darwinBitvec.cabalProjectLocal + pkgs.lib.optionalString (mobile && pkgs'.stdenv.hostPlatform.isDarwin && pkgs'.stdenv.hostPlatform.isAarch64) ''
           -- Keep every app C/C++ stub compatible with the same iOS ARM baseline.
           package *
             ghc-options: -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc -optcxx-mcpu=apple-a7 -optcxx-march=armv8-a+norcpc
