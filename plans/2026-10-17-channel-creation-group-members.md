@@ -28,7 +28,7 @@ Alternatives considered:
 - Reload the open group's members after the creation ends. Rejected: the wrong list still shows during the creation.
 
 Not changed here:
-- `ChannelRelaysModel` is also shared between the channel being created and an open channel you own (its relay bar disappears during creation); a separate fix.
+- `ChannelRelaysModel` is also shared between the channel being created and an open channel you own (its relay bar disappears during creation); fixed separately, see `2026-10-17-channel-creation-relays.md`.
 - When the creation screen is closed from outside (e.g. a notification on Android), the channel stays marked as being created; its member updates now go only to the separate list.
 
 ## Verification
