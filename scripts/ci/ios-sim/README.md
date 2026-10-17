@@ -35,7 +35,7 @@ Each session's final message ends with `CLAUDE-TEST: PASS`, or `CLAUDE-TEST: FAI
 - `device-test-plan.md`: the plan (`| ID | Do | Expect |` tables). On master it is a three-case smoke plan; a feature branch replaces it with its own and names its cases in `claude-scope`.
 - `claude-prompt.md`: what any session needs to know about the app, the `ui` helper and the test backend; `claude-test.sh` adds the `ui` help, the session's cases, layout, start state and limits, the seeded backend and the plan.
 - `claude-guard.py`: a PreToolUse hook that lets through only one plain `ui` command per Bash call, since read-only commands run without asking in every permission mode and Bash inherits the token. Read, Write and Edit are allowed only in the session's own directory, so a session can't change `ui` or the scripts it runs. After each session `claude-test.sh` deletes the session's files, and fails, if the token appears in them or the check for it fails.
-- `claude-usage.sh`: each session's turns, duration, tokens and cost "estimated at API prices" (Claude Code's own estimate, not a bill) to the job summary and `claude-usage.json`.
+- `claude-usage.sh`: each session's turns, duration, tokens and cost "estimated at API prices" (Claude Code's own estimate, not a bill) to the job summary and `claude-usage.json`, or why they are unknown (a session cut short before its token check is not uploaded).
 
 Haiku 5.5 drives the app well: the smoke plan takes a few dozen turns and cents; a 50-case feature plan took 300–450 turns, 30–60 minutes and $1.1–1.7 per session, estimated at API prices. Every run spends the subscription's usage limits, which interactive sessions share.
 
