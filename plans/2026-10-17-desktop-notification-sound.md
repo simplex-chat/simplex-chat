@@ -1,6 +1,6 @@
 # Desktop: notification sound
 
-Status: draft rev 11 (aligned with the Windows plan rev 12). All decisions taken 2026-10-17. Windows sound is gated by verification V1. Base: `origin/master` a932c8298. Paths are relative to `apps/multiplatform`.
+Status: draft rev 12 (adds nine candidate sounds and a prototype of the settings screen, for choosing D1 by ear). All decisions taken 2026-10-17, except picking the D1 sound. Windows sound is gated by verification V1. Base: `origin/master` a932c8298. Paths are relative to `apps/multiplatform`.
 Related plans: [turn off](2026-10-17-desktop-notifications-turn-off.md), [Windows click](2026-10-17-windows-notification-click.md). Research notes: `~/ntf-research/twoslices-findings.md`, `pipeline-findings.md`, `windows-findings.md`.
 
 ## Problem
@@ -54,10 +54,10 @@ Every desktop OS plays one SimpleX notification sound, controlled by one in-app 
 
 Narrative: when desktop shows a chat notification, it also plays the notification sound. Not if sound is off, not if a sound started in the last 3 s, and not while recording or in a call.
 
-1. **Asset**: `common/src/desktopMain/resources/media/notification.wav`, ≤ 0.5 s, mono, 16-bit signed PCM, 44.1 kHz, about 30–50 KB.
-   - Source (D1): a CC0 sound, e.g. from Kenney's CC0 "Interface Sounds" pack or a CC0-filtered freesound.org entry, converted to WAV.
-   - The source URL and licence go in the commit message and the PR.
-   - Two or three candidates are offered for choosing by ear before implementation.
+1. **Asset**: `common/src/desktopMain/resources/media/notification.wav`, ≤ 0.5 s, mono, 16-bit signed PCM, 44.1 kHz, about 6–45 KB.
+   - The source is one of the candidates below (D1), chosen by ear.
+   - If a Kenney sound is chosen, its source URL and licence go in the commit message.
+   - If a synthesised one is chosen, the script that generates it is committed next to it.
 2. **Player**: `object NotificationSound` in `NtfManager.desktop.kt`, next to its only caller.
    - `fun play()` hands the work to its own single-thread daemon executor, never `withBGApi` or the caller's coroutine.
    - On that thread:
@@ -107,6 +107,31 @@ Narrative: when desktop shows a chat notification, it also plays the notificatio
 
 Feature off (`desktopNotificationSound = false`, the default) = today's app, plus the new toggle row.
 
+## Candidate sounds
+
+Nine candidates, all at equal loudness (RMS -20 dBFS over the audible part, peak at most -1 dBFS) and in the asset format above.
+
+**Kenney sounds (01–05).** Picked from the 100 sounds of Kenney's "Interface Sounds" pack (CC0, https://kenney.nl/assets/interface-sounds) by measurement rather than by name:
+- 0.07–0.5 s long;
+- tonal (spectral flatness < 0.05, so no clicks, noise or glitches);
+- main pitch below about 4 kHz, so not shrill.
+
+**Synthesised sounds (06–09).** Made by a short script (sine partials with exponential decay), so there is no licence question at all.
+
+| # | Sound | Character | Length |
+|---|---|---|---|
+| 01 | Kenney `confirmation_001` | rising arpeggio G4-D5-G5-D6, warm | 0.28 s |
+| 02 | Kenney `confirmation_004` | soft major arpeggio E5-G#5-E6-G#6, slow attack | 0.47 s |
+| 03 | Kenney `glass_002` | single glass ping, about 2 kHz | 0.09 s |
+| 04 | Kenney `pluck_001` | single short pluck, E6 | 0.07 s |
+| 05 | Kenney `question_002` | descending G5-E5-C5 | 0.32 s |
+| 06 | synthesised | two-note chime A5 then E6 | 0.50 s |
+| 07 | synthesised | single soft bell, C6 | 0.45 s |
+| 08 | synthesised | marimba-like pop, G5 | 0.24 s |
+| 09 | synthesised | rising pair G5 then D6 | 0.42 s |
+
+The audio files and a combined preview, all nine in order with 1 s gaps, are linked from the PR description.
+
 ## Threat model
 
 - The sound is a bundled asset. No peer data selects or shapes it.
@@ -140,7 +165,7 @@ One build after the last review round. Recordings, plus before/after screenshots
 
 ## Decisions
 
-- **D1. Sound asset.** DECIDED: a CC0 sound, with candidates offered for choosing by ear before implementation.
+- **D1. Sound asset.** DECIDED: a CC0 or self-synthesised sound. Nine candidates are listed above. Pick one by ear.
 - **D2. Windows.** DECIDED: sound on Windows too, with the same mechanism. Delivery is gated by V1 (see Design §5).
 - **D3. Rate limit.** DECIDED: one global 3 s minimum, no per-chat limit.
 - **D4. Do Not Disturb.** DECIDED: accepted for v1 and documented; the in-app toggle is the control. Follow-up: OS-native sound. Also documented: a notification daemon configured to play its own sound (KDE, Snarl/Growl) can add a second sound; that is the user's OS configuration.
