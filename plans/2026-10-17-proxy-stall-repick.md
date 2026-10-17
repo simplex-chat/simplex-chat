@@ -31,4 +31,10 @@ Desktop AppImage built from this branch vs master, local servers: destination re
 
 The failed proxy is not excluded from the next pick, so with two proxies the next pick is P1 again about half of the time; that is what made the longer trials longer.
 
-Android: needs testing with the core library built from this PR.
+Android (Waydroid, core library built from this PR), fixed-outcome checks. With P1 as the only server, wait until P1 reports the failure. Then switch the servers to P2 only, without restarting the app, and try again on the same relay:
+- the app joins a second link: connected in 3 s through P2;
+- the app's background delivery after the contact joined its link: connected 5 s after the switch.
+
+The master core keeps P1 for the relay in the same checks: the second join fails through P1, and the background delivery is still not connected 240 s after the switch.
+
+In 2 random-pick Android trials, all 8 re-picks after a reported failure landed on P1 again. This is not explained yet.
