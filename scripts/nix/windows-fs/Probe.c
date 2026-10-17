@@ -30,6 +30,47 @@ static void reset_errors(void) {
     SetLastError(ERROR_SUCCESS);
 }
 
+/* Exact fit includes space for the terminator. A too-small buffer must fail;
+ * its truncated contents and termination are not a portable swprintf contract. */
+static bool check_swprintf_capacity(void) {
+    enum { EXPECTED_LENGTH = 5, EXACT_CAPACITY = 6, SMALL_CAPACITY = 5 };
+    const wchar_t expected[] = L"ab:cd";
+    const wchar_t sentinel = (wchar_t)0x5a5a;
+    wchar_t exact[8];
+    wchar_t small[8];
+    wmemset(exact, sentinel, sizeof(exact) / sizeof(exact[0]));
+    wmemset(small, sentinel, sizeof(small) / sizeof(small[0]));
+
+    reset_errors();
+    int count = swprintf(exact, EXACT_CAPACITY, L"%ls:%ls", L"ab", L"cd");
+    int saved_errno = errno;
+    DWORD error = GetLastError();
+    bool payload = wmemcmp(exact, expected, EXPECTED_LENGTH) == 0;
+    bool terminated = exact[EXPECTED_LENGTH] == L'\0';
+    bool bounded = exact[EXACT_CAPACITY] == sentinel
+                && exact[EXACT_CAPACITY + 1] == sentinel;
+    bool exact_ok = count == EXPECTED_LENGTH && payload && terminated && bounded;
+    printf("CRT-CASE exact capacity=%d result=%d expected=%d payload=%d"
+           " nul=%d sentinel=%d errno=%d winerror=%lu pass=%d\n",
+           EXACT_CAPACITY, count, EXPECTED_LENGTH, payload, terminated, bounded,
+           saved_errno, error, exact_ok);
+
+    reset_errors();
+    count = swprintf(small, SMALL_CAPACITY, L"%ls:%ls", L"ab", L"cd");
+    saved_errno = errno;
+    error = GetLastError();
+    bounded = small[SMALL_CAPACITY] == sentinel
+           && small[SMALL_CAPACITY + 1] == sentinel;
+    bool small_ok = count < 0 && bounded;
+    printf("CRT-CASE too-small capacity=%d result=%d sentinel=%d"
+           " nul-observed=%d errno=%d winerror=%lu pass=%d\n",
+           SMALL_CAPACITY, count, bounded,
+           wmemchr(small, L'\0', SMALL_CAPACITY) != NULL,
+           saved_errno, error, small_ok);
+    fflush(stdout);
+    return exact_ok && small_ok;
+}
+
 static void print_path(const char *label, const wchar_t *path) {
     int bytes = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, path, -1,
                                    NULL, 0, NULL, NULL);
@@ -420,8 +461,10 @@ int main(int argc, char **argv) {
     puts("CRT _UCRT=undefined");
 #endif
     fflush(stdout);
-    int status = check_path("short", argv[first], strict, 1);
-    int current = check_path("long", argv[first + 1], strict, 1);
+    int status = check_swprintf_capacity() ? 0 : 1;
+    int current = check_path("short", argv[first], strict, 1);
+    if (current > status) { status = current; }
+    current = check_path("long", argv[first + 1], strict, 1);
     if (current > status) { status = current; }
     current = check_path("archive-shaped", argv[first + 2], strict, 1);
     if (current > status) { status = current; }
