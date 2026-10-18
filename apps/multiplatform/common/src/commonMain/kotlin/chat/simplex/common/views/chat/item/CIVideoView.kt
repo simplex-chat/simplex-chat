@@ -250,7 +250,10 @@ private fun SmallVideoView(
     }
   }
   LaunchedEffect(uri, autoPlay.value) {
-    if (autoPlay.value) openFullscreen()
+    if (autoPlay.value) {
+      autoPlay.value = false
+      openFullscreen()
+    }
   }
 }
 
