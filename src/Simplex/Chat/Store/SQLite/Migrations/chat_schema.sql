@@ -1584,6 +1584,11 @@ CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
 CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(
   badge_store_receipt_id
 );
+CREATE INDEX idx_group_members_user_id_member_role ON group_members(
+  user_id,
+  member_role,
+  group_id
+);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

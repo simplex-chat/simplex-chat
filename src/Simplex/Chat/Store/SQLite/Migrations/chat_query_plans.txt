@@ -6242,7 +6242,7 @@ Query:
     LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role = ?
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_user_id_member_role (user_id=? AND member_role=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
@@ -6265,7 +6265,7 @@ Query:
     LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?)
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_user_id_member_role (user_id=? AND member_role=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
@@ -6288,7 +6288,7 @@ Query:
     LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_user_id_member_role (user_id=? AND member_role=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
@@ -6311,7 +6311,7 @@ Query:
     LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
    WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_user_id_member_role (user_id=? AND member_role=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN

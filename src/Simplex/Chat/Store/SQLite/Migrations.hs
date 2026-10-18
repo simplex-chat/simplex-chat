@@ -180,6 +180,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260925_badge_bindings
 import Simplex.Chat.Store.SQLite.Migrations.M20261010_invite_member_via_group
 import Simplex.Chat.Store.SQLite.Migrations.M20261012_delivery_job_notification
 import Simplex.Chat.Store.SQLite.Migrations.M20261016_badge_store_receipts
+import Simplex.Chat.Store.SQLite.Migrations.M20261018_member_role_index
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -359,7 +360,8 @@ schemaMigrations =
     ("20260925_badge_bindings", m20260925_badge_bindings, Just down_m20260925_badge_bindings),
     ("20261010_invite_member_via_group", m20261010_invite_member_via_group, Just down_m20261010_invite_member_via_group),
     ("20261012_delivery_job_notification", m20261012_delivery_job_notification, Just down_m20261012_delivery_job_notification),
-    ("20261016_badge_store_receipts", m20261016_badge_store_receipts, Just down_m20261016_badge_store_receipts)
+    ("20261016_badge_store_receipts", m20261016_badge_store_receipts, Just down_m20261016_badge_store_receipts),
+    ("20261018_member_role_index", m20261018_member_role_index, Just down_m20261018_member_role_index)
   ]
 
 -- | The list of migrations in ascending order by date
