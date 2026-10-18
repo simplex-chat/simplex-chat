@@ -17,7 +17,6 @@ import Control.Applicative (optional, (<|>))
 import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as AB
 import Data.Attoparsec.Combinator (lookAhead)
@@ -52,7 +51,7 @@ data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
 
 data Format
-  = Bold {singleStar :: Bool}
+  = Bold {singleStar :: BoolDef}
   | Italic
   | StrikeThrough
   | Snippet
@@ -351,8 +350,8 @@ markdownP = joinMarkdown <$> A.many' fragmentP
           ' ' -> unmarked <$> A.takeWhile (== ' ')
           '\n' -> unmarked <$> A.string "\n"
           '+' -> phoneP <|> wordP
-          '*' -> doubleP '*' (Bold False) <|> formattedP '*' (Bold True)
-          '_' -> doubleP '_' (Bold False) <|> formattedP '_' Italic
+          '*' -> doubleP '*' (Bold $ BoolDef False) <|> formattedP '*' (Bold $ BoolDef True)
+          '_' -> doubleP '_' (Bold $ BoolDef False) <|> formattedP '_' Italic
           '~' -> doubleP '~' StrikeThrough <|> formattedP '~' StrikeThrough
           '`' -> codeSpanP
           '#' -> A.char '#' *> (secretP <|> nameRefP '#' <|> secretFallback)
@@ -942,7 +941,7 @@ markdownText :: FormattedText -> Text
 markdownText (FormattedText f_ t) = case f_ of
   Nothing -> t
   Just f -> case f of
-    Bold singleStar -> if singleStar then around '*' else "**" <> t <> "**"
+    Bold (BoolDef singleStar) -> if singleStar then around '*' else "**" <> t <> "**"
     Italic -> around '_'
     StrikeThrough -> around '~'
     Snippet -> codeSpan
@@ -1016,11 +1015,7 @@ $(JQ.deriveJSON (sumTypeJSON fstToLower) ''BlockToken)
 $(JQ.deriveToJSON (sumTypeJSON fstToLower) ''Format)
 
 instance FromJSON Format where
-  parseJSON v = $(JQ.mkParseJSON (sumTypeJSON fstToLower) ''Format) v <|> boldWithoutStar <|> pure (Unknown v)
-    where
-      boldWithoutStar = case v of
-        J.Object o | JM.lookup "type" o == Just (J.String "bold") || JM.member "bold" o -> pure $ Bold False
-        _ -> fail "not bold"
+  parseJSON v = $(JQ.mkParseJSON (sumTypeJSON fstToLower) ''Format) v <|> pure (Unknown v)
 
 $(JQ.deriveJSON defaultJSON ''SegmentRange)
 

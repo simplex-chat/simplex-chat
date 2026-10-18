@@ -16,6 +16,7 @@ import Generic.Random (genericArbitraryU)
 import JSONFixtures
 import Simplex.Chat.Markdown (Format (Bold), MarkdownBlock (UnknownBlock), ParsedMarkdown (..), parsedMarkdown)
 import Simplex.Chat.Remote.Protocol (owsf2tagged)
+import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Parsers
 import Test.Hspec
 import Test.Hspec.QuickCheck (modifyMaxSuccess)
@@ -91,8 +92,8 @@ markdownBlocksJSONTests = do
   it "should decode an unknown block" $
     J.eitherDecode "{\"type\":\"future\"}" `shouldBe` Right (UnknownBlock $ J.object ["type" J..= ("future" :: String)])
   it "should decode bold without singleStar" $ do
-    J.eitherDecode "{\"type\":\"bold\"}" `shouldBe` Right (Bold False)
-    J.eitherDecode "{\"_owsf\":true,\"bold\":{}}" `shouldBe` Right (Bold False)
+    J.eitherDecode "{\"type\":\"bold\"}" `shouldBe` Right (Bold $ BoolDef False)
+    (JT.parseEither J.parseJSON . owsf2tagged =<< J.eitherDecode "{\"_owsf\":true,\"bold\":{}}") `shouldBe` Right (Bold $ BoolDef False)
 
 jsonTests :: Spec
 jsonTests = do

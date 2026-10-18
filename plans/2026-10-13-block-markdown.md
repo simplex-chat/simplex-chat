@@ -194,7 +194,7 @@ open format at the text end       text
 
 ```haskell
 data Format
-  = Bold {singleStar :: Bool}
+  = Bold {singleStar :: BoolDef}
   | ...                                  -- present constructors, unchanged
   | Phone
   | Escape
@@ -257,7 +257,7 @@ data ParsedMarkdown = ParsedMarkdown
 - JSON of `BlockToken` and `MarkdownBlock`: `sumTypeJSON fstToLower`, as `Format` (`Markdown.hs:536`).
 - An unknown block tag is decoded as `UnknownBlock`, as in `Format` (`Markdown.hs:538-539`).
 - An unknown token tag: the format is decoded as `Unknown`.
-- `Bold` without `singleStar` in JSON is decoded with `singleStar = False`.
+- `Bold` without `singleStar` in JSON is decoded with `singleStar = False`: the field type is `BoolDef` (`Types.hs:2313-2318`).
 - JSON of `ListEntry`, `SegmentRange` and `ParsedMarkdown`: `defaultJSON`.
 - JSON of `TableAlign`: `enumJSON (dropPrefix "TA")`.
 - Field names equal to local names in importing modules (`-Werror=name-shadowing`, simplex-chat.cabal:362) are hidden in those imports.
