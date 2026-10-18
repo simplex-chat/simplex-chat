@@ -473,7 +473,13 @@ struct MigrateFromDevice: View {
 
     private func exportArchive() {
         Task {
-            if let s = await exportStorageShortfall() {
+            let dataBytes = await exportDataBytes()
+            if dataBytes > MAX_FILE_SIZE_XFTP_HARD {
+                await MainActor.run {
+                    alert = databaseTooLargeAlert(dataBytes)
+                    migrationState = .uploadConfirmation
+                }
+            } else if let s = await exportStorageShortfall(dataBytes) {
                 await MainActor.run { alert = .lowStorage(required: s.required, available: s.available) }
             } else {
                 await archiveAndUpload()
@@ -489,14 +495,7 @@ struct MigrateFromDevice: View {
             if archiveBytes > MAX_FILE_SIZE_XFTP_HARD {
                 try? FileManager.default.removeItem(at: archivePath)
                 await MainActor.run {
-                    alert = .error(
-                        title: "Database is too large",
-                        error: String.localizedStringWithFormat(
-                            NSLocalizedString("The exported archive (%@) is larger than the maximum size supported for migration (%@).", comment: "migration alert"),
-                            ByteCountFormatter.string(fromByteCount: archiveBytes, countStyle: .binary),
-                            ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP_HARD, countStyle: .binary)
-                        )
-                    )
+                    alert = databaseTooLargeAlert(archiveBytes)
                     migrationState = .uploadConfirmation
                 }
             } else if errs.isEmpty {
@@ -815,9 +814,23 @@ struct MigrateFromDevice_Previews: PreviewProvider {
     }
 }
 
+private func databaseTooLargeAlert(_ bytes: Int64) -> MigrateFromDeviceViewAlert {
+    .error(
+        title: "Database is too large",
+        error: String.localizedStringWithFormat(
+            NSLocalizedString("The database (%@) is larger than the maximum size supported for migration (%@).", comment: "migration alert"),
+            ByteCountFormatter.string(fromByteCount: bytes, countStyle: .binary),
+            ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP_HARD, countStyle: .binary)
+        )
+    )
+}
+
+func exportDataBytes() async -> Int64 {
+    await Task.detached { estimatedExportBytes() }.value
+}
+
 // export transiently holds a copy of the data and the archive of it
-func exportStorageShortfall() async -> (required: Int64, available: Int64)? {
-    let dataBytes = await Task.detached { estimatedExportBytes() }.value
+func exportStorageShortfall(_ dataBytes: Int64) async -> (required: Int64, available: Int64)? {
     let required = dataBytes * 2
     guard let available = availableImportantBytes(at: getDocumentsDirectory()), available < required else { return nil }
     return (required, available)
@@ -837,12 +850,20 @@ func lowStorageAlert(_ required: Int64, _ available: Int64, onContinue: @escapin
 }
 
 private func estimatedExportBytes() -> Int64 {
-    let files = Int64(directoryFileCountAndSize(getAppFilesDirectory())?.1 ?? 0)
-    let wallpapers = Int64(directoryFileCountAndSize(getWallpaperDirectory())?.1 ?? 0)
     let dbPrefix = getAppDatabasePath().path
-    let chatDb = Int64(fileSize(URL(fileURLWithPath: dbPrefix + "_chat.db")) ?? 0)
-    let agentDb = Int64(fileSize(URL(fileURLWithPath: dbPrefix + "_agent.db")) ?? 0)
-    return files + wallpapers + chatDb + agentDb
+    return filesSize(getAppFilesDirectory()) + filesSize(getWallpaperDirectory()) + fileContentSize(dbPrefix + "_chat.db") + fileContentSize(dbPrefix + "_agent.db")
+}
+
+private func filesSize(_ dir: URL) -> Int64 {
+    let urls = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey])) ?? []
+    return urls.reduce(0) { sum, url in
+        let v = try? url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
+        return sum + (v?.isRegularFile == true ? Int64(v?.fileSize ?? 0) : 0)
+    }
+}
+
+private func fileContentSize(_ path: String) -> Int64 {
+    (try? FileManager.default.attributesOfItem(atPath: path)[.size] as? Int64) ?? 0
 }
 
 private func availableImportantBytes(at url: URL) -> Int64? {

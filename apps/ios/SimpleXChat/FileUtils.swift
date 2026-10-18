@@ -36,7 +36,7 @@ public let MAX_FILE_SIZE_XFTP_LEGEND: Int64 = 5_368_709_120 // 5GB
 // a badge raises the limit at send for this long after its expiry, shorter than the receiver's grace
 public let BADGE_SND_GRACE_INTERVAL = TimeInterval(86400)
 
-// Hard limit for standalone XFTP uploads (device migration archive);
+// Hard limit for XFTP uploads (e.g. the device migration archive);
 // mirrors maxFileSizeHard (gb 5) in simplexmq Simplex/FileTransfer/Description.hs
 public let MAX_FILE_SIZE_XFTP_HARD: Int64 = 5_368_709_120 // 5GB
 

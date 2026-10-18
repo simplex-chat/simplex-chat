@@ -475,7 +475,7 @@ struct DatabaseView: View {
         await MainActor.run {
             progressIndicator = true
         }
-        if let s = await exportStorageShortfall() {
+        if let s = await exportStorageShortfall(await exportDataBytes()) {
             await MainActor.run {
                 alert = .lowStorage(required: s.required, available: s.available)
                 progressIndicator = false

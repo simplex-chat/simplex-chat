@@ -605,13 +605,9 @@ fun deleteDatabaseBackups() {
 
 // export holds a copy of the data in databaseExportDir while it writes the archive to archiveDir,
 // where a migration upload then also writes an encrypted copy of the archive
-suspend fun confirmExportStorage(archiveDir: File = databaseExportDir): Boolean {
+suspend fun confirmExportStorage(archiveDir: File = databaseExportDir, dataBytes: Long = exportDataBytes()): Boolean {
   databaseExportDir.mkdirs()
   archiveDir.mkdirs()
-  val dataBytes = directoryFileCountAndSize(appFilesDir.absolutePath).second +
-    directoryFileCountAndSize(wallpapersDir.absolutePath).second +
-    File(dataDir, chatDatabaseFileName).length() +
-    File(dataDir, agentDatabaseFileName).length()
   val (shortDir, requiredBytes) = listOf(archiveDir to 2L * dataBytes, databaseExportDir to dataBytes)
     .firstOrNull { (dir, needed) -> dir.usableSpace < needed } ?: return true
   val availableBytes = shortDir.usableSpace
@@ -626,6 +622,12 @@ suspend fun confirmExportStorage(archiveDir: File = databaseExportDir): Boolean 
   )
   return proceed.await()
 }
+
+fun exportDataBytes(): Long =
+  directoryFileCountAndSize(appFilesDir.absolutePath).second +
+    directoryFileCountAndSize(wallpapersDir.absolutePath).second +
+    File(dataDir, chatDatabaseFileName).length() +
+    File(dataDir, agentDatabaseFileName).length()
 
 private suspend fun exportArchive(
   m: ChatModel,

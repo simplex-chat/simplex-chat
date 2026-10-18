@@ -133,7 +133,7 @@ const val MAX_FILE_SIZE_XFTP_LEGEND: Long = 5_368_709_120 // 5GB
 // a badge raises the limit at send for this long after its expiry, shorter than the receiver's grace
 val BADGE_SND_GRACE_INTERVAL: Duration = 1.days
 
-// Hard limit for standalone XFTP uploads (e.g. device migration archive);
+// Hard limit for XFTP uploads (e.g. the device migration archive);
 // mirrors maxFileSizeHard (gb 5) in simplexmq Simplex/FileTransfer/Description.hs
 const val MAX_FILE_SIZE_XFTP_HARD: Long = 5_368_709_120 // 5GB
 
