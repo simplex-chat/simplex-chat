@@ -110,6 +110,9 @@ case "$kind" in
       output=libsimplex.so
     else
       output=libsimplex.dll
+      # GHC roots this ghc-internal initializer for executables, but not DLLs.
+      # Keep its real archive member when linking the static Haskell RTS.
+      set -- -optl-Wl,-u,init_ghc_hs_iface "$@"
     fi
     "$ghc" "${common[@]}" -shared -threaded -flink-rts -package-id "$unit" \
       "$@" MobileBundle.hs -o "$output"

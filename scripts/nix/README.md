@@ -193,6 +193,13 @@ that store is pruned. iOS ZIPs contain both the plain `libHSsimplex-chat-*.a` an
 the rolled `libHSsimplex-chat-*-ghc*.a` used by `update-pbxproj.sh`. Android and
 Windows clients link the threaded RTS into `libsimplex.so` or `libsimplex.dll`;
 Android's separate `libsupport.so` resolves RTS symbols from the client library.
+The GHC 9.14 Windows DLL link explicitly roots `init_ghc_hs_iface` from the real
+static `ghc-internal` archive, as GHC already does for executable links. Run
+`python3 scripts/nix/test-link-mobile-library.py` for scoped argv/status checks.
+Its optional `--cc`, `--ar`, `--ghc-source` and `--link-output` arguments also run
+a MinGW archive-extraction control using the pinned initializer body; extra C
+linker inputs can be passed with `--link-option`. This does not execute a PE or
+qualify the complete GHC runtime ABI.
 Android client export flags use the ordered `chat-exports.txt` manifest. The
 desktop library scripts check that manifest and `libsimplex.dll.def` against the
 Haskell exports before building; update the manifest when adding an export.
