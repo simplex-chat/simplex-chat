@@ -5108,8 +5108,8 @@ Query:
 Plan:
 
 Query: 
-      INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, user_id, incognito, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?)
+      INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, chat_peer_type, user_id, incognito, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)

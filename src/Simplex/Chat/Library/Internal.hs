@@ -994,7 +994,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
   let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
   (ct, conn, incognitoProfile, getPresHeader) <- case contactId_ of
     Nothing -> do
-      incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+      incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO (generateIncognitoProfile user) else pure Nothing
       (connId, binding) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
       (ct, conn) <- withStore' $ \db ->
         createContactFromRequest db user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
@@ -1003,7 +1003,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
       ct <- withFastStore $ \db -> getContact db cxt user contactId
       case contactConn ct of
         Nothing -> do
-          incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+          incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO (generateIncognitoProfile user) else pure Nothing
           (connId, binding) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
           currentTs <- liftIO getCurrentTime
           conn <- withStore' $ \db -> do
@@ -1335,6 +1335,9 @@ introduceInChannel cxt user g@(GIK gInfo _) subscriber@GroupMember {activeConn =
   where
     sendIntros ms = forM_ (L.nonEmpty $ map (memberIntroEvt gInfo) ms) $ \evts ->
       sendGroupMemberMessages user g conn evts
+
+generateIncognitoProfile :: User -> IO Profile
+generateIncognitoProfile User {profile = LocalProfile {peerType}} = generateRandomProfile peerType
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user g = userProfileInGroup' user (Just g)

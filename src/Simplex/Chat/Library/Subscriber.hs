@@ -57,7 +57,6 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
-import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
@@ -1535,7 +1534,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       Just AutoAccept {acceptIncognito} -> do
                         incognitoProfile <-
                           if not shortLinkDataSet && acceptIncognito
-                            then Just . NewIncognito <$> liftIO generateRandomProfile
+                            then Just . NewIncognito <$> liftIO (generateIncognitoProfile user)
                             else pure Nothing
                         ct' <- acceptContactRequestAsync user uclId ct ucr incognitoProfile
                         toView $ CEvtAcceptingContactRequest user ct'
