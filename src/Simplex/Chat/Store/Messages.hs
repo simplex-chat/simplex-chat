@@ -166,7 +166,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Simplex.Chat.Badges (BadgeStatus)
 import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
-import Simplex.Chat.Markdown hiding (columns)
+import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol

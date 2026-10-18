@@ -1,21 +1,19 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module MarkdownTests where
 
-import Control.Monad (forM_)
-import Data.Char (isSpace)
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
 import Simplex.Messaging.Agent.Protocol (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util (tshow, (<$$>))
+import Simplex.Messaging.Util ((<$$>))
 import System.Console.ANSI.Types
 import Test.Hspec
 import qualified URI.ByteString as U
@@ -35,10 +33,11 @@ markdownTests = do
   textWithCommands
   textWithSimplexNames
   multilineMarkdownList
+  inlineMarkdownGFM
   blockMarkdown
   testSanitizeUri
 
-infixr 1 ==>, <==, <==>, ==>>, <<==, <<==>>, ===>
+infixr 1 ==>, <==, <==>, ==>>, <<==, <<==>>
 
 (==>) :: Text -> Markdown -> Expectation
 s ==> m = parseMarkdown s `shouldBe` m
@@ -58,59 +57,11 @@ s <<== ft = T.concat (map markdownText ft) `shouldBe` s
 (<<==>>) :: Text -> MarkdownList -> Expectation
 s <<==>> ft = (s ==>> ft) >> (s <<== ft)
 
-type TestBlock = (MarkdownBlock, [[MarkdownList]])
-
-(===>) :: Text -> [TestBlock] -> Expectation
-s ===> bs = case parseMaybeMarkdownList s of
-  Just ft -> do
-    testBlocks ft `shouldBe` bs
-    s <<== ft
-    checkMarkers ft
-  Nothing -> expectationFailure "no markdown"
-
-testBlocks :: MarkdownList -> [TestBlock]
-testBlocks = \case
-  FormattedText (Just (BlockStart b)) _ : rest ->
-    let (inside, rest') = break (\ft -> format ft == Just BlockEnd) rest
-     in (b, map (splitOnMarker CellBreak) $ splitOnMarker LineBreak inside) : testBlocks (drop 1 rest')
-  _ : rest -> testBlocks rest
-  [] -> []
-  where
-    splitOnMarker m = foldr (\ft acc -> if format ft == Just m then [] : acc else case acc of x : xs -> (ft : x) : xs; [] -> [[ft]]) [[]]
-
-checkMarkers :: MarkdownList -> Expectation
-checkMarkers ft = do
-  go Nothing ft
-  forM_ (testBlocks ft) $ \case
-    (Table columns, rows) -> map length rows `shouldBe` map (const $ length columns) rows
-    _ -> pure ()
-  filter (\(FormattedText f t) -> not (isMarker' f) && T.null t) ft `shouldBe` []
-  [(a, b) | (a@(FormattedText f _), b@(FormattedText f' _)) <- zip ft (drop 1 ft), f == f', not (isMarker' f)] `shouldBe` []
-  where
-    isMarker' = maybe False isMarker
-    go :: Maybe MarkdownBlock -> MarkdownList -> Expectation
-    go Nothing (s@(FormattedText f t) : rest) = case f of
-      Just (BlockStart b) -> go (Just b) rest
-      Nothing | T.all isSpace t -> go Nothing rest
-      _ -> expectationFailure $ "outside a block: " <> show s
-    go (Just b) (s@(FormattedText f _) : rest) = case f of
-      Just BlockEnd -> go Nothing rest
-      Just (BlockStart _) -> expectationFailure $ "BlockStart inside a block: " <> show s
-      Just CellBreak | not (isTable b) -> expectationFailure $ "CellBreak outside a table: " <> show s
-      _ -> go (Just b) rest
-    go Nothing [] = pure ()
-    go (Just _) [] = expectationFailure "BlockEnd missing"
-    isTable = \case
-      Table _ -> True
-      _ -> False
-
-noBlocks :: Text -> Expectation
-noBlocks s = case parseMaybeMarkdownList s of
-  Just ft -> filter (maybe False isMarker . format) ft `shouldBe` []
-  Nothing -> pure ()
-
 bold :: Text -> Markdown
-bold = markdown Bold
+bold = markdown (Bold True)
+
+bold2 :: Text -> Markdown
+bold2 = markdown (Bold False)
 
 textFormat :: Spec
 textFormat = describe "text format (bold)" do
@@ -131,17 +82,17 @@ textFormat = describe "text format (bold)" do
       <==> "this is " <> bold "bold" <> "   "
   it "correct markdown with double asterisk" do
     "this is **bold formatted** text"
-      ==> "this is " <> bold "bold formatted" <> " text"
+      <==> "this is " <> bold2 "bold formatted" <> " text"
     "**bold formatted** text"
-      ==> bold "bold formatted" <> " text"
+      <==> bold2 "bold formatted" <> " text"
     "this is **bold**"
-      ==> "this is " <> bold "bold"
+      <==> "this is " <> bold2 "bold"
     " **bold** text"
-      ==> " " <> bold "bold" <> " text"
+      <==> " " <> bold2 "bold" <> " text"
     "this is **bold** "
-      ==> "this is " <> bold "bold" <> " "
+      <==> "this is " <> bold2 "bold" <> " "
     "this is **bold**   "
-      ==> "this is " <> bold "bold" <> "   "
+      <==> "this is " <> bold2 "bold" <> "   "
   it "ignored as markdown" do
     "this is * unformatted * text"
       <==> "this is * unformatted * text"
@@ -374,9 +325,6 @@ obfuscatedSimplexLinks = describe "SimpleX links obfuscated with whitespace" do
     hasObfuscatedSimplexLink (T.intercalate " " $ T.chunksOf 8 $ "https://simplex.chat" <> inv) `shouldBe` True
   it "detects a split link followed by other text" do
     hasObfuscatedSimplexLink (spaced addr <> "\nplease connect") `shouldBe` True
-  it "detects a link in a code block" do
-    hasObfuscatedSimplexLink ("```\nhttps://simplex.chat" <> inv <> "\n```") `shouldBe` True
-    hasObfuscatedSimplexLink ("```\nhttps://simplex.chat" <> inv <> "\nconnect()\n```") `shouldBe` True
   it "ignores text without a SimpleX link" do
     hasObfuscatedSimplexLink "" `shouldBe` False
     hasObfuscatedSimplexLink "hello there, this is a normal message" `shouldBe` False
@@ -536,160 +484,142 @@ multilineMarkdownList = describe "multiline markdown" do
   it "command markdown" do
     "/link 1" <<==>> [command' "link 1" "/link 1"]
     " /link 1" <<==>> [command' "link 1" " /link 1"]
-    "*0*\n/7   /+" <<==>> [FormattedText (Just Bold) "0", "\n", command' "7" "/7", "   ", command' "+" "/+"]
+    "*0*\n/7   /+" <<==>> [FormattedText (Just $ Bold True) "0", "\n", command' "7" "/7", "   ", command' "+" "/+"]
+
+inlineMarkdownGFM :: Spec
+inlineMarkdownGFM = describe "inline markdown of GFM" do
+  it "strike-through, bold, code spans" do
+    "~~struck~~ text" ==> markdown StrikeThrough "struck" <> " text"
+    "__bold__ text" ==> bold2 "bold" <> " text"
+    "`` x ` y ``" ==> markdown Snippet "x ` y"
+    "``x ` y``" <== markdown Snippet "x ` y"
+    "` a `" ==> markdown Snippet "a"
+    "` a`" <==> markdown Snippet " a"
+    "` `" <==> markdown Snippet " "
+    "`  a  `" <==> markdown Snippet " a "
+    "``a``" ==> markdown Snippet "a"
+    "`` a`" <==> "`` a`"
+  it "autolinks" do
+    "<https://simplex.chat>" <==> web "https://simplex.chat" "https://simplex.chat" "<https://simplex.chat>"
+    "mail <chat@simplex.chat>" <==> "mail " <> web "chat@simplex.chat" "mailto:chat@simplex.chat" "<chat@simplex.chat>"
+    "<not a link>" <==> "<not a link>"
+  it "backslash escapes" do
+    "\\*not bold*" <==> markdown Escape "\\" <> "*not bold*"
+    "a\\_b_" <==> "a" <> markdown Escape "\\" <> "_b_"
+    "\\a" <==> "\\a"
+    "`\\*`" <==> markdown Snippet "\\*"
+
+infix 1 ===>, <===>
+
+(===>) :: Text -> (MarkdownList, [MarkdownBlock]) -> Expectation
+s ===> (ft, blocks) = parsedMarkdown s `shouldBe` ParsedMarkdown (Just ft) (L.nonEmpty blocks)
+
+(<===>) :: Text -> (MarkdownList, [MarkdownBlock]) -> Expectation
+s <===> parsed@(ft, _) = (s ===> parsed) >> (s <<== ft)
+
+mk :: BlockToken -> Text -> FormattedText
+mk = markupText
+
+rng :: Int -> Int -> SegmentRange
+rng = SegmentRange
+
+entry :: Int -> Int -> [ListEntry] -> ListEntry
+entry a b = ListEntry Nothing (rng a b)
 
 blockMarkdown :: Spec
-blockMarkdown = describe "block markdown" $ do
-  it "heading" $ do
-    forM_ ([1 .. 6] :: [Int]) $ \lvl -> (T.replicate lvl "#" <> " Title") ===> [heading lvl ["Title"]]
-    "###### Title\ntext" ===> [heading 6 ["Title"], para [["text"]]]
-    "*a*\n## B" ===> [para [[bold' "a"]], heading 2 ["B"]]
-    noBlocks "#\tx#"
-    noBlocks "####### Title\ntext"
-    noBlocks "#"
-    noBlocks "# \nx"
-    noBlocks "#x"
-  it "list" $ do
-    "- a\n* b\n+ c" ===> [item 0 [["a"]], item 0 [["b"]], item 0 [["c"]]]
-    "1. a\n2) b\n10. c" ===> [numbered "1." [["a"]], numbered "2)" [["b"]], numbered "10." [["c"]]]
-    "- a\n  - b\n    - c\n  - d\n- e" ===> [item 0 [["a"]], item 1 [["b"]], item 2 [["c"]], item 1 [["d"]], item 0 [["e"]]]
-    "- a\n   - b\n      - c" ===> [item 0 [["a"]], item 1 [["b"]], item 2 [["c"]]]
-    "- a\n    - b" ===> [item 0 [["a"]], item 1 [["b"]]]
-    "- a\n\t- b" ===> [item 0 [["a"]], item 1 [["b"]]]
-    T.intercalate "\n" [T.replicate (2 * i) " " <> "- " <> tshow i | i <- [0 .. 8 :: Int]]
-      ===> [item (min 6 i) [[FormattedText Nothing $ tshow i]] | i <- [0 .. 8]]
-    "- a\ncontinued\n- b" ===> [item 0 [["a"], ["continued"]], item 0 [["b"]]]
-    "- a\n  continued" ===> [item 0 [["a"], ["continued"]]]
-    "- a\n  - b\n\n  - c" ===> [item 0 [["a"]], item 1 [["b"]], item 1 [["c"]]]
-    "- a\n  - b\n# H\n  - c" ===> [item 0 [["a"]], item 1 [["b"]], heading 1 ["H"], item 0 [["c"]]]
-    "- *a* @b" ===> [item 0 [[bold' "a", " ", mention' "b" "@b"]]]
-  it "quote" $ do
-    "> a\n>b" ===> [quote [["a"], ["b"]]]
-    "> a\n>\n> b" ===> [quote [["a"], [], ["b"]]]
-    ">\n> a\n>" ===> [quote [["a"]]]
-    noBlocks "*a*\n>"
-    noBlocks ">"
-    noBlocks ">\nx"
-  it "code" $ do
-    "```\nls -l\n```" ===> [code Nothing [["ls -l"]]]
-    "```bash\nls\n  pwd" ===> [code (Just "bash") [["ls"], ["  pwd"]]]
-    "``` bash  script\nls\n```" ===> [code (Just "bash") [["ls"]]]
-    "  ```\n    ls\n   x\n```" ===> [code Nothing [["  ls"], [" x"]]]
-    "  ```\n\tls\n```" ===> [code Nothing [["ls"]]]
-    "```\nls\n```  \nx" ===> [code Nothing [["ls"]], para [["x"]]]
-    "```\n*a* @b\n```" ===> [code Nothing [["*a* @b"]]]
-    "````\n```" ===> [code Nothing [["```"]]]
-    "```\n\n\ncode\n```" ===> [code Nothing [[], [], ["code"]]]
-    "```\na\n\nb\n```" ===> [code Nothing [["a"], [], ["b"]]]
-    noBlocks "*a*\n```"
-    noBlocks "```"
-    noBlocks "```\n```"
-    noBlocks "```\n```\nx"
-    noBlocks "```\n\n```"
-    noBlocks "```\n   \n```"
-  it "rule" $ do
-    "a\n---" ===> [para [["a"]], rule]
-    "***\n___\n- - -" ===> [rule, rule, rule]
-  it "table" $ do
-    "| a | b | c | d |\n|---|:--|--:|:-:|\n| 1 | 2 | 3 | 4 |"
-      ===> [table [TANone, TALeft, TARight, TACenter] [[["a"], ["b"], ["c"], ["d"]], [["1"], ["2"], ["3"], ["4"]]]]
-    "a | b\n- | -" ===> [table [TANone, TANone] [[["a"], ["b"]]]]
-    "a | b\n--|--\n1 |" ===> [table [TANone, TANone] [[["a"], ["b"]], [["1"], []]]]
-    "a | b\n--|--\n1 | 2 | 3" ===> [table [TANone, TANone] [[["a"], ["b"]], [["1"], ["2 | 3"]]]]
-    "a | b\n--|--\n1 | 2 | 3 |" ===> [table [TANone, TANone] [[["a"], ["b"]], [["1"], ["2 | 3"]]]]
-    "a | b  \n--|--" ===> [table [TANone, TANone] [[["a"], ["b"]]]]
-    "a | b | c\n--|--|--\n1 |  | 3" ===> [table [TANone, TANone, TANone] [[["a"], ["b"], ["c"]], [["1"], [], ["3"]]]]
-    "a | b\n--|--\n | 2" ===> [table [TANone, TANone] [[["a"], ["b"]], [["2"], []]]]
-    "a|b\n-|-\n1|2\ntext" ===> [table [TANone, TANone] [[["a"], ["b"]], [["1"], ["2"]]], para [["text"]]]
-    "| *a* | @b |\n|---|---|" ===> [table [TANone, TANone] [[[bold' "a"], [mention' "b" "@b"]]]]
-    "  | x |\n  |---|\n  | 1 |" ===> [table [TANone] [[["x"]], [["1"]]]]
-    "| a | b | c |\n|-|-|-|\n| 1 |   | 3 |" ===> [table [TANone, TANone, TANone] [[["a"], ["b"], ["c"]], [["1"], [], ["3"]]]]
-    "| a | b | c |\n|-|-|-|\n| 1 || 3 |" ===> [table [TANone, TANone, TANone] [[["a"], ["b"], ["c"]], [["1"], [], ["3"]]]]
-    noBlocks "a | b\nc"
-  it "paragraph" $ do
-    noBlocks "*a*\n\nb"
-    "*a*\n\n# H" ===> [para [[bold' "a"]], heading 1 ["H"]]
-    "a\nb\n\nc\n# H" ===> [para [["a"], ["b"]], para [["c"]], heading 1 ["H"]]
-    "  a\n # H" ===> [para [["  a"]], heading 1 ["H"]]
-    "\n# a" ===> [heading 1 ["a"]]
-    "# h\n```\n   \n```" ===> [heading 1 ["h"], para [["```"], [], ["```"]]]
-    "- h\n```\n   \n```" ===> [item 0 [["h"], ["```"], [], ["```"]]]
-    "- h\n```\n\160\n```" ===> [item 0 [["h"], ["```"], [], ["```"]]]
-    "# h\n```\n\160\n```" ===> [heading 1 ["h"], para [["```"], [], ["```"]]]
-    " \n\n# a\n\t" ===> [heading 1 ["a"]]
-  it "command" $
-    "/link 1" ==>> [command' "link 1" "/link 1"]
-  it "CR at line ends" $
-    "p\r\n# H\r\n- a\r\n> q\r\n---\r\n```\r\nls\r\n```\r\n| a |\r\n|---|\r\n| 1 |"
-      ===> [para [["p"]], heading 1 ["H"], item 0 [["a"]], quote [["q"]], rule, code Nothing [["ls"]], table [TANone] [[["a"]], [["1"]]]]
-  it "live message" $ do
-    "---" ===> [rule]
-    noBlocks "---x"
-    noBlocks "```"
-    "```\nls" ===> [code Nothing [["ls"]]]
-    "```\nls\n`" ===> [code Nothing [["ls"], ["`"]]]
-    "```\nls\n``" ===> [code Nothing [["ls"], ["``"]]]
-    "```\nls\n```" ===> [code Nothing [["ls"]]]
-    "``````\nls\n```" ===> [code Nothing [["ls"], ["```"]]]
-    noBlocks "```ls```"
-    noBlocks "```ls```\nx"
-    "a|b\n-|-" ===> [table [TANone, TANone] [[["a"], ["b"]]]]
-    noBlocks "a|b\n-|-x"
-  it "marker texts" $ do
-    "# *Title*\n- a\n  b\n\n| x |\n|---|\n| 1 |"
-      ==>> [ ms (BlockStart $ Heading 1) "# ", bold' "Title", ms BlockEnd "", "\n",
-             ms (BlockStart $ ListItem Nothing 0) "- ", "a", ms LineBreak "\n  ", "b", ms BlockEnd "", "\n\n",
-             ms (BlockStart $ Table [TANone]) "| ", "x", ms LineBreak " |\n|---|\n| ", "1", ms BlockEnd " |"
-           ]
-    ">\n> a\n>  \n> b\n>"
-      ==>> [ms (BlockStart Quote) ">\n> ", "a", ms LineBreak "\n>  ", ms LineBreak "\n> ", "b", ms BlockEnd "\n>"]
-    "  ```kotlin\r\n    ls\r\n\r\n```\r"
-      ==>> [ms (BlockStart $ CodeBlock $ Just "kotlin") "  ```kotlin\r\n  ", "  ls", ms LineBreak "\r\n", ms BlockEnd "\r\n```\r"]
-    "a | b\n--|--\n1 |"
-      ==>> [ms (BlockStart $ Table [TANone, TANone]) "", "a", ms CellBreak " | ", "b", ms LineBreak "\n--|--\n", "1", ms CellBreak "", ms BlockEnd " |"]
-    "---\r\n\n- x"
-      ==>> [ms (BlockStart Rule) "---", ms BlockEnd "\r", "\n\n", ms (BlockStart $ ListItem Nothing 0) "- ", "x", ms BlockEnd ""]
-  it "source text from segments" $
-    forM_ sourceTexts $ \t -> case parseMaybeMarkdownList t of
-      Just ft -> (t <<== ft) >> checkMarkers ft
-      Nothing -> expectationFailure $ "no markdown: " <> show t
-  it "consumers" $ do
-    maybe [] mentionedNames (parseMaybeMarkdownList "| @alice |\n|---|\n```\n@bob\n```") `shouldBe` ["alice"]
-    maybe False hasLinks (parseMaybeMarkdownList "*a*\n```\nhttps://simplex.chat\n```") `shouldBe` False
-    maybe False hasLinks (parseMaybeMarkdownList "- https://simplex.chat") `shouldBe` True
-    map markdownText [ms (BlockStart Rule) "---", ms BlockEnd "\n```", ms LineBreak "\n> ", ms CellBreak " | "] `shouldBe` ["---", "\n```", "\n> ", " | "]
-  where
-    ms :: Format -> Text -> FormattedText
-    ms = markerSegment
-    para :: [MarkdownList] -> TestBlock
-    para ls = (Paragraph, map pure ls)
-    heading :: Int -> MarkdownList -> TestBlock
-    heading lvl l = (Heading lvl, [[l]])
-    item :: Int -> [MarkdownList] -> TestBlock
-    item i ls = (ListItem Nothing i, map pure ls)
-    numbered :: Text -> [MarkdownList] -> TestBlock
-    numbered n ls = (ListItem (Just n) 0, map pure ls)
-    quote :: [MarkdownList] -> TestBlock
-    quote ls = (Quote, map pure ls)
-    code :: Maybe Text -> [MarkdownList] -> TestBlock
-    code lang ls = (CodeBlock lang, map pure ls)
-    table :: [TableAlign] -> [[MarkdownList]] -> TestBlock
-    table aligns rows = (Table aligns, rows)
-    rule :: TestBlock
-    rule = (Rule, [[[]]])
-    bold' :: Text -> FormattedText
-    bold' = FormattedText (Just Bold)
-    mention' :: Text -> Text -> FormattedText
-    mention' n = FormattedText (Just $ Mention n)
-    sourceTexts :: [Text]
-    sourceTexts =
-      [ "# *a* @b\n- c @d\n  e\n> f\n```\n@g\n```\n| h | @i |\n|---|---|\n| j | *k* |\n---",
-        "- a\n  - b\n# H\n  - c",
-        "```\n\n```\nx\r\n  ```\n\tls\n```",
-        "a | b\n--|--\n1 | 2 | 3 |\n| x  \n> \n> q",
-        " \n# H\n\n\t\n- a\r\n  b\r\n\r",
-        ">\r\n> a\r\n>\r\n\r\n> b"
-      ]
+blockMarkdown = describe "block markdown" do
+  it "blocks and their ranges" do
+    "# Plan\n- buy *milk*\n  and eggs\n  - nested\n\n> a\n> b"
+      <===> ( [ mk (HeadingMark 1) "# ",
+                "Plan",
+                mk LineBreak "\n",
+                mk (ListMark Nothing) "- ",
+                "buy ",
+                FormattedText (Just $ Bold True) "milk",
+                mk SoftBreak "\n",
+                mk Indent "  ",
+                "and eggs",
+                mk LineBreak "\n",
+                mk (ListMark Nothing) "  - ",
+                "nested",
+                mk (ParagraphBreak 2) "\n\n",
+                mk QuoteMark "> ",
+                "a",
+                mk SoftBreak "\n",
+                mk QuoteMark "> ",
+                "b"
+              ],
+              [Heading 1 (rng 1 2), List [entry 4 9 [entry 11 12 []]], Quote (rng 14 18)]
+            )
+  it "headings" do
+    "## a\nb" <===> ([mk (HeadingMark 2) "## ", "a", mk LineBreak "\n", "b"], [Heading 2 (rng 1 2), Paragraph (rng 3 4)])
+    "# a #\nb" <===> ([mk (HeadingMark 1) "# ", "a", mk HeadingClose " #", mk LineBreak "\n", "b"], [Heading 1 (rng 1 2), Paragraph (rng 4 5)])
+    "# a#\nb" <===> ([mk (HeadingMark 1) "# ", "a#", mk LineBreak "\n", "b"], [Heading 1 (rng 1 2), Paragraph (rng 3 4)])
+    parseMaybeMarkdownList "#\nb" `shouldBe` Nothing
+    "#\n- b" <===> (["#", mk LineBreak "\n", mk (ListMark Nothing) "- ", "b"], [Paragraph (rng 0 1), List [entry 3 4 []]])
+  it "setext headings" do
+    "a\n===" <===> (["a", mk LineBreak "\n", mk (HeadingUnderline 1) "==="], [Heading 1 (rng 0 1)])
+    "a\nb\n---" <===> (["a", mk SoftBreak "\n", "b", mk LineBreak "\n", mk (HeadingUnderline 2) "---"], [Heading 2 (rng 0 3)])
+    "a\n- - -" <===> (["a", mk LineBreak "\n", mk RuleMark "- - -"], [Paragraph (rng 0 1), Rule])
+    "- a\n===" <===> ([mk (ListMark Nothing) "- ", "a", mk SoftBreak "\n", "==="], [List [entry 1 4 []]])
+  it "lists" do
+    "- a\n- b" <===> ([mk (ListMark Nothing) "- ", "a", mk LineBreak "\n", mk (ListMark Nothing) "- ", "b"], [List [entry 1 2 [], entry 4 5 []]])
+    "1. a\n2) b" <===> ([mk (ListMark $ Just "1.") "1. ", "a", mk LineBreak "\n", mk (ListMark $ Just "2)") "2) ", "b"], [List [ListEntry (Just "1.") (rng 1 2) [], ListEntry (Just "2)") (rng 4 5) []]])
+    "- a\nb" <===> ([mk (ListMark Nothing) "- ", "a", mk SoftBreak "\n", "b"], [List [entry 1 4 []]])
+    "- a\n\n- b" <===> ([mk (ListMark Nothing) "- ", "a", mk (ParagraphBreak 2) "\n\n", mk (ListMark Nothing) "- ", "b"], [List [entry 1 2 [], entry 4 5 []]])
+    "- a\n\nb" <===> ([mk (ListMark Nothing) "- ", "a", mk (ParagraphBreak 2) "\n\n", "b"], [List [entry 1 2 []], Paragraph (rng 3 4)])
+    "- a\n    - b\n  - c" <===> ([mk (ListMark Nothing) "- ", "a", mk LineBreak "\n", mk (ListMark Nothing) "    - ", "b", mk LineBreak "\n", mk (ListMark Nothing) "  - ", "c"], [List [entry 1 2 [entry 4 5 [], entry 7 8 []]]])
+  it "quotes" do
+    "> a\n>\n> b" <===> ([mk QuoteMark "> ", "a", mk LineBreak "\n", mk QuoteMark ">", mk LineBreak "\n", mk QuoteMark "> ", "b"], [Quote (rng 1 7)])
+    "> a\nb" <===> ([mk QuoteMark "> ", "a", mk SoftBreak "\n", "b"], [Quote (rng 1 4)])
+    "> a\n>\nb" <===> ([mk QuoteMark "> ", "a", mk LineBreak "\n", mk QuoteMark ">", mk LineBreak "\n", "b"], [Quote (rng 1 2), Paragraph (rng 5 6)])
+    ">a\n> b" <===> ([mk QuoteMark ">", "a", mk SoftBreak "\n", mk QuoteMark "> ", "b"], [Quote (rng 1 5)])
+    "> > b\nc" <===> ([mk QuoteMark "> ", "> b", mk SoftBreak "\n", "c"], [Quote (rng 1 4)])
+    parseMaybeMarkdownList ">\n>" `shouldBe` Nothing
+  it "code blocks" do
+    "```\nx *y*\n```" <===> ([mk (FenceMark Nothing) "```", mk LineBreak "\n", "x *y*", mk LineBreak "\n", mk (FenceMark Nothing) "```"], [CodeBlock Nothing (rng 2 3)])
+    "```bash\necho 1" <===> ([mk (FenceMark $ Just "bash") "```bash", mk LineBreak "\n", "echo 1"], [CodeBlock (Just "bash") (rng 2 3)])
+    "~~~\na\n\nb\n~~~" <===> ([mk (FenceMark Nothing) "~~~", mk LineBreak "\n", "a", mk LineBreak "\n", mk LineBreak "\n", "b", mk LineBreak "\n", mk (FenceMark Nothing) "~~~"], [CodeBlock Nothing (rng 2 6)])
+    "  ```\n    a\n  ```" <===> ([mk (FenceMark Nothing) "  ```", mk LineBreak "\n", mk Indent "  ", "  a", mk LineBreak "\n", mk (FenceMark Nothing) "  ```"], [CodeBlock Nothing (rng 2 4)])
+    parseMaybeMarkdownList "```\n```" `shouldBe` Nothing
+  it "tables" do
+    "| a | b |\n|---|:-:|\n| 1 | 2 |"
+      <===> ( [ mk RowMark "| ",
+                "a",
+                mk CellMark " | ",
+                "b",
+                mk CellMark " |",
+                mk LineBreak "\n",
+                mk (DelimiterRow [TANone, TACenter]) "|---|:-:|",
+                mk LineBreak "\n",
+                mk RowMark "| ",
+                "1",
+                mk CellMark " | ",
+                "2",
+                mk CellMark " |"
+              ],
+              [Table [TANone, TACenter] [rng 1 2, rng 3 4] [[rng 9 10, rng 11 12]]]
+            )
+    "a | b\n- | -\nc" <===> ([mk RowMark "", "a", mk CellMark " | ", "b", mk CellMark "", mk LineBreak "\n", mk (DelimiterRow [TANone, TANone]) "- | -", mk LineBreak "\n", "c"], [Table [TANone, TANone] [rng 1 2, rng 3 4] [], Paragraph (rng 8 9)])
+    "|a|\n|-|\n||" <===> ([mk RowMark "|", "a", mk CellMark "|", mk LineBreak "\n", mk (DelimiterRow [TANone]) "|-|", mk LineBreak "\n", mk RowMark "|", mk CellMark "|"], [Table [TANone] [rng 1 2] [[rng 7 7]]])
+  it "line breaks" do
+    "a  \nb\n- c" <===> (["a", mk HardBreak "  \n", "b", mk LineBreak "\n", mk (ListMark Nothing) "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
+    "a\\\nb\n- c" <===> (["a", mk HardBreak "\\\n", "b", mk LineBreak "\n", mk (ListMark Nothing) "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
+    "a \nb\n- c" <===> (["a ", mk SoftBreak "\n", "b", mk LineBreak "\n", mk (ListMark Nothing) "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
+    "a  \n\n- c" <===> (["a  ", mk (ParagraphBreak 2) "\n\n", mk (ListMark Nothing) "- ", "c"], [Paragraph (rng 0 1), List [entry 3 4 []]])
+    "# a\r\n- b" <===> ([mk (HeadingMark 1) "# ", "a", mk LineBreak "\r\n", mk (ListMark Nothing) "- ", "b"], [Heading 1 (rng 1 2), List [entry 4 5 []]])
+    "\n\n# a" <===> ([mk (ParagraphBreak 2) "\n\n", mk (HeadingMark 1) "# ", "a"], [Heading 1 (rng 2 3)])
+  it "formats across line breaks" do
+    let quoted = [mk QuoteMark "> ", FormattedText (Just $ Bold True) "a", mk SoftBreak "\n", mk QuoteMark "> ", FormattedText (Just $ Bold True) "b"]
+    "> *a\n> b*" ===> (quoted, [Quote (rng 1 5)])
+    "> *a*\n> *b*" <===> (quoted, [Quote (rng 1 5)])
+    "*a\nb*" ==>> [FormattedText (Just $ Bold True) "a", "\n", FormattedText (Just $ Bold True) "b"]
+    parseMaybeMarkdownList "*a\n\nb*" `shouldBe` Nothing
+    "# *a\nb*" <===> ([mk (HeadingMark 1) "# ", "*a", mk LineBreak "\n", "b*"], [Heading 1 (rng 1 2), Paragraph (rng 3 4)])
+  it "texts without blocks" do
+    parseMaybeMarkdownList "a\nb" `shouldBe` Nothing
+    "  a\n*b*" ==>> ["  a\n", FormattedText (Just $ Bold True) "b"]
+    parseMaybeMarkdownList "a\n" `shouldBe` Nothing
 
 testSanitizeUri :: Spec
 testSanitizeUri = describe "sanitizeUri" $ do

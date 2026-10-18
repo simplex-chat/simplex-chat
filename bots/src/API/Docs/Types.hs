@@ -224,6 +224,7 @@ chatTypesDocsData =
     (sti @BadgeServiceErrorCode, STEnum' (consSep "BSE" '_'), "", ["BSEUnknown"], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
+    (sti @BlockToken, STUnion, "", [], "", ""),
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
@@ -285,7 +286,7 @@ chatTypesDocsData =
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
     (sti @FileType, STEnum' (consLower "FT"), "", [], "", ""),
-    (sti @Format, STUnion, "", ["Unknown"], "", "The formats blockStart, blockEnd, lineBreak and cellBreak mark Markdown blocks, their lines and table cells. Their text is the Markdown syntax at these boundaries."),
+    (sti @Format, STUnion, "", ["Unknown"], "", "The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars."),
     (sti @FormattedText, STRecord, "", [], "", ""),
     (sti @FullGroupPreferences, STRecord, "", [], "", ""),
     (sti @FullPreferences, STRecord, "", [], "", ""),
@@ -319,6 +320,7 @@ chatTypesDocsData =
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
+    (sti @ListEntry, STRecord, "", [], "", ""),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
     (sti @BadgeInfo, STRecord, "", [], "", ""),
@@ -372,6 +374,7 @@ chatTypesDocsData =
     (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
+    (sti @SegmentRange, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
     (sti @SimplexDomain, STRecord, "", [], "", ""),
     (sti @SimplexDomainClaim, STRecord, "", [], "", ""),
@@ -459,6 +462,7 @@ deriving instance Generic BadgeRedeemError
 deriving instance Generic BadgeServiceErrorCode
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
+deriving instance Generic BlockToken
 deriving instance Generic BrokerErrorType
 deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
@@ -561,6 +565,7 @@ deriving instance Generic JSONCIDirection
 deriving instance Generic JSONCIFileStatus
 deriving instance Generic JSONCIStatus
 deriving instance Generic LinkContent
+deriving instance Generic ListEntry
 deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
 deriving instance Generic BadgeInfo
@@ -613,6 +618,7 @@ deriving instance Generic RemoteCtrlSessionState
 deriving instance Generic RemoteCtrlStopReason
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
+deriving instance Generic SegmentRange
 deriving instance Generic SimplexDomain
 deriving instance Generic SimplexDomainClaim
 deriving instance Generic SimplexDomainError

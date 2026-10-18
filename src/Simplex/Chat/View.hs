@@ -42,7 +42,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Library.Commands (badgeServiceErrorText, maxImageSize)
-import Simplex.Chat.Markdown hiding (indent)
+import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
 import Simplex.Chat.Badges.Service (StatementEntry (..), StatementEntryType (..))
@@ -2169,7 +2169,7 @@ viewGroupDescription GroupInfo {groupProfile = GroupProfile {description}} =
   maybe ["No welcome message!"] ((bold' "Welcome message:" :) . map plain . T.lines) description
 
 bold' :: String -> StyledString
-bold' = styled Bold
+bold' = styled (Bold False)
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated ct@Contact {profile = LocalProfile {localAlias}}

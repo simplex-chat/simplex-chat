@@ -18,6 +18,7 @@ This file is generated automatically.
 - [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
+- [BlockToken](#blocktoken)
 - [BlockingInfo](#blockinginfo)
 - [BlockingReason](#blockingreason)
 - [BrokerErrorType](#brokererrortype)
@@ -131,6 +132,7 @@ This file is generated automatically.
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
+- [ListEntry](#listentry)
 - [LocalBadge](#localbadge)
 - [LocalProfile](#localprofile)
 - [MarkdownBlock](#markdownblock)
@@ -183,6 +185,7 @@ This file is generated automatically.
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
 - [SecurityCode](#securitycode)
+- [SegmentRange](#segmentrange)
 - [SimplePreference](#simplepreference)
 - [SimplexDomain](#simplexdomain)
 - [SimplexDomainClaim](#simplexdomainclaim)
@@ -513,6 +516,64 @@ CredentialNotVerified:
 - "supporter"
 - "legend"
 - "investor"
+
+
+---
+
+## BlockToken
+
+**Discriminated union type**:
+
+LineBreak:
+- type: "lineBreak"
+
+SoftBreak:
+- type: "softBreak"
+
+HardBreak:
+- type: "hardBreak"
+
+ParagraphBreak:
+- type: "paragraphBreak"
+- lineBreaks: int
+
+Indent:
+- type: "indent"
+
+HeadingMark:
+- type: "headingMark"
+- level: int
+
+HeadingClose:
+- type: "headingClose"
+
+HeadingUnderline:
+- type: "headingUnderline"
+- level: int
+
+ListMark:
+- type: "listMark"
+- number: string?
+
+QuoteMark:
+- type: "quoteMark"
+
+FenceMark:
+- type: "fenceMark"
+- language: string?
+
+RowMark:
+- type: "rowMark"
+
+CellMark:
+- type: "cellMark"
+
+DelimiterRow:
+- type: "delimiterRow"
+- columns: [[TableAlign](#tablealign)]
+
+RuleMark:
+- type: "ruleMark"
 
 
 ---
@@ -2285,12 +2346,13 @@ NO_FILE:
 
 ## Format
 
-The formats blockStart, blockEnd, lineBreak and cellBreak mark Markdown blocks, their lines and table cells. Their text is the Markdown syntax at these boundaries.
+The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars.
 
 **Discriminated union type**:
 
 Bold:
 - type: "bold"
+- singleStar: bool
 
 Italic:
 - type: "italic"
@@ -2344,18 +2406,12 @@ Email:
 Phone:
 - type: "phone"
 
-BlockStart:
-- type: "blockStart"
-- block: [MarkdownBlock](#markdownblock)
+Escape:
+- type: "escape"
 
-BlockEnd:
-- type: "blockEnd"
-
-LineBreak:
-- type: "lineBreak"
-
-CellBreak:
-- type: "cellBreak"
+Markup:
+- type: "markup"
+- token: [BlockToken](#blocktoken)
 
 
 ---
@@ -2896,6 +2952,16 @@ Unknown:
 
 ---
 
+## ListEntry
+
+**Record type**:
+- number: string?
+- content: [SegmentRange](#segmentrange)
+- items: [[ListEntry](#listentry)]
+
+
+---
+
 ## LocalBadge
 
 **Record type**:
@@ -2931,26 +2997,31 @@ Unknown:
 
 Paragraph:
 - type: "paragraph"
+- content: [SegmentRange](#segmentrange)
 
 Heading:
 - type: "heading"
 - level: int
+- content: [SegmentRange](#segmentrange)
 
 CodeBlock:
 - type: "codeBlock"
 - language: string?
+- content: [SegmentRange](#segmentrange)
 
 Quote:
 - type: "quote"
+- content: [SegmentRange](#segmentrange)
 
-ListItem:
-- type: "listItem"
-- number: string?
-- indent: int
+List:
+- type: "list"
+- items: [[ListEntry](#listentry)]
 
 Table:
 - type: "table"
 - columns: [[TableAlign](#tablealign)]
+- header: [[SegmentRange](#segmentrange)]
+- rows: [[[SegmentRange](#segmentrange)]]
 
 Rule:
 - type: "rule"
@@ -3835,6 +3906,15 @@ A_SERVICE:
 **Record type**:
 - securityCode: string
 - verifiedAt: UTCTime
+
+
+---
+
+## SegmentRange
+
+**Record type**:
+- from: int
+- to: int
 
 
 ---
