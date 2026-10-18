@@ -94,7 +94,8 @@ enum class ModalViewId {
   CONTEXT_USER_PICKER_INCOGNITO,
   BADGE_LINK,
   BADGE_REDEEM_CODE,
-  BADGES
+  BADGES,
+  CREATE_PROFILE
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
