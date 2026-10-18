@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - stable
+      - ep/package-builds
     tags:
       - "v*"
       - "!*-fdroid"
@@ -33,6 +34,7 @@ env:
   release: ${{ startsWith(github.ref, 'refs/tags/v') }}
   branch: ${{ github.base_ref || github.ref_name }}
   cache_o0: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') }}
+  release_branch: ${{ github.event_name == 'push' && github.ref == 'refs/heads/ep/package-builds' && 'master' || '' }}
   ZSTD_CLEVEL: 9
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
@@ -139,7 +141,7 @@ jobs:
 
       - name: Library release
         id: libs
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable')
+        if: env.release_branch
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
@@ -147,7 +149,7 @@ jobs:
         run: |
           version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
           tag=core-$version
-          claim_output=$(python3 scripts/ci/packages_release.py claim-core "$version" "$GITHUB_SHA" "$GITHUB_REF_NAME")
+          claim_output=$(python3 scripts/ci/packages_release.py claim-core "$version" "$GITHUB_SHA" "$release_branch")
           eval "$claim_output"
           if [ "$claim" = skip ]; then
             echo "::notice title=Library release::core $version is recorded for another commit"
@@ -164,7 +166,7 @@ jobs:
 
       - name: Add-on release
         id: addon
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable')
+        if: env.release_branch
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
@@ -187,11 +189,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
           LIBS_REPOSITORY: ${{ github.repository }}-libs
-        run: python3 scripts/ci/packages_release.py latest-libs --branch "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+        run: python3 scripts/ci/packages_release.py latest-libs --branch "$release_branch" >> "$GITHUB_OUTPUT"
 
       - name: Versions to publish
         id: publish
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable')
+        if: env.release_branch
         env:
           GH_TOKEN: ${{ github.token }}
           LIBS_REPOSITORY: ${{ github.repository }}-libs
