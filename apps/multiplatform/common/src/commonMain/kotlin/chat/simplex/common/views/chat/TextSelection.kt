@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.itemPrefixText
-import chat.simplex.common.views.chat.item.itemSegmentDisplayText
+import chat.simplex.common.views.chat.item.itemDisplayParts
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -267,23 +267,22 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
     if (sel.first < prefix.length) {
         sb.append(prefix, sel.first, minOf(prefix.length, sel.last + 1))
     }
-    val formattedText = markdownSegments(ci.formattedText) ?: run {
+    val parts = itemDisplayParts(ci, linkMode) ?: run {
         val start = (sel.first - prefix.length).coerceAtLeast(0).coerceAtMost(ci.text.length)
         val end = (sel.last + 1 - prefix.length).coerceAtMost(ci.text.length)
         if (start < end) sb.append(ci.text, start, end)
         return sb.toString()
     }
     var displayOffset = prefix.length
-    for (ft in formattedText) {
-        val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
+    for ((segDisplay, source) in parts) {
         val displayEnd = displayOffset + segDisplay.length
         val overlapStart = maxOf(displayOffset, sel.first)
         val overlapEnd = minOf(displayEnd, sel.last + 1)
         if (overlapStart < overlapEnd) {
-            if (ft.text.length == segDisplay.length) {
-                sb.append(ft.text, overlapStart - displayOffset, overlapEnd - displayOffset)
+            if (source.length == segDisplay.length) {
+                sb.append(source, overlapStart - displayOffset, overlapEnd - displayOffset)
             } else {
-                sb.append(ft.text)
+                sb.append(source)
             }
         }
         displayOffset = displayEnd
@@ -293,12 +292,11 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
 
 // Snaps a boundary offset to include full transformed segments.
 private fun snapOffset(ci: ChatItem, offset: Int, linkMode: SimplexLinkMode, expandRight: Boolean): Int {
-    val formattedText = markdownSegments(ci.formattedText) ?: return offset
+    val parts = itemDisplayParts(ci, linkMode) ?: return offset
     var displayOffset = itemPrefixText(ci).length
-    for (ft in formattedText) {
-        val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
+    for ((segDisplay, source) in parts) {
         val displayEnd = displayOffset + segDisplay.length
-        if (offset > displayOffset && offset < displayEnd && ft.text.length != segDisplay.length) {
+        if (offset > displayOffset && offset < displayEnd && source.length != segDisplay.length) {
             return if (expandRight) displayEnd else displayOffset
         }
         displayOffset = displayEnd

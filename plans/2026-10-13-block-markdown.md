@@ -226,7 +226,7 @@ data MarkdownBlock
   | Quote {content :: SegmentRange}
   | List {items :: NonEmpty ListEntry}
   | Table {columns :: NonEmpty TableAlign, header :: [SegmentRange], rows :: [[SegmentRange]]}
-  | Rule
+  | Rule {mark :: SegmentRange}
   | UnknownBlock {json :: J.Value}
   deriving (Eq, Show)
 
@@ -281,7 +281,7 @@ paragraph        {"type":"paragraph","content":{"from":1,"to":4}}
 codeBlock        {"type":"codeBlock","language":"bash","content":{"from":2,"to":5}}
 list             {"type":"list","items":[{"number":"1.","content":{"from":4,"to":9},"items":[]}]}
 table            {"type":"table","columns":["none"],"header":[{"from":1,"to":2}],"rows":[[{"from":6,"to":7}]]}
-rule             {"type":"rule"}
+rule             {"type":"rule","mark":{"from":2,"to":3}}
 ```
 
 - `language` and `number` are omitted when absent.
@@ -425,7 +425,7 @@ kind           by the first token of a block
                  QuoteMark     Quote
                  FenceMark     CodeBlock
                  RowMark       Table
-                 RuleMark      Rule
+                 RuleMark      Rule: mark, the range of the RuleMark token
                  other         Paragraph; Heading when the last token is HeadingUnderline
 lists          consecutive list entries: one List, nested by column (section 1)
 ```
@@ -564,8 +564,10 @@ Store/Messages.hs:1284, 1630, 1870, 2864, 2936    markdownBlocks = Nothing, with
 Library/Internal.hs:226                           CIQuote: markdownBlocks of the quoted item
 Library/Commands.hs:4931                          CIQuote: markdownBlocks of the quoted item
 Messages.hs:1369-1379                             mkItemVersion: markdownBlocks of the item
-Web.hs:252-253, 325, 426-431                      toFormattedText returns ParsedMarkdown; its two fields set the two sibling fields of the record
-Directory/Listing.hs:143-144, 197-198             toFormattedText returns ParsedMarkdown; its two fields set the two sibling fields of the record
+Web.hs:252-253, 325                               parsedMarkdown of the description texts; its two fields set the two sibling fields of the record
+                                                  toFormattedText (426-431) removed: equal to parseMaybeMarkdownList
+Directory/Listing.hs:143-144, 197-198             toFormattedText returns the list and the blocks; they set the two sibling fields of the record
+Store/Messages.hs:693, 2305                       mkCIQuote (Messages.hs): CIQuote with the parsed text of its content
 Mobile.hs:396                                     chatParseMarkdown: J.encode . parsedMarkdown . safeDecodeUtf8
 ```
 
@@ -602,7 +604,7 @@ Help.hs:312                 markdown (Bold True) "bold text"
 
 ```
 spam filter reply (Directory/Service.hs:1160-1163)   each command line ends with two spaces: hard breaks between the command lines
-tests/Bots/DirectoryTests.hs:735-737, 1256-1258     expected command lines with the two spaces
+tests/Bots/DirectoryTests.hs                        unchanged: the terminal output of the tests has no trailing spaces
 ```
 
 ## 7. Docs and libraries

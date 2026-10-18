@@ -613,7 +613,7 @@ rangesCoverContent ft blocks = do
       Quote r -> [r]
       List entries -> concatMap entryRanges entries
       Table _ headerCells bodyRows -> headerCells <> concat bodyRows
-      Rule -> []
+      Rule r -> [r]
       UnknownBlock _ -> []
     entryRanges (ListEntry _ r children) = r : concatMap entryRanges children
 
@@ -760,8 +760,8 @@ headings = describe "headings" do
     "a\n  ===  " <===> (["a", hardBr, mk (HeadingUnderline 1) "  ===  "], [Heading 1 (rng 0 1)])
     "a\n---\nb" <===> (["a", hardBr, mk (HeadingUnderline 2) "---", lineBr, "b"], [Heading 2 (rng 0 1), Paragraph (rng 4 5)])
   it "underlines only under paragraphs" do
-    "a\n- - -" <===> (["a", lineBr, mk RuleMark "- - -"], [Paragraph (rng 0 1), Rule])
-    "a\n***" <===> (["a", lineBr, mk RuleMark "***"], [Paragraph (rng 0 1), Rule])
+    "a\n- - -" <===> (["a", lineBr, mk RuleMark "- - -"], [Paragraph (rng 0 1), Rule (rng 2 3)])
+    "a\n***" <===> (["a", lineBr, mk RuleMark "***"], [Paragraph (rng 0 1), Rule (rng 2 3)])
     "# a\n===" <===> ([heading1, "a", lineBr, "==="], [Heading 1 (rng 1 2), Paragraph (rng 3 4)])
     "> a\n===" <===> ([quoteMark "> ", "a", softBr, "==="], [Quote (rng 1 4)])
     "- a\n===" <===> ([bullet "- ", "a", softBr, "==="], [List [entry 1 4 []]])
@@ -774,15 +774,15 @@ thematicBreaks :: Spec
 thematicBreaks = describe "thematic breaks" do
   it "3 or more of one character, with spaces between and around" do
     forM_ (["---", "***", "___", "- - -", "* * *", "_ _ _", "-- -", "  ***", "***  ", "----------"] :: [Text]) $ \r ->
-      r <===> ([mk RuleMark r], [Rule])
+      r <===> ([mk RuleMark r], [Rule (rng 0 1)])
   it "other lines are text" do
     noBlocks "--"
     noBlocks "*-*"
     noBlocks "---x"
     noBlocks "-- a"
   it "between other blocks" do
-    "a\n***\nb" <===> (["a", lineBr, mk RuleMark "***", lineBr, "b"], [Paragraph (rng 0 1), Rule, Paragraph (rng 4 5)])
-    "- a\n---" <===> ([bullet "- ", "a", lineBr, mk RuleMark "---"], [List [entry 1 2 []], Rule])
+    "a\n***\nb" <===> (["a", lineBr, mk RuleMark "***", lineBr, "b"], [Paragraph (rng 0 1), Rule (rng 2 3), Paragraph (rng 4 5)])
+    "- a\n---" <===> ([bullet "- ", "a", lineBr, mk RuleMark "---"], [List [entry 1 2 []], Rule (rng 3 4)])
 
 lists :: Spec
 lists = describe "lists" do
@@ -1008,7 +1008,7 @@ liveMessages = describe "incomplete syntax of live messages" do
     "```\nls" <===> ([fence "```", hardBr, "ls"], [CodeBlock Nothing (rng 2 3)])
     "``` a ```" ==>> [fmt Snippet "a"]
   it "a rule until another character is added" do
-    "---" <===> ([mk RuleMark "---"], [Rule])
+    "---" <===> ([mk RuleMark "---"], [Rule (rng 0 1)])
     noBlocks "---x"
   it "a table once the delimiter row has a cell" do
     noBlocks "| a |"

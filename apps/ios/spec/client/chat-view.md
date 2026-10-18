@@ -189,7 +189,7 @@ Renders emoji-only messages (messages containing only emoji characters) in a lar
 
 **File**: [`Shared/Views/Chat/ChatItem/MsgContentView.swift`](../../Shared/Views/Chat/ChatItem/MsgContentView.swift)
 
-Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks (headings, lists, quotes, code blocks, tables, rules) are drawn as one text by `markdownSegments`.
+Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (headings, lists, quotes, code blocks, tables, rules) are drawn as one text by `blockParts`.
 
 ### DeletedItemView / MarkedDeletedItemView
 

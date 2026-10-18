@@ -3793,11 +3793,12 @@ public struct CIReaction: Decodable, Hashable {
 }
 
 public struct ChatItem: Identifiable, Decodable, Hashable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, markdownBlocks: [MarkdownBlock]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
+        self.markdownBlocks = markdownBlocks
         self.mentions = mentions
         self.quotedItem = quotedItem
         self.reactions = reactions
@@ -3808,6 +3809,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var meta: CIMeta
     public var content: CIContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var mentions: [String: CIMention]?
     public var quotedItem: CIQuote?
     public var reactions: [CIReactionCount]
@@ -3817,7 +3819,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, mentions, quotedItem, reactions, file
+        case chatDir, meta, content, formattedText, markdownBlocks, mentions, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }
@@ -4859,6 +4861,7 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
     public var sentAt: Date
     public var content: MsgContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var text: String {
         switch (content.text, content) {
         case let ("", .voice(_, duration)): return durationText(duration)
@@ -5678,14 +5681,52 @@ public struct FormattedText: Decodable, Hashable {
     }
 }
 
+public enum BlockToken: Decodable, Hashable {
+    case lineBreak
+    case softBreak
+    case hardBreak
+    case paragraphBreak(lineBreaks: Int)
+    case indent
+    case headingMark(level: Int)
+    case headingClose
+    case headingUnderline(level: Int)
+    case listMark(number: String?)
+    case quoteMark
+    case fenceMark(language: String?)
+    case rowMark
+    case cellMark
+    case delimiterRow(columns: [TableAlign])
+    case ruleMark
+
+    public var drawnText: String {
+        switch self {
+        case .softBreak: " "
+        case .lineBreak, .hardBreak: "\n"
+        case let .paragraphBreak(lineBreaks): String(repeating: "\n", count: lineBreaks)
+        default: ""
+        }
+    }
+}
+
 public enum MarkdownBlock: Decodable, Hashable {
-    case paragraph
-    case heading(level: Int)
-    case codeBlock(language: String?)
-    case quote
-    case listItem(number: String?, indent: Int)
-    case table(columns: [TableAlign])
-    case rule
+    case paragraph(content: SegmentRange)
+    case heading(level: Int, content: SegmentRange)
+    case codeBlock(language: String?, content: SegmentRange)
+    case quote(content: SegmentRange)
+    case list(items: [ListEntry])
+    case table(columns: [TableAlign], header: [SegmentRange], rows: [[SegmentRange]])
+    case rule(mark: SegmentRange)
+}
+
+public struct ListEntry: Decodable, Hashable {
+    public var number: String?
+    public var content: SegmentRange
+    public var items: [ListEntry]
+}
+
+public struct SegmentRange: Decodable, Hashable {
+    public var from: Int
+    public var to: Int
 }
 
 public enum TableAlign: String, Decodable, Hashable {
@@ -5695,88 +5736,158 @@ public enum TableAlign: String, Decodable, Hashable {
     case right
 }
 
-public func markdownSegments(_ fts: [FormattedText]?) -> [FormattedText]? {
-    guard let fts, fts.contains(where: { if case .blockStart = $0.format { true } else { false } }) else { return fts }
-    var segments: [FormattedText] = []
-    var i = 0
-    while i < fts.count {
-        if case let .blockStart(block) = fts[i].format {
-            var end = i + 1
-            while end < fts.count && !isBlockBoundary(fts[end].format) { end += 1 }
-            segments += blockSegments(block, splitByMarker(fts[(i + 1)..<end]) { if case .lineBreak = $0 { true } else { false } })
-            i = if end < fts.count, case .blockEnd = fts[end].format { end + 1 } else { end }
-        } else {
-            if fts[i].format?.isMarker != true { segments.append(fts[i]) }
-            i += 1
+public enum BlockFont {
+    case regular
+    case bold
+    case monospace
+}
+
+public enum BlockPart {
+    case segments(Range<Int>, BlockFont)
+    case text(String, BlockFont)
+}
+
+public let maxTableColumnWidth = 40
+
+public func blockParts(_ fts: [FormattedText], _ blocks: [MarkdownBlock], displayText: (FormattedText) -> String) -> [BlockPart] {
+    var parts: [BlockPart] = []
+    var pos = 0
+    func indices(_ from: Int, _ to: Int) -> Range<Int> {
+        let start = min(max(from, 0), fts.count)
+        return start..<max(start, min(to, fts.count))
+    }
+    func token(_ i: Int) -> BlockToken? {
+        if case let .markup(token) = fts[i].format { token } else { nil }
+    }
+    func gap(_ to: Int) {
+        let breaks = indices(pos, to).compactMap(token).map { t -> String in
+            switch t {
+            case .lineBreak, .paragraphBreak: t.drawnText
+            default: ""
+            }
+        }.joined()
+        if !breaks.isEmpty { parts.append(.text(breaks, .regular)) }
+        pos = max(pos, to)
+    }
+    func skip(_ to: Int) {
+        pos = max(pos, to)
+    }
+    func lines(_ r: SegmentRange) -> [Range<Int>] {
+        var result: [Range<Int>] = []
+        var start = r.from
+        for i in indices(r.from, r.to) {
+            if case .hardBreak = token(i) {
+                result.append(indices(start, i))
+                start = i + 1
+            }
+        }
+        result.append(indices(start, r.to))
+        return result
+    }
+    func drawRange(_ r: SegmentRange, _ font: BlockFont) {
+        gap(r.from)
+        parts.append(.segments(indices(r.from, r.to), font))
+        skip(r.to)
+    }
+    func drawEntry(_ entry: ListEntry, _ level: Int) {
+        gap(entry.content.from)
+        let marker = String(repeating: "    ", count: level) + (entry.number ?? "•") + " "
+        parts.append(.text(marker, .regular))
+        for (n, line) in lines(entry.content).enumerated() {
+            if n > 0 { parts.append(.text("\n" + String(repeating: " ", count: marker.count), .regular)) }
+            parts.append(.segments(line, .regular))
+        }
+        skip(entry.content.to)
+        for item in entry.items { drawEntry(item, level + 1) }
+    }
+    func drawTable(_ columns: [TableAlign], _ header: [SegmentRange], _ rows: [[SegmentRange]]) {
+        let tableRows = [header] + rows
+        func cellWidth(_ cell: SegmentRange) -> Int {
+            indices(cell.from, cell.to).reduce(0) { $0 + displayWidth(displayText(fts[$1])) }
+        }
+        let widths = columns.indices.map { c in
+            min(maxTableColumnWidth, tableRows.map { row in c < row.count ? cellWidth(row[c]) : 0 }.max() ?? 0)
+        }
+        gap(header.first?.from ?? pos)
+        for (r, row) in tableRows.enumerated() {
+            if r > 0 { parts.append(.text("\n", .monospace)) }
+            for (c, cell) in row.enumerated() {
+                let padding = max(0, (c < widths.count ? widths[c] : 0) - cellWidth(cell))
+                let align: TableAlign? = c < columns.count ? columns[c] : nil
+                let before = switch align {
+                case .some(.right): padding
+                case .some(.center): padding / 2
+                default: 0
+                }
+                if c > 0 { parts.append(.text(" │ ", .monospace)) }
+                if before > 0 { parts.append(.text(String(repeating: " ", count: before), .monospace)) }
+                parts.append(.segments(indices(cell.from, cell.to), .monospace))
+                if padding > before { parts.append(.text(String(repeating: " ", count: padding - before), .monospace)) }
+            }
+            if r == 0 { parts.append(.text("\n" + widths.map { String(repeating: "─", count: $0) }.joined(separator: "─┼─"), .monospace)) }
+        }
+        skip(tableRows.last?.last?.to ?? pos)
+    }
+    for block in blocks {
+        switch block {
+        case let .paragraph(content): drawRange(content, .regular)
+        case let .heading(_, content): drawRange(content, .bold)
+        case let .codeBlock(_, content): drawRange(content, .monospace)
+        case let .quote(content):
+            gap(content.from)
+            for (n, line) in lines(content).enumerated() {
+                parts.append(.text(n == 0 ? "│ " : "\n│ ", .regular))
+                parts.append(.segments(line, .regular))
+            }
+            skip(content.to)
+        case let .list(items): for item in items { drawEntry(item, 0) }
+        case let .table(columns, header, rows): drawTable(columns, header, rows)
+        case let .rule(mark):
+            gap(mark.from)
+            parts.append(.text("———", .regular))
+            skip(mark.to)
         }
     }
-    return segments
-}
-
-private func isBlockBoundary(_ format: Format?) -> Bool {
-    switch format {
-    case .blockStart, .blockEnd: true
-    default: false
-    }
-}
-
-private func splitByMarker(_ fts: ArraySlice<FormattedText>, _ isMarker: (Format?) -> Bool) -> [[FormattedText]] {
-    var parts: [[FormattedText]] = [[]]
-    for ft in fts {
-        if isMarker(ft.format) { parts.append([]) } else { parts[parts.count - 1].append(ft) }
-    }
+    gap(fts.count)
     return parts
 }
 
-private func blockSegments(_ block: MarkdownBlock, _ lines: [[FormattedText]]) -> [FormattedText] {
-    switch block {
-    case .paragraph: joinLines(lines, "\n")
-    case .heading: joinLines(lines, "\n").map { $0.format == nil ? FormattedText(text: $0.text, format: .bold) : $0 }
-    case let .listItem(number, indent): [FormattedText(text: String(repeating: " ", count: 4 * indent) + (number ?? "•") + " ")] + joinLines(lines, "\n")
-    case .quote: [FormattedText(text: "│ ")] + joinLines(lines, "\n│ ")
-    case .codeBlock:
-        lines.enumerated().flatMap { (i, line) -> [FormattedText] in
-            (i == 0 ? [] : [FormattedText(text: "\n", format: .snippet)]) + line.map { FormattedText(text: $0.text, format: .snippet) }
+public func displayWidth(_ s: String) -> Int {
+    var width = 0
+    var base = 0
+    var joined = false
+    for scalar in s.unicodeScalars {
+        let cp = scalar.value
+        if cp == 0x200D {
+            joined = true
+        } else if joined {
+            joined = false
+        } else if cp == 0xFE0F {
+            if base == 1 { width += 1; base = 2 }
+        } else if !isZeroWidthScalar(scalar) {
+            base = isWideCodePoint(cp) ? 2 : 1
+            width += base
         }
-    case let .table(columns):
-        tableSegments(columns, lines.map { line in
-            let cells = splitByMarker(line[...]) { if case .cellBreak = $0 { true } else { false } }
-            return columns.indices.map { $0 < cells.count ? cells[$0] : [] }
-        })
-    case .rule: [FormattedText(text: "———")]
     }
+    return width
 }
 
-private func joinLines(_ lines: [[FormattedText]], _ hardBreak: String) -> [FormattedText] {
-    lines.enumerated().flatMap { (i, line) -> [FormattedText] in
-        i == 0 ? line : [FormattedText(text: !line.isEmpty && !lines[i - 1].isEmpty ? " " : hardBreak)] + line
-    }
+private func isZeroWidthScalar(_ scalar: Unicode.Scalar) -> Bool {
+    let cp = scalar.value
+    let category = scalar.properties.generalCategory
+    return (0xFE00...0xFE0E).contains(cp) || (0x1F3FB...0x1F3FF).contains(cp) || (0xE0020...0xE007F).contains(cp)
+        || category == .nonspacingMark || category == .enclosingMark
 }
 
-private func tableSegments(_ columns: [TableAlign], _ rows: [[[FormattedText]]]) -> [FormattedText] {
-    func snippet(_ text: String) -> FormattedText { FormattedText(text: text, format: .snippet) }
-    func cellLength(_ cell: [FormattedText]) -> Int { cell.reduce(0) { $0 + $1.text.unicodeScalars.count } }
-    let widths = columns.indices.map { c in rows.map { cellLength($0[c]) }.max() ?? 0 }
-    func rowSegments(_ row: [[FormattedText]]) -> [FormattedText] {
-        row.enumerated().flatMap { (c, cell) -> [FormattedText] in
-            let padding = widths[c] - cellLength(cell)
-            let before = switch columns[c] {
-            case .right: padding
-            case .center: padding / 2
-            case .none, .left: 0
-            }
-            let separator = c == 0 ? "" : " │ "
-            let content = cell.map { $0.format == nil ? snippet($0.text) : $0 }
-            return [snippet(separator + String(repeating: " ", count: before))] + content + [snippet(String(repeating: " ", count: padding - before))]
-        }
-        .filter { !$0.text.isEmpty }
-    }
-    let underline = snippet("\n" + widths.map { String(repeating: "─", count: $0) }.joined(separator: "─┼─"))
-    return rowSegments(rows[0]) + [underline] + rows.dropFirst().flatMap { [snippet("\n")] + rowSegments($0) }
+private func isWideCodePoint(_ cp: UInt32) -> Bool {
+    (0x1100...0x115F).contains(cp) || (0x2E80...0x303E).contains(cp) || (0x3041...0x33FF).contains(cp) || (0x3400...0x4DBF).contains(cp)
+        || (0x4E00...0x9FFF).contains(cp) || (0xA000...0xA4CF).contains(cp) || (0xAC00...0xD7A3).contains(cp) || (0xF900...0xFAFF).contains(cp)
+        || (0xFE30...0xFE4F).contains(cp) || (0xFF00...0xFF60).contains(cp) || (0xFFE0...0xFFE6).contains(cp) || (0x1F300...0x1F64F).contains(cp)
+        || (0x1F680...0x1F6FF).contains(cp) || (0x1F900...0x1FAFF).contains(cp) || (0x20000...0x3FFFD).contains(cp)
 }
 
 public enum Format: Decodable, Equatable, Hashable {
-    case bold
+    case bold(singleStar: Bool)
     case italic
     case strikeThrough
     case snippet
@@ -5792,10 +5903,8 @@ public enum Format: Decodable, Equatable, Hashable {
     case modal(modalName: String, text: String)
     case email
     case phone
-    case blockStart(block: MarkdownBlock)
-    case blockEnd
-    case lineBreak
-    case cellBreak
+    case escape
+    case markup(token: BlockToken)
     case unknown
 
     // client-only format that opens a modal when tapped, see openMarkdownModal
@@ -5807,13 +5916,6 @@ public enum Format: Decodable, Equatable, Hashable {
             case .simplexLink: return true
             default: return false
             }
-        }
-    }
-
-    public var isMarker: Bool {
-        switch self {
-        case .blockStart, .blockEnd, .lineBreak, .cellBreak: true
-        default: false
         }
     }
 }
@@ -6506,6 +6608,7 @@ public struct ChatItemVersion: Decodable, Hashable {
     public var chatItemVersionId: Int64
     public var msgContent: MsgContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var itemVersionTs: Date
     public var createdAt: Date
 }

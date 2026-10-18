@@ -1070,6 +1070,7 @@ GroupLink:
 - sentAt: UTCTime
 - content: [MsgContent](#msgcontent)
 - formattedText: [[FormattedText](#formattedtext)]?
+- markdownBlocks: [[MarkdownBlock](#markdownblock)]?
 
 
 ---
@@ -1568,6 +1569,7 @@ ContactConnection:
 - content: [CIContent](#cicontent)
 - mentions: {string : [CIMention](#cimention)}
 - formattedText: [[FormattedText](#formattedtext)]?
+- markdownBlocks: [[MarkdownBlock](#markdownblock)]?
 - quotedItem: [CIQuote](#ciquote)?
 - reactions: [[CIReactionCount](#cireactioncount)]
 - file: [CIFile](#cifile)?
@@ -3025,6 +3027,7 @@ Table:
 
 Rule:
 - type: "rule"
+- mark: [SegmentRange](#segmentrange)
 
 
 ---

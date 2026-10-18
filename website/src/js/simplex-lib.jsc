@@ -54,75 +54,114 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank" rel="noopener"'
 }
 
-function markerType(ft) {
-  const type = ft.format && ft.format.type;
-  return type === 'blockStart' || type === 'blockEnd' || type === 'lineBreak' || type === 'cellBreak' ? type : null;
-}
+const MAX_LIST_DEPTH = 7;
 
-function splitByMarker(fts, type) {
-  const parts = [[]];
-  for (const ft of fts) {
-    if (markerType(ft) === type) parts.push([]);
-    else parts[parts.length - 1].push(ft);
-  }
-  return parts;
-}
-
-function renderLines(lines) {
-  return lines.map((line, i) =>
-    (i === 0 ? '' : line.length > 0 && lines[i - 1].length > 0 ? ' ' : '<br>') + renderMarkdown(line)
-  ).join('');
-}
-
-function renderTable(columns, lines) {
-  const aligns = columns.map((a) => (a === 'center' || a === 'right' ? a : 'left'));
-  const rows = lines.map((line) => splitByMarker(line, 'cellBreak'));
-  const row = (cells, tag) =>
-    '<tr>' + aligns.map((a, c) => `<${tag} style="text-align: ${a}; border: 1px solid; padding: 0 0.4em;">${renderMarkdown(cells[c] || [])}</${tag}>`).join('') + '</tr>';
-  return '<div style="overflow-x: auto;"><table style="border-collapse: collapse;">' + row(rows[0], 'th') + rows.slice(1).map((r) => row(r, 'td')).join('') + '</table></div>';
-}
-
-function renderBlock(block, lines) {
-  switch (block.type) {
-    case 'heading':
-      return `<div style="font-weight: bold;">${renderLines(lines)}</div>`;
-    case 'listItem': {
-      const indent = Math.min(6, Math.max(0, Number.parseInt(block.indent, 10) || 0));
-      return `<div style="padding-left: ${1.5 * indent}em;">${escapeHtml(String(block.number || '•'))} ${renderLines(lines)}</div>`;
+function validBlocks(fts, blocks) {
+  let pos = 0;
+  const range = (r) => {
+    const valid = !!r && Number.isInteger(r.from) && Number.isInteger(r.to) && pos <= r.from && r.from <= r.to && r.to <= fts.length;
+    if (valid) pos = r.to;
+    return valid;
+  };
+  const entries = (items, depth) =>
+    Array.isArray(items) && depth <= MAX_LIST_DEPTH && items.every((e) => !!e && range(e.content) && entries(e.items, depth + 1));
+  const rows = (rs) => Array.isArray(rs) && rs.every((row) => Array.isArray(row) && row.every(range));
+  return Array.isArray(blocks) && blocks.every((b) => {
+    switch (b && b.type) {
+      case 'paragraph':
+      case 'heading':
+      case 'codeBlock':
+      case 'quote':
+        return range(b.content);
+      case 'list':
+        return entries(b.items, 1);
+      case 'table':
+        return Array.isArray(b.columns) && rows([b.header]) && rows(b.rows);
+      case 'rule':
+        return range(b.mark);
+      default:
+        return false;
     }
-    case 'quote':
-      return `<div style="border-left: 3px solid; padding-left: 0.5em;">${renderLines(lines)}</div>`;
-    case 'codeBlock':
-      return '<pre style="font-family: monospace; white-space: pre-wrap;">' + lines.map((line) => line.map((ft) => escapeHtml(ft.text)).join('')).join('\n') + '</pre>';
-    case 'table':
-      return renderTable(Array.isArray(block.columns) ? block.columns : [], lines);
-    case 'rule':
-      return '<hr>';
-    default:
-      return `<div>${renderLines(lines)}</div>`;
-  }
+  });
 }
 
-function renderBlocks(fts) {
+function renderBlocks(fts, blocks) {
   let html = '';
-  let i = 0;
-  while (i < fts.length) {
-    if (markerType(fts[i]) === 'blockStart') {
-      let end = i + 1;
-      while (end < fts.length && markerType(fts[end]) !== 'blockEnd' && markerType(fts[end]) !== 'blockStart') end++;
-      html += renderBlock(fts[i].format.block || {}, splitByMarker(fts.slice(i + 1, end), 'lineBreak'));
-      i = end < fts.length && markerType(fts[end]) === 'blockEnd' ? end + 1 : end;
-    } else {
-      if (!fts[i].format) html += '<br>'.repeat(Math.max(0, (fts[i].text.match(/\n/g) || []).length - 1));
-      else if (!markerType(fts[i])) html += renderMarkdown([fts[i]]);
-      i++;
+  let pos = 0;
+  const segments = (r) => renderSegments(fts.slice(r.from, r.to), true);
+  const gap = (to) => {
+    for (const ft of fts.slice(pos, to)) {
+      if (ft.format && ft.format.type === 'markup' && ft.format.token && ft.format.token.type === 'paragraphBreak') {
+        html += '<br>'.repeat(Math.max(0, (ft.text.match(/\n/g) || []).length - 1));
+      }
+    }
+    pos = Math.max(pos, to);
+  };
+  const block = (r, open, close) => {
+    gap(r.from);
+    html += open + segments(r) + close;
+    pos = r.to;
+  };
+  const entry = (e, level) => {
+    block(e.content, `<div style="padding-left: ${1.5 * Math.min(level, 6)}em;">${escapeHtml(String(e.number ?? '•'))} `, '</div>');
+    e.items.forEach((item) => entry(item, level + 1));
+  };
+  const table = (b) => {
+    const align = (c) => (b.columns[c] === 'center' || b.columns[c] === 'right' ? b.columns[c] : 'left');
+    const row = (cells, tag) =>
+      '<tr>' + cells.map((r, c) => `<${tag} style="text-align: ${align(c)}; border: 1px solid; padding: 0 0.4em;">${segments(r)}</${tag}>`).join('') + '</tr>';
+    const rows = [b.header].concat(b.rows);
+    gap(b.header.length > 0 ? b.header[0].from : pos);
+    html += '<div style="overflow-x: auto;"><table style="border-collapse: collapse;">' + row(b.header, 'th') + b.rows.map((r) => row(r, 'td')).join('') + '</table></div>';
+    const last = rows[rows.length - 1];
+    pos = last.length > 0 ? last[last.length - 1].to : pos;
+  };
+  for (const b of blocks) {
+    switch (b.type) {
+      case 'paragraph':
+        block(b.content, '<div>', '</div>');
+        break;
+      case 'heading':
+        block(b.content, '<div style="font-weight: bold;">', '</div>');
+        break;
+      case 'codeBlock':
+        block(b.content, '<pre style="font-family: monospace; white-space: pre-wrap;">', '</pre>');
+        break;
+      case 'quote':
+        block(b.content, '<div style="border-left: 3px solid; padding-left: 0.5em;">', '</div>');
+        break;
+      case 'list':
+        b.items.forEach((item) => entry(item, 0));
+        break;
+      case 'table':
+        table(b);
+        break;
+      case 'rule':
+        block(b.mark, '<hr>', '');
+        break;
     }
   }
+  gap(fts.length);
   return html;
 }
 
-function renderMarkdown(fts) {
-  if (fts.some((ft) => markerType(ft) === 'blockStart')) return renderBlocks(fts);
+function markupHtml(token) {
+  switch (token && token.type) {
+    case 'softBreak':
+      return ' ';
+    case 'lineBreak':
+    case 'hardBreak':
+      return '<br>';
+    default:
+      return '';
+  }
+}
+
+function renderMarkdown(fts, blocks) {
+  return validBlocks(fts, blocks) ? renderBlocks(fts, blocks) : renderSegments(fts, false);
+}
+
+function renderSegments(fts, withBlocks) {
   let html = '';
   for (const ft of fts) {
     const { format, text } = ft;
@@ -133,7 +172,7 @@ function renderMarkdown(fts) {
     try {
       switch (format.type) {
         case 'bold':
-          html += `<strong>${escapeHtml(text)}</strong>`;
+          html += withBlocks && format.singleStar ? `<em>${escapeHtml(text)}</em>` : `<strong>${escapeHtml(text)}</strong>`;
           break;
         case 'italic':
           html += `<em>${escapeHtml(text)}</em>`;
@@ -180,6 +219,11 @@ function renderMarkdown(fts) {
           break;
         case 'phone':
           html += `<a href="tel:${escapeAttr(text)}">${escapeHtml(text)}</a>`;
+          break;
+        case 'escape':
+          break;
+        case 'markup':
+          html += withBlocks ? markupHtml(format.token) : escapeHtml(text);
           break;
         case 'unknown':
           html += escapeHtml(text);

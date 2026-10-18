@@ -61,6 +61,7 @@ fun FramedItemView(
     MarkdownText(
       qi.text,
       qi.formattedText,
+      qi.markdownBlocks,
       toggleSecrets = true,
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
@@ -461,7 +462,7 @@ fun CIMarkdownText(
 
   Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
     MarkdownText(
-      text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
+      text, if (text.isEmpty()) emptyList() else ci.formattedText, if (text.isEmpty()) null else ci.markdownBlocks, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
       mentions = ci.mentions, userMemberId = when {

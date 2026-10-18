@@ -316,7 +316,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `MarkdownFileView.kt` | Markdown file viewer, formatted or as text |
 | `IntegrityErrorItemView.kt` | Message integrity error |
 | `MarkedDeletedItemView.kt` | Marked-as-deleted / moderated message |
-| `TextItemView.kt` | Plain text message with markdown; blocks drawn as one text by `markdownSegments` |
+| `TextItemView.kt` | Plain text message with markdown; blocks of `markdownBlocks` drawn as one text by `blockParts` |
 
 ### `views/chat/group/`
 

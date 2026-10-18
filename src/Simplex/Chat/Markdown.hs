@@ -97,7 +97,7 @@ data MarkdownBlock
   | Quote {content :: SegmentRange}
   | List {items :: NonEmpty ListEntry}
   | Table {columns :: NonEmpty TableAlign, header :: [SegmentRange], rows :: [[SegmentRange]]}
-  | Rule
+  | Rule {mark :: SegmentRange}
   | UnknownBlock {json :: J.Value}
   deriving (Eq, Show)
 
@@ -250,7 +250,7 @@ blockOf ts@((i, FormattedText f t) :| _) = case f of
     QuoteMark -> Right . Quote <$> contentRange
     FenceMark lang -> Just $ Right $ CodeBlock lang $ SegmentRange (i + 2) (max (i + 2) codeEnd)
     RowMark -> Right <$> tableBlock (L.toList ts)
-    RuleMark -> Just $ Right Rule
+    RuleMark -> Just $ Right $ Rule $ SegmentRange i (i + 1)
     _ -> paragraph
   _ -> paragraph
   where

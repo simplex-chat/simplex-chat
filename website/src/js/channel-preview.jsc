@@ -885,6 +885,7 @@ function render(container, data, channelLink, showAppBadges) {
       ts: messages.length > 0 ? messages[0].ts : new Date().toISOString(),
       content: { type: 'text', text: typeof welcome === 'string' ? welcome : '' },
       formattedText: Array.isArray(welcome) ? welcome : null,
+      markdownBlocks: data.welcomeMessageBlocks,
       reactions: []
     };
     allMessages = [welcomeMsg].concat(messages);
@@ -987,7 +988,7 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
   if (shortDescr) {
     const descrDiv = document.createElement('div');
     descrDiv.className = 'simplex-preview-info-descr';
-    descrDiv.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr) : escapeHtml(shortDescr);
+    descrDiv.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr, data.shortDescriptionBlocks) : escapeHtml(shortDescr);
     container.appendChild(descrDiv);
   }
 
@@ -1519,7 +1520,7 @@ function appendTextBlock(bubble, msg) {
   textDiv.className = 'simplex-preview-text';
   const meta = renderMetaHTML(msg);
   if (msg.formattedText && msg.formattedText.length > 0) {
-    textDiv.innerHTML = renderMarkdown(msg.formattedText) + meta;
+    textDiv.innerHTML = renderMarkdown(msg.formattedText, msg.markdownBlocks) + meta;
   } else {
     textDiv.innerHTML = escapeHtml(msg.content.text || '') + meta;
   }

@@ -334,7 +334,7 @@ struct FramedItemView: View {
 
     @inline(__always)
     private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int, stripLink: String? = nil, prefix: NSAttributedString? = nil) -> some View {
-        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline, prefix: prefix, stripLink: stripLink)
+        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, markdownBlocks: qi.markdownBlocks, textStyle: .subheadline, prefix: prefix, stripLink: stripLink)
             .lineLimit(lines)
             .padding(.bottom, 6)
     }
@@ -364,6 +364,7 @@ struct FramedItemView: View {
             chat: chat,
             text: text,
             formattedText: ft,
+            markdownBlocks: text == "" ? nil : ci.markdownBlocks,
             textStyle: .body,
             meta: ci.meta,
             mentions: ci.mentions,

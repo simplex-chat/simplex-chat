@@ -32,6 +32,7 @@ struct MsgContentView: View {
     @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]? = nil
+    var markdownBlocks: [MarkdownBlock]? = nil
     var textStyle: UIFont.TextStyle
     var sender: String? = nil
     var meta: CIMeta? = nil
@@ -100,6 +101,7 @@ struct MsgContentView: View {
         let r = messageText(
             text,
             formattedText,
+            markdownBlocks: markdownBlocks,
             textStyle: textStyle,
             sender: sender,
             mentions: mentions,
@@ -338,9 +340,11 @@ func markdownText(
     showSecrets: Set<Int>? = nil,
     backgroundColor: Color
 ) -> MsgTextResult {
-    messageText(
+    let parsed = parseSimpleXMarkdownText(s)
+    return messageText(
         s,
-        parseSimpleXMarkdown(s),
+        parsed?.formattedText,
+        markdownBlocks: parsed?.markdownBlocks,
         textStyle: textStyle,
         sender: sender,
         preview: preview,
@@ -396,6 +400,7 @@ func markdownProfileDescription(
 func messageText(
     _ text: String,
     _ formattedText: [FormattedText]?,
+    markdownBlocks: [MarkdownBlock]? = nil,
     textStyle: UIFont.TextStyle = .body,
     sender: String?,
     preview: Bool = false,
@@ -408,8 +413,7 @@ func messageText(
     stripLink: String? = nil
 ) -> MsgTextResult {
     let text = if let stripLink { stripTextLink(text, stripLink) } else { text }
-    let segments = markdownSegments(formattedText)
-    let formattedText = if let stripLink { stripFormattedTextLink(segments, stripLink) } else { segments }
+    let formattedText = if let stripLink { stripFormattedTextLink(formattedText, stripLink) } else { formattedText }
     let res = NSMutableAttributedString()
     let descr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle)
     let font = UIFont.preferredFont(forTextStyle: textStyle)
@@ -418,9 +422,9 @@ func messageText(
         .foregroundColor: UIColor.label
     ]
     let secretColor = backgroundColor.withAlphaComponent(1)
-    var link: [NSAttributedString.Key: Any]?
     var hasSecrets = false
     var handleTaps = false
+    var secretIdx: Int = 0
 
     if let sender {
         if preview {
@@ -438,19 +442,59 @@ func messageText(
     }
 
     if let fts = formattedText, fts.count > 0 {
+        if let markdownBlocks {
+            for part in blockParts(fts, markdownBlocks, displayText: { segmentDisplayText($0, mentions) }) {
+                switch part {
+                case let .segments(range, blockFont): appendSegments(fts[range], blockFont)
+                case let .text(t, blockFont): res.append(NSAttributedString(string: t, attributes: [.font: blockFonts(blockFont).font, .foregroundColor: UIColor.label]))
+                }
+            }
+        } else {
+            appendSegments(fts[...], .regular)
+        }
+    } else {
+        res.append(NSMutableAttributedString(string: text, attributes: plain))
+    }
+
+    return (string: res, hasSecrets: hasSecrets, handleTaps: handleTaps)
+
+    func blockFonts(_ blockFont: BlockFont) -> (descr: UIFontDescriptor, font: UIFont) {
+        switch blockFont {
+        case .regular:
+            return (descr, font)
+        case .bold:
+            let d = descr.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.bold]])
+            return (d, UIFont(descriptor: d, size: d.pointSize))
+        case .monospace:
+            let f = UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
+            return (f.fontDescriptor, f)
+        }
+    }
+
+    func appendSegments(_ fts: ArraySlice<FormattedText>, _ blockFont: BlockFont) {
+        let (descr, font) = blockFonts(blockFont)
+        let plain: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor.label
+        ]
+        var link: [NSAttributedString.Key: Any]?
         var bold: UIFont?
         var italic: UIFont?
         var snippet: UIFont?
         var small: UIFont?
         var mention: UIFont?
-        var secretIdx: Int = 0
         for ft in fts {
             var t = ft.text
             var attrs = plain
             switch (ft.format) {
-            case .bold:
-                bold = bold ?? UIFont(descriptor: descr.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.bold]]), size: descr.pointSize)
-                attrs[.font] = bold
+            case let .bold(singleStar):
+                if singleStar && markdownBlocks != nil {
+                    italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
+                    attrs[.font] = italic
+                } else {
+                    bold = bold ?? UIFont(descriptor: descr.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.bold]]), size: descr.pointSize)
+                    attrs[.font] = bold
+                }
             case .italic:
                 italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
                 attrs[.font] = italic
@@ -564,25 +608,53 @@ func messageText(
                     attrs[modalAttrKey] = Format.modal(modalName: modalName, text: text)
                     handleTaps = true
                 }
-            case .blockStart, .blockEnd, .lineBreak, .cellBreak: ()
+            case .escape: t = ""
+            case let .markup(token): t = token.drawnText
             case .unknown: ()
             case .none: ()
             }
             res.append(NSAttributedString(string: t, attributes: attrs))
         }
-    } else {
-        res.append(NSMutableAttributedString(string: text, attributes: plain))
-    }
-    
-    return (string: res, hasSecrets: hasSecrets, handleTaps: handleTaps)
 
-    func linkAttrs() -> [NSAttributedString.Key: Any] {
-        link = link ?? [
-            .font: font,
-            .foregroundColor: uiLinkColor,
-            .underlineStyle: NSUnderlineStyle.single.rawValue
-        ]
-        return link!
+        func linkAttrs() -> [NSAttributedString.Key: Any] {
+            link = link ?? [
+                .font: font,
+                .foregroundColor: uiLinkColor,
+                .underlineStyle: NSUnderlineStyle.single.rawValue
+            ]
+            return link!
+        }
+    }
+}
+
+func segmentDisplayText(_ ft: FormattedText, _ mentions: [String: CIMention]?) -> String {
+    switch ft.format {
+    case .uri: displayedUri(ft.text)
+    case let .hyperLink(text, _): text ?? ft.text
+    case let .simplexLink(text, linkType, _, smpHosts):
+        if let s = text ?? (privacySimplexLinkModeDefault.get() == .description ? linkType.description : nil) {
+            s + " " + viaHost(smpHosts)
+        } else {
+            ft.text
+        }
+    case let .command(cmdStr): "/" + cmdStr
+    case let .mention(memberName):
+        if let m = mentions?[memberName] {
+            if let ref = m.memberRef {
+                if let alias = ref.localAlias, alias != "" {
+                    mentionText("\(alias) (\(ref.displayName))")
+                } else {
+                    mentionText(ref.displayName)
+                }
+            } else {
+                mentionText(memberName)
+            }
+        } else {
+            ft.text
+        }
+    case .escape: ""
+    case let .markup(token): token.drawnText
+    default: ft.text
     }
 }
 
@@ -610,7 +682,9 @@ func stripTextLink(_ text: String, _ link: String) -> String {
 func stripFormattedTextLink(_ ft: [FormattedText]?, _ link: String) -> [FormattedText]? {
     guard var ft, ft.last?.text == link else { return ft }
     ft.removeLast()
-    if let i = ft.indices.last, ft[i].format == nil, ft[i].text.hasSuffix("\n") {
+    if let i = ft.indices.last, case .markup = ft[i].format {
+        ft.removeLast()
+    } else if let i = ft.indices.last, ft[i].format == nil, ft[i].text.hasSuffix("\n") {
         ft[i].text = String(ft[i].text.dropLast())
         if ft[i].text.isEmpty { ft.removeLast() }
     }

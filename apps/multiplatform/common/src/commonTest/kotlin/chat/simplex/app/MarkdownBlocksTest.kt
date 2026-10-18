@@ -1,183 +1,234 @@
 package chat.simplex.app
 
 import chat.simplex.common.model.*
-import kotlinx.serialization.builtins.ListSerializer
-import kotlin.reflect.KClass
+import chat.simplex.common.views.chat.item.itemDisplayParts
+import chat.simplex.common.views.chat.item.segmentDisplayText
+import chat.simplex.common.views.helpers.ParsedFormattedText
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 
 class MarkdownBlocksTest {
+  private val headingAndParagraph = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"headingMark","level":1}},"text":"# "},{"text":"Title "},{"format":{"type":"bold","singleStar":true},"text":"x"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"text":"Para a"},{"format":{"type":"markup","token":{"type":"softBreak"}},"text":"\n"},{"text":"b"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"  \n"},{"text":"c"}],"markdownBlocks":[{"type":"heading","level":1,"content":{"from":1,"to":3}},{"type":"paragraph","content":{"from":4,"to":9}}]}""")
+
+  private val nestedList = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"listMark"}},"text":"- "},{"text":"x"},{"format":{"type":"markup","token":{"type":"softBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"indent"}},"text":"  "},{"text":"y"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"listMark"}},"text":"  - "},{"text":"z"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"listMark","number":"2."}},"text":"2. "},{"text":"w"}],"markdownBlocks":[{"type":"list","items":[{"content":{"from":1,"to":5},"items":[{"content":{"from":7,"to":8},"items":[]}]},{"number":"2.","content":{"from":10,"to":11},"items":[]}]}]}""")
+
+  private val quote = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"quoteMark"}},"text":"> "},{"text":"q1"},{"format":{"type":"markup","token":{"type":"softBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"quoteMark"}},"text":"> "},{"text":"q2"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"quoteMark"}},"text":">"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"quoteMark"}},"text":"> "},{"format":{"type":"bold","singleStar":false},"text":"q3"}],"markdownBlocks":[{"type":"quote","content":{"from":1,"to":10}}]}""")
+
+  private val codeBlockAndRule = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"fenceMark","language":"bash"}},"text":"```bash"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"text":"ls -l"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"text":"pwd"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"fenceMark"}},"text":"```"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"ruleMark"}},"text":"---"}],"markdownBlocks":[{"type":"codeBlock","language":"bash","content":{"from":2,"to":6}},{"type":"rule","mark":{"from":9,"to":10}}]}""")
+
+  private val tableAligned = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"rowMark"}},"text":"| "},{"text":"a"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"b"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"c"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"d"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" |"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"delimiterRow","columns":["none","left","right","center"]}},"text":"|---|:--|--:|:-:|"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"rowMark"}},"text":"| "},{"text":"xxx"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"format":{"type":"bold","singleStar":false},"text":"yyy"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"zzz"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" |"}],"markdownBlocks":[{"type":"table","columns":["none","left","right","center"],"header":[{"from":1,"to":2},{"from":3,"to":4},{"from":5,"to":6},{"from":7,"to":8}],"rows":[[{"from":13,"to":14},{"from":15,"to":16},{"from":17,"to":18}]]}]}""")
+
+  private val tableCenterEmoji = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"rowMark"}},"text":"| "},{"text":"abcd"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"ab"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" |"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"delimiterRow","columns":["center","none"]}},"text":"|:-:|--|"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"rowMark"}},"text":"| "},{"text":"x"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"👍"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" |"}],"markdownBlocks":[{"type":"table","columns":["center","none"],"header":[{"from":1,"to":2},{"from":3,"to":4}],"rows":[[{"from":9,"to":10},{"from":11,"to":12}]]}]}""")
+
+  private val tableMentionCjk = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"rowMark"}},"text":"| "},{"format":{"type":"mention","memberName":"bob"},"text":"@bob"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"text":"中文"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" |"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"delimiterRow","columns":["none","none"]}},"text":"|---|---|"},{"format":{"type":"markup","token":{"type":"hardBreak"}},"text":"\n"},{"format":{"type":"markup","token":{"type":"rowMark"}},"text":"| "},{"text":"x"},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":" | "},{"format":{"type":"markup","token":{"type":"cellMark"}},"text":"|"}],"markdownBlocks":[{"type":"table","columns":["none","none"],"header":[{"from":1,"to":2},{"from":3,"to":4}],"rows":[[{"from":9,"to":10},{"from":11,"to":11}]]}]}""")
+
+  private val gaps = parsed("""{"formattedText":[{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":2}},"text":"\n\n"},{"text":"a"},{"format":{"type":"markup","token":{"type":"paragraphBreak","lineBreaks":3}},"text":"\n\n\n"},{"format":{"type":"markup","token":{"type":"headingMark","level":1}},"text":"# "},{"text":"h"},{"format":{"type":"markup","token":{"type":"lineBreak"}},"text":"\n"}],"markdownBlocks":[{"type":"paragraph","content":{"from":1,"to":2}},{"type":"heading","level":1,"content":{"from":4,"to":5}}]}""")
+
+  private val escapes = parsed("""{"formattedText":[{"text":"text "},{"format":{"type":"escape"},"text":"\\"},{"text":"*not"},{"format":{"type":"escape"},"text":"\\"},{"text":"*\nmore"}]}""")
+
   @Test
-  fun testDecodeMarkers() {
-    val fts = json.decodeFromString(
-      ListSerializer(FormattedText.serializer()),
-      """[{"format":{"type":"blockStart","block":{"type":"paragraph"}},"text":""},""" +
-        """{"format":{"type":"blockStart","block":{"type":"heading","level":2}},"text":"## "},""" +
-        """{"format":{"type":"blockStart","block":{"type":"codeBlock","language":"bash"}},"text":"```bash\n"},""" +
-        """{"format":{"type":"blockStart","block":{"type":"codeBlock"}},"text":"```\n"},""" +
-        """{"format":{"type":"blockStart","block":{"type":"quote"}},"text":"> "},""" +
-        """{"format":{"type":"blockStart","block":{"type":"listItem","number":"2.","indent":1}},"text":"  2. "},""" +
-        """{"format":{"type":"blockStart","block":{"type":"listItem","indent":0}},"text":"- "},""" +
-        """{"format":{"type":"blockStart","block":{"type":"table","columns":["none","left","center","right"]}},"text":"| "},""" +
-        """{"format":{"type":"blockStart","block":{"type":"rule"}},"text":"---"},""" +
-        """{"format":{"type":"blockEnd"},"text":"\n```"},""" +
-        """{"format":{"type":"lineBreak"},"text":"\n> "},""" +
-        """{"format":{"type":"cellBreak"},"text":" | "}]"""
-    )
-    val blocks = fts.take(9).map { (it.format as Format.BlockStart).block }
-    assertEquals(MarkdownBlock.Paragraph, blocks[0])
-    assertEquals(2, (blocks[1] as MarkdownBlock.Heading).level)
-    assertEquals("bash", (blocks[2] as MarkdownBlock.CodeBlock).language)
-    assertNull((blocks[3] as MarkdownBlock.CodeBlock).language)
-    assertEquals(MarkdownBlock.Quote, blocks[4])
-    val item = blocks[5] as MarkdownBlock.ListItem
-    assertEquals("2.", item.number)
-    assertEquals(1, item.indent)
-    val itemNoNumber = blocks[6] as MarkdownBlock.ListItem
-    assertNull(itemNoNumber.number)
-    assertEquals(0, itemNoNumber.indent)
-    assertEquals(listOf(TableAlign.None, TableAlign.Left, TableAlign.Center, TableAlign.Right), (blocks[7] as MarkdownBlock.Table).columns)
-    assertEquals(MarkdownBlock.Rule, blocks[8])
+  fun testDecodeTokens() {
+    val tokens = (headingAndParagraph.formattedText!! + nestedList.formattedText!! + codeBlockAndRule.formattedText!! + tableAligned.formattedText!! + gaps.formattedText!!)
+      .mapNotNull { (it.format as? Format.Markup)?.token }
+    assertEquals(1, tokens.filterIsInstance<BlockToken.HeadingMark>().first().level)
+    assertEquals(listOf(null, null, "2."), tokens.filterIsInstance<BlockToken.ListMark>().map { it.number })
+    assertEquals(listOf("bash", null), tokens.filterIsInstance<BlockToken.FenceMark>().map { it.language })
+    assertEquals(listOf(TableAlign.None, TableAlign.Left, TableAlign.Right, TableAlign.Center), tokens.filterIsInstance<BlockToken.DelimiterRow>().first().columns)
+    assertEquals(listOf(2, 3), tokens.filterIsInstance<BlockToken.ParagraphBreak>().map { it.lineBreaks })
+    listOf(
+      BlockToken.LineBreak::class, BlockToken.SoftBreak::class, BlockToken.HardBreak::class, BlockToken.Indent::class,
+      BlockToken.RowMark::class, BlockToken.CellMark::class, BlockToken.RuleMark::class
+    ).forEach { kind -> assert(tokens.any { kind.isInstance(it) }) { "no $kind" } }
+    assertIs<BlockToken.QuoteMark>((quote.formattedText!![0].format as Format.Markup).token)
+    val bold = headingAndParagraph.formattedText!!.mapNotNull { it.format as? Format.Bold } + quote.formattedText!!.mapNotNull { it.format as? Format.Bold }
+    assertEquals(listOf(true, false), bold.map { it.singleStar })
+    assertEquals(listOf("text ", "", "*not", "", "*\nmore"), escapes.formattedText!!.map(::display))
+    assertNull(escapes.markdownBlocks)
+  }
+
+  @Test
+  fun testDecodeBlocks() {
+    val heading = assertIs<MarkdownBlock.Heading>(headingAndParagraph.markdownBlocks!![0])
+    assertEquals(1, heading.level)
+    assertEquals(1 to 3, heading.content.pair)
+    assertEquals(4 to 9, assertIs<MarkdownBlock.Paragraph>(headingAndParagraph.markdownBlocks!![1]).content.pair)
+    val list = assertIs<MarkdownBlock.ItemList>(nestedList.markdownBlocks!!.single())
+    assertEquals(listOf(null, "2."), list.items.map { it.number })
+    assertEquals(7 to 8, list.items[0].items.single().content.pair)
+    assertEquals(1 to 10, assertIs<MarkdownBlock.Quote>(quote.markdownBlocks!!.single()).content.pair)
+    val code = assertIs<MarkdownBlock.CodeBlock>(codeBlockAndRule.markdownBlocks!![0])
+    assertEquals("bash", code.language)
+    assertEquals(2 to 6, code.content.pair)
+    assertEquals(9 to 10, assertIs<MarkdownBlock.Rule>(codeBlockAndRule.markdownBlocks!![1]).mark.pair)
+    val table = assertIs<MarkdownBlock.Table>(tableAligned.markdownBlocks!!.single())
+    assertEquals(listOf(TableAlign.None, TableAlign.Left, TableAlign.Right, TableAlign.Center), table.columns)
+    assertEquals(listOf(1 to 2, 3 to 4, 5 to 6, 7 to 8), table.header.map { it.pair })
+    assertEquals(listOf(listOf(13 to 14, 15 to 16, 17 to 18)), table.rows.map { row -> row.map { it.pair } })
+  }
+
+  @Test
+  fun testHeadingAndParagraph() {
     assertEquals(
-      listOf(s("\n```", Format.BlockEnd::class), s("\n> ", Format.LineBreak::class), s(" | ", Format.CellBreak::class)),
-      shape(fts.drop(9))
+      listOf("Title x" to BlockFont.Bold, "\n" to BlockFont.Regular, "Para a b\nc" to BlockFont.Regular),
+      drawn(headingAndParagraph)
     )
   }
 
   @Test
-  fun testNoMarkers() {
-    val fts = listOf(FormattedText("a\nb", Format.Bold()), FormattedText("\nc"))
-    assertEquals(fts, markdownSegments(fts))
-    assertNull(markdownSegments(null))
+  fun testGaps() {
+    assertEquals(
+      listOf("\n\n" to BlockFont.Regular, "a" to BlockFont.Regular, "\n\n\n" to BlockFont.Regular, "h" to BlockFont.Bold, "\n" to BlockFont.Regular),
+      drawn(gaps)
+    )
   }
 
   @Test
-  fun testBlockSegments() {
+  fun testNestedList() {
+    assertEquals(
+      listOf("• ", "x y", "\n", "    • ", "z", "\n", "2. ", "w").map { it to BlockFont.Regular },
+      drawn(nestedList)
+    )
+  }
+
+  @Test
+  fun testListEntryLines() {
     val fts = listOf(
-      start(MarkdownBlock.Heading(1), "# "), FormattedText("Title"), FormattedText("x", Format.Italic()), end(),
-      FormattedText("\n"),
-      start(MarkdownBlock.Paragraph, ""), FormattedText("a "), FormattedText("b", Format.Bold()), lineBreak("\n"), FormattedText("c"), end(),
-      FormattedText("\n\n"),
-      start(MarkdownBlock.ListItem(null, 0), "- "), FormattedText("x"), lineBreak("\n  "), FormattedText("y"), end(),
-      FormattedText("\n"),
-      start(MarkdownBlock.ListItem("2.", 1), "  2. "), FormattedText("z"), end(),
-      FormattedText("\n"),
-      start(MarkdownBlock.Quote, "> "), FormattedText("q1"), lineBreak("\n> "), FormattedText("q2"), lineBreak("\n>"), lineBreak("\n> "), FormattedText("q3", Format.Bold()), end(),
-      FormattedText("\n"),
-      start(MarkdownBlock.CodeBlock("bash"), "```bash\n"), FormattedText("ls -l"), lineBreak("\n"), lineBreak("\n"), FormattedText("pwd"), end("\n```"),
-      FormattedText("\n"),
-      start(MarkdownBlock.Rule, "---"), end()
+      FormattedText("- ", Format.Markup(BlockToken.ListMark())), FormattedText("a"),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())), FormattedText("  ", Format.Markup(BlockToken.Indent())), FormattedText("b")
     )
+    val blocks = listOf(MarkdownBlock.ItemList(listOf(ListEntry(null, SegmentRange(1, 5), emptyList()))))
+    assertEquals("• a\n  b", drawnText(fts, blocks))
+  }
+
+  @Test
+  fun testQuote() {
     assertEquals(
-      listOf(
-        s("Title", Format.Bold::class), s("x", Format.Italic::class),
-        s("\n"),
-        s("a "), s("b", Format.Bold::class), s(" "), s("c"),
-        s("\n\n"),
-        s("• "), s("x"), s(" "), s("y"),
-        s("\n"),
-        s("    2. "), s("z"),
-        s("\n"),
-        s("│ "), s("q1"), s(" "), s("q2"), s("\n│ "), s("\n│ "), s("q3", Format.Bold::class),
-        s("\n"),
-        snippet("ls -l"), snippet("\n"), snippet("\n"), snippet("pwd"),
-        s("\n"),
-        s("———")
-      ),
-      shape(markdownSegments(fts))
+      listOf("│ ", "q1 q2", "\n│ ", "", "\n│ ", "q3").map { it to BlockFont.Regular },
+      drawn(quote)
     )
   }
 
   @Test
-  fun testHardBreaks() {
-    val fts = listOf(
-      start(MarkdownBlock.Paragraph, ""), FormattedText("```"), lineBreak("\n"), lineBreak("\n"), FormattedText("```"), end(),
-      FormattedText("\n"),
-      start(MarkdownBlock.ListItem(null, 0), "- "), FormattedText("h"), lineBreak("\n"), FormattedText("```"), lineBreak("\n   "), lineBreak("\n"), FormattedText("```"), end()
-    )
+  fun testCodeBlockAndRule() {
     assertEquals(
-      listOf(
-        s("```"), s("\n"), s("\n"), s("```"),
-        s("\n"),
-        s("• "), s("h"), s(" "), s("```"), s("\n"), s("\n"), s("```")
-      ),
-      shape(markdownSegments(fts))
+      listOf("ls -l\n\npwd" to BlockFont.Monospace, "\n" to BlockFont.Regular, "———" to BlockFont.Regular),
+      drawn(codeBlockAndRule)
     )
   }
 
   @Test
-  fun testSegmentsAfterBlocks() {
-    val fts = listOf(
-      start(MarkdownBlock.ListItem(null, 0), "- "), FormattedText("Berlin"), end(),
-      FormattedText(" "), FormattedText("Read more", Format.Modal(Format.Modal.Description, "- Berlin\n- Developer"))
-    )
+  fun testTableAlignments() {
     assertEquals(
-      listOf(s("• "), s("Berlin"), s(" "), s("Read more", Format.Modal::class)),
-      shape(markdownSegments(fts))
+      "a  " + " │ " + "b  " + " │ " + "  c" + " │ " + "d" + "\n───" + "─┼─" + "───" + "─┼─" + "───" + "─┼─" + "─" +
+        "\nxxx" + " │ " + "yyy" + " │ " + "zzz",
+      drawnText(tableAligned.formattedText!!, tableAligned.markdownBlocks!!)
     )
-  }
-
-  @Test
-  fun testTableSegments() {
-    val fts = listOf(
-      start(MarkdownBlock.Table(listOf(TableAlign.None, TableAlign.Left, TableAlign.Right, TableAlign.Center)), "| "),
-      FormattedText("a"), cellBreak(" | "), FormattedText("b"), cellBreak(" | "), FormattedText("c"), cellBreak(" | "), FormattedText("d"),
-      lineBreak(" |\n|---|:--|--:|:-:|\n| "),
-      FormattedText("xxx"), cellBreak(" | "), FormattedText("yyy", Format.Bold()), cellBreak(" | "), FormattedText("zzz"), cellBreak(""),
-      end(" |")
-    )
-    assertEquals(
-      listOf(
-        snippet("a"), snippet("  "),
-        snippet(" │ "), snippet("b"), snippet("  "),
-        snippet(" │   "), snippet("c"),
-        snippet(" │ "), snippet("d"),
-        snippet("\n───" + "─┼─" + "───" + "─┼─" + "───" + "─┼─" + "─"),
-        snippet("\n"),
-        snippet("xxx"),
-        snippet(" │ "), s("yyy", Format.Bold::class),
-        snippet(" │ "), snippet("zzz"),
-        snippet(" │ "), snippet(" ")
-      ),
-      shape(markdownSegments(fts))
-    )
+    assert(drawn(tableAligned).all { it.second == BlockFont.Monospace })
   }
 
   @Test
   fun testTableCenterAndEmoji() {
-    val fts = listOf(
-      start(MarkdownBlock.Table(listOf(TableAlign.Center, TableAlign.None)), ""),
-      FormattedText("abcd"), cellBreak(" | "), FormattedText("ab"),
-      lineBreak("\n:-:|--\n"),
-      FormattedText("x"), cellBreak(" | "), FormattedText("👍"),
-      end()
-    )
     assertEquals(
-      listOf(
-        snippet("abcd"),
-        snippet(" │ "), snippet("ab"),
-        snippet("\n────" + "─┼─" + "──"),
-        snippet("\n"),
-        snippet(" "), snippet("x"), snippet("  "),
-        snippet(" │ "), snippet("👍"), snippet(" ")
-      ),
-      shape(markdownSegments(fts))
+      "abcd" + " │ " + "ab" + "\n────" + "─┼─" + "──" +
+        "\n x  " + " │ " + "👍",
+      drawnText(tableCenterEmoji.formattedText!!, tableCenterEmoji.markdownBlocks!!)
     )
   }
 
-  private fun start(block: MarkdownBlock, text: String) = FormattedText(text, Format.BlockStart(block))
+  @Test
+  fun testTableWidthsOfDisplayedTexts() {
+    val fts = tableMentionCjk.formattedText!!
+    val displayed = { ft: FormattedText -> if (ft.format is Format.Mention) "@Robert" else display(ft) }
+    val text = blockParts(fts, tableMentionCjk.markdownBlocks!!, displayed).joinToString("") { part ->
+      when (part) {
+        is BlockPart.Segments -> part.range.joinToString("") { displayed(fts[it]) }
+        is BlockPart.Text -> part.text
+      }
+    }
+    assertEquals(
+      "@Robert" + " │ " + "中文" + "\n───────" + "─┼─" + "────" +
+        "\nx      " + " │ " + "    ",
+      text
+    )
+  }
 
-  private fun end(text: String = "") = FormattedText(text, Format.BlockEnd())
+  @Test
+  fun testTableColumnWidthLimit() {
+    val long = "x".repeat(50)
+    val fts = listOf(
+      FormattedText("| ", Format.Markup(BlockToken.RowMark())), FormattedText(long), FormattedText(" |", Format.Markup(BlockToken.CellMark())),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())), FormattedText("|-|", Format.Markup(BlockToken.DelimiterRow(listOf(TableAlign.Right)))),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("| ", Format.Markup(BlockToken.RowMark())), FormattedText("y"), FormattedText(" |", Format.Markup(BlockToken.CellMark()))
+    )
+    val blocks = listOf(MarkdownBlock.Table(listOf(TableAlign.Right), listOf(SegmentRange(1, 2)), listOf(listOf(SegmentRange(7, 8)))))
+    assertEquals(long + "\n" + "─".repeat(MAX_TABLE_COLUMN_WIDTH) + "\n" + " ".repeat(MAX_TABLE_COLUMN_WIDTH - 1) + "y", drawnText(fts, blocks))
+  }
 
-  private fun lineBreak(text: String) = FormattedText(text, Format.LineBreak())
+  @Test
+  fun testRangesBeyondList() {
+    val fts = headingAndParagraph.formattedText!!.take(5)
+    assertEquals("Title x\nPara a", drawnText(fts, headingAndParagraph.markdownBlocks!!))
+    assertEquals("", drawnText(emptyList(), codeBlockAndRule.markdownBlocks!!.take(1)))
+  }
 
-  private fun cellBreak(text: String) = FormattedText(text, Format.CellBreak())
+  @Test
+  fun testDisplayWidth() {
+    assertEquals(3, displayWidth("abc"))
+    assertEquals(4, displayWidth("中文"))
+    assertEquals(2, displayWidth("👍"))
+    assertEquals(2, displayWidth("👍🏽"))
+    assertEquals(2, displayWidth("❤️"))
+    assertEquals(1, displayWidth("é"))
+    assertEquals(2, displayWidth(String(intArrayOf(0x1F468, 0x200D, 0x1F469, 0x200D, 0x1F467), 0, 5)))
+    assertEquals(2, displayWidth(String(intArrayOf(0x1F1FA, 0x1F1F8), 0, 2)))
+  }
 
-  private fun s(text: String, format: KClass<out Format>? = null): Pair<String, KClass<out Format>?> = text to format
+  @Test
+  fun testTokenDisplayText() {
+    assertEquals(
+      listOf(" ", "\n", "\n", "\n\n\n", "", "", "", "", "", "", ""),
+      listOf(
+        BlockToken.SoftBreak(), BlockToken.LineBreak(), BlockToken.HardBreak(), BlockToken.ParagraphBreak(3), BlockToken.Indent(),
+        BlockToken.HeadingMark(2), BlockToken.ListMark("1."), BlockToken.QuoteMark(), BlockToken.FenceMark(null), BlockToken.CellMark(), BlockToken.RuleMark()
+      ).map { display(FormattedText("syntax", Format.Markup(it))) }
+    )
+    assertEquals("", display(FormattedText("\\", Format.Escape())))
+  }
 
-  private fun snippet(text: String): Pair<String, KClass<out Format>?> = text to Format.Snippet::class
+  @Test
+  fun testItemDisplayParts() {
+    val item = ChatItem.getSampleData(text = "> q1\n> q2\n>\n> **q3**").copy(formattedText = quote.formattedText, markdownBlocks = quote.markdownBlocks)
+    val parts = itemDisplayParts(item, SimplexLinkMode.DESCRIPTION)!!
+    assertEquals("│ q1 q2\n│ \n│ q3", parts.joinToString("") { it.first })
+    assertEquals(listOf("│ " to "│ ", "q1" to "q1", " " to " ", "" to "", "q2" to "q2"), parts.take(5))
+    val plain = item.copy(formattedText = escapes.formattedText, markdownBlocks = null)
+    assertEquals(listOf("text " to "text ", "" to "\\", "*not" to "*not", "" to "\\", "*\nmore" to "*\nmore"), itemDisplayParts(plain, SimplexLinkMode.DESCRIPTION))
+  }
 
-  private fun shape(segments: List<FormattedText>?): List<Pair<String, KClass<out Format>?>>? =
-    segments?.map { it.text to it.format?.let { f -> f::class } }
+  private val SegmentRange.pair: Pair<Int, Int> get() = from to to
+
+  private fun parsed(s: String): ParsedFormattedText = json.decodeFromString(ParsedFormattedText.serializer(), s)
+
+  private fun display(ft: FormattedText): String = segmentDisplayText(ft, null, SimplexLinkMode.DESCRIPTION)
+
+  private fun drawn(p: ParsedFormattedText): List<Pair<String, BlockFont>> {
+    val fts = p.formattedText!!
+    return blockParts(fts, p.markdownBlocks!!, ::display).map { part ->
+      when (part) {
+        is BlockPart.Segments -> part.range.joinToString("") { display(fts[it]) } to part.font
+        is BlockPart.Text -> part.text to part.font
+      }
+    }
+  }
+
+  private fun drawnText(fts: List<FormattedText>, blocks: List<MarkdownBlock>): String =
+    blockParts(fts, blocks, ::display).joinToString("") { part ->
+      when (part) {
+        is BlockPart.Segments -> part.range.joinToString("") { display(fts[it]) }
+        is BlockPart.Text -> part.text
+      }
+    }
 }

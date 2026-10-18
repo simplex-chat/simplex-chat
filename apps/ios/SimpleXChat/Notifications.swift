@@ -198,13 +198,14 @@ public func createNotification(
 
 // Spec: spec/services/notifications.md#hideSecrets
 func hideSecrets(_ cItem: ChatItem, isChannel: Bool = false) -> String {
-    if let md = markdownSegments(cItem.formattedText) {
+    if let md = cItem.formattedText {
         var res = ""
         for ft in md {
-            if case .secret = ft.format {
-                res = res + "..."
-            } else {
-                res = res + ft.text
+            switch ft.format {
+            case .secret: res = res + "..."
+            case let .markup(token): res = res + token.drawnText
+            case .escape: ()
+            default: res = res + ft.text
             }
         }
         return res

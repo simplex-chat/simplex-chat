@@ -52,10 +52,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
   @Composable
-  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
+  fun TextBubble(text: String, formattedText: List<FormattedText>?, markdownBlocks: List<MarkdownBlock>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
     if (text != "") {
       MarkdownText(
-        text, if (text.isEmpty()) emptyList() else formattedText,
+        text, if (text.isEmpty()) emptyList() else formattedText, markdownBlocks,
         sender = sender,
         mentions = mentions,
         userMemberId = userMemberId,
@@ -85,7 +85,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, ciVersion.formattedText, sender = null, showMenu = showMenu, mentions = ci.mentions,
+          TextBubble(text, ciVersion.formattedText, ciVersion.markdownBlocks, sender = null, showMenu = showMenu, mentions = ci.mentions,
             userMemberId = when {
               chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
               else -> null
@@ -137,7 +137,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, qi.formattedText, sender = qi.sender(null), showMenu)
+          TextBubble(text, qi.formattedText, qi.markdownBlocks, sender = qi.sender(null), showMenu)
         }
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
