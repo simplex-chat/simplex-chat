@@ -22,21 +22,38 @@ function recorder(results: RunResult[]): {calls: string[][]; run: (command: stri
 }
 
 describe("register", () => {
-  it("builds the entry with the timeout from server.json", () => {
-    expect(registryEntry(5226, "T", 23)).toEqual({type: "http", url: "http://127.0.0.1:5226/mcp", headers: {Authorization: "Bearer T"}, timeout: 169_800_000})
-    expect(registryEntry(5227, "T", 1).timeout).toBe(25 * 3_600_000 + 600_000)
+  const platform = Object.getOwnPropertyDescriptor(process, "platform")!
+  const onPlatform = (value: NodeJS.Platform): void => {
+    Object.defineProperty(process, "platform", {...platform, value})
+  }
+
+  afterEach(() => Object.defineProperty(process, "platform", platform))
+
+  it("builds the entry with the timeout from server.json and a helper that prints the headers file", () => {
+    onPlatform("linux")
+    expect(registryEntry(5226, "/home/alice/.simplex-mcp/agent", 23)).toEqual({
+      type: "http",
+      url: "http://127.0.0.1:5226/mcp",
+      headersHelper: "cat /home/alice/.simplex-mcp/agent/headers.json",
+      timeout: 169_800_000,
+    })
+    expect(registryEntry(5227, "/tmp/my agent's", 1)).toMatchObject({headersHelper: "cat '/tmp/my agent'\\''s/headers.json'", timeout: 25 * 3_600_000 + 600_000})
+    onPlatform("win32")
+    const data = "C:\\Users\\Ana Lu\\agent"
+    expect(registryEntry(5226, data, 23).headersHelper).toBe(`type "${join(data, "headers.json")}"`)
   })
 
-  it("removes the entry before adding it", () => {
+  it("removes the entry before adding it, with no token in the command", () => {
     writeServerFile(dir, {name: "agent", port: 5227, expireHours: 2})
     const token = serverToken(dir, false)
     const {calls, run} = recorder([{missing: false, status: 1, stderr: "not found"}, ok])
     expect(register({name: "agent", data: dir, scope: "user"}, run)).toBe("Added to Claude Code: scope user, server simplex-agent.")
-    const entry = JSON.stringify({type: "http", url: "http://127.0.0.1:5227/mcp", headers: {Authorization: `Bearer ${token}`}, timeout: 26 * 3_600_000 + 600_000})
+    const entry = JSON.stringify({type: "http", url: "http://127.0.0.1:5227/mcp", headersHelper: `cat ${join(dir, "headers.json")}`, timeout: 26 * 3_600_000 + 600_000})
     expect(calls).toEqual([
       ["claude", "mcp", "remove", "--scope", "user", "simplex-agent"],
       ["claude", "mcp", "add-json", "--scope", "user", "simplex-agent", entry],
     ])
+    expect(calls.flat().join(" ")).not.toContain(token)
   })
 
   it("reports an agent that was never started", () => {
@@ -48,8 +65,7 @@ describe("register", () => {
 
   it("prints the entry when claude is missing", () => {
     writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
-    const token = serverToken(dir, false)
-    const entry = JSON.stringify(registryEntry(5226, token, 23))
+    const entry = JSON.stringify(registryEntry(5226, dir, 23))
     const missing = {missing: true, status: null, stderr: ""}
     expect(() => register({name: "agent", data: dir, scope: "user"}, recorder([missing]).run)).toThrow(
       new ExitError(`Add this entry under "mcpServers" in ~/.claude.json: {"simplex-agent": ${entry}}`, 1),
@@ -61,7 +77,6 @@ describe("register", () => {
 
   it("reports a failed add", () => {
     writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
-    serverToken(dir, false)
     expect(() => register({name: "agent", data: dir, scope: "user"}, recorder([ok, {missing: false, status: 1, stderr: "bad scope\n"}]).run)).toThrow(
       new ExitError("claude mcp add-json failed: bad scope", 1),
     )

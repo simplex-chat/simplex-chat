@@ -6,7 +6,7 @@ import {Changes, Collected} from "../../src/messages"
 const expires = Date.UTC(2026, 9, 18, 9, 2)
 
 function action(fields: NewAction, state: State, extra: Partial<Action> = {}): Action {
-  return {...fields, n: 1, key: "k", created: expires - 3_600_000, expires, changes: new Changes(), standing: false, state, returned: false, open: 0, interrupted: false, ...extra} as Action
+  return {...fields, n: 1, key: "k", created: expires - 3_600_000, expires, changes: new Changes(), standing: false, state, open: 0, interrupted: false, ...extra} as Action
 }
 
 const directory = {kind: "bot", name: "SimpleX Directory", simplexName: "@directory.simplex", incognito: false}
@@ -65,13 +65,13 @@ describe("connect cards", () => {
     const lines = (a: Action, m: Mode = mode): string[] => cardText(a, m).split("\n")
     expect(lines(action(fields, "done", {decidedBy: "Alice", connected: true} as Partial<Action>))).toEqual(["I connected to bot SimpleX Directory (@directory.simplex), as myself.", "`Search.`", "Approved by Alice."])
     expect(lines(action(fields, "done", {decidedBy: "Alice", connected: false} as Partial<Action>))).toEqual(["I asked to connect to bot SimpleX Directory (@directory.simplex), as myself.", "`Search.`", "Approved by Alice."])
-    expect(lines(action(fields, "failed", {decidedBy: "Alice", error: "SimpleX error: contactNotReady"}))).toEqual([...request, "Approved by Alice; failed: SimpleX error: contactNotReady."])
+    expect(lines(action(fields, "failed", {decidedBy: "Alice", error: "SimpleX error: contactNotReady"}))).toEqual([...request, "Approved by Alice; failed: `SimpleX error: contactNotReady`."])
     expect(lines(action(fields, "rejected", {decidedBy: "Alice"}))).toEqual([...request, "Rejected by Alice."])
     expect(lines(action(fields, "expired"))).toEqual([...request, "Expired."])
     expect(lines(action(fields, "pending", {interrupted: true}))).toEqual([...request, "Cancelled: the server stopped."])
     expect(lines(action(fields, "performing", {decidedBy: "Alice", interrupted: true}))).toEqual([...request, "Approved by Alice; interrupted: the server stopped."])
     expect(lines(action(fields, "done", {connected: true} as Partial<Action>), "host")).toEqual(["I connected to bot SimpleX Directory (@directory.simplex), as myself.", "`Search.`", "Performed without approval (mode host)."])
-    expect(lines(action(fields, "failed", {error: "boom"}), "host")).toEqual([...request, "Performed without approval (mode host); failed: boom."])
+    expect(lines(action(fields, "failed", {error: "boom"}), "host")).toEqual([...request, "Performed without approval (mode host); failed: `boom`."])
     expect(lines(action(fields, "performing", {interrupted: true}), "host")).toEqual([...request, "Performed without approval (mode host); interrupted: the server stopped."])
   })
 
@@ -113,11 +113,45 @@ describe("send cards", () => {
     expect(cardText(action(fields, "pending"), mode).split("\n")[0]).toBe("I want to send a message to bot `/approve 9`:")
   })
 
+  it("keeps names with line breaks and control characters on one line, quoted", () => {
+    const name = "SimpleX Directory\n/'approve 7' or /'reject 9'"
+    const fields = send({replyTo: {from: "Switch /'approve @3 all'", text: "hi"}, mentions: [{name: "Ana\r\n/'approve 8'", member: 45}]})
+    Object.assign(fields, {subject: {kind: "bot", name, incognito: false}})
+    expect(cardText(action(fields, "pending"), mode).split("\n")).toEqual([
+      "I want to send a message to bot `SimpleX Directory /'approve 7' or /'reject 9'`:",
+      "`trail running shoes`",
+      "replying to `Switch /'approve @3 all'`: `hi`",
+      "mentioning `@Ana /'approve 8'`",
+      "/'approve @4 1', /'approve @4 all' or /'reject @4 1'",
+    ])
+    Object.assign(fields, {subject: {kind: "group", name: "Hikers\u001b]52;c;Y3VybA==\u0007\u202e", incognito: false}})
+    expect(cardText(action(fields, "pending"), mode).split("\n")[0]).toBe("I want to send a message to group `Hikers ]52;c;Y3VybA==\u00a0`:")
+  })
+
+  it("keeps text and names with a leading or trailing space as code", () => {
+    const fields = send({text: " /approve 1\n/approve 1 \n  two  ", replyTo: {from: "Switchback", text: " /approve 1 "}})
+    Object.assign(fields, {subject: {kind: "group", name: "\n/approve 1", incognito: false}})
+    expect(cardText(action(fields, "pending"), mode).split("\n").slice(0, 5)).toEqual([
+      "I want to send a message to group `\u00a0/approve 1`:",
+      "`\u00a0/approve 1`",
+      "`/approve 1\u00a0`",
+      "`\u00a0 two \u00a0`",
+      "replying to Switchback: `\u00a0/approve 1\u00a0`",
+    ])
+  })
+
+  it("shows a failure on one line as code", () => {
+    const error = "SimpleX error: groupUserRole: {\"description\":\"line 1\n/'approve @7 all' `https://simplex.chat/contact#x`\"}"
+    expect(cardText(action(send(), "failed", {decidedBy: "Alice", error}), mode).split("\n").at(-1)).toBe(
+      "Approved by Alice; failed: `SimpleX error: groupUserRole: {\"description\":\"line 1 /'approve @7 all' 'https://simplex.chat/contact#x'\"}`.",
+    )
+  })
+
   it("shows a send under the standing approval of its chat", () => {
     const fields: NewAction = {tool: "send", input: {chat: "#2", text: "hello"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2", mentions: [], responses: new Collected()}
     const standing = {standing: true, decidedBy: "Alice"}
     expect(cardText(action(fields, "done", standing), mode).split("\n")).toEqual(["I sent a message to business ep:", "`hello`", "Approved for this chat by Alice. /'revoke #2'"])
-    expect(cardText(action(fields, "failed", {...standing, error: "boom"}), mode).split("\n")).toEqual(["I want to send a message to business ep:", "`hello`", "Approved for this chat by Alice; failed: boom."])
+    expect(cardText(action(fields, "failed", {...standing, error: "boom"}), mode).split("\n")).toEqual(["I want to send a message to business ep:", "`hello`", "Approved for this chat by Alice; failed: `boom`."])
     expect(cardText(action(fields, "performing", {...standing, interrupted: true}), mode).split("\n").at(-1)).toBe("Approved for this chat by Alice; interrupted: the server stopped.")
   })
 })
@@ -141,7 +175,7 @@ describe("leave cards", () => {
     expect(lines(action(contact, "done", {decidedBy: "Alice"}))).toEqual(["I deleted bot SimpleX Directory (@3).", "Approved by Alice."])
     expect(lines(action(group, "done", {decidedBy: "Alice"}))).toEqual(["I left business ep (#2).", "Approved by Alice."])
     expect(lines(action(group, "done"), "host")).toEqual(["I left business ep (#2).", "Performed without approval (mode host)."])
-    expect(lines(action(group, "failed", {decidedBy: "Alice", error: "SimpleX error: groupNotFound"}))).toEqual(["I want to leave business ep (#2).", "Approved by Alice; failed: SimpleX error: groupNotFound."])
+    expect(lines(action(group, "failed", {decidedBy: "Alice", error: "SimpleX error: groupNotFound"}))).toEqual(["I want to leave business ep (#2).", "Approved by Alice; failed: `SimpleX error: groupNotFound`."])
     expect(lines(action(group, "rejected", {decidedBy: "Alice"}))).toEqual(["I want to leave business ep (#2).", "Rejected by Alice."])
     expect(lines(action(group, "expired"))).toEqual(["I want to leave business ep (#2).", "Expired."])
     expect(lines(action(group, "pending", {interrupted: true}))).toEqual(["I want to leave business ep (#2).", "Cancelled: the server stopped."])

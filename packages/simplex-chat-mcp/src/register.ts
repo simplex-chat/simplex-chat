@@ -1,8 +1,8 @@
 import {spawnSync} from "child_process"
 import {existsSync, readFileSync} from "fs"
 import {basename, dirname, join, resolve} from "path"
-import {readServerFile, savedToken} from "./files"
-import {ExitError} from "./log"
+import {headersFile, readServerFile} from "./files"
+import {ExitError, shellPath} from "./log"
 
 export type Scope = "user" | "local"
 
@@ -23,16 +23,15 @@ export type Run = (command: string, args: string[]) => RunResult
 export interface Entry {
   type: "http"
   url: string
-  headers: {Authorization: string}
+  headersHelper: string
   timeout: number
 }
 
 export function register({name, data, scope}: RegisterOptions, run: Run = runCommand, projectFolder: () => string = projectRoot): string {
   const server = readServerFile(data)
-  const token = savedToken(data)
-  if (server === undefined || token === undefined) throw new ExitError(`Agent "${name}" was never started. Start it with: npx -y @simplex-chat/mcp serve ${name}`, 1)
+  if (server === undefined) throw new ExitError(`Agent "${name}" was never started. Start it with: npx -y @simplex-chat/mcp serve ${name}`, 1)
   const serverName = `simplex-${name}`
-  const entry = JSON.stringify(registryEntry(server.port, token, server.expireHours))
+  const entry = JSON.stringify(registryEntry(server.port, data, server.expireHours))
   const removed = run("claude", ["mcp", "remove", "--scope", scope, serverName])
   if (removed.missing) throw new ExitError(manualEntryText(scope, serverName, entry, projectFolder), 1)
   const added = run("claude", ["mcp", "add-json", "--scope", scope, serverName, entry])
@@ -41,11 +40,11 @@ export function register({name, data, scope}: RegisterOptions, run: Run = runCom
   return `Added to Claude Code: scope ${scope}, server ${serverName}.`
 }
 
-export function registryEntry(port: number, token: string, expireHours: number): Entry {
+export function registryEntry(port: number, data: string, expireHours: number): Entry {
   return {
     type: "http",
     url: `http://127.0.0.1:${port}/mcp`,
-    headers: {Authorization: `Bearer ${token}`},
+    headersHelper: `${process.platform === "win32" ? "type" : "cat"} ${shellPath(headersFile(data))}`,
     timeout: (expireHours + 24) * 3_600_000 + 600_000,
   }
 }

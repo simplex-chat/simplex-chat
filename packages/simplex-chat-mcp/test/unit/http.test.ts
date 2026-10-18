@@ -119,18 +119,19 @@ describe("MCP", () => {
     })
   })
 
-  it("reports input errors naming the field", async () => {
+  it("rejects input that fails the schema with isError", async () => {
     await start()
     const text = async (args: object): Promise<string> => {
       const {result} = await body(await post(modern("tools/call", {name: "send", arguments: args}), modernHeaders("tools/call", "send")))
       expect(result.isError).toBe(true)
       return result.content[0].text
     }
-    expect(await text({chat: "@4", text: ""})).toBe("Input validation error: Invalid arguments for tool send: text: a string of 1 to 12000 characters expected")
-    expect(await text({chat: "@4", text: "x", mention: [44, 44]})).toMatch(/mention: 1 to 3 distinct items expected$/)
-    expect(await text({chat: "@4", text: "x", wait: -1})).toMatch(/wait: a number from 0 to 86400 expected$/)
-    expect(await text({chat: "@4", text: "x", colour: "red"})).toMatch(/colour: not an input of this tool$/)
-    expect(await text({text: "x"})).toMatch(/chat: required$/)
+    expect(await text({chat: "@4", text: ""})).toBe("Input validation error: Invalid arguments for tool send: data/text must NOT have fewer than 1 characters")
+    expect(await text({chat: "@4", text: "😀".repeat(12001)})).toMatch(/data\/text must NOT have more than 12000 characters$/)
+    expect(await text({chat: "@4", text: "x", mention: [44, 44]})).toMatch(/data\/mention must NOT have duplicate items/)
+    expect(await text({chat: "@4", text: "x", wait: -1})).toMatch(/data\/wait must be >= 0$/)
+    expect(await text({chat: "@4", text: "x", colour: "red"})).toMatch(/data must NOT have additional properties$/)
+    expect(await text({text: "x"})).toMatch(/data must have required property 'chat'$/)
     expect(actions.all()).toHaveLength(0)
   })
 

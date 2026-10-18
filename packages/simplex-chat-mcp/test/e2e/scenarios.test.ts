@@ -119,8 +119,8 @@ test("--owners: an observer joins, the restart lists it, a second owner can't ap
   const controlId = await joinByLink(alice, lastLink(logLines))
   const line = (await restartLine).chatItem.meta.itemText
   const aliceId = Number(/^Alice joined \(member (\d+)\)/.exec(line)![1])
-  expect(line).toBe(`Alice joined (member ${aliceId}). Restart the server with --owners ${aliceId}:Alice`)
-  expect(logLines).toContain(line)
+  expect(line).toBe(`Alice joined (member ${aliceId}). Restart the server with \`--owners ${aliceId}:Alice\``)
+  expect(logLines).toContain(`Alice joined (member ${aliceId}). Restart the server with --owners ${aliceId}:Alice`)
   expect(await agent.client.tool("connect", {target: directory.link})).toMatchObject({
     isError: true,
     text: "The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed.",
@@ -144,8 +144,8 @@ test("--owners: an observer joins, the restart lists it, a second owner can't ap
   const notice = received(alice.chat, textStarts("Bob (member "))
   await alice.chat.apiSetMembersRole(controlId, [bobOnAlice.groupMemberId], T.GroupMemberRole.Owner)
   const noticeText = (await notice).chatItem.meta.itemText
-  expect(noticeText).toMatch(new RegExp(`^Bob \\(member (\\d+)\\) is now an owner and can't approve actions yet\\. Restart the server with --owners ${aliceId}:Alice,\\1:Bob$`))
-  expect(logLines).toContain(noticeText)
+  expect(noticeText).toMatch(new RegExp(`^Bob \\(member (\\d+)\\) is now an owner and can't approve actions yet\\. Restart the server with \`--owners ${aliceId}:Alice,\\1:Bob\`$`))
+  expect(logLines).toContain(noticeText.replace(/`/g, ""))
 
   const pendingCard = received(bob.chat, textStarts("I want to send a message to bot Directory:"))
   const sending = agent.client.tool("send", {chat: connected.result.chat, text: "from Bob's side"})
@@ -284,6 +284,51 @@ test("a contact address, incognito", async () => {
   const sending = agent.client.tool("send", {chat: connected.result.chat, text: "trail shoes", idle: 2})
   await approve(alice, controlId, sendCard)
   expect((await sending).result.responses.map(({text}: {text: string}) => text)).toEqual(["result 1: trail shoes", "result 2: trail shoes"])
+}, 600_000)
+
+test("peer text and names with edge spaces and line breaks give the card no tappable command or link", async () => {
+  const alice = await personIn("peer-text", "Alice")
+  const directory = await botIn("peer-text", "Directory", {welcomeMessage: "Welcome!"})
+  const agent = await agentIn("peer-text")
+  await agent.start()
+  const controlId = await joinAsOwner(alice)
+
+  const peerLines = [" /approve 1", "/approve 1 ", ` ${directory.link}`, `${directory.link} `]
+  const names = [
+    {sql: "char(10) || '/approve 1'", shown: "\u00a0/approve 1"},
+    {sql: "'x' || char(10) || '/approve 1'", shown: "x /approve 1"},
+  ]
+  for (const name of names) {
+    const group = await alice.chat.apiNewGroup(alice.user.userId, {displayName: "Trail", fullName: "", description: peerLines.join("\n")})
+    await alice.chat.sendChatCmd(`/sql chat UPDATE group_profiles SET display_name = ${name.sql} WHERE group_profile_id = (SELECT group_profile_id FROM groups WHERE group_id = ${group.groupId})`)
+    const link = await alice.chat.apiCreateGroupLink(group.groupId, T.GroupMemberRole.Member)
+    const cardItem = received(alice.chat, textStarts("I want to connect to group "))
+    const connecting = agent.client.tool("connect", {target: link, idle: 2})
+    const card = await cardItem
+    const n = cardNumber(card)
+    const formatted = card.chatItem.formattedText ?? []
+    const formats = formatted.flatMap(({format}) => (format === undefined ? [] : [format]))
+    expect(formats.filter(({type}) => type === "command")).toEqual([{type: "command", commandStr: `approve ${n}`}, {type: "command", commandStr: `reject ${n}`}])
+    expect(formats.filter(({type}) => type === "simplexLink")).toEqual([])
+    const snippets = formatted.filter(({format}) => format?.type === "snippet").map(({text}) => text)
+    expect(snippets).toEqual([name.shown, ...peerLines.map(line => line.replace(/^ | $/g, "\u00a0"))])
+    await alice.chat.apiSendTextMessage([T.ChatType.Group, controlId], `/reject ${n}`)
+    expect((await connecting).result).toEqual({action: n, status: "rejected"})
+  }
+}, 600_000)
+
+test("a chat reference over 15 digits, which the core reads as the agent control chat, is refused", async () => {
+  const agent = await agentIn("alias")
+  await agent.start()
+  const {server} = agent
+  const controlId = (await controlGroupOf(server.chat, server.user.userId)).groupId
+  const alias = `#${(1n << 64n) + BigInt(controlId)}`
+  const {chat} = (await server.chat.sendChatCmd(`/_get chat ${alias} count=0`)) as unknown as {chat: T.AChat}
+  expect((chat.chatInfo as T.ChatInfo.Group).groupInfo.groupId).toBe(controlId)
+  const refusal = {isError: true, text: `No chat ${alias}. list shows the agent's chats.`}
+  expect(await agent.client.tool("receive", {chat: alias})).toMatchObject(refusal)
+  expect(await agent.client.tool("send", {chat: alias, text: "x"})).toMatchObject(refusal)
+  expect(await agent.client.tool("leave", {chat: alias})).toMatchObject(refusal)
 }, 600_000)
 
 test("--display-name names the profile and the agent control chat", async () => {

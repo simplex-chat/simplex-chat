@@ -1,5 +1,5 @@
 import {randomBytes} from "crypto"
-import {existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync} from "fs"
+import {chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync} from "fs"
 import {join} from "path"
 import {ExitError} from "./log"
 
@@ -11,6 +11,7 @@ export interface ServerFile {
 
 export function createDataFolder(dir: string): void {
   mkdirSync(dir, {recursive: true, mode: 0o700})
+  if (process.platform !== "win32") chmodSync(dir, 0o700)
 }
 
 export function acquireLock(dir: string): void {
@@ -34,9 +35,12 @@ export function serverToken(dir: string, renew: boolean): string {
   return token
 }
 
-export function savedToken(dir: string): string | undefined {
-  const file = join(dir, "token")
-  return existsSync(file) ? readFileSync(file, "utf8").trim() : undefined
+export function headersFile(dir: string): string {
+  return join(dir, "headers.json")
+}
+
+export function writeHeadersFile(dir: string, token: string): void {
+  writeFileSync(headersFile(dir), `${JSON.stringify({Authorization: `Bearer ${token}`})}\n`, {mode: 0o600})
 }
 
 export function writeServerFile(dir: string, server: ServerFile): void {

@@ -1,8 +1,8 @@
 import {spawnSync} from "child_process"
-import {existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync} from "fs"
+import {chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {acquireLock, createDataFolder, readServerFile, releaseLock, serverToken, writeServerFile} from "../../src/files"
+import {acquireLock, createDataFolder, readServerFile, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 let dir: string
@@ -42,6 +42,20 @@ describe("lock", () => {
 describe("data folder", () => {
   it("is private", () => {
     expect(statSync(dir).mode & 0o777).toBe(0o700)
+  })
+
+  it("is made private again at every start", () => {
+    chmodSync(dir, 0o755)
+    createDataFolder(dir)
+    expect(statSync(dir).mode & 0o777).toBe(0o700)
+  })
+
+  it("writes the headers for the MCP host, readable only by the user, and rewrites them", () => {
+    writeHeadersFile(dir, "first")
+    expect(readFileSync(join(dir, "headers.json"), "utf8")).toBe('{"Authorization":"Bearer first"}\n')
+    expect(statSync(join(dir, "headers.json")).mode & 0o777).toBe(0o600)
+    writeHeadersFile(dir, "second")
+    expect(JSON.parse(readFileSync(join(dir, "headers.json"), "utf8"))).toEqual({Authorization: "Bearer second"})
   })
 
   it("keeps the token until renewed", () => {

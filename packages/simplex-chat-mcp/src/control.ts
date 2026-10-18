@@ -1,11 +1,11 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import * as qrcode from "qrcode"
 import {api} from "simplex-chat"
-import {Action, ActionHooks, Actions, Subject, ToolError, leaveVerbs, pendingLine, subjectText} from "./actions"
-import {ExitError, chatErrorOf, log, logError, shellWord} from "./log"
-import {chatNumber, chatRef, isChatRef, validName, viewName} from "./messages"
+import {Action, ActionHooks, Actions, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
+import {ExitError, chatErrorOf, log, logError, oneLine, shellWord} from "./log"
+import {chatNumber, chatRef, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, isConnected, memberCurrent} from "./tools"
+import {AgentTools, chatSubject, isActive, isConnected, memberCurrent} from "./tools"
 
 const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},
@@ -13,6 +13,9 @@ const controlCommands: T.ChatBotCommand[] = [
 ]
 
 const commandsReply = "Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands."
+const cardTooLong = "text: too long for its approval card; shorten it."
+const maxCardLength = 15_000
+const longestError = "€".repeat(600)
 const greeting = "I'm your agent. I ask here before I connect or send."
 const noOwners = "No owners in the agent control chat."
 const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
@@ -53,6 +56,14 @@ type OwnerRequest =
   | {type: "approveChat" | "revoke"; chat: string}
   | {type: "pending" | "list"}
 
+interface Shown {
+  name: (name: string) => string
+  command: (command: string) => string
+}
+
+const inLog: Shown = {name: oneLine, command: command => command}
+const inChat: Shown = {name: safeName, command: codeSpan}
+
 export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "postCard" | "outcome"> {
   private members: T.GroupMember[] = []
   private writes: Promise<unknown> = Promise.resolve()
@@ -91,7 +102,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return this.startListed(owners)
   }
 
-  refusal(): string | undefined {
+  refusal(action: Action): string | undefined {
+    if (action.tool === "send" && largestCard(action, this.actions.mode, this.longestApproverName()) > maxCardLength) return cardTooLong
     if (this.approvers().length > 0) return undefined
     return this.options.owners === undefined
       ? "The agent has no owner. The person who runs it has to join its control chat with the link the server printed."
@@ -100,7 +112,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   standingApprover(chatInfo: T.ChatInfo): string | undefined {
     const approval = approvalOf(customDataOf(chatInfo))
-    return approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? approval.approvedBy : undefined
+    return this.actions.mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
   }
 
   saveCounter(nextAction: number): Promise<void> {
@@ -169,7 +181,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
         if (request.chat !== undefined && (action.tool === "connect" || action.chat !== request.chat)) return `Action ${request.action} is not for ${request.chat}.`
-        const approver = sender.memberProfile.displayName
+        const approver = safeName(sender.memberProfile.displayName)
         if (request.type === "approve") this.actions.approve(action, approver)
         else this.actions.reject(action, approver)
         return undefined
@@ -183,10 +195,11 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const approvedBy = sender.memberProfile.displayName
     const approval: ChatApproval = {approvedBy, approvedById: sender.groupMemberId, approvedAt: new Date().toISOString()}
     await this.setCustomData(chat, {...customDataOf(chatInfo), simplexMcp: approval})
+    const approver = safeName(approvedBy)
     for (const action of this.actions.pending()) {
-      if (action.tool === "send" && action.chat === chat && action.card !== undefined) this.actions.approve(action, approvedBy)
+      if (action.tool === "send" && action.chat === chat && action.card !== undefined) this.actions.approve(action, approver)
     }
-    return `Approved for ${chatName(chatSubject(chatInfo))} (${chat}) by ${approvedBy}. /'revoke ${chat}'`
+    return `Approved for ${chatName(chatSubject(chatInfo))} (${chat}) by ${approver}. /'revoke ${chat}'`
   }
 
   private async revoke(chat: string): Promise<string> {
@@ -228,7 +241,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private async startObserver(): Promise<void> {
     if (this.humans().length === 0) return this.openLink(T.GroupMemberRole.Observer)
-    await this.announce(`${this.humans().map(joinedText).join(". ")}. Restart the server with --owners ${ownersText(this.humans())}`)
+    await this.announce(shown => `${this.humans().map(member => joinedText(member, shown.name)).join(". ")}. ${restartText(this.humans(), shown)}`)
   }
 
   private async startListed(owners: OwnerEntry[]): Promise<void> {
@@ -255,13 +268,13 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     await this.chat.apiSetMembersRole(this.groupId, [member.groupMemberId], T.GroupMemberRole.Owner)
     await this.refreshMembers()
     await this.post(greeting)
-    log(`${joinedText(member)} and is now an owner. The link is deleted.`)
+    log(`${joinedText(member, oneLine)} and is now an owner. The link is deleted.`)
     log(this.options.registerHint)
   }
 
   private async observerJoined(member: T.GroupMember): Promise<void> {
     await this.deleteLink()
-    await this.announce(`${joinedText(member)}. Restart the server with --owners ${ownersText(this.humans())}`)
+    await this.announce(shown => `${joinedText(member, shown.name)}. ${restartText(this.humans(), shown)}`)
   }
 
   private async reportOwnerChanges(owners: OwnerEntry[], before: T.GroupMember[]): Promise<void> {
@@ -269,13 +282,13 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const isListed = (member: T.GroupMember): boolean => owners.some(owner => listsMember(owner, member))
     for (const member of after) {
       if (!isListed(member) && !before.some(sameMember(member))) {
-        await this.announce(`${memberText(member)} is now an owner and can't approve actions yet. Restart the server with --owners ${ownersText(after)}`)
+        await this.announce(shown => `${memberText(member, shown.name)} is now an owner and can't approve actions yet. ${restartText(after, shown)}`)
       }
     }
     for (const member of before) {
       if (isListed(member) && !after.some(sameMember(member))) {
-        const remaining = after.length > 0 ? `Restart the server with --owners ${ownersText(after)}` : "No owners remain: restart the server with --reset-owners --owners"
-        await this.announce(`${memberText(member)} is no longer an owner. ${remaining}`)
+        const remaining = (shown: Shown): string => (after.length > 0 ? restartText(after, shown) : "No owners remain: restart the server with --reset-owners --owners")
+        await this.announce(shown => `${memberText(member, shown.name)} is no longer an owner. ${remaining(shown)}`)
       }
     }
   }
@@ -306,9 +319,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     }
   }
 
-  private async announce(text: string): Promise<void> {
-    log(text)
-    await this.post(text)
+  private async announce(text: (shown: Shown) => string): Promise<void> {
+    log(text(inLog))
+    await this.post(text(inChat))
   }
 
   private async post(text: string): Promise<number> {
@@ -330,6 +343,11 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private approvers(): T.GroupMember[] {
     return this.humans().filter(member => this.isApprover(member))
+  }
+
+  private longestApproverName(): string {
+    const names = this.approvers().map(({memberProfile}) => safeName(memberProfile.displayName))
+    return names.reduce((longest, name) => (encodedLength(name) > encodedLength(longest) ? name : longest), "")
   }
 
   private isHuman(member: T.GroupMember): boolean {
@@ -407,9 +425,9 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
     case "performing":
       return [...request, `${approval}; interrupted: the server stopped.`].join("\n")
     case "done":
-      return [doneLine(action), ...request.slice(1), action.standing ? `${approval}. /'revoke ${action.chat}'` : `${approval}.`].join("\n")
+      return [...request, action.standing ? `${approval}. /'revoke ${action.chat}'` : `${approval}.`].join("\n")
     case "failed":
-      return [...request, `${approval}; failed: ${action.error}.`].join("\n")
+      return [...request, `${approval}; failed: ${codeSpan(oneLine(action.error ?? ""))}.`].join("\n")
     case "rejected":
       return [...request, `Rejected by ${action.decidedBy}.`].join("\n")
     case "expired":
@@ -418,21 +436,25 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
 }
 
 function requestLines(action: Action): string[] {
-  const subject = subjectText({...action.subject, name: action.subject.name === undefined ? undefined : safeName(action.subject.name)})
+  const done = action.state === "done"
+  const subject = subjectText(action.subject, safeName)
   switch (action.tool) {
     case "connect": {
       const {plan, input} = action
+      const verb = !done ? "I want to connect" : action.connected ? "I connected" : "I asked to connect"
       const message = input.message === undefined ? [] : ["With the message:", ...codeLines(input.message)]
-      return [`I want to connect to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...codeLines(plan.description), ...codeLines(plan.welcome), ...message]
+      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...codeLines(plan.description), ...codeLines(plan.welcome), ...message]
     }
     case "send": {
       const {replyTo, mentions} = action
       const reply = replyTo === undefined ? [] : [`replying to ${safeName(replyTo.from)}: ${codeSpan(replyTo.text.replace(/\s+/g, " ").slice(0, 100))}`]
       const mentioning = mentions.length === 0 ? [] : [`mentioning ${mentions.map(({name}) => mentionText(name)).join(", ")}`]
-      return [`I want to send a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...reply, ...mentioning]
+      return [`${done ? "I sent" : "I want to send"} a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...reply, ...mentioning]
     }
-    case "leave":
-      return [`I want to ${leaveVerbs(action).present} ${chatName(action.subject)} (${action.chat}).`]
+    case "leave": {
+      const {present, past} = leaveVerbs(action)
+      return [`${done ? `I ${past}` : `I want to ${present}`} ${chatName(action.subject)} (${action.chat}).`]
+    }
   }
 }
 
@@ -447,18 +469,22 @@ function commandsLine(action: Action): string {
   }
 }
 
-function doneLine(action: Action): string {
-  const [first] = requestLines(action)
-  if (action.tool === "send") return first.replace("I want to send", "I sent")
-  if (action.tool === "leave") {
-    const {present, past} = leaveVerbs(action)
-    return first.replace(`I want to ${present}`, `I ${past}`)
-  }
-  return first.replace("I want to connect", action.connected ? "I connected" : "I asked to connect")
+function pendingLine(action: Action): string {
+  return `${action.n}  ${summary(action, safeName).what}  expires ${utcMinutes(action.expires)}`
+}
+
+function largestCard(action: Action, mode: Actions["mode"], approver: string): number {
+  const decidedBy = action.decidedBy ?? approver
+  const cards: Action[] = [action, {...action, state: "done", decidedBy}, {...action, state: "failed", decidedBy, error: longestError}]
+  return Math.max(...cards.map(card => encodedLength(cardText(card, mode))))
+}
+
+function encodedLength(text: string): number {
+  return [...text].reduce((length, c) => length + (/["\\\n\r\t]/.test(c) ? 2 : c < " " ? 6 : Buffer.byteLength(c)), 0)
 }
 
 function chatName(subject: Subject): string {
-  return subjectText({...subject, name: subject.name === undefined ? undefined : safeName(subject.name), simplexName: undefined})
+  return subjectText({...subject, simplexName: undefined}, safeName)
 }
 
 function codeLines(text: string | undefined): string[] {
@@ -466,15 +492,17 @@ function codeLines(text: string | undefined): string[] {
 }
 
 function codeSpan(text: string): string {
-  return `\`${text.replace(/`/g, "'")}\``
+  return `\`${text.replace(/`/g, "'").replace(/^ | $/g, "\u00a0")}\``
 }
 
 function safeName(name: string): string {
-  return validName(name) === name ? name : codeSpan(name)
+  const line = oneLine(name)
+  return validName(line) === line ? line : codeSpan(line)
 }
 
 function mentionText(name: string): string {
-  return validName(name) === name ? `@${viewName(name)}` : codeSpan(`@${name}`)
+  const line = oneLine(name)
+  return validName(line) === line ? `@${viewName(line)}` : codeSpan(`@${line}`)
 }
 
 function controlData(nextAction: number): {simplexMcp: ControlData} {
@@ -534,10 +562,6 @@ function isLost({membership}: T.GroupInfo): boolean {
   return membership.memberRole !== T.GroupMemberRole.Owner || !statuses.includes(membership.memberStatus)
 }
 
-function isActive({memberStatus}: T.GroupMember): boolean {
-  return memberStatus === T.GroupMemberStatus.Connected || memberStatus === T.GroupMemberStatus.Complete
-}
-
 function listsMember({memberId, name}: OwnerEntry, member: T.GroupMember): boolean {
   return member.groupMemberId === memberId && member.memberProfile.displayName === name
 }
@@ -546,12 +570,12 @@ function sameMember(member: T.GroupMember): (other: T.GroupMember) => boolean {
   return other => other.groupMemberId === member.groupMemberId
 }
 
-function memberText({groupMemberId, memberProfile}: T.GroupMember): string {
-  return `${memberProfile.displayName} (member ${groupMemberId})`
+function memberText({groupMemberId, memberProfile}: T.GroupMember, showName: (name: string) => string): string {
+  return `${showName(memberProfile.displayName)} (member ${groupMemberId})`
 }
 
-function joinedText(member: T.GroupMember): string {
-  return `${member.memberProfile.displayName} joined (member ${member.groupMemberId})`
+function joinedText(member: T.GroupMember, showName: (name: string) => string): string {
+  return `${showName(member.memberProfile.displayName)} joined (member ${member.groupMemberId})`
 }
 
 export function entryText({memberId, name}: OwnerEntry): string {
@@ -559,5 +583,9 @@ export function entryText({memberId, name}: OwnerEntry): string {
 }
 
 function ownersText(members: T.GroupMember[]): string {
-  return members.map(({groupMemberId, memberProfile}) => entryText({memberId: groupMemberId, name: memberProfile.displayName})).join(",")
+  return members.map(({groupMemberId, memberProfile}) => entryText({memberId: groupMemberId, name: oneLine(memberProfile.displayName)})).join(",")
+}
+
+function restartText(members: T.GroupMember[], shown: Shown): string {
+  return `Restart the server with ${shown.command(`--owners ${ownersText(members)}`)}`
 }

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import {homedir} from "os"
 import {join, resolve} from "path"
+import {Mode} from "./actions"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
 import {RegisterOptions, Scope, register} from "./register"
-import {Approve, OwnerEntry, QrCodeSize, ServeOptions, serve} from "./serve"
+import {OwnerEntry, QrCodeSize, ServeOptions, serve} from "./serve"
 
 export const helpText = `Usage:
   simplex-mcp serve NAME [options]     run agent NAME
@@ -22,7 +23,7 @@ serve options:
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
   --reset-owners         replace the owners: a new agent control chat and link
-  --new-token            replace the access token; the agent must be registered again
+  --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
 
@@ -148,7 +149,7 @@ function displayName(value: string): string {
   return value
 }
 
-function approveMode(value: string): Approve {
+function approveMode(value: string): Mode {
   if (value !== "requests" && value !== "host") throw usageError(`--approve: requests or host expected, got ${value}`)
   return value
 }

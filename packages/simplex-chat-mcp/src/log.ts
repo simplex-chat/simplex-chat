@@ -2,6 +2,7 @@ import {T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 
 const maxDetails = 500
+const causeKey = /(Err|Error|errorType)$/
 
 export class ExitError extends Error {
   constructor(message: string, readonly code: number) {
@@ -12,6 +13,14 @@ export class ExitError extends Error {
 export function shellWord(word: string, plain: RegExp): string {
   if (plain.test(word)) return word
   return process.platform === "win32" ? `"${word}"` : `'${word.replace(/'/g, "'\\''")}'`
+}
+
+export function shellPath(path: string): string {
+  return shellWord(path, process.platform === "win32" ? /^[A-Za-z0-9_.:\\/-]+$/ : /^[A-Za-z0-9_./-]+$/)
+}
+
+export function oneLine(text: string): string {
+  return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ")
 }
 
 export function log(line: string): void {
@@ -29,20 +38,21 @@ export function errorText(error: unknown): string {
 }
 
 export function chatErrorText(chatError: T.ChatError): string {
-  const {type, ...details} = chatErrorDetail(chatError)
+  const {types, details} = errorChain(chatError)
+  const chain = types.join(": ")
   const text = JSON.stringify(details)
-  return text === "{}" ? `SimpleX error: ${type}` : `SimpleX error: ${type}: ${text.slice(0, maxDetails)}`
+  return text === "{}" ? `SimpleX error: ${chain}` : `SimpleX error: ${chain}: ${text.slice(0, maxDetails)}`
 }
 
-function chatErrorDetail(chatError: T.ChatError): {type: string} {
-  switch (chatError.type) {
-    case "error":
-      return chatError.errorType
-    case "errorAgent":
-      return chatError.agentError
-    case "errorStore":
-      return chatError.storeError
-  }
+function errorChain({type, ...fields}: {type: string}): {types: string[]; details: object} {
+  const entries = Object.entries(fields)
+  const cause = entries.find(([key, value]) => causeKey.test(key) && isTyped(value))?.[1] as {type: string} | undefined
+  const below = cause === undefined ? {types: [], details: {}} : errorChain(cause)
+  return {types: [type, ...below.types], details: {...Object.fromEntries(entries.filter(([, value]) => typeof value !== "object")), ...below.details}}
+}
+
+function isTyped(value: unknown): boolean {
+  return typeof value === "object" && value !== null && typeof (value as {type?: unknown}).type === "string"
 }
 
 export function chatErrorOf(error: unknown): T.ChatError | undefined {

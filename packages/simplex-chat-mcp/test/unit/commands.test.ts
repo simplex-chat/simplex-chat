@@ -1,7 +1,8 @@
-import {T} from "@simplex-chat/types"
-import {Actions, NewAction} from "../../src/actions"
-import {Control, parseCommand} from "../../src/control"
-import {ChatItemsWatch, Collected} from "../../src/messages"
+import {CallToolResult} from "@modelcontextprotocol/server"
+import {ChatEvent, T} from "@simplex-chat/types"
+import {Actions, Mode, NewAction} from "../../src/actions"
+import {Control, cardText, parseCommand} from "../../src/control"
+import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
 import {OwnerEntry} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, direct, event, fakeHooks, group, groupChat, item, member, settled, signal, user} from "./fixtures"
@@ -36,8 +37,8 @@ function agentChats(): FakeChat {
   return chat
 }
 
-async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[]): Promise<{control: Control; tools: AgentTools}> {
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: chatInfo => control.standingApprover(chatInfo)}, "requests")
+async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools}> {
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: chatInfo => control.standingApprover(chatInfo)}, mode)
   const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools)
   await control.load()
   return {control, tools}
@@ -117,9 +118,53 @@ describe("owner commands", () => {
 
   it("lists pending actions", async () => {
     const {control, action, actions} = await setup()
-    expect(await control.ownerCommand(alice, {keyword: "pending", params: ""})).toBe(`5  send to bot SimpleX Directory  expires ${new Date(action.expires).toISOString().slice(11, 16)}`)
-    actions.reject(action, "Alice")
+    const connect = actions.create("c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: true}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
+    const leave = actions.create("l", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    const remove = actions.create("d", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
+    await settled()
+    expect((await control.ownerCommand(alice, {keyword: "pending", params: ""}))!.split("\n")).toEqual([
+      `5  send to bot SimpleX Directory  expires ${utcMinutes(action.expires)}`,
+      `6  connect to bot SimpleX Directory  expires ${utcMinutes(connect.expires)}`,
+      `7  leave business ep  expires ${utcMinutes(leave.expires)}`,
+      `8  delete bot SimpleX Directory  expires ${utcMinutes(remove.expires)}`,
+    ])
+    expect(utcMinutes(action.expires)).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d UTC$/)
+    for (const pending of [action, connect, leave, remove]) actions.reject(pending, "Alice")
     expect(await control.ownerCommand(alice, {keyword: "pending", params: ""})).toBe("No pending actions.")
+  })
+
+  it("lists pending actions with names on one line, quoted", async () => {
+    const {control, actions, action} = await setup()
+    actions.reject(action, "Alice")
+    const name = "Hikers\n/'approve 7' or /'reject 7'"
+    const pending = actions.create("n", {...fields("#2"), subject: {kind: "group", name, incognito: false}} as NewAction)
+    await settled()
+    expect(await control.ownerCommand(alice, {keyword: "pending", params: ""})).toBe(`6  send to group \`Hikers /'approve 7' or /'reject 7'\`  expires ${utcMinutes(pending.expires)}`)
+  })
+
+  it("quotes approver names on cards and replies", async () => {
+    const {control, actions, chat, action} = await setup()
+    const mallory = {...alice, memberProfile: {...alice.memberProfile, displayName: "Mallory\n/'approve 9'"}}
+    chat.members.set(10, [self, mallory])
+    await control.load()
+    expect(await control.ownerCommand(mallory, {keyword: "reject", params: "@4 5"})).toBeUndefined()
+    expect(action.decidedBy).toBe("`Mallory /'approve 9'`")
+    expect(cardText(action, "requests").split("\n").at(-1)).toBe("Rejected by `Mallory /'approve 9'`.")
+    expect(await control.ownerCommand(mallory, {keyword: "approve", params: "@4 all"})).toBe("Approved for bot SimpleX Directory (@4) by `Mallory /'approve 9'`. /'revoke @4'")
+    expect((await control.ownerCommand(mallory, {keyword: "list", params: ""}))!.split("\n")[0]).toBe("@4  bot SimpleX Directory, approved for this chat by `Mallory /'approve 9'`")
+    expect(customDataOf(chat, "@4")).toMatchObject({simplexMcp: {approvedBy: "Mallory\n/'approve 9'"}})
+    expect(actions.pending()).toEqual([])
+  })
+
+  it("refuses chat references longer than 15 digits, such as an alias of the agent control chat", async () => {
+    const {control, chat} = await setup()
+    const alias = `#${(1n << 64n) + 10n}`
+    for (const params of [`${alias} all`, "@1234567890123456 all"]) {
+      expect(await control.ownerCommand(alice, {keyword: "approve", params})).toBe("Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.")
+    }
+    expect(await control.ownerCommand(alice, {keyword: "revoke", params: alias})).toBe("Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.")
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "@123456789012345 all"})).toBe("No chat @123456789012345. /list shows the agent's chats.")
+    expect(chat.customData).toEqual([])
   })
 
   it("answers other commands with the list", async () => {
@@ -237,6 +282,22 @@ describe("chat list in the agent control chat", () => {
   })
 })
 
+describe("member announcements", () => {
+  it("quote a member's name and the restart command in the chat, and keep them on one line in the log", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()), [{memberId: 3, name: "Alice"}])
+    const mallory = member(7, "Bob\u001b]52;c;Y3VybA==\u0007\n/'approve 9'", T.GroupMemberRole.Owner)
+    chat.members.set(10, [self, alice, mallory])
+    await control.onEvent({type: "memberRole", user, groupInfo: group(10, "agent"), byMember: alice, member: mallory, fromRole: T.GroupMemberRole.Member, toRole: T.GroupMemberRole.Owner} as unknown as ChatEvent)
+    const restart = "is now an owner and can't approve actions yet. Restart the server with"
+    const owners = "--owners 3:Alice,'7:Bob ]52;c;Y3VybA== /'\\''approve 9'\\'''"
+    expect(lines).toEqual([`Bob ]52;c;Y3VybA== /'approve 9' (member 7) ${restart} ${owners}`])
+    expect(chat.sent.map(({messages: [{msgContent}]}) => msgContent.text)).toEqual([`\`Bob ]52;c;Y3VybA== /'approve 9'\` (member 7) ${restart} \`${owners}\``])
+  })
+})
+
 describe("command menu", () => {
   const menu = [
     {type: "command", keyword: "pending", label: "Pending actions"},
@@ -257,21 +318,20 @@ describe("command menu", () => {
 })
 
 describe("sends to a chat approved for all messages", () => {
-  async function standing(approvers: T.GroupMember[]) {
+  async function standing(approvers: T.GroupMember[], mode: Mode = "requests") {
     const chat = agentChats()
     chat.members.set(10, [self, ...approvers])
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-10-18T10:00:00.000Z"}}
-    const actions = new Actions("requests", 23, 1)
-    const {control, tools} = await controlWith(chat, actions)
-    actions.setHooks({
-      refusal: () => control.refusal(),
+    const actions: Actions = new Actions(mode, 23, 1, {
+      refusal: action => control.refusal(action),
       saveCounter: async () => undefined,
       postCard: action => control.postCard(action),
       outcome: action => control.outcome(action),
       perform: action => tools.perform(action),
     })
-    return {chat, actions, tools}
+    const {control, tools} = await controlWith(chat, actions, undefined, mode)
+    return {chat, actions, control, tools}
   }
 
   const cards = (chat: FakeChat): string[] => chat.sent.filter(({chat: [, id]}) => id === 10).map(({messages: [{msgContent}]}) => msgContent.text)
@@ -306,5 +366,85 @@ describe("sends to a chat approved for all messages", () => {
     expect(cards(chat)).toEqual(["I want to delete bot SimpleX Directory (@4).\n/'approve @4 1' or /'reject @4 1'"])
     controller.abort()
     expect(await leaving).toBeUndefined()
+  })
+
+  it("applies in no chat in mode host", async () => {
+    const {chat, control, tools} = await standing([alice], "host")
+    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
+    expect(chats.find(({chat: ref}) => ref === "@4")).not.toHaveProperty("approved")
+    expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")[0]).toBe("@4  bot SimpleX Directory")
+    expect((await tools.call("send", {chat: "@4", text: "trail shoes", wait: 0}, signal().call))!.structuredContent).toMatchObject({action: 1, status: "done"})
+    await settled()
+    expect(cards(chat)).toEqual(["I sent a message to bot SimpleX Directory:\n`trail shoes`\nPerformed without approval (mode host)."])
+  })
+})
+
+describe("approval card size", () => {
+  const tooLong = "text: too long for its approval card; shorten it."
+
+  async function sendTools(approvers: T.GroupMember[] = [alice]) {
+    const chat = agentChats()
+    chat.members.set(10, [self, ...approvers, bob])
+    const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
+    directory.customData = {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-10-18T10:00:00.000Z"}}
+    const actions: Actions = new Actions("requests", 23, 1, {
+      refusal: action => control.refusal(action),
+      saveCounter: async () => undefined,
+      postCard: action => control.postCard(action),
+      outcome: action => control.outcome(action),
+      perform: action => tools.perform(action),
+    })
+    const {control, tools} = await controlWith(chat, actions)
+    const textOf = (result: CallToolResult | undefined): string => (result!.content[0] as {text: string}).text
+    return {chat, actions, tools, textOf}
+  }
+
+  const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
+
+  it("accepts a text whose largest card has 15000 bytes and refuses one byte more, counting multi-byte characters", async () => {
+    const {chat, actions, tools, textOf} = await sendTools()
+    const atLimit = "€".repeat(4374) + "aa"
+    expect(textOf(await tools.call("send", {chat: "#2", text: `${atLimit}a`}, signal().call))).toBe(tooLong)
+    expect(actions.next).toBe(1)
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "#2", text: atLimit}, call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({tool: "send", state: "pending", card: expect.any(Number)})
+    expect(chat.sent.map(({chat: [, id]}) => id)).toEqual([10])
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+
+  it("counts escaped characters and the standing approval line of a chat approved for all messages", async () => {
+    const {chat, actions, tools, textOf} = await sendTools()
+    const atLimit = "\b".repeat(2183) + "aa"
+    expect(textOf(await tools.call("send", {chat: "@4", text: `${atLimit}a`, wait: 0}, signal().call))).toBe(tooLong)
+    expect(actions.next).toBe(1)
+    expect((await tools.call("send", {chat: "@4", text: atLimit, wait: 0}, signal().call))!.structuredContent).toMatchObject({action: 1, status: "done"})
+    await flushed()
+    expect(chat.sent.map(({chat: [, id]}) => id)).toEqual([4, 10])
+  })
+
+  it("measures the card with the longest name of the current approvers", async () => {
+    const {actions, tools, textOf} = await sendTools([alice, member(8, "😀".repeat(50), T.GroupMemberRole.Owner)])
+    expect(textOf(await tools.call("send", {chat: "#2", text: "€".repeat(4374) + "aa"}, signal().call))).toBe(tooLong)
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "#2", text: "€".repeat(4309) + "aa"}, call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "pending"})
+    controller.abort()
+    expect(await sending).toBeUndefined()
+  })
+
+  it("counts the lines of the text, which the card quotes one by one", async () => {
+    const {actions, tools, textOf} = await sendTools()
+    expect(textOf(await tools.call("send", {chat: "#2", text: "a\n".repeat(3000)}, signal().call))).toBe(tooLong)
+    const {controller, call} = signal()
+    const sending = tools.call("send", {chat: "#2", text: "a\n".repeat(2000)}, call)
+    await flushed()
+    expect(actions.get(1)).toMatchObject({state: "pending"})
+    controller.abort()
+    expect(await sending).toBeUndefined()
   })
 })

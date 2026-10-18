@@ -96,9 +96,7 @@ export function fakeHooks(): FakeHooks {
 }
 
 export function actionsWith(mode: "requests" | "host", fake: FakeHooks, next = 1, expireHours = 23): Actions {
-  const actions = new Actions(mode, expireHours, next)
-  actions.setHooks(fake.hooks)
-  return actions
+  return new Actions(mode, expireHours, next, fake.hooks)
 }
 
 export async function settled(): Promise<void> {

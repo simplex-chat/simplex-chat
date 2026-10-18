@@ -5,9 +5,9 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {api, util} from "simplex-chat"
 import {Actions, Mode} from "./actions"
 import {Control, controlDataOf, createControlChat, findControlGroup, isControlEvent, resetControlChat} from "./control"
-import {acquireLock, createDataFolder, releaseLock, serverToken, writeServerFile} from "./files"
+import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
-import {ExitError, log, logError, shellWord} from "./log"
+import {ExitError, log, logError, shellPath} from "./log"
 import {ChatItemsWatch, chatCommand} from "./messages"
 import {AgentTools, instructions} from "./tools"
 
@@ -15,8 +15,6 @@ export const version: string = require("../package.json").version
 
 const deliveryTimeout = 10_000
 const deliveryPoll = 100
-
-export type Approve = Mode
 
 export type QrCodeSize = "small" | "large"
 
@@ -30,7 +28,7 @@ export interface ServeOptions {
   data: string
   dataGiven: boolean
   displayName?: string
-  approve: Approve
+  approve: Mode
   owners?: OwnerEntry[]
   expireHours: number
   resetOwners: boolean
@@ -69,6 +67,7 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
   acquireLock(data)
   try {
     const token = serverToken(data, options.newToken)
+    writeHeadersFile(data, token)
     const chat = await api.ChatApi.init({type: "sqlite", filePrefix: join(data, "simplex")})
     log(`SimpleX MCP server ${version}, agent "${name}"`)
     log(`Data folder: ${data}`)
@@ -95,17 +94,16 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   const user = await renamedUser(chat, created, options.displayName)
   const displayName = user.profile.displayName
   const group = await controlGroup(chat, user.userId, displayName, options.resetOwners)
-  const actions = new Actions(approve, expireHours, controlDataOf(group.customData)?.nextAction ?? 1)
-  const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: chatInfo => control.standingApprover(chatInfo)}, approve)
-  const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
-  actions.setHooks({
-    refusal: () => control.refusal(),
+  const actions: Actions = new Actions(approve, expireHours, controlDataOf(group.customData)?.nextAction ?? 1, {
+    refusal: action => control.refusal(action),
     saveCounter: next => control.saveCounter(next),
     postCard: action => control.postCard(action),
     outcome: action => control.outcome(action),
     perform: action => tools.perform(action),
   })
+  const watch = new ChatItemsWatch()
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: chatInfo => control.standingApprover(chatInfo)}, approve)
+  const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
   await control.load()
   const factory = (): McpServer => {
     const mcp = new McpServer({name: "simplex-mcp", version}, {instructions: instructions(displayName)})
@@ -164,8 +162,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
 }
 
 export function registerHint({name, data, dataGiven}: ServeOptions): string {
-  const plainPath = process.platform === "win32" ? /^\S+$/ : /^[A-Za-z0-9_./-]+$/
-  return `Add the agent to Claude Code:\n  npx -y @simplex-chat/mcp register ${name}${dataGiven ? ` --data ${shellWord(data, plainPath)}` : ""}`
+  return `Add the agent to Claude Code:\n  npx -y @simplex-chat/mcp register ${name}${dataGiven ? ` --data ${shellPath(data)}` : ""}`
 }
 
 async function deliveries(chat: api.ChatApi, groupId: number): Promise<void> {

@@ -143,6 +143,8 @@ With `--owners`, only the owners listed in it approve actions. An owner added la
 
    When none remains: `No owners remain: restart the server with --reset-owners --owners`.
 
+In the chat, the `--owners ...` part of these lines is shown as code, so a member's name in it cannot form a tappable command.
+
 At every start with a list, the server removes the connected members of the agent control chat other than the listed owners.
 
 ## Add the agent to Claude Code
@@ -152,13 +154,14 @@ npx -y @simplex-chat/mcp register my-agent                  # all Claude Code pr
 npx -y @simplex-chat/mcp register my-agent --scope local    # the current project only
 ```
 
-`register NAME` reads the agent's port and token from its data folder, runs `claude mcp remove --scope SCOPE simplex-NAME` (SCOPE: `user`, or the `--scope` value), ignoring a missing entry, and then, for `register my-agent`:
+`register NAME` reads the agent's port from its data folder, runs `claude mcp remove --scope SCOPE simplex-NAME` (SCOPE: `user`, or the `--scope` value), ignoring a missing entry, and then, for `register my-agent`:
 
 ```
-claude mcp add-json --scope user simplex-my-agent '{"type":"http","url":"http://127.0.0.1:5226/mcp","headers":{"Authorization":"Bearer <token>"},"timeout":169800000}'
+claude mcp add-json --scope user simplex-my-agent '{"type":"http","url":"http://127.0.0.1:5226/mcp","headersHelper":"cat /home/alice/.simplex-mcp/my-agent/headers.json","timeout":169800000}'
 ```
 
 - NAME: 1 to 32 lowercase letters, digits and single hyphens, starting with a letter or digit.
+- The entry has no token. At every connection Claude Code runs the `headersHelper` command and sends the header it prints from `headers.json` in the data folder; on Windows the command is `type "<folder>\headers.json"`. With `--scope local`, Claude Code runs it only in a folder whose trust dialog was accepted.
 - The agent's tools in Claude Code are `mcp__simplex-my-agent__connect` and the rest.
 - `timeout` is the expiry plus 24 hours and 10 minutes, in milliseconds: the longest wait for a decision plus the longest wait for responses. After a change of `--expire` or `--port`, register the agent again; an agent on another port needs the same `--port` at every start.
 - The server must be running when Claude Code starts a session. If a session started before the server, run `/mcp reconnect all` in it (Claude Code 2.1.284 or later; earlier, reconnect `simplex-my-agent` in `/mcp`).
@@ -172,7 +175,7 @@ claude not on PATH         Add this entry under "mcpServers" in ~/.claude.json: 
                            (--scope local: under "projects" > "<project folder>" > "mcpServers")
 ```
 
-The token is created at the agent's first start and saved in its data folder. `serve my-agent --new-token` replaces it; the agent must then be registered again.
+The token is created at the agent's first start and saved in its data folder; every start writes it to `headers.json`. `serve my-agent --new-token` replaces it, and Claude Code sends the new token from its next connection, without a new `register`.
 
 ## Approval modes
 
@@ -189,13 +192,15 @@ In `host` mode, approval is left to the MCP host. The server marks `connect`, `s
 
 ## Expiry
 
-A pending action expires after `--expire HOURS`, 23 by default and at most: SimpleX allows edits of a message for 24 hours, and every outcome is an edit of the card. Cards don't show the time; `/pending` does. The last line of its card is edited to `Expired.`, and the agent's call returns `{"action": N, "status": "expired"}`.
+A pending action expires after `--expire HOURS`, 23 by default and at most: SimpleX allows edits of a message for 24 hours, and the outcome of a pending action is an edit of its card. Cards don't show the time; `/pending` does. The last line of its card is edited to `Expired.`, and the agent's call returns `{"action": N, "status": "expired"}`. For the same reason, a `connect` waits for the other side at most until 23 hours 50 minutes after the action was created.
+
+A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions are pending at once; a further `connect`, `send` or `leave` fails until the owner decides.
 
 Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`; after a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 
 ## What the owner sees
 
-All of it is in the agent control chat, posted by the agent's profile. The chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Text written by the agent or by peers is shown as code, line by line, so commands inside it cannot be tapped.
+All of it is in the agent control chat, posted by the agent's profile. The chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Names that are valid display names are shown plain. All other text written by the agent or by peers, other names included, is shown as code, line by line; names and errors take one line. Commands and SimpleX links inside it cannot be tapped: a valid display name cannot contain `/`, and the app parses each line of a message separately.
 
 ```
 My Agent: I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
@@ -244,6 +249,7 @@ My Agent: I sent a message to business Ridgeline, where I am incognito:
 - It covers messages only: connecting and leaving are approved one by one.
 - It lasts until `/revoke`, until the chat is deleted, or until the approving owner is no longer an approver. It survives restarts: it is kept in the agent's database, as custom data of that chat.
 - With it, the agent can send anything it can read, without asking, to everyone in that chat.
+- It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
 
 ## What the agent sees
 
@@ -256,6 +262,8 @@ Five tools:
 | `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
+
+A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in `PLAN.md`, section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
@@ -279,7 +287,7 @@ npx -y @simplex-chat/mcp register my-agent-2
 
 ## Other MCP hosts
 
-Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorization: Bearer <token>`. A host that ends a tool call early returns a timeout to the agent; the agent repeats the call with the same arguments, which picks up the same action. Hosts with a fixed tool-call limit, between 60 and 300 seconds in several hosts, need `wait` below it.
+Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorization: Bearer <token>`, as in `headers.json` of the data folder; after `--new-token`, update the entry. A host that ends a tool call early returns a timeout to the agent; the agent repeats the call with the same arguments, which picks up the same action. Hosts with a fixed tool-call limit, between 60 and 300 seconds in several hosts, need `wait` below it.
 
 ## Recovery
 
@@ -292,7 +300,7 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 | The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect`, `send` and `leave` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
 | The QR code does not scan | Start with `--qr-code large`, or paste the link into the app. |
 | The wrong person joined by the link | Start with `--reset-owners`. |
-| The token leaked | Start with `--new-token` and register the agent again. |
+| The token leaked | Start with `--new-token`; Claude Code reads the new token at its next connection. |
 
 `--reset-owners` deletes the agent control chat for all its members, creates a new one and prints a new link. Member IDs change in the new chat, so `--reset-owners` takes `--owners` without a list.
 
@@ -317,7 +325,7 @@ serve options:
                          every owner approves.
   --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
   --reset-owners         replace the owners: a new agent control chat and link
-  --new-token            replace the access token; the agent must be registered again
+  --new-token            replace the access token
   --port N               HTTP port on 127.0.0.1 (default: 5226)
   --qr-code SIZE         QR code of the link: small (default) or large
 
@@ -335,9 +343,12 @@ register options:
   simplex_chat.db    SimpleX chat database: the agent's profile and chats
   simplex_agent.db   SimpleX agent database: connections and keys
   token              access token, readable only by the user
+  headers.json       the token as the Authorization header for Claude Code, readable only by the user
   server.json        name, port and expiry of the server, read by register
   lock               PID of the running server
 ```
+
+The folder is readable only by the user: every start sets its mode to 0700, except on Windows.
 
 The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat as custom data of that chat, and its actions in memory.
 
@@ -348,7 +359,8 @@ One server runs per data folder: a second one exits, because two processes on on
 ## Security
 
 - The server listens only on 127.0.0.1. Every request needs the token. Requests from web pages on other hosts, and requests with another `Host`, are refused (the SDK's localhost Origin and Host checks).
-- Any process with the token can act as the agent.
+- Any process with the token can act as the agent. The token is stored only in the data folder, in `token` and `headers.json`; Claude Code's config and the `claude mcp add-json` command line contain the command that prints `headers.json`, not the token.
+- Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
 - After `/approve #N all`, the agent sends to that chat without asking; `/revoke #N` ends it.

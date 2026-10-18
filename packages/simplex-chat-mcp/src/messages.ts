@@ -113,7 +113,7 @@ export function chatRef(chatInfo: T.ChatInfo): string | undefined {
 }
 
 export function isChatRef(value: string): boolean {
-  return /^[@#][1-9]\d*$/.test(value)
+  return /^[@#][1-9]\d{0,14}$/.test(value)
 }
 
 export function chatNumber(chat: string): number {
@@ -180,16 +180,21 @@ export async function markRead(chat: api.ChatApi, ref: string, itemIds: number[]
   if (itemIds.length > 0) await chatCommand(chat, `/_read chat items ${ref} ${itemIds.join(",")}`, "itemsReadForChat")
 }
 
-export async function unreadItems(chat: api.ChatApi, ref: string): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]}> {
+export async function unreadItems(chat: api.ChatApi, ref: string, messages: number): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
   const {chatInfo, chatStats} = await getChat(chat, ref, "initial=1")
-  if (chatStats.unreadCount === 0) return {chatInfo, items: []}
+  if (chatStats.unreadCount === 0) return {chatInfo, items: [], unreadRest: 0}
   const items = (await getChat(chat, ref, `around=${chatStats.minUnreadItemId} count=0`)).chatItems
-  for (let last = items.at(-1); last !== undefined;) {
+  for (let last = items.at(-1); last !== undefined && items.filter(isNewMessage).length < messages;) {
     const page = (await getChat(chat, ref, `after=${last.meta.itemId} count=${pageSize}`)).chatItems
     items.push(...page)
     last = page.length === pageSize ? page.at(-1) : undefined
   }
-  return {chatInfo, items: items.filter(isNew)}
+  const unread = items.filter(isNew)
+  return {chatInfo, items: unread, unreadRest: Math.max(0, chatStats.unreadCount - unread.length)}
+}
+
+function isNewMessage(item: T.ChatItem): boolean {
+  return item.content.type === "rcvMsgContent" && isNew(item) && !isLive(item)
 }
 
 export function reportProgress(call: ToolCall, message: () => string): () => void {

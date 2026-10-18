@@ -62,6 +62,7 @@ owner entry      ID:NAME              SimpleX core, log                   person
 ```
 
 - Chat, item and member IDs are rows of the agent's database.
+- A chat reference has 1 to 15 digits: the core parses chat IDs into Int64 with `A.decimal` (`Commands.hs:6659-6665`, 9711dcfc9), so a longer number can name another chat, such as `#18446744073709551626` for the agent control chat `#10`.
 - Action numbers grow across restarts, so a card left from an earlier run never matches a new action.
 
 ## Correlation
@@ -69,9 +70,9 @@ owner entry      ID:NAME              SimpleX core, log                   person
 ```
 link                     rule
 owner command -> action  /approve [CHAT] N or /reject [CHAT] N from an approver, action N pending in memory, CHAT its chat when given; otherwise a reply
-chat -> approval         the chat's custom data {simplexMcp: {approvedBy, approvedById, approvedAt}}, while member approvedById is an approver
+chat -> approval         the chat's custom data {simplexMcp: {approvedBy, approvedById, approvedAt}}, in mode requests, while member approvedById is an approver
 action -> card           actions[N].card: the card's item ID in the agent control chat
-tool call -> action      same tool and action fields, result not returned: the call attaches; otherwise a new action
+tool call -> action      same tool and action fields, action in memory: the call attaches; otherwise a new action
 send -> responses        every received message item (rcvMsgContent) of newChatItems in the chat with an ID above the sent item's, from the perform until a call returns the result
 connect -> chat          actions[N].conn, completed by the event of the connection
 agent -> follow-up       results carry chat, item, member and action IDs; inputs take chat, item and member IDs: send, receive, reply_to, mention; action IDs match the cards and list
@@ -109,7 +110,7 @@ cancellation                  SDK                                      the clien
 tools                         tools.ts, registered on each McpServer    names, descriptions, input and output schemas, _meta requiresUserInteraction in host mode, instructions; handlers call AgentTools with ctx.mcpReq.signal and send progress with ctx.mcpReq.notify when the request has a progressToken
 ```
 
-- Tool input that fails its schema is an error the model can correct (`isError: true`, the field named).
+- Tool input that fails its schema is refused by the SDK's default validator, an error the model can correct: `isError: true` with the validator's message, for example `data/text must NOT have fewer than 1 characters`.
 
 ## Package
 
@@ -122,7 +123,7 @@ licence        AGPL-3.0
 Node.js        22
 chat library   simplex-chat 7.1.0-beta.6.3
 types          @simplex-chat/types ^0.12.1
-MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1, zod ^4
+MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1
 QR code        qrcode ^1.5
 tests          jest with ts-jest, as packages/simplex-chat-nodejs; end to end with a local smp-server (SMP_SERVER), as steward test/e2e
 ```
@@ -136,7 +137,7 @@ actions.ts    actions: state machine, expiry, attach rule
 tools.ts      MCP tools, schemas, instructions
 messages.ts   message items, waits, responses
 http.ts       listener, token, /mcp, the SDK handler with its Origin and Host checks
-files.ts      token, server.json, lock
+files.ts      token, headers.json, server.json, lock
 register.ts   register command
 log.ts        stdout log lines, stderr errors
 ```
@@ -145,9 +146,11 @@ log.ts        stdout log lines, stderr errors
 
 ```
 path               contents                                     mode
-DIR/               created at first start                       0700
+DIR/               created at first start                       0700, set at every start except on Windows
 DIR/simplex_*.db   SimpleX chat and agent databases             core default
 DIR/token          32 random bytes, base64url                   0600
+DIR/headers.json   {"Authorization": "Bearer <token>"}, written 0600
+                   at every start
 DIR/server.json    {name, port, expireHours} of the server      0600
 DIR/lock           PID of the running server                    0600
 ```
@@ -190,7 +193,7 @@ register NAME:
 - `--display-name` is the agent's name in SimpleX, which peers see and which the app shows above its cards. The first start creates the profile with it, NAME when absent; a later start with another value updates the profile. A display name has 1 to 50 characters, none of `.,;/\#@'"`~`, and starts with a letter, a digit or a symbol (`mkValidName`, `Commands.hs:6948-6976`); another value exits with code 2: `--display-name: not a valid SimpleX name; try <the valid form>`.
 - `--owners` with no value: the next argument is absent or starts with `--`; parsing is custom, because `util.parseArgs` takes an option either as a flag or with a value. Entries whose NAME has characters other than letters, digits, `_` and `-` are printed in single quotes, `'` escaped as `'\''` (double quotes on Windows): `--owners '3:Alice Smith'`. The register hint adds `--data <folder>`, quoted the same way, when serve was started with `--data`.
 - `--port` and `--expire` apply to one run; `server.json` records them at each start for `register`. An agent on another port takes the same `--port` at every start; after a change of `--port` or `--expire`, `register NAME` runs again.
-- `--expire` at most 23: a sent message is editable for 24 hours (`deletable'`, `Messages.hs:537-548`; refused edit, `Commands.hs:845-868`), so every outcome edit of a card falls within that window.
+- `--expire` at most 23: a sent message is editable for 24 hours (`deletable'`, `Messages.hs:537-548`; refused edit, `Commands.hs:845-868`), so the outcome edit of a pending card falls within that window. Standing and host-mode outcomes are posted, not edited.
 
 Rejected arguments, exit code 2:
 
@@ -257,8 +260,9 @@ $ npx -y @simplex-chat/mcp register my-agent
 Added to Claude Code: scope user, server simplex-my-agent.
 ```
 
-- `register` reads `DIR/server.json` and `DIR/token`, runs `claude mcp remove --scope SCOPE simplex-NAME` (a missing entry is ignored), then `claude mcp add-json --scope SCOPE simplex-NAME '<entry>'`.
-- `<entry>`: `{"type": "http", "url": "http://127.0.0.1:PORT/mcp", "headers": {"Authorization": "Bearer <token>"}, "timeout": (expireHours + 24) * 3600000 + 600000}`; 169800000 for the default expiry.
+- `register` reads `DIR/server.json`, runs `claude mcp remove --scope SCOPE simplex-NAME` (a missing entry is ignored), then `claude mcp add-json --scope SCOPE simplex-NAME '<entry>'`.
+- `<entry>`: `{"type": "http", "url": "http://127.0.0.1:PORT/mcp", "headersHelper": "cat <DIR>/headers.json", "timeout": (expireHours + 24) * 3600000 + 600000}`; 169800000 for the default expiry. The path is quoted for the shell as the register hint quotes `--data`; on Windows the command is `type "<DIR>\headers.json"`.
+- Claude Code 2.1.302 runs `headersHelper` through a shell (`cmd.exe` on Windows) at every connection attempt and sends the headers it prints; for `project` and `local` scope only in a folder with persisted trust; for `user` scope and `--mcp-config` without that check. A token replaced with `--new-token` is therefore read at the next connection.
 - Tool names are `mcp__simplex-NAME__<tool>`; the allow rule of an agent is `mcp__simplex-NAME`, because allow rules take a literal server name (Claude Code permissions docs).
 - `--scope local`: the entry applies in the git repository that contains the folder where `register` runs (its main repository for a worktree), or in that folder outside a repository, as Claude Code keys local-scope servers.
 
@@ -290,7 +294,9 @@ shutdown                        Cancelled 2 actions. Stopped.   (the count only 
 
 ## What the owner sees: the agent control chat
 
-The agent control chat has the agent's display name, for example "My Agent". Everything below is in its main chat, posted by the agent's profile, in the first person: the app shows the profile's name above each message. Text from peers and from the agent is shown as code spans, line by line, with backticks replaced by `'`, so commands inside it are not tappable. `/'approve 1'` shows in the app as the tappable `/approve 1` (`bots/README.md`).
+The agent control chat has the agent's display name, for example "My Agent". Everything below is in its main chat, posted by the agent's profile, in the first person: the app shows the profile's name above each message. Text from peers and from the agent is shown as code spans, line by line, with backticks replaced by `'`. Commands inside it are not tappable: the core parses each line separately (`parseMaybeMarkdownList`, `T.lines`, `Markdown.hs:149-167`). A code span whose content starts or ends with a space is not code but unmarked text with its backticks (`formattedP`, `md`, `:227-235`), so a leading and a trailing space of a span become U+00A0. A name or an error with a line break would split its code span across lines, so both are folded to one line first. The e2e test "peer text and names ..." checks the received card's `formattedText`: only the card's own commands, no SimpleX link, and every peer line a snippet. `/'approve 1'` shows in the app as the tappable `/approve 1` (`bots/README.md`).
+
+Names written by peers and members (contacts, groups, members, approvers) are folded to one line in cards, replies, `/pending`, `/list` and membership messages: runs of `\p{Cc}`, `\p{Cf}`, `\p{Zl}` and `\p{Zp}` become one space, and a name that is not a valid display name (`validName`) is a code span. Log lines fold names the same way, without the code span.
 
 At the owner's join:
 
@@ -364,17 +370,18 @@ outcome             card
 done                "I connected to ...", "I sent a message to ...", "I left ..." or "I deleted ..." + the request's other lines + "Approved by Alice."
 done, not connected "I asked to connect to ..." + the request's other lines + "Approved by Alice."
 standing            a send under a standing approval, posted after the send: "I sent a message to ..." + the request's other lines + "Approved for this chat by Alice. /'revoke @4'"
-standing, failed    the request's lines + "Approved for this chat by Alice; failed: <error>."
-failed              the request's lines except the commands line + "Approved by Alice; failed: <error>."
+standing, failed    the request's lines + "Approved for this chat by Alice; failed: `<error>`."
+failed              the request's lines except the commands line + "Approved by Alice; failed: `<error>`."
 rejected            the request's lines except the commands line + "Rejected by Alice."
 expired             the request's lines except the commands line + "Expired."
 cancelled           the request's lines except the commands line + "Cancelled: the server stopped."
 interrupted         the request's lines except the commands line + "Approved by Alice; interrupted: the server stopped."
 host                the done form with "Performed without approval (mode host)." in place of "Approved by Alice."
-host, failed        the request's lines except the commands line + "Performed without approval (mode host); failed: <error>."
+host, failed        the request's lines except the commands line + "Performed without approval (mode host); failed: `<error>`."
 host, interrupted   the request's lines except the commands line + "Performed without approval (mode host); interrupted: the server stopped."
 ```
 
+- `<error>` is a code span on one line: runs of control, format, line and paragraph separator characters (`\p{Cc}`, `\p{Cf}`, `\p{Zl}`, `\p{Zp}`) become one space, as in names.
 - Edits do not notify; the card's first post does.
 - At a normal stop, pending cards get the cancelled form and performing cards the interrupted form. After a crash, the cards of that run keep their commands, and `/approve N` gets "Action N is not pending."
 
@@ -388,7 +395,7 @@ command             result
 /reject [CHAT] N    the card is edited
 /approve CHAT all   the standing approval of CHAT by the sender; its pending sends are approved
 /revoke CHAT        the standing approval of CHAT is removed
-/pending            one line per pending action: "2  send to bot SimpleX Directory  expires 09:15"; "No pending actions." when none
+/pending            one line per pending action: "2  send to bot SimpleX Directory  expires 2026-10-18 09:15 UTC"; "No pending actions." when none
 /list               one line per chat of the agent, as list returns them
 ```
 
@@ -416,7 +423,7 @@ other one-line text starting with "/"       Commands: /approve, /reject, /revoke
 ```
 
 - CHAT is optional in `/approve N` and `/reject N` as typed; the cards include it for sends and leaves.
-- A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver.
+- A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
 
 ### Membership messages
 
@@ -429,6 +436,8 @@ an owner in LIST loses the role or leaves,            Alice (member 3) is no lon
 an owner in LIST loses the role or leaves,            Alice (member 3) is no longer an owner. No owners remain: restart the server with --reset-owners --owners
   no human owner remains
 ```
+
+- In the chat, the `--owners ...` part is a code span, for example ``Restart the server with `--owners 3:Alice` ``, so a name in it forms no tappable command; the terminal line is as shown.
 
 ## What the agent sees: tools
 
@@ -479,7 +488,7 @@ input field   type      rule
 target        string    required; SimpleX link, @name.simplex or #name.simplex
 incognito     boolean   optional; default false; true: the core creates a random profile for this chat only
 message       string    optional; 1 to 2000 characters; for contact and business addresses with short link data
-wait          number    optional; seconds from the approval for the other side to accept and, with message, to send its first reply; the call returns at the latest then; 0 to 86400; default 60
+wait          number    optional; seconds from the approval for the other side to accept and, with message, to send its first reply; the call returns at the latest then; 0 to 86400; default 60; the wait for the connection ends at most 23 h 50 min after the action's creation, so the card's outcome edit falls within 24 hours
 idle          number    optional; seconds without a new message that end the wait: from the connection, or with message from the first reply; 1 to 300; default 30
 ```
 
@@ -566,10 +575,10 @@ Input: none.
 ```
 result field  type    content
 chats         array   {chat, type, name, simplex_name, peer_type, incognito, known_as, connected, unread, approved}
-actions       array   {action, tool, input, state, open}: actions of this server run whose result no call has returned; open: at least one call waits on it
+actions       array   {action, tool, input, state, open}: actions of this server run in memory, whose result no call has returned; open: at least one call waits on it
 ```
 
-- `approved: true`: the chat has a standing approval; present only then.
+- `approved: true`: the chat has a standing approval; present only then, and never in mode host.
 - An action with `open: false` resumes by calling `tool` with `input`.
 - The agent control chat is not one of the agent's chats: `list` leaves it out, and `send`, `receive` and `leave` return "unknown chat" for it.
 
@@ -588,7 +597,7 @@ chat          string    done; the deleted chat
 error         string    failed
 ```
 
-- A contact is deleted; a connected contact is notified (`sendDelDeleteConns`, `Commands.hs:1384-1388`). From a group, business chat or channel the agent leaves while its membership is current, and the members are notified; the chat is deleted with its messages and its custom data.
+- A contact is deleted; a connected contact is notified (`sendDelDeleteConns`, `Commands.hs:1384-1388`). From a group, business chat or channel the agent leaves while its membership is current or pending approval or review (`memberCurrentOrPending`, `Types.hs:1491-1492`, 9711dcfc9), and the members are notified; the chat is deleted with its messages and its custom data.
 
 ### Errors
 
@@ -597,6 +606,8 @@ situation                          message
 no approver, no --owners           The agent has no owner. The person who runs it has to join its control chat with the link the server printed.
 no approver, --owners              The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed.
 control chat lost                  The agent lost its control chat. The person who runs it has to restart it with --reset-owners.
+20 actions pending                 20 actions are pending; wait for the owner's decisions.
+card over 15000 bytes (send)       text: too long for its approval card; shorten it.
 unknown chat                       No chat #13. list shows the agent's chats.
 not a link or name                 Not a SimpleX link or name: <target>
 link not joinable                  <target> can't be joined now: <plan type>.
@@ -604,10 +615,13 @@ message not for an address         message: <target> is not a contact or busines
 role below author                  The agent has role observer in #12 and can't post.
 reply_to not in chat               reply_to: #15 has no item 999.
 mention not a member               mention: #15 has no member 45. (in a contact chat: mention: @4 is a contact chat; mentions apply to groups and channels.)
-SimpleX error                      SimpleX error: <type>: <details>
+SimpleX error                      SimpleX error: <the chain of error types>: <the scalar fields of the chain as JSON, at most 500 characters>
+                                     for example: SimpleX error: errorAgent: SMP: NAME: NOT_FOUND: {"agentConnId":"","serverAddress":"smp://..."}
 ```
 
-- The no-approver and lost-group errors are returned by `connect`, `send` and `leave` when a call creates a new action, after the input checks; a `known` target and a call that attaches to an action return without them.
+- The chain starts at the `ChatError` type and follows the field whose name ends in `Err`, `Error` or `errorType` and whose value has a `type` (`agentError`, `smpErr`, `nameErr`, ...); other nested values, such as a `groupInfo` with its welcome message, are left out.
+
+- The no-approver, lost-group, pending and card errors are returned by `connect`, `send` and `leave` when a call creates a new action, after the input checks; a `known` target and a call that attaches to an action return without them.
 
 ## What peers see
 
@@ -633,7 +647,7 @@ Every command acts for the active user, the agent's profile, the only user of th
 ```
 serve(NAME, options):
   check options
-  create DIR (0700); DIR/lock created exclusively, or exit 1 when its PID runs; token = DIR/token, created when missing or with --new-token
+  create DIR, mode 0700 (set again when DIR exists, except on Windows); DIR/lock created exclusively, or exit 1 when its PID runs; token = DIR/token, created when missing or with --new-token; DIR/headers.json written with the token
   chat = ChatApi.init({type: "sqlite", filePrefix: DIR/simplex})
   profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: bot}, pastTimestamp: false}
   write DIR/server.json {name: NAME, port, expireHours}
@@ -650,7 +664,8 @@ serve(NAME, options):
   HTTP listen 127.0.0.1:PORT; port in use: chat.close(); remove DIR/lock; exit 1 "Port PORT is in use. Start with --port N."   # before any link or QR code is printed
   lost unset: ownerStart(group)
   log "Listening on http://127.0.0.1:PORT/mcp"
-  every 60 s, and at each owner command: expire the pending actions whose expires has passed (wall clock, so a sleep of the computer delays no expiry)
+  every 60 s, and at each owner command: expire the pending actions whose expires has passed (wall clock, so a sleep of the computer delays no expiry);
+    delete from memory the decided actions (done, failed, rejected, expired) with open 0 whose expires has passed, and stop their collections
   drain buffered events
 
 SIGINT, SIGTERM (process.on; the second signal joins the stop in progress):
@@ -789,12 +804,12 @@ state       state
 created     ISO time
 expires     created + --expire
 card        item ID of the card in the agent control chat
-decidedBy   approver's display name; standing: approvedBy of the chat's approval
-returned    the result was returned by a call; the action is then deleted from memory
+decidedBy   approver's display name, folded and quoted as names in cards; standing: approvedBy of the chat's approval
 open        the number of calls waiting on it
+stopCollecting ends the collection of messages or responses of chat; called when the action is deleted from memory
 chat        chat reference, set during perform
 item        sent item, send after done
-responses   received message items of chat with IDs above item, from newChatItems during perform and until returned; send
+responses   received message items of chat with IDs above item, from newChatItems during perform and until the action is deleted; send
 interrupted the server is stopping during perform
 plan        {type, name, simplexName, description, welcome, commands, connLink, direct, linkData}, connect
 conn        {pcc: pccConnId} | {contact: contactId} | {group: groupId}, connect after perform
@@ -804,11 +819,13 @@ error       text, failed
 
 ```
 action(tool, input, ctx):
-  an action with the same tool and action fields and returned unset: attach to it
+  an action in memory with the same tool and action fields: attach to it
   otherwise:
     the call's signal aborted: return, with no action and no card
     stopping: tool error "The server is stopping."
     lost: tool error "control chat lost"
+    20 actions pending: tool error "20 actions pending"
+    a send whose largest card exceeds 15000 bytes (section Card size): tool error "card over 15000 bytes"
     no approvers: tool error, the no-approver message
     N = nextAction; nextAction = N + 1; create action N; log "Action N: ..."
     /_set custom #group {simplexMcp: {control: true, nextAction}}, queued after earlier writes, awaited
@@ -819,11 +836,12 @@ action(tool, input, ctx):
   wait for: state done, failed, rejected or expired | the call's signal
     progress at once and every 60 s: pending: "Action N waits for an approver until <expires>."; performing, send: "Action N is being performed."; performing, connect: "Action N waits for the connection until <time>."
     signal: return (nothing is sent for the call)
-  rejected, expired, failed: result {action: N, status, error}; returned = true
+  rejected, expired, failed: result {action: N, status, error}; the action is deleted from memory
   done: the tool continues after perform
 ```
 
 - `open` counts the calls attached to the action: +1 here, -1 when the call ends, by its result or its signal, including the tool's continuation after done.
+- An action leaves memory when a call returns its result, or, decided and with `open` 0, at the first expiry run after its `expires`; a repeated call after that creates a new action.
 - The attach check and the creation of action N run with no await between them, so two identical calls made at once share one action.
 - `perform(N)` runs once, in state `performing`: on `/approve N` or `/approve CHAT all`, or in `action()` in mode host or under a standing approval. It ends in `done` or `failed`; `perform connect` ends after its wait for the connection.
 - The counter is written before the card is posted, so a crash skips a number and never repeats one.
@@ -832,7 +850,7 @@ action(tool, input, ctx):
 
 ```
 connect(input, ctx):
-  an action with tool connect, equal action fields, returned unset: action(connect, input, ctx); go to result
+  an action in memory with tool connect and equal action fields: action(connect, input, ctx); go to result
   /_connect plan <user> <target>                                         # APIConnectPlan, parser Commands.hs:6559
     error with errorType invalidConnReq: tool error "not a link or name"
     other errors: tool error "SimpleX error"                             # e.g. an unregistered name: SMP NAME NOT_FOUND (resolveNameRecord, 9711dcfc9 Commands.hs:5175-5180)
@@ -845,7 +863,7 @@ connect(input, ctx):
   message with a plan type other than a contact or business address, with contactAddress contactViaAddress, or without linkData: tool error "message not for an address"
   action(connect, input, ctx)
   connected: collect the received message items of newChatItems of chat from the connection, until none arrives for idle seconds (counted from the connection; with message, from the first reply) | wait seconds after the approval | the call's signal
-  result: {action, status: "done", chat fields, connected, known_as, messages: the chat's messages at the connection, then the collected ones}; returned = true
+  result: {action, status: "done", chat fields, connected, known_as, messages: the chat's messages at the connection, then the collected ones}; the action is deleted from memory
 
 perform connect, the steps of connectWithPlan for the plan type (Commands.hs:4681-4716), with incognito=on|off from input.incognito:
   /_connect plan <user> <target> again, as the approval can come hours later and /_prepare creates a chat each time (Commands.hs:2198-2233):
@@ -866,15 +884,15 @@ perform connect, the steps of connectWithPlan for the plan type (Commands.hs:468
   action.known_as = the response's customUserProfile.displayName when present; contactAlreadyExists (no customUserProfile, responses.d.ts:70-74): as known_as in list()
   conn names a contact or group: action.chat = it
   contactAlreadyExists, or /_get chat <action.chat> count=0 shows it connected (as connected in list()): done
-  otherwise wait: the event that completes action.conn; up to wait
+  otherwise wait: the event that completes action.conn; up to wait, at most until created + 23 h 50 min (an edit after 24 hours is refused: deletable', Messages.hs:537-548)
 ```
 
 Events that complete a connect:
 
 ```
 event               action
-contactConnected    the performing or done connect action whose conn is {contact: contactId} or {pcc: contact.activeConn.connId} (the pending connection becomes the contact's, Store/Direct.hs:454-458): action.chat = @contactId
-userJoinedGroup     the performing or done connect action whose conn is {group: groupId} or {pcc: hostMember.activeConn.connId} (a group link's pending connection becomes the host member's, Store/Groups.hs:904): action.chat = #groupId
+contactConnected    the performing or done connect action, not yet connected, whose conn is {contact: contactId} or {pcc: contact.activeConn.connId} (the pending connection becomes the contact's, Store/Direct.hs:454-458): action.chat = @contactId
+userJoinedGroup     the performing or done connect action, not yet connected, whose conn is {group: groupId} or {pcc: hostMember.activeConn.connId} (a group link's pending connection becomes the host member's, Store/Groups.hs:904): action.chat = #groupId
 newChatItems        wake the waiting send and receive calls of that chat
 ```
 
@@ -897,7 +915,7 @@ send(input, ctx):
 
 perform send:
   text' = text with @name for each mention it lacks
-  action.responses = []; from now until returned is set, each newChatItems of chat adds its received message items (content.type rcvMsgContent) to action.responses
+  action.responses = []; from now until the action is deleted, each newChatItems of chat adds its received message items (content.type rcvMsgContent) to action.responses
   /_send <chat> json [{msgContent: {type: "text", text: text'}, mentions: {name: m}, quotedItemId: reply_to}] -> S     # parser Commands.hs:6353
   action.chat = chat; action.item = S; drop from action.responses the items with itemId not above S
 ```
@@ -911,7 +929,7 @@ until: wait seconds | idle seconds after the last collected item | the call's si
 progress at once and every 60 s: "<k> responses in <chat>; waiting until <time>."
 messages = collected, up to limit; more = the rest + overflow
 not aborted, at least one returned: /_read chat items <chat> <their IDs joined by ",">     # APIChatItemsRead, parser Commands.hs:6376; the list is non-empty
-returned = true
+the action is deleted from memory
 result {chat, item, responses: messages, more}
 ```
 
@@ -919,18 +937,33 @@ result {chat, item, responses: messages, more}
 - The library delivers each event to the handler in order (`api.js:113-142`); a response that arrives before `/_send` returns is kept, and an item received before the sent one has a lower ID and is dropped.
 - `wait` starts when the message is sent; when the call attaches to an action already done, at the call.
 
+### Card size
+
+```
+item                         bytes   source
+chat message, JSON           15602   maxEncodedMsgLength (Protocol.hs:929-930), checked in createNewSndMessage (Store/Messages.hs:241-242), 9711dcfc9
+x.msg.new envelope           114     measured with core 7.1.0.11; 128 with a 30-day ttl
+x.msg.update envelope        168     measured; 182 with a 30-day ttl
+card text, JSON-escaped      15000   the server's limit: 420 below the strictest measured case, 15602 - 182
+```
+
+- Group member connections are created with PQ off (`Store/Groups.hs:1837`, `:2201`, `:2726`), so `deliverMessagesB` compresses to the same 15602 bytes (`Internal.hs:2578`).
+- The library posts a card with `/_send #G json ...` without `sign=on`, and edits it with `/_update item #G <item> json ...` (`api.js`, `apiSendMessages`, `apiUpdateChatItem`): the body has no signature prefix.
+- History sends the edited card to a later owner as `x.msg.new` in a forward element, within 15763 bytes (`maxForwardBatchLength`, `batchElements`, `Internal.hs:1425`).
+- At `send`, before the action is created, the server builds the card forms of the action, with its text, reply and mentions: pending, done (the standing form under a standing approval) and failed. The approver is the action's own (a standing send) or the longest name of the current approvers, the error 600 three-byte characters (`chatErrorText` keeps 500 characters of details). Each form is measured as aeson encodes it: `"`, `\`, `\n`, `\r` and `\t` 2 bytes, other characters below U+0020 6 bytes, the rest their UTF-8 length.
+
 ### leave
 
 ```
 leave(input, ctx):
-  an action with tool leave and the same chat, returned unset: action(leave, input, ctx); go to result
+  an action in memory with tool leave and the same chat: action(leave, input, ctx); go to result
   chat is the agent control chat, or /_get chat <chat> count=0 returns a store error: tool error "unknown chat"
   action(leave, input, ctx)
-  result: {action, status: "done", chat}; returned = true
+  result: {action, status: "done", chat}; the action is deleted from memory
 
 perform leave:
   @C: /_delete @C full notify=on
-  #G: membership current: /_leave #G; then /_delete #G full notify=on       # only an owner or a former member deletes a group, Commands.hs:1396-1398
+  #G: membership current or pending approval or review: /_leave #G; then /_delete #G full notify=on       # only an owner or a former member deletes a group, Commands.hs:1396-1398
 ```
 
 ### receive and list
@@ -941,12 +974,12 @@ receive(input, ctx):
   from now, each newChatItems of chat adds its received message items to arrived
   s = /_get chat <chat> initial=1; a store error: tool error "unknown chat"
   s.chatStats.unreadCount > 0: pages = /_get chat <chat> around=<s.chatStats.minUnreadItemId> count=0 (that item alone),
-    then /_get chat <chat> after=<the last item ID> count=100, repeated while the last after= page holds 100
+    then /_get chat <chat> after=<the last item ID> count=100, repeated while the last after= page holds 100 and pages hold fewer than limit + 1 rcvNew message items that are not live
   unread = the rcvNew message items of pages; skipped = the rcvNew items of other content in pages (ciRequiresAttention, CIContent.hs:215-250)
   new = unread, then the items of arrived not in unread
   none new and wait > 0: wait for newChatItems of chat until one is new | wait | signal
     progress at once and every 60 s: "No new messages in <chat>; waiting until <time>."
-  messages: new, up to limit; more = the rest
+  messages: new, up to limit; more = the rest + s.chatStats.unreadCount - the rcvNew items of pages (the unread items not read, at least 0)
   not aborted: /_read chat items <chat> <the IDs of messages and of skipped, joined by ",">, when that list is non-empty
   result {chat, messages, more}
 
@@ -957,11 +990,12 @@ list():
   unread: chatStats.unreadCount (types.d.ts:1175)
   incognito: contacts: contact.activeConn.customUserProfileId set (types.d.ts:1328); groups: membership.memberProfile.profileId differs from membership.memberContactProfileId (memberIncognito, Types.hs:1289-1290)
   known_as: groups: membership.memberProfile.displayName; contacts: the incognito profile from /_info @C, read only for incognito contacts
-  approved: true when the chat's custom data has simplexMcp.approvedById of a current approver
-  result {chats, actions: actions with returned unset, open: open > 0}
+  approved: true in mode requests, when the chat's custom data has simplexMcp.approvedById of a current approver
+  result {chats, actions: the actions in memory, open: open > 0}
 ```
 
 - `initial=` returns `chatStats.unreadCount` and `chatStats.minUnreadItemId` when unread items exist (its items surround the last viewed item and are not used); `count=` returns empty stats (`Store/Messages.hs:1246`, `:1353-1361`, `:1467`, `:1699-1713`).
+- `unreadCount` counts every `rcvNew` item of the main scope (`getContactUnreadCount_`, `getGroupUnreadCount_`, `Store/Messages.hs:1398-1408`, `:1739-1743`), so when the pages stop at limit + 1 messages, the unread items not read count in `more`, other content included.
 - Every unread item sorts at or after `minUnreadItemId` in the chat's order: `created_at` for contacts, `item_ts` for groups (`:1369-1381`, `:1722-1728`); `around=` and `after=` page in that order.
 - Events that arrive while the snapshot is read are in `arrived` and, when unread at the read, in `unread` too; each item is returned once.
 - Received items other than messages that the core creates unread (deletions, decryption errors, group invitations, role changes) are marked read with the returned messages, so `unread` in `list` reaches 0 after `receive`.
@@ -1131,8 +1165,8 @@ second agent             serve my-agent-2 --port 5227;        a second agent con
                          register my-agent-2
 reset owners             serve my-agent --reset-owners        the agent control chat deleted; join the new      connect, send, leave: the no-approver error until an   none
                          [--owners]                           link                                              approver exists
-new token                serve my-agent --new-token;          none                                              HTTP 401 until the entry is replaced and the            none
-                         register my-agent                                                                      session reconnects (/mcp reconnect all)
+new token                serve my-agent --new-token           none                                              open calls fail; the reconnection reads the new token   none
+                                                                                                                from headers.json
 session before server    start serve; /mcp reconnect all      none                                              the tools appear after the reconnect                     none
 no approver              no --owners: "No owners in the       --owners LIST: "... No owners remain: restart     connect, send, leave: the no-approver error              none
                          agent control chat." and a new       the server with --reset-owners --owners"
@@ -1148,13 +1182,13 @@ Unit:
 ```
 test        covers
 options     defaults, ranges, NAME, --display-name at the first and a later start, --owners with and without a list, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run
-actions     every transition; attach rule; open counts; counter written before the card; stop edits pending and performing cards; standing approval: performed at once, outcome card posted
-cards       every card form and outcome; quoting; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form
-messages    message fields; responses with idle and wait; receive with new messages under a concurrent call; leave of @N and #N; approved in list; an approval whose approver is no longer one
-http        401 without token; 403 with another Origin; 404 for other paths
-register    entry JSON; timeout from server.json; remove before add; errors
-files       lock: exclusive create, a running PID, a stale PID
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; chat references over 15 digits; names with line breaks and escape sequences; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; mode host without approvals
+actions     every transition; attach rule; open counts; counter written before the card; stop edits pending and performing cards; standing approval: performed at once, outcome card posted; 20 pending; decided actions deleted after expires
+cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form
+messages    message fields; responses with idle and wait; receive with new messages under a concurrent call, stopping at limit + 1; leave of @N and #N, pending membership included; approved in list; an approval whose approver is no longer one; a group-role failure; the connect wait cap
+http        401 without token; 403 with another Origin; 404 for other paths; SDK validation errors
+register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors
+files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json
 ```
 
 End to end, with the preset SimpleX servers; the owner is a scripted profile in its own database; the agent's calls come from an MCP client in the test:
@@ -1170,6 +1204,8 @@ reject, expire    /reject; --expire 1 with a test clock
 lost result       the client aborts a send; list shows the action with open false; the repeat attaches
 restart           stop with a pending action: card cancelled; start: counter continues; /approve of the old number refused
 host mode         actions done at once; outcome cards
+peer text         groups named "\n/approve 1" and "x\n/approve 1" by SQL, their welcome with edge-space commands and links: the card's formattedText has only its own commands, no SimpleX link, every peer line a snippet
+alias             a 20-digit reference that the core reads as the agent control chat: receive, send and leave refuse it
 ```
 
 Claude Code checks, by hand (TESTING.md):

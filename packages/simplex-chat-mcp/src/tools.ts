@@ -1,4 +1,4 @@
-import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema, jsonSchemaValidator} from "@modelcontextprotocol/server"
+import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema} from "@modelcontextprotocol/server"
 import {CEvt, CR, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, ConnRef, ConnectAction, LeaveAction, Mode, SendAction, Subject, ToolError} from "./actions"
@@ -105,7 +105,10 @@ type Plan = {join: PlanSummary; method: JoinMethod} | {known: T.ChatInfo; summar
 
 type Schema = {[key: string]: unknown}
 
+type ToolName = "connect" | "send" | "receive" | "list" | "leave"
+
 const chatsPage = 100
+const editWindow = 24 * 3_600_000 - 10 * 60_000
 const connectWait = 60
 const sendWait = 60
 const defaultIdle = 30
@@ -328,7 +331,7 @@ Chat references are @N for contacts and #N for groups and channels.`
 }
 
 interface ToolDefinition {
-  name: string
+  name: ToolName
   description: string
   inputSchema: Schema
   outputSchema: Schema
@@ -343,30 +346,16 @@ const definitions: ToolDefinition[] = [
   {name: "leave", description: leaveDescription, inputSchema: leaveSchema, outputSchema: leaveOutput, action: true},
 ]
 
-const inputValidator: jsonSchemaValidator = {
-  getValidator<T>(schema: JsonSchemaType) {
-    return (input: unknown) => {
-      try {
-        return {valid: true as const, data: checkInput(schema as Schema, input) as T, errorMessage: undefined}
-      } catch (error) {
-        return {valid: false as const, data: undefined, errorMessage: errorText(error)}
-      }
-    }
-  },
-}
-
 const cancelled: CallToolResult = {content: [{type: "text", text: "Cancelled."}], isError: true}
 
 export class AgentTools {
-  private readonly collections = new Map<Action, () => void>()
-
   constructor(private readonly agent: Agent, private readonly mode: Mode) {}
 
   register(server: McpServer): void {
     for (const {name, description, inputSchema, outputSchema, action} of definitions) {
       const config = {
         description,
-        inputSchema: fromJsonSchema(inputSchema as JsonSchemaType, inputValidator),
+        inputSchema: fromJsonSchema(inputSchema as JsonSchemaType),
         outputSchema: fromJsonSchema(outputSchema as JsonSchemaType),
         ...(action && this.mode === "host" ? {_meta: {"anthropic/requiresUserInteraction": true}} : {}),
       }
@@ -374,7 +363,7 @@ export class AgentTools {
     }
   }
 
-  async call(name: string, input: unknown, call: ToolCall): Promise<CallToolResult | undefined> {
+  async call(name: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined> {
     try {
       const result = await this.run(name, input as object, call)
       return result === undefined ? undefined : {content: [{type: "text", text: JSON.stringify(result)}], structuredContent: result as {[key: string]: unknown}}
@@ -404,7 +393,7 @@ export class AgentTools {
     this.completeConnect(conn => conn.group === groupInfo.groupId || (conn.pcc !== undefined && conn.pcc === connId), `#${groupInfo.groupId}`)
   }
 
-  private run(name: string, input: object, call: ToolCall): Promise<object | undefined> {
+  private run(name: ToolName, input: object, call: ToolCall): Promise<object | undefined> {
     switch (name) {
       case "connect":
         return this.connect(input as ConnectInput, call)
@@ -414,7 +403,7 @@ export class AgentTools {
         return this.receive(input as ReceiveInput, call)
       case "leave":
         return this.leave(input as LeaveInput, call)
-      default:
+      case "list":
         return this.listChats()
     }
   }
@@ -434,15 +423,18 @@ export class AgentTools {
     return this.connectResult(action as ConnectAction, input, call)
   }
 
-  private async connectResult(action: ConnectAction, input: ConnectInput, call: ToolCall): Promise<object | undefined> {
+  private connectResult(action: ConnectAction, input: ConnectInput, call: ToolCall): Promise<object | undefined> {
+    return this.actionResult(action, call, async () => (action.chat === undefined ? planFields(action.plan, action.knownAs) : this.connectedChat(action, input, call)))
+  }
+
+  private async actionResult(action: Action, call: ToolCall, done: () => Promise<object | undefined>): Promise<object | undefined> {
     action.open++
     try {
       if (!(await this.agent.actions.decided(action, call))) return undefined
-      if (action.state !== "done") return this.returnOutcome(action)
-      const fields = action.chat === undefined ? planFields(action.plan, action.knownAs) : await this.connectedChat(action, input, call)
+      const fields = action.state === "done" ? await done() : defined({error: action.error})
       if (fields === undefined || call.signal.aborted) return undefined
-      this.markReturned(action)
-      return {action: action.n, status: "done", ...fields}
+      this.agent.actions.remove(action)
+      return {action: action.n, status: action.state, ...fields}
     } finally {
       action.open--
     }
@@ -487,7 +479,7 @@ export class AgentTools {
   private async performConnect(action: ConnectAction): Promise<void> {
     const {input} = action
     action.startedAt = Date.now()
-    action.connectUntil = action.startedAt + (input.wait ?? connectWait) * 1000
+    action.connectUntil = Math.min(action.startedAt + (input.wait ?? connectWait) * 1000, action.created + editWindow)
     const plan = await this.plan(input)
     if ("known" in plan) {
       const fields = await this.chatFields(plan.known, plan.summary)
@@ -563,7 +555,7 @@ export class AgentTools {
 
   private completeConnect(matches: (conn: ConnRef) => boolean, chat: string): void {
     for (const action of this.agent.actions.all()) {
-      if (action.tool !== "connect" || action.conn === undefined || !matches(action.conn)) continue
+      if (action.tool !== "connect" || action.connected || action.conn === undefined || !matches(action.conn)) continue
       if (action.state === "performing" || action.state === "done") this.markConnected(action, chat)
     }
   }
@@ -573,19 +565,8 @@ export class AgentTools {
     action.connected = true
     action.connectedAt ??= Date.now()
     if (action.input.message === undefined) action.messages.lastAt ??= action.connectedAt
-    if (!this.collections.has(action)) this.collections.set(action, this.agent.watch.collect(chat, action.messages))
+    action.stopCollecting ??= this.agent.watch.collect(chat, action.messages)
     action.changes.notify()
-  }
-
-  private markReturned(action: Action): void {
-    this.agent.actions.markReturned(action)
-    this.collections.get(action)?.()
-    this.collections.delete(action)
-  }
-
-  private returnOutcome(action: Action): object {
-    this.markReturned(action)
-    return {action: action.n, status: action.state, ...defined({error: action.error})}
   }
 
   private async send(input: SendInput, call: ToolCall): Promise<object | undefined> {
@@ -605,12 +586,9 @@ export class AgentTools {
     return this.sendResult(action as SendAction, input, call)
   }
 
-  private async sendResult(action: SendAction, input: SendInput, call: ToolCall): Promise<object | undefined> {
+  private sendResult(action: SendAction, input: SendInput, call: ToolCall): Promise<object | undefined> {
     const doneAtCall = action.state === "done"
-    action.open++
-    try {
-      if (!(await this.agent.actions.decided(action, call))) return undefined
-      if (action.state !== "done") return this.returnOutcome(action)
+    return this.actionResult(action, call, async () => {
       const {wait = sendWait, idle = defaultIdle, limit = defaultLimit} = input
       const start = doneAtCall ? Date.now() : action.sentAt!
       const deadline = start + wait * 1000
@@ -619,24 +597,18 @@ export class AgentTools {
       if (!finished || call.signal.aborted) return undefined
       const returned = action.responses.items.filter(({chatItem}) => !isLive(chatItem)).slice(0, limit)
       await markRead(this.agent.chat, action.chat, returned.map(({chatItem}) => chatItem.meta.itemId))
-      if (call.signal.aborted) return undefined
-      this.markReturned(action)
       return {
-        action: action.n,
-        status: "done",
         chat: action.chat,
         item: action.item,
         responses: returned.map(({chatInfo, chatItem}) => toMessage(chatInfo, chatItem, {name: ""})),
         more: action.responses.items.length - returned.length + action.responses.overflow,
       }
-    } finally {
-      action.open--
-    }
+    })
   }
 
   private async performSend(action: SendAction): Promise<void> {
     const {input, mentions, chat, responses} = action
-    this.collections.set(action, this.agent.watch.collect(chat, responses, ({meta}) => action.item === undefined || meta.itemId > action.item))
+    action.stopCollecting = this.agent.watch.collect(chat, responses, ({meta}) => action.item === undefined || meta.itemId > action.item)
     try {
       const missing = mentions.filter(({name}) => !mentionedIn(input.text, name)).map(({name}) => `@${viewName(name)}`)
       const text = missing.length === 0 ? input.text : `${missing.join(" ")} ${input.text}`
@@ -650,8 +622,7 @@ export class AgentTools {
       responses.items.splice(0, responses.items.length, ...kept)
       if (kept.length === 0) responses.lastAt = undefined
     } catch (error) {
-      this.collections.get(action)?.()
-      this.collections.delete(action)
+      action.stopCollecting()
       throw error
     }
   }
@@ -667,22 +638,14 @@ export class AgentTools {
     return this.leaveResult(action as LeaveAction, call)
   }
 
-  private async leaveResult(action: LeaveAction, call: ToolCall): Promise<object | undefined> {
-    action.open++
-    try {
-      if (!(await this.agent.actions.decided(action, call))) return undefined
-      if (action.state !== "done") return this.returnOutcome(action)
-      this.markReturned(action)
-      return {action: action.n, status: "done", chat: action.chat}
-    } finally {
-      action.open--
-    }
+  private leaveResult(action: LeaveAction, call: ToolCall): Promise<object | undefined> {
+    return this.actionResult(action, call, async () => ({chat: action.chat}))
   }
 
   private async performLeave({chat}: LeaveAction): Promise<void> {
     if (chat.startsWith("@")) return this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
     const {groupInfo} = (await getChat(this.agent.chat, chat, "count=0")).chatInfo as T.ChatInfo.Group
-    if (memberCurrent(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
+    if (memberCurrentOrPending(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
     await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
   }
 
@@ -692,7 +655,7 @@ export class AgentTools {
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
     try {
-      const {chatInfo, items} = await unreadItems(this.agent.chat, chat).catch(error => {
+      const {chatInfo, items, unreadRest} = await unreadItems(this.agent.chat, chat, limit + 1).catch(error => {
         throw chatErrorOf(error)?.type === "errorStore" ? unknownChat(chat) : error
       })
       const unread = items.filter(({content}) => content.type === "rcvMsgContent").map(chatItem => arrived.items.find(copy => copy.chatItem.meta.itemId === chatItem.meta.itemId) ?? {chatInfo, chatItem})
@@ -715,7 +678,7 @@ export class AgentTools {
       if (call.signal.aborted) return undefined
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
-      return {chat, messages: returned.map(({chatInfo, chatItem}): Message => toMessage(chatInfo, chatItem, {name: ""})), more: arrived.items.length - returned.length + arrived.overflow}
+      return {chat, messages: returned.map(({chatInfo, chatItem}): Message => toMessage(chatInfo, chatItem, {name: ""})), more: arrived.items.length - returned.length + arrived.overflow + unreadRest}
     } finally {
       stop()
     }
@@ -727,7 +690,7 @@ export class AgentTools {
       const fields = await this.chatFields(chatInfo)
       chats.push({chat: fields.chat, type: fields.type, name: fields.name, simplex_name: fields.simplex_name, peer_type: fields.peer_type, incognito: isIncognito(chatInfo), known_as: fields.known_as, connected: fields.connected, unread: chatStats.unreadCount, ...(this.agent.standingApprover(chatInfo) === undefined ? {} : {approved: true})})
     }
-    const actions = this.agent.actions.unreturned().map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
+    const actions = this.agent.actions.all().map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
     return {chats, actions}
   }
 
@@ -783,25 +746,22 @@ export class AgentTools {
         chat: `@${contact.contactId}`,
         type: "contact",
         name: profile.displayName,
-        ...defined({simplex_name: profile.contactDomainVerified && profile.contactDomain ? `@${profile.contactDomain.domain}` : undefined}),
-        ...defined({peer_type: profile.peerType, description: profile.shortDescr, commands: commandsOf(profile.preferences?.commands)}),
-        ...defined({known_as: contact.activeConn?.customUserProfileId === undefined ? undefined : await this.incognitoName(contact.contactId)}),
-        connected: contact.activeConn?.connStatus.type === "ready",
+        ...defined({simplex_name: simplexNameOf(chatInfo), peer_type: profile.peerType, description: profile.shortDescr, commands: commandsOf(profile.preferences?.commands)}),
+        ...defined({known_as: isIncognito(chatInfo) ? await this.incognitoName(contact.contactId) : undefined}),
+        connected: isConnected(chatInfo),
       }
     }
     const {groupInfo} = chatInfo as T.ChatInfo.Group
     const {groupProfile, membership} = groupInfo
-    const claim = groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim
     return {
       ...fromPlan,
       chat: `#${groupInfo.groupId}`,
       type: groupKind(groupInfo),
       name: groupProfile.displayName,
-      ...defined({simplex_name: groupInfo.groupDomainVerified && claim ? `#${claim.domain}` : undefined}),
-      ...defined({description: groupProfile.shortDescr, welcome: groupProfile.description, commands: commandsOf(groupProfile.groupPreferences?.commands)}),
+      ...defined({simplex_name: simplexNameOf(chatInfo), description: groupProfile.shortDescr, welcome: groupProfile.description, commands: commandsOf(groupProfile.groupPreferences?.commands)}),
       ...defined({known_as: isIncognito(chatInfo) ? membership.memberProfile.displayName : undefined}),
       role: membership.memberRole,
-      connected: membership.memberStatus === T.GroupMemberStatus.Connected || membership.memberStatus === T.GroupMemberStatus.Complete,
+      connected: isConnected(chatInfo),
     }
   }
 
@@ -917,7 +877,7 @@ function contactSummary(simplexName: string | undefined, linkData: T.ContactShor
   const peerType = profile?.peerType as string | undefined
   const welcome = linkData?.message?.text
   return {
-    cardKind: business ? "business" : peerType === "bot" || peerType === "agent" ? peerType : "contact",
+    cardKind: business ? "business" : contactKind(peerType),
     type: business ? "business" : "contact",
     takesMessage,
     ...defined({name: profile?.displayName, simplexName, peerType, description: profile?.shortDescr, welcome, commands: commandsOf(profile?.preferences?.commands)}),
@@ -948,24 +908,24 @@ function domainParam(domain: string | undefined): string {
 }
 
 export function chatSubject(chatInfo: T.ChatInfo): Subject {
+  const named = chatInfo.type === "direct"
+    ? {kind: contactKind(chatInfo.contact.profile.peerType), name: chatInfo.contact.profile.displayName}
+    : {kind: groupKind((chatInfo as T.ChatInfo.Group).groupInfo), name: (chatInfo as T.ChatInfo.Group).groupInfo.groupProfile.displayName}
+  return {...named, ...defined({simplexName: simplexNameOf(chatInfo)}), incognito: isIncognito(chatInfo)}
+}
+
+function simplexNameOf(chatInfo: T.ChatInfo): string | undefined {
   if (chatInfo.type === "direct") {
-    const {profile, activeConn} = chatInfo.contact
-    const peerType = profile.peerType as string | undefined
-    return {
-      kind: peerType === "bot" || peerType === "agent" ? peerType : "contact",
-      name: profile.displayName,
-      ...defined({simplexName: profile.contactDomainVerified && profile.contactDomain ? `@${profile.contactDomain.domain}` : undefined}),
-      incognito: activeConn?.customUserProfileId !== undefined,
-    }
+    const {contactDomainVerified, contactDomain} = chatInfo.contact.profile
+    return contactDomainVerified && contactDomain ? `@${contactDomain.domain}` : undefined
   }
-  const {groupInfo} = chatInfo as T.ChatInfo.Group
-  const claim = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim
-  return {
-    kind: groupKind(groupInfo),
-    name: groupInfo.groupProfile.displayName,
-    ...defined({simplexName: groupInfo.groupDomainVerified && claim ? `#${claim.domain}` : undefined}),
-    incognito: isIncognito(chatInfo),
-  }
+  const {groupDomainVerified, groupProfile} = (chatInfo as T.ChatInfo.Group).groupInfo
+  const claim = groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim
+  return groupDomainVerified && claim ? `#${claim.domain}` : undefined
+}
+
+function contactKind(peerType: string | undefined): string {
+  return peerType === "bot" || peerType === "agent" ? peerType : "contact"
 }
 
 function groupKind(groupInfo: T.GroupInfo): ChatKind {
@@ -982,8 +942,10 @@ function isIncognito(chatInfo: T.ChatInfo): boolean {
 
 export function isConnected(chatInfo: T.ChatInfo): boolean {
   if (chatInfo.type === "direct") return chatInfo.contact.activeConn?.connStatus.type === "ready"
-  if (chatInfo.type !== "group") return false
-  const {memberStatus} = chatInfo.groupInfo.membership
+  return chatInfo.type === "group" && isActive(chatInfo.groupInfo.membership)
+}
+
+export function isActive({memberStatus}: T.GroupMember): boolean {
   return memberStatus === T.GroupMemberStatus.Connected || memberStatus === T.GroupMemberStatus.Complete
 }
 
@@ -998,6 +960,10 @@ export function memberCurrent({memberStatus}: T.GroupMember): boolean {
     T.GroupMemberStatus.Creator,
   ]
   return current.includes(memberStatus)
+}
+
+function memberCurrentOrPending(member: T.GroupMember): boolean {
+  return memberCurrent(member) || member.memberStatus === T.GroupMemberStatus.Pending_approval || member.memberStatus === T.GroupMemberStatus.Pending_review
 }
 
 function chatTs(chatInfo: T.ChatInfo): string {
@@ -1056,66 +1022,4 @@ function toolCall({mcpReq}: ServerContext): ToolCall {
       mcpReq.notify({method: "notifications/progress", params: {progressToken, progress: progress++, message}}).catch(() => undefined)
     },
   }
-}
-
-export function checkInput(schema: Schema, args: unknown): object {
-  if (typeof args !== "object" || args === null || Array.isArray(args)) throw new ToolError("arguments: an object expected")
-  const properties = schema.properties as {[name: string]: Schema}
-  const input = args as {[name: string]: unknown}
-  for (const name of Object.keys(input)) {
-    if (!(name in properties)) throw new ToolError(`${name}: not an input of this tool`)
-    if (input[name] !== undefined) checkValue(name, properties[name], input[name])
-  }
-  for (const name of (schema.required as string[] | undefined) ?? []) {
-    if (input[name] === undefined) throw new ToolError(`${name}: required`)
-  }
-  return input
-}
-
-function checkValue(name: string, schema: Schema, value: unknown): void {
-  const {type, minimum, maximum, minLength, maxLength, minItems, maxItems} = schema as {
-    type: string
-    minimum?: number
-    maximum?: number
-    minLength?: number
-    maxLength?: number
-    minItems?: number
-    maxItems?: number
-  }
-  switch (type) {
-    case "string":
-      if (typeof value !== "string" || (minLength !== undefined && [...value].length < minLength) || (maxLength !== undefined && [...value].length > maxLength)) {
-        throw new ToolError(`${name}: a string of ${countText(minLength, maxLength, "characters")} expected`)
-      }
-      return
-    case "boolean":
-      if (typeof value !== "boolean") throw new ToolError(`${name}: true or false expected`)
-      return
-    case "number":
-    case "integer":
-      if (typeof value !== "number" || !Number.isFinite(value) || (type === "integer" && !Number.isInteger(value)) || (minimum !== undefined && value < minimum) || (maximum !== undefined && value > maximum)) {
-        throw new ToolError(`${name}: ${type === "integer" ? "an integer" : "a number"}${rangeText(minimum, maximum)} expected`)
-      }
-      return
-    case "array": {
-      const items = schema.items as Schema
-      if (!Array.isArray(value) || (minItems !== undefined && value.length < minItems) || (maxItems !== undefined && value.length > maxItems) || new Set(value).size !== value.length) {
-        throw new ToolError(`${name}: ${countText(minItems, maxItems, "distinct items")} expected`)
-      }
-      value.forEach((item, i) => checkValue(`${name}[${i}]`, items, item))
-      return
-    }
-  }
-}
-
-function countText(min: number | undefined, max: number | undefined, unit: string): string {
-  if (min !== undefined && max !== undefined) return `${min} to ${max} ${unit}`
-  if (min !== undefined) return `at least ${min} ${unit}`
-  return max === undefined ? unit : `at most ${max} ${unit}`
-}
-
-function rangeText(min: number | undefined, max: number | undefined): string {
-  if (min !== undefined && max !== undefined) return ` from ${min} to ${max}`
-  if (min !== undefined) return ` of at least ${min}`
-  return max === undefined ? "" : ` of at most ${max}`
 }
