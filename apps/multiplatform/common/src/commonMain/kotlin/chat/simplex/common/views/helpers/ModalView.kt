@@ -95,7 +95,10 @@ enum class ModalViewId {
   BADGE_LINK,
   BADGE_REDEEM_CODE,
   BADGES,
-  CREATE_PROFILE
+  CREATE_PROFILE,
+  PROFILE_DESCRIPTION,
+  MARKDOWN_FILE,
+  CHAT_ITEM_INFO
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
