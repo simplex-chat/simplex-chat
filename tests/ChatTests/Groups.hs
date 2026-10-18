@@ -12659,13 +12659,7 @@ testChannelMessageFile ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-            -- the roster arrives as a file before this one; Postgres assigns it a new id and does not
-            -- reuse it on delete (SQLite does), so the received message file is id 2 here, 1 on SQLite.
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12711,11 +12705,7 @@ testChannelMessageFileCancel ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12891,11 +12881,7 @@ testChannelOwnerFileTransferAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -13043,11 +13029,7 @@ testChannelFileBadgeProof ps = do
           withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
             addTestBadge alice =<< issueTestBadge sk futureDate
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -13110,11 +13092,7 @@ testChannelOwnerFileCancelAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -13490,17 +13468,8 @@ testChannelSignedFile ps =
             xftpCLI ["rand", testfile, "1mb"] `shouldReturn` ["File created: " <> testfile]
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
-            -- roster serves arrive as files that Postgres deletes without reusing the id (SQLite reuses
-            -- it), so ids run higher here. cath's send and the subscribers' (dan, eve) receive both
-            -- follow only their join roster (id 2). The relay (bob) also received the roster re-served
-            -- on cath's promotion, so its file is id 3. The owner (alice) has no roster file, so id 1.
-#if defined(dbPostgres)
             let fileId = 2 :: Int
                 relayFileId = 3 :: Int
-#else
-            let fileId = 1 :: Int
-                relayFileId = 1 :: Int
-#endif
 
             -- cath's first (signed) message introduces her to dan/eve
             cath ##> "/_send #1 sign=on text hi"
