@@ -20,18 +20,18 @@ SMP_SERVER=/code/steward/node_modules/.cache/smp-server/smp-server-v7.1.0-beta.3
 
 1. Check out simplex-chat master; the package is `packages/simplex-chat-mcp`.
 2. In that folder: `npm install`, then `npx tsc`.
-3. `node dist/cli.js serve agent`. At the first start, `simplex-chat` downloads libsimplex and its Node.js add-on, with a `Downloading ...` line each on stderr.
+3. `node dist/cli.js serve my-agent --display-name "My Agent"`. At the first start, `simplex-chat` downloads libsimplex and its Node.js add-on, with a `Downloading ...` line each on stderr.
 4. Tests: `npx jest test/unit`; `npx jest test/e2e` downloads smp-server v7.1.0-beta.3 on Linux, and elsewhere takes `SMP_SERVER=/path/to/smp-server`.
 
-Until the package is published, the printed hint `npx -y @simplex-chat/mcp register agent` stands for `node dist/cli.js register agent`.
+Until the package is published, the printed hint `npx -y @simplex-chat/mcp register my-agent` stands for `node dist/cli.js register my-agent`.
 
 ## Start, join, register
 
-1. `node dist/cli.js serve agent`. It prints the data folder (`~/.simplex-mcp/agent`), creates the agent control chat "agent", and prints a QR code and a link that works once. Keep it running; Ctrl-C stops it. `node dist/cli.js --help` lists the options.
-2. In the SimpleX app, scan the QR code, or paste the link into "Connect via link". The chat "agent" appears with `I'm your agent. I ask here before I connect or send.` The terminal prints `Alice joined (member N) and is now an owner. The link is deleted.` and the register hint.
-3. `node dist/cli.js register agent`. It prints `Added to Claude Code: scope user, server simplex-agent.`
-4. Add `"mcp__simplex-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
-5. Start `claude`. `/mcp` shows `simplex-agent` connected with 4 tools.
+1. `node dist/cli.js serve my-agent --display-name "My Agent"`. NAME, here `my-agent`, names the data folder and the Claude Code entry; `--display-name` is the name people see in SimpleX. It prints the data folder (`~/.simplex-mcp/my-agent`), creates the agent control chat "My Agent", and prints a QR code and a link that works once. For a short link the QR code has 33 modules and takes 37 columns × 19 lines; `--qr-code large` prints it at 74 × 37. Keep it running; Ctrl-C stops it. `node dist/cli.js --help` lists the options.
+2. In the SimpleX app, scan the QR code, or paste the link into "Connect via link". If the code does not scan, restart with `--qr-code large`. The chat "My Agent" appears with `I'm your agent. I ask here before I connect or send.` The terminal prints `Alice joined (member N) and is now an owner. The link is deleted.` and the register hint.
+3. `node dist/cli.js register my-agent`. It prints `Added to Claude Code: scope user, server simplex-my-agent.`
+4. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
+5. Start `claude`. `/mcp` shows `simplex-my-agent` connected with 4 tools.
 
 ## Try the tools
 
@@ -59,24 +59,24 @@ A channel:
 
 Incognito, as a second agent, because the first one already knows the directory:
 
-1. `node dist/cli.js serve scout --port 5227`; join its control chat "scout" with the printed link; `node dist/cli.js register scout`; add `"mcp__simplex-scout"` to `permissions.allow`; `/mcp reconnect all`.
+1. `node dist/cli.js serve scout --display-name "Scout" --port 5227`; join its control chat "Scout" with the printed link; `node dist/cli.js register scout`; add `"mcp__simplex-scout"` to `permissions.allow`; `/mcp reconnect all`.
 2. `Using simplex-scout, connect to the directory incognito: https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok` Card: `I want to connect to bot SimpleX Directory, incognito.` Approve it; Claude gets `known_as`, a random name.
 3. `Using simplex-scout, list your chats.` The directory has `incognito: true` and the same `known_as`. A send card for it says `where I am incognito`.
 
 Stop and restart:
 
 - Stop the server while a card waits: the card ends with `Cancelled: the server stopped.` After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
-- A second `serve agent` on the same data folder exits with `Another server uses ... (PID N).` A port in use exits with `Port 5226 is in use. Start with --port N.`, before any link is printed.
+- A second `serve my-agent` on the same data folder exits with `Another server uses ... (PID N).` A port in use exits with `Port 5226 is in use. Start with --port N.`, before any link is printed.
 
 ## Claude Code checks
 
-1. C2, protocol: passed with Claude Code 2.1.302 in the default runtime, with `MCP_PROTOCOL_NEGOTIATION=legacy` and with `MCP_SDK_GENERATION=v1`. To repeat it, write `c2.json` with `{"mcpServers": {"simplex-agent": {"type": "http", "url": "http://127.0.0.1:5226/mcp", "headers": {"Authorization": "Bearer <the contents of ~/.simplex-mcp/agent/token>"}}}}`, and run it once as is and once with each variable before it:
+1. C2, protocol: passed with Claude Code 2.1.302 in the default runtime, with `MCP_PROTOCOL_NEGOTIATION=legacy` and with `MCP_SDK_GENERATION=v1`. To repeat it, write `c2.json` with `{"mcpServers": {"simplex-my-agent": {"type": "http", "url": "http://127.0.0.1:5226/mcp", "headers": {"Authorization": "Bearer <the contents of ~/.simplex-mcp/my-agent/token>"}}}}`, and run it once as is and once with each variable before it:
    ```
-   claude -p "Call the list tool and show its result." --strict-mcp-config --mcp-config c2.json --allowedTools mcp__simplex-agent
+   claude -p "Call the list tool and show its result." --strict-mcp-config --mcp-config c2.json --allowedTools mcp__simplex-my-agent
    ```
    Each run shows the chats, with the preset contact "Ask SimpleX Team".
 2. C3, subagent: `Use a subagent to send "trail shoes" to the directory.` While the card waits, the subagent's call stays in the foreground, with no background task; it returns after `/approve`.
-3. C4, reconnect: restart `serve agent`; in the running session, `/mcp reconnect all`; `list` returns the chats.
-4. C5, register again: `node dist/cli.js register agent` prints `Added to Claude Code: scope user, server simplex-agent.`; `claude mcp list` shows one `simplex-agent`.
+3. C4, reconnect: restart `serve my-agent`; in the running session, `/mcp reconnect all`; `list` returns the chats.
+4. C5, register again: `node dist/cli.js register my-agent` prints `Added to Claude Code: scope user, server simplex-my-agent.`; `claude mcp list` shows one `simplex-my-agent`.
 5. C6, Esc: ask for a send, and press Esc while its card waits; `List your pending actions.` shows the action with `open: false`; the same request again attaches to it, and `/approve` returns the result to that call.
-6. Host mode: restart with `node dist/cli.js serve agent --approve host`, then `/mcp reconnect all`. `Send /help to the directory.` makes Claude Code prompt, despite the allow rule. After you allow it, the agent control chat gets `I sent a message to bot SimpleX Directory:`, `` `/help` `` and `Performed without approval (mode host).` A `connect` to a link not yet joined gets the same prompt and an outcome card; a target already joined returns `status: known`, with no card.
+6. Host mode: restart with `node dist/cli.js serve my-agent --approve host`, then `/mcp reconnect all`. `Send /help to the directory.` makes Claude Code prompt, despite the allow rule. After you allow it, the agent control chat gets `I sent a message to bot SimpleX Directory:`, `` `/help` `` and `Performed without approval (mode host).` A `connect` to a link not yet joined gets the same prompt and an outcome card; a target already joined returns `status: known`, with no card.

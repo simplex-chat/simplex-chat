@@ -1,5 +1,6 @@
+import * as qrcode from "qrcode"
 import {Action, Mode, NewAction, State} from "../../src/actions"
-import {cardText} from "../../src/control"
+import {cardText, qrCodeText} from "../../src/control"
 import {Changes, Collected, utcMinutes} from "../../src/messages"
 
 const expires = Date.UTC(2026, 9, 18, 9, 2)
@@ -111,5 +112,38 @@ describe("send cards", () => {
     const fields = send()
     Object.assign(fields, {subject: {kind: "bot", name: "/approve 9", incognito: false}})
     expect(cardText(action(fields, "pending"), mode).split("\n")[0]).toBe("I want to send a message to bot `/approve 9`:")
+  })
+})
+
+describe("QR codes", () => {
+  const link = "https://smp4.simplex.im/g#1ai9d8WS140_IxvPDYWLigJNZU-z7GsDUhp0JoJ7kbU"
+  const cells = (line: string): string[] => [...line.matchAll(/\x1b\[[0-9;]+m[^\x1b]+/g)].map(([cell]) => cell)
+  const visible = (line: string): string => line.replace(/\x1b\[[0-9;]*m/g, "")
+
+  it("draws each module as two cells in large", () => {
+    const lines = qrCodeText(link, "large").split("\n")
+    expect(lines).toHaveLength(37)
+    for (const line of lines) {
+      expect(visible(line)).toHaveLength(74)
+      expect(line.endsWith("\x1b[0m")).toBe(true)
+    }
+    for (const line of [...lines.slice(0, 2), ...lines.slice(-2)]) expect(cells(line)).toEqual(Array(37).fill("\x1b[47m  "))
+    expect(cells(lines[2]).slice(0, 10)).toEqual([...Array(2).fill("\x1b[47m  "), ...Array(7).fill("\x1b[40m  "), "\x1b[47m  "])
+  })
+
+  it("draws two module rows per line with lower half blocks in small", () => {
+    const lines = qrCodeText(link, "small").split("\n")
+    expect(lines).toHaveLength(19)
+    for (const line of lines) {
+      expect(visible(line)).toHaveLength(37)
+      expect(line.endsWith("\x1b[0m")).toBe(true)
+      expect([...cells(line).slice(0, 2), ...cells(line).slice(-2)]).toEqual(Array(4).fill("\x1b[47m "))
+    }
+    for (const line of [lines[0], lines.at(-1)!]) expect(cells(line)).toEqual(Array(37).fill("\x1b[47m "))
+    expect(cells(lines[1]).slice(2, 4)).toEqual(["\x1b[40m ", "\x1b[37;40m▄"])
+    const {modules} = qrcode.create(link, {errorCorrectionLevel: "L"})
+    const row = Array.from({length: 16}, (_, i) => 2 * i).find(r => Array.from({length: modules.size}, (_, c) => c).some(c => !modules.get(r, c) && modules.get(r + 1, c)))!
+    const col = Array.from({length: modules.size}, (_, c) => c).find(c => !modules.get(row, c) && modules.get(row + 1, c))!
+    expect(cells(lines[row / 2 + 1])[col + 2]).toBe("\x1b[30;47m▄")
   })
 })

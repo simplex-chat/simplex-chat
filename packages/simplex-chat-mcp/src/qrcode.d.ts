@@ -1,3 +1,3 @@
 declare module "qrcode" {
-  export function toString(text: string, options: {type: "terminal"; small?: boolean}): Promise<string>
+  export function create(text: string, options: {errorCorrectionLevel?: "L" | "M" | "Q" | "H"}): {modules: {size: number; get(row: number, col: number): number}}
 }

@@ -4,7 +4,7 @@ import {api} from "simplex-chat"
 import {Action, ActionHooks, Actions, pendingLine, subjectText} from "./actions"
 import {ExitError, chatErrorOf, log, logError, shellWord} from "./log"
 import {utcMinutes, validName, viewName} from "./messages"
-import type {OwnerEntry} from "./serve"
+import type {OwnerEntry, QrCodeSize} from "./serve"
 
 const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "approve", label: "Approve", params: "N"},
@@ -15,6 +15,15 @@ const controlCommands: T.ChatBotCommand[] = [
 const commandsReply = "Commands: /approve N, /reject N, /pending"
 const greeting = "I'm your agent. I ask here before I connect or send."
 const noOwners = "No owners in the agent control chat."
+const qrCodeHint = "If the QR code does not scan, restart with --qr-code large, or paste the link into the app."
+const qrMargin = 2
+const darkCell = "\x1b[40m  "
+const lightCell = "\x1b[47m  "
+const darkHalfCell = "\x1b[40m "
+const lightHalfCell = "\x1b[47m "
+const darkTopCell = "\x1b[37;40m▄"
+const darkBottomCell = "\x1b[30;47m▄"
+const resetColors = "\x1b[0m"
 
 export interface ControlData {
   control: true
@@ -25,6 +34,7 @@ export interface ControlOptions {
   displayName: string
   owners?: OwnerEntry[]
   registerHint: string
+  qrCode: QrCodeSize
 }
 
 export interface Command {
@@ -203,8 +213,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     await this.deleteLink()
     const link = await this.chat.apiCreateGroupLink(this.groupId, role)
     log("Join the agent control chat in the SimpleX app. The link works once:")
-    log((await qrcode.toString(link, {type: "terminal", small: true})).trimEnd())
+    log(qrCodeText(link, this.options.qrCode))
     log(link)
+    if (this.options.qrCode === "small") log(qrCodeHint)
     log(role === T.GroupMemberRole.Observer
       ? "The link adds an observer. Its ID and name are printed when it joins."
       : `Whoever joins by this link becomes an owner of "${this.options.displayName}" and approves its actions. To approve owners yourself, start with --owners.`)
@@ -371,6 +382,22 @@ function mentionText(name: string): string {
 
 function controlData(nextAction: number): {simplexMcp: ControlData} {
   return {simplexMcp: {control: true, nextAction}}
+}
+
+export function qrCodeText(link: string, size: QrCodeSize): string {
+  const {modules} = qrcode.create(link, {errorCorrectionLevel: "L"})
+  const positions = Array.from({length: modules.size + 2 * qrMargin}, (_, i) => i - qrMargin)
+  const inside = (i: number): boolean => i >= 0 && i < modules.size
+  const dark = (row: number, col: number): boolean => inside(row) && inside(col) && modules.get(row, col) !== 0
+  const cell = (row: number, col: number): string => (dark(row, col) ? darkCell : lightCell)
+  const halfCell = (top: boolean, bottom: boolean): string => {
+    if (top === bottom) return top ? darkHalfCell : lightHalfCell
+    return top ? darkTopCell : darkBottomCell
+  }
+  const lines = size === "large"
+    ? positions.map(row => positions.map(col => cell(row, col)).join(""))
+    : positions.filter((_, i) => i % 2 === 0).map(row => positions.map(col => halfCell(dark(row, col), dark(row + 1, col))).join(""))
+  return lines.map(line => line + resetColors).join("\n")
 }
 
 function losesControl(event: ChatEvent): boolean {

@@ -56,7 +56,7 @@ export async function startBot(smpAddress: string, filePrefix: string, displayNa
 }
 
 export function serveOptions(data: string, port: number, extra: Partial<ServeOptions> = {}): ServeOptions {
-  return {name: "agent", data, dataGiven: true, approve: "requests", expireHours: 23, resetOwners: false, newToken: false, port, ...extra}
+  return {name: "agent", data, dataGiven: true, approve: "requests", expireHours: 23, resetOwners: false, newToken: false, port, qrCode: "small", ...extra}
 }
 
 export function lastLink(lines: string[]): string {

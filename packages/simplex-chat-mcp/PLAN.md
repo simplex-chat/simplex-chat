@@ -178,6 +178,7 @@ serve NAME:
 --reset-owners    flag                                 off
 --new-token       flag                                 off
 --port            1 to 65535                           5226
+--qr-code         small | large                        small
 register NAME:
 --scope           user | local                         user
 --data            folder                               ~/.simplex-mcp/NAME
@@ -204,50 +205,54 @@ NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits an
 ### First start
 
 ```
-$ npx -y @simplex-chat/mcp serve agent
+$ npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
 Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.11/simplex-chat-libs-linux-x86_64.zip ...
 Downloading the Node.js add-on from https://github.com/simplex-chat/simplex-chat-libs/releases/download/... ...
-SimpleX MCP server 0.1.0, agent "agent"
-Data folder: /home/alice/.simplex-mcp/agent
+SimpleX MCP server 0.1.0, agent "my-agent"
+Data folder: /home/alice/.simplex-mcp/my-agent
 Approval mode: requests
-Agent control chat "agent" created.
+Agent control chat "My Agent" created.
 Join the agent control chat in the SimpleX app. The link works once:
 <QR code>
 https://smp4.simplex.im/g#...
-Whoever joins by this link becomes an owner of "agent" and approves its actions. To approve owners yourself, start with --owners.
+If the QR code does not scan, restart with --qr-code large, or paste the link into the app.
+Whoever joins by this link becomes an owner of "My Agent" and approves its actions. To approve owners yourself, start with --owners.
 Listening on http://127.0.0.1:5226/mcp
 ```
 
+- The QR code: the modules of `qrcode.create(link, {errorCorrectionLevel: "L"})` with a light margin of 2 modules; dark is SGR 40 background or 30 foreground, light 47 or 37; each line ends with `\x1b[0m`.
+  - small (default): one column per module, two module rows per line, an extra light row when the row count is odd; equal modules are a space with their background, different ones `▄` with the bottom module's foreground and the top module's background. 37 columns × 19 lines for 33 modules. The line "If the QR code does not scan, ..." is printed in small only.
+  - large: two spaces with the module's background per module, one line per module: 74 columns × 37 lines.
 - The download lines are written to stderr by the `simplex-chat` package on first use (`libs.ts`, `installLibs`, `installAddon`).
 - `npx -y` answers npm's install prompt only; the server asks no questions.
-- A second `serve` on the same data folder exits with code 1: `Another server uses /home/alice/.simplex-mcp/agent (PID 1234).` A port in use: exit code 1, `Port 5226 is in use. Start with --port N.`
+- A second `serve` on the same data folder exits with code 1: `Another server uses /home/alice/.simplex-mcp/my-agent (PID 1234).` A port in use: exit code 1, `Port 5226 is in use. Start with --port N.`
 
 ### Owner joins (no --owners)
 
 ```
 Alice joined (member 3) and is now an owner. The link is deleted.
 Add the agent to Claude Code:
-  npx -y @simplex-chat/mcp register agent
+  npx -y @simplex-chat/mcp register my-agent
 ```
 
 ### Owner joins (--owners)
 
 ```
-$ npx -y @simplex-chat/mcp serve agent --owners
+$ npx -y @simplex-chat/mcp serve my-agent --owners
 ... (as the first start, with this line in place of "Whoever joins by this link ...")
 The link adds an observer. Its ID and name are printed when it joins.
 Alice joined (member 3). Restart the server with --owners 3:Alice
-$ npx -y @simplex-chat/mcp serve agent --owners 3:Alice
+$ npx -y @simplex-chat/mcp serve my-agent --owners 3:Alice
 Owners: 3:Alice.
 Add the agent to Claude Code:
-  npx -y @simplex-chat/mcp register agent
+  npx -y @simplex-chat/mcp register my-agent
 ```
 
 ### Register
 
 ```
-$ npx -y @simplex-chat/mcp register agent
-Added to Claude Code: scope user, server simplex-agent.
+$ npx -y @simplex-chat/mcp register my-agent
+Added to Claude Code: scope user, server simplex-my-agent.
 ```
 
 - `register` reads `DIR/server.json` and `DIR/token`, runs `claude mcp remove --scope SCOPE simplex-NAME` (a missing entry is ignored), then `claude mcp add-json --scope SCOPE simplex-NAME '<entry>'`.
@@ -259,9 +264,9 @@ Errors, exit code 1:
 
 ```
 situation                  message
-never started              Agent "agent" was never started. Start it with: npx -y @simplex-chat/mcp serve agent
-claude not on PATH, user   Add this entry under "mcpServers" in ~/.claude.json: {"simplex-agent": <entry>}
-claude not on PATH, local  Add this entry under "projects" > "<project folder>" > "mcpServers" in ~/.claude.json: {"simplex-agent": <entry>}
+never started              Agent "my-agent" was never started. Start it with: npx -y @simplex-chat/mcp serve my-agent
+claude not on PATH, user   Add this entry under "mcpServers" in ~/.claude.json: {"simplex-my-agent": <entry>}
+claude not on PATH, local  Add this entry under "projects" > "<project folder>" > "mcpServers" in ~/.claude.json: {"simplex-my-agent": <entry>}
 ```
 
 ### Other lines
@@ -283,20 +288,20 @@ shutdown                        Cancelled 2 actions. Stopped.   (the count only 
 
 ## What the owner sees: the agent control chat
 
-The agent control chat has the agent's display name, for example "agent". Everything below is in its main chat, posted by the agent's profile, in the first person: the app shows the profile's name above each message. Text from peers and from the agent is shown as code spans, line by line, with backticks replaced by `'`, so commands inside it are not tappable. `/'approve 1'` shows in the app as the tappable `/approve 1` (`bots/README.md`).
+The agent control chat has the agent's display name, for example "My Agent". Everything below is in its main chat, posted by the agent's profile, in the first person: the app shows the profile's name above each message. Text from peers and from the agent is shown as code spans, line by line, with backticks replaced by `'`, so commands inside it are not tappable. `/'approve 1'` shows in the app as the tappable `/approve 1` (`bots/README.md`).
 
 At the owner's join:
 
 ```
-agent:   I'm your agent. I ask here before I connect or send.
+My Agent: I'm your agent. I ask here before I connect or send.
 ```
 
 ### Connect card
 
 ```
-agent:   I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
-         `Find groups, channels, businesses and bots.`
-         /'approve 1' or /'reject 1'. Expires 2026-10-18 09:02 UTC.
+My Agent: I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
+          `Find groups, channels, businesses and bots.`
+          /'approve 1' or /'reject 1'. Expires 2026-10-18 09:02 UTC.
 ```
 
 ```
@@ -312,9 +317,9 @@ quoted lines                                     short description and welcome m
 ### Send card
 
 ```
-agent:   I want to send a message to bot SimpleX Directory (@directory.simplex):
-         `trail running shoes`
-         /'approve 2' or /'reject 2'. Expires 2026-10-18 09:15 UTC.
+My Agent: I want to send a message to bot SimpleX Directory (@directory.simplex):
+          `trail running shoes`
+          /'approve 2' or /'reject 2'. Expires 2026-10-18 09:15 UTC.
 ```
 
 ```
@@ -645,7 +650,7 @@ ownerStart(group):
 openLink(role):
   deleteLink()
   link = apiCreateGroupLink(group, role)         # role at most member, Commands.hs:3362
-  print the join line, the QR code, the link
+  print the join line, the QR code in the --qr-code size, the link; small: the line "If the QR code does not scan, ..."
 
 deleteLink():
   apiDeleteGroupLink(group); groupLinkNotFound ignored, as steward isGroupLinkNotFound
@@ -879,7 +884,7 @@ list():
 
 ## Sequence diagrams
 
-Participants: P person (CLI), O owner Alice (SimpleX app), S the agent's server, A the agent "agent", D the SimpleX Directory bot, V vendor Ridgeline's bot, R a channel #12, G a group #15 where the agent has role member, with member Switchback (member 44). Item IDs are rows of the agent's database.
+Participants: P person (CLI), O owner Alice (SimpleX app), S the agent's server, A the agent "My Agent", D the SimpleX Directory bot, V vendor Ridgeline's bot, R a channel #12, G a group #15 where the agent has role member, with member Switchback (member 44). Item IDs are rows of the agent's database.
 
 ### Setup
 
@@ -888,13 +893,13 @@ sequenceDiagram
   participant P as Person (CLI)
   participant S as Server
   participant O as Owner (app)
-  P->>S: npx -y @simplex-chat/mcp serve agent
-  S->>P: link and QR code of the agent control chat "agent"
-  O->>S: joins "agent" by the link
+  P->>S: npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
+  S->>P: link and QR code of the agent control chat "My Agent"
+  O->>S: joins "My Agent" by the link
   S->>S: owner role for Alice; link deleted
-  S->>O: agent: "I'm your agent. I ask here before I connect or send."
+  S->>O: My Agent: "I'm your agent. I ask here before I connect or send."
   S->>P: "Alice joined (member 3) and is now an owner." + register hint
-  P->>P: npx -y @simplex-chat/mcp register agent: claude mcp remove; claude mcp add-json --scope user simplex-agent {...}
+  P->>P: npx -y @simplex-chat/mcp register my-agent: claude mcp remove; claude mcp add-json --scope user simplex-my-agent {...}
 ```
 
 ### Searching the directory
@@ -907,13 +912,13 @@ sequenceDiagram
   participant D as SimpleX Directory
   A->>S: connect {target: "@directory.simplex"}
   S->>S: /_connect plan: contact address, bot, commands new, help, list
-  S->>O: agent: "I want to connect to bot SimpleX Directory (@directory.simplex), as myself. /approve 1 or /reject 1"
+  S->>O: My Agent: "I want to connect to bot SimpleX Directory (@directory.simplex), as myself. /approve 1 or /reject 1"
   O->>S: /approve 1
   S->>D: /_prepare contact ...; /_connect contact @4 incognito=off
   D->>S: contactConnected @4; welcome message
   S->>A: {action: 1, status: done, chat: "@4", connected: true, type: "contact", peer_type: "bot", commands: [{keyword: "help", ...}, ...], messages: [welcome]}
   A->>S: send {chat: "@4", text: "trail running shoes"}
-  S->>O: agent: "I want to send a message to bot SimpleX Directory (@directory.simplex): 'trail running shoes'. /approve 2 or /reject 2"
+  S->>O: My Agent: "I want to send a message to bot SimpleX Directory (@directory.simplex): 'trail running shoes'. /approve 2 or /reject 2"
   O->>S: /approve 2
   S->>D: item 20
   D->>S: items 21, 22, 23: search results with their links
@@ -930,13 +935,13 @@ sequenceDiagram
   participant O as Owner
   participant V as Ridgeline's bot
   A->>S: connect {target: "https://smp9.simplex.im/a#...", incognito: true, message: "Do you have trail shoes under $150 in size 44?"}
-  S->>O: agent: "I want to connect to business Ridgeline, incognito. With the message: ... /approve 3 or /reject 3"
+  S->>O: My Agent: "I want to connect to business Ridgeline, incognito. With the message: ... /approve 3 or /reject 3"
   O->>S: /approve 3
   S->>V: /_prepare contact ... -> #9 (business chat); /_connect group #9 incognito=on text ...; known_as BraveOtter
   V->>S: userJoinedGroup #9; the bot's answer, item 31
   S->>A: {action: 3, status: done, chat: "#9", connected: true, type: "business", known_as: "BraveOtter", messages: [the request, 31]}
   A->>S: send {chat: "#9", text: "Is the Talus Trail waterproof?", wait: 600}
-  S->>O: agent: "I want to send a message to business Ridgeline, where I am incognito: ... /approve 4 or /reject 4"
+  S->>O: My Agent: "I want to send a message to business Ridgeline, where I am incognito: ... /approve 4 or /reject 4"
   O->>S: /approve 4
   S->>V: item 32
   V->>S: item 33
@@ -952,7 +957,7 @@ sequenceDiagram
   participant O as Owner
   participant R as Channel Ridgeline News
   A->>S: connect {target: "#ridgeline.simplex", incognito: true}
-  S->>O: agent: "I want to connect to channel Ridgeline News (#ridgeline.simplex), incognito. /approve 5 or /reject 5"
+  S->>O: My Agent: "I want to connect to channel Ridgeline News (#ridgeline.simplex), incognito. /approve 5 or /reject 5"
   O->>S: /approve 5
   S->>R: /_prepare group ...; /_connect group #12 incognito=on
   R->>S: userJoinedGroup #12; recent posts
@@ -997,7 +1002,7 @@ sequenceDiagram
 
 ```
 scenario                 person (CLI)                         owner (agent control chat)                        agent (call -> result)                                  peers
-mode host                serve agent --approve host           outcome cards with "Performed without approval    connect, send: performed without approval;             as in mode requests
+mode host                serve my-agent --approve host        outcome cards with "Performed without approval    connect, send: performed without approval;             as in mode requests
                                                               (mode host)."                                      Claude Code prompts for each call
                                                                                                                 (requiresUserInteraction)
 mention                  none                                 send card with "mentioning @Switchback"           send {chat: "#15", text, mention: [44]}                 Switchback's item has the mention
@@ -1008,12 +1013,12 @@ restart                  stop and start serve                 pending cards edit
                                                                                                                 creates a new action
 crash                    start serve                          the run's cards keep their commands; /approve N   as restart                                               none
                                                               gets "Action N is not pending."
-second agent             serve agent-2 --port 5227;           a second agent control chat "agent-2"             the tools of simplex-agent-2                            the profile agent-2
-                         register agent-2
-reset owners             serve agent --reset-owners           the agent control chat deleted; join the new      connect, send: the no-approver error until an          none
+second agent             serve my-agent-2 --port 5227;        a second agent control chat "my-agent-2"          the tools of simplex-my-agent-2                         the profile my-agent-2
+                         register my-agent-2
+reset owners             serve my-agent --reset-owners        the agent control chat deleted; join the new      connect, send: the no-approver error until an          none
                          [--owners]                           link                                              approver exists
-new token                serve agent --new-token;             none                                              HTTP 401 until the entry is replaced and the            none
-                         register agent                                                                         session reconnects (/mcp reconnect all)
+new token                serve my-agent --new-token;          none                                              HTTP 401 until the entry is replaced and the            none
+                         register my-agent                                                                      session reconnects (/mcp reconnect all)
 session before server    start serve; /mcp reconnect all      none                                              the tools appear after the reconnect                     none
 no approver              no --owners: "No owners in the       --owners LIST: "... No owners remain: restart     connect, send: the no-approver error                     none
                          agent control chat." and a new       the server with --reset-owners --owners"

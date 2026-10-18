@@ -30,13 +30,14 @@ describe("serve options", () => {
         resetOwners: false,
         newToken: false,
         port: 5226,
+        qrCode: "small",
       },
     })
   })
 
   it("reads every option", () => {
     const {options} = parseCommand(
-      ["serve", "agent-2", "--data", "/tmp/a", "--display-name", "Agent Two", "--approve", "host", "--expire", "1", "--port", "5227", "--new-token", "--reset-owners", "--owners"],
+      ["serve", "agent-2", "--data", "/tmp/a", "--display-name", "Agent Two", "--approve", "host", "--expire", "1", "--port", "5227", "--qr-code", "large", "--new-token", "--reset-owners", "--owners"],
       home,
     ) as {options: object}
     expect(options).toEqual({
@@ -47,10 +48,18 @@ describe("serve options", () => {
       approve: "host",
       expireHours: 1,
       port: 5227,
+      qrCode: "large",
       newToken: true,
       resetOwners: true,
       owners: [],
     })
+  })
+
+  it("takes the QR code size", () => {
+    expect(parseCommand(["serve", "agent", "--qr-code", "small"], home)).toMatchObject({options: {qrCode: "small"}})
+    expect(parseCommand(["serve", "agent", "--qr-code", "large"], home)).toMatchObject({options: {qrCode: "large"}})
+    expect(usage(["serve", "agent", "--qr-code", "huge"])).toBe("--qr-code: small or large expected, got huge")
+    expect(usage(["serve", "agent", "--qr-code"])).toBe("--qr-code: a value expected.")
   })
 
   it("takes --owners with and without a list", () => {

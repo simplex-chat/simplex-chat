@@ -44,46 +44,47 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
 
 ## Quick start
 
-1. Start the agent's server in a terminal and keep it running. NAME, here `agent`, names its data folder and its entry in Claude Code; `--display-name` sets the name peers see, NAME by default:
+1. Start the agent's server in a terminal and keep it running. NAME, here `my-agent`, names the agent's data folder and its entry in Claude Code; `--display-name` is the name people see in SimpleX, NAME by default:
 
    ```
-   npx -y @simplex-chat/mcp serve agent
+   npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
    ```
 
    The first start prints, after two lines about downloading the SimpleX core library and the Node.js add-on:
 
    ```
-   SimpleX MCP server 0.1.0, agent "agent"
-   Data folder: /home/alice/.simplex-mcp/agent
+   SimpleX MCP server 0.1.0, agent "my-agent"
+   Data folder: /home/alice/.simplex-mcp/my-agent
    Approval mode: requests
-   Agent control chat "agent" created.
+   Agent control chat "My Agent" created.
    Join the agent control chat in the SimpleX app. The link works once:
    <QR code>
    https://smp4.simplex.im/g#...
-   Whoever joins by this link becomes an owner of "agent" and approves its actions. To approve owners yourself, start with --owners.
+   If the QR code does not scan, restart with --qr-code large, or paste the link into the app.
+   Whoever joins by this link becomes an owner of "My Agent" and approves its actions. To approve owners yourself, start with --owners.
    Listening on http://127.0.0.1:5226/mcp
    ```
 
-   `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option.
+   `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high.
 
-2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect or send.` The terminal prints:
+2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect or send.` The terminal prints:
 
    ```
    Alice joined (member 3) and is now an owner. The link is deleted.
    Add the agent to Claude Code:
-     npx -y @simplex-chat/mcp register agent
+     npx -y @simplex-chat/mcp register my-agent
    ```
 
 3. In another terminal, add the agent to Claude Code:
 
    ```
-   $ npx -y @simplex-chat/mcp register agent
-   Added to Claude Code: scope user, server simplex-agent.
+   $ npx -y @simplex-chat/mcp register my-agent
+   Added to Claude Code: scope user, server simplex-my-agent.
    ```
 
-4. Add `"mcp__simplex-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
+4. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
 
-5. Start Claude Code and ask it, for example: `Connect to the SimpleX Directory at https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok and search it for trail running shoes.` In the chat "agent", the agent writes:
+5. Start Claude Code and ask it, for example: `Connect to the SimpleX Directory at https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok and search it for trail running shoes.` In the chat "My Agent", the agent writes:
 
    ```
    I want to connect to bot SimpleX Directory, as myself.
@@ -106,7 +107,7 @@ With `--owners`, only the owners listed in it approve actions. An owner added la
 1. Start the server with `--owners` and no list:
 
    ```
-   npx -y @simplex-chat/mcp serve agent --owners
+   npx -y @simplex-chat/mcp serve my-agent --owners
    ```
 
    The output is the same as in the quick start, with the line `The link adds an observer. Its ID and name are printed when it joins.` in place of `Whoever joins by this link ...`.
@@ -122,10 +123,10 @@ With `--owners`, only the owners listed in it approve actions. An owner added la
 3. Stop the server with Ctrl-C and start it with the list:
 
    ```
-   $ npx -y @simplex-chat/mcp serve agent --owners 3:Alice
+   $ npx -y @simplex-chat/mcp serve my-agent --owners 3:Alice
    Owners: 3:Alice.
    Add the agent to Claude Code:
-     npx -y @simplex-chat/mcp register agent
+     npx -y @simplex-chat/mcp register my-agent
    ```
 
 4. To add an owner, add the person to the agent control chat in the app and make them an owner there. The terminal prints, and the agent posts in the chat:
@@ -147,31 +148,31 @@ At every start with a list, the server removes the connected members of the agen
 ## Add the agent to Claude Code
 
 ```
-npx -y @simplex-chat/mcp register agent                  # all Claude Code projects
-npx -y @simplex-chat/mcp register agent --scope local    # the current project only
+npx -y @simplex-chat/mcp register my-agent                  # all Claude Code projects
+npx -y @simplex-chat/mcp register my-agent --scope local    # the current project only
 ```
 
-`register NAME` reads the agent's port and token from its data folder, runs `claude mcp remove --scope SCOPE simplex-NAME` (SCOPE: `user`, or the `--scope` value), ignoring a missing entry, and then, for `register agent`:
+`register NAME` reads the agent's port and token from its data folder, runs `claude mcp remove --scope SCOPE simplex-NAME` (SCOPE: `user`, or the `--scope` value), ignoring a missing entry, and then, for `register my-agent`:
 
 ```
-claude mcp add-json --scope user simplex-agent '{"type":"http","url":"http://127.0.0.1:5226/mcp","headers":{"Authorization":"Bearer <token>"},"timeout":169800000}'
+claude mcp add-json --scope user simplex-my-agent '{"type":"http","url":"http://127.0.0.1:5226/mcp","headers":{"Authorization":"Bearer <token>"},"timeout":169800000}'
 ```
 
 - NAME: 1 to 32 lowercase letters, digits and single hyphens, starting with a letter or digit.
-- The agent's tools in Claude Code are `mcp__simplex-agent__connect` and the rest.
+- The agent's tools in Claude Code are `mcp__simplex-my-agent__connect` and the rest.
 - `timeout` is the expiry plus 24 hours and 10 minutes, in milliseconds: the longest wait for a decision plus the longest wait for responses. After a change of `--expire` or `--port`, register the agent again; an agent on another port needs the same `--port` at every start.
-- The server must be running when Claude Code starts a session. If a session started before the server, run `/mcp reconnect all` in it (Claude Code 2.1.284 or later; earlier, reconnect `simplex-agent` in `/mcp`).
+- The server must be running when Claude Code starts a session. If a session started before the server, run `/mcp reconnect all` in it (Claude Code 2.1.284 or later; earlier, reconnect `simplex-my-agent` in `/mcp`).
 
 Errors:
 
 ```
 situation                  message
-never started              Agent "agent" was never started. Start it with: npx -y @simplex-chat/mcp serve agent
-claude not on PATH         Add this entry under "mcpServers" in ~/.claude.json: {"simplex-agent": {...}}
+never started              Agent "my-agent" was never started. Start it with: npx -y @simplex-chat/mcp serve my-agent
+claude not on PATH         Add this entry under "mcpServers" in ~/.claude.json: {"simplex-my-agent": {...}}
                            (--scope local: under "projects" > "<project folder>" > "mcpServers")
 ```
 
-The token is created at the agent's first start and saved in its data folder. `serve agent --new-token` replaces it; the agent must then be registered again.
+The token is created at the agent's first start and saved in its data folder. `serve my-agent --new-token` replaces it; the agent must then be registered again.
 
 ## Approval modes
 
@@ -182,7 +183,7 @@ The token is created at the agent's first start and saved in its data folder. `s
 | `requests` (default) | Performed after `/approve N`. | Passed to the agent. |
 | `host` | Performed at once; a copy is posted in the agent control chat. | Passed to the agent. |
 
-Claude Code's own permission check applies to every tool call too. In mode `requests`, add the agent's server, for example `"mcp__simplex-agent"`, to `permissions.allow` in `~/.claude/settings.json`; otherwise Claude Code prompts for each call, or in auto mode its classifier decides it.
+Claude Code's own permission check applies to every tool call too. In mode `requests`, add the agent's server, for example `"mcp__simplex-my-agent"`, to `permissions.allow` in `~/.claude/settings.json`; otherwise Claude Code prompts for each call, or in auto mode its classifier decides it.
 
 In `host` mode, approval is left to the MCP host. The server marks `connect` and `send` with `_meta["anthropic/requiresUserInteraction"]: true`, so Claude Code shows its permission prompt on every call, in `acceptEdits`, `auto` and `bypassPermissions` modes as well, and allow rules do not skip it. In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls.
 
@@ -197,21 +198,21 @@ Actions last only while the server runs. When the server stops, the last line of
 All of it is in the agent control chat, posted by the agent's profile. The chat has the agent's display name; to see it under another name in your chat list, set an alias for the chat in the app. Text written by the agent or by peers is shown as code, line by line, so commands inside it cannot be tapped.
 
 ```
-agent:   I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
-         `Find groups, channels, businesses and bots.`
-         /approve 1 or /reject 1. Expires 2026-10-18 09:02 UTC.
+My Agent: I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
+          `Find groups, channels, businesses and bots.`
+          /approve 1 or /reject 1. Expires 2026-10-18 09:02 UTC.
 
-agent:   I want to send a message to business Ridgeline, where I am incognito:
-         `Is the Talus Trail waterproof?`
-         /approve 4 or /reject 4. Expires 2026-10-18 09:40 UTC.
+My Agent: I want to send a message to business Ridgeline, where I am incognito:
+          `Is the Talus Trail waterproof?`
+          /approve 4 or /reject 4. Expires 2026-10-18 09:40 UTC.
 ```
 
 After the decision the card is edited, and its commands removed:
 
 ```
-agent:   I sent a message to business Ridgeline, where I am incognito:
-         `Is the Talus Trail waterproof?`
-         Approved by Alice.
+My Agent: I sent a message to business Ridgeline, where I am incognito:
+          `Is the Talus Trail waterproof?`
+          Approved by Alice.
 ```
 
 Commands, also in the chat's command menu:
@@ -251,8 +252,8 @@ An MCP server cannot start a turn of the agent: what the agent reads from the se
 Each agent is its own process, with its own data folder, port, agent control chat and Claude Code server:
 
 ```
-npx -y @simplex-chat/mcp serve agent-2 --port 5227
-npx -y @simplex-chat/mcp register agent-2
+npx -y @simplex-chat/mcp serve my-agent-2 --port 5227
+npx -y @simplex-chat/mcp register my-agent-2
 ```
 
 ## Other MCP hosts
@@ -268,6 +269,7 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 | A second server was started on the same data folder | It exits with `Another server uses <folder> (PID N).` |
 | Every owner left the agent control chat or was removed | `connect` and `send` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
 | The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect` and `send` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
+| The QR code does not scan | Start with `--qr-code large`, or paste the link into the app. |
 | The wrong person joined by the link | Start with `--reset-owners`. |
 | The token leaked | Start with `--new-token` and register the agent again. |
 
@@ -296,6 +298,7 @@ serve options:
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token; the agent must be registered again
   --port N               HTTP port on 127.0.0.1 (default: 5226)
+  --qr-code SIZE         QR code of the link: small (default) or large
 
 register options:
   --scope SCOPE          user (default) or local
@@ -307,7 +310,7 @@ register options:
 ## Data folder
 
 ```
-~/.simplex-mcp/agent/
+~/.simplex-mcp/my-agent/
   simplex_chat.db    SimpleX chat database: the agent's profile and chats
   simplex_agent.db   SimpleX agent database: connections and keys
   token              access token, readable only by the user

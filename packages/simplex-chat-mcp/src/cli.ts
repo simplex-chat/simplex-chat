@@ -4,7 +4,7 @@ import {join, resolve} from "path"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
 import {RegisterOptions, Scope, register} from "./register"
-import {Approve, OwnerEntry, ServeOptions, serve} from "./serve"
+import {Approve, OwnerEntry, QrCodeSize, ServeOptions, serve} from "./serve"
 
 export const helpText = `Usage:
   simplex-mcp serve NAME [options]     run agent NAME
@@ -24,6 +24,7 @@ serve options:
   --reset-owners         replace the owners: a new agent control chat and link
   --new-token            replace the access token; the agent must be registered again
   --port N               HTTP port on 127.0.0.1 (default: 5226)
+  --qr-code SIZE         QR code of the link: small (default) or large
 
 register options:
   --scope SCOPE          user (default) or local
@@ -55,6 +56,7 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
     resetOwners: false,
     newToken: false,
     port: 5226,
+    qrCode: "small",
     dataGiven: false,
   }
   for (let option = options.next(); option !== undefined; option = options.next()) {
@@ -83,6 +85,9 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
         break
       case "--port":
         serve.port = integer(option, options.value(option), 1, 65535, "a port from 1 to 65535")
+        break
+      case "--qr-code":
+        serve.qrCode = qrCodeSize(options.value(option))
         break
       default:
         throw unknownOption(option)
@@ -145,6 +150,11 @@ function displayName(value: string): string {
 
 function approveMode(value: string): Approve {
   if (value !== "requests" && value !== "host") throw usageError(`--approve: requests or host expected, got ${value}`)
+  return value
+}
+
+function qrCodeSize(value: string): QrCodeSize {
+  if (value !== "small" && value !== "large") throw usageError(`--qr-code: small or large expected, got ${value}`)
   return value
 }
 

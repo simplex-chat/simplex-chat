@@ -18,6 +18,8 @@ const deliveryPoll = 100
 
 export type Approve = Mode
 
+export type QrCodeSize = "small" | "large"
+
 export interface OwnerEntry {
   memberId: number
   name: string
@@ -34,6 +36,7 @@ export interface ServeOptions {
   resetOwners: boolean
   newToken: boolean
   port: number
+  qrCode: QrCodeSize
 }
 
 export interface RunningServer {
@@ -93,7 +96,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   const displayName = user.profile.displayName
   const group = await controlGroup(chat, user.userId, displayName, options.resetOwners)
   const actions = new Actions(approve, expireHours, controlDataOf(group.customData)?.nextAction ?? 1)
-  const control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options)}, actions)
+  const control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions)
   const watch = new ChatItemsWatch()
   const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef}, approve)
   actions.setHooks({

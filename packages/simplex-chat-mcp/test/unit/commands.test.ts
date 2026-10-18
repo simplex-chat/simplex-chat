@@ -28,7 +28,7 @@ async function setup(owners?: {memberId: number; name: string}[]) {
   const fake = fakeHooks()
   const actions = actionsWith("requests", fake, 5)
   const chat = new FakeChat()
-  const control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint"}, actions)
+  const control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions)
   const action = actions.create("k", fields())
   await settled()
   return {fake, actions, chat, control, action}
