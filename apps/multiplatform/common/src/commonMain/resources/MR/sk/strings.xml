@@ -1450,4 +1450,5 @@
     <string name="your_ICE_servers">Vaše ICE servery</string>
     <string name="enter_one_ICE_server_per_line">ICE servery (jeden na riadok)</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Ujistite sa, že adresy WebRTC ICE serverov sú v správnom formáte, oddelené na riadkoch a nie sú duplikované.</string>
+    <string name="badges_period_one_month">1 mesiac</string>
 </resources>
