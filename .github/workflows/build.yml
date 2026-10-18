@@ -5,7 +5,6 @@ on:
     branches:
       - master
       - stable
-      - ep/package-builds
     tags:
       - "v*"
       - "!*-fdroid"
@@ -34,7 +33,7 @@ env:
   release: ${{ startsWith(github.ref, 'refs/tags/v') }}
   branch: ${{ github.base_ref || github.ref_name }}
   cache_o0: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') }}
-  release_branch: ${{ github.event_name == 'push' && github.ref == 'refs/heads/ep/package-builds' && 'master' || '' }}
+  release_branch: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') && github.ref_name || '' }}
   ZSTD_CLEVEL: 9
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:

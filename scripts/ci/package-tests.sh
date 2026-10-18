@@ -30,7 +30,7 @@ test_nodejs() {
 }
 
 test_python() {
-  (cd "$python_package" && "$python" -m pip install -e ".[test]" && "$python" -m pytest -q)
+  (unset SIMPLEX_LIBS_DIR && cd "$python_package" && "$python" -m pip install -e ".[test]" && "$python" -m pytest -q)
 }
 
 case "${1:-}" in
