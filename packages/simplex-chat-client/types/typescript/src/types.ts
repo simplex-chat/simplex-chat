@@ -2577,6 +2577,7 @@ export type Format =
   | Format.Snippet
   | Format.Secret
   | Format.Small
+  | Format.Header
   | Format.Colored
   | Format.Uri
   | Format.HyperLink
@@ -2595,6 +2596,7 @@ export namespace Format {
     | "snippet"
     | "secret"
     | "small"
+    | "header"
     | "colored"
     | "uri"
     | "hyperLink"
@@ -2631,6 +2633,11 @@ export namespace Format {
 
   export interface Small extends Interface {
     type: "small"
+  }
+
+  export interface Header extends Interface {
+    type: "header"
+    level: number // int
   }
 
   export interface Colored extends Interface {

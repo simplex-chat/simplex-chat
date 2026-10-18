@@ -2303,6 +2303,10 @@ Secret:
 Small:
 - type: "small"
 
+Header:
+- type: "header"
+- level: int
+
 Colored:
 - type: "colored"
 - color: [Color](#color)
