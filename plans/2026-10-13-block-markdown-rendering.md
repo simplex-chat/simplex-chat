@@ -288,7 +288,7 @@ range            each segment drawn as now
 gaps             between blocks and between list entries: LineBreak nothing; ParagraphBreak n: n − 1 × <br>
 Paragraph        <div>: the range
 Heading          <div style="font-weight: bold;">: the range
-CodeBlock        <pre style="font-family: monospace; white-space: pre-wrap;">: the range, LineBreak as "\n"
+CodeBlock        <pre style="font-family: monospace; white-space: pre-wrap;">: the range, HardBreak as "\n"
 Quote            <div style="border-left: 3px solid; padding-left: 0.5em;">: the range
 List             each entry, in source order: <div style="padding-left: Nem;">, "•" or the number, a space, then the range
                  N: 1.5 × the level below the top, at most 6 levels
@@ -406,7 +406,7 @@ files       MarkdownBlocksTest.kt
 
 ```
 block Markdown plan, "Types"                      constructors, fields, JSON tags
-block Markdown plan, "Pass 2: the fold"           ranges
+block Markdown plan, "Pass 2: blocks"            ranges
 block Markdown plan, "Records and parse sites"    fields
 release                                           both plans together
 ```

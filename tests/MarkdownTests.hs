@@ -507,12 +507,13 @@ inlineMarkdownGFM = describe "inline markdown of GFM" do
     "\\*not bold*" <==> markdown Escape "\\" <> "*not bold*"
     "a\\_b_" <==> "a" <> markdown Escape "\\" <> "_b_"
     "\\a" <==> "\\a"
+    "C:\\dir\\file.txt" <==> "C:\\dir\\file.txt"
     "`\\*`" <==> markdown Snippet "\\*"
 
 infix 1 ===>, <===>
 
 (===>) :: Text -> (MarkdownList, [MarkdownBlock]) -> Expectation
-s ===> (ft, blocks) = parsedMarkdown s `shouldBe` ParsedMarkdown (Just ft) (L.nonEmpty blocks)
+s ===> (ft, blocks) = let ParsedMarkdown ft' blocks' = parsedMarkdown s in (ft', blocks') `shouldBe` (Just ft, L.nonEmpty blocks)
 
 (<===>) :: Text -> (MarkdownList, [MarkdownBlock]) -> Expectation
 s <===> parsed@(ft, _) = (s ===> parsed) >> (s <<== ft)
@@ -558,8 +559,8 @@ blockMarkdown = describe "block markdown" do
     parseMaybeMarkdownList "#\nb" `shouldBe` Nothing
     "#\n- b" <===> (["#", mk LineBreak "\n", mk (ListMark Nothing) "- ", "b"], [Paragraph (rng 0 1), List [entry 3 4 []]])
   it "setext headings" do
-    "a\n===" <===> (["a", mk LineBreak "\n", mk (HeadingUnderline 1) "==="], [Heading 1 (rng 0 1)])
-    "a\nb\n---" <===> (["a", mk SoftBreak "\n", "b", mk LineBreak "\n", mk (HeadingUnderline 2) "---"], [Heading 2 (rng 0 3)])
+    "a\n===" <===> (["a", mk HardBreak "\n", mk (HeadingUnderline 1) "==="], [Heading 1 (rng 0 1)])
+    "a\nb\n---" <===> (["a", mk SoftBreak "\n", "b", mk HardBreak "\n", mk (HeadingUnderline 2) "---"], [Heading 2 (rng 0 3)])
     "a\n- - -" <===> (["a", mk LineBreak "\n", mk RuleMark "- - -"], [Paragraph (rng 0 1), Rule])
     "- a\n===" <===> ([mk (ListMark Nothing) "- ", "a", mk SoftBreak "\n", "==="], [List [entry 1 4 []]])
   it "lists" do
@@ -570,17 +571,23 @@ blockMarkdown = describe "block markdown" do
     "- a\n\nb" <===> ([mk (ListMark Nothing) "- ", "a", mk (ParagraphBreak 2) "\n\n", "b"], [List [entry 1 2 []], Paragraph (rng 3 4)])
     "- a\n    - b\n  - c" <===> ([mk (ListMark Nothing) "- ", "a", mk LineBreak "\n", mk (ListMark Nothing) "    - ", "b", mk LineBreak "\n", mk (ListMark Nothing) "  - ", "c"], [List [entry 1 2 [entry 4 5 [], entry 7 8 []]]])
   it "quotes" do
-    "> a\n>\n> b" <===> ([mk QuoteMark "> ", "a", mk LineBreak "\n", mk QuoteMark ">", mk LineBreak "\n", mk QuoteMark "> ", "b"], [Quote (rng 1 7)])
+    "> a\n>\n> b" <===> ([mk QuoteMark "> ", "a", mk HardBreak "\n", mk QuoteMark ">", mk HardBreak "\n", mk QuoteMark "> ", "b"], [Quote (rng 1 7)])
     "> a\nb" <===> ([mk QuoteMark "> ", "a", mk SoftBreak "\n", "b"], [Quote (rng 1 4)])
-    "> a\n>\nb" <===> ([mk QuoteMark "> ", "a", mk LineBreak "\n", mk QuoteMark ">", mk LineBreak "\n", "b"], [Quote (rng 1 2), Paragraph (rng 5 6)])
+    "> a\n>\nb" <===> ([mk QuoteMark "> ", "a", mk HardBreak "\n", mk QuoteMark ">", mk LineBreak "\n", "b"], [Quote (rng 1 2), Paragraph (rng 5 6)])
     ">a\n> b" <===> ([mk QuoteMark ">", "a", mk SoftBreak "\n", mk QuoteMark "> ", "b"], [Quote (rng 1 5)])
     "> > b\nc" <===> ([mk QuoteMark "> ", "> b", mk SoftBreak "\n", "c"], [Quote (rng 1 4)])
+    "> a\nb\n>\n> c" <===> ([mk QuoteMark "> ", "a", mk SoftBreak "\n", "b", mk HardBreak "\n", mk QuoteMark ">", mk HardBreak "\n", mk QuoteMark "> ", "c"], [Quote (rng 1 9)])
+    ">\n> a\n>" <===> ([mk QuoteMark ">", mk HardBreak "\n", mk QuoteMark "> ", "a", mk HardBreak "\n", mk QuoteMark ">"], [Quote (rng 3 4)])
+    "> *a\n>\n> b*" <===> ([mk QuoteMark "> ", "*a", mk HardBreak "\n", mk QuoteMark ">", mk HardBreak "\n", mk QuoteMark "> ", "b*"], [Quote (rng 1 7)])
     parseMaybeMarkdownList ">\n>" `shouldBe` Nothing
+    parseMaybeMarkdownList (T.intercalate "\n" $ "a" : replicate 7000 ">") `shouldBe` Nothing
+    "a\n>\n> b" <===> (["a", mk LineBreak "\n", mk QuoteMark ">", mk HardBreak "\n", mk QuoteMark "> ", "b"], [Paragraph (rng 0 1), Quote (rng 5 6)])
   it "code blocks" do
-    "```\nx *y*\n```" <===> ([mk (FenceMark Nothing) "```", mk LineBreak "\n", "x *y*", mk LineBreak "\n", mk (FenceMark Nothing) "```"], [CodeBlock Nothing (rng 2 3)])
-    "```bash\necho 1" <===> ([mk (FenceMark $ Just "bash") "```bash", mk LineBreak "\n", "echo 1"], [CodeBlock (Just "bash") (rng 2 3)])
-    "~~~\na\n\nb\n~~~" <===> ([mk (FenceMark Nothing) "~~~", mk LineBreak "\n", "a", mk LineBreak "\n", mk LineBreak "\n", "b", mk LineBreak "\n", mk (FenceMark Nothing) "~~~"], [CodeBlock Nothing (rng 2 6)])
-    "  ```\n    a\n  ```" <===> ([mk (FenceMark Nothing) "  ```", mk LineBreak "\n", mk Indent "  ", "  a", mk LineBreak "\n", mk (FenceMark Nothing) "  ```"], [CodeBlock Nothing (rng 2 4)])
+    "```\nx *y*\n```" <===> ([mk (FenceMark Nothing) "```", mk HardBreak "\n", "x *y*", mk HardBreak "\n", mk (FenceMark Nothing) "```"], [CodeBlock Nothing (rng 2 3)])
+    "```bash\necho 1" <===> ([mk (FenceMark $ Just "bash") "```bash", mk HardBreak "\n", "echo 1"], [CodeBlock (Just "bash") (rng 2 3)])
+    "~~~\na\n\nb\n~~~" <===> ([mk (FenceMark Nothing) "~~~", mk HardBreak "\n", "a", mk HardBreak "\n", mk HardBreak "\n", "b", mk HardBreak "\n", mk (FenceMark Nothing) "~~~"], [CodeBlock Nothing (rng 2 6)])
+    "```\n\na\n\n```" <===> ([mk (FenceMark Nothing) "```", mk HardBreak "\n", mk HardBreak "\n", "a", mk HardBreak "\n", mk HardBreak "\n", mk (FenceMark Nothing) "```"], [CodeBlock Nothing (rng 2 5)])
+    "  ```\n    a\n  ```" <===> ([mk (FenceMark Nothing) "  ```", mk HardBreak "\n", mk Indent "  ", "  a", mk HardBreak "\n", mk (FenceMark Nothing) "  ```"], [CodeBlock Nothing (rng 2 4)])
     parseMaybeMarkdownList "```\n```" `shouldBe` Nothing
   it "tables" do
     "| a | b |\n|---|:-:|\n| 1 | 2 |"
@@ -589,9 +596,9 @@ blockMarkdown = describe "block markdown" do
                 mk CellMark " | ",
                 "b",
                 mk CellMark " |",
-                mk LineBreak "\n",
+                mk HardBreak "\n",
                 mk (DelimiterRow [TANone, TACenter]) "|---|:-:|",
-                mk LineBreak "\n",
+                mk HardBreak "\n",
                 mk RowMark "| ",
                 "1",
                 mk CellMark " | ",
@@ -600,8 +607,8 @@ blockMarkdown = describe "block markdown" do
               ],
               [Table [TANone, TACenter] [rng 1 2, rng 3 4] [[rng 9 10, rng 11 12]]]
             )
-    "a | b\n- | -\nc" <===> ([mk RowMark "", "a", mk CellMark " | ", "b", mk CellMark "", mk LineBreak "\n", mk (DelimiterRow [TANone, TANone]) "- | -", mk LineBreak "\n", "c"], [Table [TANone, TANone] [rng 1 2, rng 3 4] [], Paragraph (rng 8 9)])
-    "|a|\n|-|\n||" <===> ([mk RowMark "|", "a", mk CellMark "|", mk LineBreak "\n", mk (DelimiterRow [TANone]) "|-|", mk LineBreak "\n", mk RowMark "|", mk CellMark "|"], [Table [TANone] [rng 1 2] [[rng 7 7]]])
+    "a | b\n- | -\nc" <===> ([mk RowMark "", "a", mk CellMark " | ", "b", mk CellMark "", mk HardBreak "\n", mk (DelimiterRow [TANone, TANone]) "- | -", mk LineBreak "\n", "c"], [Table [TANone, TANone] [rng 1 2, rng 3 4] [], Paragraph (rng 8 9)])
+    "|a|\n|-|\n||" <===> ([mk RowMark "|", "a", mk CellMark "|", mk HardBreak "\n", mk (DelimiterRow [TANone]) "|-|", mk HardBreak "\n", mk RowMark "|", mk CellMark "|"], [Table [TANone] [rng 1 2] [[rng 7 7]]])
   it "line breaks" do
     "a  \nb\n- c" <===> (["a", mk HardBreak "  \n", "b", mk LineBreak "\n", mk (ListMark Nothing) "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
     "a\\\nb\n- c" <===> (["a", mk HardBreak "\\\n", "b", mk LineBreak "\n", mk (ListMark Nothing) "- ", "c"], [Paragraph (rng 0 3), List [entry 5 6 []]])
@@ -615,6 +622,11 @@ blockMarkdown = describe "block markdown" do
     "> *a*\n> *b*" <===> (quoted, [Quote (rng 1 5)])
     "*a\nb*" ==>> [FormattedText (Just $ Bold True) "a", "\n", FormattedText (Just $ Bold True) "b"]
     parseMaybeMarkdownList "*a\n\nb*" `shouldBe` Nothing
+    parseMaybeMarkdownList "*a\n*" `shouldBe` Nothing
+    "*a\n_b_" ==>> ["*a\n", FormattedText (Just Italic) "b"]
+    "5 * 3\n*b*" ==>> ["5 * 3\n", FormattedText (Just $ Bold True) "b"]
+    "- *a\n  b*" ===> ([mk (ListMark Nothing) "- ", FormattedText (Just $ Bold True) "a", mk SoftBreak "\n", mk Indent "  ", FormattedText (Just $ Bold True) "b"], [List [entry 1 5 []]])
+    "- a  \n  b" <===> ([mk (ListMark Nothing) "- ", "a", mk HardBreak "  \n", mk Indent "  ", "b"], [List [entry 1 5 []]])
     "# *a\nb*" <===> ([mk (HeadingMark 1) "# ", "*a", mk LineBreak "\n", "b*"], [Heading 1 (rng 1 2), Paragraph (rng 3 4)])
   it "texts without blocks" do
     parseMaybeMarkdownList "a\nb" `shouldBe` Nothing

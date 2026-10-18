@@ -1,8 +1,8 @@
 # Block Markdown: core
 
-Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, two passes over the whole text. Revised: 2026-10-18, CommonMark syntax (S4, S6), soft breaks (S5).
+Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, two passes over the whole text. Revised: 2026-10-18, CommonMark syntax (S4, S6), soft breaks (S5), block lines then inline content.
 
-Each message text is parsed in two passes. In pass 1, the whole text is tokenized by the parser of master: inline formats as now, block syntax as markup tokens. Pass 2 is one fold over the tokens: segments are joined, block syntax is checked, and the block structure is built. `formattedText` is the joined token list; the text of each token is its source. `markdownBlocks` is the block structure: index ranges into `formattedText`.
+Each message text is parsed in two passes. In pass 1, the lines of the text are grouped into blocks. The content of the lines of a block is joined with "\n" and parsed by the inline parser of master; each "\n" is then replaced by the break token and the syntax tokens of the next line. Pass 2 divides the tokens at the breaks between blocks and builds the block structure. `formattedText` is the joined token list; the text of each token is its source. `markdownBlocks` is the block structure: index ranges into `formattedText`.
 
 References are to master at 382dc7480. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
@@ -14,7 +14,7 @@ References are to master at 382dc7480. Haskell paths without a directory are in 
 line break    "\n", with an optional "\r" before it
 final         one line break at the text end is removed before pass 1, as by T.lines (Markdown.hs:162)
 line          the text between two line breaks, or between a line break and the text start or end
-hard break    two or more spaces, or a backslash, before a line break, when the next line is a continuation of the block (section 4, continues)
+hard break    two or more spaces, or an odd number of backslashes, before a line break, when the next line is a continuation of the block (section 3)
               CommonMark 0.31.2 section 6.7, examples 633, 634
 soft break    a line break before a line that is a continuation of a paragraph, a list entry or a quote, without a hard break
               CommonMark 0.31.2, section "Soft line breaks"
@@ -42,9 +42,9 @@ underline    "=" only, or "-" only, then white space only, when the open block i
 rule         3 or more of one of "-", "*", "_", with spaces and tabs between and after them
 list item    a marker, a space, then text with a character other than white space
              marker: "-", "*", "+", or 1 to 9 digits and "." or ")"
-quote        ">", then text
-             in a run of quote lines with a text other than white space
-             the run ends before a table start
+quote        ">", then text with a character other than white space
+             or blank quote lines before such a line
+             after a paragraph line: such a line, or one blank quote line before it
 table row    a line with "|", while a table is open
 blank        white space only
 paragraph    any other line
@@ -70,11 +70,11 @@ Heading     one heading line
             level: 1 for "=", 2 for "-"
 Rule        one rule line
 List        consecutive list items, blank lines between them included
-ListEntry   a list item line and its continuation lines (section 4, continues)
+ListEntry   a list item line and its continuation lines (section 3)
             content: the text after the marker and the space, then the continuation lines without their indentation
             number: the digits and the delimiter, as written
             number is absent for "-", "*" and "+"
-Quote       consecutive quote lines, and the paragraph lines that are continuations of them (section 4, continues)
+Quote       consecutive quote lines, and the paragraph lines that are continuations of them (section 3)
             CommonMark 0.31.2 section 5.1, example 247
             text of a quote line: after ">" and one optional space or tab
             a text of white space only is syntax
@@ -92,29 +92,25 @@ Table       a table start line, its delimiter row, and the table rows after them
             the "|" at the line start and at the line end are optional
             in a row longer than the header, the last cell is the text from the start of its column to the end of the row, without a "|" at the line end
             the white space around the text of a cell is syntax
-Paragraph   consecutive paragraph lines (section 4, continues)
+Paragraph   consecutive paragraph lines (section 3)
             a paragraph line is text as written, indentation included, as now
 ```
 
 List nesting:
 
 ```
-item at c     open items with a column above c are closed
-              an open item at c is closed
-              the new item is a child of the innermost open item, or a top-level item
+parent        the nearest entry before it with a smaller column, in the same List
 depth         at most 7 (maxListIndent 6, plus 1)
-              an item at depth 8: the innermost item is closed, and the new item is added at depth 7
-blank line    open items are kept
-other block   open items are closed, then the list
+              an entry below depth 7: added at depth 7
+blank line    the List continues
+other block   the List ends
 ```
 
 Content:
 
 ```
-inline       each paragraph line
+inline       the lines of a paragraph, of a list entry, of a quote: one text (section 3, inlineLines)
              the text of a heading line
-             each quote text
-             the text of a list item line, and of each continuation line
              each cell
 code         each code line after its syntax: one segment without format
 ```
@@ -125,10 +121,11 @@ Decided 2026-10-17.
 
 ```
 formats     Bold, Italic, StrikeThrough, Snippet, Secret, Small, Colored
-across      a format is continued into the next line when that line is a continuation of the block (section 4, continues)
+across      a format is continued into the next line when that line is a continuation of the block (section 3)
             one segment of the format per line
             the line break and the syntax of the next line between them
             never across a blank line
+            "*", "_", "~": across lines when the content does not start or end with white space; otherwise as now, within the line
 within      headings and cells: within one line
             links, SimpleX links, names, mentions, commands, e-mails, phones: within one line
 ```
@@ -295,23 +292,61 @@ rule             {"type":"rule"}
 input      the text without its final line break
 output     segments in source order
            the concatenation of their texts is the input
-building   a list of segments
-           inline runs as Markdown (Markdown.hs:89-101), converted by markdownToList
 ```
 
-- Markup tokens are not built as `Markdown`: in its Semigroup (`Markdown.hs:89-101`), equal formats are joined and empty texts are dropped.
+Block parsers, tested in this order at a line start:
+
+```
+tableP  fenceP  headingP  ruleP  listItemP  quoteP  paragraphP
+```
+
+- Block start (`blockStartP`): a table start, a fence, a heading line, a rule, a list item line, a quote start.
+- Between blocks: `LineBreak`, or `ParagraphBreak` with the blank lines.
+
+Continuation lines:
+
+```
+block        next line                                            its syntax tokens
+paragraph    text, not a block start, not an underline            none: the indentation is content
+list item    text, not a block start                              Indent, when indented
+quote        a quote line with text                               QuoteMark
+             a blank quote line                                   QuoteMark: the whole line
+             after a line with text: a line with text,            none
+               without ">", not a block start
+table        a line with "|", not a block start                   the row tokens
+code         each line before the closing fence                   Indent, then the code
+```
+
+- An unindented line after a list item is a continuation of it (B11; CommonMark 0.31.2 section 5.2, rule 5).
+- A paragraph line after a quote line is a continuation of the quote (CommonMark 0.31.2 section 5.1, example 247).
+
+Inline content of a paragraph, a list item, a quote (`inlineLines`):
+
+```
+lines       the text of each line after its syntax tokens
+hard break  two or more spaces, or an odd number of "\", at the end of a line with a next line: removed from the line
+runs        consecutive lines with text; a blank line is a run alone
+parse       each run joined with "\n", parsed by markdownP; the runs joined with "\n"
+breaks      each "\n" replaced by the break token and the syntax tokens of the next line
+            a segment with "\n" is divided there; empty parts are dropped
+break       HardBreak: after a hard break, or with a blank line before or after it
+            SoftBreak: otherwise
+```
+
+- `markdownP` keeps each "\n" of its input in the texts of its segments.
 
 Texts of the markup tokens:
 
 ```
-LineBreak          a line break between two lines, when the second line has text, other than a soft or hard break
+LineBreak          a line break between two blocks
 SoftBreak          a soft break (section 1)
 HardBreak          a hard break (section 1): the spaces or the backslash, and the line break
+                   the line break before and after a blank quote line inside a quote
+                   the line break between the lines of a code block, between the lines of a table, before a setext underline
 ParagraphBreak n   a line break and the blank lines after it, each with its line break
                    the blank lines at the text start, with their line breaks
-                   a blank last line, after its line break
                    n: the number of "\n"
-Indent             the indentation of a paragraph line
+Indent             the indentation of a continuation line of a list item
                    in a code line: the white space up to the column of the opening fence
 HeadingMark        the indentation, the "#" run, the space
 HeadingClose       the closing sequence of a heading line (section 1)
@@ -329,16 +364,17 @@ DelimiterRow       the delimiter row
 RuleMark           the rule line
 ```
 
-- Inside a code block the lines are divided by `LineBreak` only, blank code lines and spaces at line ends included.
+- Inside a code block the lines are divided by `HardBreak` only, blank code lines and spaces at line ends included.
 - Spaces at a line end before a line break other than a hard break: content, as now.
 
 Tokens of a line, in order:
 
 ```
-paragraph line   Indent when indented, inline content
+paragraph line   inline content, the indentation included
 heading          HeadingMark, inline content, HeadingClose when present
 underline        HeadingUnderline
 list item        ListMark, inline content
+continuation     Indent when indented, inline content
 quote line       QuoteMark, inline content
 fence line       FenceMark
 code line        Indent when indented, one segment without format when not empty
@@ -350,153 +386,61 @@ rule             RuleMark
 Changes to `Markdown.hs`:
 
 ```
-parseMaybeMarkdownList (148-167)   the command rule (149-157): unchanged
-                                   T.lines (162), intercalate (163) and the join (164-167): replaced by pass 1 and pass 2
-documentP                          new: the parser of the whole text: line starts, inline runs, breaks
-markdownP (205-206)                inline run; parameter: the start kind of the line (section 4)
-fragmentP (209)                    no case for a line break
-' ' case (212)                     spaces before a hard break: not content
-'*' case (214)                     formattedP '*' (Bold True)
-'_' case (215)                     "__": Bold False; then formattedP '_' Italic
-'~' case (216)                     "~~": StrikeThrough; then formattedP '~' StrikeThrough
+parseMaybeMarkdownList (148-167)   formattedText of parsedMarkdown
+parsedMarkdown                     new: the command rule (149-157), as now
+                                   T.lines (162), intercalate (163): replaced by pass 1
+                                   the join (164-167): joinSegments, markup tokens not joined
+documentP, block parsers           new (above)
+inlineLines                        new (above)
+fragmentP (209)                    '\n': "\n" without format
+'*' case (214)                     doubleP '*' (Bold False); then formattedP '*' (Bold True)
+'_' case (215)                     doubleP '_' (Bold False); then formattedP '_' Italic
+'~' case (216)                     doubleP '~' StrikeThrough; then formattedP '~' StrikeThrough
 '`' case (217)                     code span (section 1), in place of formattedP '`' Snippet
 '<' case                           new: autolink (section 1); then wordP
 '\' case                           new: escape (section 1); then wordP
-boldP result (241)                 Bold False
-wordP (320)                        takeTill: a space, a line break, or a backslash before an ASCII punctuation character
-                                   a backslash before a hard break: not part of the word
-secretFallback (251)               the same
-nameRefP (253)                     the same
-displayNameTextP_ (511-517)        a quoted name: within one line
+formattedP (228-230)               content to the delimiter within the line, as now
+                                   without the delimiter in the line: across lines (section 1)
+boldP (236-241)                    doubleP: "**", "__", "~~"
+                                   white space at the content ends by isSpace
+secret (245-249)                   white space at the content ends by isSpace
+styledP (267-272)                  the space after the style: not "\n"
+                                   white space at the content ends by isSpace
+sowLinkP (281-293)                 the format of the link: hyperLinkFormat, shared with autolinks
+wordP (320)                        to a space, "\n", or a backslash before an ASCII punctuation character
+secretFallback (251)               to a space or "\n"
+nameRefP (253)                     to a space or "\n"
 inParens (294)                     within one line
-formattedP (227-230)               content by contentP
-boldP (236-241)                    the same
-secretP (242-249)                  the same
-styledP (266-272)                  the same
-                                   the space after the style (268): not a line break
-parseMarkdown (176-177)            unchanged: the inline parser of one line, used by msgPlain (View.hs:2474)
+displayNameTextP_ (512-517)        a quoted name: within one line
+parseMarkdown (176-177)            unchanged: the inline parser, used by msgPlain (View.hs:2474)
 ```
 
-`contentP`:
+## 4. Pass 2: blocks
 
 ```
-pieces      text up to the closing delimiter
-            at a line break: the break and the syntax tokens of the next line, when that line is a continuation of the block (section 4, continues)
-            otherwise: no format
-result      each piece: a segment with the format
-            between pieces: the break and the syntax tokens
-check       no format when the first piece or the last piece is empty
-            the checks of each parser, as now, with the first piece as the content start and the last piece as the content end
-              formattedP   Markdown.hs:231-235, for "*", "_", "~"; code spans: section 1
-              boldP        Markdown.hs:239-241
-              secretP      Markdown.hs:246
-              styledP      Markdown.hs:270-272
-no format   as now: the delimiter and the text up to the line end, without format (Markdown.hs:230)
+blocks         the tokens divided at LineBreak and ParagraphBreak; empty parts dropped
+kind           by the first token of a block
+                 HeadingMark   Heading
+                 ListMark      list entry: the column of its indentation, its number
+                 QuoteMark     Quote
+                 FenceMark     CodeBlock
+                 RowMark       Table
+                 RuleMark      Rule
+                 other         Paragraph; Heading when the last token is HeadingUnderline
+lists          consecutive list entries: one List, nested by column (section 1)
 ```
-
-## 4. Pass 2: the fold
-
-Start kind of a line, by its first token:
-
-```
-content          paragraph
-Indent           indented
-ListMark         list item
-QuoteMark        quote
-HeadingMark      heading
-FenceMark        fence
-RowMark          table
-DelimiterRow     table
-RuleMark         rule
-HeadingUnderline underline
-```
-
-Block kind: the start kind of the first line of the open block; blank at the text start and after a ParagraphBreak.
-
-`continues`, used by pass 1 (`contentP`, SoftBreak, HardBreak) and pass 2:
-
-```
-block kind                        next line
-paragraph, indented, list item    paragraph, indented
-quote                             quote, paragraph, indented
-table                             table
-```
-
-- An unindented line after a list item is a continuation of it (B11, the approved plan; CommonMark 0.31.2 section 5.2, rule 5).
-- A paragraph line after a quote line is a continuation of the quote (CommonMark 0.31.2 section 5.1, example 247).
-- Pass 1 tracks the block kind by the same rule.
-
-State:
-
-```
-FoldState
-  out         joined segments, reversed
-  n           number of joined segments
-  blockKind   block kind (above)
-  lineStart   the next token is the first token of a line
-  leaf        the open block and its content range: paragraph, heading, quote, code, list item, table
-  items       open list items, innermost first: column, number, content range, closed child items
-  blocks      closed top-level blocks, reversed
-```
-
-Step, for each token:
-
-```
-in a code block, after its opening FenceMark:
-                      FenceMark: content to = index of the last LineBreak; the code block closed
-                      other tokens: appended
-                      the first LineBreak: content from = n after it
-first token of a line, outside code:
-  HeadingUnderline           the open paragraph becomes a Heading of its level, with its content range; appended; closed
-  continues blockKind kind   the leaf kept
-  otherwise                  the leaf closed; the block of the token opened; blockKind = kind
-block of a token:
-  content, Indent    paragraph; the list closed
-  ListMark c         list item (list nesting, section 1)
-  QuoteMark          quote; the list closed
-  HeadingMark        heading; the list closed
-  FenceMark          code block; the list closed
-  RowMark            table, its first row; the list closed
-  RuleMark           Rule, added to blocks; the list closed
-each token:
-  content            a segment without Markup: no format, an inline format, Escape
-                     appended
-                     joined to the last segment when neither is markup and their formats are equal
-                     dropped when its text is empty
-                     content range of the leaf, outside tables: from = its index when unset; to = n
-  Indent             in a list item: appended as markup
-                     otherwise: content without format
-  LineBreak          appended; lineStart
-  SoftBreak          appended; lineStart
-  HardBreak          appended; lineStart
-  ParagraphBreak     appended; lineStart; blockKind = blank
-  RowMark            appended; a row opened after the rows of the table; cell from = n
-  CellMark           the cell [cell from, index of the CellMark) added to the open row; appended; cell from = n
-  DelimiterRow       appended; table columns; the open row is the header
-  other markup       appended
-end                  the leaf closed; the list closed
-```
-
-- Closed leaf: the content range of a list item is stored in `items`; any other leaf is added to `blocks`.
-- Closed list: the open items are closed into their parents; the `List` of the top-level items is added to `blocks`.
-- `markdownBlocks`: `blocks` in source order.
 
 Ranges:
 
 ```
-content    from the first content segment of the block to its last
-           the line breaks and the markup between them included
-code       from the token after the line break of the opening fence to the last line break before the closing fence, excluded
+content    from the first segment without Markup to the last
+           the breaks and the markup between them included
+code       from the token after the line break of the opening fence to the line break before the closing fence, excluded
            without a closing fence: to the end
 cell       from the token after its RowMark or CellMark to its CellMark
            empty for an empty cell
-```
-
-Indices:
-
-```
-index      assigned when a segment is appended
-join       no index assigned
+row        from a RowMark to the next RowMark
+columns    the DelimiterRow
 ```
 
 ### Texts without blocks
@@ -504,8 +448,8 @@ join       no index assigned
 Decided 2026-10-17.
 
 ```
-condition   pass 1 yields no markup other than LineBreak, SoftBreak, HardBreak, ParagraphBreak and Indent
-result      each markup token a segment without format, joined as in pass 2
+condition   pass 1 yields no markup other than LineBreak, SoftBreak, HardBreak and ParagraphBreak
+result      each markup token a segment without format, joined by joinSegments
             Nothing when no segment has a format, as now
             markdownBlocks: Nothing
 ```
@@ -619,8 +563,8 @@ Store/Messages.hs:1284, 1630, 1870, 2864, 2936    markdownBlocks = Nothing, with
 Library/Internal.hs:226                           CIQuote: markdownBlocks of the quoted item
 Library/Commands.hs:4931                          CIQuote: markdownBlocks of the quoted item
 Messages.hs:1369-1379                             mkItemVersion: markdownBlocks of the item
-Web.hs:252-253, 325, 426-431                      toFormattedText returns ParsedMarkdown
-Directory/Listing.hs:143-144, 197-198             toFormattedText returns ParsedMarkdown
+Web.hs:252-253, 325, 426-431                      toFormattedText returns ParsedMarkdown; its two fields set the two sibling fields of the record
+Directory/Listing.hs:143-144, 197-198             toFormattedText returns ParsedMarkdown; its two fields set the two sibling fields of the record
 Mobile.hs:396                                     chatParseMarkdown: J.encode . parsedMarkdown . safeDecodeUtf8
 ```
 
@@ -808,14 +752,16 @@ paragraph   a paragraph line with indentation: Indent as text
             blank lines before the first block and after the last block
 across      bold, italic, strike-through, snippet, secret, colored across a line break: in a paragraph, a quote, a list item
             not across a blank line, a heading line, a cell
-            an unclosed format: the delimiter and the rest of the line as text
+            an unclosed format: the delimiter and the rest of the line as text; formats on the next lines kept
+            a delimiter with white space at the content end across lines: as now, within the line
 breaks      ParagraphBreak counts
             CR before each line break, in each block kind
             final line break removed
             hard break: two and three spaces, and a backslash, before a line break in a paragraph, a list item, a quote
-            one space before a line break: LineBreak, the space as content
+            one space before a line break: SoftBreak, the space as content
             two spaces or a backslash before a blank line, at the text end, in code: content
-            SoftBreak in a paragraph, a list entry, a quote; LineBreak between blocks, table rows, code lines
+            SoftBreak in a paragraph, a list entry, a quote; HardBreak between table rows and code lines; LineBreak between blocks
+escapes     "C:\dir\file.txt": text, one word
 bold        "*x*": singleStar True
             "**x**", "__x__": singleStar False
 gfm         "~~x~~": StrikeThrough
