@@ -4,6 +4,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import signal
@@ -35,7 +36,7 @@ class LauncherTests(unittest.TestCase):
         log = Path(folder) / "nix-build.log"
         log.write_text(failure)
         calls = []
-        def step(arguments, deadline, seconds, capture=False):
+        def step(arguments, deadline, seconds, capture=False, *, phase="command"):
             values = list(map(str, arguments))
             calls.append((values, seconds, capture))
             if values[0] == "git":
@@ -105,6 +106,31 @@ class LauncherTests(unittest.TestCase):
             TRACE.run_step([sys.executable, "-c", "print('x' * 65536)"], time.monotonic() + 10, 5, True)
         self.assertEqual(TRACE.run_step([sys.executable, "-c", "print('revision')"],
                                         time.monotonic() + 10, 5, True), "revision")
+
+    def test_phase_and_elapsed_time_survive_metadata_timeout(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), \
+                patch.object(TRACE, "command_status", side_effect=TimeoutError("Diagnostic command reached its wall-clock limit")):
+            with self.assertRaisesRegex(TimeoutError, "wall-clock limit"):
+                TRACE.run_step(["git", "rev-parse", "HEAD"], time.monotonic() + 20, 10, True,
+                               phase="checkout-revision")
+        events = [json.loads(line) for line in output.getvalue().splitlines()]
+        self.assertEqual([event["intelGHCPhase"] for event in events],
+                         ["checkout-revision", "checkout-revision"])
+        self.assertEqual([event["event"] for event in events], ["start", "end"])
+        self.assertLessEqual(events[0]["limitSeconds"], 10)
+        self.assertEqual(events[1]["outcome"], "failure")
+        self.assertGreaterEqual(events[1]["elapsedSeconds"], 0)
+
+    def test_successful_metadata_phase_is_reported(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            result = TRACE.run_step([sys.executable, "-c", "print('revision')"],
+                                    time.monotonic() + 10, 5, True, phase="checkout-revision")
+        self.assertEqual(result, "revision")
+        events = [json.loads(line) for line in output.getvalue().splitlines()]
+        self.assertEqual(events[-1]["outcome"], "success")
+        self.assertEqual(events[-1]["intelGHCPhase"], "checkout-revision")
 
     def test_actual_timeout_kills_owned_command_and_its_child(self):
         with tempfile.TemporaryDirectory() as folder:

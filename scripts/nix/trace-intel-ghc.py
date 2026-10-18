@@ -56,16 +56,32 @@ def command_status(arguments, seconds, **streams):
         raise TimeoutError("Diagnostic command reached its wall-clock limit") from None
 
 
-def run_step(arguments, deadline, seconds, capture=False):
+def run_step(arguments, deadline, seconds, capture=False, *, phase="command"):
+    started = time.monotonic()
     remaining = min(seconds, int(deadline - time.monotonic()))
     if remaining < 1:
-        raise TimeoutError("Diagnostic wall-clock limit reached")
+        raise TimeoutError(phase + ": diagnostic wall-clock limit reached")
+    # Metadata commands can expire before the replay header is printed. Name
+    # each phase before launching it so a timeout still identifies the command.
+    print(json.dumps({"intelGHCPhase": phase, "event": "start",
+                      "limitSeconds": remaining}), flush=True)
+    outcome = "failure"
+    try:
+        result = run_command(arguments, remaining, capture)
+        outcome = "success"
+        return result
+    finally:
+        print(json.dumps({"intelGHCPhase": phase, "event": "end", "outcome": outcome,
+                          "elapsedSeconds": round(time.monotonic() - started, 3)}), flush=True)
+
+
+def run_command(arguments, seconds, capture):
     if capture:
         # Keep subprocess output out of memory until its size is known. These
         # three metadata queries have tiny successful outputs; errors remain
         # visible through a bounded stderr suffix.
         with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
-            status = command_status(arguments, remaining, stdout=output, stderr=errors)
+            status = command_status(arguments, seconds, stdout=output, stderr=errors)
             if status:
                 errors.seek(0, os.SEEK_END)
                 errors.seek(max(0, errors.tell() - 4096))
@@ -76,7 +92,7 @@ def run_step(arguments, deadline, seconds, capture=False):
             if len(data) > 4096:
                 raise ValueError("Diagnostic command exceeded the metadata output limit")
             return data.decode().strip()
-    status = command_status(arguments, remaining)
+    status = command_status(arguments, seconds)
     if status:
         raise RuntimeError("Diagnostic command returned " + str(status))
     return None
@@ -108,11 +124,14 @@ def main():
         if missing:
             raise ValueError("Required existing diagnostic tools unavailable: " + ", ".join(missing))
         repo = args.repo.resolve()
-        revision = run_step(["git", "-C", repo, "rev-parse", "HEAD"], deadline, 10, True)
+        revision = run_step(["git", "-C", repo, "rev-parse", "HEAD"], deadline, 10, True,
+                            phase="checkout-revision")
         if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
             raise ValueError("Invalid checkout revision")
-        compiler = run_step(["xcrun", "--find", "clang"], deadline, 10, True)
-        sdk = run_step(["xcrun", "--sdk", "macosx", "--show-sdk-path"], deadline, 10, True)
+        compiler = run_step(["xcrun", "--find", "clang"], deadline, 10, True,
+                            phase="apple-clang-path")
+        sdk = run_step(["xcrun", "--sdk", "macosx", "--show-sdk-path"], deadline, 10, True,
+                       phase="macos-sdk-path")
         if not Path(compiler).is_absolute() or not Path(sdk).is_absolute():
             raise ValueError("Expected absolute existing Apple tool paths")
         scripts = repo / "scripts/nix"
@@ -120,7 +139,8 @@ def main():
             tracer = Path(folder) / "ghc-sigbus-recorder.dylib"
             run_step([compiler, "-isysroot", sdk, "-arch", "x86_64", "-std=c11", "-Werror=vla",
                       "-pedantic", "-Wall", "-Wextra", "-Werror", "-O0", "-g", "-dynamiclib",
-                      scripts / "trace_ghc_sigbus.c", "-o", tracer], deadline, 30)
+                      scripts / "trace_ghc_sigbus.c", "-o", tracer], deadline, 30,
+                     phase="build-fault-recorder")
             # Pin evaluation to this checkout. The component's exact drvPath is
             # checked again by the Nix adapter before any diagnostic realization.
             flake = "builtins.getFlake " + nix_string("git+" + repo.as_uri() + "?rev=" + revision)
@@ -134,7 +154,7 @@ def main():
             # the local store or substitutes, and skip rather than compile it.
             run_step(["nix", "build", "--expr", python, "--no-link", "--max-jobs", "0",
                       "--builders", "", "--option", "external-builders", "[]",
-                      "--timeout", "30"], deadline, 30)
+                      "--timeout", "30"], deadline, 30, phase="prepare-python")
             print("Intel GHC diagnostic: one exact-component replay; original failure remains authoritative.", flush=True)
             print(json.dumps({"expectedDrv": expected, "checkout": revision,
                               "perDerivationSeconds": 300, "overallSeconds": 360,
@@ -143,7 +163,7 @@ def main():
                       "--arg", "original", original, "--arg", "python", python,
                       "--argstr", "expectedDrv", expected, "--argstr", "tracerPath", tracer,
                       "--no-link", "-L", "--keep-failed", "--max-jobs", "1", "--timeout", "300"],
-                     deadline, 300)
+                     deadline, 300, phase="replay-compiler")
     except (OSError, ValueError, RuntimeError, TimeoutError) as error:
         # The build driver always returns its saved canonical status. A failed
         # or skipped diagnostic must never turn that failure into success.
