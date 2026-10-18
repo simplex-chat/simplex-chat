@@ -36,7 +36,8 @@ HTML blocks      renderMarkdown (W/simplex-lib.jsc:57-128)
   - commands
 - Per message:
   - the typing indicator and the meta reserve: at the end of the last view when it is text, otherwise in a line below
-  - text direction
+  - the meta reserve after text: a line break when the text direction differs from the bubble's, as now; spaces in the line below
+  - text direction: the column in the text direction (Kotlin)
 - Code blocks and tables scroll sideways; a drag that starts in them does not swipe the item.
 
 ## 2. Types

@@ -171,20 +171,21 @@ private fun CodeBlockCard(shape: Shape, color: Color, roundness: Float, copyText
   ) {
     content(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp))
     if (hovered || tapped) {
-      Box(
-        Modifier
-          .align(Alignment.TopEnd)
-          .padding(4.dp)
-          .size(28.dp)
-          .clip(RoundedCornerShape(8.dp * roundness))
-          .background(color)
-          .clickable {
-            clipboard.setText(AnnotatedString(copyText))
-            showToast(generalGetString(MR.strings.copied))
-          },
-        contentAlignment = Alignment.Center
-      ) {
-        Icon(painterResource(MR.images.ic_content_copy), stringResource(MR.strings.copy_verb), Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+      Box(Modifier.matchParentSize(), contentAlignment = Alignment.TopEnd) {
+        Box(
+          Modifier
+            .padding(4.dp)
+            .size(28.dp)
+            .clip(RoundedCornerShape(8.dp * roundness))
+            .background(color)
+            .clickable {
+              clipboard.setText(AnnotatedString(copyText))
+              showToast(generalGetString(MR.strings.copied))
+            },
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(painterResource(MR.images.ic_content_copy), stringResource(MR.strings.copy_verb), Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+        }
       }
     }
   }

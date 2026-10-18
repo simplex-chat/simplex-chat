@@ -193,7 +193,8 @@ fun MarkdownText (
   blockLayout: Boolean = false,
   range: IntRange? = null,
   softWrap: Boolean = true,
-  cardColor: Color? = null
+  cardColor: Color? = null,
+  parentDirection: LayoutDirection? = null
 ) {
   val text = if (stripLink != null) stripTextLink(text.toString(), stripLink) else text
   val formattedText = if (stripLink != null) stripFormattedTextLink(formattedText, stripLink) else formattedText
@@ -201,12 +202,8 @@ fun MarkdownText (
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
-    CompositionLocalProvider(
-      LocalLayoutDirection provides if (textLayoutDirection != LocalLayoutDirection.current)
-        if (LocalLayoutDirection.current == LayoutDirection.Ltr) LayoutDirection.Rtl else LayoutDirection.Ltr
-      else
-        LocalLayoutDirection.current
-    ) {
+    val direction = LocalLayoutDirection.current
+    CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(
         formattedText, markdownBlocks, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
         blockText = { index, r, blockStyle, blockModifier, blockSoftWrap, last ->
@@ -215,7 +212,7 @@ fun MarkdownText (
             mentions = mentions, userMemberId = userMemberId, toggleSecrets = toggleSecrets, sendCommandMsg = sendCommandMsg, style = blockStyle,
             uriHandler = uriHandler, senderBold = senderBold, modifier = blockModifier, linkMode = linkMode, onLinkLongClick = onLinkLongClick,
             showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = if (index == 0) prefix else null,
-            selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap
+            selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
           )
         },
         metaLine = {
@@ -228,7 +225,7 @@ fun MarkdownText (
     }
     return
   }
-  val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
+  val reserve = if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current) && meta != null) {
     "\n"
   } else if (meta != null) {
     reserveSpaceForMeta(meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
@@ -286,7 +283,7 @@ fun MarkdownText (
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       if (textSelection != null) {
         SelectableText(annotatedText, style = style, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = textSelection.onTextLayoutResult)
       } else {
@@ -442,7 +439,7 @@ fun MarkdownText (
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
       val onTextLayout: (TextLayoutResult) -> Unit = { r ->
         layoutResult.value = r

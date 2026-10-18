@@ -148,7 +148,7 @@ struct MsgContentView: View {
     @ViewBuilder
     private func metaLineView() -> some View {
         if let mt = meta {
-            (mt.isLive ? Text(AttributedString(typingIndicator(mt.recent))) : Text(verbatim: "")) + reserveSpaceForMeta(mt)
+            (mt.isLive ? Text(AttributedString(typingIndicator(mt.recent))) : Text(verbatim: "")) + reserveSpaceForMeta(mt, newLine: false)
         }
     }
 
@@ -189,8 +189,8 @@ struct MsgContentView: View {
     }
 
     @inline(__always)
-    private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)
+    private func reserveSpaceForMeta(_ mt: CIMeta, newLine: Bool = true) -> Text {
+        (rightToLeft && newLine ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)
     }
 }
 
@@ -917,12 +917,12 @@ private struct CodeBlockCard<Content: View>: View {
     @State private var showCopy = false
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            HScroll {
-                content()
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-            }
+        HScroll {
+            content()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+        }
+        .overlay(alignment: .topTrailing) {
             if showCopy {
                 Button {
                     UIPasteboard.general.string = copyText
