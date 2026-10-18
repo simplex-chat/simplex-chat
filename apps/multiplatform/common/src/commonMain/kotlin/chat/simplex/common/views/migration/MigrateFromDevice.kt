@@ -11,6 +11,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +33,7 @@ import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.LinkTextView
 import chat.simplex.common.views.newchat.SimpleXLinkQRCode
+import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -427,19 +432,44 @@ private fun ProgressView() {
 
 @Composable
 fun LargeProgressView(value: Float, title: String, description: String) {
-  Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
+  val landscape = !appPlatform.isDesktop && windowWidth() > windowHeight()
+  val scrollState = LocalAppBarHandler.current?.scrollState
+  val density = LocalDensity.current
+  val windowPx = LocalWindowInfo.current.containerSize.height
+  val oneHandUI = remember { derivedStateOf { appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete && appPrefs.oneHandUI.state.value } }
+  val bottomBarsPx = if (oneHandUI.value) {
+    WindowInsets.navigationBars.getBottom(density) + with(density) { (AppBarHeight * fontSizeSqrtMultiplier).roundToPx() }
+  } else {
+    WindowInsets.systemBars.getBottom(density)
+  }
+  var contentTopPx by remember { mutableStateOf<Float?>(null) }
+  val size = when {
+    appPlatform.isDesktop -> DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier
+    landscape -> contentTopPx?.let { top ->
+      (with(density) { (windowPx - top - bottomBarsPx).toDp() } - DEFAULT_PADDING * 2).coerceAtLeast(120.dp)
+    } ?: 120.dp
+    else -> windowWidth() - DEFAULT_PADDING * 2
+  }
+  Box(
+    Modifier
+      .onGloballyPositioned { if (landscape) contentTopPx = it.positionInWindow().y + (scrollState?.value ?: 0) }
+      .padding(DEFAULT_PADDING)
+      .then(if (landscape) Modifier.fillMaxWidth() else Modifier.fillMaxSize()),
+    contentAlignment = Alignment.Center
+  ) {
     CircularProgressIndicator(
       progress = value,
-      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier.size(windowWidth() - DEFAULT_PADDING *
-          2))
+      Modifier.size(size)
         .rotate(-90f),
       color = MaterialTheme.colors.primary,
       strokeWidth = 25.dp
     )
+    val textScale = if (landscape) (size / 300.dp).coerceIn(0.4f, 1f) else 1f
+    val descriptionStyle = MaterialTheme.typography.subtitle1.let { it.copy(fontSize = it.fontSize * textScale) }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      Text(description, color = Color.Transparent)
-      Text(title, style = MaterialTheme.typography.h1.copy(fontSize = 50.sp, fontWeight = FontWeight.Bold), color = MaterialTheme.colors.primary)
-      Text(description, style = MaterialTheme.typography.subtitle1)
+      Text(description, style = LocalTextStyle.current.let { it.copy(fontSize = it.fontSize * textScale) }, color = Color.Transparent)
+      Text(title, style = MaterialTheme.typography.h1.copy(fontSize = 50.sp * textScale, fontWeight = FontWeight.Bold), color = MaterialTheme.colors.primary)
+      Text(description, style = descriptionStyle)
     }
   }
 }

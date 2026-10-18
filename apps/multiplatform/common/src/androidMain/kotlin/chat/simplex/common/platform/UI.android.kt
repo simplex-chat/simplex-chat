@@ -27,14 +27,7 @@ actual fun LockToCurrentOrientationUntilDispose() {
   val context = LocalContext1.current
   DisposableEffect(Unit) {
     val activity = (context as Activity?) ?: return@DisposableEffect onDispose {}
-    val manager = context.getSystemService(Activity.WINDOW_SERVICE) as WindowManager
-    val rotation = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) manager.defaultDisplay.rotation else activity.display?.rotation
-    activity.requestedOrientation = when (rotation) {
-      Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-      Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
-      Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
-      else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-    }
+    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
     // Unlock orientation
     onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
   }
