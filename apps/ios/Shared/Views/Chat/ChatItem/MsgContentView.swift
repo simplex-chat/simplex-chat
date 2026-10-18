@@ -107,6 +107,7 @@ struct MsgContentView: View {
                 blocks: blocks,
                 textStyle: textStyle,
                 cardColor: cardColor ?? theme.appColors.receivedQuote,
+                rightToLeft: rightToLeft,
                 blockText: { index, range, font, secretStart, last in blockTextView(fts, blocks, index, range, font, secretStart, last) },
                 metaLine: { metaLineView() }
             )
@@ -690,6 +691,8 @@ func messageText(
 
 let swipeExclusionSpace = "swipeExclusion"
 
+private let maxGridCells = 1000
+
 struct SwipeExclusionFrames: PreferenceKey {
     static var defaultValue: [CGRect] = []
 
@@ -716,6 +719,7 @@ struct MarkdownView: View {
                 blocks: blocks,
                 textStyle: .body,
                 cardColor: cardColor,
+                rightToLeft: isRightToLeft(text),
                 blockText: { index, range, font, secretStart, _ in
                     let r = messageText(
                         text, fts, markdownBlocks: blocks, sender: index == 0 ? sender : nil, mentions: mentions, userMemberId: userMemberId,
@@ -755,6 +759,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     var blocks: [MarkdownBlock]
     var textStyle: UIFont.TextStyle
     var cardColor: Color
+    var rightToLeft: Bool
     @ViewBuilder var blockText: (_ index: Int, _ range: Range<Int>, _ font: UIFont, _ secretStart: Int, _ last: Bool) -> BlockText
     @ViewBuilder var metaLine: () -> MetaLine
 
@@ -771,6 +776,8 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
                 metaLine()
             }
         }
+        .multilineTextAlignment(.leading)
+        .environment(\.layoutDirection, rightToLeft ? .rightToLeft : .leftToRight)
     }
 
     private func text(_ index: Int, _ r: SegmentRange, _ font: UIFont, _ l: BlocksLayout) -> BlockText {
@@ -814,36 +821,44 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
         let lineColor = Color(uiColor: .secondaryLabel).opacity(0.35)
         let radius = 12 * roundness
         if #available(iOS 16, *) {
-            HScroll {
-                Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
-                    ForEach(Array(tableRows.enumerated()), id: \.offset) { r, row in
-                        GridRow {
-                            ForEach(0..<columnCount, id: \.self) { c in
-                                Group {
-                                    if c < row.count {
-                                        text(rowStarts[r] + c, row[c], r == 0 ? boldFont(l.font) : l.font, l).fixedSize()
-                                    } else {
-                                        Text(verbatim: "")
+            if columnCount * tableRows.count <= maxGridCells {
+                HScroll {
+                    Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
+                        ForEach(Array(tableRows.enumerated()), id: \.offset) { r, row in
+                            GridRow {
+                                ForEach(0..<columnCount, id: \.self) { c in
+                                    Group {
+                                        if c < row.count {
+                                            text(rowStarts[r] + c, row[c], r == 0 ? boldFont(l.font) : l.font, l).fixedSize()
+                                        } else {
+                                            Text(verbatim: "")
+                                        }
                                     }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 4)
+                                    .frame(maxWidth: .infinity, alignment: cellAlignment(c < columns.count ? columns[c] : .none))
+                                    .background(r == 0 ? cardColor : r % 2 == 0 ? Color(uiColor: .secondaryLabel).opacity(0.1) : Color.clear)
+                                    .overlay(Rectangle().stroke(lineColor, lineWidth: 0.5))
                                 }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 4)
-                                .frame(maxWidth: .infinity, alignment: cellAlignment(c < columns.count ? columns[c] : .none))
-                                .background(r == 0 ? cardColor : r % 2 == 0 ? Color(uiColor: .secondaryLabel).opacity(0.1) : Color.clear)
-                                .overlay(Rectangle().stroke(lineColor, lineWidth: 0.5))
                             }
                         }
                     }
+                    .fixedSize()
+                    .clipShape(RoundedRectangle(cornerRadius: radius))
+                    .overlay(RoundedRectangle(cornerRadius: radius).stroke(lineColor, lineWidth: 1))
                 }
-                .fixedSize()
-                .clipShape(RoundedRectangle(cornerRadius: radius))
-                .overlay(RoundedRectangle(cornerRadius: radius).stroke(lineColor, lineWidth: 1))
+            } else {
+                tableSourceCard(tableRows, l, radius)
             }
         } else {
-            let source = tableSource(tableRows)
-            CodeBlockCard(color: cardColor, radius: radius, copyText: source) {
-                Text(verbatim: source).font(.system(size: l.font.pointSize * 0.875, design: .monospaced)).fixedSize(horizontal: true, vertical: false)
-            }
+            tableSourceCard(tableRows, l, radius)
+        }
+    }
+
+    private func tableSourceCard(_ tableRows: [[SegmentRange]], _ l: BlocksLayout, _ radius: CGFloat) -> some View {
+        let source = tableSource(tableRows)
+        return CodeBlockCard(color: cardColor, radius: radius, copyText: source) {
+            Text(verbatim: source).font(.system(size: l.font.pointSize * 0.875, design: .monospaced)).fixedSize(horizontal: true, vertical: false)
         }
     }
 
@@ -922,6 +937,7 @@ private struct CodeBlockCard<Content: View>: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .topTrailing) {
             if showCopy {
                 Button {

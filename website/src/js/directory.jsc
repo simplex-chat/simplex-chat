@@ -32,6 +32,7 @@ async function initDirectory() {
   liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn));
   newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn));
   topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn));
+  document.getElementById('directory').addEventListener('click', handleCodeClick);
   window.addEventListener('popstate', applyHash);
 
   function applyHash() {

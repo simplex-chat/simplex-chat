@@ -36,8 +36,8 @@ HTML blocks      renderMarkdown (W/simplex-lib.jsc:57-128)
   - commands
 - Per message:
   - the typing indicator and the meta reserve: at the end of the last view when it is text, otherwise in a line below
-  - the meta reserve after text: a line break when the text direction differs from the bubble's, as now; spaces in the line below
-  - text direction: the column in the text direction (Kotlin)
+  - the meta reserve after text: a line break when the text direction differs from the bubble's, as now; spaces in the line below (iOS `reserveSpaceForMeta(mt, newLine: false)`)
+  - text direction: the column in the text direction, text aligned to its start
 - Code blocks and tables scroll sideways; a drag that starts in them does not swipe the item.
 
 ## 2. Types
@@ -180,14 +180,15 @@ Paragraph     text view, body font
 Heading       text view, bold; size × 1.5 (level 1), 1.3 (2), 1.15 (3), 1 (4-6); line height scaled alike
 List          per entry (listEntries): a row of the marker ("•" or the number) and the text view; indent 20 per level
 Quote         a 4 wide bar (text colour at 16%), 10 gap, the text view at 70-72% opacity
-CodeBlock     card in the bubble's quote colour, corners 12 × the bubble roundness setting
+CodeBlock     card in the bubble's quote colour, corners 12 × the bubble roundness setting, the bubble's full width
                 the text view: monospace, size × 0.875, no wrapping, scrolls sideways
                 copy icon at the top right: on hover (desktop) or after a tap (mobile); copies the drawn text of the range
 Table         rounded frame (12 × roundness, 1 line), scrolls sideways
                 columns as wide as their widest cell; header row bold on the quote colour; alternate body rows tinted
                 lines between rows and columns; a cell aligned by its column
                 a missing cell at a row end: an empty cell (GFM 0.29 example 204)
-                Kotlin: a Layout measuring cells by max intrinsic width; iOS 16+: Grid; iOS 15: the table as typed in a code card
+                Kotlin: a Layout measuring cells by max intrinsic width, composing only the present cells
+                iOS 16+: Grid, columns × rows at most 1000 (maxGridCells); otherwise, and on iOS 15: the table as typed in a code card
 Rule          1 line, 6 above and below
 first view    gets the sender and the report prefix
 last view     gets the meta reserve and the typing indicator when it is text; otherwise a line with them below the column
@@ -217,7 +218,7 @@ Notifications, `hideSecrets` (K/platform/NtfManager.kt, S/Notifications.swift): 
 Kotlin:
 
 ```
-MarkdownText (K/views/chat/item/TextItemView.kt)            parameters markdownBlocks, blockLayout, range, softWrap, cardColor, selection, textIndex; section 3
+MarkdownText (K/views/chat/item/TextItemView.kt)            parameters markdownBlocks, blockLayout, range, softWrap, cardColor, selection, textIndex, parentDirection (the bubble's direction, for the meta reserve of block views); section 3
 CIMarkdownText (K/views/chat/item/FramedItemView.kt:445)    ci.markdownBlocks; column; quote colour by direction; selection with itemDisplay bases
 ciQuotedMsgTextView (K/views/chat/item/FramedItemView.kt:61) qi.markdownBlocks; one text
 item preview (K/views/chatlist/ChatPreviewView.kt:261-265, 277)   null where formattedText is null, otherwise ci.markdownBlocks; one text
@@ -236,7 +237,7 @@ iOS:
 
 ```
 messageText (I/Chat/ChatItem/MsgContentView.swift)          parameters markdownBlocks, range, baseFont, secretStart; section 3
-MsgContentView (I/Chat/ChatItem/MsgContentView.swift)       vars markdownBlocks, blockLayout, cardColor
+MsgContentView (I/Chat/ChatItem/MsgContentView.swift)       vars markdownBlocks, blockLayout, cardColor; MarkdownBlocksView rightToLeft from its rightToLeft, MarkdownView from isRightToLeft(text)
 item content (I/Chat/ChatItem/MsgContentView.swift:624)     chatItem.markdownBlocks
 quote (I/Chat/ChatItem/FramedItemView.swift:337)            qi.markdownBlocks; one text
 FramedItemView (I/Chat/ChatItem/FramedItemView.swift:366)   the markdownBlocks of the item; column; quote colour by direction
@@ -287,20 +288,22 @@ range            each segment drawn as now
                  LineBreak, HardBreak: <br>
                  other markup, escape: nothing
                  Bold, singleStar: <em>
-gaps             between blocks and between list entries: LineBreak nothing; ParagraphBreak: one <br> less than the line breaks of its text
+gaps             a ParagraphBreak between two blocks: <div class="md-gap"></div>; otherwise nothing
 Paragraph        <div>: the range
-Heading          <div style="font-weight: bold;">: the range
-CodeBlock        <pre style="font-family: monospace; white-space: pre-wrap;">: the range
-Quote            <div style="border-left: 3px solid; padding-left: 0.5em;">: the range
-List             each entry, in source order: <div style="padding-left: Nem;">, "•" or the number, a space, then the range
-                 N: 1.5 × the level below the top, at most 6 levels
-Table            <div style="overflow-x: auto;"><table style="border-collapse: collapse;">: the header row in <th>, the body rows in <td>
-                 each cell: style="text-align: A; border: 1px solid; padding: 0 0.4em;"
-                 A: the column alignment, none as left, any other value as left
-                 a missing cell at a row end: no element
-Rule             <hr>
+Heading          <div class="md-hN">: the range; N: the level 1-3, otherwise 4
+CodeBlock        <div class="md-code"><pre>: the range, then a copy button (class md-copy, icons md-icon-copy and md-icon-done)
+Quote            <div class="md-quote"><span class="md-bar"></span><div class="md-text">: the range
+List             each entry, in source order: <div class="md-entry" style="padding-left: Nem;"><span class="md-mark">: "•" or the number; <span class="md-text">: the range
+                 N: 1.25 × the level below the top, at most 6 levels
+Table            <div class="md-table"><div class="md-frame"><table>: the header row in <th>, the body rows in <td>
+                 each cell: style="text-align: A;"; A: the column alignment, none as left, any other value as left
+                 rows padded with empty cells to the column count when columns × rows <= 1000 (MAX_TABLE_CELLS)
+Rule             <hr class="md-rule">
 number           escaped text
+copy             handleCodeClick: a click on the button copies the text of the <pre> (innerText); a click elsewhere in the card toggles the class tapped
 ```
+
+Styles, as the apps (section 3), in each page: `.simplex-preview-text .md-*` in W/channel-preview.jsc (colours from its `--sp-*` variables, card `--sp-quote`, corners 10px for its 18px bubbles), `#directory .entry .md-*` in website/src/directory.html (light and `.dark` values, corners 4px as its entries). The flex items around the text get `min-width: 0` (`.simplex-preview-msg-col`, `#directory .entry .text-container`), so that wide blocks scroll inside the message. `copyToClipboard` moved from W/channel-preview.jsc to W/simplex-lib.jsc.
 
 Call sites:
 
@@ -314,7 +317,7 @@ W/directory.jsc:254, 260            <p> kept: set by innerHTML, the block elemen
 ```
 
 - The meta span after a message with a block at its end (`W/channel-preview.jsc:1522`) is drawn on its own line.
-- Differences from the apps: a table is an HTML table, scrolled sideways when wider than the message.
+- Click handlers: W/channel-preview.jsc `setupSecretToggles` calls `handleCodeClick`; W/directory.jsc `initDirectory` adds it on `#directory`.
 
 ## 6. Docs
 
