@@ -65,7 +65,157 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank" rel="noopener"'
 }
 
-function renderMarkdown(fts) {
+const MAX_LIST_DEPTH = 7;
+
+const MAX_TABLE_CELLS = 1000;
+
+const COPY_BUTTON =
+  '<button type="button" class="md-copy" aria-label="Copy">' +
+  '<svg class="md-icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"></rect><path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9"></path></svg>' +
+  '<svg class="md-icon-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>' +
+  '</button>';
+
+// navigator.clipboard is undefined outside secure contexts; fall back to execCommand
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise(function(resolve, reject) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    ok ? resolve() : reject(new Error('copy failed'));
+  });
+}
+
+function handleCodeClick(e) {
+  const card = e.target.closest('.md-code');
+  if (!card) return;
+  const button = e.target.closest('.md-copy');
+  if (!button) {
+    card.classList.toggle('tapped');
+    return;
+  }
+  const pre = card.querySelector('pre');
+  if (!pre) return;
+  copyToClipboard(pre.innerText).then(() => {
+    button.classList.add('copied');
+    setTimeout(() => button.classList.remove('copied'), 1500);
+  }).catch(() => {});
+}
+
+function validBlocks(fts, blocks) {
+  let pos = 0;
+  const range = (r) => {
+    const valid = !!r && Number.isInteger(r.from) && Number.isInteger(r.to) && pos <= r.from && r.from <= r.to && r.to <= fts.length;
+    if (valid) pos = r.to;
+    return valid;
+  };
+  const entries = (items, depth) =>
+    Array.isArray(items) && (items.length === 0 || depth <= MAX_LIST_DEPTH) && items.every((e) => !!e && range(e.content) && entries(e.items, depth + 1));
+  const rows = (rs) => Array.isArray(rs) && rs.every((row) => Array.isArray(row) && row.every(range));
+  return Array.isArray(blocks) && blocks.every((b) => {
+    switch (b && b.type) {
+      case 'paragraph':
+      case 'heading':
+      case 'codeBlock':
+      case 'quote':
+        return range(b.content);
+      case 'list':
+        return entries(b.items, 1);
+      case 'table':
+        return Array.isArray(b.columns) && rows([b.header]) && rows(b.rows);
+      case 'rule':
+        return range(b.mark);
+      default:
+        return false;
+    }
+  });
+}
+
+function renderBlocks(fts, blocks) {
+  let html = '';
+  let pos = 0;
+  const segments = (r) => renderSegments(fts.slice(r.from, r.to), true);
+  const isParagraphBreak = (ft) => ft.format && ft.format.type === 'markup' && ft.format.token && ft.format.token.type === 'paragraphBreak';
+  const gap = (to) => {
+    if (html && fts.slice(pos, to).some(isParagraphBreak)) html += '<div class="md-gap"></div>';
+    pos = Math.max(pos, to);
+  };
+  const block = (r, open, close) => {
+    gap(r.from);
+    html += open + segments(r) + close;
+    pos = r.to;
+  };
+  const entry = (e, level) => {
+    html += `<div class="md-entry" style="padding-left: ${1.25 * Math.min(level, 6)}em;"><span class="md-mark">${escapeHtml(String(e.number ?? '•'))}</span><span class="md-text">${segments(e.content)}</span></div>`;
+    pos = e.content.to;
+    e.items.forEach((item) => entry(item, level + 1));
+  };
+  const table = (b) => {
+    const rows = [b.header].concat(b.rows);
+    const width = b.columns.length * rows.length <= MAX_TABLE_CELLS ? b.columns.length : 0;
+    const align = (c) => (b.columns[c] === 'center' || b.columns[c] === 'right' ? b.columns[c] : 'left');
+    const cell = (tag, c, r) => `<${tag} style="text-align: ${align(c)};">${r ? segments(r) : ''}</${tag}>`;
+    const row = (cells, tag) =>
+      '<tr>' + cells.map((r, c) => cell(tag, c, r)).join('') + Array.from({ length: Math.max(0, width - cells.length) }, (_, k) => cell(tag, cells.length + k, null)).join('') + '</tr>';
+    gap(b.header.length > 0 ? b.header[0].from : pos);
+    html += '<div class="md-table"><div class="md-frame"><table>' + row(b.header, 'th') + b.rows.map((r) => row(r, 'td')).join('') + '</table></div></div>';
+    const last = rows[rows.length - 1];
+    pos = last.length > 0 ? last[last.length - 1].to : pos;
+  };
+  for (const b of blocks) {
+    switch (b.type) {
+      case 'paragraph':
+        block(b.content, '<div>', '</div>');
+        break;
+      case 'heading':
+        block(b.content, `<div class="md-h${b.level === 1 || b.level === 2 || b.level === 3 ? b.level : 4}">`, '</div>');
+        break;
+      case 'codeBlock':
+        block(b.content, '<div class="md-code"><pre>', '</pre>' + COPY_BUTTON + '</div>');
+        break;
+      case 'quote':
+        block(b.content, '<div class="md-quote"><span class="md-bar"></span><div class="md-text">', '</div></div>');
+        break;
+      case 'list':
+        if (b.items.length > 0) gap(b.items[0].content.from);
+        b.items.forEach((item) => entry(item, 0));
+        break;
+      case 'table':
+        table(b);
+        break;
+      case 'rule':
+        block(b.mark, '<hr class="md-rule">', '');
+        break;
+    }
+  }
+  return html;
+}
+
+function markupHtml(token) {
+  switch (token && token.type) {
+    case 'softBreak':
+      return ' ';
+    case 'lineBreak':
+    case 'hardBreak':
+      return '<br>';
+    default:
+      return '';
+  }
+}
+
+function renderMarkdown(fts, blocks) {
+  return validBlocks(fts, blocks) ? renderBlocks(fts, blocks) : renderSegments(fts, false);
+}
+
+function renderSegments(fts, withBlocks) {
   let html = '';
   for (const ft of fts) {
     const { format, text } = ft;
@@ -76,7 +226,7 @@ function renderMarkdown(fts) {
     try {
       switch (format.type) {
         case 'bold':
-          html += `<strong>${escapeHtml(text)}</strong>`;
+          html += withBlocks && format.singleStar ? `<em>${escapeHtml(text)}</em>` : `<strong>${escapeHtml(text)}</strong>`;
           break;
         case 'italic':
           html += `<em>${escapeHtml(text)}</em>`;
@@ -123,6 +273,11 @@ function renderMarkdown(fts) {
           break;
         case 'phone':
           html += `<a href="tel:${escapeAttr(text)}">${escapeHtml(text)}</a>`;
+          break;
+        case 'escape':
+          break;
+        case 'markup':
+          html += withBlocks ? markupHtml(format.token) : escapeHtml(text);
           break;
         case 'unknown':
           html += escapeHtml(text);

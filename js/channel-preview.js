@@ -67,7 +67,157 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank" rel="noopener"'
 }
 
-function renderMarkdown(fts) {
+const MAX_LIST_DEPTH = 7;
+
+const MAX_TABLE_CELLS = 1000;
+
+const COPY_BUTTON =
+  '<button type="button" class="md-copy" aria-label="Copy">' +
+  '<svg class="md-icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"></rect><path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9"></path></svg>' +
+  '<svg class="md-icon-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>' +
+  '</button>';
+
+// navigator.clipboard is undefined outside secure contexts; fall back to execCommand
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise(function(resolve, reject) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    ok ? resolve() : reject(new Error('copy failed'));
+  });
+}
+
+function handleCodeClick(e) {
+  const card = e.target.closest('.md-code');
+  if (!card) return;
+  const button = e.target.closest('.md-copy');
+  if (!button) {
+    card.classList.toggle('tapped');
+    return;
+  }
+  const pre = card.querySelector('pre');
+  if (!pre) return;
+  copyToClipboard(pre.innerText).then(() => {
+    button.classList.add('copied');
+    setTimeout(() => button.classList.remove('copied'), 1500);
+  }).catch(() => {});
+}
+
+function validBlocks(fts, blocks) {
+  let pos = 0;
+  const range = (r) => {
+    const valid = !!r && Number.isInteger(r.from) && Number.isInteger(r.to) && pos <= r.from && r.from <= r.to && r.to <= fts.length;
+    if (valid) pos = r.to;
+    return valid;
+  };
+  const entries = (items, depth) =>
+    Array.isArray(items) && (items.length === 0 || depth <= MAX_LIST_DEPTH) && items.every((e) => !!e && range(e.content) && entries(e.items, depth + 1));
+  const rows = (rs) => Array.isArray(rs) && rs.every((row) => Array.isArray(row) && row.every(range));
+  return Array.isArray(blocks) && blocks.every((b) => {
+    switch (b && b.type) {
+      case 'paragraph':
+      case 'heading':
+      case 'codeBlock':
+      case 'quote':
+        return range(b.content);
+      case 'list':
+        return entries(b.items, 1);
+      case 'table':
+        return Array.isArray(b.columns) && rows([b.header]) && rows(b.rows);
+      case 'rule':
+        return range(b.mark);
+      default:
+        return false;
+    }
+  });
+}
+
+function renderBlocks(fts, blocks) {
+  let html = '';
+  let pos = 0;
+  const segments = (r) => renderSegments(fts.slice(r.from, r.to), true);
+  const isParagraphBreak = (ft) => ft.format && ft.format.type === 'markup' && ft.format.token && ft.format.token.type === 'paragraphBreak';
+  const gap = (to) => {
+    if (html && fts.slice(pos, to).some(isParagraphBreak)) html += '<div class="md-gap"></div>';
+    pos = Math.max(pos, to);
+  };
+  const block = (r, open, close) => {
+    gap(r.from);
+    html += open + segments(r) + close;
+    pos = r.to;
+  };
+  const entry = (e, level) => {
+    html += `<div class="md-entry" style="padding-left: ${1.25 * Math.min(level, 6)}em;"><span class="md-mark">${escapeHtml(String(e.number ?? '•'))}</span><span class="md-text">${segments(e.content)}</span></div>`;
+    pos = e.content.to;
+    e.items.forEach((item) => entry(item, level + 1));
+  };
+  const table = (b) => {
+    const rows = [b.header].concat(b.rows);
+    const width = b.columns.length * rows.length <= MAX_TABLE_CELLS ? b.columns.length : 0;
+    const align = (c) => (b.columns[c] === 'center' || b.columns[c] === 'right' ? b.columns[c] : 'left');
+    const cell = (tag, c, r) => `<${tag} style="text-align: ${align(c)};">${r ? segments(r) : ''}</${tag}>`;
+    const row = (cells, tag) =>
+      '<tr>' + cells.map((r, c) => cell(tag, c, r)).join('') + Array.from({ length: Math.max(0, width - cells.length) }, (_, k) => cell(tag, cells.length + k, null)).join('') + '</tr>';
+    gap(b.header.length > 0 ? b.header[0].from : pos);
+    html += '<div class="md-table"><div class="md-frame"><table>' + row(b.header, 'th') + b.rows.map((r) => row(r, 'td')).join('') + '</table></div></div>';
+    const last = rows[rows.length - 1];
+    pos = last.length > 0 ? last[last.length - 1].to : pos;
+  };
+  for (const b of blocks) {
+    switch (b.type) {
+      case 'paragraph':
+        block(b.content, '<div>', '</div>');
+        break;
+      case 'heading':
+        block(b.content, `<div class="md-h${b.level === 1 || b.level === 2 || b.level === 3 ? b.level : 4}">`, '</div>');
+        break;
+      case 'codeBlock':
+        block(b.content, '<div class="md-code"><pre>', '</pre>' + COPY_BUTTON + '</div>');
+        break;
+      case 'quote':
+        block(b.content, '<div class="md-quote"><span class="md-bar"></span><div class="md-text">', '</div></div>');
+        break;
+      case 'list':
+        if (b.items.length > 0) gap(b.items[0].content.from);
+        b.items.forEach((item) => entry(item, 0));
+        break;
+      case 'table':
+        table(b);
+        break;
+      case 'rule':
+        block(b.mark, '<hr class="md-rule">', '');
+        break;
+    }
+  }
+  return html;
+}
+
+function markupHtml(token) {
+  switch (token && token.type) {
+    case 'softBreak':
+      return ' ';
+    case 'lineBreak':
+    case 'hardBreak':
+      return '<br>';
+    default:
+      return '';
+  }
+}
+
+function renderMarkdown(fts, blocks) {
+  return validBlocks(fts, blocks) ? renderBlocks(fts, blocks) : renderSegments(fts, false);
+}
+
+function renderSegments(fts, withBlocks) {
   let html = '';
   for (const ft of fts) {
     const { format, text } = ft;
@@ -78,7 +228,7 @@ function renderMarkdown(fts) {
     try {
       switch (format.type) {
         case 'bold':
-          html += `<strong>${escapeHtml(text)}</strong>`;
+          html += withBlocks && format.singleStar ? `<em>${escapeHtml(text)}</em>` : `<strong>${escapeHtml(text)}</strong>`;
           break;
         case 'italic':
           html += `<em>${escapeHtml(text)}</em>`;
@@ -125,6 +275,11 @@ function renderMarkdown(fts) {
           break;
         case 'phone':
           html += `<a href="tel:${escapeAttr(text)}">${escapeHtml(text)}</a>`;
+          break;
+        case 'escape':
+          break;
+        case 'markup':
+          html += withBlocks ? markupHtml(format.token) : escapeHtml(text);
           break;
         case 'unknown':
           html += escapeHtml(text);
@@ -189,6 +344,9 @@ const STYLE = `
   --sp-color-white: #000;
   --sp-qr-fg: #062D56;
   --sp-qr-bg: #ffffff;
+  --sp-md-line: rgba(139, 135, 134, 0.35);
+  --sp-md-bar: rgba(0, 0, 0, 0.16);
+  --sp-md-stripe: rgba(139, 135, 134, 0.08);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 15px;
   line-height: 1.4;
@@ -224,6 +382,9 @@ const STYLE = `
   --sp-color-white: #fff;
   --sp-qr-fg: #FFFBFA;
   --sp-qr-bg: transparent;
+  --sp-md-line: rgba(139, 135, 134, 0.45);
+  --sp-md-bar: rgba(255, 255, 255, 0.22);
+  --sp-md-stripe: rgba(139, 135, 134, 0.12);
 }
 
 .simplex-preview-header {
@@ -663,6 +824,44 @@ const STYLE = `
 .simplex-preview-text .black { color: var(--sp-color-black); }
 .simplex-preview-text .white { color: var(--sp-color-white); }
 
+.simplex-preview-msg-col {
+  min-width: 0;
+}
+
+.simplex-preview-text .md-gap { height: 0.7em; }
+.simplex-preview-text .md-h1 { font-size: 1.5em; line-height: 1.3; font-weight: 700; }
+.simplex-preview-text .md-h2 { font-size: 1.3em; line-height: 1.3; font-weight: 700; }
+.simplex-preview-text .md-h3 { font-size: 1.15em; line-height: 1.3; font-weight: 700; }
+.simplex-preview-text .md-h4 { font-weight: 700; }
+.simplex-preview-text .md-entry { display: flex; gap: 6px; }
+.simplex-preview-text .md-mark { flex: none; min-width: 1.1em; }
+.simplex-preview-text .md-text { flex: 1; min-width: 0; }
+.simplex-preview-text .md-quote { display: flex; gap: 10px; }
+.simplex-preview-text .md-bar { flex: none; width: 4px; border-radius: 2px; background: var(--sp-md-bar); }
+.simplex-preview-text .md-quote > .md-text { opacity: 0.7; }
+.simplex-preview-text .md-code { position: relative; background: var(--sp-quote); border-radius: 10px; overflow: hidden; }
+.simplex-preview-text .md-code pre { margin: 0; padding: 8px 12px; overflow-x: auto; white-space: pre; font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.875em; line-height: 1.45; }
+.simplex-preview-text .md-copy { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 7px; background: var(--sp-quote); color: var(--sp-link); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+.simplex-preview-text .md-code:hover .md-copy,
+.simplex-preview-text .md-code.tapped .md-copy,
+.simplex-preview-text .md-copy:focus-visible { opacity: 1; pointer-events: auto; }
+.simplex-preview-text .md-copy svg { width: 18px; height: 18px; }
+.simplex-preview-text .md-icon-done,
+.simplex-preview-text .md-copy.copied .md-icon-copy { display: none; }
+.simplex-preview-text .md-copy.copied .md-icon-done { display: block; }
+.simplex-preview-text .md-table { overflow-x: auto; }
+.simplex-preview-text .md-frame { display: inline-block; vertical-align: top; border: 1px solid var(--sp-md-line); border-radius: 10px; overflow: hidden; }
+.simplex-preview-text .md-frame table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.simplex-preview-text .md-frame th,
+.simplex-preview-text .md-frame td { padding: 4px 12px; white-space: nowrap; border-right: 1px solid var(--sp-md-line); border-bottom: 1px solid var(--sp-md-line); }
+.simplex-preview-text .md-frame th:last-child,
+.simplex-preview-text .md-frame td:last-child { border-right: 0; }
+.simplex-preview-text .md-frame tr:last-child th,
+.simplex-preview-text .md-frame tr:last-child td { border-bottom: 0; }
+.simplex-preview-text .md-frame th { font-weight: 700; background: var(--sp-quote); }
+.simplex-preview-text .md-frame tr:nth-child(odd) td { background: var(--sp-md-stripe); }
+.simplex-preview-text .md-rule { border: 0; border-top: 1px solid var(--sp-md-line); margin: 6px 0; }
+
 .simplex-preview-main {
   flex: 1;
   min-width: 0;
@@ -1051,6 +1250,7 @@ function render(container, data, channelLink, showAppBadges) {
       ts: messages.length > 0 ? messages[0].ts : new Date().toISOString(),
       content: { type: 'text', text: typeof welcome === 'string' ? welcome : '' },
       formattedText: Array.isArray(welcome) ? welcome : null,
+      markdownBlocks: data.welcomeMessageBlocks,
       reactions: []
     };
     allMessages = [welcomeMsg].concat(messages);
@@ -1153,7 +1353,7 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
   if (shortDescr) {
     const descrDiv = document.createElement('div');
     descrDiv.className = 'simplex-preview-info-descr';
-    descrDiv.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr) : escapeHtml(shortDescr);
+    descrDiv.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr, data.shortDescriptionBlocks) : escapeHtml(shortDescr);
     container.appendChild(descrDiv);
   }
 
@@ -1232,25 +1432,6 @@ function qrColor(value, fallback) {
   value = (value || '').trim();
   if (!value) return fallback;
   return value === 'transparent' ? '#0000' : value;
-}
-
-// navigator.clipboard is undefined outside secure contexts; fall back to execCommand
-function copyToClipboard(text) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    return navigator.clipboard.writeText(text);
-  }
-  return new Promise(function(resolve, reject) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.top = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch (e) {}
-    document.body.removeChild(ta);
-    ok ? resolve() : reject(new Error('copy failed'));
-  });
 }
 
 function renderDesktopConversion(container, channelLink, showAppBadges) {
@@ -1356,6 +1537,7 @@ function setupSecretToggles(container) {
   container.addEventListener('click', (e) => {
     const secret = e.target.closest('.secret');
     if (secret) secret.classList.toggle('visible');
+    handleCodeClick(e);
   });
 }
 
@@ -1412,6 +1594,7 @@ function renderMessages(container, messages, membersMap, channel) {
     }
 
     const col = document.createElement('div');
+    col.className = 'simplex-preview-msg-col';
     const bubble = renderBubble(msg, member, showTail, membersMap, channel);
     col.appendChild(bubble);
 
@@ -1685,7 +1868,7 @@ function appendTextBlock(bubble, msg) {
   textDiv.className = 'simplex-preview-text';
   const meta = renderMetaHTML(msg);
   if (msg.formattedText && msg.formattedText.length > 0) {
-    textDiv.innerHTML = renderMarkdown(msg.formattedText) + meta;
+    textDiv.innerHTML = renderMarkdown(msg.formattedText, msg.markdownBlocks) + meta;
   } else {
     textDiv.innerHTML = escapeHtml(msg.content.text || '') + meta;
   }
