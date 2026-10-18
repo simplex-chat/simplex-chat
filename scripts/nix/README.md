@@ -425,10 +425,21 @@ before the production build starts; this metadata check has a twenty-second
 overall limit and does not compile or run GHC.
 
 The recorder loads only into the selected normal SimpleX iOS compiler process.
-It reports its main executable's UUID, image base and slide, then records SIGBUS
-fault address, signal code and registers, including PC and SP, if the process
-faults. It does not unwind the signal handler or read memory at the fault
-address. It restores the loader environment before compiler children start and
+Preparation reports the exact executable's `LC_UUID` and `LC_SEGMENT_64` virtual
+and file ranges, reading at most a 32-byte header and 1 MiB of load commands.
+The startup record reports the runtime main-image base, slide and UUID; compare
+these with the executable ranges before attributing a PC to its main image.
+On SIGBUS it records the fault address, signal code and registers, including PC
+and SP, plus the raw x86 trap number, error code and exception fault address.
+After writing that primary record, the x86 handler attempts one 16-byte `write`
+from PC to an optional `<record>.pc` sidecar. The kernel copies the bytes; the
+handler makes no C dereference of PC, formatter, image lookup or unwinder call. It
+appends the optional copy's result and errno in a separate fixed-size record.
+Missing, partial, unreadable or invalid optional data stays explicit in decoded
+output and preserves the primary fault facts. Old two-record files still
+decode unchanged. These facts alone do not identify a dynamically loaded object
+or establish a fault's cause.
+The recorder restores the loader environment before compiler children start and
 disables core output. This diagnostic adds a loaded image and a signal handler;
 its results require comparison with the canonical failure. SIGBUS still
 terminates the instrumented compiler; its enclosing shell reports status 138.
@@ -436,7 +447,9 @@ The build driver always returns the original canonical build status. A skipped,
 failed or successful replay does not qualify a production output. Run the
 selector and launcher controls with
 `python3 -B scripts/nix/test-select-ghc-sigbus.py` and
-`python3 -B scripts/nix/test-trace-intel-ghc.py`. The recorder's owned-process
+`python3 -B scripts/nix/test-trace-intel-ghc.py`. Run pure parser and source checks
+with `python3 -B scripts/nix/test-trace-ghc-sigbus.py ParserControls MachOMetadataControls InstructionRecordControls`.
+The recorder's owned-process
 controls are in `python3 -B scripts/nix/test-trace-ghc-sigbus.py`.
 
 When the pinned Intel Darwin `ghc-boot` component fails, CI captures a separate

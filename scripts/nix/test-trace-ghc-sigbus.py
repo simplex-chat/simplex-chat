@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import signal
 import struct
 import subprocess
@@ -19,6 +20,30 @@ HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("sigbus", HERE / "trace-ghc-sigbus.py")
 SIGBUS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SIGBUS)
+
+
+def macho_image(architecture="x86_64", uuid=bytes(range(16))):
+    # Data-only Mach-O header/load commands; never executed or loaded.
+    commands = (struct.pack("<II", 0x1B, 24) + uuid) if uuid is not None else b""
+    size = 32 + len(commands) + 72
+    commands += struct.pack("<II16s4Q4I", 0x19, 72, b"__TEXT", 0x100000000, 4096,
+                            0, size, 7, 5, 0, 0)
+    return struct.pack("<8I", 0xFEEDFACF, SIGBUS.CPUS[architecture], 0, 2,
+                       2 if uuid is not None else 1, len(commands), 0, 0) + commands
+
+
+def primary_words(extension=False):
+    startup = [SIGBUS.MAGIC, 1, 1, SIGBUS.CPUS["x86_64"]] + [0] * 60
+    startup[4:7] = [77436, 0x107720000, 0x7720000]
+    fault = [SIGBUS.MAGIC, 1, 2, SIGBUS.CPUS["x86_64"]] + [0] * 60
+    fault[4:8] = [10, 2, 0x11F70DFFF, 0x11F70D01E]
+    if extension:
+        fault[41:45] = [1, 14, 6, 0x11F70DFFF]
+    return startup, fault
+
+
+def packed(*records):
+    return b"".join(struct.pack("<64Q", *record) for record in records)
 
 FIXTURE = r'''
 #define _DARWIN_C_SOURCE 1
@@ -114,8 +139,8 @@ class ParserControls(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="ghc-sigbus-parser-") as directory:
             root = Path(directory)
             binary, tracer = root / "ghc-fixture", root / "tracer.dylib"
-            for path, kind in ((binary, 2), (tracer, 6)):
-                path.write_bytes(struct.pack("<4I", 0xFEEDFACF, SIGBUS.CPUS["arm64"], 0, kind))
+            binary.write_bytes(macho_image("arm64"))
+            tracer.write_bytes(struct.pack("<4I", 0xFEEDFACF, SIGBUS.CPUS["arm64"], 0, 6))
             source = root / "ghc-source"
             source.write_text('#!/bin/sh\nexec ' + str(binary) + ' "$@"\n')
             original_hash = hashlib.sha256(source.read_bytes()).hexdigest()
@@ -131,6 +156,200 @@ class ParserControls(unittest.TestCase):
             link.symlink_to(source)
             with self.assertRaises(OSError):
                 SIGBUS.prepare(link, root / "link-copy", tracer, root / "link.bin", "arm64", binary)
+
+
+class MachOMetadataControls(unittest.TestCase):
+    def test_prepare_reports_exact_uuid_and_segment_without_reading_payload(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binary, tracer, source = root / "ghc-fixture", root / "tracer", root / "source"
+            binary.write_bytes(macho_image() + b"payload that is not a load command")
+            tracer.write_bytes(struct.pack("<4I", 0xFEEDFACF, SIGBUS.CPUS["x86_64"], 0, 6))
+            original = '#!/bin/sh\nexec ' + str(binary) + ' "$@"\n'
+            source.write_text(original)
+            with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("Unbounded read")):
+                report = SIGBUS.prepare(source, root / "copy", tracer, root / "record", "x86_64", binary)
+            self.assertEqual(report["executableImage"], {
+                "uuid": bytes(range(16)).hex(), "segments": [{
+                    "name": "__TEXT", "vmaddr": "0x100000000", "vmsize": "0x1000",
+                    "fileoff": "0x0", "filesize": "0x80", "maxprot": 7, "initprot": 5,
+                }],
+            })
+            self.assertEqual(source.read_text(), original)
+            self.assertTrue(report["originalExecAndArgumentsPreserved"])
+
+    def test_missing_uuid_is_explicit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "ghc"
+            binary.write_bytes(macho_image(uuid=None))
+            report = SIGBUS.executable_image(binary, "x86_64")
+            self.assertIsNone(report["uuid"])
+            self.assertEqual(len(report["segments"]), 1)
+
+    def test_malformed_or_unbounded_commands_are_rejected(self):
+        original = macho_image()
+        variants = [original[:16], original[:-1]]
+        for offset, value in [(4, SIGBUS.CPUS["arm64"]), (12, 6), (16, 1), (16, 1025),
+                              (20, 1024 * 1024 + 1), (36, 0), (36, 25), (60, 64),
+                              (120, 1)]:
+            data = bytearray(original)
+            struct.pack_into("<I", data, offset, value)
+            variants.append(data)
+        data = bytearray(original)
+        struct.pack_into("<Q", data, 104, 4096)  # segment filesize exceeds the file
+        variants.append(data)
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "ghc"
+            for data in variants:
+                with self.subTest(data=bytes(data[:40])):
+                    binary.write_bytes(data)
+                    with self.assertRaises(ValueError):
+                        SIGBUS.executable_image(binary, "x86_64")
+
+
+class InstructionRecordControls(unittest.TestCase):
+    def decode(self, result=16, error=0, attempted=1, sidecar=bytes(range(16)), metadata=None):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fault.bin"
+            words = [SIGBUS.MAGIC, 1, 3, SIGBUS.CPUS["x86_64"]] + [0] * 60
+            words[4:9] = [0x11F70D01E, 16, result & (2**64 - 1), error, attempted]
+            if metadata is not None:
+                words = metadata(words)
+            path.write_bytes(packed(*primary_words(True), words))
+            if sidecar is not None:
+                Path(str(path) + ".pc").write_bytes(sidecar)
+            return SIGBUS.decode(path)
+
+    def test_old_two_record_format_is_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fault.bin"
+            data = packed(*primary_words())
+            path.write_bytes(data)
+            report = SIGBUS.decode(path)
+            self.assertEqual(set(report), {"bytes", "sha256", "records"})
+            self.assertEqual(report["bytes"], 1024)
+            self.assertEqual(report["sha256"], hashlib.sha256(data).hexdigest())
+            self.assertEqual([r["kind"] for r in report["records"]], ["startup", "fault"])
+            self.assertNotIn("x86ExceptionState", report["records"][1])
+            self.assertEqual(report["records"][1]["pc"], "0x11f70d01e")
+
+    def test_exception_state_and_complete_instruction_bytes(self):
+        report = self.decode()
+        self.assertEqual(report["records"][1]["x86ExceptionState"], {
+            "trapNumber": 14, "errorCode": "0x6", "faultAddress": "0x11f70dfff",
+        })
+        optional = report["records"][2]
+        self.assertEqual(optional["status"], "complete")
+        self.assertEqual(optional["instructionBytes"], bytes(range(16)).hex())
+        self.assertEqual(optional["writeResult"], 16)
+
+    def test_partial_failed_disabled_and_missing_byte_captures_keep_primary(self):
+        for arguments, status in [
+            ({"result": 5, "sidecar": b"12345"}, "partial"),
+            ({"result": -1, "error": 14, "sidecar": b""}, "write-failed"),
+            ({"result": -1, "error": 36, "attempted": 0, "sidecar": None}, "disabled"),
+            ({"sidecar": None}, "sidecar-unavailable"),
+            ({"sidecar": b"short"}, "sidecar-size-mismatch"),
+            ({"sidecar": bytes(17)}, "sidecar-unavailable"),
+        ]:
+            with self.subTest(arguments=arguments):
+                report = self.decode(**arguments)
+                self.assertEqual([r["kind"] for r in report["records"][:2]], ["startup", "fault"])
+                self.assertEqual(report["records"][1]["faultAddress"], "0x11f70dfff")
+                self.assertEqual(report["records"][2]["status"], status)
+
+    def test_optional_metadata_failures_keep_complete_primary_records(self):
+        for field, value in [(0, 0), (2, 4), (3, SIGBUS.CPUS["arm64"]), (4, 0),
+                             (5, 17), (6, 17), (7, 14), (8, 2)]:
+            with self.subTest(field=field):
+                def change(words):
+                    words[field] = value
+                    return words
+                report = self.decode(metadata=change)
+                self.assertEqual(len(report["records"]), 2)
+                self.assertIn("optionalInstructionError", report)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fault.bin"
+            primary = packed(*primary_words(True))
+            for suffix in [b"", b"partial optional metadata"]:
+                path.write_bytes(primary + suffix)
+                report = SIGBUS.decode(path)
+                self.assertEqual(len(report["records"]), 2)
+                self.assertIn("optionalInstructionError", report)
+            path.write_bytes(primary[:768])
+            with self.assertRaisesRegex(ValueError, "primary"):
+                SIGBUS.decode(path)
+
+    def test_instruction_bytes_require_the_same_fault_cpu(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fault.bin"
+            startup, fault = primary_words()
+            fault[3] = SIGBUS.CPUS["arm64"]
+            metadata = [SIGBUS.MAGIC, 1, 3, SIGBUS.CPUS["x86_64"]] + [0] * 60
+            metadata[4:9] = [fault[7], 16, 16, 0, 1]
+            path.write_bytes(packed(startup, fault, metadata))
+            Path(str(path) + ".pc").write_bytes(bytes(16))
+            report = SIGBUS.decode(path)
+            self.assertEqual(len(report["records"]), 2)
+            self.assertIn("context", report["optionalInstructionError"])
+
+    def test_sidecar_is_nofollow_regular_and_bounded_to_sixteen_bytes(self):
+        original = SIGBUS.read_regular
+        observed = []
+        def observe(path, limit):
+            observed.append((str(path), limit))
+            return original(path, limit)
+        with mock.patch.object(SIGBUS, "read_regular", side_effect=observe):
+            self.decode()
+        self.assertEqual([limit for path, limit in observed if path.endswith(".pc")], [16])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fault.bin"
+            words = [SIGBUS.MAGIC, 1, 3, SIGBUS.CPUS["x86_64"]] + [0] * 60
+            words[4:9] = [0x11F70D01E, 16, 16, 0, 1]
+            path.write_bytes(packed(*primary_words(True), words))
+            sidecar = Path(str(path) + ".pc")
+            target = Path(directory) / "target"
+            target.write_bytes(bytes(16))
+            real_fdopen = os.fdopen
+            read_sizes = []
+            class BoundedStream:
+                def __init__(self, descriptor, mode):
+                    self.stream = real_fdopen(descriptor, mode)
+                def __enter__(self):
+                    return self
+                def __exit__(self, *args):
+                    self.stream.close()
+                def fileno(self):
+                    return self.stream.fileno()
+                def read(self, size):
+                    read_sizes.append(size)
+                    return self.stream.read(size)
+            with mock.patch.object(SIGBUS.os, "fdopen", side_effect=BoundedStream):
+                self.assertEqual(SIGBUS.read_regular(target, 16), bytes(16))
+            self.assertEqual(read_sizes, [16])
+            sidecar.symlink_to(target)
+            self.assertEqual(SIGBUS.decode(path)["records"][2]["status"], "sidecar-unavailable")
+            sidecar.unlink()
+            os.mkfifo(sidecar)
+            self.assertEqual(SIGBUS.decode(path)["records"][2]["status"], "sidecar-unavailable")
+
+    def test_handler_source_uses_only_bounded_async_safe_capture(self):
+        source = (HERE / "trace_ghc_sigbus.c").read_text()
+        handler = source.split("static void fault_record(", 1)[1].split("__attribute__((constructor))", 1)[0]
+        statements = re.sub(r"(?m)^#.*$", "", re.sub(r"/\*.*?\*/", "", handler, flags=re.DOTALL))
+        calls = set(re.findall(r"\b([A-Za-z_]\w*)\s*\(", statements))
+        self.assertEqual(calls, {"if", "for", "sizeof", "atomic_load_explicit", "write", "kill", "getpid"})
+        capture = "write(code_descriptor, (const void *)(uintptr_t)record[7], INSTRUCTION_BYTES)"
+        self.assertEqual(handler.count(capture), 1)
+        self.assertLess(handler.index("write(descriptor, record, sizeof(record))"), handler.index(capture))
+        self.assertLess(handler.index(capture), handler.index("write(descriptor, code_record, sizeof(code_record))"))
+        self.assertLess(handler.index("write(descriptor, code_record"), handler.index("kill(getpid()"))
+        self.assertIn("if (primary_bytes == (ssize_t)sizeof(record))", handler)
+        self.assertIn("#define INSTRUCTION_BYTES 16", source)
+        optional = source.split("char code_path[PATH_MAX];", 1)[1].split("#endif", 1)[0]
+        self.assertIn('snprintf(code_path, sizeof(code_path), "%s.pc", path)', optional)
+        self.assertIn("O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600", optional)
+        self.assertNotIn("fail()", optional)
 
 
 class Controls(unittest.TestCase):

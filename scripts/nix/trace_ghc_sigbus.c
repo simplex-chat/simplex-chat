@@ -3,11 +3,13 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
 #include <signal.h>
 #include <stdatomic.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/resource.h>
@@ -16,6 +18,7 @@
 
 #define RECORD_MAGIC UINT64_C(0x5349474255533031)
 #define RECORD_WORDS 64
+#define INSTRUCTION_BYTES 16
 
 #if defined(__x86_64__)
 #define RECORD_CPU CPU_TYPE_X86_64
@@ -25,9 +28,13 @@
 #error "The SIGBUS diagnostic requires 64-bit Darwin"
 #endif
 
-/* This is the only static value read from the signal handler. */
+/* The handler reads only lock-free atomic integers from static storage. */
 _Static_assert(ATOMIC_INT_LOCK_FREE == 2, "The handler requires lock-free int atomics");
 static atomic_int record_fd = ATOMIC_VAR_INIT(-1);
+#if defined(__x86_64__)
+static atomic_int code_fd = ATOMIC_VAR_INIT(-1);
+static atomic_int code_open_error = ATOMIC_VAR_INIT(0);
+#endif
 
 static void fail(void)
 {
@@ -38,8 +45,9 @@ static void fail(void)
 
 static void fault_record(int signal_number, siginfo_t *information, void *context)
 {
-    /* No formatter, allocator, unwinder, dyld call, or fault-address read here.
-     * A short/interrupted write is reported as a truncated record by the reader.
+    /* No formatter, allocator, unwinder, dyld call, or C fault-address read here.
+     * The optional byte copy goes through write's kernel copyin, never a C
+     * dereference. A short/interrupted primary write remains a truncated record.
      */
     uint64_t record[RECORD_WORDS] = {0};
     record[0] = RECORD_MAGIC;
@@ -73,6 +81,14 @@ static void fault_record(int signal_number, siginfo_t *information, void *contex
         record[23] = state->__r13;
         record[24] = state->__r14;
         record[25] = state->__r15;
+        const struct __darwin_x86_exception_state64 *exception = &machine->uc_mcontext->__es;
+        /* Versioned extension in words unused by either architecture. Old
+         * record files leave the marker zero and keep their original decode.
+         */
+        record[41] = 1;
+        record[42] = exception->__trapno;
+        record[43] = exception->__err;
+        record[44] = exception->__faultvaddr;
 #else
         const struct __darwin_arm_thread_state64 *state = &machine->uc_mcontext->__ss;
         record[7] = state->__pc;
@@ -85,7 +101,36 @@ static void fault_record(int signal_number, siginfo_t *information, void *contex
         }
 #endif
     }
-    (void)write(atomic_load_explicit(&record_fd, memory_order_relaxed), record, sizeof(record));
+    const int descriptor = atomic_load_explicit(&record_fd, memory_order_relaxed);
+    const ssize_t primary_bytes = write(descriptor, record, sizeof(record));
+#if defined(__x86_64__)
+    if (primary_bytes == (ssize_t)sizeof(record)) {
+        uint64_t code_record[RECORD_WORDS] = {0};
+        const int code_descriptor = atomic_load_explicit(&code_fd, memory_order_relaxed);
+        ssize_t copied = -1;
+        int copy_error = atomic_load_explicit(&code_open_error, memory_order_relaxed);
+        int attempted = 0;
+        if (code_descriptor >= 0 && record[7] != 0) {
+            attempted = 1;
+            copied = write(code_descriptor, (const void *)(uintptr_t)record[7], INSTRUCTION_BYTES);
+            copy_error = copied < 0 ? errno : 0;
+        } else if (copy_error == 0) {
+            copy_error = EINVAL;
+        }
+        code_record[0] = RECORD_MAGIC;
+        code_record[1] = 1;
+        code_record[2] = 3;
+        code_record[3] = RECORD_CPU;
+        code_record[4] = record[7];
+        code_record[5] = INSTRUCTION_BYTES;
+        code_record[6] = (uint64_t)(int64_t)copied;
+        code_record[7] = (uint64_t)copy_error;
+        code_record[8] = (uint64_t)attempted;
+        (void)write(descriptor, code_record, sizeof(code_record));
+    }
+#else
+    (void)primary_bytes;
+#endif
     /* SA_RESETHAND restored SIG_DFL. Queue the same signal while it is blocked,
      * then return for default termination. Darwin raise() can report the same
      * si_code as a hardware fault, so returning alone could swallow that signal.
@@ -114,6 +159,27 @@ __attribute__((constructor)) static void initialize(void)
         fail();
     }
     atomic_store_explicit(&record_fd, descriptor, memory_order_relaxed);
+#if defined(__x86_64__)
+    /* Best effort: an unavailable optional sidecar must not disable the
+     * primary fault record. O_EXCL also refuses preexisting files/symlinks.
+     */
+    char code_path[PATH_MAX];
+    const int code_length = snprintf(code_path, sizeof(code_path), "%s.pc", path);
+    int code_descriptor = -1;
+    int optional_error = 0;
+    if (code_length < 0) {
+        optional_error = EIO;
+    } else if ((size_t)code_length >= sizeof(code_path)) {
+        optional_error = ENAMETOOLONG;
+    } else {
+        code_descriptor = open(code_path, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+        if (code_descriptor < 0) {
+            optional_error = errno;
+        }
+    }
+    atomic_store_explicit(&code_fd, code_descriptor, memory_order_relaxed);
+    atomic_store_explicit(&code_open_error, optional_error, memory_order_relaxed);
+#endif
     int restored = had_previous ? setenv("DYLD_INSERT_LIBRARIES", previous_copy, 1)
                                 : unsetenv("DYLD_INSERT_LIBRARIES");
     free(previous_copy);
