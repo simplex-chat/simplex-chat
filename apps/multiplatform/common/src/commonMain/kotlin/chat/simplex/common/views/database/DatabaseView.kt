@@ -603,22 +603,23 @@ fun deleteDatabaseBackups() {
   File(dataDir, "$agentDatabaseFileName.bak").delete()
 }
 
-// Advisory check before exporting the database — export transiently uses ~2x the data on disk.
-suspend fun confirmExportStorage(): Boolean {
+// export holds a copy of the data in databaseExportDir while it writes the archive to archiveDir,
+// where a migration upload then also writes an encrypted copy of the archive
+suspend fun confirmExportStorage(archiveDir: File = databaseExportDir): Boolean {
   databaseExportDir.mkdirs()
-  val requiredBytes = 2L * (
-    directoryFileCountAndSize(appFilesDir.absolutePath).second +
-      directoryFileCountAndSize(wallpapersDir.absolutePath).second +
-      File(dataDir, chatDatabaseFileName).length() +
-      File(dataDir, agentDatabaseFileName).length()
-  )
-  val availableBytes = databaseExportDir.usableSpace
-  if (availableBytes >= requiredBytes) return true
+  archiveDir.mkdirs()
+  val dataBytes = directoryFileCountAndSize(appFilesDir.absolutePath).second +
+    directoryFileCountAndSize(wallpapersDir.absolutePath).second +
+    File(dataDir, chatDatabaseFileName).length() +
+    File(dataDir, agentDatabaseFileName).length()
+  val (shortDir, requiredBytes) = listOf(archiveDir to 2L * dataBytes, databaseExportDir to dataBytes)
+    .firstOrNull { (dir, needed) -> dir.usableSpace < needed } ?: return true
+  val availableBytes = shortDir.usableSpace
   val proceed = CompletableDeferred<Boolean>()
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.not_enough_storage_title),
     text = String.format(generalGetString(MR.strings.not_enough_storage_desc), formatBytes(requiredBytes), formatBytes(availableBytes)),
-    confirmText = generalGetString(MR.strings.chat_database_exported_continue),
+    confirmText = generalGetString(MR.strings.continue_to_next_step),
     onConfirm = { proceed.complete(true) },
     onDismiss = { proceed.complete(false) },
     onDismissRequest = { proceed.complete(false) },
@@ -632,8 +633,11 @@ private suspend fun exportArchive(
   chatArchiveFile: MutableState<String?>,
   saveArchiveLauncher: FileChooserLauncher
 ): Boolean {
-  if (!confirmExportStorage()) return false
   progressIndicator.value = true
+  if (!confirmExportStorage()) {
+    progressIndicator.value = false
+    return false
+  }
   try {
     val (archiveFile, archiveErrors) = exportChatArchive(m, null, chatArchiveFile)
     chatArchiveFile.value = archiveFile

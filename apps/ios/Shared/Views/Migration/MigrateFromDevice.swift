@@ -35,6 +35,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
     case databaseError(_ title: LocalizedStringKey = "Database error", message: String)
     case unknownError(_ title: LocalizedStringKey = "Unknown error", message: String)
     case archiveExportedWithErrors(archivePath: URL, archiveErrors: [ArchiveError])
+    case lowStorage(required: Int64, available: Int64)
 
     case error(title: LocalizedStringKey, error: String = "")
 
@@ -50,6 +51,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
         case let .databaseError(title, message): return "\(title) \(message)"
         case let .unknownError(title, message): return "\(title) \(message)"
         case let .archiveExportedWithErrors(path, _): return "archiveExportedWithErrors \(path)"
+        case .lowStorage: return "lowStorage"
 
         case let .error(title, _): return "error \(title)"
         }
@@ -183,6 +185,12 @@ struct MigrateFromDevice: View {
                         Task { await uploadArchive(path: archivePath) }
                     }
                 )
+            case let .lowStorage(required, available):
+                return lowStorageAlert(required, available, onContinue: {
+                    Task { await archiveAndUpload() }
+                }, onCancel: {
+                    migrationState = .uploadConfirmation
+                })
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
@@ -262,7 +270,7 @@ struct MigrateFromDevice: View {
             progressView()
         }
         .onAppear {
-            exportArchiveCheckingStorage()
+            exportArchive()
         }
     }
 
@@ -463,31 +471,46 @@ struct MigrateFromDevice: View {
         }
     }
 
-    private func exportArchiveCheckingStorage() {
+    private func exportArchive() {
         Task {
-            if await confirmExportStorage() { await MainActor.run { exportArchive() } }
-            else { await MainActor.run { migrationState = .uploadConfirmation } }
+            if let s = await exportStorageShortfall() {
+                await MainActor.run { alert = .lowStorage(required: s.required, available: s.available) }
+            } else {
+                await archiveAndUpload()
+            }
         }
     }
 
-    private func exportArchive() {
-        Task {
-            do {
-                try? FileManager.default.createDirectory(at: getMigrationTempFilesDirectory(), withIntermediateDirectories: true)
-                let (archivePath, errs) = try await exportChatArchive(getMigrationTempFilesDirectory())
-                if errs.isEmpty {
-                    await uploadArchive(path: archivePath)
-                } else {
-                    await MainActor.run {
-                        alert = .archiveExportedWithErrors(archivePath: archivePath, archiveErrors: errs)
-                        migrationState = .uploadConfirmation
-                    }
-                }
-            } catch let error {
+    private func archiveAndUpload() async {
+        do {
+            try? FileManager.default.createDirectory(at: getMigrationTempFilesDirectory(), withIntermediateDirectories: true)
+            let (archivePath, errs) = try await exportChatArchive(getMigrationTempFilesDirectory())
+            let archiveBytes = (try? FileManager.default.attributesOfItem(atPath: archivePath.path)[.size] as? Int64) ?? 0
+            if archiveBytes > MAX_FILE_SIZE_XFTP_HARD {
+                try? FileManager.default.removeItem(at: archivePath)
                 await MainActor.run {
-                    alert = .error(title: "Error exporting chat database", error: responseError(error))
+                    alert = .error(
+                        title: "Database is too large",
+                        error: String.localizedStringWithFormat(
+                            NSLocalizedString("The exported archive (%@) is larger than the maximum size supported for migration (%@).", comment: "migration alert"),
+                            ByteCountFormatter.string(fromByteCount: archiveBytes, countStyle: .binary),
+                            ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP_HARD, countStyle: .binary)
+                        )
+                    )
                     migrationState = .uploadConfirmation
                 }
+            } else if errs.isEmpty {
+                await uploadArchive(path: archivePath)
+            } else {
+                await MainActor.run {
+                    alert = .archiveExportedWithErrors(archivePath: archivePath, archiveErrors: errs)
+                    migrationState = .uploadConfirmation
+                }
+            }
+        } catch let error {
+            await MainActor.run {
+                alert = .error(title: "Error exporting chat database", error: responseError(error))
+                migrationState = .uploadConfirmation
             }
         }
     }
@@ -495,20 +518,6 @@ struct MigrateFromDevice: View {
     private func uploadArchive(path archivePath: URL) async {
         if let attrs = try? FileManager.default.attributesOfItem(atPath: archivePath.path),
             let totalBytes = attrs[.size] as? Int64 {
-            if totalBytes > MAX_FILE_SIZE_XFTP_HARD {
-                await MainActor.run {
-                    alert = .error(
-                        title: "Database is too large",
-                        error: String.localizedStringWithFormat(
-                            NSLocalizedString("The exported archive (%@) is larger than the maximum size supported for migration (%@).", comment: "migration alert"),
-                            ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .binary),
-                            ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP_HARD, countStyle: .binary)
-                        )
-                    )
-                    migrationState = .uploadConfirmation
-                }
-                return
-            }
             await MainActor.run {
                 migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
             }
@@ -806,27 +815,25 @@ struct MigrateFromDevice_Previews: PreviewProvider {
     }
 }
 
-// Advisory check before exporting the database — export transiently uses ~2x the data on disk.
-func confirmExportStorage() async -> Bool {
+// export transiently holds a copy of the data and the archive of it
+func exportStorageShortfall() async -> (required: Int64, available: Int64)? {
     let dataBytes = await Task.detached { estimatedExportBytes() }.value
     let required = dataBytes * 2
-    guard let available = availableImportantBytes(at: getDocumentsDirectory()), available < required else { return true }
-    return await withCheckedContinuation { cont in
-        DispatchQueue.main.async {
-            showAlert(
-                NSLocalizedString("You may not have enough storage", comment: "alert title"),
-                message: String.localizedStringWithFormat(
-                    NSLocalizedString("Exporting the database may need about %@ of free space, but only %@ is available. Continue anyway?", comment: "alert message"),
-                    ByteCountFormatter.string(fromByteCount: required, countStyle: .binary),
-                    ByteCountFormatter.string(fromByteCount: available, countStyle: .binary)
-                ),
-                actions: {
-                    [ UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default) { _ in cont.resume(returning: true) },
-                      UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in cont.resume(returning: false) } ]
-                }
-            )
-        }
-    }
+    guard let available = availableImportantBytes(at: getDocumentsDirectory()), available < required else { return nil }
+    return (required, available)
+}
+
+func lowStorageAlert(_ required: Int64, _ available: Int64, onContinue: @escaping () -> Void, onCancel: @escaping () -> Void) -> Alert {
+    Alert(
+        title: Text("You may not have enough storage"),
+        message: Text(String.localizedStringWithFormat(
+            NSLocalizedString("Exporting the database may need about %@ of free space, but only %@ is available. Continue anyway?", comment: "alert message"),
+            ByteCountFormatter.string(fromByteCount: required, countStyle: .binary),
+            ByteCountFormatter.string(fromByteCount: available, countStyle: .binary)
+        )),
+        primaryButton: .default(Text("Continue"), action: onContinue),
+        secondaryButton: .cancel(onCancel)
+    )
 }
 
 private func estimatedExportBytes() -> Int64 {
