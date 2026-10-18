@@ -1,0 +1,52 @@
+{
+  "name": "@simplex-chat/mcp",
+  "version": "0.1.0",
+  "description": "MCP server that gives an AI agent its own SimpleX profile",
+  "main": "dist/serve.js",
+  "types": "dist/serve.d.ts",
+  "bin": {
+    "simplex-mcp": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "TESTING.md",
+    "PLAN.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest test/unit",
+    "test:e2e": "jest test/e2e"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "^2.1.1",
+    "@modelcontextprotocol/server": "^2.3.1",
+    "@simplex-chat/types": "^0.12.1",
+    "qrcode": "^1.5",
+    "simplex-chat": "7.1.0-beta.6.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.0.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git",
+    "directory": "packages/simplex-chat-mcp"
+  },
+  "keywords": [
+    "simplex",
+    "mcp",
+    "agent",
+    "privacy"
+  ],
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0"
+}
