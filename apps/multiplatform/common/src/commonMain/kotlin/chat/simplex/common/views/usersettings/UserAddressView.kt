@@ -38,7 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun UserAddressView(
+fun ModalData.UserAddressView(
   chatModel: ChatModel,
   shareViaProfile: Boolean = false,
   autoCreateAddress: Boolean = false,
@@ -46,7 +46,7 @@ fun UserAddressView(
   close: () -> Unit
 ) {
   // TODO close when remote host changes
-  val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
+  val shareViaProfile = remember { stateGetOrPut("shareViaProfile") { shareViaProfile } }
   val progressIndicator = remember { mutableStateOf(false) }
   val user = remember { chatModel.currentUser }
   val clipboard = LocalClipboardManager.current
@@ -114,9 +114,11 @@ fun UserAddressView(
 
   fun share(userAddress: String) { clipboard.shareText(userAddress) }
 
-  LaunchedEffect(autoCreateAddress) {
-    if (chatModel.userAddress.value == null && autoCreateAddress) {
-      createAddress()
+  val autoCreatePending = remember { stateGetOrPut("autoCreateAddress") { autoCreateAddress } }
+  LaunchedEffect(Unit) {
+    if (autoCreatePending.value) {
+      autoCreatePending.value = false
+      if (chatModel.userAddress.value == null) createAddress()
     }
   }
   val userAddress = remember { chatModel.userAddress }
