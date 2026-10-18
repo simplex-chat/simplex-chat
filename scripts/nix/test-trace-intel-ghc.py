@@ -8,6 +8,8 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -100,6 +102,36 @@ class LauncherTests(unittest.TestCase):
             self.assertEqual(result, 0)
             self.assertEqual(sum("--expr" in call[0] for call in calls), 1)
             self.assertFalse(any("--file" in call[0] for call in calls))
+
+    @unittest.skipUnless(shutil.which("nix") and shutil.which("git"), "requires Nix and Git")
+    def test_pure_preparation_uses_pinned_flake_source(self):
+        with tempfile.TemporaryDirectory(prefix="intel-python-source-") as folder:
+            root = Path(folder)
+            factory = root / "scripts/nix/native-packages.nix"
+            factory.parent.mkdir(parents=True)
+            (root / "flake.nix").write_text('{ outputs = { self }: {}; }\n')
+            # The factory ignores its input: this fixture checks source access,
+            # without evaluating haskell.nix or building Python or a compiler.
+            factory.write_text('{ haskellNix }: system: { python3 = "pinned:${system}"; }\n')
+            def call(argv):
+                return subprocess.run(argv, cwd=root, text=True, capture_output=True, timeout=30)
+            call(["git", "init", "-q", "-b", "master"]).check_returncode()
+            call(["git", "add", "flake.nix", "scripts/nix/native-packages.nix"]).check_returncode()
+            call(["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                  "commit", "-qm", "pinned fixture"]).check_returncode()
+            revision = call(["git", "rev-parse", "HEAD"])
+            revision.check_returncode()
+            flake = "builtins.getFlake " + TRACE.nix_string("git+" + root.as_uri() + "?rev=" + revision.stdout.strip())
+            factory.write_text('throw "read live workspace"\n')
+            original = ("let f = " + flake + "; in (import " + TRACE.nix_string(factory)
+                        + ' { haskellNix = f.inputs.haskellNix; } "x86_64-darwin").python3')
+            argv = ["nix", "eval", "--offline", "--option", "pure-eval", "true", "--json", "--expr"]
+            rejected = call([*argv, original])
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("forbidden in pure evaluation mode", rejected.stderr)
+            fixed = call([*argv, TRACE.python_expression(flake)])
+            self.assertEqual(fixed.returncode, 0, fixed.stderr)
+            self.assertEqual(json.loads(fixed.stdout), "pinned:x86_64-darwin")
 
     def test_actual_metadata_output_is_bounded(self):
         with self.assertRaises(ValueError):

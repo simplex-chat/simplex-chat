@@ -35,6 +35,13 @@ def nix_string(value):
     return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"').replace("${", "\\${") + '"'
 
 
+def python_expression(flake):
+    # Pure evaluation permits the pinned flake source, not the live checkout.
+    return ("let f = " + flake
+            + '; in (import (f.outPath + "/scripts/nix/native-packages.nix")'
+            + ' { haskellNix = f.inputs.haskellNix; } "x86_64-darwin").python3')
+
+
 def command_status(arguments, seconds, **streams):
     # A fresh session gives this command and its descendants a group owned by
     # this launcher. macOS need not provide GNU timeout (or a Homebrew alias).
@@ -146,9 +153,7 @@ def main():
             flake = "builtins.getFlake " + nix_string("git+" + repo.as_uri() + "?rev=" + revision)
             original = ("let f = " + flake + "; in f.hydraJobs.x86_64-darwin."
                         + nix_string("x86_64-darwin-ios:lib:simplex-chat"))
-            python = ("let f = " + flake + "; in (import "
-                      + nix_string(scripts / "native-packages.nix")
-                      + ' { haskellNix = f.inputs.haskellNix; } "x86_64-darwin").python3')
+            python = python_expression(flake)
             # Python is the only added producer input. The observed failed
             # component already realized its other inputs. Obtain Python from
             # the local store or substitutes, and skip rather than compile it.
