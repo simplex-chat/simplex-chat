@@ -5261,6 +5261,13 @@ sealed class BlockToken {
     is ParagraphBreak -> "\n".repeat(lineBreaks)
     else -> ""
   }
+
+  val previewText: String get() = when (this) {
+    is SoftBreak, is HardBreak, is CellMark -> " "
+    is LineBreak, is ParagraphBreak -> "\n"
+    is ListMark -> (number ?: "•") + " "
+    else -> ""
+  }
 }
 
 @Serializable
@@ -5288,158 +5295,27 @@ enum class TableAlign {
   @SerialName("right") Right
 }
 
-enum class BlockFont { Regular, Bold, Monospace }
+class BlockTextRange(val range: SegmentRange, val inRow: Boolean)
 
-sealed class BlockPart {
-  class Segments(val range: IntRange, val font: BlockFont): BlockPart()
-  class Text(val text: String, val font: BlockFont): BlockPart()
+val MarkdownBlock.textRanges: List<BlockTextRange> get() = when (this) {
+  is MarkdownBlock.Paragraph -> listOf(BlockTextRange(content, false))
+  is MarkdownBlock.Heading -> listOf(BlockTextRange(content, false))
+  is MarkdownBlock.CodeBlock -> listOf(BlockTextRange(content, false))
+  is MarkdownBlock.Quote -> listOf(BlockTextRange(content, false))
+  is MarkdownBlock.ItemList -> listEntries(items, 0).map { (entry, _) -> BlockTextRange(entry.content, false) }
+  is MarkdownBlock.Table -> (listOf(header) + rows).flatMap { row -> row.mapIndexed { c, cell -> BlockTextRange(cell, c > 0) } }
+  is MarkdownBlock.Rule -> emptyList()
 }
 
-const val MAX_TABLE_COLUMN_WIDTH = 40
+fun listEntries(items: List<ListEntry>, level: Int): List<Pair<ListEntry, Int>> =
+  items.flatMap { listOf(it to level) + listEntries(it.items, level + 1) }
 
-fun blockParts(fts: List<FormattedText>, blocks: List<MarkdownBlock>, displayText: (FormattedText) -> String): List<BlockPart> {
-  val parts = mutableListOf<BlockPart>()
-  fun range(r: IntRange, font: BlockFont) { parts += BlockPart.Segments(r, font) }
-  fun text(t: String, font: BlockFont) { parts += BlockPart.Text(t, font) }
-  var pos = 0
-  fun indices(from: Int, to: Int): IntRange = from.coerceIn(0, fts.size) until to.coerceIn(0, fts.size)
-  fun token(i: Int): BlockToken? = (fts[i].format as? Format.Markup)?.token
-  fun gap(to: Int) {
-    val breaks = indices(pos, to).joinToString("") { i ->
-      when (val t = token(i)) {
-        is BlockToken.LineBreak, is BlockToken.ParagraphBreak -> t.drawnText
-        else -> ""
-      }
-    }
-    if (breaks.isNotEmpty()) text(breaks, BlockFont.Regular)
-    pos = maxOf(pos, to)
-  }
-  fun skip(to: Int) {
-    pos = maxOf(pos, to)
-  }
-  fun lines(r: SegmentRange): List<IntRange> {
-    val result = mutableListOf<IntRange>()
-    var start = r.from
-    for (i in indices(r.from, r.to)) {
-      if (token(i) is BlockToken.HardBreak) {
-        result += indices(start, i)
-        start = i + 1
-      }
-    }
-    result += indices(start, r.to)
-    return result
-  }
-  fun drawRange(r: SegmentRange, font: BlockFont) {
-    gap(r.from)
-    range(indices(r.from, r.to), font)
-    skip(r.to)
-  }
-  fun drawEntry(entry: ListEntry, level: Int) {
-    gap(entry.content.from)
-    val marker = "    ".repeat(level) + (entry.number ?: "•") + " "
-    text(marker, BlockFont.Regular)
-    lines(entry.content).forEachIndexed { n, line ->
-      if (n > 0) text("\n" + " ".repeat(marker.length), BlockFont.Regular)
-      range(line, BlockFont.Regular)
-    }
-    skip(entry.content.to)
-    entry.items.forEach { drawEntry(it, level + 1) }
-  }
-  fun drawTable(table: MarkdownBlock.Table) {
-    val tableRows = listOf(table.header) + table.rows
-    fun cellWidth(cell: SegmentRange) = indices(cell.from, cell.to).sumOf { displayWidth(displayText(fts[it])) }
-    val widths = table.columns.indices.map { c ->
-      minOf(MAX_TABLE_COLUMN_WIDTH, tableRows.maxOf { row -> row.getOrNull(c)?.let(::cellWidth) ?: 0 })
-    }
-    gap(table.header.firstOrNull()?.from ?: pos)
-    tableRows.forEachIndexed { r, row ->
-      if (r > 0) text("\n", BlockFont.Monospace)
-      row.forEachIndexed { c, cell ->
-        val padding = maxOf(0, widths.getOrElse(c) { 0 } - cellWidth(cell))
-        val before = when (table.columns.getOrNull(c)) {
-          TableAlign.Right -> padding
-          TableAlign.Center -> padding / 2
-          else -> 0
-        }
-        if (c > 0) text(" │ ", BlockFont.Monospace)
-        if (before > 0) text(" ".repeat(before), BlockFont.Monospace)
-        range(indices(cell.from, cell.to), BlockFont.Monospace)
-        if (padding > before) text(" ".repeat(padding - before), BlockFont.Monospace)
-      }
-      if (r == 0) text("\n" + widths.joinToString("─┼─") { "─".repeat(it) }, BlockFont.Monospace)
-    }
-    skip(tableRows.last().lastOrNull()?.to ?: pos)
-  }
-  for (block in blocks) {
-    when (block) {
-      is MarkdownBlock.Paragraph -> drawRange(block.content, BlockFont.Regular)
-      is MarkdownBlock.Heading -> drawRange(block.content, BlockFont.Bold)
-      is MarkdownBlock.CodeBlock -> drawRange(block.content, BlockFont.Monospace)
-      is MarkdownBlock.Quote -> {
-        gap(block.content.from)
-        lines(block.content).forEachIndexed { n, line ->
-          text(if (n == 0) "│ " else "\n│ ", BlockFont.Regular)
-          range(line, BlockFont.Regular)
-        }
-        skip(block.content.to)
-      }
-      is MarkdownBlock.ItemList -> block.items.forEach { drawEntry(it, 0) }
-      is MarkdownBlock.Table -> drawTable(block)
-      is MarkdownBlock.Rule -> {
-        gap(block.mark.from)
-        text("———", BlockFont.Regular)
-        skip(block.mark.to)
-      }
-    }
-  }
-  gap(fts.size)
-  return parts
-}
+fun blockTextRanges(blocks: List<MarkdownBlock>): List<BlockTextRange> = blocks.flatMap { it.textRanges }
 
-fun displayWidth(s: String): Int {
-  var width = 0
-  var base = 0
-  var joined = false
-  s.codePoints().forEach { cp ->
-    when {
-      cp == 0x200D -> joined = true
-      joined -> joined = false
-      cp == 0xFE0F -> if (base == 1) { width++; base = 2 }
-      isZeroWidthCodePoint(cp) -> {}
-      else -> { base = if (isWideCodePoint(cp)) 2 else 1; width += base }
-    }
-  }
-  return width
-}
-
-private fun isZeroWidthCodePoint(cp: Int): Boolean =
-  cp in 0xFE00..0xFE0E || cp in 0x1F3FB..0x1F3FF || cp in 0xE0020..0xE007F
-    || Character.getType(cp).let { it == Character.NON_SPACING_MARK.toInt() || it == Character.ENCLOSING_MARK.toInt() }
-
-private val wideCodePoints = intArrayOf(
-  0x1100, 0x115F, 0x231A, 0x231B, 0x2329, 0x232A, 0x23E9, 0x23EC, 0x23F0, 0x23F0, 0x23F3, 0x23F3,
-  0x25FD, 0x25FE, 0x2614, 0x2615, 0x2648, 0x2653, 0x267F, 0x267F, 0x2693, 0x2693, 0x26A1, 0x26A1,
-  0x26AA, 0x26AB, 0x26BD, 0x26BE, 0x26C4, 0x26C5, 0x26CE, 0x26CE, 0x26D4, 0x26D4, 0x26EA, 0x26EA,
-  0x26F2, 0x26F3, 0x26F5, 0x26F5, 0x26FA, 0x26FA, 0x26FD, 0x26FD, 0x2705, 0x2705, 0x270A, 0x270B,
-  0x2728, 0x2728, 0x274C, 0x274C, 0x274E, 0x274E, 0x2753, 0x2755, 0x2757, 0x2757, 0x2795, 0x2797,
-  0x27B0, 0x27B0, 0x27BF, 0x27BF, 0x2B1B, 0x2B1C, 0x2B50, 0x2B50, 0x2B55, 0x2B55, 0x2E80, 0x3029,
-  0x302E, 0x303E, 0x3041, 0x3096, 0x309B, 0x3247, 0x3250, 0x4DBF, 0x4E00, 0xA4C6, 0xA960, 0xA97C,
-  0xAC00, 0xD7A3, 0xF900, 0xFAFF, 0xFE10, 0xFE19, 0xFE30, 0xFE6B, 0xFF01, 0xFF60, 0xFFE0, 0xFFE6,
-  0x16FE0, 0x16FE3, 0x16FF0, 0x1B2FB, 0x1F004, 0x1F004, 0x1F0CF, 0x1F0CF, 0x1F18E, 0x1F18E, 0x1F191, 0x1F19A,
-  0x1F200, 0x1F320, 0x1F32D, 0x1F335, 0x1F337, 0x1F37C, 0x1F37E, 0x1F393, 0x1F3A0, 0x1F3CA, 0x1F3CF, 0x1F3D3,
-  0x1F3E0, 0x1F3F0, 0x1F3F4, 0x1F3F4, 0x1F3F8, 0x1F43E, 0x1F440, 0x1F440, 0x1F442, 0x1F4FC, 0x1F4FF, 0x1F53D,
-  0x1F54B, 0x1F54E, 0x1F550, 0x1F567, 0x1F57A, 0x1F57A, 0x1F595, 0x1F596, 0x1F5A4, 0x1F5A4, 0x1F5FB, 0x1F64F,
-  0x1F680, 0x1F6C5, 0x1F6CC, 0x1F6CC, 0x1F6D0, 0x1F6D2, 0x1F6D5, 0x1F6DF, 0x1F6EB, 0x1F6EC, 0x1F6F4, 0x1F6FC,
-  0x1F7E0, 0x1F7F0, 0x1F90C, 0x1F93A, 0x1F93C, 0x1F945, 0x1F947, 0x1F9FF, 0x1FA70, 0x1FAF8, 0x20000, 0x3FFFD
-)
-
-private fun isWideCodePoint(cp: Int): Boolean {
-  var i = 0
-  while (i < wideCodePoints.size && cp >= wideCodePoints[i]) {
-    if (cp <= wideCodePoints[i + 1]) return true
-    i += 2
-  }
-  return false
+fun headingSegments(size: Int, blocks: List<MarkdownBlock>): BooleanArray {
+  val bold = BooleanArray(size)
+  blocks.forEach { if (it is MarkdownBlock.Heading) for (i in it.content.from.coerceIn(0, size) until it.content.to.coerceIn(0, size)) bold[i] = true }
+  return bold
 }
 
 @Serializable

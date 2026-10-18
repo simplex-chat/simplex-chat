@@ -297,7 +297,10 @@ struct ChatItemInfoView: View {
 
     @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ markdownBlocks: [MarkdownBlock]?, _ sender: String? = nil, backgroundColor: Color) -> some View {
         if text != "" {
-            TextBubble(text: text, formattedText: formattedText, markdownBlocks: markdownBlocks, sender: sender, mentions: ci.mentions, userMemberId: userMemberId, backgroundColor: backgroundColor)
+            TextBubble(
+                text: text, formattedText: formattedText, markdownBlocks: markdownBlocks, sender: sender, mentions: ci.mentions, userMemberId: userMemberId,
+                backgroundColor: backgroundColor, cardColor: ci.chatDir.sent ? theme.appColors.sentQuote : theme.appColors.receivedQuote
+            )
         } else {
             Text("no text")
                 .italic()
@@ -314,11 +317,14 @@ struct ChatItemInfoView: View {
         var mentions: [String: CIMention]?
         var userMemberId: String?
         var backgroundColor: Color
+        var cardColor: Color
         @State private var showSecrets: Set<Int> = []
 
         var body: some View {
-            let r = messageText(text, formattedText, markdownBlocks: markdownBlocks, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor))
-            return msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
+            MarkdownView(
+                text: text, formattedText: formattedText, markdownBlocks: markdownBlocks, sender: sender, mentions: mentions, userMemberId: userMemberId,
+                backgroundColor: backgroundColor, cardColor: cardColor, showSecrets: $showSecrets
+            )
         }
     }
 

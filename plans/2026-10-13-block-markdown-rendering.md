@@ -1,8 +1,8 @@
 # Block Markdown: rendering in the apps and on the web
 
-Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, drawing from markdownBlocks. Revised: 2026-10-18, drawing by index ranges (S5).
+Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, drawing from markdownBlocks. Revised: 2026-10-18, drawing by index ranges (S5). Revised: 2026-10-18, a column of block views (approved mockup https://claude.ai/artifact/7Twe2qJcdULBbcqhSPuh6k, v3).
 
-The apps draw `formattedText` with `markdownBlocks` (`2026-10-13-block-markdown.md`, sections 2 and 4) as one text per item. A message without blocks is drawn as now. In a message with blocks, the segment loop of master is called for the index ranges of the blocks, in the font of each block, and the block drawing is put between the calls (section 3). On the web, HTML blocks are drawn by the page script.
+Where a whole message is shown, the apps draw `formattedText` with `markdownBlocks` (`2026-10-13-block-markdown.md`, sections 2 and 4) as a column of block views; each text view is the segment loop of master over the index range of one block, list entry or table cell (section 3). Previews, quotes, the compose context, the profile teaser and notifications stay one text. A message without blocks is drawn as now. On the web, HTML blocks are drawn by the page script.
 
 References are to master at 382dc7480.
 
@@ -28,18 +28,16 @@ token form       compose state: parsedMessage, links, mentions, link sanitizing,
 HTML blocks      renderMarkdown (W/simplex-lib.jsc:57-128)
 ```
 
-- One text per item, as now:
+- Per text view, as in one text now:
   - taps
   - long presses
   - secrets
   - mentions
   - commands
-  - the typing indicator
-  - the meta reserve
+- Per message:
+  - the typing indicator and the meta reserve: at the end of the last view when it is text, otherwise in a line below
   - text direction
-- Lines are wrapped.
-- Code blocks and tables are scrolled with the chat.
-- Horizontal scrolling: in the terminal layout (ep/llm-ux); its table views are drawn from the same ranges, one segment loop call per cell.
+- Code blocks and tables scroll sideways; a drag that starts in them does not swipe the item.
 
 ## 2. Types
 
@@ -77,26 +75,28 @@ MarkdownBlock        @Serializable sealed class
 ListEntry            @Serializable class ListEntry(val number: String? = null, val content: SegmentRange, val items: List<ListEntry>)
 SegmentRange         @Serializable class SegmentRange(val from: Int, val to: Int)
 TableAlign           @Serializable enum class: none, left, center, right
-BlockFont            enum class: regular, bold, monospace
-BlockPart            sealed class
-                       Segments(val range: IntRange, val font: BlockFont)
-                       Text(val text: String, val font: BlockFont)
-BlockToken.drawnText the text drawn for the token (section 3)
-blockParts           (fts: List<FormattedText>, blocks: List<MarkdownBlock>, displayText: (FormattedText) -> String) -> List<BlockPart>
-                     section 3
-displayWidth         (s: String) -> Int, section 3
+BlockToken.drawnText the text of the token in a block view (section 3)
+BlockToken.previewText the text of the token in one text (section 3)
+BlockTextRange       class BlockTextRange(val range: SegmentRange, val inRow: Boolean)
+MarkdownBlock.textRanges   the ranges of the text views of a block, in source order
+                       Paragraph, Heading, CodeBlock, Quote: content
+                       ItemList: the contents of the entries, a parent before its children
+                       Table: the cells of the header, then of each row; inRow for each cell after the first of a row
+                       Rule: none
+listEntries          (items, level) -> List<Pair<ListEntry, Int>>: the entries with their levels, a parent before its children
+blockTextRanges      (blocks) -> the textRanges of all blocks
+headingSegments      (size, blocks) -> BooleanArray: the segments in heading contents
 segmentDisplayText   (ft: FormattedText, mentions: Map<String, CIMention>?, linkMode: SimplexLinkMode) -> String
                      the body of itemSegmentDisplayText (K/views/chat/item/TextItemView.kt:88-108), with mentions instead of ci
-                     Escape and Markup: the text drawn for the token (section 3)
+                     Escape and Markup: the text drawn for the token in a block view
                      replaces itemSegmentDisplayText
-itemDisplayParts     (ci: ChatItem, linkMode: SimplexLinkMode) -> List<Pair<String, String>>?
-                     per drawn part: the displayed text and the copied text
-                       segment         segmentDisplayText, its text (Markup: its drawn text)
-                       BlockPart.Text  the text, the text
-                     null without formattedText
+itemDisplay          (ci: ChatItem, linkMode: SimplexLinkMode) -> ItemDisplay?, null without formattedText
+                     parts: per segment the displayed and the copied text (Markup: its drawn text both);
+                       between text views a part "\t" (between cells of a row) or "\n"
+                     bases: per text view the offset of its first character in the selection offsets of the item; 0 for the first
+                     without markdownBlocks: the segments, bases [0]
+MarkdownBlocks       composable: the column of block views (section 3)
 ```
-
-- `blockParts` returns parts instead of calling back: the segment loop reads `@Composable` getters (`Format.style`, `MaterialTheme.colors`), so it stays in the composable scope.
 
 - Kotlin name `ItemList`: `List` is `kotlin.collections.List` in the scope of `MarkdownBlock`; JSON tag "list".
 
@@ -122,14 +122,9 @@ MarkdownBlock        enum: Decodable, Equatable, Hashable
 ListEntry            struct: Decodable, Equatable, Hashable
 SegmentRange         struct: Decodable, Equatable, Hashable
 TableAlign           enum: String, Decodable, Hashable
-BlockFont            enum: regular, bold, monospace
-BlockPart            enum: segments(Range<Int>, BlockFont), text(String, BlockFont)
-blockParts           public func (_ fts: [FormattedText], _ blocks: [MarkdownBlock], displayText: (FormattedText) -> String) -> [BlockPart]
-                     section 3
-displayWidth         public func (_ s: String) -> Int, section 3
-segmentDisplayText   (_ ft: FormattedText, _ mentions: [String: CIMention]?) -> String, in I/Chat/ChatItem/MsgContentView.swift
-                     the displayed text of a segment, as drawn by messageText (I/Chat/ChatItem/MsgContentView.swift:483-541): uri, hyperLink, simplexLink, command, mention
-                     escape and markup: the text drawn for the token (section 3)
+drawnText, previewText, BlockTextRange, textRanges, listEntries, blockTextRanges, headingSegments: as Kotlin
+MarkdownBlocksView   SwiftUI view, generic over the block text view, in I/Chat/ChatItem/MsgContentView.swift (section 3)
+MarkdownView         SwiftUI view: one text, or MarkdownBlocksView when blocks are present
 ```
 
 - The `case .bold:` pattern (I/Chat/ChatItem/MsgContentView.swift:450) binds `singleStar`.
@@ -152,119 +147,85 @@ Segment loop:
 
 ```
 segment loop      master's loop over formattedText
-                    Kotlin: MarkdownText (K/views/chat/item/TextItemView.kt:229-342)
-                    Swift: messageText (I/Chat/ChatItem/MsgContentView.swift:446-570)
-range             the range of a Segments part, all indices without blocks
-                    Swift: the loop in a nested function appendSegments(_ fts: ArraySlice<FormattedText>, _ blockFont: BlockFont)
-font              Kotlin: withStyle(bold or monospace) around the loop
-                  Swift: the base font descriptor and font of the block font; regular: those of the text style (:413-414)
-                    the fonts of formats and links derived from them
-tokens            SoftBreak            " "
-                  LineBreak            "\n"
-                  HardBreak            "\n"
-                  ParagraphBreak n     n × "\n"
-                  other Markup         nothing
-                  Escape               nothing
-                  without markdownBlocks: Markup drawn as its text (a teaser parsed from part of a text)
+                    Kotlin: MarkdownText (K/views/chat/item/TextItemView.kt)
+                    Swift: messageText (I/Chat/ChatItem/MsgContentView.swift), the loop in a nested function appendSegments
+range             a block view: the range of its block, entry or cell; otherwise all indices
+font              Kotlin: the style passed by the column
+                  Swift: parameter baseFont; the fonts of formats and links derived from it
 Bold singleStar   italic, when markdownBlocks is present
 HyperLink         linkUri "mailto:" (e-mail autolink): opened as an e-mail link
                     Kotlin: annotation OTHER_URL; Swift: without webLinkAttrKey
                   FormattedText.linkUri: null for it, so no link preview
 ```
 
-MarkdownText (Kotlin), messageText (Swift):
+Modes of the segment loop (Kotlin `MarkdownText`, Swift `messageText`):
 
 ```
-markdownBlocks null   the segment loop over all segments, as now
-otherwise             blockParts
-                        Segments   the segment loop over the range, in the font
-                        Text       the text without format, in the font
+block view    parameter range (a text view of the column)
+                tokens by drawnText: SoftBreak " ", LineBreak and HardBreak "\n", ParagraphBreak n × "\n", other markup nothing
+one text      markdownBlocks present, no range (previews, quotes, compose context, profile teaser)
+                tokens by previewText: SoftBreak, HardBreak and CellMark " "; LineBreak and ParagraphBreak "\n";
+                ListMark the number or "•" and " "; other markup nothing
+                segments in heading contents (headingSegments) bold
+no blocks     markup drawn as its text; Escape nothing
 ```
 
-`blockParts`, with `range(r, font)` for a Segments part and `text(t, font)` for a Text part:
+The column (Kotlin `MarkdownBlocks`, `blockLayout = true` of `MarkdownText`; Swift `MarkdownBlocksView`, `blockLayout` of `MsgContentView`, and `MarkdownView`):
 
 ```
-blocks       in source order
-gaps         the tokens before the first block, between two blocks, between two list entries, after the last block
-               LineBreak, ParagraphBreak: text(their drawn text, regular)
-               other tokens: nothing
-             the tokens of a block outside its ranges: nothing
-Paragraph    range(content, regular)
-Heading      range(content, bold)
-CodeBlock    range(content, monospace)
-Quote        the lines of content, divided at HardBreak tokens
-             each line: text("│ "), range(line)
-             between lines: text("\n")
-List         the entries in source order, a parent before its children
-             each entry: text(4 spaces per level below the top, "•" or the number, " ")
-               the lines of its content, divided at HardBreak tokens: range(line)
-               between lines: text("\n", then as many spaces as before its first text)
-Table        each row: each cell: range(cell, monospace), text(padding, monospace)
-                       between cells: text(" │ ", monospace)
-             between rows: text("\n")
-             under the header row: text(a run of "─" of the column width per column, "─┼─" between runs, monospace)
-             a missing cell at a row end: not drawn
-             a cell wider than its column: no padding
-             padding by the column alignment
-               none         after the text
-               left         after the text
-               right        before the text
-               center       half before, rounded down
-                            the rest after
-Rule         text("———"), at mark
-width        column: the largest width of a cell of the column, at most 40
-             cell: displayWidth of displayText of its segments
-ranges       limited to the length of fts
+order         blocks in source order; text view index i = the i-th of blockTextRanges
+spacing       a ParagraphBreak between two blocks: half a line; otherwise none
+Paragraph     text view, body font
+Heading       text view, bold; size × 1.5 (level 1), 1.3 (2), 1.15 (3), 1 (4-6); line height scaled alike
+List          per entry (listEntries): a row of the marker ("•" or the number) and the text view; indent 20 per level
+Quote         a 4 wide bar (text colour at 16%), 10 gap, the text view at 70-72% opacity
+CodeBlock     card in the bubble's quote colour, corners 12 × the bubble roundness setting
+                the text view: monospace, size × 0.875, no wrapping, scrolls sideways
+                copy icon at the top right: on hover (desktop) or after a tap (mobile); copies the drawn text of the range
+Table         rounded frame (12 × roundness, 1 line), scrolls sideways
+                columns as wide as their widest cell; header row bold on the quote colour; alternate body rows tinted
+                lines between rows and columns; a cell aligned by its column
+                a missing cell at a row end: an empty cell (GFM 0.29 example 204)
+                Kotlin: a Layout measuring cells by max intrinsic width; iOS 16+: Grid; iOS 15: the table as typed in a code card
+Rule          1 line, 6 above and below
+first view    gets the sender and the report prefix
+last view     gets the meta reserve and the typing indicator when it is text; otherwise a line with them below the column
+ranges        limited to the length of fts
 ```
 
-`displayWidth`, per code point:
+- Quote colour: `sentQuote` in a sent bubble, `receivedQuote` otherwise (Kotlin `AppColors`, Swift `theme.appColors`).
+- Swipe to reply: Kotlin: the horizontal scroll consumes the drag before `swipeable` of the item. iOS: scrolling blocks report their frames (`SwipeExclusionFrames`) in the item's coordinate space; the item's drag gesture ignores drags that start in them.
+- iOS: a horizontal scroll only when the content is wider than the bubble (`ViewThatFits` on iOS 16+).
+
+Secrets (Kotlin, as iOS `hiddenSecretsView`): a hidden secret is drawn transparent, and its text path is painted with the tile `vertical_logo` (8 dp, rotated 45°, saturation 0.65, alpha 0.35), added to `moko-resources/images` from the iOS asset.
+
+Desktop selection (K/views/chat/TextSelection.kt):
 
 ```
-U+200D                                     0; the next code point 0
-U+FE0F                                     1 after a code point of width 1, 0 otherwise
-U+FE00-U+FE0E, U+1F3FB-U+1F3FF, U+E0020-U+E007F, marks Mn and Me   0
-East Asian Wide and Fullwidth, Unicode 15.0   2
-other                                      1
+setupItemSelection   (selectionManager, selectionIndex, isLive, bases)
+text views           each registers its bounds and layout with its base (ItemSelection.text(index))
+pointer offset       the view under the pointer, or the nearest; base + its local offset
+highlight            per view, the selected offsets of the item within the view, shifted by its base
+copy, snap           itemDisplay(ci).parts: copied text as before, with "\t" and "\n" between views
 ```
 
-- The wide set: a table of 84 ranges, generated from Python's `unicodedata` (Unicode 15.0), assigned code points only, gaps of unassigned code points merged; it includes the emoji of default emoji presentation.
-
-- Per code point, not per grapheme: `java.text.BreakIterator` of JDK 17 (desktop) divides emoji modifier and ZWJ sequences, Android's divides by Unicode rules; the code point rule gives equal widths on both.
-
-- A row wider than the bubble is wrapped; the wrapped part starts at the left edge (B12, decided 2026-10-18).
-- Ranges are limited to the length of `fts`: for chat link items, `stripFormattedTextLink` (K/views/chat/item/TextItemView.kt:622-632, I/Chat/ChatItem/MsgContentView.swift:608-616) removes the last segment.
-
-Desktop selection, `selectedItemCopiedText` and `snapOffset` (K/views/chat/TextSelection.kt:264-305):
-
-```
-parts      itemDisplayParts
-display    the length of each displayed text added to the display offset
-copy       the selected part of the copied text when its length equals the displayed length, otherwise all of it
-```
-
-Notifications, `hideSecrets` (K/platform/NtfManager.kt:134-148, S/Notifications.swift:200-210):
-
-```
-segment text   Secret "...", Markup its drawn text, Escape nothing, other segments their text
-blocks null    the segment texts joined
-otherwise      blockParts with the segment text as displayText: Segments by their segment texts, Text as is
-```
+Notifications, `hideSecrets` (K/platform/NtfManager.kt, S/Notifications.swift): Secret "...", markup by previewText, Escape nothing, other segments their text.
 
 ## 4. Call sites
 
 Kotlin:
 
 ```
-MarkdownText (K/views/chat/item/TextItemView.kt:125)        parameter markdownBlocks: List<MarkdownBlock>? = null; section 3
-CIMarkdownText (K/views/chat/item/FramedItemView.kt:445)    ci.markdownBlocks
-ciQuotedMsgTextView (K/views/chat/item/FramedItemView.kt:61) qi.markdownBlocks
-item preview (K/views/chatlist/ChatPreviewView.kt:261-265, 277)   null where formattedText is null, otherwise ci.markdownBlocks
-TextBubble (K/views/chat/ChatItemInfoView.kt:55-57)         the markdownBlocks of the item or the version
-ContextItemView (K/views/chat/ContextItemView.kt:59)        contextItem.markdownBlocks
-ProfileDescriptionText (K/views/chat/ChatInfoView.kt:794-795, 804-805)   blocks of parseToMarkdownText
-showFullProfileDescription (K/views/chat/item/TextItemView.kt:56-58)     blocks of parseToMarkdownText
-WelcomeMessageView (K/views/chat/group/WelcomeMessageView.kt:149-151)    blocks of parseToMarkdownText
-desktop selection (K/views/chat/TextSelection.kt:264-305)   section 3; itemDisplayParts
+MarkdownText (K/views/chat/item/TextItemView.kt)            parameters markdownBlocks, blockLayout, range, softWrap, cardColor, selection, textIndex; section 3
+CIMarkdownText (K/views/chat/item/FramedItemView.kt:445)    ci.markdownBlocks; column; quote colour by direction; selection with itemDisplay bases
+ciQuotedMsgTextView (K/views/chat/item/FramedItemView.kt:61) qi.markdownBlocks; one text
+item preview (K/views/chatlist/ChatPreviewView.kt:261-265, 277)   null where formattedText is null, otherwise ci.markdownBlocks; one text
+TextBubble (K/views/chat/ChatItemInfoView.kt:55-57)         the markdownBlocks of the item or the version; column
+ContextItemView (K/views/chat/ContextItemView.kt:59)        contextItem.markdownBlocks; one text
+ProfileDescriptionText (K/views/chat/ChatInfoView.kt:794-795, 804-805)   blocks of parseToMarkdownText; one text
+showFullProfileDescription (K/views/chat/item/TextItemView.kt:56-58)     blocks of parseToMarkdownText; column
+WelcomeMessageView (K/views/chat/group/WelcomeMessageView.kt:149-151)    blocks of parseToMarkdownText; column
+desktop selection (K/views/chat/TextSelection.kt:264-305)   section 3; itemDisplay
 notifications (K/platform/NtfManager.kt:134-148)            section 3
 parseToMarkdownText (K/views/helpers/TextEditor.kt)         new: (text: String) -> ParsedFormattedText?
 parseToMarkdown (K/views/helpers/TextEditor.kt:138-146)     the formattedText of parseToMarkdownText
@@ -273,15 +234,17 @@ parseToMarkdown (K/views/helpers/TextEditor.kt:138-146)     the formattedText of
 iOS:
 
 ```
-messageText (I/Chat/ChatItem/MsgContentView.swift:396)      parameter markdownBlocks: [MarkdownBlock]?; section 3
-MsgContentView (I/Chat/ChatItem/MsgContentView.swift:34, 100)   var markdownBlocks, passed to messageText
+messageText (I/Chat/ChatItem/MsgContentView.swift)          parameters markdownBlocks, range, baseFont, secretStart; section 3
+MsgContentView (I/Chat/ChatItem/MsgContentView.swift)       vars markdownBlocks, blockLayout, cardColor
 item content (I/Chat/ChatItem/MsgContentView.swift:624)     chatItem.markdownBlocks
-quote (I/Chat/ChatItem/FramedItemView.swift:337)            qi.markdownBlocks
-FramedItemView (I/Chat/ChatItem/FramedItemView.swift:366)   the markdownBlocks of the item
-chatItemPreviewText (I/ChatList/ChatPreviewView.swift:305-316, 302)   nil where formattedText is nil, otherwise ci.markdownBlocks
-TextBubble (I/Chat/ChatItemInfoView.swift:298-319)          the markdownBlocks of the item or the version
-ContextItemView (I/Chat/ComposeMessage/ContextItemView.swift:74)   contextItem.markdownBlocks
-markdownText (I/Chat/ChatItem/MsgContentView.swift:331-352)  blocks of parseSimpleXMarkdownText
+quote (I/Chat/ChatItem/FramedItemView.swift:337)            qi.markdownBlocks; one text
+FramedItemView (I/Chat/ChatItem/FramedItemView.swift:366)   the markdownBlocks of the item; column; quote colour by direction
+chatItemPreviewText (I/ChatList/ChatPreviewView.swift:305-316, 302)   nil where formattedText is nil, otherwise ci.markdownBlocks; one text
+TextBubble (I/Chat/ChatItemInfoView.swift:298-319)          the markdownBlocks of the item or the version; MarkdownView
+ContextItemView (I/Chat/ComposeMessage/ContextItemView.swift:74)   contextItem.markdownBlocks; one text
+markdownText (I/Chat/ChatItem/MsgContentView.swift:331-352)  blocks of parseSimpleXMarkdownText; one text
+FullProfileDescriptionView, GroupWelcomeView textPreview    MarkdownView with blocks of parseSimpleXMarkdownText
+item swipe (I/Chat/ChatView.swift chatItemWithMenu)          ignores drags starting in SwipeExclusionFrames
 notifications (S/Notifications.swift:200-210)               section 3
 parseSimpleXMarkdownText (S/API.swift)                      new: (_ s: String) -> ParsedMarkdown?
 parseSimpleXMarkdown (S/API.swift:151-162)                  the formattedText of parseSimpleXMarkdownText
@@ -315,9 +278,9 @@ blocks invalid   as now; escape: nothing
                  invalid: not an array
                           an unknown type
                           a range not of integers with 0 <= from <= to <= fts.length
-                          a range starting before the end of the previous range, in the order of blockParts
+                          a range starting before the end of the previous range, in source order
                           a list deeper than 7 levels
-blocks           the order of blockParts (section 3), each block one element below
+blocks           in source order, each block one element below
 range            each segment drawn as now
                  SoftBreak: " "
                  LineBreak, HardBreak: <br>
@@ -355,8 +318,8 @@ W/directory.jsc:254, 260            <p> kept: set by innerHTML, the block elemen
 ## 6. Docs
 
 ```
-apps/multiplatform/spec/client/chat-view.md   TextItemView.kt: blocks drawn by blockParts from markdownBlocks
-apps/ios/spec/client/chat-view.md             MsgContentView: the same
+apps/multiplatform/spec/client/chat-view.md   TextItemView.kt: blocks of markdownBlocks drawn as a column (MarkdownBlocks.kt)
+apps/ios/spec/client/chat-view.md             MsgContentView: the same (MarkdownBlocksView)
 ```
 
 ## 7. Tests
@@ -370,18 +333,11 @@ decoding           each block token in the JSON of the core
                    with and without language
                    with and without number
                    Bold with and without singleStar; Escape
-blockParts         the parts, drawn as texts with fonts, for each block kind
-                   gaps before the first block, between blocks, after the last block
-                   quote and list entry lines divided at HardBreak
-                   nested list entries: order and indentation
-                   a table with each alignment
-                   a table with a missing cell and an empty cell
-                   a table with emoji, CJK and a mention in cells: widths in columns of the displayed texts
-                   a cell wider than 40 columns
-                   ranges beyond the length of the list
-displayWidth       ASCII, CJK, an emoji, a modifier sequence, a ZWJ sequence, a flag, U+FE0F, a combining mark
-segment texts      each token kind and Escape: segmentDisplayText as in section 3
-selection          itemDisplayParts: displayed and copied texts of a quote, Escape without blocks
+text ranges        blockTextRanges for each block kind: order, inRow of table cells
+list entries       listEntries: order and levels
+headings           headingSegments, also with a shortened list
+token texts        drawnText and previewText of each token kind; Escape; one-text previews of a heading, paragraph and list
+selection          itemDisplay: displayed and copied texts and bases of a quote and a table; Escape without blocks
 ```
 
 Checks on each platform of the apps:
@@ -420,7 +376,7 @@ Web:
 Not automated:
 
 ```
-iOS          the Swift blockParts: check 12 only
+iOS          the Swift views: check 12 only
 web script   checks 13-15 only
 ```
 
@@ -433,16 +389,16 @@ app types   Format: Markup, Escape, Bold singleStar
             ListEntry
             SegmentRange
             TableAlign
-            BlockFont
-            BlockPart
+            BlockTextRange
 records     markdownBlocks: ChatItem, CIQuote, ChatItemVersion, ParsedFormattedText (Kotlin), ParsedMarkdown (Swift)
-functions   blockParts
-            displayWidth
-            segmentDisplayText
-            itemDisplayParts (Kotlin)
+functions   textRanges, blockTextRanges, listEntries, headingSegments
+            segmentDisplayText, itemDisplay (Kotlin)
             parseToMarkdownText (Kotlin), parseSimpleXMarkdownText (Swift)
-            the segment loop: over the parts; Swift: nested function appendSegments
-files       MarkdownBlocksTest.kt
+            the segment loop: range; Swift: baseFont, secretStart, nested function appendSegments
+views       MarkdownBlocks (Kotlin), MarkdownBlocksView and MarkdownView (Swift)
+selection   ItemSelection per text view (Kotlin)
+resources   vertical_logo@1x, @2x, @3x.png (Kotlin, from the iOS asset)
+files       MarkdownBlocksTest.kt, MarkdownBlocks.kt
 ```
 
 ## Depends on

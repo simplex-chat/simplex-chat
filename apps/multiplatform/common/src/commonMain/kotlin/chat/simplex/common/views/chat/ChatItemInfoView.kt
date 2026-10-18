@@ -62,7 +62,9 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         senderBold = true,
         toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
-        onLinkLongClick = { showMenu.value = true }
+        onLinkLongClick = { showMenu.value = true },
+        blockLayout = true,
+        cardColor = if (sent) appColors.sentQuote else appColors.receivedQuote
       )
     } else {
       Text(

@@ -371,7 +371,9 @@ struct FramedItemView: View {
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
             prefix: txtPrefix,
-            stripLink: stripLink
+            stripLink: stripLink,
+            blockLayout: true,
+            cardColor: ci.chatDir.sent ? theme.appColors.sentQuote : theme.appColors.receivedQuote
         )
         .environment(\.containerBackground, UIColor(chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)

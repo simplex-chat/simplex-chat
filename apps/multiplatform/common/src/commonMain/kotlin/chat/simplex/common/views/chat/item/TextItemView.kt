@@ -12,8 +12,20 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
@@ -22,11 +34,14 @@ import androidx.compose.ui.text.AnnotatedString.Range
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.appColors
+import chat.simplex.common.views.chat.ItemSelection
 import chat.simplex.common.views.chat.SelectionHighlightColor
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -34,12 +49,6 @@ import kotlinx.coroutines.*
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
-
-private val BlockFont.style: SpanStyle get() = when (this) {
-  BlockFont.Regular -> SpanStyle()
-  BlockFont.Bold -> SpanStyle(fontWeight = FontWeight.Bold)
-  BlockFont.Monospace -> SpanStyle(fontFamily = FontFamily.Monospace)
-}
 
 fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolean) {
   if (sender != null) {
@@ -69,6 +78,7 @@ private fun showFullProfileDescription(description: String) {
         uriHandler = LocalUriHandler.current,
         linkMode = chatModel.simplexLinkMode.value,
         modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING),
+        blockLayout = true,
       )
     }
   }
@@ -117,17 +127,32 @@ fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, lin
     else -> ft.text
   }
 
-fun itemDisplayParts(ci: ChatItem, linkMode: SimplexLinkMode): List<Pair<String, String>>? {
+class ItemDisplay(val parts: List<Pair<String, String>>, val bases: List<Int>)
+
+fun itemDisplay(ci: ChatItem, linkMode: SimplexLinkMode): ItemDisplay? {
   val fts = ci.formattedText ?: return null
-  val display = { ft: FormattedText -> segmentDisplayText(ft, ci.mentions, linkMode) }
-  val segment = { ft: FormattedText -> display(ft) to if (ft.format is Format.Markup) display(ft) else ft.text }
-  val blocks = ci.markdownBlocks ?: return fts.map(segment)
-  return blockParts(fts, blocks, display).flatMap { part ->
-    when (part) {
-      is BlockPart.Segments -> part.range.map { segment(fts[it]) }
-      is BlockPart.Text -> listOf(part.text to part.text)
-    }
+  val segment = { ft: FormattedText ->
+    val display = segmentDisplayText(ft, ci.mentions, linkMode)
+    display to if (ft.format is Format.Markup) display else ft.text
   }
+  val blocks = ci.markdownBlocks ?: return ItemDisplay(fts.map(segment), listOf(0))
+  val parts = mutableListOf<Pair<String, String>>()
+  var offset = itemPrefixText(ci).length
+  val bases = blockTextRanges(blocks).mapIndexed { i, t ->
+    if (i > 0) {
+      val separator = if (t.inRow) "\t" else "\n"
+      parts += separator to separator
+      offset += 1
+    }
+    val base = if (i == 0) 0 else offset
+    for (j in t.range.from.coerceIn(0, fts.size) until t.range.to.coerceIn(0, fts.size)) {
+      val part = segment(fts[j])
+      parts += part
+      offset += part.first.length
+    }
+    base
+  }
+  return ItemDisplay(parts, bases)
 }
 
 // Display-only prefix rendered before ci.text (e.g. "Spam: " for reports).
@@ -163,13 +188,45 @@ fun MarkdownText (
   showTimestamp: Boolean = true,
   prefix: AnnotatedString? = null,
   stripLink: String? = null,
-  selectionRange: IntRange? = null,
-  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
+  selection: ItemSelection? = null,
+  textIndex: Int = 0,
+  blockLayout: Boolean = false,
+  range: IntRange? = null,
+  softWrap: Boolean = true,
+  cardColor: Color? = null
 ) {
   val text = if (stripLink != null) stripTextLink(text.toString(), stripLink) else text
   val formattedText = if (stripLink != null) stripFormattedTextLink(formattedText, stripLink) else formattedText
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
+  }
+  if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
+    CompositionLocalProvider(
+      LocalLayoutDirection provides if (textLayoutDirection != LocalLayoutDirection.current)
+        if (LocalLayoutDirection.current == LayoutDirection.Ltr) LayoutDirection.Rtl else LayoutDirection.Ltr
+      else
+        LocalLayoutDirection.current
+    ) {
+      MarkdownBlocks(
+        formattedText, markdownBlocks, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
+        blockText = { index, r, blockStyle, blockModifier, blockSoftWrap, last ->
+          MarkdownText(
+            text, formattedText, markdownBlocks, sender = if (index == 0) sender else null, meta = if (last) meta else null, chatTTL = chatTTL,
+            mentions = mentions, userMemberId = userMemberId, toggleSecrets = toggleSecrets, sendCommandMsg = sendCommandMsg, style = blockStyle,
+            uriHandler = uriHandler, senderBold = senderBold, modifier = blockModifier, linkMode = linkMode, onLinkLongClick = onLinkLongClick,
+            showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = if (index == 0) prefix else null,
+            selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap
+          )
+        },
+        metaLine = {
+          MarkdownText(
+            text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, toggleSecrets = toggleSecrets, style = style,
+            linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY
+          )
+        }
+      )
+    }
+    return
   }
   val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
     "\n"
@@ -214,6 +271,7 @@ fun MarkdownText (
         }
       )
     }
+    val textSelection = selection?.text(textIndex)
     if (formattedText == null) {
       var selectableEnd = 0
       val annotatedText = buildAnnotatedString {
@@ -228,9 +286,9 @@ fun MarkdownText (
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
-      if (onTextLayoutResult != null) {
-        SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
+      val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      if (textSelection != null) {
+        SelectableText(annotatedText, style = style, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = textSelection.onTextLayoutResult)
       } else {
         Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
       }
@@ -240,134 +298,140 @@ fun MarkdownText (
       var hasSecrets = false
       var hasCommands = false
       var hasModals = false
+      val hiddenSecrets = mutableListOf<IntRange>()
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
         if (prefix != null) append(prefix)
-        val parts = if (markdownBlocks == null) listOf(BlockPart.Segments(formattedText.indices, BlockFont.Regular))
-          else blockParts(formattedText, markdownBlocks) { segmentDisplayText(it, mentions, linkMode) }
-        for (part in parts) when (part) {
-          is BlockPart.Text -> withStyle(part.font.style) { append(part.text) }
-          is BlockPart.Segments -> withStyle(part.font.style) {
-            for (i in part.range) {
-              val ft = formattedText[i]
-              if (ft.format == null) append(ft.text)
-              else when(ft.format) {
-                is Format.Bold -> withStyle(if (markdownBlocks != null && ft.format.singleStar) Format.Italic().style else ft.format.style) { append(ft.text) }
-                is Format.Italic -> withStyle(ft.format.style) { append(ft.text) }
-                is Format.StrikeThrough -> withStyle(ft.format.style) { append(ft.text) }
-                is Format.Snippet -> withStyle(ft.format.style) { append(ft.text) }
-                is Format.Small -> withStyle(ft.format.style) { append(ft.text) }
-                is Format.Colored -> withStyle(ft.format.style) { append(ft.text) }
-                is Format.Secret -> {
-                  val ftStyle = ft.format.style
-                  if (toggleSecrets) {
-                    hasSecrets = true
-                    val key = i.toString()
-                    withAnnotation(tag = "SECRET", annotation = key) {
-                      if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
-                    }
-                  } else {
-                    withStyle(ftStyle) { append(ft.text) }
-                  }
+        val headings = if (range == null && markdownBlocks != null) headingSegments(formattedText.size, markdownBlocks) else null
+        fun appendSecret(s: String) {
+          val start = length
+          withStyle(hiddenSecretStyle) { append(s) }
+          hiddenSecrets += start until length
+        }
+        for (i in range?.let { it.first.coerceAtLeast(0) .. minOf(it.last, formattedText.lastIndex) } ?: formattedText.indices) {
+          val ft = formattedText[i]
+          val heading = headings?.get(i) == true
+          if (heading) pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+          if (ft.format == null) append(ft.text)
+          else when(ft.format) {
+            is Format.Bold -> withStyle(if (markdownBlocks != null && ft.format.singleStar) Format.Italic().style else ft.format.style) { append(ft.text) }
+            is Format.Italic -> withStyle(ft.format.style) { append(ft.text) }
+            is Format.StrikeThrough -> withStyle(ft.format.style) { append(ft.text) }
+            is Format.Snippet -> withStyle(ft.format.style) { append(ft.text) }
+            is Format.Small -> withStyle(ft.format.style) { append(ft.text) }
+            is Format.Colored -> withStyle(ft.format.style) { append(ft.text) }
+            is Format.Secret -> {
+              if (toggleSecrets) {
+                hasSecrets = true
+                val key = i.toString()
+                withAnnotation(tag = "SECRET", annotation = key) {
+                  if (showSecrets[key] == true) append(ft.text) else appendSecret(ft.text)
                 }
-                is Format.Mention -> {
-                  val mention = mentions?.get(ft.format.memberName)
-                  if (mention != null) {
-                    val ftStyle = ft.format.style
-                    if (mention.memberRef != null) {
-                      val displayName = mention.memberRef.displayName
-                      val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
-                        displayName
-                      } else {
-                        "${mention.memberRef.localAlias} ($displayName)"
-                      }
-                      val mentionStyle = if (mention.memberId == userMemberId) ftStyle.copy(color = MaterialTheme.colors.primary) else ftStyle
-                      withStyle(mentionStyle) { append(mentionText(name)) }
-                    } else {
-                      withStyle(ftStyle) { append(mentionText(ft.format.memberName)) }
-                    }
-                  } else {
-                    append(ft.text)
-                  }
-                }
-                is Format.Command ->
-                  if (sendCommandMsg == null) {
-                    append(ft.text)
-                  } else {
-                    hasCommands = true
-                    val ftStyle = ft.format.style
-                    val cmd = ft.format.commandStr
-                    withAnnotation(tag = "COMMAND", annotation = cmd) {
-                      withStyle(ftStyle) { append("/$cmd") }
-                    }
-                  }
-                is Format.Uri -> {
-                  hasLinks = true
-                  val ftStyle = Format.linkStyle
-                  val s = ft.text
-                  val link = if (s.startsWith("http://") || s.startsWith("https://")) s else "https://$s"
-                  withAnnotation(tag = "WEB_URL", annotation = link) {
-                    withStyle(ftStyle) { append(displayedUri(ft.text)) }
-                  }
-                }
-                is Format.HyperLink -> {
-                  hasLinks = true
-                  val ftStyle = Format.linkStyle
-                  withAnnotation(tag = if (ft.format.isEmail) "OTHER_URL" else "WEB_URL", annotation = ft.format.linkUri) {
-                    withStyle(ftStyle) { append(ft.format.showText ?: ft.text) }
-                  }
-                }
-                is Format.SimplexLink -> {
-                  hasLinks = true
-                  val ftStyle = Format.linkStyle
-                  val link =
-                    if (linkMode == SimplexLinkMode.BROWSER && ft.format.showText == null && !ft.text.startsWith("[")) ft.text
-                    else ft.format.simplexUri
-                  val t = ft.format.showText ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
-                  withAnnotation(tag = "SIMPLEX_URL", annotation = link) {
-                    if (t == null) {
-                      withStyle(ftStyle) { append(ft.text) }
-                    } else {
-                      withStyle(ftStyle) { append("$t ") }
-                      withStyle(ftStyle.copy(fontStyle = FontStyle.Italic)) { append(ft.format.viaHosts) }
-                    }
-                  }
-                }
-                is Format.SimplexName -> {
-                  hasLinks = true
-                  val ftStyle = Format.linkStyle
-                  withAnnotation(tag = "SIMPLEX_NAME", annotation = i.toString()) {
-                    withStyle(ftStyle) { append(ft.text) }
-                  }
-                }
-                is Format.Email -> {
-                  hasLinks = true
-                  val ftStyle = Format.linkStyle
-                  withAnnotation(tag = "OTHER_URL", annotation = "mailto:${ft.text}") {
-                    withStyle(ftStyle) { append(ft.text) }
-                  }
-                }
-                is Format.Phone -> {
-                  hasLinks = true
-                  val ftStyle = Format.linkStyle
-                  withAnnotation(tag = "OTHER_URL", annotation = "tel:${ft.text}") {
-                    withStyle(ftStyle) { append(ft.text) }
-                  }
-                }
-                is Format.Modal -> {
-                  hasModals = true
-                  val ftStyle = Format.linkStyle
-                  withAnnotation(tag = "MODAL", annotation = i.toString()) {
-                    withStyle(ftStyle) { append(ft.text) }
-                  }
-                }
-                is Format.Escape -> {}
-                is Format.Markup -> append(if (markdownBlocks != null) ft.format.token.drawnText else ft.text)
-                is Format.Unknown -> append(ft.text)
+              } else {
+                appendSecret(ft.text)
               }
             }
+            is Format.Mention -> {
+              val mention = mentions?.get(ft.format.memberName)
+              if (mention != null) {
+                val ftStyle = ft.format.style
+                if (mention.memberRef != null) {
+                  val displayName = mention.memberRef.displayName
+                  val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
+                    displayName
+                  } else {
+                    "${mention.memberRef.localAlias} ($displayName)"
+                  }
+                  val mentionStyle = if (mention.memberId == userMemberId) ftStyle.copy(color = MaterialTheme.colors.primary) else ftStyle
+                  withStyle(mentionStyle) { append(mentionText(name)) }
+                } else {
+                  withStyle(ftStyle) { append(mentionText(ft.format.memberName)) }
+                }
+              } else {
+                append(ft.text)
+              }
+            }
+            is Format.Command ->
+              if (sendCommandMsg == null) {
+                append(ft.text)
+              } else {
+                hasCommands = true
+                val ftStyle = ft.format.style
+                val cmd = ft.format.commandStr
+                withAnnotation(tag = "COMMAND", annotation = cmd) {
+                  withStyle(ftStyle) { append("/$cmd") }
+                }
+              }
+            is Format.Uri -> {
+              hasLinks = true
+              val ftStyle = Format.linkStyle
+              val s = ft.text
+              val link = if (s.startsWith("http://") || s.startsWith("https://")) s else "https://$s"
+              withAnnotation(tag = "WEB_URL", annotation = link) {
+                withStyle(ftStyle) { append(displayedUri(ft.text)) }
+              }
+            }
+            is Format.HyperLink -> {
+              hasLinks = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = if (ft.format.isEmail) "OTHER_URL" else "WEB_URL", annotation = ft.format.linkUri) {
+                withStyle(ftStyle) { append(ft.format.showText ?: ft.text) }
+              }
+            }
+            is Format.SimplexLink -> {
+              hasLinks = true
+              val ftStyle = Format.linkStyle
+              val link =
+                if (linkMode == SimplexLinkMode.BROWSER && ft.format.showText == null && !ft.text.startsWith("[")) ft.text
+                else ft.format.simplexUri
+              val t = ft.format.showText ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
+              withAnnotation(tag = "SIMPLEX_URL", annotation = link) {
+                if (t == null) {
+                  withStyle(ftStyle) { append(ft.text) }
+                } else {
+                  withStyle(ftStyle) { append("$t ") }
+                  withStyle(ftStyle.copy(fontStyle = FontStyle.Italic)) { append(ft.format.viaHosts) }
+                }
+              }
+            }
+            is Format.SimplexName -> {
+              hasLinks = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "SIMPLEX_NAME", annotation = i.toString()) {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            }
+            is Format.Email -> {
+              hasLinks = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "OTHER_URL", annotation = "mailto:${ft.text}") {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            }
+            is Format.Phone -> {
+              hasLinks = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "OTHER_URL", annotation = "tel:${ft.text}") {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            }
+            is Format.Modal -> {
+              hasModals = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "MODAL", annotation = i.toString()) {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            }
+            is Format.Escape -> {}
+            is Format.Markup -> append(
+              if (range != null) ft.format.token.drawnText
+              else if (markdownBlocks != null) ft.format.token.previewText
+              else ft.text
+            )
+            is Format.Unknown -> append(ft.text)
           }
+          if (heading) pop()
         }
         selectableEnd = this.length
         if (meta?.isLive == true) {
@@ -378,10 +442,21 @@ fun MarkdownText (
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+      val onTextLayout: (TextLayoutResult) -> Unit = { r ->
+        layoutResult.value = r
+        textSelection?.onTextLayoutResult?.invoke(r)
+      }
+      val textModifier = modifier
+        .then(textSelection?.positionModifier ?: Modifier)
+        .then(if (hiddenSecrets.isEmpty()) Modifier else Modifier.drawWithContent {
+          drawContent()
+          drawSecretPattern(hiddenSecrets, layoutResult.value)
+        })
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
-        ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
+        ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = textModifier.pointerHoverIcon(icon.value), softWrap = softWrap, maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             if (hasLinks) {
               val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
@@ -438,13 +513,38 @@ fun MarkdownText (
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)
           },
-          onTextLayout = { onTextLayoutResult?.invoke(it) }
+          onTextLayout = onTextLayout
         )
       } else {
-        if (onTextLayoutResult != null) {
-          SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
+        if (textSelection != null) {
+          SelectableText(annotatedText, style = style, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayout)
         } else {
-          Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+          Text(annotatedText, style = style, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = onTextLayout)
+        }
+      }
+    }
+  }
+}
+
+private val hiddenSecretStyle = SpanStyle(color = Color.Transparent)
+
+private val secretTile: ImageBitmap? by lazy { MR.images.vertical_logo.toComposeImageBitmap() }
+
+private fun ContentDrawScope.drawSecretPattern(ranges: List<IntRange>, layout: TextLayoutResult?) {
+  val tile = secretTile ?: return
+  if (layout == null) return
+  val brush = ShaderBrush(ImageShader(tile, TileMode.Repeated, TileMode.Repeated))
+  val tileScale = 8.dp.toPx() / tile.width
+  val saturation = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.65f) })
+  val textLength = layout.layoutInput.text.length
+  ranges.forEach { r ->
+    val path = layout.getPathForRange(r.first.coerceIn(0, textLength), (r.last + 1).coerceIn(0, textLength))
+    val bounds = path.getBounds()
+    val side = (bounds.width + bounds.height) / tileScale
+    clipPath(path) {
+      rotate(45f, bounds.center) {
+        scale(tileScale, bounds.center) {
+          drawRect(brush, Offset(bounds.center.x - side / 2, bounds.center.y - side / 2), Size(side, side), alpha = 0.35f, colorFilter = saturation)
         }
       }
     }
@@ -528,6 +628,7 @@ private fun SelectableText(
   text: AnnotatedString,
   style: TextStyle,
   modifier: Modifier = Modifier,
+  softWrap: Boolean = true,
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   selectionRange: IntRange? = null,
@@ -539,6 +640,7 @@ private fun SelectableText(
     text = text,
     modifier = modifier.pointerHoverIcon(PointerIcon.Text).then(selectionHighlight(selectionRange, text.length, layoutResult)),
     style = style,
+    softWrap = softWrap,
     maxLines = maxLines,
     overflow = overflow,
     onTextLayout = {
