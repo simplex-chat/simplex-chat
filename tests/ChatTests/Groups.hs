@@ -13468,6 +13468,7 @@ testChannelSignedFile ps =
             xftpCLI ["rand", testfile, "1mb"] `shouldReturn` ["File created: " <> testfile]
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
+            -- roster files are deleted after the transfer, so ids run higher: cath, dan and eve use id 2, the relay (bob) id 3, the owner (alice) id 1.
             let fileId = 2 :: Int
                 relayFileId = 3 :: Int
 
