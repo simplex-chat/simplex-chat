@@ -42,6 +42,51 @@ def python_expression(flake):
             + ' { haskellNix = f.inputs.haskellNix; } "x86_64-darwin").python3')
 
 
+def apple_tool_paths(deadline):
+    developer = os.environ.get("DEVELOPER_DIR")
+    if developer is None:
+        if not shutil.which("xcode-select"):
+            raise ValueError("Required existing diagnostic tool unavailable: xcode-select")
+        developer = run_step(["xcode-select", "--print-path"], deadline, 10, True,
+                             phase="apple-developer-path")
+    if not developer or any(char in developer for char in "\r\n\0"):
+        raise ValueError("Invalid selected Apple developer directory")
+    directory = Path(developer)
+    if not directory.is_absolute():
+        raise ValueError("Expected an absolute selected Apple developer directory")
+    # xcode-select accepts either the application or its Developer directory.
+    if directory.suffix == ".app":
+        directory = directory / "Contents/Developer"
+    if not directory.is_dir():
+        raise ValueError("Selected Apple developer directory is unavailable: " + str(directory))
+
+    toolchain = os.environ.get("TOOLCHAINS", "")
+    if toolchain not in ("", "default", "XcodeDefault", "com.apple.dt.toolchain.XcodeDefault"):
+        # Preserve xcrun's explicit custom-toolchain selection semantics. Do
+        # not silently replace it with the default toolchain after a failure.
+        if not shutil.which("xcrun"):
+            raise ValueError("Required existing diagnostic tool unavailable: xcrun")
+        compiler = Path(run_step(["xcrun", "--find", "clang"], deadline, 10, True,
+                                 phase="apple-clang-path"))
+        sdk = Path(run_step(["xcrun", "--sdk", "macosx", "--show-sdk-path"], deadline, 10, True,
+                            phase="macos-sdk-path"))
+    elif (directory / "Toolchains").is_dir():
+        # Use the existing selected installation directly. xcrun discovery
+        # itself timed out on hosted Intel before the recorder could start.
+        compiler = directory / "Toolchains/XcodeDefault.xctoolchain/usr/bin/clang"
+        sdk = directory / "Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+    else:
+        compiler = directory / "usr/bin/clang"
+        sdk = directory / "SDKs/MacOSX.sdk"
+    if not compiler.is_absolute() or not compiler.is_file() or not os.access(compiler, os.X_OK):
+        raise ValueError("Selected Apple Clang is unavailable or not executable: " + str(compiler))
+    if not sdk.is_absolute() or not sdk.is_dir():
+        raise ValueError("Selected macOS SDK is unavailable: " + str(sdk))
+    print(json.dumps({"intelGHCAppleTools": {"developer": str(directory),
+                      "clang": str(compiler), "macosSDK": str(sdk)}}), flush=True)
+    return compiler, sdk
+
+
 def command_status(arguments, seconds, **streams):
     # A fresh session gives this command and its descendants a group owned by
     # this launcher. macOS need not provide GNU timeout (or a Homebrew alias).
@@ -85,7 +130,7 @@ def run_step(arguments, deadline, seconds, capture=False, *, phase="command"):
 def run_command(arguments, seconds, capture):
     if capture:
         # Keep subprocess output out of memory until its size is known. These
-        # three metadata queries have tiny successful outputs; errors remain
+        # metadata queries have tiny successful outputs; errors remain
         # visible through a bounded stderr suffix.
         with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
             status = command_status(arguments, seconds, stdout=output, stderr=errors)
@@ -127,7 +172,7 @@ def main():
         if expected is None:
             print("Skipping Intel GHC diagnostic: no unique observed SimpleX SIGBUS component.", flush=True)
             return 0
-        missing = [tool for tool in ("xcrun", "git", "nix") if not shutil.which(tool)]
+        missing = [tool for tool in ("git", "nix") if not shutil.which(tool)]
         if missing:
             raise ValueError("Required existing diagnostic tools unavailable: " + ", ".join(missing))
         repo = args.repo.resolve()
@@ -135,12 +180,7 @@ def main():
                             phase="checkout-revision")
         if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
             raise ValueError("Invalid checkout revision")
-        compiler = run_step(["xcrun", "--find", "clang"], deadline, 10, True,
-                            phase="apple-clang-path")
-        sdk = run_step(["xcrun", "--sdk", "macosx", "--show-sdk-path"], deadline, 10, True,
-                       phase="macos-sdk-path")
-        if not Path(compiler).is_absolute() or not Path(sdk).is_absolute():
-            raise ValueError("Expected absolute existing Apple tool paths")
+        compiler, sdk = apple_tool_paths(deadline)
         scripts = repo / "scripts/nix"
         with tempfile.TemporaryDirectory(prefix="simplex-intel-ghc-") as folder:
             tracer = Path(folder) / "ghc-sigbus-recorder.dylib"

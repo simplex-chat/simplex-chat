@@ -26,6 +26,18 @@ FAILURE = ("Failed to build simplex-chat-7.1.0.11-unit. The build process termin
 
 
 class LauncherTests(unittest.TestCase):
+    def apple_installation(self, root, *, command_line=False):
+        developer = Path(root) / ("CommandLineTools" if command_line else "Xcode.app/Contents/Developer")
+        compiler = developer / ("usr/bin/clang" if command_line
+                                else "Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
+        sdk = developer / ("SDKs/MacOSX.sdk" if command_line
+                           else "Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+        compiler.parent.mkdir(parents=True, exist_ok=True)
+        compiler.write_text("fixture Apple tool; never executed\n")
+        compiler.chmod(0o755)
+        sdk.mkdir(parents=True, exist_ok=True)
+        return developer, compiler, sdk
+
     def test_unique_observed_failure(self):
         self.assertEqual(TRACE.select_failure(FAILURE + FAILURE), DRV)
         self.assertIsNone(TRACE.select_failure(FAILURE.replace("exit code -10", "exit code 1")))
@@ -34,7 +46,8 @@ class LauncherTests(unittest.TestCase):
             TRACE.select_failure(FAILURE + FAILURE.replace("a" * 32, "b" * 32))
 
     def invoke(self, folder, *, actions="true", machine="x86_64", target=None, failure=FAILURE,
-               reject_build=False, reject_cache=False):
+               reject_build=False, reject_cache=False, reject_xcrun=False):
+        developer, compiler, sdk = self.apple_installation(folder)
         log = Path(folder) / "nix-build.log"
         log.write_text(failure)
         calls = []
@@ -43,15 +56,18 @@ class LauncherTests(unittest.TestCase):
             calls.append((values, seconds, capture))
             if values[0] == "git":
                 return "c" * 40
+            if values[0] == "xcrun" and reject_xcrun:
+                raise TimeoutError("Diagnostic command reached its wall-clock limit")
             if values[:3] == ["xcrun", "--find", "clang"]:
-                return "/usr/bin/clang"
+                return str(compiler)
             if values[0] == "xcrun":
-                return "/existing/SDK"
+                return str(sdk)
             if (reject_build and "--file" in values) or (reject_cache and "--expr" in values):
                 raise RuntimeError("Diagnostic command returned 1")
             return None
         argv = ["trace-intel-ghc.py", "--repo", folder, "--attribute", target or TRACE.ATTRIBUTE, "--log", str(log)]
-        with patch.dict(os.environ, {"GITHUB_ACTIONS": actions}), patch.object(TRACE.platform, "system", return_value="Darwin"), \
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": actions, "DEVELOPER_DIR": str(developer), "TOOLCHAINS": ""}), \
+                patch.object(TRACE.platform, "system", return_value="Darwin"), \
                 patch.object(TRACE.platform, "machine", return_value=machine), \
                 patch.object(TRACE.shutil, "which", side_effect=lambda tool: None if tool in ("timeout", "gtimeout") else "/existing/tool"), \
                 patch.object(TRACE, "run_step", side_effect=step), patch("sys.argv", argv), \
@@ -88,7 +104,81 @@ class LauncherTests(unittest.TestCase):
             original = arguments[arguments.index("original") + 1]
             self.assertIn('f.hydraJobs.x86_64-darwin."x86_64-darwin-ios:lib:simplex-chat"', original)
             self.assertNotIn(".project.hsPkgs", original)
-            self.assertEqual(sum(call[0][:1] == ["/usr/bin/clang"] for call in calls), 1)
+            compiler = str(Path(folder) / "Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
+            self.assertEqual(sum(call[0][:1] == [compiler] for call in calls), 1)
+
+    def test_observed_xcrun_timeout_does_not_block_selected_tools(self):
+        with tempfile.TemporaryDirectory() as folder:
+            result, calls = self.invoke(folder, reject_xcrun=True)
+        self.assertEqual(result, 0)
+        self.assertEqual(sum("--file" in call[0] for call in calls), 1)
+        self.assertFalse(any(call[0][0] == "xcrun" for call in calls))
+
+    def test_selected_xcode_and_command_line_tools_need_no_discovery_process(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for command_line in (False, True):
+                developer, compiler, sdk = self.apple_installation(folder, command_line=command_line)
+                with patch.dict(os.environ, {"DEVELOPER_DIR": str(developer), "TOOLCHAINS": "", "SDKROOT": "/unused/iPhoneOS.sdk"}), \
+                        patch.object(TRACE, "run_step") as step, contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(TRACE.apple_tool_paths(time.monotonic() + 20), (compiler, sdk))
+                step.assert_not_called()
+
+    def test_xcode_application_selection_is_supported(self):
+        with tempfile.TemporaryDirectory() as folder:
+            developer, compiler, sdk = self.apple_installation(folder)
+            with patch.dict(os.environ, {"DEVELOPER_DIR": str(developer.parent.parent), "TOOLCHAINS": ""}), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(TRACE.apple_tool_paths(time.monotonic() + 20), (compiler, sdk))
+
+    def test_system_developer_selection_is_bounded(self):
+        with tempfile.TemporaryDirectory() as folder:
+            developer, compiler, sdk = self.apple_installation(folder)
+            deadline = time.monotonic() + 20
+            with patch.dict(os.environ, {}, clear=True), \
+                    patch.object(TRACE.shutil, "which", return_value="/usr/bin/xcode-select"), \
+                    patch.object(TRACE, "run_step", return_value=str(developer)) as step, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(TRACE.apple_tool_paths(deadline), (compiler, sdk))
+            step.assert_called_once_with(["xcode-select", "--print-path"], deadline, 10, True,
+                                         phase="apple-developer-path")
+
+    def test_invalid_developer_selection_never_uses_another_installation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for selection in ("", "relative", "bad\npath", str(Path(folder) / "missing")):
+                with self.subTest(selection=selection), \
+                        patch.dict(os.environ, {"DEVELOPER_DIR": selection, "TOOLCHAINS": ""}), \
+                        patch.object(TRACE, "run_step") as step:
+                    with self.assertRaisesRegex(ValueError, "developer directory"):
+                        TRACE.apple_tool_paths(time.monotonic() + 20)
+                    step.assert_not_called()
+
+    def test_missing_selected_clang_or_sdk_is_named(self):
+        with tempfile.TemporaryDirectory() as folder:
+            developer, compiler, sdk = self.apple_installation(folder)
+            with patch.dict(os.environ, {"DEVELOPER_DIR": str(developer), "TOOLCHAINS": ""}):
+                compiler.chmod(0o644)
+                with self.assertRaisesRegex(ValueError, "Clang.*not executable"):
+                    TRACE.apple_tool_paths(time.monotonic() + 20)
+                compiler.chmod(0o755)
+                sdk.rmdir()
+                with self.assertRaisesRegex(ValueError, "macOS SDK is unavailable"):
+                    TRACE.apple_tool_paths(time.monotonic() + 20)
+
+    def test_custom_toolchain_uses_original_bounded_discovery(self):
+        with tempfile.TemporaryDirectory() as folder:
+            developer, compiler, sdk = self.apple_installation(folder)
+            custom = Path(folder) / "Selected.xctoolchain/usr/bin/clang"
+            custom.parent.mkdir(parents=True)
+            custom.write_text("fixture custom tool; never executed\n")
+            custom.chmod(0o755)
+            deadline = time.monotonic() + 30
+            with patch.dict(os.environ, {"DEVELOPER_DIR": str(developer), "TOOLCHAINS": "selected.custom.toolchain"}), \
+                    patch.object(TRACE.shutil, "which", return_value="/usr/bin/xcrun"), \
+                    patch.object(TRACE, "run_step", side_effect=[str(custom), str(sdk)]) as step, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(TRACE.apple_tool_paths(deadline), (custom, sdk))
+            self.assertEqual(step.call_args_list[0].args, (["xcrun", "--find", "clang"], deadline, 10, True))
+            self.assertEqual(step.call_args_list[1].args, (["xcrun", "--sdk", "macosx", "--show-sdk-path"], deadline, 10, True))
 
     def test_failed_diagnostic_returns_without_replay_loop(self):
         with tempfile.TemporaryDirectory() as folder:

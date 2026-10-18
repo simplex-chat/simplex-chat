@@ -405,6 +405,17 @@ deadline and kills only that group on expiry, with at most five seconds to reap
 the command; GNU `timeout` and Homebrew aliases are not required. Missing Apple
 or Nix tools are named explicitly.
 
+For the default Apple toolchain, the launcher reads `DEVELOPER_DIR` or makes
+one bounded `xcode-select --print-path` query, then validates the existing
+Clang executable and macOS SDK in that selected Xcode or Command Line Tools
+installation. This avoids `xcrun --find clang`, which reached its ten-second
+limit on hosted Intel before the recorder could start. An invalid selection
+does not fall back to another installation. Explicit custom `TOOLCHAINS`
+selection retains the original bounded `xcrun` queries. The Intel policy tests
+also check the real selected Apple paths and Clang version on hosted Darwin
+before the production build starts; this metadata check has a twenty-second
+overall limit and does not compile or run GHC.
+
 The recorder loads only into the selected normal SimpleX iOS compiler process.
 It reports its main executable's UUID, image base and slide, then records SIGBUS
 fault address, signal code and registers, including PC and SP, if the process

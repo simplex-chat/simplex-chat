@@ -1,5 +1,8 @@
 import importlib.util
+import os
 import pathlib
+import sys
+import time
 import unittest
 
 
@@ -43,6 +46,25 @@ class FailedComponentSelection(unittest.TestCase):
             selector.select_failed_component(
                 f"error: Cannot build '{OLD}'.\nerror: Cannot build '{NEW}'."
             )
+
+
+class AppleToolDiscovery(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == "darwin" and os.environ.get("GITHUB_ACTIONS") == "true",
+                         "real Apple metadata check runs on hosted Darwin CI")
+    def test_selected_tools_before_production_build(self):
+        # This suite already runs in the Intel policy step before the long
+        # build. Exercise the actual resolver early, without invoking GHC.
+        spec = importlib.util.spec_from_file_location(
+            "intel_trace", pathlib.Path(__file__).with_name("trace-intel-ghc.py")
+        )
+        trace = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(trace)
+        deadline = time.monotonic() + 20
+        compiler, sdk = trace.apple_tool_paths(deadline)
+        self.assertTrue(compiler.is_file())
+        self.assertTrue(sdk.is_dir())
+        version = trace.run_step([compiler, "--version"], deadline, 10, True, phase="check-apple-clang")
+        self.assertIn("Apple clang", version)
 
 
 if __name__ == "__main__":
