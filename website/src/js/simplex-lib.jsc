@@ -64,7 +64,7 @@ function validBlocks(fts, blocks) {
     return valid;
   };
   const entries = (items, depth) =>
-    Array.isArray(items) && depth <= MAX_LIST_DEPTH && items.every((e) => !!e && range(e.content) && entries(e.items, depth + 1));
+    Array.isArray(items) && (items.length === 0 || depth <= MAX_LIST_DEPTH) && items.every((e) => !!e && range(e.content) && entries(e.items, depth + 1));
   const rows = (rs) => Array.isArray(rs) && rs.every((row) => Array.isArray(row) && row.every(range));
   return Array.isArray(blocks) && blocks.every((b) => {
     switch (b && b.type) {

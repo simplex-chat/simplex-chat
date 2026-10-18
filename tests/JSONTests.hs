@@ -14,7 +14,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU)
 import JSONFixtures
-import Simplex.Chat.Markdown (MarkdownBlock (UnknownBlock), ParsedMarkdown (..), parsedMarkdown)
+import Simplex.Chat.Markdown (Format (Bold), MarkdownBlock (UnknownBlock), ParsedMarkdown (..), parsedMarkdown)
 import Simplex.Chat.Remote.Protocol (owsf2tagged)
 import Simplex.Messaging.Parsers
 import Test.Hspec
@@ -90,6 +90,9 @@ markdownBlocksJSONTests = do
     J.eitherDecode (J.encode blocks) `shouldBe` Right blocks
   it "should decode an unknown block" $
     J.eitherDecode "{\"type\":\"future\"}" `shouldBe` Right (UnknownBlock $ J.object ["type" J..= ("future" :: String)])
+  it "should decode bold without singleStar" $ do
+    J.eitherDecode "{\"type\":\"bold\"}" `shouldBe` Right (Bold False)
+    J.eitherDecode "{\"_owsf\":true,\"bold\":{}}" `shouldBe` Right (Bold False)
 
 jsonTests :: Spec
 jsonTests = do

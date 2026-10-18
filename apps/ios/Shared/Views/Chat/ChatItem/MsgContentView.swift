@@ -541,7 +541,7 @@ func messageText(
                 if let text { t = text }
                 if !preview {
                     attrs[linkAttrKey] = uri
-                    attrs[webLinkAttrKey] = true
+                    if !ft.isEmailLink { attrs[webLinkAttrKey] = true }
                     handleTaps = true
                 }
             case let .simplexLink(text, linkType, simplexUri, smpHosts):
@@ -609,7 +609,7 @@ func messageText(
                     handleTaps = true
                 }
             case .escape: t = ""
-            case let .markup(token): t = token.drawnText
+            case let .markup(token): if markdownBlocks != nil { t = token.drawnText }
             case .unknown: ()
             case .none: ()
             }

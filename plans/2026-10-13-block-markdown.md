@@ -36,7 +36,7 @@ fence        3 or more "`", then an info string without "`"
              or 3 or more "~", then an info string
              when a line follows it; a fence line at the text end is text
 heading      1 to 6 "#", a space, then text with a character other than white space
-             closing sequence: a space, one or more "#", then white space only, at the line end
+             closing sequence: a space or a tab, one or more "#", then white space only, at the line end
 underline    "=" only, or "-" only, then white space only, when the open block is a paragraph
              CommonMark 0.31.2 section 4.3 (setext heading underline)
 rule         3 or more of one of "-", "*", "_", with spaces and tabs between and after them
@@ -100,7 +100,7 @@ List nesting:
 
 ```
 parent        the nearest entry before it with a smaller column, in the same List
-depth         at most 7 (maxListIndent 6, plus 1)
+depth         at most 7 (maxListDepth)
               an entry below depth 7: added at depth 7
 blank line    the List continues
 other block   the List ends
@@ -853,7 +853,7 @@ records     markdownBlocks: ChatItem, CIQuote, ChatItemVersion, WebMessage
             shortDescrBlocks, welcomeMessageBlocks: DirectoryEntry
 functions   parsedMarkdown
             parseMaybeMarkdownList: formattedText of parsedMarkdown
-constants   maxListIndent 6
+constants   maxListDepth 7
             maxMarkupTokens 2000
 ```
 

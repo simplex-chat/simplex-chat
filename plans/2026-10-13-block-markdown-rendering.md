@@ -165,7 +165,11 @@ tokens            SoftBreak            " "
                   ParagraphBreak n     n × "\n"
                   other Markup         nothing
                   Escape               nothing
+                  without markdownBlocks: Markup drawn as its text (a teaser parsed from part of a text)
 Bold singleStar   italic, when markdownBlocks is present
+HyperLink         linkUri "mailto:" (e-mail autolink): opened as an e-mail link
+                    Kotlin: annotation OTHER_URL; Swift: without webLinkAttrKey
+                  FormattedText.linkUri: null for it, so no link preview
 ```
 
 MarkdownText (Kotlin), messageText (Swift):
@@ -219,9 +223,11 @@ ranges       limited to the length of fts
 U+200D                                     0; the next code point 0
 U+FE0F                                     1 after a code point of width 1, 0 otherwise
 U+FE00-U+FE0E, U+1F3FB-U+1F3FF, U+E0020-U+E007F, marks Mn and Me   0
-East Asian Wide and Fullwidth, emoji       2
+East Asian Wide and Fullwidth, Unicode 15.0   2
 other                                      1
 ```
+
+- The wide set: a table of 84 ranges, generated from Python's `unicodedata` (Unicode 15.0), assigned code points only, gaps of unassigned code points merged; it includes the emoji of default emoji presentation.
 
 - Per code point, not per grapheme: `java.text.BreakIterator` of JDK 17 (desktop) divides emoji modifier and ZWJ sequences, Android's divides by Unicode rules; the code point rule gives equal widths on both.
 
@@ -239,8 +245,9 @@ copy       the selected part of the copied text when its length equals the displ
 Notifications, `hideSecrets` (K/platform/NtfManager.kt:134-148, S/Notifications.swift:200-210):
 
 ```
-segments   as now
-tokens     drawn by kind, as in the segment loop
+segment text   Secret "...", Markup its drawn text, Escape nothing, other segments their text
+blocks null    the segment texts joined
+otherwise      blockParts with the segment text as displayText: Segments by their segment texts, Text as is
 ```
 
 ## 4. Call sites

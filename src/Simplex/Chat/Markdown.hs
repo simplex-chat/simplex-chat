@@ -17,6 +17,7 @@ import Control.Applicative (optional, (<|>))
 import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as AB
 import Data.Attoparsec.Combinator (lookAhead)
@@ -1015,7 +1016,11 @@ $(JQ.deriveJSON (sumTypeJSON fstToLower) ''BlockToken)
 $(JQ.deriveToJSON (sumTypeJSON fstToLower) ''Format)
 
 instance FromJSON Format where
-  parseJSON v = $(JQ.mkParseJSON (sumTypeJSON fstToLower) ''Format) v <|> pure (Unknown v)
+  parseJSON v = $(JQ.mkParseJSON (sumTypeJSON fstToLower) ''Format) v <|> boldWithoutStar <|> pure (Unknown v)
+    where
+      boldWithoutStar = case v of
+        J.Object o | JM.lookup "type" o == Just (J.String "bold") || JM.member "bold" o -> pure $ Bold False
+        _ -> fail "not bold"
 
 $(JQ.deriveJSON defaultJSON ''SegmentRange)
 

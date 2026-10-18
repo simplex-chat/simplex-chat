@@ -130,10 +130,6 @@ fun itemDisplayParts(ci: ChatItem, linkMode: SimplexLinkMode): List<Pair<String,
   }
 }
 
-// Full display text for a chat item — joins segment display texts.
-fun itemDisplayText(ci: ChatItem, linkMode: SimplexLinkMode): String =
-  itemDisplayParts(ci, linkMode)?.joinToString("") { it.first } ?: ci.text
-
 // Display-only prefix rendered before ci.text (e.g. "Spam: " for reports).
 // Renderers and selection code MUST share this string — otherwise selection offsets drift from screen.
 fun itemPrefixText(ci: ChatItem): String = when (val mc = ci.content.msgContent) {
@@ -318,7 +314,7 @@ fun MarkdownText (
                 is Format.HyperLink -> {
                   hasLinks = true
                   val ftStyle = Format.linkStyle
-                  withAnnotation(tag = "WEB_URL", annotation = ft.format.linkUri) {
+                  withAnnotation(tag = if (ft.format.isEmail) "OTHER_URL" else "WEB_URL", annotation = ft.format.linkUri) {
                     withStyle(ftStyle) { append(ft.format.showText ?: ft.text) }
                   }
                 }
@@ -367,7 +363,7 @@ fun MarkdownText (
                   }
                 }
                 is Format.Escape -> {}
-                is Format.Markup -> append(ft.format.token.drawnText)
+                is Format.Markup -> append(if (markdownBlocks != null) ft.format.token.drawnText else ft.text)
                 is Format.Unknown -> append(ft.text)
               }
             }
