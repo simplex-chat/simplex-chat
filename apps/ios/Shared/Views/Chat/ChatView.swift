@@ -1735,6 +1735,7 @@ struct ChatView: View {
         @State private var markReadTask: Task<Void, Never>? = nil
         @State private var actionSheet: SomeActionSheet? = nil
         @State private var swipeOffset: CGFloat = 0
+        @State private var swipeExclusionFrames: [CGRect] = []
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
@@ -2156,12 +2157,14 @@ struct ChatView: View {
                             .padding(.bottom, 4)
                     }
                 }
+                .coordinateSpace(name: swipeExclusionSpace)
+                .onPreferenceChange(SwipeExclusionFrames.self) { swipeExclusionFrames = $0 }
                 .offset(x: swipeOffset)
                 .contentShape(Rectangle())
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 10)
+                    DragGesture(minimumDistance: 10, coordinateSpace: .named(swipeExclusionSpace))
                         .onChanged { value in
-                            guard canReply else { return }
+                            guard canReply, !swipeExclusionFrames.contains(where: { $0.contains(value.startLocation) }) else { return }
                             let x = value.translation.width
                             if x < 0 {
                                 swipeOffset = max(x * 0.63, -56)
