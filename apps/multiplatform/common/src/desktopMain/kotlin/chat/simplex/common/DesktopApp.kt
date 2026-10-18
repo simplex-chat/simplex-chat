@@ -120,6 +120,22 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   }
 
   simplexWindowState.windowState = windowState
+  val unreadTotal by remember {
+    derivedStateOf {
+      val active = ChatModel.chats.value.sumOf { c ->
+        when (c.chatInfo.chatSettings?.enableNtfs) {
+          MsgFilter.All -> c.chatStats.unreadCount
+          MsgFilter.Mentions -> minOf(c.chatStats.unreadMentions, c.chatStats.unreadCount)
+          else -> 0
+        }
+      }
+      val others = ChatModel.users.sumOf { u ->
+        if (!u.user.activeUser && !u.user.hidden && u.user.showNtfs) u.unreadCount else 0
+      }
+      active + others
+    }
+  }
+  val windowTitle = if (unreadTotal > 0) "SimpleX [$unreadTotal]" else "SimpleX"
   // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
     Window(state = windowState, visible = simplexWindowState.windowVisible.value, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { handleCloseRequest(closedByError) }, onKeyEvent = {
@@ -128,7 +144,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       } else {
         false
       }
-    }, title = "SimpleX") {
+    }, title = windowTitle) {
 //      val hardwareAccelerationDisabled = remember { listOf(GraphicsApi.SOFTWARE_FAST, GraphicsApi.SOFTWARE_COMPAT, GraphicsApi.UNKNOWN).contains(window.renderApi) }
       simplexWindowState.window = window
       AppScreen()
