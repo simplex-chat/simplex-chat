@@ -205,8 +205,8 @@ class PlanTest(unittest.TestCase):
 
 
 class BuildPlanTest(unittest.TestCase):
-    def plan(self, event="push", release_missing=False, libs_artifact=False, libs_release="", core=False, addon=False):
-        return build_plan(event, release_missing, libs_artifact, libs_release, core, addon)
+    def plan(self, event="push", release_missing=False, libs_release="", core=False, addon=False):
+        return build_plan(event, release_missing, libs_release, core, addon)
 
     def test_push_builds_a_missing_addon_release_and_tests_it(self):
         self.assertEqual(self.plan(release_missing=True), BuildPlan(ADDON_PLATFORMS, test=True))
@@ -219,11 +219,6 @@ class BuildPlanTest(unittest.TestCase):
     def test_core_change_leaves_tests_to_build_yml(self):
         self.assertEqual(self.plan("pull_request", core=True), BuildPlan([], test=False))
         self.assertEqual(self.plan("pull_request", core=True, addon=True), BuildPlan(ADDON_PLATFORMS, test=False))
-
-    def test_libsimplex_of_the_pull_request_is_tested_on_its_platform(self):
-        self.assertEqual(
-            self.plan("pull_request", libs_artifact=True, core=True), BuildPlan(["linux-x86_64"], test=True)
-        )
 
     def test_new_library_release_is_tested_on_every_platform(self):
         self.assertEqual(self.plan(libs_release="core-1.0.0.2"), BuildPlan(ADDON_PLATFORMS, test=True))

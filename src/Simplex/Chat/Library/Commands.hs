@@ -462,7 +462,7 @@ processChatCommand cxt nm = \case
       checkValidName displayName
       checkProfileImageSize image
       checkProfileSize p
-    p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
+    p@Profile {displayName} <- liftIO $ maybe (generateRandomProfile Nothing) pure profile
     u <- asks currentUser
     users <- withFastStore' getUsers
     forM_ users $ \User {profile = LocalProfile {displayName = n}, activeUser, viewPwdHash, userChatRelay = userChatRelay'} -> do
@@ -2132,7 +2132,7 @@ processChatCommand cxt nm = \case
   Welcome -> withUser $ pure . CRWelcome
   APIAddContact userId incognito -> withUserId userId $ \user -> do
     -- [incognito] generate profile for connection
-    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+    incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
     subMode <- chatReadVar subscriptionMode
     (preparedReq, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareInvitationLink a (aUserId user) IKUsePQ Nothing
     linkProfile <- presentUserBadge user incognitoProfile (Just $ PHLink linkKey) $ userProfileDirect user incognitoProfile Nothing True
@@ -2150,7 +2150,7 @@ processChatCommand cxt nm = \case
     let PendingContactConnection {pccConnStatus, customUserProfileId, connLinkInv} = conn
     case (pccConnStatus, customUserProfileId, incognito) of
       (ConnNew, Nothing, True) -> do
-        incognitoProfile <- liftIO generateRandomProfile
+        incognitoProfile <- liftIO $ generateIncognitoProfile user
         sLnk <- updatePCCShortLinkData conn $ userProfileDirect user (Just incognitoProfile) Nothing True
         conn' <- withFastStore' $ \db -> do
           pId <- createIncognitoProfile db user incognitoProfile
@@ -2329,7 +2329,7 @@ processChatCommand cxt nm = \case
             publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
         -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
         -- set group link info and incognito profile, generate and store membership keys
-        incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+        incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
         g'@(GIK gInfo' _) <- withFastStore $ \db -> do
           g'@(GIK gInfo' _) <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey publicMemberCount_
@@ -3886,7 +3886,7 @@ processChatCommand cxt nm = \case
               pqSup' = PQSupportOn
               joinNewConn chatV = do
                 -- [incognito] generate profile to send
-                incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+                incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
                 (connId, binding) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
@@ -3958,7 +3958,7 @@ processChatCommand cxt nm = \case
           -- [incognito] generate profile to send, or use membership profile for relay groups
           incognitoProfile_ <- case gInfo_ of
             Just (Just (GIK gInfo _)) | useRelays' gInfo -> pure $ ExistingIncognito <$> incognitoMembershipProfile gInfo
-            _ -> if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+            _ -> if incognito then Just . NewIncognito <$> liftIO (generateIncognitoProfile user) else pure Nothing
           let incognitoProfile = fromIncognitoProfile <$> incognitoProfile_
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
@@ -3974,7 +3974,7 @@ processChatCommand cxt nm = \case
             (connId, chatV, reqHeader) <- prepareContact user cReq pqSup
             newXContactId <- XContactId <$> drgRandomBytes 16
             -- [incognito] generate profile to send
-            incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+            incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
             subMode <- chatReadVar subscriptionMode
             let cReqHash = contactCReqHash cReq
             conn <- withFastStore' $ \db -> createConnReqConnection db userId connId (Just $ PCEContact ct) cReq reqHeader cReqHash shortLink newXContactId (NewIncognito <$> incognitoProfile) Nothing subMode chatV pqSup
@@ -4345,7 +4345,7 @@ processChatCommand cxt nm = \case
       when (isPublicGroup groupKeys && isJust (memberAdmission >>= review)) $ throwCmdError "Admission review is not supported in channels"
       when (not (isPublicGroup groupKeys) && isJust publicGroup) $ throwCmdError "publicGroup is not allowed in groups"
       -- [incognito] generate incognito profile for group membership
-      incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+      incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
       withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile memberId groupKeys publicMemberCount_
     createNewGroupItems :: User -> GroupInfo -> CM ()
     createNewGroupItems user gInfo = do
