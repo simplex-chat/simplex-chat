@@ -5862,88 +5862,109 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
         <target state="translated">Mesaj mətni</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message too large" xml:space="preserve">
+      <trans-unit id="Message too large" xml:space="preserve" approved="no">
         <source>Message too large</source>
+        <target state="translated">Mesaj həddindən artıq böyükdür</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages" xml:space="preserve">
+      <trans-unit id="Messages" xml:space="preserve" approved="no">
         <source>Messages</source>
+        <target state="translated">Mesajlar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages &amp; files" xml:space="preserve">
+      <trans-unit id="Messages &amp; files" xml:space="preserve" approved="no">
         <source>Messages &amp; files</source>
+        <target state="translated">Mesajlar və fayllar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages are protected by **end-to-end encryption**." xml:space="preserve">
+      <trans-unit id="Messages are protected by **end-to-end encryption**." xml:space="preserve" approved="no">
         <source>Messages are protected by **end-to-end encryption**.</source>
+        <target state="translated">Mesajlar uçdan-uca şifrələmə ilə qorunur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages from %@ will be shown!" xml:space="preserve">
+      <trans-unit id="Messages from %@ will be shown!" xml:space="preserve" approved="no">
         <source>Messages from %@ will be shown!</source>
+        <target state="translated">%@ gələn mesajlar göstəriləcək!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." xml:space="preserve">
+      <trans-unit id="Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." xml:space="preserve" approved="no">
         <source>Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages.</source>
+        <target state="translated">Bu kanaldakı mesajlar ** uçtan-uca şifrələnməyib**. Çat ötürücüləri bu mesajları görə bilər.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." xml:space="preserve">
+      <trans-unit id="Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." xml:space="preserve" approved="no">
         <source>Messages in this channel are not end-to-end encrypted. Chat relays can see these messages.</source>
+        <target state="translated">Bu kanaldakı mesajlar uçdan-uca şifrələnməyib. Çat ötürücüləri bu mesajları görə bilər.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
-      <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve">
+      <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve" approved="no">
         <source>Messages in this chat will never be deleted.</source>
+        <target state="translated">Bu söhbətdəki mesajlar heç vaxt silinməyəcək.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Messages received" xml:space="preserve">
+      <trans-unit id="Messages received" xml:space="preserve" approved="no">
         <source>Messages received</source>
+        <target state="translated">Alınan mesajlar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages sent" xml:space="preserve">
+      <trans-unit id="Messages sent" xml:space="preserve" approved="no">
         <source>Messages sent</source>
+        <target state="translated">Göndərilmiş mesajlar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
+      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve" approved="no">
         <source>Messages were deleted after you selected them.</source>
+        <target state="translated">Mesajlar siz onları seçdikdən sonra silindi.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+      <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
+        <target state="translated">Mesajlar, fayllar və zənglər mükəmməl irəli məxfilik, inkar imkanı və pozuntu sonrası bərpa xüsusiyyətlərinə malik **uçdan-uca şifrələmə** ilə qorunur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
+        <target state="translated">Mesajlar, fayllar və zənglər; mükəmməl irəli məxfilik (perfect forward secrecy), inkarolunma imkanı və pozuntu sonrası bərpa xüsusiyyətlərinə malik, **kvant hesablamalarına davamlı uçdan-uca şifrələmə** ilə qorunur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate" xml:space="preserve">
+      <trans-unit id="Migrate" xml:space="preserve" approved="no">
         <source>Migrate</source>
+        <target state="translated">Köç et</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate device" xml:space="preserve">
+      <trans-unit id="Migrate device" xml:space="preserve" approved="no">
         <source>Migrate device</source>
+        <target state="translated">Cihazı köçürün</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate here" xml:space="preserve">
+      <trans-unit id="Migrate here" xml:space="preserve" approved="no">
         <source>Migrate here</source>
+        <target state="translated">Bura köçün</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate to another device" xml:space="preserve">
+      <trans-unit id="Migrate to another device" xml:space="preserve" approved="no">
         <source>Migrate to another device</source>
+        <target state="translated">Başqa cihaza keçin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate to another device via QR code." xml:space="preserve">
+      <trans-unit id="Migrate to another device via QR code." xml:space="preserve" approved="no">
         <source>Migrate to another device via QR code.</source>
+        <target state="translated">QR kod vasitəsilə başqa cihaza keçin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrating" xml:space="preserve">
+      <trans-unit id="Migrating" xml:space="preserve" approved="no">
         <source>Migrating</source>
+        <target state="translated">Köçmə</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrating database archive…" xml:space="preserve">
+      <trans-unit id="Migrating database archive…" xml:space="preserve" approved="no">
         <source>Migrating database archive…</source>
+        <target state="translated">Verilənlər bazası arxivi köçürülür…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration complete" xml:space="preserve">
+      <trans-unit id="Migration complete" xml:space="preserve" approved="no">
         <source>Migration complete</source>
+        <target state="translated">Miqrasiya tamamlandı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration error:" xml:space="preserve">
