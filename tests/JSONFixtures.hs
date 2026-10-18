@@ -38,10 +38,10 @@ userJSON :: LB.ByteString
 userJSON = "{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"\",\"shortDescr\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"files\":{\"allow\":\"always\"},\"calls\":{\"allow\":\"yes\"},\"sessions\":{\"allow\":\"no\"},\"commands\":[]},\"activeUser\":true,\"activeOrder\":1,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true,\"autoAcceptMemberContacts\":false,\"autoAcceptGroupInvitations\":false,\"userChatRelay\":false}"
 
 parsedMarkdownSwift :: LB.ByteString
-parsedMarkdownSwift = "{\"formattedText\":[{\"format\":{\"_owsf\":true,\"bold\":{}},\"text\":\"hello\"}]}"
+parsedMarkdownSwift = "{\"formattedText\":[{\"format\":{\"_owsf\":true,\"bold\":{\"singleStar\":true}},\"text\":\"hello\"}]}"
 
 parsedMarkdownTagged :: LB.ByteString
-parsedMarkdownTagged = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
+parsedMarkdownTagged = "{\"formattedText\":[{\"format\":{\"type\":\"bold\",\"singleStar\":true},\"text\":\"hello\"}]}"
 
 markdownBlocksSwift :: LB.ByteString
 markdownBlocksSwift = "{\"formattedText\":[{\"format\":{\"_owsf\":true,\"markup\":{\"token\":{\"_owsf\":true,\"headingMark\":{\"level\":2}}}},\"text\":\"## \"},{\"text\":\"a\"},{\"format\":{\"_owsf\":true,\"markup\":{\"token\":{\"_owsf\":true,\"lineBreak\":{}}}},\"text\":\"\\n\"},{\"format\":{\"_owsf\":true,\"markup\":{\"token\":{\"_owsf\":true,\"listMark\":{}}}},\"text\":\"- \"},{\"format\":{\"_owsf\":true,\"bold\":{\"singleStar\":true}},\"text\":\"b\"}],\"markdownBlocks\":[{\"_owsf\":true,\"heading\":{\"level\":2,\"content\":{\"from\":1,\"to\":2}}},{\"_owsf\":true,\"list\":{\"items\":[{\"content\":{\"from\":4,\"to\":5},\"items\":[]}]}}]}"
