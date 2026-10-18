@@ -194,18 +194,25 @@ class Matrix(unittest.TestCase):
         self.assertEqual(queue_key("workflow_dispatch", ""), keys[0])
         self.assertEqual(queue_key("workflow_dispatch", None), keys[0])
 
-    def test_legacy_pr_jobs_do_not_cancel_active_runs(self):
+    def test_legacy_jobs_preserve_running_pr_and_non_pr_builds(self):
         source = (HERE.parent.parent / ".github/workflows/build.yml").read_text()
-        expressions = re.findall(r"^      cancel-in-progress: \$\{\{ (.*) \}\}$", source, re.MULTILINE)
-        self.assertEqual(len(expressions), 3)
-        prior = "!startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag"
-        for expression in expressions:
-            self.assertEqual(expression, "github.event_name != 'pull_request' && " + prior)
+        values = re.findall(r"^      cancel-in-progress: (.*)$", source, re.MULTILINE)
+        self.assertEqual(len(values), 3)
+        # Master queues non-PR jobs; this migration also preserves running PR
+        # builds. The ARM Linux push job shares the Linux concurrency policy.
+        self.assertRegex(source, r"(?m)^    concurrency: &linux-concurrency$")
+        push_job = re.search(r"(?ms)^  build-linux-push:\n(.*?)(?=^  \S|\Z)", source)
+        self.assertIsNotNone(push_job)
+        self.assertRegex(push_job.group(1), r"(?m)^    concurrency: \*linux-concurrency$")
+        for value in values:
 
             def evaluate(event, ref, libs_tag):
+                if value in ("true", "false"):
+                    return value == "true"
+                self.assertTrue(value.startswith("${{ ") and value.endswith(" }}"))
                 # Evaluate these actual, narrowly constrained workflow
                 # expressions with GitHub's relevant boolean/string semantics.
-                code = expression.replace("github.event_name", "event").replace("github.ref", "ref")
+                code = value[4:-3].replace("github.event_name", "event").replace("github.ref", "ref")
                 code = code.replace("needs.maybe-release.outputs.libs_tag", "libs_tag")
                 code = re.sub(r"!(?!=)", "not ", code).replace("&&", "and")
                 return bool(eval(code, {"__builtins__": {}}, {
@@ -217,8 +224,7 @@ class Matrix(unittest.TestCase):
                 for ref in ["refs/pull/7729/merge", "refs/heads/master", "refs/tags/v7.0", "refs/tags/other"]:
                     for libs_tag in [None, False, 0, "", "false", "v7.0-libs"]:
                         with self.subTest(event=event, ref=ref, libs_tag=libs_tag):
-                            expected = False if event == "pull_request" else not ref.startswith("refs/tags/v") and not libs_tag
-                            self.assertEqual(evaluate(event, ref, libs_tag), expected)
+                            self.assertFalse(evaluate(event, ref, libs_tag))
 
     def test_unknown_group_rejected(self):
         with self.assertRaises(ValueError):
