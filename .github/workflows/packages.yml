@@ -39,13 +39,9 @@ on:
       python_version:
         description: "simplex-chat PyPI version, bumped when needed by default"
         required: false
-  # build.yml: a pull request that changes the chat core, or a new library release
+  # build.yml: a new library release
   workflow_call:
     inputs:
-      libs_artifact:
-        description: "test with simplex-chat-libs-linux-x86_64 built by the calling run"
-        type: boolean
-        default: false
       libs_release:
         description: "test with this simplex-chat-libs release"
         type: string
@@ -119,12 +115,11 @@ jobs:
           EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.sha }}
           RELEASE_MISSING: ${{ steps.release.outputs.missing }}
-          LIBS_ARTIFACT: ${{ inputs.libs_artifact }}
           LIBS_RELEASE: ${{ inputs.libs_release }}
         run: |
           if [ -n "$BASE" ]; then git fetch -q --depth=1 origin "$BASE"; fi
           python3 scripts/ci/packages_release.py build-plan --event "$EVENT" --base "$BASE" \
-            --release-missing "$RELEASE_MISSING" --libs-artifact "$LIBS_ARTIFACT" --libs-release "$LIBS_RELEASE" >> "$GITHUB_OUTPUT"
+            --release-missing "$RELEASE_MISSING" --libs-release "$LIBS_RELEASE" >> "$GITHUB_OUTPUT"
 
   build:
     name: "build ${{ matrix.platform }}"
@@ -163,13 +158,6 @@ jobs:
           npx tsc && cp src/simplex.* dist
           cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
 
-      - name: Download libsimplex of this run
-        if: needs.addon.outputs.test && inputs.libs_artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: simplex-chat-libs-${{ matrix.platform }}
-          path: ${{ runner.temp }}/libsimplex
-
       - name: Download libsimplex release
         if: needs.addon.outputs.test && inputs.libs_release
         env:
@@ -177,13 +165,13 @@ jobs:
         run: curl -fsSL --create-dirs -o "$RUNNER_TEMP/libsimplex/simplex-chat-libs-${{ matrix.platform }}.zip" "$URL"
 
       - name: Unpack libsimplex
-        if: needs.addon.outputs.test && (inputs.libs_artifact || inputs.libs_release)
+        if: needs.addon.outputs.test && inputs.libs_release
         run: python -m zipfile -e "$RUNNER_TEMP/libsimplex/simplex-chat-libs-${{ matrix.platform }}.zip" "$RUNNER_TEMP/libsimplex"
 
       - name: Test simplex-chat (npm)
         if: needs.addon.outputs.test
         env:
-          SIMPLEX_LIBS_DIR: ${{ (inputs.libs_artifact || inputs.libs_release) && format('{0}/libsimplex/libs', runner.temp) || '' }}
+          SIMPLEX_LIBS_DIR: ${{ inputs.libs_release && format('{0}/libsimplex/libs', runner.temp) || '' }}
         # A failed test can leave chat controllers running, and jest then waits for them.
         # Tests on the public preset servers fail in CI when a server is slow to connect.
         run: npx jest --forceExit --testNamePattern '^(?!.*use preset servers)'
