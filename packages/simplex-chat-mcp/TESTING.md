@@ -39,7 +39,7 @@ Prompts for Claude Code, one at a time. A call that waits more than 2 minutes, f
 
 By name, first:
 
-- `Connect to @directory.simplex.` While the name is not registered: a tool error `SimpleX error: ...`, and no card. Once it is registered: the card `I want to connect to bot SimpleX Directory (@directory.simplex), as myself.`; after the approval, step 1 below returns `status: known`, with no card.
+- `Connect to @directory.simplex.` While the name is not registered: the tool error `Name not found: This SimpleX name is not registered. Please check the name.`, and no card. Once it is registered: the card `I want to connect to bot SimpleX Directory (@directory.simplex), as myself.`; after the approval, step 1 below returns `status: known`, with no card.
 
 The directory by its address (`docs/DIRECTORY.md`):
 

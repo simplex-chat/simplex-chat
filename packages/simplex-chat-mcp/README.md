@@ -14,7 +14,7 @@ What it isn't:
   - a Claude Code plugin or channel;
   - registration in other hosts.
 
-Status: v0.1, implemented and in testing, not yet published to npm; `TESTING.md` describes a local build and test. The design, the tools and the scenarios are in `PLAN.md`.
+Status: v0.1. [`TESTING.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/PLAN.md).
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -234,7 +234,7 @@ Commands:
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's chats and which of them are approved for all messages. |
 
-`/pending` and `/list` are in the chat's command menu; the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in `PLAN.md`, section "What the owner sees: the agent control chat".
+`/pending` and `/list` are in the chat's command menu; the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/PLAN.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -265,7 +265,7 @@ Five tools:
 
 A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
-Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in `PLAN.md`, section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
+Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
 ## Waiting for approval in Claude Code
 

@@ -375,7 +375,7 @@ export async function createControlChat(chat: api.ChatApi, userId: number, displ
   const group = await chat.apiNewGroup(userId, {
     displayName,
     fullName: "",
-    description: "Your agent asks here before it connects or sends. /approve N approves, /reject N rejects, /pending lists pending actions.",
+    description: "Supervise your AI agent here: approve or reject its connections and messages with one tap.",
     groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, commands: controlCommands},
   })
   const customData = controlData(nextAction)

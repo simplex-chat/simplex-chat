@@ -260,3 +260,8 @@ export function validName(name: string): string {
 export function viewName(name: string): string {
   return /\s/u.test(name) || /\p{P}$/u.test(name) ? `'${name}'` : name
 }
+
+export function fullDomainName({nameTLD, domain, subDomain}: T.SimplexDomain): string {
+  const tld = nameTLD === T.SimplexTLD.Simplex ? ".simplex" : nameTLD === T.SimplexTLD.Testing ? ".testing" : ""
+  return `${[...subDomain].reverse().concat(domain).join(".")}${tld}`
+}

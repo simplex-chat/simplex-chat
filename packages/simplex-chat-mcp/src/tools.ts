@@ -13,6 +13,7 @@ import {
   chatCommand,
   chatNumber,
   chatRef,
+  fullDomainName,
   getChat,
   isChatRef,
   isLive,
@@ -988,11 +989,6 @@ function commandsOf(commands: T.ChatBotCommand[] | undefined): Command[] | undef
       ? {keyword: command.keyword, label: command.label, ...defined({params: command.params})}
       : {label: command.label, commands: commandsOf(command.commands) ?? []},
   )
-}
-
-function fullDomainName({nameTLD, domain, subDomain}: T.SimplexDomain): string {
-  const tld = nameTLD === T.SimplexTLD.Simplex ? ".simplex" : nameTLD === T.SimplexTLD.Testing ? ".testing" : ""
-  return `${[...subDomain].reverse().concat(domain).join(".")}${tld}`
 }
 
 function mentionedIn(text: string, name: string): boolean {

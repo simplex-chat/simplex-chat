@@ -615,9 +615,48 @@ message not for an address         message: <target> is not a contact or busines
 role below author                  The agent has role observer in #12 and can't post.
 reply_to not in chat               reply_to: #15 has no item 999.
 mention not a member               mention: #15 has no member 45. (in a contact chat: mention: @4 is a contact chat; mentions apply to groups and channels.)
-SimpleX error                      SimpleX error: <the chain of error types>: <the scalar fields of the chain as JSON, at most 500 characters>
-                                     for example: SimpleX error: errorAgent: SMP: NAME: NOT_FOUND: {"agentConnId":"","serverAddress":"smp://..."}
+SimpleX error worded by the apps   the apps' text (table below), for example: Name not found: This SimpleX name is not registered. Please check the name.
+other SimpleX error                SimpleX error: <the chain of error types>: <the scalar fields of the chain as JSON, at most 500 characters>
+                                     for example: SimpleX error: error: groupUserRole: {"requiredRole":"author"}
 ```
+
+SimpleX errors worded by the apps (`chatErrorText`, `log.ts`), copied from the Android app's alerts (`SimpleXAPI.kt`, strings in `moko-resources/base/strings.xml`) and iOS (`SimpleXAPI.swift`, `ErrorAlert.swift`). The alert's title and message form one line, joined by ": ", or by a space after "!" and "?"; HOST is the first host of the server address. The text has no "SimpleX error:" prefix, as the title names the error.
+
+```
+error shape                                              text
+error invalidConnReq                                     Invalid connection link: Please check that you used the correct link or ask your contact to send you another one.
+error unsupportedConnReq                                 Unsupported connection link: This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.
+error simplexDomainNotReady noValidLink                  No valid link: The SimpleX name NAME is registered, but it has no valid link.
+error simplexDomainNotReady unknownDomain                Unconfirmed name: The SimpleX name NAME is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.
+errorAgent NO_NAME_SERVERS                               SimpleX name error: None of your servers are set to resolve SimpleX names. Use a connection link.
+errorAgent SMP NAME NOT_FOUND                            Name not found: This SimpleX name is not registered. Please check the name.
+errorAgent SMP NAME NO_RESOLVER                          SimpleX name error: Server SERVER does not support name resolution. Use a connection link.
+errorAgent SMP NAME RESOLVER                             SimpleX name error: Resolver error: RESOLVER ERROR
+errorAgent SMP AUTH                                      Connection link removed: Your contact removed this link, or it was a one-time link that was already used. To connect, ask your contact to create a new link.
+errorAgent SMP BLOCKED                                   Connection blocked: Connection is blocked by server operator: Spam. (or: Content violates conditions of use.)
+errorAgent SMP QUOTA                                     Undelivered messages: The connection reached the limit of undelivered messages, your contact may be offline.
+errorAgent INTERNAL SEUniqueID (iOS only)                Already connected? It seems like you are already connected via this link. If it is not the case, there was an error (SEUniqueID).
+errorAgent BROKER TIMEOUT                                Connection timeout: Please check your network connection with HOST and try again.
+errorAgent BROKER NETWORK                                Connection error: Please check your network connection with HOST and try again.
+errorAgent BROKER NETWORK unknownCAError                 Connection error: Fingerprint in server address does not match certificate: HOST.
+errorAgent BROKER HOST                                   Connection error: Server address is incompatible with network settings: HOST.
+errorAgent BROKER TRANSPORT version                      Connection error: Server version is incompatible with your app: HOST.
+errorAgent SMP PROXY BROKER TIMEOUT | NETWORK            Private routing error: Error connecting to forwarding server HOST. Please try later.
+errorAgent SMP PROXY BROKER NETWORK unknownCAError       Private routing error: Fingerprint in forwarding server address does not match certificate: HOST.
+errorAgent SMP PROXY BROKER HOST                         Private routing error: Forwarding server address is incompatible with network settings: HOST.
+errorAgent SMP PROXY BROKER TRANSPORT version            Private routing error: Forwarding server version is incompatible with network settings: HOST.
+errorAgent PROXY protocolError PROXY BROKER TIMEOUT | NETWORK, or NO_SESSION
+                                                         Private routing error: Forwarding server HOST failed to connect to destination server HOST. Please try later.
+errorAgent PROXY ... BROKER NETWORK unknownCAError       Private routing error: Fingerprint in destination server address does not match certificate: HOST.
+errorAgent PROXY ... BROKER HOST                         Private routing error: Destination server address of HOST is incompatible with forwarding server HOST settings.
+errorAgent PROXY ... BROKER TRANSPORT version            Private routing error: Destination server version of HOST is incompatible with forwarding server HOST.
+errorAgent AGENT A_SERVICE timeout                       Connection timeout: The service did not respond. Please try again.
+errorStore largeMsg                                      Message is too large! Please reduce the message size and send again.
+errorStore groupNotFound                                 Group not found! This group no longer exists.
+```
+
+- Adapted from the apps: "Configure servers, or use a connection link." became "Use a connection link." in the two name-server texts, as the agent configures no servers; the line break of the AUTH and BLOCKED messages became a space.
+- The apps word group role, membership, contact state and file errors only by their type, so those keep the chain.
 
 - The chain starts at the `ChatError` type and follows the field whose name ends in `Err`, `Error` or `errorType` and whose value has a `type` (`agentError`, `smpErr`, `nameErr`, ...); other nested values, such as a `groupInfo` with its welcome message, are left out.
 
@@ -688,7 +727,7 @@ SIGINT, SIGTERM (process.on; the second signal joins the stop in progress):
 
 ```
 g = /_group <user> {displayName: DISPLAY, fullName: "",
-  description: "Your agent asks here before it connects or sends. /approve N approves, /reject N rejects, /pending lists pending actions.",
+  description: "Supervise your AI agent here: approve or reject its connections and messages with one tap.",
   groupPreferences: {history: {enable: "on"}, commands: [
     {type: "command", keyword: "pending", label: "Pending actions"},
     {type: "command", keyword: "list", label: "Chats and approvals"}]}}
@@ -853,7 +892,7 @@ connect(input, ctx):
   an action in memory with tool connect and equal action fields: action(connect, input, ctx); go to result
   /_connect plan <user> <target>                                         # APIConnectPlan, parser Commands.hs:6559
     error with errorType invalidConnReq: tool error "not a link or name"
-    other errors: tool error "SimpleX error"                             # e.g. an unregistered name: SMP NAME NOT_FOUND (resolveNameRecord, 9711dcfc9 Commands.hs:5175-5180)
+    other errors: tool error "SimpleX error"                             # e.g. an unregistered name: SMP NAME NOT_FOUND (resolveNameRecord, 9711dcfc9 Commands.hs:5175-5180), "Name not found: ..."
   plan type error (a caught store error, Commands.hs:4517, :4549): tool error "SimpleX error" with plan.chatError
   plan summary: type, name, simplexName, description, welcome, commands, connLink, direct, linkData
   plan with connectionPlanProceed false (Controller.hs:1226-1245):
@@ -1189,6 +1228,7 @@ messages    message fields; responses with idle and wait; receive with new messa
 http        401 without token; 403 with another Origin; 404 for other paths; SDK validation errors
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors
 files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json
+log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors
 ```
 
 End to end, with the preset SimpleX servers; the owner is a scripted profile in its own database; the agent's calls come from an MCP client in the test:

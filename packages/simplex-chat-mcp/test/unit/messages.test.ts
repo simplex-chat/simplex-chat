@@ -477,7 +477,7 @@ describe("connect", () => {
     expect(known({connId: 207, connStatus: {type: "joined"}})).toMatchObject({known: {type: "direct"}})
   })
 
-  it("reports an unregistered name with the chain of agent, SMP and name error types", async () => {
+  it("reports an unregistered name as the apps word it", async () => {
     const chat = new FakeChat()
     chat.sendChatCmd = async () => {
       throw new core.ChatAPIError("Chat command error", {
@@ -488,7 +488,7 @@ describe("connect", () => {
       } as unknown as T.ChatError)
     }
     const {tools} = connectTools(chat)
-    expect(textOf(await tools.call("connect", {target: "@nobody.simplex"}, signal().call))).toBe('SimpleX error: errorAgent: SMP: NAME: NOT_FOUND: {"agentConnId":"","serverAddress":"smp://abc@smp4.simplex.im"}')
+    expect(textOf(await tools.call("connect", {target: "@nobody.simplex"}, signal().call))).toBe("Name not found: This SimpleX name is not registered. Please check the name.")
   })
 
   it("connects a known prepared contact, and deletes it when the connection fails", async () => {
