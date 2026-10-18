@@ -221,14 +221,16 @@ fun UserPicker(
         UserPickerOptionRow(
           painterResource(MR.images.ic_qr_code),
           if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
-          showCustomModal { it, close ->
-            val user = it.currentUser.value
-            if (user != null) {
-              UserAddressView(it, shareViaProfile = user.addressShared, close = close)
-            } else {
-              val modal = this
-              LaunchedEffect(modal, ModalManager.start.modalCount.value) {
-                if (ModalManager.start.isLastModal(modal)) close()
+          {
+            ModalManager.start.showCustomModal(id = ModalViewId.USER_ADDRESS) { close ->
+              val user = chatModel.currentUser.value
+              if (user != null) {
+                UserAddressView(chatModel, shareViaProfile = user.addressShared, close = close)
+              } else {
+                val modal = this
+                LaunchedEffect(modal, ModalManager.start.modalCount.value) {
+                  if (ModalManager.start.isLastModal(modal)) close()
+                }
               }
             }
           }, disabled = stopped
