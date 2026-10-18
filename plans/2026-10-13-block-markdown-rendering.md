@@ -183,7 +183,8 @@ Table        each row: each cell: range(cell, monospace), text(padding, monospac
                        between cells: text(" │ ", monospace)
              between rows: text("\n")
              under the header row: text(a run of "─" of the column width per column, "─┼─" between runs, monospace)
-             a missing cell: text(padding, monospace)
+             a missing cell at a row end: not drawn
+             a cell wider than its column: no padding
              padding by the column alignment
                none         after the text
                left         after the text
@@ -191,7 +192,7 @@ Table        each row: each cell: range(cell, monospace), text(padding, monospac
                center       half before, rounded down
                             the rest after
 Rule         text("———")
-width        column: the largest width of a cell of the column
+width        column: the largest width of a cell of the column, at most 40
              cell: the columns of displayText of its segments
              columns: per grapheme, 2 for East Asian Wide and Fullwidth characters and for emoji, 1 otherwise
 ranges       limited to the length of fts
@@ -295,6 +296,7 @@ List             each entry, in source order: <div style="padding-left: Nem;">, 
 Table            <div style="overflow-x: auto;"><table style="border-collapse: collapse;">: the header row in <th>, the body rows in <td>
                  each cell: style="text-align: A; border: 1px solid; padding: 0 0.4em;"
                  A: the column alignment, none as left, any other value as left
+                 a missing cell at a row end: no element
 Rule             <hr>
 number           escaped text
 ```

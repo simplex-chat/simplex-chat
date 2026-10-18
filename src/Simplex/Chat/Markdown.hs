@@ -28,10 +28,10 @@ import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace, isSymbol)
 import Data.Either (fromRight, isLeft, lefts)
 import Data.Functor (($>))
-import Data.List (foldl', intercalate)
+import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe, isNothing, listToMaybe, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Semigroup (sconcat)
 import Data.String
 import Data.Text (Text)
@@ -201,7 +201,7 @@ parsedMarkdown s = case T.lines s of
         Just (c, rest) -> (c == '/', rest)
         Nothing -> (False, "")
   _
-    | any isBlockSyntax tokens -> ParsedMarkdown (Just tokens) (L.nonEmpty $ markdownBlocksOf tokens)
+    | any isBlockSyntax tokens && length [f | FormattedText f _ <- tokens, isMarkup f] <= maxMarkupTokens -> ParsedMarkdown (Just tokens) (L.nonEmpty $ markdownBlocksOf tokens)
     | all (isNothing . format) inline -> ParsedMarkdown Nothing Nothing
     | otherwise -> ParsedMarkdown (Just inline) Nothing
   where
@@ -221,11 +221,10 @@ isBlockSyntax = \case
   _ -> False
 
 joinSegments :: MarkdownList -> MarkdownList
-joinSegments = reverse . foldl' acc []
-  where
-    acc (FormattedText f t : ms) (FormattedText f' t')
-      | f == f' && not (isMarkup f) = FormattedText f (t <> t') : ms
-    acc ms ft = ft : ms
+joinSegments = map joinGroup . L.groupBy (\(FormattedText f _) (FormattedText f' _) -> f == f' && not (isMarkup f))
+
+joinGroup :: NonEmpty FormattedText -> FormattedText
+joinGroup g@(FormattedText f _ :| _) = FormattedText f $ T.concat [t | FormattedText _ t <- L.toList g]
 
 isMarkup :: Maybe Format -> Bool
 isMarkup = \case
@@ -249,7 +248,7 @@ blockOf ts@((i, FormattedText f t) :| _) = case f of
     HeadingMark lvl -> Right . Heading lvl <$> contentRange
     ListMark num -> (\r -> Left (indentColumn $ T.takeWhile isIndentChar t, num, r)) <$> contentRange
     QuoteMark -> Right . Quote <$> contentRange
-    FenceMark lang -> Just $ Right $ CodeBlock lang $ SegmentRange (i + 2) codeEnd
+    FenceMark lang -> Just $ Right $ CodeBlock lang $ SegmentRange (i + 2) (max (i + 2) codeEnd)
     RowMark -> Right <$> tableBlock (L.toList ts)
     RuleMark -> Just $ Right Rule
     _ -> paragraph
@@ -266,14 +265,15 @@ blockOf ts@((i, FormattedText f t) :| _) = case f of
 tableBlock :: [(Int, FormattedText)] -> Maybe MarkdownBlock
 tableBlock ts = do
   cols <- L.nonEmpty $ concat [aligns | (_, FormattedText (Just (Markup (DelimiterRow aligns))) _) <- ts]
-  headerRow : bodyRows <- pure $ zipWith rowCells rowMarks (map Just (drop 1 rowMarks) <> [Nothing])
+  headerRow : bodyRows <- pure $ tableRows [(i, tkn) | (i, FormattedText (Just (Markup tkn)) _) <- ts, tkn == RowMark || tkn == CellMark]
   pure $ Table cols headerRow bodyRows
   where
-    rowMarks = [i | (i, FormattedText (Just (Markup RowMark)) _) <- ts]
-    cellMarks = [i | (i, FormattedText (Just (Markup CellMark)) _) <- ts]
-    rowCells i next = cells i $ takeWhile (\j -> maybe True (j <) next) $ dropWhile (< i) cellMarks
-    cells i = \case
-      j : js -> SegmentRange (i + 1) j : cells j js
+    tableRows = \case
+      (i, RowMark) : marks ->
+        let (cellMarks, marks') = span ((== CellMark) . snd) marks
+            js = map fst cellMarks
+         in zipWith (\a b -> SegmentRange (a + 1) b) (i : js) js : tableRows marks'
+      _ : marks -> tableRows marks
       [] -> []
 
 groupLists :: [Either (Int, Maybe Text, SegmentRange) MarkdownBlock] -> [MarkdownBlock]
@@ -294,12 +294,22 @@ nestEntries depth = \case
 maxListDepth :: Int
 maxListDepth = 7
 
+maxMarkupTokens :: Int
+maxMarkupTokens = 2000
+
 parseMarkdownList :: Text -> MarkdownList
 parseMarkdownList = markdownToList . parseMarkdown
 
 markdownToList :: Markdown -> MarkdownList
 markdownToList (Markdown f s) = [FormattedText f s]
 markdownToList (m1 :|: m2) = markdownToList m1 <> markdownToList m2
+
+joinMarkdown :: [Markdown] -> Markdown
+joinMarkdown ms = case map joinGroup $ L.groupBy sameFormat $ filter (\(FormattedText _ t) -> not $ T.null t) $ concatMap markdownToList ms of
+  [] -> mempty
+  fts -> foldr1 (:|:) [Markdown f t | FormattedText f t <- fts]
+  where
+    sameFormat (FormattedText f _) (FormattedText f' _) = f == f'
 
 parseMarkdown :: Text -> Markdown
 parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInput) s
@@ -331,7 +341,7 @@ hasObfuscatedSimplexLink t =
         <|> pure False
 
 markdownP :: Parser Markdown
-markdownP = mconcat <$> A.many' fragmentP
+markdownP = joinMarkdown <$> A.many' fragmentP
   where
     fragmentP :: Parser Markdown
     fragmentP =
@@ -429,16 +439,15 @@ markdownP = mconcat <$> A.many' fragmentP
           res = markdown (format str) (pfx `T.cons` origStr)
       pure $ if T.null punct then res else res :|: unmarked punct
     sowLinkP = do
-      t <- '[' `inParens` ']'
-      l <- '(' `inParens` ')'
+      t <- enclosedP '[' ']' (\c -> c == '[' || c == '\n')
+      l <- enclosedP '(' ')' isSpace
       let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
       when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
       f <- hyperLinkFormat t l
       pure $ markdown f $ T.concat ["[", t, "](", l, ")"]
     autolinkP = do
-      l <- '<' `inParens` '>'
-      guard $ not (T.any isSpace l)
-      f <- if isEmail l then pure (HyperLink (Just l) ("mailto:" <> l)) else hyperLinkFormat l l
+      l <- enclosedP '<' '>' (\c -> c == '<' || isSpace c)
+      f <-if isEmail l then pure (HyperLink (Just l) ("mailto:" <> l)) else hyperLinkFormat l l
       pure $ markdown f $ "<" <> l <> ">"
     hyperLinkFormat t l = case strDecode $ encodeUtf8 l of
       Right lnk@(ACL _ cLink) -> case cLink of
@@ -447,7 +456,7 @@ markdownP = mconcat <$> A.many' fragmentP
       Left _ -> case parseUri $ encodeUtf8 l of
         Right _ -> pure $ HyperLink (Just t) l
         Left e -> fail $ "not uri: " <> T.unpack e
-    inParens open close = A.char open *> A.takeWhile1 (\c -> c /= close && c /= '\n') <* A.char close
+    enclosedP open close stop = A.char open *> A.takeWhile1 (\c -> c /= close && not (stop c)) <* A.char close
     colorP =
       A.anyChar >>= \case
         'r' -> optional "ed" $> Red
@@ -466,10 +475,12 @@ markdownP = mconcat <$> A.many' fragmentP
     phoneP = do
       country <- optional $ T.cons <$> A.char '+' <*> A.takeWhile1 isDigit
       code <- optional $ conc4 <$> phoneSep <*> "(" <*> A.takeWhile1 isDigit <*> ")"
-      segments <- mconcat <$> A.many' ((<>) <$> phoneSep <*> A.takeWhile1 isDigit)
-      let s = fromMaybe "" country <> fromMaybe "" code <> segments
-          len = T.length s
+      s <- segmentsP $ fromMaybe "" country <> fromMaybe "" code
+      let len = T.length s
       if 7 <= len && len <= 22 then pure $ markdown Phone s else fail "not phone"
+    segmentsP s
+      | T.length s > 22 = fail "not phone"
+      | otherwise = optional ((<>) <$> phoneSep <*> A.takeWhile1 isDigit) >>= maybe (pure s) (segmentsP . (s <>))
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
     wordP :: Parser Markdown
@@ -559,7 +570,7 @@ blockP :: Parser MarkdownList
 blockP = tableP <|> fenceP <|> headingP <|> ruleP <|> listItemP <|> quoteP <|> paragraphP
 
 blockStartP :: Parser ()
-blockStartP = void tableP <|> void fenceP <|> void headingMarkP <|> void ruleP <|> void listMarkP <|> quoteStartP
+blockStartP = void tableStartP <|> void fenceStartP <|> void headingMarkP <|> void ruleP <|> void listMarkP <|> quoteStartP
 
 paragraphLineP :: Parser ()
 paragraphLineP = hasTextP *> notP blockStartP
@@ -572,13 +583,18 @@ notP p = ((True <$ lookAhead p) <|> pure False) >>= guard . not
 
 tableP :: Parser MarkdownList
 tableP = do
+  (headerLine, br, delimiter, aligns) <- tableStartP
+  let row = tableRowTokens $ length aligns
+  bodyRows <- A.many' $ (\br' l -> markupText HardBreak br' : row l) <$> lineEndP <* notP blockStartP <*> (lineTextP >>= \l -> l <$ guard (T.any (== '|') l))
+  pure $ row headerLine <> [markupText HardBreak br, markupText (DelimiterRow aligns) delimiter] <> concat bodyRows
+
+tableStartP :: Parser (Text, Text, Text, [TableAlign])
+tableStartP = do
   headerLine <- lineTextP
   br <- lineEndP
   delimiter <- lineTextP
   aligns <- maybe mzero pure $ tableStart headerLine delimiter
-  let row = tableRowTokens $ length aligns
-  bodyRows <- A.many' $ (\br' l -> markupText HardBreak br' : row l) <$> lineEndP <* notP blockStartP <*> (lineTextP >>= \l -> l <$ guard (T.any (== '|') l))
-  pure $ row headerLine <> [markupText HardBreak br, markupText (DelimiterRow aligns) delimiter] <> concat bodyRows
+  pure (headerLine, br, delimiter, aligns)
 
 tableRowTokens :: Int -> Text -> MarkdownList
 tableRowTokens n t = case map cellParts cellTexts of
@@ -601,16 +617,20 @@ tableRowTokens n t = case map cellParts cellTexts of
 
 fenceP :: Parser MarkdownList
 fenceP = do
-  l <- lineTextP
-  (col, n, ch, lang) <- maybe mzero pure $ fenceLine l
+  (l, (col, n, ch, lang)) <- fenceStartP
   codeLines <- A.many' $ (,) <$> lineEndP <*> (lineTextP >>= \cl -> cl <$ guard (not $ closingFence n ch cl))
-  guard $ any (not . isBlank . snd) codeLines
   closing <- optional $ (,) <$> lineEndP <*> lineTextP
   pure $ markupText (FenceMark lang) l : concatMap (codeLine col) codeLines <> maybe [] (\(br, cl) -> [markupText HardBreak br, markupText (FenceMark Nothing) cl]) closing
   where
     codeLine col (br, cl) =
       let (ind, code) = dropColumns col cl
        in markupText HardBreak br : [markupText Indent ind | not (T.null ind)] <> [FormattedText Nothing code | not (T.null code)]
+
+fenceStartP :: Parser (Text, (Int, Int, Char, Maybe Text))
+fenceStartP = do
+  l <- lineTextP
+  fence <- maybe mzero pure $ fenceLine l
+  (l, fence) <$ lookAhead lineEndP
 
 headingP :: Parser MarkdownList
 headingP = do
@@ -719,7 +739,7 @@ insertBreaks breaks = \case
     _ -> segment f t <> insertBreaks breaks fts
   [] -> []
   where
-    segment f t = [FormattedText f t | not (T.null t)]
+    segment f t = [FormattedText f t | isJust f || not (T.null t)]
 
 lineTextP :: Parser Text
 lineTextP = T.concat <$> A.many' (A.takeWhile1 (\c -> c /= '\n' && c /= '\r') <|> (A.string "\r" <* (A.peekChar >>= guard . (/= Just '\n'))))

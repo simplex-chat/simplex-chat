@@ -34,7 +34,7 @@ code line    a line inside a code block, until its closing fence
 table start  a line with "|", when the next line is a delimiter row with the same number of cells
 fence        3 or more "`", then an info string without "`"
              or 3 or more "~", then an info string
-             when a line with a character other than white space follows it, before its closing fence
+             when a line follows it; a fence line at the text end is text
 heading      1 to 6 "#", a space, then text with a character other than white space
              closing sequence: a space, one or more "#", then white space only, at the line end
 underline    "=" only, or "-" only, then white space only, when the open block is a paragraph
@@ -174,7 +174,7 @@ nested inline formats
 
 ```
 fence line at the text end        paragraph line
-                                  a code block once a line with text follows
+                                  a code block once a line follows
 open code fence                   code to the end of the text
 table header row                  paragraph line
                                   a table once the delimiter row is complete
@@ -328,7 +328,7 @@ hard break  two or more spaces, or an odd number of "\", at the end of a line wi
 runs        consecutive lines with text; a blank line is a run alone
 parse       each run joined with "\n", parsed by markdownP; the runs joined with "\n"
 breaks      each "\n" replaced by the break token and the syntax tokens of the next line
-            a segment with "\n" is divided there; empty parts are dropped
+            a segment with "\n" is divided there; empty parts without a format are dropped
 break       HardBreak: after a hard break, or with a blank line before or after it
             SoftBreak: otherwise
 ```
@@ -449,6 +449,7 @@ Decided 2026-10-17.
 
 ```
 condition   pass 1 yields no markup other than LineBreak, SoftBreak, HardBreak and ParagraphBreak
+            or more than 2000 markup tokens (maxMarkupTokens; decided 2026-10-18)
 result      each markup token a segment without format, joined by joinSegments
             Nothing when no segment has a format, as now
             markdownBlocks: Nothing
@@ -735,7 +736,8 @@ code        closed
             a tab across the column of the fence
             a closing fence with white space after it
             inline syntax in code: text
-            "```", "```\n```", "```\n```\nx", "```\n\n```", "```\n   \n```": no blocks
+            "```", "```\n", "a\n```": no blocks
+            "```\n```", "```\n\n```", "```\n   \n```", "```\n```\nx": code blocks
 rule        each character
             "- - -"
             "---" under a text line
@@ -784,7 +786,7 @@ Properties, for each text above:
 ```
 source      T.concat (map markdownText formattedText) is the text without its final line break, except:
               colour names       written as digits, as now (Markdown.hs:295-309, 494-503)
-              formats across lines, delimited on each line
+              formats across lines, delimited on each line; an empty part at a line break written as empty delimiters
               ~~x~~              written ~x~
               __x__              written **x**
               code spans         written with the delimiters of markdownText (section 2)
@@ -795,11 +797,16 @@ content     each segment without markup is in one content range or one cell
 Consumers:
 
 ```
-mentionedNames   a mention in a table cell and in a list item is found
-                 a mention in code is not found
-hasLinks         a URI in code is not found
-markdownText     each markup token
+mentionedNames            a mention in a list item, a quote, a heading, a table cell is found
+                          a mention in code and in a snippet is not found
+hasLinks                  a URI in a list item and a table cell is found; in code not found
+SimpleX links             in a list item and a table cell: a SimplexLink segment
+                          in code: no segment; found by hasObfuscatedSimplexLink
+                          the text without SimpleX link segments, as removeSimplexLink (Library/Internal.hs:1369-1380)
+markdownText              each markup token
 ```
+
+- The consumers above are tested on parsed text in `tests/MarkdownTests.hs`; chat tests are not added.
 
 Other modules:
 
@@ -809,16 +816,25 @@ tests/ChatTests/Groups.hs:8427        testUpdatedMentionNames
                                         a renamed mention outside code
                                         the same mention in code
                                         the new text: the source with the new name outside code
-tests/ChatTests/Groups.hs             a mention name only in code: SEInvalidMention
-tests/ChatTests/Profiles.hs:3787      testGroupPrefsSimplexLinksForRole: a SimpleX link in a list item, in a table cell, in code: rejected
-tests/ChatTests/Profiles.hs:382       testMemberDescriptionRedacted: a SimpleX link in a list item of a description: removed
-                                      a SimpleX link in code of a description: the description removed
-tests/MarkdownTests.hs:310            obfuscatedSimplexLinks: an invitation link in a code block
-tests/JSONFixtures.hs                 a message with each block and each markup token, in both encodings
-tests/JSONTests.hs:29                 the fixtures, for owsf2tagged
-tests/JSONTests.hs                    an unknown block tag is UnknownBlock
-tests/ChatTests/Direct.hs             a message with a code block, a list, a table: printed with its source lines
+tests/JSONFixtures.hs                 a message with a heading, a list and a bold segment, in both encodings
+tests/JSONTests.hs                    the fixtures, for owsf2tagged
+                                      a round trip of each block and each markup token
+                                      an unknown block tag is UnknownBlock
 ```
+
+Linear time:
+
+```
+phone numbers          the scan ends after 22 characters (master: to the end of the digit groups)
+link text "[x]"        the scan ends at "[" or a line break
+link target "(x)"      the scan ends at white space
+autolink "<x>"         the scan ends at "<" or white space
+segment joining        each run of equal formats joined once (T.concat)
+block starts           a table start: two lines; a fence: one line and a line break
+table cells            one pass over the row and cell marks
+```
+
+- Tests: the bounded scans keep master's results; texts of 4000 repetitions of each adversarial pattern are parsed; 1000 list items have blocks, 1001 have none.
 
 ## Interfaces
 
@@ -836,6 +852,7 @@ records     markdownBlocks: ChatItem, CIQuote, ChatItemVersion, WebMessage
 functions   parsedMarkdown
             parseMaybeMarkdownList: formattedText of parsedMarkdown
 constants   maxListIndent 6
+            maxMarkupTokens 2000
 ```
 
 `2026-10-13-block-markdown-rendering.md`:

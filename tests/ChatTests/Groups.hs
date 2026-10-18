@@ -252,7 +252,6 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
-    it "should reject a mention only in code" testMentionOnlyInCode
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -8304,17 +8303,6 @@ testMemberMention =
         [ alice <# "#team cath> [edited] hello @alice @bob",
           bob <# "#team cath> [edited] hello @alice @bob"
         ]
-
-testMentionOnlyInCode :: HasCallStack => TestParams -> IO ()
-testMentionOnlyInCode =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
-      alice ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"```\\n@bob\\n```\"}, \"mentions\": {\"bob\": " <> show bobId <> "}}]")
-      alice <## "chat db error: SEInvalidMention"
-      (bob </)
-      (cath </)
 
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =

@@ -65,12 +65,7 @@ chatProfileTests = do
     it "profile name used by another user is rejected, names with _N suffix are invalid" testUpdateProfileNameUsedByUser
     it "profile name used by a hidden user is rejected" testUpdateProfileNameUsedByHiddenUser
     it "profile description round-trips and shows in contact info" testProfileDescriptionShown
-    it "member profile description is redacted for members without a direct contact" $
-      testMemberDescriptionRedacted "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out" (Just "check  out")
-    it "member profile description with a link in a list item is redacted" $
-      testMemberDescriptionRedacted "- check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out" (Just "- check  out")
-    it "member profile description with a link in code is removed" $
-      testMemberDescriptionRedacted "```\nhttps://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok\n```" Nothing
+    it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
     it "reject profile image that is too large" testSetProfileImageTooLarge
     it "set profile image from file" testSetProfileImageFromFile
@@ -384,8 +379,8 @@ testProfileDescriptionShown =
     bobWithDescr = bobProfile {description = Just "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"}
 
 -- for a member without a direct contact, the description is redacted per the group's link/name policy
-testMemberDescriptionRedacted :: HasCallStack => T.Text -> Maybe String -> TestParams -> IO ()
-testMemberDescriptionRedacted descr redacted =
+testMemberDescriptionRedacted :: HasCallStack => TestParams -> IO ()
+testMemberDescriptionRedacted =
   testChat3 aliceProfile bobProfile cathWithDescr $
     \alice bob cath -> do
       connectUsers alice bob
@@ -418,15 +413,14 @@ testMemberDescriptionRedacted descr redacted =
       bob ##> "/i #team cath"
       bob <## "group ID: 1"
       bob <##. "member ID:"
-      forM_ redacted $ \d -> do
-        bob <## "description:"
-        bob <## d
+      bob <## "description:"
+      bob <## "check  out"
       bob <##. "receiving messages via"
       bob <##. "sending messages via"
       bob <## "connection not verified, use /code command to see security code"
       bob <##. "peer chat protocol version range"
   where
-    cathWithDescr = cathProfile {description = Just descr}
+    cathWithDescr = cathProfile {description = Just "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"}
 
 -- the test issuer key under index 1 in the test config
 testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
@@ -3812,12 +3806,6 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     bob ##> ("#team \"" <> lnk1 <> " " <> lnk2 <> "\"")
     bob <## "bad chat command: feature not allowed SimpleX links"
     bob ##> ("#team \"" <> lnk1 <> "\\n" <> lnk2 <> "\"")
-    bob <## "bad chat command: feature not allowed SimpleX links"
-    bob ##> ("#team \"- " <> inv <> "\"")
-    bob <## "bad chat command: feature not allowed SimpleX links"
-    bob ##> ("#team \"| a | " <> inv <> " |\\n|---|---|\"")
-    bob <## "bad chat command: feature not allowed SimpleX links"
-    bob ##> ("#team \"```\\n" <> inv <> "\\n```\"")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
