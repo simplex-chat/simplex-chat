@@ -294,17 +294,26 @@ make nix-native NIX_ARGS=--dry-run
 ```
 
 `.github/workflows/nix.yml` runs these same outputs on Linux ARM64/x86_64 and
-Darwin ARM64/x86_64, with a six-hour limit per build job. Its seven build jobs cover all 21
+Darwin ARM64/x86_64, with a six-hour limit per build job. Its eight build jobs cover all 21
 outputs once: x86_64 Linux runs `native`, `android`, `windows`, and `linux-static`
-separately; ARM64 Linux runs `native`; both Darwin hosts run `all`. A failed
+separately; ARM64 Linux runs `native`; ARM64 Darwin runs `all`; Intel Darwin runs
+`native` and `darwin-libs` separately. On a cold Intel runner the combined job
+finished the native library and CLI only after about five and a half hours,
+then hit GitHub's six-hour cap while building mobile dependencies. The split
+gives each group its own existing six-hour budget and artifact upload; both use
+the same checkout, lock file, and `ghc914-sh`. Intel policy, info-table and
+failure diagnostic checks apply to both groups; CLI smoke runs in `native`. A failed
 native Linux build therefore leaves the cross-build jobs running. PRs, pushes,
 and default manual runs retain that complete matrix. A manual dispatch can
 select the existing three `linux-static` outputs with
 `gh workflow run nix.yml --ref BRANCH -f group=linux-static`, or the four Android
 outputs with `gh workflow run nix.yml --ref BRANCH -f group=android`, or the two
 Windows outputs with `gh workflow run nix.yml --ref BRANCH -f group=windows`, or
-all four Intel Darwin outputs with
-`gh workflow run nix.yml --ref BRANCH -f group=x86_64-darwin`. The registered
+all four Intel Darwin outputs in both jobs with
+`gh workflow run nix.yml --ref BRANCH -f group=x86_64-darwin`. Select only the two
+Intel mobile library outputs with
+`gh workflow run nix.yml --ref BRANCH -f group=x86_64-darwin-libs`; its distinct
+manual queue can run while an earlier full Intel trial remains active. The registered
 workflow can run on a branch containing this workflow file; it does not require
 that file on the default branch. Runs for the same workflow/ref queue without
 canceling an active run; manual groups have separate queues. Legacy PR build jobs also preserve running

@@ -8,7 +8,7 @@ on:
         type: choice
         required: true
         default: all
-        options: [all, linux-static, android, windows, x86_64-darwin]
+        options: [all, linux-static, android, windows, x86_64-darwin, x86_64-darwin-libs]
   push:
     branches: [master, stable, build/stable-ghc-9.14]
     paths:
@@ -52,7 +52,7 @@ jobs:
       - name: Select existing build groups
         id: select
         env:
-          # PRs and pushes always retain all seven build groups.
+          # PRs and pushes always retain all eight build groups.
           NIX_CI_GROUP: ${{ github.event_name == 'workflow_dispatch' && inputs.group || 'all' }}
         shell: bash
         run: |
@@ -115,7 +115,7 @@ jobs:
         run: nix build .#checks.x86_64-linux.ghc-elf-comdat-functions --no-link -L --max-jobs 1 --timeout "$NIX_BUILD_TIMEOUT"
 
       - name: Check Intel Darwin build policies
-        if: ${{ matrix.system == 'x86_64-darwin' && matrix.target == 'all' }}
+        if: ${{ matrix.system == 'x86_64-darwin' }}
         timeout-minutes: 1
         run: |
           python3 -B scripts/nix/test-select-intel-setup.py
@@ -150,7 +150,7 @@ jobs:
         run: make nix-build 2>&1 | tee nix-build.log
 
       - name: Check native Intel Darwin GHC info-table placement
-        if: ${{ matrix.system == 'x86_64-darwin' && matrix.target == 'all' }}
+        if: ${{ matrix.system == 'x86_64-darwin' }}
         timeout-minutes: 10
         run: nix build .#checks.x86_64-darwin.ghc-macho-info-tables --no-link -L --max-jobs 1 --timeout 300
 
@@ -213,7 +213,7 @@ jobs:
 
       - name: Capture Intel Darwin ghc-boot Setup failure
         id: intel_setup_trace
-        if: ${{ failure() && matrix.system == 'x86_64-darwin' && matrix.target == 'all' && steps.haskell_build.outcome == 'failure' }}
+        if: ${{ failure() && matrix.system == 'x86_64-darwin' && steps.haskell_build.outcome == 'failure' }}
         timeout-minutes: 120
         shell: bash
         run: |
