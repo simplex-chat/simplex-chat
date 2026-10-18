@@ -99,7 +99,7 @@ export function updated(chat: api.ChatApi, check: ItemCheck): Promise<T.AChatIte
 export const textStarts = (prefix: string): ItemCheck => ci => ci.chatItem.meta.itemText.startsWith(prefix)
 
 export function cardNumber(ci: T.AChatItem): number {
-  return Number(/\/'approve (\d+)'/.exec(ci.chatItem.meta.itemText)![1])
+  return Number(/\/'approve (?:[#@]\d+ )?(\d+)'/.exec(ci.chatItem.meta.itemText)![1])
 }
 
 export function lines(ci: T.AChatItem): string[] {

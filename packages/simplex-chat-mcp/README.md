@@ -1,6 +1,6 @@
 # SimpleX MCP server
 
-`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and receives all the responses. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects or sends, and you approve or reject from your phone with one tap. Four tools cover it: `connect`, `send`, `receive`, `list`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
+`@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and receives all the responses. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust. Five tools cover it: `connect`, `send`, `receive`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
 What it isn't:
 - **Not a directory or a search service.** The agent reaches chats through links, SimpleX names and the directories it connects to.
@@ -89,10 +89,10 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    ```
    I want to connect to bot SimpleX Directory, as myself.
    `Find groups, channels, businesses and bots.`
-   /approve 1 or /reject 1. Expires 2026-10-18 09:02 UTC.
+   /approve 1 or /reject 1
    ```
 
-   Tap `/approve 1`. The agent then asks to send its search, and you approve that too. Once the name `@directory.simplex` is registered, it works as the target too, and the card shows `(@directory.simplex)`.
+   Tap `/approve 1`. The agent then asks to send its search, and you approve that too, or tap the card's `all` command to approve all its messages to the directory. Once the name `@directory.simplex` is registered, it works as the target too, and the card shows `(@directory.simplex)`.
 
 Without `--owners`:
 
@@ -118,7 +118,7 @@ With `--owners`, only the owners listed in it approve actions. An owner added la
    Alice joined (member 3). Restart the server with --owners 3:Alice
    ```
 
-   Until the restart, the agent's `connect` and `send` fail.
+   Until the restart, the agent's `connect`, `send` and `leave` fail.
 
 3. Stop the server with Ctrl-C and start it with the list:
 
@@ -178,18 +178,18 @@ The token is created at the agent's first start and saved in its data folder. `s
 
 `--approve MODE` sets what the owner approves. It is set only by this option.
 
-| Mode | The agent's actions: connect, send | Messages to the agent |
+| Mode | The agent's actions: connect, send, leave | Messages to the agent |
 |---|---|---|
-| `requests` (default) | Performed after `/approve N`. | Passed to the agent. |
+| `requests` (default) | Performed after `/approve N`; a send to a chat approved for all messages at once, with a copy posted in the agent control chat. | Passed to the agent. |
 | `host` | Performed at once; a copy is posted in the agent control chat. | Passed to the agent. |
 
 Claude Code's own permission check applies to every tool call too. In mode `requests`, add the agent's server, for example `"mcp__simplex-my-agent"`, to `permissions.allow` in `~/.claude/settings.json`; otherwise Claude Code prompts for each call, or in auto mode its classifier decides it.
 
-In `host` mode, approval is left to the MCP host. The server marks `connect` and `send` with `_meta["anthropic/requiresUserInteraction"]: true`, so Claude Code shows its permission prompt on every call, in `acceptEdits`, `auto` and `bypassPermissions` modes as well, and allow rules do not skip it. In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls.
+In `host` mode, approval is left to the MCP host. The server marks `connect`, `send` and `leave` with `_meta["anthropic/requiresUserInteraction"]: true`, so Claude Code shows its permission prompt on every call, in `acceptEdits`, `auto` and `bypassPermissions` modes as well, and allow rules do not skip it. In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls.
 
 ## Expiry
 
-A pending action expires after `--expire HOURS`, 23 by default and at most: SimpleX allows edits of a message for 24 hours, and every outcome is an edit of the card. The last line of its card is edited to `Expired.`, and the agent's call returns `{"action": N, "status": "expired"}`.
+A pending action expires after `--expire HOURS`, 23 by default and at most: SimpleX allows edits of a message for 24 hours, and every outcome is an edit of the card. Cards don't show the time; `/pending` does. The last line of its card is edited to `Expired.`, and the agent's call returns `{"action": N, "status": "expired"}`.
 
 Actions last only while the server runs. When the server stops, the last line of each pending card is edited to `Cancelled: the server stopped.`; after a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 
@@ -200,11 +200,14 @@ All of it is in the agent control chat, posted by the agent's profile. The chat 
 ```
 My Agent: I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
           `Find groups, channels, businesses and bots.`
-          /approve 1 or /reject 1. Expires 2026-10-18 09:02 UTC.
+          /approve 1 or /reject 1
 
 My Agent: I want to send a message to business Ridgeline, where I am incognito:
           `Is the Talus Trail waterproof?`
-          /approve 4 or /reject 4. Expires 2026-10-18 09:40 UTC.
+          /approve #9 4, /approve #9 all or /reject #9 4
+
+My Agent: I want to leave business Ridgeline (#9).
+          /approve #9 12 or /reject #9 12
 ```
 
 After the decision the card is edited, and its commands removed:
@@ -215,26 +218,44 @@ My Agent: I sent a message to business Ridgeline, where I am incognito:
           Approved by Alice.
 ```
 
-Commands, also in the chat's command menu:
+Commands:
 
 | Command | Effect |
 |---|---|
-| `/approve N` | Performs action N. |
-| `/reject N` | Rejects action N. |
+| `/approve N`, `/approve #9 N` | Performs action N; the cards of sends and leaves name the chat. |
+| `/reject N`, `/reject #9 N` | Rejects action N. |
+| `/approve #9 all` | Approves all the agent's messages to chat #9: the pending ones and later ones. |
+| `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
 | `/pending` | Lists pending actions. |
+| `/list` | Lists the agent's chats and which of them are approved for all messages. |
 
-Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in `PLAN.md`, section "What the owner sees: the agent control chat".
+`/pending` and `/list` are in the chat's command menu; the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in `PLAN.md`, section "What the owner sees: the agent control chat".
+
+### Approval of all messages to a chat
+
+After `/approve #9 all`, the agent's messages to #9 are sent at once, and each one is posted in the agent control chat after it is sent:
+
+```
+My Agent: I sent a message to business Ridgeline, where I am incognito:
+          `Thanks, I'll order.`
+          Approved for this chat by Alice. /revoke #9
+```
+
+- It covers messages only: connecting and leaving are approved one by one.
+- It lasts until `/revoke`, until the chat is deleted, or until the approving owner is no longer an approver. It survives restarts: it is kept in the agent's database, as custom data of that chat.
+- With it, the agent can send anything it can read, without asking, to everyone in that chat.
 
 ## What the agent sees
 
-Four tools:
+Five tools:
 
 | Tool | What it does |
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
 | `send` | Sends a message and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
 | `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
-| `list` | Lists the agent's chats with unread counts, and its actions without a result. |
+| `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
+| `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in `PLAN.md`, section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
@@ -267,8 +288,8 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 | The server was not running when Claude Code started | Start the server, then run `/mcp reconnect all` in Claude Code (2.1.284 or later). |
 | The server restarted while Claude Code was running | Claude Code reconnects up to five times within about 30 seconds. After that, in an interactive session, run `/mcp reconnect all`; `claude -p` runs and Agent SDK sessions keep retrying for about half an hour. Open calls fail, and pending actions are cancelled; the agent's repeated call creates a new request. |
 | A second server was started on the same data folder | It exits with `Another server uses <folder> (PID N).` |
-| Every owner left the agent control chat or was removed | `connect` and `send` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
-| The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect` and `send` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
+| Every owner left the agent control chat or was removed | `connect`, `send` and `leave` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
+| The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect`, `send` and `leave` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
 | The QR code does not scan | Start with `--qr-code large`, or paste the link into the app. |
 | The wrong person joined by the link | Start with `--reset-owners`. |
 | The token leaked | Start with `--new-token` and register the agent again. |
@@ -318,7 +339,7 @@ register options:
   lock               PID of the running server
 ```
 
-The server keeps its action counter in the chat database, as custom data of the agent control chat, and its actions in memory.
+The server keeps its action counter in the chat database, as custom data of the agent control chat, the approvals of all messages to a chat as custom data of that chat, and its actions in memory.
 
 The server keeps no log file: it writes its log to the terminal where `serve` runs, events to stdout and errors to stderr.
 
@@ -330,6 +351,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - Any process with the token can act as the agent.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
+- After `/approve #N all`, the agent sends to that chat without asking; `/revoke #N` ends it.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.
 - The agent has no address, so nobody can contact it first.
 - The agent uses private message routing: the SMP server that holds a contact's queue does not see the agent's IP address.

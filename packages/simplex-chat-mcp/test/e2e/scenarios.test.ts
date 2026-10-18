@@ -171,6 +171,7 @@ test("host mode: actions run without approval and post outcome cards", async () 
     send: {"anthropic/requiresUserInteraction": true},
     receive: undefined,
     list: undefined,
+    leave: {"anthropic/requiresUserInteraction": true},
   })
 
   const connectCard = received(alice.chat, textStarts("I connected to bot Directory, as myself."))
@@ -245,7 +246,7 @@ test("a business address, incognito, with a message", async () => {
     "`Welcome to Ridgeline.`",
     "With the message:",
     `\`${question}\``,
-    expect.stringMatching(/^\/'approve \d+' or \/'reject \d+'\. Expires /),
+    expect.stringMatching(/^\/'approve \d+' or \/'reject \d+'$/),
   ])
   const connected = await connecting
   expect(connected.result).toMatchObject({status: "done", type: "business", name: "Ridgeline", connected: true})

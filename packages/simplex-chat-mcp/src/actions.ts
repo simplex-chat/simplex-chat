@@ -1,6 +1,6 @@
 import {errorText, log, logError} from "./log"
 import {Changes, Collected, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
-import type {ConnectInput, PlanSummary, SendInput} from "./tools"
+import type {ConnectInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 export type Mode = "requests" | "host"
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
@@ -32,6 +32,7 @@ interface ActionRecord {
   readonly created: number
   readonly expires: number
   readonly changes: Changes
+  readonly standing: boolean
   state: State
   card?: number
   decidedBy?: string
@@ -68,9 +69,16 @@ export interface SendAction extends ActionRecord {
   sentAt?: number
 }
 
-export type Action = ConnectAction | SendAction
+export interface LeaveAction extends ActionRecord {
+  readonly tool: "leave"
+  readonly input: LeaveInput
+  readonly subject: Subject
+  readonly chat: string
+}
 
-export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord>
+export type Action = ConnectAction | SendAction | LeaveAction
+
+export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord>
 
 export interface ActionHooks {
   refusal(): string | undefined
@@ -115,18 +123,21 @@ export class Actions {
     return this.all().find(action => action.key === key && !action.returned)
   }
 
-  create(key: string, fields: NewAction): Action {
+  create(key: string, fields: NewAction, approvedBy?: string): Action {
     const refusal = this.stopping ? stoppingMessage : this.lost ? lostMessage : this.effects().refusal()
     if (refusal !== undefined) throw new ToolError(refusal)
     const n = this.next++
     const created = Date.now()
+    const standing = this.mode === "requests" && approvedBy !== undefined
     const record: ActionRecord = {
       n,
       key,
       created,
       expires: created + this.expireHours * 3_600_000,
       changes: new Changes(),
-      state: this.mode === "host" ? "performing" : "pending",
+      standing,
+      state: this.mode === "host" || standing ? "performing" : "pending",
+      decidedBy: standing ? approvedBy : undefined,
       returned: false,
       open: 0,
       interrupted: false,
@@ -202,7 +213,7 @@ export class Actions {
   private async post(action: Action): Promise<boolean> {
     try {
       await this.effects().saveCounter(this.next)
-      if (this.mode === "requests") action.card = await this.effects().postCard(action)
+      if (action.state === "pending") action.card = await this.effects().postCard(action)
       return true
     } catch (error) {
       action.error = errorText(error)
@@ -213,7 +224,7 @@ export class Actions {
 
   private async afterPosting(action: Action, posted: boolean): Promise<void> {
     this.posting.delete(action.n)
-    if (!posted || this.mode !== "host") return
+    if (!posted || action.state !== "performing") return
     if (this.stopping) action.state = "pending"
     else await this.runPerform(action)
   }
@@ -268,13 +279,19 @@ export function summary(action: Action): string {
       return `connect to ${target}, ${action.subject.incognito ? "incognito" : "as itself"}`
     case "send":
       return `send to ${target} (${action.chat})`
+    case "leave":
+      return `${leaveVerbs(action).present} ${target} (${action.chat})`
   }
 }
 
 export function pendingLine(action: Action): string {
   const target = subjectText({...action.subject, simplexName: undefined})
-  const what = action.tool === "connect" ? `connect to ${target}` : `send to ${target}`
+  const what = action.tool === "connect" ? `connect to ${target}` : action.tool === "send" ? `send to ${target}` : `${leaveVerbs(action).present} ${target}`
   return `${action.n}  ${what}  expires ${new Date(action.expires).toISOString().slice(11, 16)}`
+}
+
+export function leaveVerbs({chat}: LeaveAction): {present: string; past: string} {
+  return chat.startsWith("@") ? {present: "delete", past: "deleted"} : {present: "leave", past: "left"}
 }
 
 function performedText(action: Action, mode: Mode): string {
@@ -282,6 +299,7 @@ function performedText(action: Action, mode: Mode): string {
   if (mode === "host") return `performed without approval (mode host)${failure}.`
   if (failure !== "") return `failed: ${action.error}.`
   if (action.tool === "send") return "sent."
+  if (action.tool === "leave") return `${leaveVerbs(action).past}.`
   return action.connected ? "connected." : "connection requested."
 }
 

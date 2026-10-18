@@ -135,9 +135,9 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks())): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10"}, "requests"), watch}
+  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover}, "requests"), watch}
 }
 
 describe("receive", () => {
@@ -553,5 +553,93 @@ describe("connect", () => {
     const result = (await connecting)!.structuredContent
     expect(result).toMatchObject({status: "done", chat: "@9", type: "contact", name: "SimpleX Directory", connected: true})
     expect(result).not.toHaveProperty("simplex_name")
+  })
+})
+
+describe("leave", () => {
+  function leaveTools(chat: FakeChat): {tools: AgentTools; actions: Actions} {
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const {tools} = agentTools(chat, actions)
+    fake.hooks.perform = action => tools.perform(action)
+    return {tools, actions}
+  }
+
+  it("deletes a contact with notification", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory", {peerType: "bot"})), items: []})
+    const {tools, actions} = leaveTools(chat)
+    const leaving = tools.call("leave", {chat: "@4"}, signal().call)
+    await settled()
+    const action = actions.get(1)!
+    expect(action).toMatchObject({tool: "leave", state: "pending", chat: "@4", subject: {kind: "bot", name: "SimpleX Directory", incognito: false}})
+    actions.approve(action, "Alice")
+    expect((await leaving)!.structuredContent).toEqual({action: 1, status: "done", chat: "@4"})
+    expect(chat.left).toEqual([])
+    expect(chat.deleted).toEqual([{chatType: T.ChatType.Direct, chatId: 4, mode: {type: "full", notify: true}}])
+  })
+
+  it("leaves a group whose membership is current before deleting it", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("#15", {chatInfo: groupChat(group(15, "Trail", member(1, "agent"))), items: []})
+    chat.chats.set("#16", {chatInfo: groupChat(group(16, "Old", member(1, "agent", T.GroupMemberRole.Member, T.GroupMemberStatus.Removed))), items: []})
+    const {tools, actions} = leaveTools(chat)
+    for (const [n, ref] of [[1, "#15"], [2, "#16"]] as const) {
+      const leaving = tools.call("leave", {chat: ref}, signal().call)
+      await settled()
+      actions.approve(actions.get(n)!, "Alice")
+      expect((await leaving)!.structuredContent).toEqual({action: n, status: "done", chat: ref})
+    }
+    expect(chat.left).toEqual([15])
+    expect(chat.deleted).toEqual([
+      {chatType: T.ChatType.Group, chatId: 15, mode: {type: "full", notify: true}},
+      {chatType: T.ChatType.Group, chatId: 16, mode: {type: "full", notify: true}},
+    ])
+  })
+
+  it("attaches a repeated call to its action after the chat is deleted", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Bob")), items: []})
+    const {tools, actions} = leaveTools(chat)
+    const first = signal()
+    const leaving = tools.call("leave", {chat: "@4"}, first.call)
+    await settled()
+    first.controller.abort()
+    expect(await leaving).toBeUndefined()
+    actions.approve(actions.get(1)!, "Alice")
+    await settled()
+    expect(chat.chats.has("@4")).toBe(false)
+    expect((await tools.call("leave", {chat: "@4"}, signal().call))!.structuredContent).toEqual({action: 1, status: "done", chat: "@4"})
+    expect(textOf(await tools.call("leave", {chat: "@4"}, signal().call))).toBe("No chat @4. list shows the agent's chats.")
+  })
+
+  it("refuses the agent control chat and unknown chats, and returns a rejection", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Bob")), items: []})
+    const {tools, actions} = leaveTools(chat)
+    expect(textOf(await tools.call("leave", {chat: "#10"}, signal().call))).toBe("No chat #10. list shows the agent's chats.")
+    expect(textOf(await tools.call("leave", {chat: "@99"}, signal().call))).toBe("No chat @99. list shows the agent's chats.")
+    expect(actions.all()).toEqual([])
+    const leaving = tools.call("leave", {chat: "@4"}, signal().call)
+    await settled()
+    actions.reject(actions.get(1)!, "Alice")
+    expect((await leaving)!.structuredContent).toEqual({action: 1, status: "rejected"})
+    expect(chat.deleted).toEqual([])
+  })
+})
+
+describe("list", () => {
+  it("marks the chats approved for all messages", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory", {peerType: "bot"})), items: [item(20, "hi")]})
+    chat.chats.set("#2", {chatInfo: groupChat(group(2, "ep", member(1, "agent"))), items: []})
+    chat.chats.set("#10", {chatInfo: groupChat(group(10, "agent")), items: []})
+    const {tools} = agentTools(chat, actionsWith("requests", fakeHooks()), chatInfo => (chatInfo.type === "direct" ? "Alice" : undefined))
+    const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: object[]}
+    expect(chats).toEqual([
+      {chat: "@4", type: "contact", name: "SimpleX Directory", peer_type: "bot", incognito: false, connected: true, unread: 1, approved: true},
+      {chat: "#2", type: "group", name: "ep", incognito: false, connected: true, unread: 0},
+    ])
+    expect(chats[1]).not.toHaveProperty("approved")
   })
 })

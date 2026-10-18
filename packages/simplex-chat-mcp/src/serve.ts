@@ -96,9 +96,9 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
   const displayName = user.profile.displayName
   const group = await controlGroup(chat, user.userId, displayName, options.resetOwners)
   const actions = new Actions(approve, expireHours, controlDataOf(group.customData)?.nextAction ?? 1)
-  const control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions)
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef}, approve)
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: chatInfo => control.standingApprover(chatInfo)}, approve)
+  const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
   actions.setHooks({
     refusal: () => control.refusal(),
     saveCounter: next => control.saveCounter(next),

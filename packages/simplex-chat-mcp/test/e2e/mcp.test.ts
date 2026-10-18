@@ -23,7 +23,7 @@ afterAll(async () => {
   rmSync(dir, {recursive: true, force: true})
 })
 
-test("agent with an owner, a bot and the four tools", async () => {
+test("agent with an owner, a bot and the tools", async () => {
   const agentData = join(dir, "agent")
   mkdirSync(agentData, {recursive: true})
   await profileWithServer(smpServer.address, join(agentData, "simplex"), {displayName: "agent", fullName: "", peerType: T.ChatPeerType.Bot})
@@ -55,7 +55,7 @@ test("agent with an owner, a bot and the four tools", async () => {
 
     expect(await client.initialize()).toMatchObject({protocolVersion: "2025-11-25", serverInfo: {name: "simplex-mcp"}})
     const {tools} = await client.request("tools/list")
-    expect(tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "list"])
+    expect(tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "list", "leave"])
 
     const connectCard = received(alice, textStarts("I want to connect to bot Directory, as myself."))
     const connecting = client.tool("connect", {target: directoryLink, idle: 2})

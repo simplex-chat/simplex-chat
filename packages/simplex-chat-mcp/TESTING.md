@@ -29,13 +29,13 @@ Until the package is published, the printed hint `npx -y @simplex-chat/mcp regis
 
 1. `node dist/cli.js serve my-agent --display-name "My Agent"`. NAME, here `my-agent`, names the data folder and the Claude Code entry; `--display-name` is the name people see in SimpleX. It prints the data folder (`~/.simplex-mcp/my-agent`), creates the agent control chat "My Agent", and prints a QR code and a link that works once. For a short link the QR code has 33 modules and takes 37 columns × 19 lines; `--qr-code large` prints it at 74 × 37. Keep it running; Ctrl-C stops it. `node dist/cli.js --help` lists the options.
 2. In the SimpleX app, scan the QR code, or paste the link into "Connect via link". If the code does not scan, restart with `--qr-code large`. The chat "My Agent" appears with `I'm your agent. I ask here before I connect or send.` The terminal prints `Alice joined (member N) and is now an owner. The link is deleted.` and the register hint.
-3. `node dist/cli.js register my-agent`. It prints `Added to Claude Code: scope user, server simplex-my-agent.`
+3. `node dist/cli.js register my-agent`. It prints `Added to Claude Code: scope user, server simplex-my-agent.` Run it in a terminal with the same `CLAUDE_CONFIG_DIR` as the one where `claude` runs: `claude mcp add-json` writes to the config of its own environment.
 4. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`, so Claude Code does not prompt for each call; approval happens in the SimpleX app.
-5. Start `claude`. `/mcp` shows `simplex-my-agent` connected with 4 tools.
+5. Start `claude`. `/mcp` shows `simplex-my-agent` connected with 5 tools. A session started before `register` does not load the entry; start a new one.
 
 ## Try the tools
 
-Prompts for Claude Code, one at a time.
+Prompts for Claude Code, one at a time. A call that waits more than 2 minutes, for example for an approval, moves to a background task, and its result arrives as a notification.
 
 By name, first:
 
@@ -49,7 +49,16 @@ The directory by its address (`docs/DIRECTORY.md`):
 3. `Send /help to the directory.` A bot command is sent as text.
 4. `Check for new messages from the directory, waiting up to 60 seconds.` `receive` with `wait`.
 5. `List your chats and pending actions.` `list`.
-6. Reject one card with `/reject N`: the call returns `status: rejected`; the card ends with `Rejected by Alice.` `/pending` lists the waiting cards.
+6. Reject one card with its `/reject @N A`: the call returns `status: rejected`; the card ends with `Rejected by Alice.` `/pending` lists the waiting cards.
+
+Approval of all messages to a chat, and leaving:
+
+1. `Search the directory for Monero groups.` On the card, tap `/approve @N all`. The reply is `Approved for bot SimpleX Directory (@N) by Alice. /revoke @N`, and the search is sent.
+2. `Send /help to the directory.` It is sent without a card; the agent control chat then gets `I sent a message to bot SimpleX Directory:`, `` `/help` `` and `Approved for this chat by Alice. /revoke @N`. `list` shows `approved: true` for the directory.
+3. Tap `/list` in the command menu: one line per chat; the directory's line ends with `, approved for this chat by Alice`.
+4. Tap `/revoke @N`: `Messages to bot SimpleX Directory (@N) need approval again.` The next send gets a card.
+5. `Leave the directory.` Card: `I want to delete bot SimpleX Directory (@N).` Approve it: the call returns `status: done`, and `list` no longer shows the directory.
+6. Join a group from the search results, then `Leave that group.` Card: `I want to leave group <name> (#N).` Approve it: the members see that the agent left.
 
 A channel:
 
@@ -79,4 +88,4 @@ Stop and restart:
 3. C4, reconnect: restart `serve my-agent`; in the running session, `/mcp reconnect all`; `list` returns the chats.
 4. C5, register again: `node dist/cli.js register my-agent` prints `Added to Claude Code: scope user, server simplex-my-agent.`; `claude mcp list` shows one `simplex-my-agent`.
 5. C6, Esc: ask for a send, and press Esc while its card waits; `List your pending actions.` shows the action with `open: false`; the same request again attaches to it, and `/approve` returns the result to that call.
-6. Host mode: restart with `node dist/cli.js serve my-agent --approve host`, then `/mcp reconnect all`. `Send /help to the directory.` makes Claude Code prompt, despite the allow rule. After you allow it, the agent control chat gets `I sent a message to bot SimpleX Directory:`, `` `/help` `` and `Performed without approval (mode host).` A `connect` to a link not yet joined gets the same prompt and an outcome card; a target already joined returns `status: known`, with no card.
+6. Host mode: restart with `node dist/cli.js serve my-agent --approve host`, then `/mcp reconnect all`. `Send /help to the directory.` makes Claude Code prompt, despite the allow rule; so does `leave`. After you allow it, the agent control chat gets `I sent a message to bot SimpleX Directory:`, `` `/help` `` and `Performed without approval (mode host).` A `connect` to a link not yet joined gets the same prompt and an outcome card; a target already joined returns `status: known`, with no card.

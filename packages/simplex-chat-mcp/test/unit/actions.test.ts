@@ -269,6 +269,38 @@ describe("actions in mode requests", () => {
     const action = await pendingAction(actions)
     expect(pendingLine(action)).toBe(`1  send to bot SimpleX Directory  expires ${new Date(action.expires).toISOString().slice(11, 16)}`)
   })
+
+  it("performs an action approved in advance at once, without a card, and posts the outcome", async () => {
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const action = actions.create("k", sendFields(), "Alice")
+    expect(action).toMatchObject({state: "performing", standing: true, decidedBy: "Alice"})
+    await settled()
+    fake.performs[0].resolve()
+    await settled()
+    expect(action.state).toBe("done")
+    expect(action.card).toBeUndefined()
+    expect(fake.calls).toEqual(["counter 2", "perform 1", "outcome 1 done"])
+    expect(logLines).toEqual(["Action 1: send to bot SimpleX Directory (@4)", "Action 1 approved by Alice: sent."])
+  })
+
+  it("logs and lists leave actions", async () => {
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const subject = {kind: "bot", name: "SimpleX Directory", simplexName: "@directory.simplex", incognito: false}
+    const contact = actions.create("a", {tool: "leave", input: {chat: "@4"}, subject, chat: "@4"})
+    const group = actions.create("b", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    await settled()
+    expect(logLines).toEqual(["Action 1: delete bot SimpleX Directory (@4)", "Action 2: leave business ep (#2)"])
+    expect(pendingLine(contact)).toMatch(/^1 {2}delete bot SimpleX Directory {2}expires \d\d:\d\d$/)
+    expect(pendingLine(group)).toMatch(/^2 {2}leave business ep {2}expires \d\d:\d\d$/)
+    actions.approve(contact, "Alice")
+    actions.approve(group, "Alice")
+    fake.performs[0].resolve()
+    fake.performs[1].resolve()
+    await settled()
+    expect(logLines.slice(-2)).toEqual(["Action 1 approved by Alice: deleted.", "Action 2 approved by Alice: left."])
+  })
 })
 
 describe("actions in mode host", () => {
@@ -284,6 +316,11 @@ describe("actions in mode host", () => {
     expect(action.state).toBe("done")
     expect(fake.calls).toEqual(["counter 2", "perform 1", "outcome 1 done"])
     expect(logLines.at(-1)).toBe("Action 1: performed without approval (mode host).")
+  })
+
+  it("ignores a standing approval", () => {
+    const actions = actionsWith("host", fakeHooks())
+    expect(actions.create("k", sendFields(), "Alice")).toMatchObject({state: "performing", standing: false, decidedBy: undefined})
   })
 
   it("cancels an action whose counter is being written at the stop, without performing it", async () => {

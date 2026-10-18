@@ -1,7 +1,7 @@
 import {CallToolResult, JsonSchemaType, McpServer, ServerContext, fromJsonSchema, jsonSchemaValidator} from "@modelcontextprotocol/server"
 import {CEvt, CR, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Action, Actions, ConnRef, ConnectAction, Mode, SendAction, Subject, ToolError} from "./actions"
+import {Action, Actions, ConnRef, ConnectAction, LeaveAction, Mode, SendAction, Subject, ToolError} from "./actions"
 import {chatErrorOf, chatErrorText, errorText} from "./log"
 import {
   ChatItemsWatch,
@@ -51,6 +51,10 @@ export interface ReceiveInput {
   limit?: number
 }
 
+export interface LeaveInput {
+  chat: string
+}
+
 export type ChatKind = "contact" | "business" | "group" | "channel"
 
 export type Command = {keyword: string; label: string; params?: string} | {label: string; commands: Command[]}
@@ -87,6 +91,7 @@ export interface Agent {
   actions: Actions
   watch: ChatItemsWatch
   controlChat: () => string
+  standingApprover: (chatInfo: T.ChatInfo) => string | undefined
 }
 
 type JoinMethod =
@@ -196,6 +201,15 @@ const receiveSchema: Schema = {
 
 const listSchema: Schema = {type: "object", properties: {}, additionalProperties: false}
 
+const leaveSchema: Schema = {
+  type: "object",
+  properties: {
+    chat: {type: "string", description: "Chat reference from connect or list: @N or #N."},
+  },
+  required: ["chat"],
+  additionalProperties: false,
+}
+
 const actionField = {type: "integer", description: "Action number; the owner sees it on the card in the agent control chat, list shows it until a call returns its result."}
 const errorField = {type: "string", description: "What failed, when status is failed."}
 
@@ -247,17 +261,18 @@ const listOutput: Schema = {
           ...chatFieldSchemas,
           incognito: {type: "boolean", description: "true when you are in this chat with a random profile."},
           unread: {type: "integer", description: "Unread messages; receive returns them."},
+          approved: {type: "boolean", description: "true when your owner approved all your messages to this chat: send to it is performed without waiting for approval."},
         },
       },
     },
     actions: {
       type: "array",
-      description: "Your connect and send actions whose result no call has returned.",
+      description: "Your connect, send and leave actions whose result no call has returned.",
       items: {
         type: "object",
         properties: {
           action: actionField,
-          tool: {type: "string", description: "connect or send."},
+          tool: {type: "string", description: "connect, send or leave."},
           input: {type: "object", description: "The input of the call; the same call again attaches to the action."},
           state: {type: "string", description: "pending: waits for the owner; performing; done, failed, rejected, expired: call the tool with the input to get the result."},
           open: {type: "boolean", description: "true when a call waits on it now."},
@@ -268,6 +283,17 @@ const listOutput: Schema = {
   required: ["chats", "actions"],
 }
 
+const leaveOutput: Schema = {
+  type: "object",
+  properties: {
+    action: actionField,
+    status: {type: "string", enum: ["done", "failed", "rejected", "expired"], description: "done: the chat is deleted; rejected or expired: the owner rejected it or did not decide in time; failed: see error."},
+    chat: {type: "string", description: "Chat reference of the deleted chat."},
+    error: errorField,
+  },
+  required: ["action", "status"],
+}
+
 const connectDescription = `Connects you to a contact, bot, business, group or channel by a SimpleX link or a SimpleX name, as your profile or incognito.
 It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision.
 Result status: done (connected: true when the other side accepted within wait; connected: false when it has not; chat is then present only when the chat already exists, and list shows the chat when it connects), known (already connected, no action), rejected, expired, failed (error).
@@ -275,20 +301,25 @@ Use chat with send and receive. Bots advertise commands: send "/keyword" or "/ke
 messages has the chat's first messages, such as a welcome. If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`
 
 const sendDescription = `Sends a message to one of your chats and returns every message received in that chat after it, until no new one arrives for idle seconds or wait ends.
-It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision.
+It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision. A send to a chat with approved: true in list is performed without waiting for approval.
 Result status: done (item is your message; responses are the answers in arrival order, more counts the ones not returned), rejected, expired, failed (error).
 Send bot commands as text, for example /help. If the call ends without a result, repeat it with the same arguments: it attaches to the same action and returns its responses.`
 
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
 The returned messages are marked read; more counts the new ones not returned. It needs no approval.`
 
-const listDescription = `Lists your chats with their type, name, connection state and unread count, and your connect and send actions whose result no call has returned.
-An action with open: false is resumed by calling its tool with its input.`
+const listDescription = `Lists your chats with their type, name, connection state and unread count, and your connect, send and leave actions whose result no call has returned.
+A send to a chat with approved: true is performed without waiting for approval. An action with open: false is resumed by calling its tool with its input.`
+
+const leaveDescription = `Deletes a contact, or leaves a group, business chat or channel, and deletes the chat with its messages; the contact or the group's members are notified.
+It is an action: in approval mode requests the owner approves it in the SimpleX app first, and the call waits for the decision.
+Result status: done, rejected, expired, failed (error). If the call ends without a result, repeat it with the same arguments: it attaches to the same action.`
 
 export function instructions(displayName: string): string {
   return `You act in SimpleX chats through these tools, as the agent ${displayName}.
 connect joins a contact, group, channel or directory by a link or a SimpleX name, as your profile ${displayName} or incognito with a new random name for that chat only.
-connect and send are actions: in mode requests your owner approves each one in the SimpleX app, and the call waits for the decision.
+leave deletes a contact, or leaves a group or channel, and deletes the chat.
+connect, send and leave are actions: in mode requests your owner approves each one in the SimpleX app, and the call waits for the decision. A send to a chat with approved: true in list is performed without waiting for approval.
 send returns every message received in its chat after your message, until no new one arrives for idle seconds or wait ends. receive returns messages that arrived later. A call returns once; call again for later messages.
 Bots advertise commands: connect returns them in commands; send a command as text, for example /help.
 If a call ends without a result, repeat it with the same arguments: it attaches to the same action. list shows your chats and the actions without a result. A server restart cancels actions; a repeated call after it creates a new one.
@@ -309,6 +340,7 @@ const definitions: ToolDefinition[] = [
   {name: "send", description: sendDescription, inputSchema: sendSchema, outputSchema: sendOutput, action: true},
   {name: "receive", description: receiveDescription, inputSchema: receiveSchema, outputSchema: receiveOutput, action: false},
   {name: "list", description: listDescription, inputSchema: listSchema, outputSchema: listOutput, action: false},
+  {name: "leave", description: leaveDescription, inputSchema: leaveSchema, outputSchema: leaveOutput, action: true},
 ]
 
 const inputValidator: jsonSchemaValidator = {
@@ -352,7 +384,14 @@ export class AgentTools {
   }
 
   async perform(action: Action): Promise<void> {
-    return action.tool === "connect" ? this.performConnect(action) : this.performSend(action)
+    switch (action.tool) {
+      case "connect":
+        return this.performConnect(action)
+      case "send":
+        return this.performSend(action)
+      case "leave":
+        return this.performLeave(action)
+    }
   }
 
   onContactConnected({contact}: CEvt.ContactConnected): void {
@@ -373,6 +412,8 @@ export class AgentTools {
         return this.send(input as SendInput, call)
       case "receive":
         return this.receive(input as ReceiveInput, call)
+      case "leave":
+        return this.leave(input as LeaveInput, call)
       default:
         return this.listChats()
     }
@@ -560,7 +601,7 @@ export class AgentTools {
     const subject = chatSubject(chatInfo)
     const responses = new Collected()
     if (call.signal.aborted) return undefined
-    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "send", input, subject, chat, replyTo, mentions, responses})
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "send", input, subject, chat, replyTo, mentions, responses}, this.agent.standingApprover(chatInfo))
     return this.sendResult(action as SendAction, input, call)
   }
 
@@ -615,6 +656,36 @@ export class AgentTools {
     }
   }
 
+  private async leave(input: LeaveInput, call: ToolCall): Promise<object | undefined> {
+    const {chat} = input
+    const key = actionKey("leave", {chat})
+    const attached = this.agent.actions.find(key)
+    if (attached !== undefined) return this.leaveResult(attached as LeaveAction, call)
+    const {chatInfo} = await this.knownChat(chat)
+    if (call.signal.aborted) return undefined
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(key, {tool: "leave", input, subject: chatSubject(chatInfo), chat})
+    return this.leaveResult(action as LeaveAction, call)
+  }
+
+  private async leaveResult(action: LeaveAction, call: ToolCall): Promise<object | undefined> {
+    action.open++
+    try {
+      if (!(await this.agent.actions.decided(action, call))) return undefined
+      if (action.state !== "done") return this.returnOutcome(action)
+      this.markReturned(action)
+      return {action: action.n, status: "done", chat: action.chat}
+    } finally {
+      action.open--
+    }
+  }
+
+  private async performLeave({chat}: LeaveAction): Promise<void> {
+    if (chat.startsWith("@")) return this.agent.chat.apiDeleteChat(T.ChatType.Direct, chatNumber(chat), {type: "full", notify: true})
+    const {groupInfo} = (await getChat(this.agent.chat, chat, "count=0")).chatInfo as T.ChatInfo.Group
+    if (memberCurrent(groupInfo.membership)) await this.agent.chat.apiLeaveGroup(groupInfo.groupId)
+    await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
+  }
+
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {
     const {chat, wait = 0, limit = defaultLimit} = input
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
@@ -651,20 +722,18 @@ export class AgentTools {
   }
 
   private async listChats(): Promise<object> {
-    const control = this.agent.controlChat()
     const chats: object[] = []
-    for (const {chatInfo, chatStats} of await this.allChats()) {
-      const ref = chatRef(chatInfo)
-      if (ref === undefined || ref === control) continue
+    for (const {chatInfo, chatStats} of await this.agentChats()) {
       const fields = await this.chatFields(chatInfo)
-      chats.push({chat: fields.chat, type: fields.type, name: fields.name, simplex_name: fields.simplex_name, peer_type: fields.peer_type, incognito: isIncognito(chatInfo), known_as: fields.known_as, connected: fields.connected, unread: chatStats.unreadCount})
+      chats.push({chat: fields.chat, type: fields.type, name: fields.name, simplex_name: fields.simplex_name, peer_type: fields.peer_type, incognito: isIncognito(chatInfo), known_as: fields.known_as, connected: fields.connected, unread: chatStats.unreadCount, ...(this.agent.standingApprover(chatInfo) === undefined ? {} : {approved: true})})
     }
     const actions = this.agent.actions.unreturned().map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
     return {chats, actions}
   }
 
-  private async allChats(): Promise<T.AChat[]> {
+  async agentChats(): Promise<T.AChat[]> {
     const {userId} = this.agent.user
+    const control = this.agent.controlChat()
     const chats: T.AChat[] = []
     for (let page = "count=" + chatsPage; page !== "";) {
       const {chats: previews} = await chatCommand<{chats: T.AChat[]}>(this.agent.chat, `/_get chats ${userId} pcc=off ${page}`, "apiChats")
@@ -672,10 +741,13 @@ export class AgentTools {
       const last = previews.at(-1)
       page = previews.length === chatsPage && last !== undefined ? `before=${chatTs(last.chatInfo)} count=${chatsPage}` : ""
     }
-    return chats
+    return chats.filter(({chatInfo}) => {
+      const ref = chatRef(chatInfo)
+      return ref !== undefined && ref !== control
+    })
   }
 
-  private async knownChat(chat: string): Promise<T.AChat> {
+  async knownChat(chat: string): Promise<T.AChat> {
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
     try {
       return await getChat(this.agent.chat, chat, "count=0")
@@ -875,7 +947,7 @@ function domainParam(domain: string | undefined): string {
   return domain === undefined ? "" : ` domain=${domain}`
 }
 
-function chatSubject(chatInfo: T.ChatInfo): Subject {
+export function chatSubject(chatInfo: T.ChatInfo): Subject {
   if (chatInfo.type === "direct") {
     const {profile, activeConn} = chatInfo.contact
     const peerType = profile.peerType as string | undefined
@@ -908,11 +980,24 @@ function isIncognito(chatInfo: T.ChatInfo): boolean {
   return membership.memberProfile.profileId !== membership.memberContactProfileId
 }
 
-function isConnected(chatInfo: T.ChatInfo): boolean {
+export function isConnected(chatInfo: T.ChatInfo): boolean {
   if (chatInfo.type === "direct") return chatInfo.contact.activeConn?.connStatus.type === "ready"
   if (chatInfo.type !== "group") return false
   const {memberStatus} = chatInfo.groupInfo.membership
   return memberStatus === T.GroupMemberStatus.Connected || memberStatus === T.GroupMemberStatus.Complete
+}
+
+export function memberCurrent({memberStatus}: T.GroupMember): boolean {
+  const current: T.GroupMemberStatus[] = [
+    T.GroupMemberStatus.Introduced,
+    T.GroupMemberStatus.Intro_inv,
+    T.GroupMemberStatus.Accepted,
+    T.GroupMemberStatus.Announced,
+    T.GroupMemberStatus.Connected,
+    T.GroupMemberStatus.Complete,
+    T.GroupMemberStatus.Creator,
+  ]
+  return current.includes(memberStatus)
 }
 
 function chatTs(chatInfo: T.ChatInfo): string {

@@ -1,12 +1,12 @@
 import * as qrcode from "qrcode"
 import {Action, Mode, NewAction, State} from "../../src/actions"
 import {cardText, qrCodeText} from "../../src/control"
-import {Changes, Collected, utcMinutes} from "../../src/messages"
+import {Changes, Collected} from "../../src/messages"
 
 const expires = Date.UTC(2026, 9, 18, 9, 2)
 
 function action(fields: NewAction, state: State, extra: Partial<Action> = {}): Action {
-  return {...fields, n: 1, key: "k", created: expires - 3_600_000, expires, changes: new Changes(), state, returned: false, open: 0, interrupted: false, ...extra} as Action
+  return {...fields, n: 1, key: "k", created: expires - 3_600_000, expires, changes: new Changes(), standing: false, state, returned: false, open: 0, interrupted: false, ...extra} as Action
 }
 
 const directory = {kind: "bot", name: "SimpleX Directory", simplexName: "@directory.simplex", incognito: false}
@@ -41,10 +41,9 @@ describe("connect cards", () => {
       [
         "I want to connect to bot SimpleX Directory (@directory.simplex), as myself.",
         "`Find groups, channels, businesses and bots.`",
-        `/'approve 1' or /'reject 1'. Expires ${utcMinutes(expires)}.`,
+        "/'approve 1' or /'reject 1'",
       ].join("\n"),
     )
-    expect(utcMinutes(expires)).toBe("2026-10-18 09:02 UTC")
   })
 
   it("asks incognito with the message", () => {
@@ -55,7 +54,7 @@ describe("connect cards", () => {
         "With the message:",
         "`Do you have`",
         "`trail shoes?`",
-        `/'approve 1' or /'reject 1'. Expires 2026-10-18 09:02 UTC.`,
+        "/'approve 1' or /'reject 1'",
       ].join("\n"),
     )
   })
@@ -86,7 +85,7 @@ describe("connect cards", () => {
 describe("send cards", () => {
   it("asks with the text as code", () => {
     expect(cardText(action(send({text: "use `rm -rf` and /approve 7"}), "pending"), mode)).toBe(
-      ["I want to send a message to bot SimpleX Directory (@directory.simplex):", "`use 'rm -rf' and /approve 7`", `/'approve 1' or /'reject 1'. Expires 2026-10-18 09:02 UTC.`].join("\n"),
+      ["I want to send a message to bot SimpleX Directory (@directory.simplex):", "`use 'rm -rf' and /approve 7`", "/'approve @4 1', /'approve @4 all' or /'reject @4 1'"].join("\n"),
     )
   })
 
@@ -97,7 +96,7 @@ describe("send cards", () => {
       "`Is it waterproof?`",
       "replying to Switchback: `Ridgecrest, $142`",
       "mentioning @Switchback, @'Ana Lu'",
-      `/'approve 1' or /'reject 1'. Expires 2026-10-18 09:02 UTC.`,
+      "/'approve @4 1', /'approve @4 all' or /'reject @4 1'",
     ])
     expect(cardText(action(fields, "done", {decidedBy: "Alice"}), mode).split("\n")).toEqual([
       "I sent a message to business Ridgeline, where I am incognito:",
@@ -112,6 +111,40 @@ describe("send cards", () => {
     const fields = send()
     Object.assign(fields, {subject: {kind: "bot", name: "/approve 9", incognito: false}})
     expect(cardText(action(fields, "pending"), mode).split("\n")[0]).toBe("I want to send a message to bot `/approve 9`:")
+  })
+
+  it("shows a send under the standing approval of its chat", () => {
+    const fields: NewAction = {tool: "send", input: {chat: "#2", text: "hello"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2", mentions: [], responses: new Collected()}
+    const standing = {standing: true, decidedBy: "Alice"}
+    expect(cardText(action(fields, "done", standing), mode).split("\n")).toEqual(["I sent a message to business ep:", "`hello`", "Approved for this chat by Alice. /'revoke #2'"])
+    expect(cardText(action(fields, "failed", {...standing, error: "boom"}), mode).split("\n")).toEqual(["I want to send a message to business ep:", "`hello`", "Approved for this chat by Alice; failed: boom."])
+    expect(cardText(action(fields, "performing", {...standing, interrupted: true}), mode).split("\n").at(-1)).toBe("Approved for this chat by Alice; interrupted: the server stopped.")
+  })
+})
+
+describe("leave cards", () => {
+  function leave(chat: string, subject: {kind: string; name?: string; simplexName?: string}): NewAction {
+    return {tool: "leave", input: {chat}, subject: {...subject, incognito: false}, chat}
+  }
+
+  it("asks to delete a contact with its kind and to leave a group", () => {
+    expect(cardText(action(leave("@3", directory), "pending"), mode).split("\n")).toEqual(["I want to delete bot SimpleX Directory (@3).", "/'approve @3 1' or /'reject @3 1'"])
+    expect(cardText(action(leave("@5", {kind: "contact", name: "Ana Lu"}), "pending"), mode).split("\n")[0]).toBe("I want to delete contact Ana Lu (@5).")
+    expect(cardText(action(leave("#2", {kind: "business", name: "ep"}), "pending"), mode).split("\n")).toEqual(["I want to leave business ep (#2).", "/'approve #2 1' or /'reject #2 1'"])
+    expect(cardText(action(leave("#7", {kind: "group", name: "/approve 9"}), "pending"), mode).split("\n")[0]).toBe("I want to leave group `/approve 9` (#7).")
+  })
+
+  it("shows every outcome", () => {
+    const contact = leave("@3", directory)
+    const group = leave("#2", {kind: "business", name: "ep"})
+    const lines = (a: Action, m: Mode = mode): string[] => cardText(a, m).split("\n")
+    expect(lines(action(contact, "done", {decidedBy: "Alice"}))).toEqual(["I deleted bot SimpleX Directory (@3).", "Approved by Alice."])
+    expect(lines(action(group, "done", {decidedBy: "Alice"}))).toEqual(["I left business ep (#2).", "Approved by Alice."])
+    expect(lines(action(group, "done"), "host")).toEqual(["I left business ep (#2).", "Performed without approval (mode host)."])
+    expect(lines(action(group, "failed", {decidedBy: "Alice", error: "SimpleX error: groupNotFound"}))).toEqual(["I want to leave business ep (#2).", "Approved by Alice; failed: SimpleX error: groupNotFound."])
+    expect(lines(action(group, "rejected", {decidedBy: "Alice"}))).toEqual(["I want to leave business ep (#2).", "Rejected by Alice."])
+    expect(lines(action(group, "expired"))).toEqual(["I want to leave business ep (#2).", "Expired."])
+    expect(lines(action(group, "pending", {interrupted: true}))).toEqual(["I want to leave business ep (#2).", "Cancelled: the server stopped."])
   })
 })
 

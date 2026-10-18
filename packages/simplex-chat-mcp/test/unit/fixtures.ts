@@ -116,6 +116,9 @@ export class FakeChat {
   updates: {chatId: number; itemId: number; text: string}[] = []
   replies: string[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
+  left: number[] = []
+  customData: {chat: string; customData?: object}[] = []
+  profiles: {groupId: number; groupProfile: T.GroupProfile}[] = []
   members = new Map<number, T.GroupMember[]>()
   chats = new Map<string, FakeChatData>()
   responses = new Map<string, object>()
@@ -127,6 +130,10 @@ export class FakeChat {
     if (fixed !== undefined) return fixed as ChatResponse
     const getChat = /^\/_get chat ([@#]\d+) (.+)$/.exec(cmd)
     if (getChat) return this.getChat(getChat[1], getChat[2])
+    if (cmd.startsWith("/_get chats ")) {
+      const chats = [...this.chats.values()].map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
+      return structuredClone({type: "apiChats", user, chats}) as unknown as ChatResponse
+    }
     if (cmd.startsWith("/_read chat items ")) {
       const [, ref, ids] = /^\/_read chat items ([@#]\d+) (.+)$/.exec(cmd)!
       const data = this.chats.get(ref)!
@@ -162,6 +169,27 @@ export class FakeChat {
 
   async apiDeleteChat(chatType: T.ChatType, chatId: number, mode?: T.ChatDeleteMode): Promise<void> {
     this.deleted.push({chatType, chatId, mode})
+    this.chats.delete(`${chatType === T.ChatType.Direct ? "@" : "#"}${chatId}`)
+  }
+
+  async apiLeaveGroup(groupId: number): Promise<T.GroupInfo> {
+    this.left.push(groupId)
+    const {groupInfo} = this.chats.get(`#${groupId}`)!.chatInfo as T.ChatInfo.Group
+    groupInfo.membership = {...groupInfo.membership, memberStatus: T.GroupMemberStatus.Left}
+    return groupInfo
+  }
+
+  async apiSetContactCustomData(contactId: number, customData?: object): Promise<void> {
+    this.setCustomData(`@${contactId}`, customData)
+  }
+
+  async apiSetGroupCustomData(groupId: number, customData?: object): Promise<void> {
+    this.setCustomData(`#${groupId}`, customData)
+  }
+
+  async apiUpdateGroupProfile(groupId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
+    this.profiles.push({groupId, groupProfile})
+    return {...group(groupId, groupProfile.displayName), groupProfile}
   }
 
   api(): api.ChatApi {
@@ -174,11 +202,16 @@ export class FakeChat {
     return event(data.chatInfo, structuredClone(chatItem))
   }
 
+  private setCustomData(ref: string, customData: object | undefined): void {
+    this.customData.push({chat: ref, customData})
+    const {chatInfo} = this.chats.get(ref)!
+    if (chatInfo.type === "direct") chatInfo.contact.customData = customData
+    else (chatInfo as T.ChatInfo.Group).groupInfo.customData = customData
+  }
+
   private getChat(ref: string, pagination: string): ChatResponse {
     const data = this.chats.get(ref)
     if (data === undefined) throw storeError(ref)
-    const unread = data.items.filter(({meta}) => meta.itemStatus.type === "rcvNew")
-    const chatStats = {unreadCount: unread.length, minUnreadItemId: unread[0]?.meta.itemId ?? 0, unreadMentions: 0, reportsCount: 0, unreadChat: false}
     const around = /^around=(\d+) count=0$/.exec(pagination)
     const after = /^after=(\d+) count=(\d+)$/.exec(pagination)
     const last = /^count=(\d+)$/.exec(pagination)
@@ -190,8 +223,13 @@ export class FakeChat {
           ? data.items.slice(-Number(last[1]))
           : []
     if (around && chatItems.length === 0) throw storeError(ref)
-    return structuredClone({type: "apiChat", chat: {chatInfo: data.chatInfo, chatItems, chatStats}}) as unknown as ChatResponse
+    return structuredClone({type: "apiChat", chat: {chatInfo: data.chatInfo, chatItems, chatStats: chatStats(data.items)}}) as unknown as ChatResponse
   }
+}
+
+function chatStats(items: T.ChatItem[]): T.ChatStats {
+  const unread = items.filter(({meta}) => meta.itemStatus.type === "rcvNew")
+  return {unreadCount: unread.length, minUnreadItemId: unread[0]?.meta.itemId ?? 0, unreadMentions: 0, reportsCount: 0, unreadChat: false}
 }
 
 function storeError(ref: string): Error {

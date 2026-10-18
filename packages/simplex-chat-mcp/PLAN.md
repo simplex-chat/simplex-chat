@@ -8,8 +8,8 @@ In:
 
 - one agent per process: one SimpleX profile, one data folder, one port;
 - MCP over Streamable HTTP on 127.0.0.1, registered in Claude Code;
-- the agent control chat: the owner approves the agent's connects and sends there;
-- four tools: `connect`, `send`, `receive`, `list`;
+- the agent control chat: the owner approves the agent's connects, sends and leaves there, or all sends to one chat;
+- five tools: `connect`, `send`, `receive`, `list`, `leave`;
 - connections to contact addresses, one-time links, groups, channels and SimpleX names, as the agent's profile or incognito;
 - bots as services: the commands a bot advertises are returned by `connect`.
 
@@ -53,9 +53,9 @@ no --owners           every human owner
 identifier       form                 assigned by                         seen by           used for
 agent name       NAME                 person, serve                       person            data folder; Claude Code entry simplex-NAME
 display name     DISPLAY              person, --display-name, else NAME   owner, peers      the agent's profile; the agent control chat's name
-action           N                    server: counter in the custom data  owner, agent      /approve N, /reject N; tool results; list
+action           N                    server: counter in the custom data  owner, agent      /approve [CHAT] N, /reject [CHAT] N; tool results; list
                                       of the agent control chat
-chat             @N contact, #N group SimpleX core                        agent             tool inputs and results
+chat             @N contact, #N group SimpleX core                        agent, owner      tool inputs and results; CHAT in commands and cards
 item             N                    SimpleX core                        agent             reply_to; messages
 member           N (groupMemberId)    SimpleX core                        agent             from_member; mention
 owner entry      ID:NAME              SimpleX core, log                   person            --owners
@@ -68,7 +68,8 @@ owner entry      ID:NAME              SimpleX core, log                   person
 
 ```
 link                     rule
-owner command -> action  /approve N or /reject N from an approver, action N pending in memory; otherwise a reply
+owner command -> action  /approve [CHAT] N or /reject [CHAT] N from an approver, action N pending in memory, CHAT its chat when given; otherwise a reply
+chat -> approval         the chat's custom data {simplexMcp: {approvedBy, approvedById, approvedAt}}, while member approvedById is an approver
 action -> card           actions[N].card: the card's item ID in the agent control chat
 tool call -> action      same tool and action fields, result not returned: the call attaches; otherwise a new action
 send -> responses        every received message item (rcvMsgContent) of newChatItems in the chat with an ID above the sent item's, from the perform until a call returns the result
@@ -76,7 +77,7 @@ connect -> chat          actions[N].conn, completed by the event of the connecti
 agent -> follow-up       results carry chat, item, member and action IDs; inputs take chat, item and member IDs: send, receive, reply_to, mention; action IDs match the cards and list
 ```
 
-Action fields: `target`, `incognito`, `message` for `connect`; `chat`, `text`, `reply_to`, `mention` for `send`.
+Action fields: `target`, `incognito`, `message` for `connect`; `chat`, `text`, `reply_to`, `mention` for `send`; `chat` for `leave`.
 
 ## MCP facts the tools rely on
 
@@ -159,6 +160,7 @@ State:
 ```
 item          where
 nextAction    custom data of the agent control chat: {simplexMcp: {control: true, nextAction: N}}
+approval      custom data of the contact or group: {simplexMcp: {approvedBy, approvedById, approvedAt}}; deleted with the chat
 actions       memory: they end with the process
 open calls    memory
 ```
@@ -301,7 +303,7 @@ My Agent: I'm your agent. I ask here before I connect or send.
 ```
 My Agent: I want to connect to bot SimpleX Directory (@directory.simplex), as myself.
           `Find groups, channels, businesses and bots.`
-          /'approve 1' or /'reject 1'. Expires 2026-10-18 09:02 UTC.
+          /'approve 1' or /'reject 1'
 ```
 
 ```
@@ -319,7 +321,7 @@ quoted lines                                     short description and welcome m
 ```
 My Agent: I want to send a message to bot SimpleX Directory (@directory.simplex):
           `trail running shoes`
-          /'approve 2' or /'reject 2'. Expires 2026-10-18 09:15 UTC.
+          /'approve @4 2', /'approve @4 all' or /'reject @4 2'
 ```
 
 ```
@@ -338,14 +340,31 @@ replying to Switchback: `Ridgecrest, $142`   reply_to
 mentioning @Switchback                       mention
 ```
 
+- Cards show no expiry; `/pending` shows it.
+- The commands of sends and leaves name the chat, and `/'approve @4 all'` approves all sends to it (section Commands).
+
+### Leave card
+
+```
+My Agent: I want to leave business Ridgeline (#9).
+          /'approve #9 12' or /'reject #9 12'
+
+My Agent: I want to delete bot SimpleX Directory (@4).
+          /'approve @4 13' or /'reject @4 13'
+```
+
+- `leave` for a group, business chat or channel; `delete` for a contact. The type and name are as in the send card.
+
 ### Outcomes
 
 Each card is edited by the agent's profile; the commands are removed:
 
 ```
 outcome             card
-done                "I connected to ..." or "I sent a message to ..." + the request's other lines + "Approved by Alice."
+done                "I connected to ...", "I sent a message to ...", "I left ..." or "I deleted ..." + the request's other lines + "Approved by Alice."
 done, not connected "I asked to connect to ..." + the request's other lines + "Approved by Alice."
+standing            a send under a standing approval, posted after the send: "I sent a message to ..." + the request's other lines + "Approved for this chat by Alice. /'revoke @4'"
+standing, failed    the request's lines + "Approved for this chat by Alice; failed: <error>."
 failed              the request's lines except the commands line + "Approved by Alice; failed: <error>."
 rejected            the request's lines except the commands line + "Rejected by Alice."
 expired             the request's lines except the commands line + "Expired."
@@ -361,13 +380,24 @@ host, interrupted   the request's lines except the commands line + "Performed wi
 
 ### Commands
 
-Commands are in the group's command menu.
+The group's command menu has `/pending` and `/list`; the cards carry the others.
 
 ```
-command      result
-/approve N   the action is performed; the card is edited
-/reject N    the card is edited
-/pending     one line per pending action: "2  send to bot SimpleX Directory  expires 09:15"; "No pending actions." when none
+command             result
+/approve [CHAT] N   the action is performed; the card is edited
+/reject [CHAT] N    the card is edited
+/approve CHAT all   the standing approval of CHAT by the sender; its pending sends are approved
+/revoke CHAT        the standing approval of CHAT is removed
+/pending            one line per pending action: "2  send to bot SimpleX Directory  expires 09:15"; "No pending actions." when none
+/list               one line per chat of the agent, as list returns them
+```
+
+`/list`:
+
+```
+@4  bot SimpleX Directory
+#9  business Ridgeline, approved for this chat by Alice
+@2  contact Ask SimpleX Team, not connected
 ```
 
 Replies:
@@ -376,8 +406,17 @@ Replies:
 situation                                   reply
 sender is not an approver                   Only owners approve actions. (--owners: Only the owners listed in --owners approve actions.)
 N unknown, decided or from an earlier run   Action 9 is not pending.
-other one-line text starting with "/"       Commands: /approve N, /reject N, /pending
+CHAT not the action's chat                  Action 10 is not for #3.
+/approve CHAT all                           Approved for business Ridgeline (#9) by Alice. /'revoke #9'
+/approve CHAT all, CHAT not the agent's     No chat #13. /list shows the agent's chats.
+/revoke CHAT                                Messages to business Ridgeline (#9) need approval again.
+/revoke CHAT, no standing approval          Messages to #9 have no standing approval.
+/list, no chats                             No chats.
+other one-line text starting with "/"       Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands.
 ```
+
+- CHAT is optional in `/approve N` and `/reject N` as typed; the cards include it for sends and leaves.
+- A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver.
 
 ### Membership messages
 
@@ -398,7 +437,8 @@ an owner in LIST loses the role or leaves,            Alice (member 3) is no lon
 ```
 You act in SimpleX chats through these tools, as the agent DISPLAY.
 connect joins a contact, group, channel or directory by a link or a SimpleX name, as your profile DISPLAY or incognito with a new random name for that chat only.
-connect and send are actions: in mode requests your owner approves each one in the SimpleX app, and the call waits for the decision.
+leave deletes a contact, or leaves a group or channel, and deletes the chat.
+connect, send and leave are actions: in mode requests your owner approves each one in the SimpleX app, and the call waits for the decision. A send to a chat with approved: true in list is performed without waiting for approval.
 send returns every message received in its chat after your message, until no new one arrives for idle seconds or wait ends. receive returns messages that arrived later. A call returns once; call again for later messages.
 Bots advertise commands: connect returns them in commands; send a command as text, for example /help.
 If a call ends without a result, repeat it with the same arguments: it attaches to the same action. list shows your chats and the actions without a result. A server restart cancels actions; a repeated call after it creates a new one.
@@ -525,12 +565,30 @@ Input: none.
 
 ```
 result field  type    content
-chats         array   {chat, type, name, simplex_name, peer_type, incognito, known_as, connected, unread}
+chats         array   {chat, type, name, simplex_name, peer_type, incognito, known_as, connected, unread, approved}
 actions       array   {action, tool, input, state, open}: actions of this server run whose result no call has returned; open: at least one call waits on it
 ```
 
+- `approved: true`: the chat has a standing approval; present only then.
 - An action with `open: false` resumes by calling `tool` with `input`.
-- The agent control chat is not one of the agent's chats: `list` leaves it out, and `send` and `receive` return "unknown chat" for it.
+- The agent control chat is not one of the agent's chats: `list` leaves it out, and `send`, `receive` and `leave` return "unknown chat" for it.
+
+### leave
+
+```
+input field   type      rule
+chat          string    required; a chat of the agent
+```
+
+```
+result field  type      present
+action        number    always
+status        string    done | failed | rejected | expired
+chat          string    done; the deleted chat
+error         string    failed
+```
+
+- A contact is deleted; a connected contact is notified (`sendDelDeleteConns`, `Commands.hs:1384-1388`). From a group, business chat or channel the agent leaves while its membership is current, and the members are notified; the chat is deleted with its messages and its custom data.
 
 ### Errors
 
@@ -549,7 +607,7 @@ mention not a member               mention: #15 has no member 45. (in a contact 
 SimpleX error                      SimpleX error: <type>: <details>
 ```
 
-- The no-approver and lost-group errors are returned by `connect` and `send` when a call creates a new action, after the input checks; a `known` target and a call that attaches to an action return without them.
+- The no-approver and lost-group errors are returned by `connect`, `send` and `leave` when a call creates a new action, after the input checks; a `known` target and a call that attaches to an action return without them.
 
 ## What peers see
 
@@ -587,7 +645,7 @@ serve(NAME, options):
   --reset-owners: membership current and role below owner: /_leave #group (parser Commands.hs:6424), as only an owner or a former member deletes a group (Commands.hs:1395-1398);
     /_delete #group full notify=on; group = createControlChat(nextAction)
   group.membership not owner, or memberStatus not creator, connected or complete: lost = true; log "The agent lost its control chat. Restart the server with --reset-owners."
-  lost unset, group.groupProfile.displayName differs from the profile's: /_group_profile #group {the group profile with that displayName}   # APIUpdateGroupProfile, parser Commands.hs:6534
+  lost unset, group.groupProfile.displayName differs from the profile's, or its commands from the menu of createControlChat: /_group_profile #group {the group profile with that displayName and menu}   # APIUpdateGroupProfile, parser Commands.hs:6534
   members = /_members #group, so approvers are known before the first call
   HTTP listen 127.0.0.1:PORT; port in use: chat.close(); remove DIR/lock; exit 1 "Port PORT is in use. Start with --port N."   # before any link or QR code is printed
   lost unset: ownerStart(group)
@@ -617,9 +675,8 @@ SIGINT, SIGTERM (process.on; the second signal joins the stop in progress):
 g = /_group <user> {displayName: DISPLAY, fullName: "",
   description: "Your agent asks here before it connects or sends. /approve N approves, /reject N rejects, /pending lists pending actions.",
   groupPreferences: {history: {enable: "on"}, commands: [
-    {type: "command", keyword: "approve", label: "Approve", params: "N"},
-    {type: "command", keyword: "reject", label: "Reject", params: "N"},
-    {type: "command", keyword: "pending", label: "Pending actions"}]}}
+    {type: "command", keyword: "pending", label: "Pending actions"},
+    {type: "command", keyword: "list", label: "Chats and approvals"}]}}
 /_set custom #g {simplexMcp: {control: true, nextAction: n}}
 log "Agent control chat \"DISPLAY\" created."
 return g with customData {simplexMcp: {control: true, nextAction: n}}       # the /_group response precedes the custom data
@@ -676,13 +733,20 @@ newChatItems, groupRcv, main scope       text starts with "/"                   
 
 ```
 command = parseCommand(text)                      # steward src/commands.ts; undefined: ignore
-approve N | reject N | pending, sender not an approver: reply "Only owners approve actions." (--owners: "Only the owners listed in --owners approve actions.")
-approve N | reject N, action N not pending in memory, or its card unset: reply "Action N is not pending."
-approve N: decidedBy = sender; state performing; start perform(N) without awaiting it in the event handler; its end edits the card
-reject N:  decidedBy = sender; state rejected; edit the card
-pending:   reply with the pending actions
-other:     reply "Commands: /approve N, /reject N, /pending"
+not one of the commands below: reply "Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands."
+sender not an approver: reply "Only owners approve actions." (--owners: "Only the owners listed in --owners approve actions.")
+approve [CHAT] N | reject [CHAT] N, action N not pending in memory, or its card unset: reply "Action N is not pending."
+approve CHAT N | reject CHAT N, action N a connect or for another chat: reply "Action N is not for CHAT."
+approve [CHAT] N: decidedBy = sender; state performing; start perform(N) without awaiting it in the event handler; its end edits the card
+reject [CHAT] N:  decidedBy = sender; state rejected; edit the card
+approve CHAT all: CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set the chat's custom data simplexMcp = {approvedBy: sender name, approvedById: sender groupMemberId, approvedAt}, keeping its other keys
+                  (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'"
+revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
+pending:          reply with the pending actions
+list:             reply with one line per chat of list(): CHAT, the type and name, ", approved for this chat by NAME" while the approval applies, ", not connected"
 ```
+
+- Owner commands run one at a time, in arrival order: a command awaits the custom data write of the one before it.
 
 - Editing a card: `/_update item #<group> <card> text <text>` (`APIUpdateChatItem`, parser `Commands.hs:6362`).
 
@@ -704,7 +768,10 @@ call, mode requests       -           pending
 card post fails           pending     failed
 control chat lost         pending     failed
 call, mode host           -           performing
+send call, mode requests, -           performing
+  standing approval
 /approve N                pending     performing
+/approve CHAT all         pending     performing    (the sends of CHAT)
 perform(N) ends           performing  done | failed
 /reject N                 pending     rejected
 --expire hours pass       pending     expired
@@ -715,13 +782,14 @@ Action record, in memory:
 ```
 field       value
 n           number
-tool        connect | send
+tool        connect | send | leave
 input       tool input
+standing    performed under a standing approval: no pending card; the outcome card is posted
 state       state
 created     ISO time
 expires     created + --expire
 card        item ID of the card in the agent control chat
-decidedBy   approver's display name
+decidedBy   approver's display name; standing: approvedBy of the chat's approval
 returned    the result was returned by a call; the action is then deleted from memory
 open        the number of calls waiting on it
 chat        chat reference, set during perform
@@ -744,7 +812,8 @@ action(tool, input, ctx):
     no approvers: tool error, the no-approver message
     N = nextAction; nextAction = N + 1; create action N; log "Action N: ..."
     /_set custom #group {simplexMcp: {control: true, nextAction}}, queued after earlier writes, awaited
-    mode requests: /_send #group text <card>; card = its item ID; post failed: state failed, error "SimpleX error"
+    mode requests, a send to a chat whose approval applies: standing; decidedBy = approvedBy; start perform(N); its end posts the outcome card
+    mode requests otherwise: /_send #group text <card>; card = its item ID; post failed: state failed, error "SimpleX error"
     mode host: start perform(N); its end posts the outcome card
   open += 1
   wait for: state done, failed, rejected or expired | the call's signal
@@ -756,7 +825,7 @@ action(tool, input, ctx):
 
 - `open` counts the calls attached to the action: +1 here, -1 when the call ends, by its result or its signal, including the tool's continuation after done.
 - The attach check and the creation of action N run with no await between them, so two identical calls made at once share one action.
-- `perform(N)` runs once, in state `performing`: on `/approve N`, or in `action()` in mode host. It ends in `done` or `failed`; `perform connect` ends after its wait for the connection.
+- `perform(N)` runs once, in state `performing`: on `/approve N` or `/approve CHAT all`, or in `action()` in mode host or under a standing approval. It ends in `done` or `failed`; `perform connect` ends after its wait for the connection.
 - The counter is written before the card is posted, so a crash skips a number and never repeats one.
 
 ### connect
@@ -850,6 +919,20 @@ result {chat, item, responses: messages, more}
 - The library delivers each event to the handler in order (`api.js:113-142`); a response that arrives before `/_send` returns is kept, and an item received before the sent one has a lower ID and is dropped.
 - `wait` starts when the message is sent; when the call attaches to an action already done, at the call.
 
+### leave
+
+```
+leave(input, ctx):
+  an action with tool leave and the same chat, returned unset: action(leave, input, ctx); go to result
+  chat is the agent control chat, or /_get chat <chat> count=0 returns a store error: tool error "unknown chat"
+  action(leave, input, ctx)
+  result: {action, status: "done", chat}; returned = true
+
+perform leave:
+  @C: /_delete @C full notify=on
+  #G: membership current: /_leave #G; then /_delete #G full notify=on       # only an owner or a former member deletes a group, Commands.hs:1396-1398
+```
+
 ### receive and list
 
 ```
@@ -874,6 +957,7 @@ list():
   unread: chatStats.unreadCount (types.d.ts:1175)
   incognito: contacts: contact.activeConn.customUserProfileId set (types.d.ts:1328); groups: membership.memberProfile.profileId differs from membership.memberContactProfileId (memberIncognito, Types.hs:1289-1290)
   known_as: groups: membership.memberProfile.displayName; contacts: the incognito profile from /_info @C, read only for incognito contacts
+  approved: true when the chat's custom data has simplexMcp.approvedById of a current approver
   result {chats, actions: actions with returned unset, open: open > 0}
 ```
 
@@ -918,8 +1002,8 @@ sequenceDiagram
   D->>S: contactConnected @4; welcome message
   S->>A: {action: 1, status: done, chat: "@4", connected: true, type: "contact", peer_type: "bot", commands: [{keyword: "help", ...}, ...], messages: [welcome]}
   A->>S: send {chat: "@4", text: "trail running shoes"}
-  S->>O: My Agent: "I want to send a message to bot SimpleX Directory (@directory.simplex): 'trail running shoes'. /approve 2 or /reject 2"
-  O->>S: /approve 2
+  S->>O: My Agent: "I want to send a message to bot SimpleX Directory (@directory.simplex): 'trail running shoes'. /approve @4 2, /approve @4 all or /reject @4 2"
+  O->>S: /approve @4 2
   S->>D: item 20
   D->>S: items 21, 22, 23: search results with their links
   Note over S: 5 s pass after item 23
@@ -941,8 +1025,8 @@ sequenceDiagram
   V->>S: userJoinedGroup #9; the bot's answer, item 31
   S->>A: {action: 3, status: done, chat: "#9", connected: true, type: "business", known_as: "BraveOtter", messages: [the request, 31]}
   A->>S: send {chat: "#9", text: "Is the Talus Trail waterproof?", wait: 600}
-  S->>O: My Agent: "I want to send a message to business Ridgeline, where I am incognito: ... /approve 4 or /reject 4"
-  O->>S: /approve 4
+  S->>O: My Agent: "I want to send a message to business Ridgeline, where I am incognito: ... /approve #9 4, /approve #9 all or /reject #9 4"
+  O->>S: /approve #9 4
   S->>V: item 32
   V->>S: item 33
   S->>A: {action: 4, status: done, chat: "#9", item: 32, responses: [33]}
@@ -975,12 +1059,12 @@ sequenceDiagram
   participant S as Server
   participant O as Owner
   A->>S: send {chat: "@4", text: "..."}
-  S->>O: card: "/approve 6 or /reject 6"
-  O->>S: /reject 6
+  S->>O: card: "/approve @4 6, /approve @4 all or /reject @4 6"
+  O->>S: /reject @4 6
   S->>O: card edited: "Rejected by Alice."
   S->>A: {action: 6, status: rejected}
   A->>S: send {chat: "#9", text: "..."}
-  S->>O: card: "/approve 7 or /reject 7"
+  S->>O: card: "/approve #9 7, /approve #9 all or /reject #9 7"
   Note over A,S: the host ends the call; action 7 stays pending, open false
   A->>S: list {}
   S->>A: {actions: [{action: 7, tool: send, input: {...}, state: pending, open: false}], chats: [...]}
@@ -990,19 +1074,49 @@ sequenceDiagram
   S->>O: card edited: "Expired."
   S->>A: {action: 7, status: expired}
   A->>S: send {chat: "#9", text: "..."}
-  S->>O: card: "/approve 8 or /reject 8"
+  S->>O: card: "/approve #9 8, /approve #9 all or /reject #9 8"
   Note over S: the person stops the server
   S->>O: card edited: "Cancelled: the server stopped."
   Note over A,S: the call fails; after the restart, the same call creates action 9
-  O->>S: /approve 8
+  O->>S: /approve #9 8
   S->>O: "Action 8 is not pending."
+```
+
+### Standing approval and leave
+
+```mermaid
+sequenceDiagram
+  participant A as Agent
+  participant S as Server
+  participant O as Owner
+  participant V as Ridgeline's bot
+  A->>S: send {chat: "#9", text: "Any discount for two pairs?"}
+  S->>O: My Agent: "I want to send a message to business Ridgeline, where I am incognito: ... /approve #9 10, /approve #9 all or /reject #9 10"
+  O->>S: /approve #9 all
+  S->>S: /_set custom #9 {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt}}
+  S->>O: "Approved for business Ridgeline (#9) by Alice. /revoke #9"
+  S->>V: item 50
+  S->>O: card 10 edited: "I sent a message ... Approved by Alice."
+  S->>A: {action: 10, status: done, chat: "#9", item: 50, responses: [...]}
+  A->>S: send {chat: "#9", text: "Thanks, I'll order."}
+  S->>V: item 52
+  S->>O: My Agent: "I sent a message to business Ridgeline, where I am incognito: ... Approved for this chat by Alice. /revoke #9"
+  S->>A: {action: 11, status: done, chat: "#9", item: 52, responses: [...]}
+  O->>S: /revoke #9
+  S->>O: "Messages to business Ridgeline (#9) need approval again."
+  A->>S: leave {chat: "#9"}
+  S->>O: My Agent: "I want to leave business Ridgeline (#9). /approve #9 12 or /reject #9 12"
+  O->>S: /approve #9 12
+  S->>V: /_leave #9; /_delete #9 full notify=on
+  S->>O: card edited: "I left business Ridgeline (#9). Approved by Alice."
+  S->>A: {action: 12, status: done, chat: "#9"}
 ```
 
 ### Other scenarios
 
 ```
 scenario                 person (CLI)                         owner (agent control chat)                        agent (call -> result)                                  peers
-mode host                serve my-agent --approve host        outcome cards with "Performed without approval    connect, send: performed without approval;             as in mode requests
+mode host                serve my-agent --approve host        outcome cards with "Performed without approval    connect, send, leave: performed without approval;      as in mode requests
                                                               (mode host)."                                      Claude Code prompts for each call
                                                                                                                 (requiresUserInteraction)
 mention                  none                                 send card with "mentioning @Switchback"           send {chat: "#15", text, mention: [44]}                 Switchback's item has the mention
@@ -1015,17 +1129,17 @@ crash                    start serve                          the run's cards ke
                                                               gets "Action N is not pending."
 second agent             serve my-agent-2 --port 5227;        a second agent control chat "my-agent-2"          the tools of simplex-my-agent-2                         the profile my-agent-2
                          register my-agent-2
-reset owners             serve my-agent --reset-owners        the agent control chat deleted; join the new      connect, send: the no-approver error until an          none
+reset owners             serve my-agent --reset-owners        the agent control chat deleted; join the new      connect, send, leave: the no-approver error until an   none
                          [--owners]                           link                                              approver exists
 new token                serve my-agent --new-token;          none                                              HTTP 401 until the entry is replaced and the            none
                          register my-agent                                                                      session reconnects (/mcp reconnect all)
 session before server    start serve; /mcp reconnect all      none                                              the tools appear after the reconnect                     none
-no approver              no --owners: "No owners in the       --owners LIST: "... No owners remain: restart     connect, send: the no-approver error                     none
+no approver              no --owners: "No owners in the       --owners LIST: "... No owners remain: restart     connect, send, leave: the no-approver error              none
                          agent control chat." and a new       the server with --reset-owners --owners"
                          link
 ```
 
-- Mode host: `connect` and `send` carry `_meta: {"anthropic/requiresUserInteraction": true}` in `tools/list`.
+- Mode host: `connect`, `send` and `leave` carry `_meta: {"anthropic/requiresUserInteraction": true}` in `tools/list`.
 
 ## Tests
 
@@ -1034,10 +1148,10 @@ Unit:
 ```
 test        covers
 options     defaults, ranges, NAME, --display-name at the first and a later start, --owners with and without a list, rejected arguments, --help text
-commands    /approve N, /reject N, /pending, unknown, multi-line, non-command text, a number from an earlier run
-actions     every transition; attach rule; open counts; counter written before the card; stop edits pending and performing cards
-cards       every card form and outcome; quoting; "as myself" and "incognito"; "where I am incognito"
-messages    message fields; responses with idle and wait; receive with new messages under a concurrent call
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run
+actions     every transition; attach rule; open counts; counter written before the card; stop edits pending and performing cards; standing approval: performed at once, outcome card posted
+cards       every card form and outcome; quoting; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form
+messages    message fields; responses with idle and wait; receive with new messages under a concurrent call; leave of @N and #N; approved in list; an approval whose approver is no longer one
 http        401 without token; 403 with another Origin; 404 for other paths
 register    entry JSON; timeout from server.json; remove before add; errors
 files       lock: exclusive create, a running PID, a stale PID
@@ -1092,3 +1206,7 @@ C6      Claude Code closes the request stream when a call times out or its task 
 - The wait after the last message is `idle`, 30 s by default, in `send` and `connect`; `connect` with `message` waits for the first reply as `send` does.
 - The agent control chat has the agent's display name; the owner can set an alias in the app.
 - `known_as` stays in tool results: peers can address the agent by that name.
+- Standing approval per chat: `/approve CHAT all`, ended by `/revoke CHAT`; kept in the chat's custom data; sends only; it applies while its approver is an approver.
+- Cards show no expiry. The commands of sends and leaves name the chat: `/approve CHAT N`.
+- The command menu has `/pending` and `/list`.
+- `leave`: one action deletes a contact, or leaves a group, business chat or channel and deletes it; always with notification.
