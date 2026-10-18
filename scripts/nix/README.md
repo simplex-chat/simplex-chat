@@ -200,6 +200,14 @@ Its optional `--cc`, `--ar`, `--ghc-source` and `--link-output` arguments also r
 a MinGW archive-extraction control using the pinned initializer body; extra C
 linker inputs can be passed with `--link-option`. This does not execute a PE or
 qualify the complete GHC runtime ABI.
+Each Windows ZIP collects its own recursive DLL dependencies from the selected
+Windows OpenSSL, zlib, libffi, GMP, GCC and mcfgthreads outputs. The CLI ZIP no
+longer relies on DLLs in the separate library ZIP. Windows system/API-set DLLs
+remain supplied by the OS. Run `python3 scripts/nix/test-windows-packaging.py
+--cc /path/to/x86_64-w64-mingw32-gcc --output /tmp/windows-packaging-check` with
+a cached MinGW compiler for the bounded real-PE packaging regression; it does
+not execute the resulting Windows code.
+
 Android client export flags use the ordered `chat-exports.txt` manifest. The
 desktop library scripts check that manifest and `libsimplex.dll.def` against the
 Haskell exports before building; update the manifest when adding an export.
