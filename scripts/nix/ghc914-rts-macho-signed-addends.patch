@@ -1,0 +1,21 @@
+--- a/linker/MachO.c
++++ b/linker/MachO.c
+@@ -897,10 +897,18 @@
+ 
+             type = X86_64_RELOC_SIGNED;
+         }
+         else if (reloc->r_extern)
+         {
++            /* SIGNED_N's embedded addend already contains a -N bias for
++             * trailing instruction bytes. Normalize it before subtracting
++             * baseValue, which also includes N. Local relocations instead
++             * encode a displacement in the original image and are handled
++             * separately below.
++             */
++            thing += nextInstrAdj;
++
+             MachOSymbol *symbol = &symbols[reloc->r_symbolnum];
+             SymbolName* nm = symbol->name;
+             SymbolAddr* addr = NULL;
+ 
+             IF_DEBUG(linker_verbose, debugBelch("relocateSection: looking up external symbol %s\n", nm));
