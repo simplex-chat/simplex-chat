@@ -299,7 +299,7 @@ struct ChatPreviewView: View {
 
     func chatItemPreview(_ cItem: ChatItem) -> (Text, Bool) {
         let (itemText, itemFormattedText) = chatItemPreviewText(cItem)
-        let r = messageText(itemText, itemFormattedText, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
+        let r = messageText(itemText, itemFormattedText, markdownBlocks: itemFormattedText == nil ? nil : cItem.markdownBlocks, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
         return (Text(AttributedString(r.string)), r.hasSecrets)
 
         func chatItemPreviewText(_ ci: ChatItem) -> (String, [FormattedText]?) {
@@ -444,7 +444,7 @@ struct ChatPreviewView: View {
             smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {
                 ProfileImage(
                     imageStr: chatLink.image,
-                    iconName: chatLink.iconName,
+                    icon: Image(systemName: chatLink.iconName),
                     size: dynamicMediaSize,
                     color: Color(uiColor: .tertiaryLabel)
                 )
