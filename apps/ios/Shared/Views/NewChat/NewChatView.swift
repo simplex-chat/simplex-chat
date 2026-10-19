@@ -477,6 +477,13 @@ private struct ActiveProfilePicker: View {
                                     )
                                 }
                             }
+                        } else {
+                            await MainActor.run {
+                                profileSwitchStatus = .idle
+                                if let currentUser = chatModel.currentUser {
+                                    selectedProfile = currentUser
+                                }
+                            }
                         }
                     } catch {
                         await MainActor.run {
