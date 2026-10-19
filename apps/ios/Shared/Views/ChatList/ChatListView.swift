@@ -630,25 +630,7 @@ struct ChatListView: View {
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .getStake }
                     }
-                    if #available(iOS 16.0, *) {
-                        ForEach(cs, id: \.viewId) { chat in
-                            ChatListNavLink(chat: chat, parentSheet: $sheet)
-                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                                .padding(.trailing, -16)
-                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                                .listRowBackground(Color.clear)
-                        }
-                        .offset(x: -8)
-                    } else {
-                        ForEach(cs, id: \.viewId) { chat in
-                            ChatListNavLink(chat: chat,  parentSheet: $sheet)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets())
-                            .background { theme.colors.background } // Hides default list selection colour
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                        }
-                    }
+                    ForEach(cs, id: \.viewId) { chat in chatListNavLink(chat) }
                     nameRows(rows.names)
                     directoryRows(rows)
                     if showsCards && !addressCreationCardShown && hasConversations {
@@ -683,6 +665,24 @@ struct ChatListView: View {
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
             }
+        }
+    }
+
+    @ViewBuilder private func chatListNavLink(_ chat: Chat) -> some View {
+        if #available(iOS 16.0, *) {
+            ChatListNavLink(chat: chat, parentSheet: $sheet)
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .padding(.trailing, -16)
+                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                .listRowBackground(Color.clear)
+                .offset(x: -8)
+        } else {
+            ChatListNavLink(chat: chat,  parentSheet: $sheet)
+            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets())
+            .background { theme.colors.background } // Hides default list selection colour
+            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
         }
     }
 
