@@ -261,7 +261,13 @@
     "about-and-contact-us": "عن واتصل بنا",
     "index-hero-h1": "كن<br>حراً",
     "index-hero-h2": "في شبكتك",
-    "index-hero-p1": "أول شبكة بدون معرّفات مستخدمين.<br>أنت تملك جهات اتصالك ومجموعاتك وقنواتك.",
+    "index-hero-p1": "<span class=\"nowrap\">شبكة المراسلة الوحيدة</span> <span class=\"nowrap\">بدون أي معرّفات للمستخدمين.</span><br>أنت تملك جهات اتصالك ومجموعاتك وقنواتك.",
+    "index-hero-own-part": "امتلك جزءًا منها.",
+    "index-hero-invest": "استثمر في SimpleX Chat.",
+    "index-hero-downloads": "تنزيلات",
+    "index-hero-monthly-users": "مستخدمون شهريًا",
+    "index-hero-countdown-lead": "إطلاق نطاقات SimpleX",
+    "index-hero-countdown-done": "احصل على نطاق SimpleX",
     "index-hero-download-desktop-btn-title": "نزّل تطبيق سطح مكتب SimpleX",
     "index-testflight-title": "إصدار SimpleX التجريبي ل iOS على TestFlight",
     "index-f-droid-title": "تطبيق SimpleX من خلال F-Droid",
@@ -296,7 +302,7 @@
     "index-roadmap-3-title": "اجعل مجتمعاتك تنمو",
     "index-roadmap-3-desc": "أدوات لتعزيز مجتمعاتك",
     "index-directory-h2": "انضم إلى مجتمعات SimpleX",
-    "index-directory-p1": "أكثر من 2 مليون شخص قاموا بتنزيل تطبيقات SimpleX.",
+    "index-directory-p1": "أكثر من 3 ملايين شخص قاموا بتنزيل تطبيقات SimpleX.",
     "index-directory-p2": "ابحث عن قنواتك ومجتمعاتك في الدليل وأنشئ قنواتك الخاصة!",
     "index-directory-cta": "اعرض دليل SimpleX",
     "index-directory-users-group-title": "مجموعة مستخدمي SimpleX",
@@ -318,5 +324,6 @@
     "navbar-token": "رمز",
     "index-token-cta": "اعرف المزيد عن أرصدة المجتمع",
     "navbar-old-site": "الموقع القديم",
-    "send-file": "إرسال ملف"
+    "send-file": "إرسال ملف",
+    "why-footer-link": "لماذا نبنيها"
 }
