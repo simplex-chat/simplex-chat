@@ -13,11 +13,11 @@ Every run builds the core library, and the backend when it's asked for, from the
 | Job | Does | Time |
 |---|---|---|
 | `plan` | reads the inputs, finds earlier core and backend builds | 10 s |
-| `core` | `build-core.sh`: `lib:simplex-chat` and `lib:support` for aarch64-android with Nix, as `scripts/android/build-android.sh` builds them | skipped when reused, about 26 min not |
-| `app` | the debug APK (`:android:assembleFossDebug` for arm64-v8a only), the emulator, `smoke-test.sh` | about 8 min for the APK, 1.5 min to install and boot the emulator, then the smoke test |
+| `core` | `build-core.sh`: `lib:simplex-chat` and `lib:support` for aarch64-android with Nix, as `scripts/android/build-android.sh` builds them | skipped when reused, about 27 min not |
+| `app` | the debug APK (`:android:assembleFossDebug` for arm64-v8a only), the emulator, `smoke-test.sh` | about 13 min: APK 7–8, emulator 1.5, smoke test 3.5 (4 with the backend case, after 2.5 to start the backend) |
 | `claude` (opt-in) | after `app` passed: its APK in a new emulator at the first screen, then Claude Code drives it | not measured yet |
 | `backend` (opt-in) | desktop-linux's `build-backend.sh` | about 30 min, skipped when reused |
-| `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 3 min |
+| `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 4 min |
 
 Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for the Claude job, is kept a day. The job summaries list the checks and the Claude usage.
 
