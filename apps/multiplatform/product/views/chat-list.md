@@ -73,7 +73,7 @@ Display logic:
 - User tags show with emoji or label icon; long-press opens `TagsDropdownMenu` (edit, delete, change order)
 - "+" button at end opens `TagListEditor` for creating new tags
 - Only the most recently active 5000 chats are loaded ([GAP-12]), so a chat outside that set is absent
-  from the list until it receives a message. Such a chat is then added counting that message as unread,
+  from the list until an event for it arrives, such as a message. Such a chat is then added counting that message as unread,
   so it carries an unread badge, and appears under the Unread filter on the same terms as any other chat
   -- a muted chat does not, and a mentions-only group only for a mention. Its full count is shown once
   the list is reloaded

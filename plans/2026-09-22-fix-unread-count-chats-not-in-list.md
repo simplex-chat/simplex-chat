@@ -104,7 +104,7 @@ message finds it and increments 0 to 1, so the chat becomes visible again. What 
 invisible is the set of chats that received exactly one message since the list was
 loaded.
 
-Any reload repairs the value, because `/_get chats` returns the database's counts, and
+Any reload repairs the value of a chat it loads, because `/_get chats` returns the database's counts, and
 by then the chat's `chat_ts` is recent enough to be inside the 5000. Android reloads on
 `Lifecycle.Event.ON_START` when the chat is running (`SimplexApp.kt`) and iOS when the
 app becomes active after being suspended (`SimpleXApp.swift`), so on mobile the wrong
@@ -187,7 +187,8 @@ separate change.
 
 - **The 5000 limit is not addressed.** With more chats than that, the UI still silently
   loads only the most recently active 5000: the rest are not shown, not searched, and
-  missing from the in-memory tag counts, until one of them receives a message. Recorded
+  missing from the in-memory tag counts, until an event for one of them arrives (a message,
+  or a contact or group update). Recorded
   as GAP-12.
 - **`addPresetChatTags` is not called** for the newly added chat, as it is not today, so
   the preset tag counts stay low by one for such a chat until they are recomputed —
@@ -207,14 +208,18 @@ separate change.
   chat that has unread messages leaves the profile counter and `unreadTags` high, because
   `removeChat` decrements neither — it removes the chat's preset tags, but not those two;
   a cleared mention can leave `unreadMentions` behind. Both are recorded as GAP-10.
-  Before this change such a chat contributed nothing to either counter, so the drift is
-  newly reachable here even though the defect is not new.
+  Before this change this branch added nothing to either counter, so the tag drift is
+  newly reachable here and the profile-counter drift grows by the arriving item, even
+  though the defect is not new.
 - **A message that arrives while the profile or remote host is being switched can be
   counted twice.** `changeActiveUser_` refills `users` from `listUsers` and only then
   reloads the chat list, so during the reload every chat id misses in the stale list and
   takes this branch. If the core had already committed the item before `listUsers` ran,
   the `+1` is a second count. Master was inert here only because it dropped the count
-  entirely.
+  entirely. On iOS the same can happen after any reload: the `+1` queued in
+  `UnreadCollector` is not cleared when the list is replaced, so if the reload lands
+  within that second the chat comes back with the item already counted and the queued
+  `+1` is added on top.
 - **Marking such a chat read from the list leaves the profile counter high.** The count
   shown is a floor, so `markChatItemsRead` decrements by it while `apiChatRead` clears
   every unread item in the chat: a chat with older unread messages, marked read from the

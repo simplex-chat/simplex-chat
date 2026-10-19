@@ -386,8 +386,8 @@ unread state without a matching counter update.
 
 ### Impact
 
-The unread badge on the profile and on tags can be too high (or, in the secondary-context case, negative)
-until the user switches profile or restarts. A chat that is inside the loaded window has its own count
+The unread badge on the profile and on tags can be too high (in the secondary-context case the chat's own
+entry in that context goes negative, which `ChatView` does not draw) until the user switches profile or restarts. A chat that is inside the loaded window has its own count
 corrected by the next chat-list reload; a chat outside it (GAP-12) does not.
 
 ### Recommendation
@@ -448,7 +448,8 @@ updated.
 
 On a profile with more than 5000 chats the oldest are not shown, not searched (chat-list search is
 in-memory) and missing from the in-memory tag counts, with no indication to the user. They reappear only
-when they receive a message or after the list is reloaded with them inside the window.
+when an event for them arrives (a message, or a contact or group update) or after the list is reloaded
+with them inside the window.
 
 ### Recommendation
 
