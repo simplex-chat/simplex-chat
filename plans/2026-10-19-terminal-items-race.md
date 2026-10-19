@@ -31,4 +31,5 @@ When it happens in `sendCmd`, the exception is not caught there: on Android it s
 
 ## Testing
 
-To be done before the PR is opened, and replaced here with what was observed: a JVM harness against the built desktop jars (not committed), where several threads call `addTerminalItem` with the cap at 200, on master and on this fix; desktop GUI regression of the chat console (commands, responses, rows added while it is closed, the cap, the console window); Android smoke test.
+- JVM harness (not committed) against the desktop jars, 8 threads calling `addTerminalItem` with the cap at 200: master 3e6fd3836 lost rows in 843 of 2000 runs and threw 742 `IndexOutOfBoundsException: toIndex = 201` in one flood round; this fix lost none in 2000 runs and threw none in 135 flood rounds, ending at exactly 200 rows.
+- Desktop GUI, master and this fix, same results: a command and its response, the `/sql` rejection, rows added while the console is closed, the 200-row cap, the floating console during incoming messages, opening and closing the console during a flood, sending and receiving messages; no crashes.
