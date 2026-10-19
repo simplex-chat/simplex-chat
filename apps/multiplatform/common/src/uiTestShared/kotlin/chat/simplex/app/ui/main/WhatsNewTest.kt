@@ -23,19 +23,16 @@ class WhatsNewTest : UiTest() {
   @Test fun whatsNewShownAfterVersionUpgrade() = uiTest {
     app("alice")
     appPrefs.whatsNewVersion.set(WhatsNewScreen.OLDER_VERSION)
+    check(storedSetting("WhatsNewVersion") == WhatsNewScreen.OLDER_VERSION) { "stored What's New version: ${storedSetting("WhatsNewVersion")}" }
     restart()
     val whatsNew = WhatsNewScreen(this)
     poll(what = "What's New to open by itself") { whatsNew.shown() && exists(Ui.WhatsNew.Ok) }
     poll(what = "the stored What's New version to be the current one") { storedSetting("WhatsNewVersion") == WhatsNewScreen.VERSION }
-  }
-
-  @Test fun whatsNewOkCloses() = uiTest {
-    app("alice")
-    appPrefs.whatsNewVersion.set(WhatsNewScreen.OLDER_VERSION)
-    restart()
-    val whatsNew = WhatsNewScreen(this)
-    poll(what = "What's New to open by itself") { whatsNew.shown() && exists(Ui.WhatsNew.Ok) }
     whatsNew.ok()
+    restart()
+    waitFor(Ui.ChatList.NewChat)
+    repeat(AUTO_OPEN_DELAY_SETTLES) { settle() }
+    check(!whatsNew.shown() && !exists(Ui.WhatsNew.Ok)) { "What's New opened again after a restart" }
   }
 
   @Test fun whatsNewShowsViewUpdatedConditions() = uiTest {
@@ -51,5 +48,9 @@ class WhatsNewTest : UiTest() {
     poll(what = "the conditions to be marked as notified in the core") {
       runBlocking { chatController.getServerOperators(null) }?.currentConditions?.notifiedAt != null
     }
+  }
+
+  private companion object {
+    const val AUTO_OPEN_DELAY_SETTLES = 5
   }
 }

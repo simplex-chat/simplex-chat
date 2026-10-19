@@ -4,12 +4,15 @@ import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.PeerFlags
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.common.ui.Ui
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class MessagingTest : UiTest() {
   @Test fun unreadCounterIncrementsAndClears() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
+    alice.chatList.row("bob")
+    assertFalse("1" in alice.chatList.rowTexts("bob"))
     bob sends "@alice one"
     poll(what = "unread badge 1") { "1" in alice.chatList.rowTexts("bob") }
     bob sends "@alice two"
@@ -69,6 +72,7 @@ class MessagingTest : UiTest() {
     chat.react("hi", "👍")
     bob expectsMessage "alice> > hi"
     bob expects "    + 👍"
+    poll(what = "reaction chip without a count") { chat.reactionCount("hi", "👍") == null }
     bob types "+1 alice hi"
     poll(what = "reaction chip count 2") { chat.reactionCount("hi", "👍") == "2" }
   }

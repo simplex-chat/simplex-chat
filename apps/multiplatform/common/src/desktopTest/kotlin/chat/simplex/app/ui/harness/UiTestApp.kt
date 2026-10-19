@@ -46,7 +46,7 @@ object UiTestApp {
 
   private var coreStarted = false
 
-  fun drain() {
+  fun drain(): List<String> {
     val deadline = System.currentTimeMillis() + DRAIN_MS
     while (UiIdle.inFlight().isNotEmpty() && System.currentTimeMillis() < deadline) Thread.sleep(20)
     val stuck = UiIdle.inFlight()
@@ -54,6 +54,7 @@ object UiTestApp {
       println("UITEST drain gave up after ${DRAIN_MS / 1000} s; abandoned: ${stuck.joinToString { it.what }}")
       UiIdle.abandon(stuck)
     }
+    return stuck.map { it.what }
   }
 
   fun resetForTest(user: String?) {
@@ -84,7 +85,8 @@ object UiTestApp {
     UiState.clearTransientUi()
   }
 
-  fun restartCore() {
+  fun restartCore(beforeInit: () -> Unit = {}) {
+    drain()
     runBlocking {
       val ctrl = chatController.getChatCtrl()
       if (ctrl != null && ctrl != -1L && chatModel.chatRunning.value != false) chatController.apiStopChat()
@@ -95,6 +97,7 @@ object UiTestApp {
     chatController.setChatCtrl(null)
     drain()
     UiState.clearUiState()
+    beforeInit()
     initChatControllerOnStart()
   }
 
@@ -105,9 +108,10 @@ object UiTestApp {
 
   fun stopCore() {
     val deadline = System.currentTimeMillis() + 10_000
-    while (chatModel.ctrlInitInProgress.value) {
-      check(System.currentTimeMillis() < deadline) { "ctrlInitInProgress still set after 10 s" }
-      Thread.sleep(50)
+    while (chatModel.ctrlInitInProgress.value && System.currentTimeMillis() < deadline) Thread.sleep(50)
+    if (chatModel.ctrlInitInProgress.value) {
+      println("UITEST ctrlInitInProgress still set after 10 s (left by a failed test); clearing it to reset")
+      chatModel.ctrlInitInProgress.value = false
     }
     runBlocking { if (chatModel.chatRunning.value == true) stopChatAsync(chatModel) }
     val ctrl = chatController.getChatCtrl()

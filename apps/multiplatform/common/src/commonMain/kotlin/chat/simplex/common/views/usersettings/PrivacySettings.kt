@@ -1,5 +1,6 @@
 package chat.simplex.common.views.usersettings
 
+import chat.simplex.common.ui.Ui
 import SectionBottomSpacer
 import SectionItemView
 import SectionDividerSpaced
@@ -109,7 +110,8 @@ fun PrivacySettingsView(
       SettingsActionItem(
         painterResource(MR.images.ic_more_horiz),
         stringResource(MR.strings.more_privacy),
-        showSettingsModal { MorePrivacyView(it) }
+        showSettingsModal { MorePrivacyView(it) },
+        uiKey = Ui.Privacy.More
       )
     }
     SectionBottomSpacer()
@@ -126,6 +128,7 @@ fun MorePrivacyView(chatModel: ChatModel) {
         painterResource(MR.images.ic_chat_bubble),
         stringResource(MR.strings.privacy_show_last_messages),
         chatModel.controller.appPrefs.privacyShowChatPreviews,
+        uiKey = Ui.Privacy.ShowLastMessages,
         onChange = { showPreviews ->
           chatModel.showChatPreviews.value = showPreviews
         }

@@ -45,6 +45,11 @@ class CliPeer(name: String, private val flags: PeerFlags, waiter: Waiter) : Peer
 
   fun stop() { runCatching { Bridge.call("stop $name") } }
 
+  fun dispose() { runCatching { Bridge.call("forget $name") } }
+
+  fun createFile(fileName: String, content: String): String =
+    Bridge.call("file $name $fileName ${java.util.Base64.getEncoder().encodeToString(content.toByteArray(Charsets.UTF_8))}").first()
+
   override fun fill() {
     val ls = Bridge.call("drain $name")
     synchronized(lines) { lines.addAll(ls) }

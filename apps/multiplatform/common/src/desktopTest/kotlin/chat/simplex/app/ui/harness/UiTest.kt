@@ -10,6 +10,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import java.io.File
 
 abstract class UiTest {
+  @get:org.junit.Rule val knownIssue = KnownIssueRule()
+
   companion object {
     init { UiJvm.setup() }
     private var testIndex = 0
@@ -30,29 +32,26 @@ abstract class UiTest {
       }, HARD_TIMEOUT_MS)
     }
     try {
-      for (attempt in 1..KNOWN_ISSUE_ATTEMPTS) {
-        var bodyStarted = false
-        var bodyCompleted = false
+      AppCrashes.install()
+      AppCrashes.clear()
+      withKnownIssue(knownIssue.issue) {
         try {
           runInternalSkikoComposeUiTest(width = 1600, height = 900, coroutineDispatcher = StandardTestDispatcher()) {
             mainClock.autoAdvance = false
-            bodyStarted = true
-            UiScope(this, dir).body()
-            bodyCompleted = true
-            UiTestApp.drain()
+            UiScope(this, dir).apply {
+              body()
+              failOnPeerErrors(Peers.all())
+              waitForAppWork()
+              failOnStuckWork(UiTestApp.drain())
+              AppCrashes.failIfAny()
+            }
           }
-          break
         } catch (e: Throwable) {
-          val errors = (listOf(e) + e.suppressed).filter { it.javaClass.simpleName !in WRAPPERS }
-          val known = errors.isNotEmpty() && errors.all(::isKnownAppIssue)
-          if (!known || (bodyStarted && !bodyCompleted)) {
-            throw if (e.suppressed.isEmpty()) e else AssertionError("${e.message}; suppressed:\n" + e.suppressed.joinToString("\n") { it.stackTraceToString().lines().take(25).joinToString("\n") }, e)
-          }
-          println("UITEST known app issue, not failing the test: " + errors.joinToString { it.message.orEmpty() })
-          if (bodyCompleted) break
-          UiTestApp.drain()
-          if (attempt == KNOWN_ISSUE_ATTEMPTS) throw e
+          throw if (e.suppressed.isEmpty()) e else AssertionError("${e.message}; suppressed:\n" + e.suppressed.joinToString("\n") { it.stackTraceToString().lines().take(25).joinToString("\n") }, e)
         }
+        repeat(2) { javax.swing.SwingUtilities.invokeAndWait {} }
+        failOnStuckWork(UiTestApp.drain())
+        AppCrashes.failIfAny()
       }
       passed = true
     } finally {
@@ -70,6 +69,7 @@ abstract class UiTest {
 }
 
 private const val EXTENSION_MS = 60_000L
+private const val END_WORK_MS = 30_000L
 private const val SCROLL_ATTEMPTS = 10
 private const val SCROLL_ANIMATION_FRAMES = 40
 private const val FOCUS_SETTLE_FRAMES = 3
@@ -93,7 +93,7 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
   fun restart(): App {
     ui.setContent { }
     ui.waitForIdle()
-    UiTestApp.restartCore()
+    UiTestApp.restartCore(beforeInit = PrefStores::reloadFromDisk)
     ui.setContent { TestRoot(clipboard, uriHandler) { AppScreen() } }
     poll(timeoutMs = 30_000, what = "the app to start again") {
       chat.simplex.common.platform.chatModel.chatDbStatus.value != null && !chat.simplex.common.platform.chatModel.ctrlInitInProgress.value
@@ -312,6 +312,7 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
     while (true) {
       ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true)
       ui.waitForIdle()
+      AppCrashes.failIfAny()
       if (runCatching(cond).onFailure { lastError = it }.getOrDefault(false)) return
       val now = System.currentTimeMillis()
       if (now > deadline) {
@@ -330,7 +331,7 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
 
   private fun failureShot(what: String): String? = runCatching {
     val dir = File(UiEnv.runDir, "failures").apply { mkdirs() }
-    val f = File(dir, "%s-%02d-%s.png".format(UiEnv.jvmDir.name, ++shots, what.replace(Regex("[^A-Za-z0-9]+"), "_").take(60)))
+    val f = File(dir, "%s-%s-%02d-%s.png".format(UiEnv.jvmDir.name, this.dir.name, ++shots, what.replace(Regex("[^A-Za-z0-9]+"), "_").take(60)))
     javax.imageio.ImageIO.write(ui.onRoot().captureToImage().toAwtImage(), "png", f)
     f.path
   }.getOrNull()
@@ -342,6 +343,8 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
 
   fun assumeCamera() {}
 
+  fun hideKeyboard() {}
+
   fun seesDescription(text: String, substring: Boolean = false) =
     ui.onAllNodes(hasContentDescription(text, substring = substring), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 
@@ -349,10 +352,14 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
     ui.onAllNodes(hasText(text, substring = substring), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 }
 
-private fun isKnownAppIssue(e: Throwable): Boolean =
-  e !is AssertionError && generateSequence(e) { it.cause }.any { c -> KNOWN_APP_ISSUES.any { c.message.orEmpty().contains(it) } }
+private fun failOnStuckWork(stuck: List<String>) {
+  if (stuck.isNotEmpty()) throw AssertionError("app work still running when the test ended: ${stuck.joinToString()}")
+}
 
-private val WRAPPERS = setOf("UncaughtExceptionsBeforeTest", "DiagnosticCoroutineContextException")
-
-private const val KNOWN_ISSUE_ATTEMPTS = 3
-private val KNOWN_APP_ISSUES = listOf("Controller is not initialized", "database closed")
+private fun UiScope.waitForAppWork() {
+  try {
+    poll(timeoutMs = END_WORK_MS, what = "app work to finish", screenshot = false) { UiIdle.inFlight().isEmpty() }
+  } catch (e: AssertionError) {
+    if (e.message?.startsWith("timed out") != true) throw e
+  }
+}

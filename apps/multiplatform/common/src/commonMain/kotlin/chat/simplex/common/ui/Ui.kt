@@ -64,6 +64,11 @@ object Ui {
   object Settings {
     val Appearance = UiKey("settings.appearance")
     val Help = UiKey("settings.help")
+    val Privacy = UiKey("settings.privacy")
+  }
+  object Privacy {
+    val More = UiKey("privacy.more")
+    val ShowLastMessages = UiKey("privacy.showLastMessages")
   }
   object Help {
     val WhatsNew = UiKey("help.whatsNew")
@@ -88,6 +93,8 @@ object Ui {
     val RandomPassphrase = UiKey("onboarding.randomPassphrase")
     val SetupRouters = UiKey("onboarding.setupRouters")
     val SetupNotifications = UiKey("onboarding.setupNotifications")
+    fun NotificationsModeCard(mode: String) = UiKey("onboarding.notificationsModeCard", mode)
+    val NotificationsOk = UiKey("onboarding.notificationsOk")
     val Continue = UiKey("onboarding.continue")
     fun Operator(operatorId: Long) = UiKey("onboarding.operator", operatorId)
     val OperatorsOk = UiKey("onboarding.operatorsOk")
@@ -119,6 +126,14 @@ object Ui {
   }
   object Profiles {
     val Add = UiKey("profiles.add")
+    val Bar = UiKey("profiles.bar")
+    fun User(userId: Long) = UiKey("profiles.user", userId)
+    fun UserMenu(userId: Long, action: String) = UiKey("profiles.user.menu.$action", userId)
+  }
+  object HideProfile {
+    val Password = UiKey("hideProfile.password")
+    val Confirm = UiKey("hideProfile.confirm")
+    val Save = UiKey("hideProfile.save")
   }
   object NewProfile {
     val Name = UiKey("newProfile.name")
@@ -141,12 +156,20 @@ object Ui {
     val RequestReject = UiKey("chat.request.reject")
     fun Item(itemId: Long) = UiKey("chat.item", itemId)
     fun ItemMenu(itemId: Long, action: String) = UiKey("chat.item.menu.$action", itemId)
+    fun ItemFile(itemId: Long) = UiKey("chat.item.file", itemId)
+    val ScrollToBottom = UiKey("chat.scrollToBottom")
     fun ItemReaction(itemId: Long, emoji: String) = UiKey("chat.item.menu.react", "$itemId:$emoji")
     fun ReactionChip(itemId: Long, emoji: String) = UiKey("chat.item.reaction", "$itemId:$emoji")
+    fun MentionMember(groupMemberId: Long) = UiKey("chat.mentionMember", groupMemberId)
   }
   object Share {
     fun Row(chatId: String) = UiKey("share.row", chatId)
   }
+  object DbError {
+    val Passphrase = UiKey("dbError.passphrase")
+    val Open = UiKey("dbError.open")
+  }
+
   object Info {
     val Alias = UiKey("info.alias")
     val DeleteContact = UiKey("info.deleteContact")
@@ -162,10 +185,15 @@ object Ui {
   }
   object GroupInfo {
     fun Member(groupMemberId: Long) = UiKey("groupInfo.member", groupMemberId)
+    val CreateLink = UiKey("groupInfo.createLink")
+  }
+  object GroupLink {
+    val Share = UiKey("groupLink.share")
   }
   object MemberInfo {
     val Role = UiKey("memberInfo.role")
     val Remove = UiKey("memberInfo.remove")
+    val BlockForAll = UiKey("memberInfo.blockForAll")
   }
   enum class AlertSource { Shared, PrivacySensitive }
   object Alert {

@@ -1,18 +1,18 @@
 # UI test catalogue 5a: what changes on Android for the rows of 01–04
 
-Companion to `05-android-only.md` (paths `A/`, `APP/`, `MAN`, `C/`, `D/`, `US/`, `NS/` as defined there and in `00-legend.md`; line numbers of master `d72f68e6d` at `~/wt-uitest-ref`). Every test of catalogues 01–04 runs on Android unless this map lists it. Each of the 1,177 test names of 01–04 was checked against its row's entry path, expected cells and the code it touches; a name is listed only when its Android behaviour or the harness mechanism differs from desktop.
+Companion to `05-android-only.md` (paths `A/`, `APP/`, `MAN`, `C/`, `D/`, `US/`, `NS/` as defined there and in `00-legend.md`; line numbers of master `d72f68e6d` at `~/wt-uitest-ref`). Every test of catalogues 01–04 runs on Android unless this map lists it. Each of the 1,155 test names of 01–04 was checked against its row's entry path, expected cells and the code it touches; a name is listed only when its Android behaviour or the harness mechanism differs from desktop.
 
 ## Summary
 
 | Catalogue | Tests | Listed | REPLACED | DESKTOP-ONLY | ADAPT | Unchanged on Android |
 |---|---|---|---|---|---|---|
-| 01 | 352 | 91 | 10 | 7 | 74 | 261 |
-| 02 | 281 | 105 | 12 | 11 | 82 | 176 |
+| 01 | 331 | 83 | 7 | 6 | 70 | 248 |
+| 02 | 280 | 104 | 12 | 11 | 81 | 176 |
 | 03 | 312 | 59 | 0 | 0 | 59 | 253 |
 | 04 | 232 | 102 | 11 | 32 | 59 | 130 |
-| **Total** | **1,177** | **357** | **33** | **50** | **274** | **820** |
+| **Total** | **1,155** | **348** | **30** | **49** | **269** | **807** |
 
-The Android run of 01–04 is therefore the 820 unchanged tests plus the 274 ADAPT tests; the 33 REPLACED and 50 DESKTOP-ONLY tests don't run there (9 of the DESKTOP-ONLY tests and the REPLACED `call_webrtcSession_connects` are `IGNORE` on desktop too: `dragDrop_files_attach`, `dbMgmt_openDatabaseFolder`, `dbError_openDatabaseFolder`, the five tray and window tests of 04 §M and `updates_checkDownloadInstall`). Each REPLACED row names the 05 test that runs instead. The first cell gives the line of the test's row in its catalogue.
+The Android run of 01–04 is therefore the 807 unchanged tests plus the 269 ADAPT tests; the 30 REPLACED and 49 DESKTOP-ONLY tests don't run there (9 of the DESKTOP-ONLY tests and the REPLACED `call_webrtcSession_connects` are `IGNORE` on desktop too: `dragDrop_files_attach`, `dbMgmt_openDatabaseFolder`, `dbError_openDatabaseFolder`, the five tray and window tests of 04 §M and `updates_checkDownloadInstall`). Each REPLACED row names the 05 test that runs instead. The first cell gives the line of the test's row in its catalogue.
 
 ## Classes
 
@@ -43,10 +43,10 @@ Rules used by many rows; the tables name every row they apply to, as `R<n>` plus
 - The message field is typed with Espresso `replaceText` on the `EditText`, followed by `setSelection(editText.length())` (05 setup item 5, R12); only key-driven steps are listed (R2). The clear-text (x) button shows at `EditText.lineCount >= 4`, which counts wrapped lines, where desktop counts newlines (`A/platform/PlatformTextField.android.kt:196`; `D/platform/PlatformTextField.desktop.kt:204`); 02 `compose_clearTextButton_clears` carries over as long as the lines it types are short enough not to wrap. Reads of the field (its text and placeholder) go through `ChatScreen.messageText`/`placeholder`, which read the `EditText` in an Espresso `ViewAction` (05 setup item 5), so rows that read it are not listed for that reason alone.
 - Rows whose entry is "row menu" or "long-press" (R1 note), and rows that only need a runtime permission the runner pre-grants (05 setup item 2: `POST_NOTIFICATIONS`, `CAMERA`, `RECORD_AUDIO`).
 - `CB` tests (90 in 01–04): the clipboard is the real system one, cleared by the reset (R13), so a `CB` test is not listed for that reason alone.
-- 04 `privacy_linkPreviewsOff_noPreview` (04:53) runs unchanged, but until the debug-only network-security-config of the 02:44 rows is approved it passes vacuously: with the setting on, no preview could be fetched either.
-- `RESTART` tests (48 in 01–04; 45 run on Android, 3 are DESKTOP-ONLY or REPLACED) carry over once `restart()` has an Android mechanism (05 open question 14); they are listed only where the Android startup differs.
-- `FIXTURE` tests (38 in 01–04) carry over once fixtures have an Android mechanism (05 open question 16); listed only where the fixture differs on Android (04:199, the key).
-- Screenshot-only checks (01 `createListDuplicateNameError`, `unreadCounterGrayWhenMuted`, `planBotAddressShowsBotIcon`, 04 `morePrivacy_verifySimplexNamesPref`): their semantic assertions run on Android unchanged, and the part checked only in the screenshot waits for 05 open question 17, since Android writes no §7.7 shots until then; they are not listed for that reason alone (01:187 is listed for R6).
+- 04 `privacy_linkPreviewsOff_noPreview` (04:53) runs unchanged, but until the debug-only network-security-config of the 02:43 rows is approved it passes vacuously: with the setting on, no preview could be fetched either.
+- `RESTART` tests (51 in 01–04; 47 run on Android, 4 are DESKTOP-ONLY or REPLACED) carry over once `restart()` has an Android mechanism (05 open question 14); they are listed only where the Android startup differs.
+- `FIXTURE` tests (37 in 01–04) carry over once fixtures have an Android mechanism (05 open question 16); listed only where the fixture differs on Android (04:199, the key).
+- Screenshot-only checks (01 `createListDuplicateNameError`, `planBotAddressShowsBotIcon`, 04 `morePrivacy_verifySimplexNamesPref`): their semantic assertions run on Android unchanged, and the part checked only in the screenshot waits for 05 open question 17, since Android writes no §7.7 shots until then; they are not listed for that reason alone (01:187 is listed for R6).
 - Layout-only differences that no row asserts (paddings, the tags row scrolling horizontally instead of wrapping, `A/views/chatlist/ChatListView.android.kt:33-43`; the user picker drawn as a bottom sheet).
 
 ---
@@ -55,39 +55,31 @@ Rules used by many rows; the tables name every row they apply to, as `R<n>` plus
 
 | Catalogue row (file:line) | Test name | Class | Android behaviour / replacement | Code ref |
 |---|---|---|---|---|
-| 01:27 | `onboardingWelcomeShowsDesktopActions` | REPLACED | 05 §1 `androidOnboardingWelcomeShowsGetStarted`: only "Get started" and "Why SimpleX is built." | `A/views/onboarding/SimpleXInfo.android.kt:11-16`; `D/views/onboarding/SimpleXInfo.desktop.kt:16-23` |
-| 01:28 | `onboardingCreateProfileValidName` | ADAPT | R4: entry "Get started" (no "Create your profile"); mobile "Your profile"; success moves to "Your network", not "Setup database passphrase" | `C/views/WelcomeView.kt:236-300,399-405` |
+| 01:27 | `onboardingWhySimplexIsBuiltOpensHowItWorks` | ADAPT | R4: the welcome screen has only "Get started" and "Why SimpleX is built.", so the checks of "Link a mobile" and "Create your profile" are dropped (05 §1 `androidOnboardingWelcomeShowsGetStarted` checks the Android buttons); HowItWorks and Back are unchanged | `A/views/onboarding/SimpleXInfo.android.kt:11-16`; `D/views/onboarding/SimpleXInfo.desktop.kt:16-23` |
 | 01:28 | `onboardingCreateProfileButtonDisabledForEmptyName` | ADAPT | R4: entry "Get started" | `A/views/onboarding/SimpleXInfo.android.kt:13` |
 | 01:28 | `onboardingCreateProfileInvalidNameShowsCorrectionAlert` | ADAPT | R4: entry "Get started" | `A/views/onboarding/SimpleXInfo.android.kt:13` |
 | 01:28 | `onboardingCreateProfileBackReturnsToWelcome` | ADAPT | R4: entry "Get started"; the back arrow of the mobile screen returns to the welcome screen (system Back: 05 §13 `back_onboardingProfile_returnsToWelcome`) | `C/views/WelcomeView.kt:227-242` |
 | 01:29 | `onboardingMigrateFromAnotherDeviceOpensMigrationScreen` | REPLACED | 05 §1 `androidOnboardingMigrateButtonOpensScanAndPaste`: the button reads "Migrate" and the screen leads with "Scan QR code" | `C/views/WelcomeView.kt:221`; `C/views/migration/MigrateToDevice.kt:206-216` |
-| 01:30 | `onboardingSetDatabasePassphrase` | DESKTOP-ONLY | The passphrase step exists only on desktop; Android stores a random passphrase in the Keystore (05 §1 `androidOnboardingNoPassphraseStepAfterProfile`) | `C/views/WelcomeView.kt:400` |
-| 01:30 | `onboardingSetPassphraseMismatchDisablesButton` | DESKTOP-ONLY | As above | `C/views/WelcomeView.kt:400` |
-| 01:30 | `onboardingUseRandomPassphraseAlert` | DESKTOP-ONLY | As above | `C/views/WelcomeView.kt:400` |
-| 01:31 | `onboardingPassphrasePersistsAcrossRestart` | DESKTOP-ONLY | As above; the Android path to the startup passphrase prompt is 05 §11 `keystore_removed_restartAsksPassphrase` | `C/views/WelcomeView.kt:400` |
-| 01:32 | `onboardingYourNetworkShowsSetupRouters` | ADAPT | R4: reached right after the profile; the screen also shows "Setup notifications" (05 §1 `androidYourNetworkShowsSetupNotifications`) | `C/views/onboarding/YourNetwork.kt:58-133` |
-| 01:32 | `onboardingContinueGoesToConditions` | ADAPT | R4: after "Continue" the "Instant notifications" alert appears; "OK", then "Network commitments" | `C/views/onboarding/YourNetwork.kt:118-125`; `APP/SimplexApp.kt:217-244` |
-| 01:33 | `onboardingChooseOperatorsToggle` | ADAPT | R4: reached without the passphrase step ("Setup routers" on the mobile "Your network") | `C/views/onboarding/YourNetwork.kt:98-103` |
-| 01:33 | `onboardingChooseOperatorsCannotDeselectAll` | ADAPT | R4: as above | `C/views/onboarding/YourNetwork.kt:98-103` |
-| 01:33 | `onboardingHowItHelpsPrivacyInfo` | ADAPT | R4: as above | `C/views/onboarding/YourNetwork.kt:98-103` |
-| 01:34 | `onboardingAcceptConditionsCompletesOnboarding` | ADAPT | R4: no passphrase step; "OK" on the "Instant notifications" alert after "Continue"; after "Accept" the toolbar shows "Chats" and the list area shows the onboarding cards | `C/views/chatlist/ChatListView.kt:449-454` |
-| 01:34 | `onboardingConditionsLinkOpensConditionsText` | ADAPT | R4: as above | `C/views/onboarding/YourNetwork.kt:118-125` |
-| 01:35 | `onboardingAcceptButtonDisabledWithNoOperators` | ADAPT | R4: as above | `C/views/onboarding/YourNetwork.kt:118-125` |
-| 01:36 | `onboardingNoNotificationsStepOnDesktop` | REPLACED | 05 §1 `androidYourNetworkShowsSetupNotifications` (and the `onboardingNotifications_*` rows): the notifications step exists on Android | `C/views/onboarding/YourNetwork.kt:58,105-109` |
+| 01:30 | `onboardingSetPassphraseMismatchDisablesButton` | DESKTOP-ONLY | The passphrase step exists only on desktop; Android stores a random passphrase in the Keystore (05 §1 `androidOnboardingNoPassphraseStepAfterProfile`) | `C/views/WelcomeView.kt:400` |
+| 01:31 | `onboardingUseRandomPassphraseAlert` | DESKTOP-ONLY | As above | `C/views/WelcomeView.kt:400` |
+| 01:32 | `onboardingPassphrasePersistsAcrossRestart` | DESKTOP-ONLY | As above; the Android path to the startup passphrase prompt is 05 §11 `keystore_removed_restartAsksPassphrase` | `C/views/WelcomeView.kt:400` |
+| 01:33 | `onboardingYourNetworkShowsSetupRouters` | ADAPT | R4: reached right after the profile; the screen also shows "Setup notifications" (05 §1 `androidYourNetworkShowsSetupNotifications`), so the check that it is absent is dropped | `C/views/onboarding/YourNetwork.kt:58-133` |
+| 01:34 | `onboardingChooseOperatorsCannotDeselectAll` | ADAPT | R4: reached without the passphrase step ("Setup routers" on the mobile "Your network") | `C/views/onboarding/YourNetwork.kt:98-103` |
+| 01:34 | `onboardingHowItHelpsPrivacyInfo` | ADAPT | R4: as above | `C/views/onboarding/YourNetwork.kt:98-103` |
+| 01:35 | `onboardingAcceptConditionsCompletesOnboarding` | ADAPT | R4: no passphrase step; after "Continue", "OK" on the "Instant notifications" alert, then "Network commitments"; after "Accept" the toolbar shows "Chats" and the list area shows the onboarding cards | `C/views/onboarding/YourNetwork.kt:118-125`; `C/views/chatlist/ChatListView.kt:449-454` |
+| 01:35 | `onboardingConditionsLinkOpensConditionsText` | ADAPT | R4: as above | `C/views/onboarding/YourNetwork.kt:118-125` |
+| 01:36 | `onboardingAcceptButtonDisabledWithNoOperators` | ADAPT | R4: as above | `C/views/onboarding/YourNetwork.kt:118-125` |
 | 01:37 | `onboardingThenConnectToCliPeerViaLocalServers` | ADAPT | R4: no passphrase step, "OK" on the notifications alert; the chat-list area then shows the onboarding cards, so the 1-time link is created from "Start new chat" › "Create 1-time link" (or the card "Let someone connect to you" › "Invite someone privately") | `C/views/newchat/OnboardingCards.kt:357-404` |
 | 01:38 | `onboardingLinkAMobileShowsQrAndDeviceName` | DESKTOP-ONLY | No "Link a mobile" on the Android welcome screen (05 §1 `androidOnboardingWelcomeShowsGetStarted`) | `A/views/onboarding/SimpleXInfo.android.kt:11-16` |
 | 01:39 | `onboardingLinkAMobileBackReturnsToWelcome` | DESKTOP-ONLY | As above | `A/views/onboarding/SimpleXInfo.android.kt:11-16` |
 | 01:40 | `onboardingCreateProfileWhenOnlyHiddenUsersExist` | ADAPT | R4: "Get started"; the next screen is always "Your network" (no passphrase step); the no-user startup sets the welcome stage without `startChatWithoutUser` | `C/views/WelcomeView.kt:398-405`; `C/platform/Core.kt:153-167` |
 | 01:48 | `whatsNewPaginationPrevNext` | ADAPT | R13: "Open" on the "Open external link?" alert of "Read more" fires `ACTION_VIEW` with the URL, recorded and stubbed with `INTENTS`, instead of the URI stub | `C/views/onboarding/WhatsNewView.kt:261`; `C/views/helpers/Utils.kt:613-624` |
 | 01:49 | `whatsNewNotShownForNewUser` | ADAPT | R4: onboarding path ("Get started", no passphrase step, notifications alert) | `C/views/WelcomeView.kt:399-405` |
-| 01:70 | `createListWithEmoji` | REPLACED | 05 §14 `tagListAndroid_emojiPickerViewSetsEmoji`: the emoji comes from a full-screen `EmojiPickerView`, not a single-emoji text field | `A/views/chatlist/TagListView.android.kt:22-81`; `D/views/chatlist/TagListView.desktop.kt:24-72` |
-| 01:73 | `editListNameAndEmoji` | ADAPT | R1 (long-press the chip); changing the emoji goes through the `EmojiPickerView` (`VIEW`) | `C/views/chatlist/ChatListView.kt:1331`; `A/views/chatlist/TagListView.android.kt:22-81` |
+| 01:73 | `editListNameAndEmoji` | ADAPT | R1 (long-press the chip); the emoji, both when the list is created and when it is changed, comes from the `EmojiPickerView` (`VIEW`, as in 05 §14 `tagListAndroid_emojiPickerViewSetsEmoji`) | `C/views/chatlist/ChatListView.kt:1331`; `A/views/chatlist/TagListView.android.kt:22-81` |
 | 01:73 | `deleteListConfirm` | ADAPT | R1 (long-press the chip) | `C/views/chatlist/ChatListView.kt:1331` |
 | 01:73 | `reorderListsDrag` | ADAPT | R1 (long-press the chip); the drag is a touch drag | `C/views/chatlist/ChatListView.kt:1331` |
 | 01:84 | `contactMenuMarkRead` | ADAPT | R1 (long-press the row) | `A/views/chatlist/ChatListNavLinkView.android.kt:26-27` |
 | 01:84 | `contactMenuMarkUnread` | ADAPT | R1 | `A/views/chatlist/ChatListNavLinkView.android.kt:26-27` |
-| 01:84 | `contactMenuFavoriteUnfavorite` | ADAPT | R1 | `A/views/chatlist/ChatListNavLinkView.android.kt:26-27` |
-| 01:84 | `contactMenuMuteUnmute` | ADAPT | R1 | `A/views/chatlist/ChatListNavLinkView.android.kt:26-27` |
 | 01:84 | `contactMenuClearChat` | ADAPT | R1 | `A/views/chatlist/ChatListNavLinkView.android.kt:26-27` |
 | 01:84 | `contactMenuRightClickOpens` | ADAPT | R1: tests the long press of the same handler | `A/views/chatlist/ChatListNavLinkView.android.kt:26-27` |
 | 01:90 | `pendingAcceptedRowIcon` | ADAPT | R6: the full link is pasted through the connect screen ("Paste link / Scan") | `C/views/newchat/NewChatSheet.kt:61,194` |
@@ -142,10 +134,10 @@ Rules used by many rows; the tables name every row they apply to, as `R<n>` plus
 | 01:187 | `planBotAddressShowsBotIcon` | ADAPT | R6 | `C/views/newchat/NewChatSheet.kt:61,194` |
 | 01:211 | `pendingInfoInvitedShowsLinkQrShare` | ADAPT | R5: "Share 1-time link" opens the chooser (05 §6 `shareText_pendingConnection_firesChooser`) instead of filling the clipboard | `C/views/newchat/ContactConnectionInfoView.kt:159-166` |
 | 01:224 | `addressQrAndShareAddress` | ADAPT | R5: "Share address" opens the chooser (05 §6 `shareText_address_firesChooser`) | `C/views/usersettings/UserAddressView.kt:115,343-366` |
-| 01:241 | `simplexNameRegisterLinkOpensBrowser` | ADAPT | R13: opening the link from the "Open web link?" alert fires `ACTION_VIEW` with `https://simplex.domains/#testing` (`INTENTS`) | `C/views/usersettings/SetSimplexNameView.kt:178`; `C/views/chat/item/TextItemView.kt:533-585` |
-| 01:250 | `contactInfoHeaderShowsNameBioCopy` | ADAPT | R11: "Copied to clipboard" is a system toast, asserted through the toast recorder; the clipboard check is unchanged | `C/views/chat/ChatInfoView.kt:745-748`; `A/platform/UI.android.kt:23` |
-| 01:251 | `contactInfoSearchButton` | ADAPT | "search" closes the info screen first, then opens the chat's search field (05 §14 `chatInfo_searchButtonClosesInfoAndSearches`) | `C/views/chat/ChatInfoView.kt:883-899` |
-| 01:252 | `contactInfoCallButtonsStubbed` | REPLACED | 05 §9 `call_outgoingAudio_invitationReachesPeer` (video: as far as 05 §9 `callPermissions_videoCallNeedsCamera`): calls start `CallActivity`, not the URI handler | `C/App.kt:227-235`; `APP/SimplexApp.kt:319-330`; `D/views/call/CallView.desktop.kt:158-167` |
+| 01:240 | `simplexNameRegisterLinkOpensBrowser` | ADAPT | R13: opening the link from the "Open web link?" alert fires `ACTION_VIEW` with `https://simplex.domains/#testing` (`INTENTS`) | `C/views/usersettings/SetSimplexNameView.kt:178`; `C/views/chat/item/TextItemView.kt:533-585` |
+| 01:249 | `contactInfoHeaderShowsNameBioCopy` | ADAPT | R11: "Copied to clipboard" is a system toast, asserted through the toast recorder; the clipboard check is unchanged | `C/views/chat/ChatInfoView.kt:745-748`; `A/platform/UI.android.kt:23` |
+| 01:250 | `contactInfoSearchButton` | ADAPT | "search" closes the info screen first, then opens the chat's search field (05 §14 `chatInfo_searchButtonClosesInfoAndSearches`) | `C/views/chat/ChatInfoView.kt:883-899` |
+| 01:251 | `contactInfoCallButtonsStubbed` | REPLACED | 05 §9 `call_outgoingAudio_invitationReachesPeer` (video: as far as 05 §9 `callPermissions_videoCallNeedsCamera`): calls start `CallActivity`, not the URI handler | `C/App.kt:227-235`; `APP/SimplexApp.kt:319-330`; `D/views/call/CallView.desktop.kt:158-167` |
 
 ## 02 chat view, messages, chat item info
 
@@ -155,98 +147,97 @@ Rules used by many rows; the tables name every row they apply to, as `R<n>` plus
 | 02:28 | `toolbarMenu_direct_items` | ADAPT | With calls available the direct chat's ⋮ menu also lists the content filters after a divider (at least "Images" and "Links"; 05 §14 `toolbar_directChat_filterInMenuWhenCallsAvailable`) | `C/views/chat/ChatView.kt:1377-1400` |
 | 02:30 | `toolbarCall_audio_opensCallLink` | REPLACED | 05 §9 `call_outgoingAudio_invitationReachesPeer`: the call opens `CallActivity`, not the URI handler | `C/App.kt:227-235`; `APP/SimplexApp.kt:319-330` |
 | 02:31 | `callStart_browserUnavailable_showsAlertAndEnds` | DESKTOP-ONLY | No browser is opened on Android, so "Error opening browser" can't appear | `D/views/call/CallView.desktop.kt:157-174`; `C/App.kt:227-235` |
-| 02:36 | `sendText_enter_peerReceives` | ADAPT | R2: sends with the send button (the same steps as `sendText_sendButton_peerReceives`; the row still runs for its `S` variant) | `A/platform/PlatformTextField.android.kt:60-63` |
-| 02:39 | `multiline_shiftEnter_peerReceivesTwoLines` | REPLACED | 05 §14 `compose_enterKeyInsertsNewline_sendButtonSends`: Enter inserts the line break, the send button sends | `A/platform/PlatformTextField.android.kt:60-63,99-132` |
-| 02:40 | `groupSend_allMembersReceive` | ADAPT | R2: sends with the send button | `A/platform/PlatformTextField.android.kt:60-63` |
-| 02:43 | `link_click_showsOpenWebLinkAlert` | ADAPT | R13: "Open" fires `ACTION_VIEW` with `http://127.0.0.1/page`, recorded and stubbed with `INTENTS` so no browser launches | `C/views/chat/item/TextItemView.kt:533-585` |
-| 02:43 | `link_openClean_opensSanitizedUri` | ADAPT | R13: "Open clean link" fires `ACTION_VIEW` whose data is the URL without `utm_source` (`INTENTS`) | `C/views/chat/item/TextItemView.kt:533-585` |
-| 02:44 | `linkPreview_firstTimeAlert_enable_fetchesPreview` | ADAPT | Cleartext HTTP to 127.0.0.1 is blocked: the app targets API 36 and its manifest sets neither `usesCleartextTraffic` nor `networkSecurityConfig`, so the platform default forbids cleartext, with no loopback exemption; jsoup's `HttpURLConnection` fetch fails with "Cleartext HTTP traffic to 127.0.0.1 not permitted" and `getLinkPreview` catches it and returns null (no preview card, the content type stays text). The test needs a debug-only network-security-config allowing cleartext to 127.0.0.1, a build change that needs the user's approval (05 open question 15), and `adb reverse` of the HTTP stub's port like the other servers; until it is approved the test fails | `android/build.gradle.kts:18`; `MAN:40-50`; `common/build.gradle.kts:74`; SDK `com/android/okhttp/HttpHandler.java:121-128`, `android/security/net/config/NetworkSecurityConfig.java:200-202`, `android/security/net/config/ManifestConfigSource.java:73-79`; `C/views/helpers/LinkPreviews.kt:96-140` |
-| 02:44 | `linkPreview_sent_peerReceivesLinkContent` | ADAPT | As above: without the debug-only config no preview is attached, so bob's content types print `text`, not `link` | `C/views/helpers/LinkPreviews.kt:96-140` |
-| 02:44 | `linkPreview_cancel_sendsPlainText` | ADAPT | As above: without the debug-only config there is no preview to cancel | `C/views/helpers/LinkPreviews.kt:96-140` |
-| 02:57 | `liveMessage_menuStart_alertConfirm_peerSeesStarted` | ADAPT | R1: long-press the send button for its menu | `C/views/chat/SendMsgView.kt:452-490` |
-| 02:57 | `liveMessage_typingUpdates_peerSeesUpdates` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
-| 02:57 | `liveMessage_finish_peerSeesEnded` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
-| 02:61 | `liveMessage_group_membersSeeLive` | ADAPT | R1: "Same, in a group" starts from the send-button menu, so the send button is long-pressed | `C/views/chat/SendMsgView.kt:452-490` |
-| 02:68 | `timed_send30s_bothSidesDelete` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
-| 02:69 | `timed_menuOptions_listed` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
-| 02:69 | `timed_customTime_sendsWithChosenTtl` | REPLACED | 05 §14 `timedCustom_androidWheelPickerSetsTtl`: "Delete after" shows two wheels instead of two dropdowns | `A/views/helpers/CustomTimePicker.android.kt:14-106`; `D/views/helpers/CustomTimePicker.desktop.kt:11-81` |
-| 02:70 | `timed_menuHidden_whenFeatureOff` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
-| 02:71 | `timed_chatPref_receivedMessagesDisappear` | ADAPT | R1 (long-press the feature row → "Expand") | `C/views/chat/item/CIChatFeatureView.kt:30-35` |
-| 02:71 | `timed_meta_showsTimerAndTtl` | ADAPT | R1 (long-press the feature row → "Expand") | `C/views/chat/item/CIChatFeatureView.kt:30-35` |
-| 02:76 | `voice_record_send_peerReceivesVoice` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
-| 02:77 | `voice_tapToRecord_stopButton_addsPreview` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
-| 02:77 | `voice_tooShort_discarded` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
-| 02:77 | `voice_preview_cancel_deletesTmpFile` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
-| 02:80 | `voice_disabledWhileRecording_cancels` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
-| 02:82 | `voice_playback_playPauseProgress` | ADAPT | R10 (`AV`) | `A/platform/RecAndPlay.android.kt:101-296` |
-| 02:83 | `voice_preview_playPauseAndSeek` | ADAPT | R10 (`REC`, `AV`) | `A/platform/RecAndPlay.android.kt` |
-| 02:84 | `voice_notes_recordAndSave` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
-| 02:89 | `attach_sheet_showsImageVideoFile` | REPLACED | 05 §6 `attachSheet_androidShowsCameraImageVideoFile`: four buttons, "Camera" first | `A/views/helpers/ChooseAttachmentView.android.kt:13-30`; `D/views/helpers/ChooseAttachmentView.desktop.kt:13-26` |
-| 02:90 | `attachFile_send_peerReceivesOffer` | ADAPT | R3: "File" fires `ACTION_GET_CONTENT` `*/*`, answered by the stub (as 05 §6 `attachFile_getContent_sendsFile`) | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:90 | `attachFile_withText_peerReceivesTextAndFile` | ADAPT | R3: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:91 | `attachFile_cancelPreview_nothingSent` | ADAPT | R3: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:92 | `attachImage_send_peerReceivesCompressedImage` | ADAPT | R3: "Image" fires `ACTION_PICK` on the gallery, answered by the stub (as 05 §6 `attachGallery_twoImages_sendsEach`) | `A/views/chat/ComposeView.android.kt:40,58-65` |
-| 02:92 | `attachImages_multiple_sentAsSeparateMessages` | ADAPT | R3: the stub returns several URIs in `ClipData` | `A/views/helpers/GetImageView.android.kt:218-242` |
-| 02:92 | `attachImage_textOnLastImageOnly` | ADAPT | R3: as above | `A/views/helpers/GetImageView.android.kt:218-242` |
-| 02:93 | `attachImage_cancelPreview` | ADAPT | R3 | `A/views/chat/ComposeView.android.kt:40,58-65` |
-| 02:94 | `attachGif_sentUncompressedAnimated` | ADAPT | R3: the gallery stub returns the GIF; the coil animation runs in real time even under blur and modals (`A/views/chat/item/CIImageView.android.kt:22-57`), so the image node is volatile in screenshots | `A/views/chat/ComposeView.android.kt:40,58-65` |
-| 02:95 | `attachVideo_send_peerReceivesVideo` | ADAPT | R3: "Video" fires `ACTION_PICK` for videos (as 05 §6 `attachGallery_video_sendsVideo`); R10 (`AV`) | `A/views/chat/ComposeView.android.kt:42,66-73` |
-| 02:96 | `attachVideo_undecodable_showsAlert` | ADAPT | R3 and R10, as above | `A/views/chat/ComposeView.android.kt:42,66-73` |
-| 02:97 | `paste_filePathText_attachesFile` | DESKTOP-ONLY | R2: the Android field doesn't turn typed paths into attachments | `A/platform/PlatformTextField.android.kt:60-63`; `D/platform/PlatformTextField.desktop.kt:97-110` |
-| 02:98 | `ctrlV_clipboardFiles_attaches` | DESKTOP-ONLY | R2: no Ctrl+V handling | `D/platform/PlatformTextField.desktop.kt:141-145` |
-| 02:99 | `pasteFileList_webmAudio_sentAsFile` | DESKTOP-ONLY | R2: no Ctrl+V handling | `D/platform/PlatformTextField.desktop.kt:144-145` |
-| 02:100 | `ctrlV_clipboardImage_attachesPng` | DESKTOP-ONLY | R2: no Ctrl+V handling (`IMGCB`); a keyboard-committed image is 05 §6 `compose_imeCommitImage_attachesToOpenChat` | `D/platform/PlatformTextField.desktop.kt:146-150`; `A/platform/PlatformTextField.android.kt:108-121` |
-| 02:101 | `dragDrop_files_attach` | DESKTOP-ONLY | `desktopOnExternalDrag` returns the modifier unchanged on Android (`IGNORE` on desktop too) | `A/platform/Modifier.android.kt:8-14` |
-| 02:102 | `attachFile_tooLarge_showsLargeFileAlert` | ADAPT | R3: the `GET_CONTENT` stub returns the sparse file | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:104 | `attachImage_withQuote_peerSeesQuote` | ADAPT | R3: the image comes from the gallery stub | `A/views/chat/ComposeView.android.kt:40,58-65` |
-| 02:105 | `attachImage_group_allMembersReceive` | ADAPT | R3: as above | `A/views/chat/ComposeView.android.kt:40,58-65` |
-| 02:115 | `sndFile_revoke_peerSeesCancelled` | ADAPT | R2: alice attaches `test.pdf` through the "File" stub, not a typed path (`rcvFile_senderRevoked_showsCancelled` of the same row is bob's `/f` + `/fc` and is unchanged) | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:116 | `sndFile_stopDuringUpload` | ADAPT | R2: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:118 | `sndFile_xftpResetDuringUpload_showsFileError` | ADAPT | R2: the 150 MB file is attached through the "File" stub | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:122 | `rcvFile_clickCompleted_opensSaveDialog` | REPLACED | 05 §6 `rcvFile_tapLoaded_showsOpenWithAndSave` and `rcvFile_save_createDocumentWritesDecrypted`: a click on a loaded file opens the "Open with…" / "Save" menu, and "Save" fires `ACTION_CREATE_DOCUMENT` | `C/views/chat/item/CIFileView.kt:183-200`; `A/views/chat/item/CIFileView.android.kt:14-57` |
-| 02:123 | `rcvFile_missingOnDisk_clickDoesNothing` | ADAPT | R3: "no save dialog awaiting" becomes "no intent recorded" (`INTENTS`); with the file missing, `getLoadedFilePath` is null, so no menu opens either | `C/views/chat/item/CIFileView.kt:183-200` |
-| 02:125 | `rcvVideo_previewAndDownload` | ADAPT | R10 (`AV`) | `A/platform/VideoPlayer.android.kt` |
-| 02:131 | `reply_menu_sendQuoted_peerSeesQuote` | ADAPT | R1 (long-press the item) | `C/views/chat/item/ChatItemView.kt:327-335` |
-| 02:131 | `reply_cancelContext` | ADAPT | R1 | `C/views/chat/item/ChatItemView.kt:327-335` |
-| 02:139 | `edit_menu_updatesPeer` | ADAPT | R2: the edit is sent with the send button | `A/platform/PlatformTextField.android.kt:60-63` |
-| 02:139 | `edit_unchanged_noUpdate` | ADAPT | R2: as above | `A/platform/PlatformTextField.android.kt:60-63` |
-| 02:139 | `edit_metaShowsEditedIcon` | ADAPT | R2: as above | `A/platform/PlatformTextField.android.kt:60-63` |
-| 02:140 | `edit_upArrow_editsLastMessage` | DESKTOP-ONLY | R2: no Up-arrow handling | `D/platform/PlatformTextField.desktop.kt:138-140` |
-| 02:143 | `edit_ownImage_previewWithoutCancel` | ADAPT | R3: the image comes from the gallery stub; R2: the edit is sent with the send button | `A/views/chat/ComposeView.android.kt:40,58-65` |
-| 02:143 | `edit_ownFile_previewWithoutCancel` | ADAPT | R3: the file comes from the "File" stub; R2: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:144 | `edit_notOffered_forReceivedVoiceForwarded` | ADAPT | R10 (`REC`) for alice's recorded voice message | `A/platform/RecAndPlay.android.kt:17-98` |
-| 02:168 | `forwarded_goToSource_opensOriginalChat` | ADAPT | No hover: the arrow button is always composed (faded until activated) and is tapped directly; tapping the forwarded bubble toggles it to full visibility | `C/views/chat/item/ChatItemView.kt:243-302,330-332` |
-| 02:179 | `reaction_chipMenu_direct_showsNames` | ADAPT | R1 (long-press the chip) | `C/views/chat/item/ChatItemView.kt:200-207` |
-| 02:180 | `reaction_chipMenu_group_membersAndOpenInfo` | ADAPT | R1 | `C/views/chat/item/ChatItemView.kt:200-207` |
-| 02:186 | `copy_text_toClipboardAndToast` | REPLACED | 05 §6 `copyAndroid_text_noToast`: the clipboard gets the text with no toast | `A/views/chat/item/ChatItemView.android.kt:47-49`; `D/views/chat/item/ChatItemView.desktop.kt:54-71` |
-| 02:187 | `copy_fileItem_copiesPath` | REPLACED | 05 §6 `copyAndroid_fileItem_copiesCaptionOnly`: the item's text, not the path, and no toast | `A/views/chat/item/ChatItemView.android.kt:47-49` |
-| 02:188 | `share_text_copiesToClipboard` | REPLACED | 05 §6 `shareText_itemMenu_firesChooser` (R5) | `C/views/chat/item/ChatItemView.kt:425-434`; `A/platform/Share.android.kt:30-49` |
-| 02:189 | `share_file_savesViaDialog` | REPLACED | 05 §6 `shareFile_itemMenu_firesChooserWithStream`: "Share" of a file fires the chooser with `EXTRA_STREAM`, no save dialog | `A/platform/Share.android.kt:112-114`; `D/platform/Share.desktop.kt:24-42` |
-| 02:190 | `save_image_writesFile` | REPLACED | 05 §6 `rcvImage_save_insertsIntoGallery`: "Save" of an image inserts it into MediaStore with the toast "Image saved to Gallery", no picker | `A/views/chat/item/ChatItemView.android.kt:28-45`; `A/platform/Share.android.kt:145-181` |
-| 02:190 | `save_encryptedFile_decrypts` | ADAPT | R3: "Save" fires `ACTION_CREATE_DOCUMENT`; the stub's URI receives the decrypted bytes (as 05 §6 `rcvFile_save_createDocumentWritesDecrypted`) | `A/views/chat/item/ChatItemView.android.kt:40`; `A/platform/Files.android.kt:36-43` |
-| 02:192 | `textSelection_dragAcrossItems_copyButton` | DESKTOP-ONLY | `SelectionManager` exists only on desktop | `C/views/chat/ChatView.kt:166,1056,2383` |
-| 02:192 | `textSelection_ctrlC_copies` | DESKTOP-ONLY | As above | `C/views/chat/ChatView.kt:166,2383` |
-| 02:209 | `info_historyBubble_copy` | ADAPT | R1 (long-press the version) | `C/views/chat/ChatItemInfoView.kt:80-85,132-137` |
-| 02:211 | `info_delivery_liveUpdatesOnReceipt` | ADAPT | R1 (long-press the item → "Info" → "Delivery") | `C/views/chat/item/ChatItemView.kt:327-335` |
-| 02:214 | `info_share_copiesText` | ADAPT | R5: the info screen's share button opens the chooser with `EXTRA_TEXT` = the info text (`INTENTS`), not the clipboard | `C/views/chat/ChatView.kt:731-734`; `A/platform/Share.android.kt:30-49` |
-| 02:215 | `info_closesOnChatSwitch` | ADAPT | The info covers the whole screen, so the other chat is opened from outside it, preferably with `openChat` from test code, which exercises the info's own close on the chat change (`KeyChangeEffect`, `ChatView.kt:753-755`); tapping cath's message notification (`SYSNTF`) closes it earlier through `clearOverlays` → `closeAllModalsEverywhere` instead; Back would close the info itself | `C/views/chat/ChatView.kt:731,753-755`; `C/platform/NtfManager.kt:80`; `C/App.kt:111-115`; `C/views/helpers/ModalView.kt:253-258` |
-| 02:221 | `unreadFab_top_rightClick_markRead` | ADAPT | R1: tests the long press of the top button | `C/views/chat/ChatView.kt:2852` |
-| 02:223 | `pagination_scrollUp_loadsOlder` | ADAPT | The chat opens with the newest 75 messages (`INITIAL_COUNT` is 100 only on desktop); older pages are still 100 | `C/model/SimpleXAPI.kt:4609-4610` |
-| 02:232 | `contentFilter_menu_listsAvailableTypes` | ADAPT | In the direct chat with bob (calls available) there is no filter icon in the bar: the filters are opened from the ⋮ menu (after the divider), or from the filter icon of the search field once search is open | `C/views/chat/ChatView.kt:1339-1340,1377-1442` |
-| 02:232 | `contentFilter_files` | ADAPT | As above | `C/views/chat/ChatView.kt:1377-1400` |
-| 02:232 | `contentFilter_images` | ADAPT | As above | `C/views/chat/ChatView.kt:1377-1400` |
-| 02:232 | `contentFilter_allMessages_resets` | ADAPT | As above; "All messages" is the last ⋮ item while a filter is active | `C/views/chat/ChatView.kt:1401-1418` |
-| 02:233 | `contentFilter_links_showsOnlyLinks` | ADAPT | As above | `C/views/chat/ChatView.kt:1377-1400` |
-| 02:233 | `contentFilter_withSearchText` | ADAPT | As above | `C/views/chat/ChatView.kt:1377-1442` |
-| 02:239 | `draft_withAttachment_restored` | ADAPT | R2: the file is attached through the "File" stub instead of Ctrl+V | `A/views/chat/ComposeView.android.kt:44,74-77` |
-| 02:240 | `draft_voiceRecording_finishedOnSwitch` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
-| 02:260 | `featureItem_contactChangesPref_shown` | ADAPT | R1 (long-press the feature row → "Expand") | `C/views/chat/item/CIChatFeatureView.kt:28-48` |
-| 02:261 | `featureItems_merged_iconRowExpandHide` | ADAPT | R1 | `C/views/chat/item/CIChatFeatureView.kt:28-48` |
-| 02:263 | `callItem_incoming_answerButton` | ADAPT | "Answer call" starts `CallActivity` instead of the URI handler: the test asserts that `CallActivity` opens (found through `ComposeRootRegistry`) with bob's name and that `chatModel.activeCall` holds bob's call, before any media, as 05 §9 `call_outgoingAudio_invitationReachesPeer` does for an outgoing call (media is 05 §9 `call_answer_mediaConnects`, `IGNORE`); R10 (`AV`) for the ringtone | `C/views/call/CallManager.kt:27-58`; `C/App.kt:227-235`; `APP/SimplexApp.kt:319-330` |
-| 02:263 | `callItem_endedStates` | ADAPT | R10 (`AV`, the ringtone through `SoundPlayer`) | `A/helpers/SoundPlayer.kt` |
-| 02:264 | `callAlert_incoming_acceptRejectIgnore` | ADAPT | "Accept" closes the alert and starts `CallActivity` instead of recording the call link with the URI stub; it is asserted before any media, as in `callItem_incoming_answerButton` (`C/App.kt:227-235`; media is 05 §9 `call_answer_mediaConnects`, `IGNORE`); "Reject" and "Ignore" are unchanged (the in-app alert shows in the foreground, 05 §9 `call_incomingForeground_inAppAlertNoSystemNotification`); R10 for the ringtone | `C/views/call/IncomingCallAlertView.kt:27-46`; `APP/model/NtfManager.android.kt:160-169` |
-| 02:265 | `callItem_answerEnded_showsAlert` | ADAPT | R10 (`AV`); the "Call already ended!" alert comes before any call screen, as on desktop | `C/views/chat/ChatView.kt:616-627` |
-| 02:266 | `events_merged_deleteRange` | ADAPT | R1 (long-press the collapsed events) | `C/views/chat/item/ChatItemView.kt:327-335` |
+| 02:38 | `multiline_shiftEnter_peerReceivesTwoLines` | REPLACED | 05 §14 `compose_enterKeyInsertsNewline_sendButtonSends`: Enter inserts the line break, the send button sends | `A/platform/PlatformTextField.android.kt:60-63,99-132` |
+| 02:39 | `groupSend_allMembersReceive` | ADAPT | R2: sends with the send button | `A/platform/PlatformTextField.android.kt:60-63` |
+| 02:42 | `link_click_showsOpenWebLinkAlert` | ADAPT | R13: "Open" fires `ACTION_VIEW` with `http://127.0.0.1/page`, recorded and stubbed with `INTENTS` so no browser launches | `C/views/chat/item/TextItemView.kt:533-585` |
+| 02:42 | `link_openClean_opensSanitizedUri` | ADAPT | R13: "Open clean link" fires `ACTION_VIEW` whose data is the URL without `utm_source` (`INTENTS`) | `C/views/chat/item/TextItemView.kt:533-585` |
+| 02:43 | `linkPreview_firstTimeAlert_enable_fetchesPreview` | ADAPT | Cleartext HTTP to 127.0.0.1 is blocked: the app targets API 36 and its manifest sets neither `usesCleartextTraffic` nor `networkSecurityConfig`, so the platform default forbids cleartext, with no loopback exemption; jsoup's `HttpURLConnection` fetch fails with "Cleartext HTTP traffic to 127.0.0.1 not permitted" and `getLinkPreview` catches it and returns null (no preview card, the content type stays text). The test needs a debug-only network-security-config allowing cleartext to 127.0.0.1, a build change that needs the user's approval (05 open question 15), and `adb reverse` of the HTTP stub's port like the other servers; until it is approved the test fails | `android/build.gradle.kts:18`; `MAN:40-50`; `common/build.gradle.kts:74`; SDK `com/android/okhttp/HttpHandler.java:121-128`, `android/security/net/config/NetworkSecurityConfig.java:200-202`, `android/security/net/config/ManifestConfigSource.java:73-79`; `C/views/helpers/LinkPreviews.kt:96-140` |
+| 02:43 | `linkPreview_sent_peerReceivesLinkContent` | ADAPT | As above: without the debug-only config no preview is attached, so bob's content types print `text`, not `link` | `C/views/helpers/LinkPreviews.kt:96-140` |
+| 02:43 | `linkPreview_cancel_sendsPlainText` | ADAPT | As above: without the debug-only config there is no preview to cancel | `C/views/helpers/LinkPreviews.kt:96-140` |
+| 02:56 | `liveMessage_menuStart_alertConfirm_peerSeesStarted` | ADAPT | R1: long-press the send button for its menu | `C/views/chat/SendMsgView.kt:452-490` |
+| 02:56 | `liveMessage_typingUpdates_peerSeesUpdates` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
+| 02:56 | `liveMessage_finish_peerSeesEnded` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
+| 02:60 | `liveMessage_group_membersSeeLive` | ADAPT | R1: "Same, in a group" starts from the send-button menu, so the send button is long-pressed | `C/views/chat/SendMsgView.kt:452-490` |
+| 02:67 | `timed_send30s_bothSidesDelete` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
+| 02:68 | `timed_menuOptions_listed` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
+| 02:68 | `timed_customTime_sendsWithChosenTtl` | REPLACED | 05 §14 `timedCustom_androidWheelPickerSetsTtl`: "Delete after" shows two wheels instead of two dropdowns | `A/views/helpers/CustomTimePicker.android.kt:14-106`; `D/views/helpers/CustomTimePicker.desktop.kt:11-81` |
+| 02:69 | `timed_menuHidden_whenFeatureOff` | ADAPT | R1 | `C/views/chat/SendMsgView.kt:452-490` |
+| 02:70 | `timed_chatPref_receivedMessagesDisappear` | ADAPT | R1 (long-press the feature row → "Expand") | `C/views/chat/item/CIChatFeatureView.kt:30-35` |
+| 02:70 | `timed_meta_showsTimerAndTtl` | ADAPT | R1 (long-press the feature row → "Expand") | `C/views/chat/item/CIChatFeatureView.kt:30-35` |
+| 02:75 | `voice_record_send_peerReceivesVoice` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
+| 02:76 | `voice_tapToRecord_stopButton_addsPreview` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
+| 02:76 | `voice_tooShort_discarded` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
+| 02:76 | `voice_preview_cancel_deletesTmpFile` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
+| 02:79 | `voice_disabledWhileRecording_cancels` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
+| 02:81 | `voice_playback_playPauseProgress` | ADAPT | R10 (`AV`) | `A/platform/RecAndPlay.android.kt:101-296` |
+| 02:82 | `voice_preview_playPauseAndSeek` | ADAPT | R10 (`REC`, `AV`) | `A/platform/RecAndPlay.android.kt` |
+| 02:83 | `voice_notes_recordAndSave` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
+| 02:88 | `attach_sheet_showsImageVideoFile` | REPLACED | 05 §6 `attachSheet_androidShowsCameraImageVideoFile`: four buttons, "Camera" first | `A/views/helpers/ChooseAttachmentView.android.kt:13-30`; `D/views/helpers/ChooseAttachmentView.desktop.kt:13-26` |
+| 02:89 | `attachFile_send_peerReceivesOffer` | ADAPT | R3: "File" fires `ACTION_GET_CONTENT` `*/*`, answered by the stub (as 05 §6 `attachFile_getContent_sendsFile`) | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:89 | `attachFile_withText_peerReceivesTextAndFile` | ADAPT | R3: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:90 | `attachFile_cancelPreview_nothingSent` | ADAPT | R3: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:91 | `attachImage_send_peerReceivesCompressedImage` | ADAPT | R3: "Image" fires `ACTION_PICK` on the gallery, answered by the stub (as 05 §6 `attachGallery_twoImages_sendsEach`) | `A/views/chat/ComposeView.android.kt:40,58-65` |
+| 02:91 | `attachImages_multiple_sentAsSeparateMessages` | ADAPT | R3: the stub returns several URIs in `ClipData` | `A/views/helpers/GetImageView.android.kt:218-242` |
+| 02:91 | `attachImage_textOnLastImageOnly` | ADAPT | R3: as above | `A/views/helpers/GetImageView.android.kt:218-242` |
+| 02:92 | `attachImage_cancelPreview` | ADAPT | R3 | `A/views/chat/ComposeView.android.kt:40,58-65` |
+| 02:93 | `attachGif_sentUncompressedAnimated` | ADAPT | R3: the gallery stub returns the GIF; the coil animation runs in real time even under blur and modals (`A/views/chat/item/CIImageView.android.kt:22-57`), so the image node is volatile in screenshots | `A/views/chat/ComposeView.android.kt:40,58-65` |
+| 02:94 | `attachVideo_send_peerReceivesVideo` | ADAPT | R3: "Video" fires `ACTION_PICK` for videos (as 05 §6 `attachGallery_video_sendsVideo`); R10 (`AV`) | `A/views/chat/ComposeView.android.kt:42,66-73` |
+| 02:95 | `attachVideo_undecodable_showsAlert` | ADAPT | R3 and R10, as above | `A/views/chat/ComposeView.android.kt:42,66-73` |
+| 02:96 | `paste_filePathText_attachesFile` | DESKTOP-ONLY | R2: the Android field doesn't turn typed paths into attachments | `A/platform/PlatformTextField.android.kt:60-63`; `D/platform/PlatformTextField.desktop.kt:97-110` |
+| 02:97 | `ctrlV_clipboardFiles_attaches` | DESKTOP-ONLY | R2: no Ctrl+V handling | `D/platform/PlatformTextField.desktop.kt:141-145` |
+| 02:98 | `pasteFileList_webmAudio_sentAsFile` | DESKTOP-ONLY | R2: no Ctrl+V handling | `D/platform/PlatformTextField.desktop.kt:144-145` |
+| 02:99 | `ctrlV_clipboardImage_attachesPng` | DESKTOP-ONLY | R2: no Ctrl+V handling (`IMGCB`); a keyboard-committed image is 05 §6 `compose_imeCommitImage_attachesToOpenChat` | `D/platform/PlatformTextField.desktop.kt:146-150`; `A/platform/PlatformTextField.android.kt:108-121` |
+| 02:100 | `dragDrop_files_attach` | DESKTOP-ONLY | `desktopOnExternalDrag` returns the modifier unchanged on Android (`IGNORE` on desktop too) | `A/platform/Modifier.android.kt:8-14` |
+| 02:101 | `attachFile_tooLarge_showsLargeFileAlert` | ADAPT | R3: the `GET_CONTENT` stub returns the sparse file | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:103 | `attachImage_withQuote_peerSeesQuote` | ADAPT | R3: the image comes from the gallery stub | `A/views/chat/ComposeView.android.kt:40,58-65` |
+| 02:104 | `attachImage_group_allMembersReceive` | ADAPT | R3: as above | `A/views/chat/ComposeView.android.kt:40,58-65` |
+| 02:114 | `sndFile_revoke_peerSeesCancelled` | ADAPT | R2: alice attaches `test.pdf` through the "File" stub, not a typed path (`rcvFile_senderRevoked_showsCancelled` of the same row is bob's `/f` + `/fc` and is unchanged) | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:115 | `sndFile_stopDuringUpload` | ADAPT | R2: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:117 | `sndFile_xftpResetDuringUpload_showsFileError` | ADAPT | R2: the 150 MB file is attached through the "File" stub | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:121 | `rcvFile_clickCompleted_opensSaveDialog` | REPLACED | 05 §6 `rcvFile_tapLoaded_showsOpenWithAndSave` and `rcvFile_save_createDocumentWritesDecrypted`: a click on a loaded file opens the "Open with…" / "Save" menu, and "Save" fires `ACTION_CREATE_DOCUMENT` | `C/views/chat/item/CIFileView.kt:183-200`; `A/views/chat/item/CIFileView.android.kt:14-57` |
+| 02:122 | `rcvFile_missingOnDisk_clickDoesNothing` | ADAPT | R3: "no save dialog awaiting" becomes "no intent recorded" (`INTENTS`); with the file missing, `getLoadedFilePath` is null, so no menu opens either | `C/views/chat/item/CIFileView.kt:183-200` |
+| 02:124 | `rcvVideo_previewAndDownload` | ADAPT | R10 (`AV`) | `A/platform/VideoPlayer.android.kt` |
+| 02:130 | `reply_menu_sendQuoted_peerSeesQuote` | ADAPT | R1 (long-press the item) | `C/views/chat/item/ChatItemView.kt:327-335` |
+| 02:130 | `reply_cancelContext` | ADAPT | R1 | `C/views/chat/item/ChatItemView.kt:327-335` |
+| 02:138 | `edit_menu_updatesPeer` | ADAPT | R2: the edit is sent with the send button | `A/platform/PlatformTextField.android.kt:60-63` |
+| 02:138 | `edit_unchanged_noUpdate` | ADAPT | R2: as above | `A/platform/PlatformTextField.android.kt:60-63` |
+| 02:138 | `edit_metaShowsEditedIcon` | ADAPT | R2: as above | `A/platform/PlatformTextField.android.kt:60-63` |
+| 02:139 | `edit_upArrow_editsLastMessage` | DESKTOP-ONLY | R2: no Up-arrow handling | `D/platform/PlatformTextField.desktop.kt:138-140` |
+| 02:142 | `edit_ownImage_previewWithoutCancel` | ADAPT | R3: the image comes from the gallery stub; R2: the edit is sent with the send button | `A/views/chat/ComposeView.android.kt:40,58-65` |
+| 02:142 | `edit_ownFile_previewWithoutCancel` | ADAPT | R3: the file comes from the "File" stub; R2: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:143 | `edit_notOffered_forReceivedVoiceForwarded` | ADAPT | R10 (`REC`) for alice's recorded voice message | `A/platform/RecAndPlay.android.kt:17-98` |
+| 02:167 | `forwarded_goToSource_opensOriginalChat` | ADAPT | No hover: the arrow button is always composed (faded until activated) and is tapped directly; tapping the forwarded bubble toggles it to full visibility | `C/views/chat/item/ChatItemView.kt:243-302,330-332` |
+| 02:178 | `reaction_chipMenu_direct_showsNames` | ADAPT | R1 (long-press the chip) | `C/views/chat/item/ChatItemView.kt:200-207` |
+| 02:179 | `reaction_chipMenu_group_membersAndOpenInfo` | ADAPT | R1 | `C/views/chat/item/ChatItemView.kt:200-207` |
+| 02:185 | `copy_text_toClipboardAndToast` | REPLACED | 05 §6 `copyAndroid_text_noToast`: the clipboard gets the text with no toast | `A/views/chat/item/ChatItemView.android.kt:47-49`; `D/views/chat/item/ChatItemView.desktop.kt:54-71` |
+| 02:186 | `copy_fileItem_copiesPath` | REPLACED | 05 §6 `copyAndroid_fileItem_copiesCaptionOnly`: the item's text, not the path, and no toast | `A/views/chat/item/ChatItemView.android.kt:47-49` |
+| 02:187 | `share_text_copiesToClipboard` | REPLACED | 05 §6 `shareText_itemMenu_firesChooser` (R5) | `C/views/chat/item/ChatItemView.kt:425-434`; `A/platform/Share.android.kt:30-49` |
+| 02:188 | `share_file_savesViaDialog` | REPLACED | 05 §6 `shareFile_itemMenu_firesChooserWithStream`: "Share" of a file fires the chooser with `EXTRA_STREAM`, no save dialog | `A/platform/Share.android.kt:112-114`; `D/platform/Share.desktop.kt:24-42` |
+| 02:189 | `save_image_writesFile` | REPLACED | 05 §6 `rcvImage_save_insertsIntoGallery`: "Save" of an image inserts it into MediaStore with the toast "Image saved to Gallery", no picker | `A/views/chat/item/ChatItemView.android.kt:28-45`; `A/platform/Share.android.kt:145-181` |
+| 02:189 | `save_encryptedFile_decrypts` | ADAPT | R3: "Save" fires `ACTION_CREATE_DOCUMENT`; the stub's URI receives the decrypted bytes (as 05 §6 `rcvFile_save_createDocumentWritesDecrypted`) | `A/views/chat/item/ChatItemView.android.kt:40`; `A/platform/Files.android.kt:36-43` |
+| 02:191 | `textSelection_dragAcrossItems_copyButton` | DESKTOP-ONLY | `SelectionManager` exists only on desktop | `C/views/chat/ChatView.kt:166,1056,2383` |
+| 02:191 | `textSelection_ctrlC_copies` | DESKTOP-ONLY | As above | `C/views/chat/ChatView.kt:166,2383` |
+| 02:208 | `info_historyBubble_copy` | ADAPT | R1 (long-press the version) | `C/views/chat/ChatItemInfoView.kt:80-85,132-137` |
+| 02:210 | `info_delivery_liveUpdatesOnReceipt` | ADAPT | R1 (long-press the item → "Info" → "Delivery") | `C/views/chat/item/ChatItemView.kt:327-335` |
+| 02:213 | `info_share_copiesText` | ADAPT | R5: the info screen's share button opens the chooser with `EXTRA_TEXT` = the info text (`INTENTS`), not the clipboard | `C/views/chat/ChatView.kt:731-734`; `A/platform/Share.android.kt:30-49` |
+| 02:214 | `info_closesOnChatSwitch` | ADAPT | The info covers the whole screen, so the other chat is opened from outside it, preferably with `openChat` from test code, which exercises the info's own close on the chat change (`KeyChangeEffect`, `ChatView.kt:753-755`); tapping cath's message notification (`SYSNTF`) closes it earlier through `clearOverlays` → `closeAllModalsEverywhere` instead; Back would close the info itself | `C/views/chat/ChatView.kt:731,753-755`; `C/platform/NtfManager.kt:80`; `C/App.kt:111-115`; `C/views/helpers/ModalView.kt:253-258` |
+| 02:220 | `unreadFab_top_rightClick_markRead` | ADAPT | R1: tests the long press of the top button | `C/views/chat/ChatView.kt:2852` |
+| 02:222 | `pagination_scrollUp_loadsOlder` | ADAPT | The chat opens with the newest 75 messages (`INITIAL_COUNT` is 100 only on desktop); older pages are still 100 | `C/model/SimpleXAPI.kt:4609-4610` |
+| 02:231 | `contentFilter_menu_listsAvailableTypes` | ADAPT | In the direct chat with bob (calls available) there is no filter icon in the bar: the filters are opened from the ⋮ menu (after the divider), or from the filter icon of the search field once search is open | `C/views/chat/ChatView.kt:1339-1340,1377-1442` |
+| 02:231 | `contentFilter_files` | ADAPT | As above | `C/views/chat/ChatView.kt:1377-1400` |
+| 02:231 | `contentFilter_images` | ADAPT | As above | `C/views/chat/ChatView.kt:1377-1400` |
+| 02:231 | `contentFilter_allMessages_resets` | ADAPT | As above; "All messages" is the last ⋮ item while a filter is active | `C/views/chat/ChatView.kt:1401-1418` |
+| 02:232 | `contentFilter_links_showsOnlyLinks` | ADAPT | As above | `C/views/chat/ChatView.kt:1377-1400` |
+| 02:232 | `contentFilter_withSearchText` | ADAPT | As above | `C/views/chat/ChatView.kt:1377-1442` |
+| 02:238 | `draft_withAttachment_restored` | ADAPT | R2: the file is attached through the "File" stub instead of Ctrl+V | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:239 | `draft_voiceRecording_finishedOnSwitch` | ADAPT | R10 (`REC`) | `A/platform/RecAndPlay.android.kt:17-98` |
+| 02:259 | `featureItem_contactChangesPref_shown` | ADAPT | R1 (long-press the feature row → "Expand") | `C/views/chat/item/CIChatFeatureView.kt:28-48` |
+| 02:260 | `featureItems_merged_iconRowExpandHide` | ADAPT | R1 | `C/views/chat/item/CIChatFeatureView.kt:28-48` |
+| 02:262 | `callItem_incoming_answerButton` | ADAPT | "Answer call" starts `CallActivity` instead of the URI handler: the test asserts that `CallActivity` opens (found through `ComposeRootRegistry`) with bob's name and that `chatModel.activeCall` holds bob's call, before any media, as 05 §9 `call_outgoingAudio_invitationReachesPeer` does for an outgoing call (media is 05 §9 `call_answer_mediaConnects`, `IGNORE`); R10 (`AV`) for the ringtone | `C/views/call/CallManager.kt:27-58`; `C/App.kt:227-235`; `APP/SimplexApp.kt:319-330` |
+| 02:262 | `callItem_endedStates` | ADAPT | R10 (`AV`, the ringtone through `SoundPlayer`) | `A/helpers/SoundPlayer.kt` |
+| 02:263 | `callAlert_incoming_acceptRejectIgnore` | ADAPT | "Accept" closes the alert and starts `CallActivity` instead of recording the call link with the URI stub; it is asserted before any media, as in `callItem_incoming_answerButton` (`C/App.kt:227-235`; media is 05 §9 `call_answer_mediaConnects`, `IGNORE`); "Reject" and "Ignore" are unchanged (the in-app alert shows in the foreground, 05 §9 `call_incomingForeground_inAppAlertNoSystemNotification`); R10 for the ringtone | `C/views/call/IncomingCallAlertView.kt:27-46`; `APP/model/NtfManager.android.kt:160-169` |
+| 02:264 | `callItem_answerEnded_showsAlert` | ADAPT | R10 (`AV`); the "Call already ended!" alert comes before any call screen, as on desktop | `C/views/chat/ChatView.kt:616-627` |
+| 02:265 | `events_merged_deleteRange` | ADAPT | R1 (long-press the collapsed events) | `C/views/chat/item/ChatItemView.kt:327-335` |
 | 02:277 | `notes_attachImage_storedLocally` | ADAPT | R3: the gallery stub | `A/views/chat/ComposeView.android.kt:40,58-65` |
 | 02:277 | `notes_attachFile_storedLocally` | ADAPT | R3: the "File" stub | `A/views/chat/ComposeView.android.kt:44,74-77` |
 | 02:277 | `notes_delete_removesFile` | ADAPT | R3: the file is attached through the "File" stub | `A/views/chat/ComposeView.android.kt:44,74-77` |

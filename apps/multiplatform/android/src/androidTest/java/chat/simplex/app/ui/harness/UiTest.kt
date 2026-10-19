@@ -26,16 +26,23 @@ import androidx.test.espresso.intent.matcher.IntentMatchers
 
 abstract class UiTest {
   @get:Rule val rule: ComposeTestRule = createEmptyComposeRule()
+  @get:Rule val knownIssue = KnownIssueRule()
 
   fun uiTest(body: UiScope.() -> Unit) {
     val watchdog = Watchdog.start(HARD_TIMEOUT_MS)
     try {
       UiTestApp.bootOnce()
-      val scope = UiScope(rule)
-      try {
-        scope.body()
-      } finally {
-        scope.finish()
+      AppCrashes.install()
+      AppCrashes.clear()
+      withKnownIssue(knownIssue.issue) {
+        val scope = UiScope(rule)
+        try {
+          scope.body()
+          scope.checkEnd()
+        } finally {
+          scope.finish()
+        }
+        AppCrashes.failIfAny()
       }
     } finally {
       watchdog.cancel()
@@ -78,6 +85,7 @@ class UiScope(val rule: ComposeTestRule) {
 
   fun restart(): App {
     UiTestApp.restartCore()
+    UiTestApp.onMain { CommonPrefs.reload() }
     poll(timeoutMs = 60_000, what = "the core to start again with chat running") {
       val m = chat.simplex.common.platform.chatModel
       m.chatDbStatus.value != null && !m.ctrlInitInProgress.value && m.chatRunning.value == true && m.currentUser.value != null && m.users.isNotEmpty()
@@ -87,14 +95,39 @@ class UiScope(val rule: ComposeTestRule) {
     return App(this)
   }
 
+  fun keyboardShown(): Boolean {
+    var shown = false
+    UiTestApp.onMain {
+      val decor = androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry.getInstance()
+        .getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED).firstOrNull()?.window?.decorView
+      shown = decor != null && androidx.core.view.ViewCompat.getRootWindowInsets(decor)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true
+    }
+    return shown
+  }
+
+  fun hideKeyboard() {
+    runCatching { poll(timeoutMs = KEYBOARD_SHOW_MS, what = "the soft keyboard to show", screenshot = false) { keyboardShown() } }
+    if (!keyboardShown()) return
+    Espresso.closeSoftKeyboard()
+    poll(what = "the soft keyboard to hide") { !keyboardShown() }
+  }
+
   fun assumeCamera() {
     val cameras = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
       .getSystemService(android.hardware.camera2.CameraManager::class.java).cameraIdList
     org.junit.Assume.assumeTrue("the device has no camera for the QR scanner", cameras.isNotEmpty())
   }
 
+  fun checkEnd() {
+    failOnPeerErrors(peers)
+    waitForAppWork()
+    val stuck = UiTestApp.drain()
+    if (stuck.isNotEmpty()) throw AssertionError("app work still running when the test ended: ${stuck.joinToString()}")
+    AppCrashes.failIfAny()
+  }
+
   fun finish() {
-    peers.forEach { it.stop() }
+    peers.forEach { it.dispose() }
     Timing.phase("close") { close() }
     Timing.phase("drain") { UiTestApp.drain() }
   }
@@ -125,6 +158,7 @@ class UiScope(val rule: ComposeTestRule) {
     while (true) {
       rule.mainClock.advanceTimeBy(48, ignoreFrameDuration = true)
       rule.waitForIdle()
+      AppCrashes.failIfAny()
       if (runCatching(cond).onFailure { lastError = it }.getOrDefault(false)) {
         Timing.wait(what, System.currentTimeMillis() - start)
         return
@@ -216,16 +250,10 @@ class UiScope(val rule: ComposeTestRule) {
 
   private fun setMessageField(key: UiKey, value: String) {
     waitFor(key)
-    val deadline = System.currentTimeMillis() + 10_000
-    while (true) {
-      Espresso.onView(ViewMatchers.isAssignableFrom(EditText::class.java)).perform(ViewActions.replaceText(value))
-      try {
-        poll(timeoutMs = 2_000, what = "message field to hold `$value`", screenshot = false) { editableText(key) == value }
-        return
-      } catch (e: AssertionError) {
-        if (System.currentTimeMillis() > deadline) throw AssertionError("${e.message}; field holds `${editableText(key)}`", e)
-      }
-    }
+    waitStable(key)
+    settle()
+    Espresso.onView(ViewMatchers.isAssignableFrom(EditText::class.java)).perform(CommitText(value))
+    poll(what = "the message field to hold `$value`") { editableText(key) == value }
   }
 
   fun enterText(key: UiKey, text: String) {
@@ -351,4 +379,29 @@ object Timing {
 }
 
 private const val SETTLE_MS = 500L
+private const val KEYBOARD_SHOW_MS = 1_500L
+private const val END_WORK_MS = 30_000L
 private const val EXTENSION_MS = 60_000L
+
+private class CommitText(private val value: String) : androidx.test.espresso.ViewAction {
+  override fun getConstraints(): org.hamcrest.Matcher<android.view.View> = ViewMatchers.isAssignableFrom(EditText::class.java)
+  override fun getDescription() = "type `$value` through the input connection, as a keyboard does"
+  override fun perform(uiController: androidx.test.espresso.UiController, view: android.view.View) {
+    val editText = view as EditText
+    editText.requestFocus()
+    val ic = editText.onCreateInputConnection(android.view.inputmethod.EditorInfo()) ?: error("the message field has no input connection")
+    ic.beginBatchEdit()
+    ic.setSelection(0, editText.text.length)
+    ic.commitText(value, 1)
+    ic.endBatchEdit()
+    uiController.loopMainThreadUntilIdle()
+  }
+}
+
+private fun UiScope.waitForAppWork() {
+  try {
+    poll(timeoutMs = END_WORK_MS, what = "app work to finish", screenshot = false) { UiIdle.inFlight().isEmpty() }
+  } catch (e: AssertionError) {
+    if (e.message?.startsWith("timed out") != true) throw e
+  }
+}

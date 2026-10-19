@@ -274,9 +274,11 @@ fun SectionItemViewSpaceBetween(
   minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
   padding: PaddingValues = PaddingValues(horizontal = itemHPadding),
   disabled: Boolean = false,
+  uiKey: UiKey? = null,
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
+    .ui(uiKey)
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(

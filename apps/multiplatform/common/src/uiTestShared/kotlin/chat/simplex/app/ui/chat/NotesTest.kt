@@ -11,5 +11,6 @@ class NotesTest : UiTest() {
     notes.send("keep in mind")
     val id = notes.itemId("keep in mind")
     poll(what = "a local note") { notes.item(id)?.chatDir is CIDirection.LocalSnd }
+    restart().chatList.open("Private notes").itemId("keep in mind")
   }
 }

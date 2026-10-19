@@ -142,7 +142,7 @@ Sections 3–11 remain the design. This section describes what is implemented in
 
 - `tests/UITestServers.hs` (cabal flag `uitest`, `exe:uitest-servers`) takes `<dir> <portBase>`, runs **`smp1` only** (persistent store, port base + 1), prints `ready smp1 smp://…@localhost:<port>` and exits on stdin EOF. It has no control protocol.
 - `TestServers`: 120 slots (`slot-<k>.lock` in the run directory), base 20000 + 100 k. It is spawned under `setpriv --pdeathsig KILL` from the test thread during the first reset (in the bridge, from its main thread).
-- `configureServers(smp, xftp)` disables the operator groups and adds a custom group with `smp1` and an `xftp1` address on base + 2 that **nothing serves**. Any XFTP test fails until P1b.
+- `configureServers(smp, xftp)` disables the operator groups and adds a custom group with `smp1` and `xftp1` (base + 2). Since 2026-10-19 `uitest-servers` also runs the XFTP server (`xftpServerConfig` from `tests/ChatClient.hs`, files in `<servers>/xftp1`) and prints `ready xftp1 …`; CLI peers get `--xftp-server`. `CliPeer.createFile(name, content)` writes a file on the peer's host (Android: through the bridge `file` command). Any XFTP test fails until P1b.
 
 ### 0.5.7 Helpers and timeouts
 
@@ -166,17 +166,16 @@ Sections 3–11 remain the design. This section describes what is implemented in
 | Hard timeout per test | 240 s: thread dump, `Runtime.halt(3)`; the JVM's remaining tests are lost (15.4 item 20) | 300 s: thread dump, process killed; the runner resumes |
 | Gradle task | 12 h | — |
 
-### 0.5.8 Known-issue policy (desktop)
+### 0.5.8 Failure policy (both platforms, 2026-10-19)
 
-`KNOWN_APP_ISSUES` lists "Controller is not initialized" and "database closed" (15.5 item 3). When the scene runner throws:
-1. the coroutines-test wrappers (`UncaughtExceptionsBeforeTest`, `DiagnosticCoroutineContextException`) are dropped;
-2. if every remaining error matches somewhere in its cause chain and none is an `AssertionError`:
-   - a test whose body completed passes, logged as `UITEST known app issue, not failing the test`;
-   - a test whose body never started is retried (at most 3 attempts);
-   - a test whose body started but did not complete fails;
-3. any other error fails the test, with the suppressed errors listed.
-
-Android has no allowlist.
+The rules for test authors are in `apps/multiplatform/common/src/uiTestShared/README.md` (the test-writing guide). The harness enforces:
+- **Any app crash fails the test.** `AppCrashes` (uiTestShared) wraps the default uncaught-exception handler (on Android around the app's own `GlobalExceptionsHandler`, which still runs); every `poll` and the end of every test fail on a recorded crash. Uncaught coroutine exceptions that kotlinx-coroutines-test reports at the end of the scene fail the test too. There is no message-text allowlist.
+- **Known app bugs are explicit.** `@KnownAppIssue(finding, error, intermittent)` on a test turns a failure whose stack trace contains `error` into a skipped result naming the plan §15.5 finding; any other failure still fails; a pass fails with "no longer reproduces" unless `intermittent`.
+- **Peers:** lines that look like CLI errors (`error…`, `chat error:`, `chat db error:`, `exception:`, `smp server error`, `agent error`), whether skipped by `eventually` or never read, fail the test unless the test consumed them explicitly.
+- **App work still running at the end** (after a 30 s drain) fails the test with the names of the stuck calls.
+- **No input retries:** `send` presses Enter once (Android: taps Send once) and fails if the field does not clear; Android types into the message field once, after the field is stable.
+- **Restart** stops the core after draining pending app work, re-reads `settings.properties`/`themes.properties` from disk (desktop) or refreshes preference states (Android), then initialises the core, the order of a real relaunch.
+- **Isolation:** a reset that finds `ctrlInitInProgress` still set by a failed test clears it (logged) instead of failing every later test.
 
 ### 0.5.9 Runners and Gradle
 
@@ -246,7 +245,7 @@ UITEST_SERIAL=<serial> scripts/uitest-android.sh <app.apk> <test.apk>   # anothe
 | 7.4, 7.5 | `UiDriver`/`UiNode`/`InProcessDriver`; `MR.strings` lookups and exactly-one matching; `hold`, `dragTo`, `hover`, `clickAtTextRange`, `press(key, modifiers)`, `wait(d)`, `composeField()` (placeholder); the report directory with semantics dump, peer tails and command log (only the failure PNG and the message exist) |
 | 7.6, 7.7, 7.8 | `UiFiles` dialog responders (pending dialogs are only completed empty at reset); `LocalClipboard`; a throwing URI handler; toast and notification recording; screenshots; coverage |
 | 8.1 | the Stable CLI and `CliVersion`; `--mute` (the D-Bus notification concern of 8.3 stands); `--xftp-server`; `$HOME/Downloads`; the start–stop–start cycle; the `! `/`> `/`\ ` typing rule; `PeerFlags.key`, `PeerServers`; `expectsAny`, `repeatUntil`; `stop`/`start`/`snapshot`/`restore` inside a test; `RelayPeer`; mobile hosts |
-| 8.2 | `xftp1` (configured but not served), `smp2`, `xftp2`, the names resolver, the control protocol, `restoreBaseline` |
+| 8.2 | `smp2`, `xftp2`, the names resolver, the control protocol, `restoreBaseline` (`xftp1` is served since 2026-10-19) |
 | 9.1–9.3 | `GuiUser`, `ChatRow` and the typed row classes; `uiTest(realTimes)`, `app(name, onboarded, fixture)`, `connect(gui, peer)`, `relay`, `mobileHost`, `servers`, `allowUncaught`, `screenshot`, `shouldHave`; the one-`app()`-per-test rule; `…CompatStableTest` subclasses |
 | 10.1 | `CatalogueTraceabilityTest`, stub generation, the catalogue in the repo; a traceability rule for the desktop-only (`chat.simplex.app.ui.desktop`) and Android-only (`chat.simplex.app.ui`, `chat.simplex.app.ui.back`) packages |
 | 11 | local HTTP and SOCKS stubs, committed media fixtures, multicast tests, server control, SQL fixtures |
@@ -1387,7 +1386,7 @@ Next: re-plan P1b from these results.
 **Status 2026-10-14, about 20:05 UTC (code before the PR; counts from the code, 0.5.1):**
 - Desktop: 142 `@Test` methods (112 shared + 25 desktop-only + 5 harness; `HarnessMeasureTest` is `@Ignore`d, so 141 run).
 - Android: 127 (112 shared + 14 `BackKeyTest` + `SmokeTest`). The last Android run (`run-20261014-164429`, 53/53) predates the exhaustive batches, so 74 shared tests had not run on Android before the final runs.
-- **Latest run results (2026-10-14, final code):** desktop `b22-desktop.log`: 142 completed, 141 passed, 0 failed, 1 skipped (`HarnessMeasureTest`, manual), 6 min 37 s with automatic forks; Android full run `run-20261014-214038` on Waydroid instance 2: 127 tests, 126 passed, 0 failed, 1 skipped (`connectBannerCardOpensPasteLink`, no camera), 18.5 min. Open flakes seen in earlier runs of the same day: 15.4.1, 15.4.1a, item 41. After rebasing on master `000258224` (2026-10-15): desktop `b23-desktop-rebased.log` 140 passed, 1 failed (15.4.1b; 3 reruns of the class passed), 1 skipped; Android `run-20261015-072618` through `scripts/waydroid/wd.sh` 126 passed, 0 failed, 1 skipped, 18.5 min.
+- **Latest run results (2026-10-14, final code):** desktop `b22-desktop.log`: 142 completed, 141 passed, 0 failed, 1 skipped (`HarnessMeasureTest`, manual), 6 min 37 s with automatic forks; Android full run `run-20261014-214038` on Waydroid instance 2: 127 tests, 126 passed, 0 failed, 1 skipped (`connectBannerCardOpensPasteLink`, no camera), 18.5 min. Open flakes seen in earlier runs of the same day: 15.4.1, 15.4.1a, item 41. After rebasing on master `000258224` (2026-10-15): desktop `b23-desktop-rebased.log` 140 passed, 1 failed (15.4.1b; 3 reruns of the class passed), 1 skipped; Android `run-20261015-072618` through `scripts/waydroid/wd.sh` 126 passed, 0 failed, 1 skipped, 18.5 min. After the test review, the stricter harness and the new tests (2026-10-19): desktop `s17-desktop.log` 138 tests, 137 passed, 0 failed, 1 skipped (`profilesHideShowsPasswordHint`, 15.5 item 5), 10 min 48 s; Android `run-20261019-182857` 131 tests, 126 passed, 2 failed (fixed afterwards: the quote test uses short filler messages because Android positions a chat inside a message taller than the screen; the group-link setup reopens the group because of 15.5 item 6), 3 skipped (no camera; 15.5 items 5 and 6).
 
 **Earlier status, 2026-10-14 about 17:00:** desktop 43/43, twice in a row (`b13-desktop-1/2.log`); Android 53/53 in one run (`run-20261014-164429`: 38 shared + 14 Back-key + smoke, 16.5 min of instrumentation). The exhaustive pass then added 99 catalogue tests (74 shared, 25 desktop-only) in two batches (P1a progress, batches 5 and 6).
 
@@ -1401,7 +1400,7 @@ Next: re-plan P1b from these results.
 - ~~Android `PrefStores` reset~~ (done: `android/.../harness/PrefStores.kt`, used by `resetForTest`); ~~Android Back tests~~ (done: `BackKeyTest`, 14).
 - Android notification tests; an Android 10-run exit check.
 - Android template decryption: `bootOnce` now calls `apiStopChat` before `apiStorageEncryption` (15.4 item 25); verified on Waydroid in the final run (reset median 585 ms, n = 126).
-- `wd.sh net isolate` in the Android runner (0.5.9); `xftp1` served by `uitest-servers` (0.5.6); peer `--mute` (8.1).
+- `wd.sh net isolate` in the Android runner (0.5.9); peer `--mute` (8.1).
 - The test-APK build spends about 80 s on the `~/build` snapshot and slot plus a cold Gradle daemon, before about 60 s of real work. A warm daemon during runs would save most of that, but costs 1.5–2.5 GB of RAM; not done.
 - Nothing is committed.
 
@@ -1535,12 +1534,29 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
     - The "Paste link / Scan" banner opens the QR scanner; Waydroid has no camera, so CameraX fails and the app crashes when the scanner is disposed (15.5 item 4). `connectBannerCardOpensPasteLink` calls `assumeCamera()` (skipped on devices without a camera; no-op on desktop).
 41. **`chatCloseStore` failures were ignored.** It returns an error text ("" on success); the resets deleted the database files whatever it returned. One desktop run (b21) had `apiNewGroup` fail with "SQLite3 returned ErrorIO … disk I/O error" right after a reset (first time in about 20 runs; the disk was not full). Both harnesses now fail the reset when `chatCloseStore` returns an error, so a recurrence names its cause. The I/O error itself is not explained yet (open item).
 42. **The Waydroid tool is in the repo and portable** (2026-10-15, user request). `apps/multiplatform/scripts/waydroid/` holds `wd.sh`, `provision2.sh` (instance 2), `watchdog2.sh`, `weston.ini`, `fetch-images.sh` and a README; `uitest-android.sh` uses it by default (`WD_SH` overrides) and takes its adb from `wd.sh adb-path`, so both use one adb binary (before, the runner used `$ANDROID_HOME`'s adb 37.0.0 and `wd.sh` `~/Android/Sdk`'s 36.0.2). Machine paths became `WD_HOME`/`WD2_HOME`/`$HOME`/SDK variables. On Qubes it behaves as before (offline debs, `$WD_HOME/var` bind mount, Qubes nft chains). Elsewhere it installs with apt (repo.waydro.id) or dnf, uses `/var/lib/waydroid` directly, lets `waydroid init` download images, trusts the bridge in firewalld, and isolates with an nft table of its own (`inet wd_uitest`). Weston flags follow the version (12+: `--backend=headless --renderer=pixman`; checked against weston 11, 12 and 14 sources). Verified on Qubes: instance 2 up/status/shot/nodes/rootsh, `net isolate/open` with the Qubes chain and, on a scratch copy with the Qubes check off, with the own table; the full Android suite ran through it. The apt/dnf install, image download and firewalld paths were not run (no non-Qubes host here).
+43. **Test review and the stricter harness (2026-10-19).** Five reviewers graded all 157 tests (`reviews/2026-10-19-test-review-{A..E}.md`; point-in-time, the outcome is in this item): 103 keep, 29 strengthen, 19 merge, 6 drop; the harness hid failures (Android crash handler recovery, second Enter, quiesce, deadline extensions, discarded peer output, message allowlist). The test-writing guide (`apps/multiplatform/common/src/uiTestShared/README.md`) codifies the rules; the harness now fails on crashes, peer errors and stuck work, has no input retries, and marks known app bugs with `@KnownAppIssue` (0.5.8). Steps 2–3 applied the verdicts: about 25 tests merged or dropped, the rest strengthened (outcomes checked, opposite states proven first, negative controls, both branches of conditional UI); new keys only on elements tests act on: the link-preview thumbnail (`Ui.ChatList.Row(id).part("link")`) and the database-error passphrase field and Open button (`Ui.DbError`).
+44. **Restart re-read settings after the core started.** Reloading `settings.properties` after `initChatControllerOnStart` raced with the app's start-up and opened the database with the wrong key ("Wrong database passphrase") in three tests. The reload now runs between stopping and initialising the core.
+45. **Restart stopped the core before pending app work finished.** `restart()` disposes the scene, and a disposed onboarding passphrase screen starts chat in the background (15.5 item 3); stopping the core first made that job fail with "Controller is not initialized" and left `ctrlInitInProgress` set, which failed every later test of the JVM. `restartCore` now drains first, and a reset clears a leftover `ctrlInitInProgress`.
+46. **Assertions written from the review were checked against the app.** Two proposed checks did not match the app: the invite sheet shows "Skip inviting members" or, with no contacts, "No contacts to add" instead of an Invite button; a row with unread messages shows the badge instead of the mute icon. Rule kept in the guide: read the code behind every expected element.
+47. **The group mute revert (15.5 item 1) is now visible.** With the row's mute icon checked after each mode change, the revert shows as a missing icon; the waits report the model's mode on timeout.
+48. **XFTP is served** (0.5.6), so file and image tests can run against local servers.
+49. **First runs of the new tests (2026-10-19).** Causes found and fixed, none in app code:
+    - the CLI inserts the open chat after a leading `> ` (as after `! `), so quote commands are written `>@alice (…) …` (guide, Peers);
+    - a helper waited for a group member that had not joined yet (`memberTexts` returns empty instead);
+    - `DefaultAppBar` keys only its parts, so the selection bar is `Ui.Chat.Selection.part("title")`;
+    - `switchTo` returned while the user picker was still closing, and the next tap hit a disappearing row; it now waits for `Ui.UserPicker.Sheet` to go;
+    - failure screenshots of different tests in one JVM overwrote each other; the name now includes the test directory.
+50. **Android peers leaked between tests.** The bridge reused a peer's directory by name so a peer could be stopped and restarted within a test, but the reuse outlived the test: 76 tests failed with "subscribed N connections". `CliPeer.dispose()` (bridge `forget`) ends a test's peers and their directories.
+51. **The notification shade took window focus on Waydroid.** A "bob Connected" heads-up left the expanded shade focused (`mCurrentFocus=NotificationShade`), and every later Espresso action failed with `RootViewWithoutFocusException`. The runner disables heads-up notifications and each Android reset collapses the shade (environment setup, not app behaviour under test).
+52. **Native allocator deadlock under arm64 translation stalls the whole process.** Several threads in `scudo::HybridMutex::lockSlow` (`wd.sh bt`) block every thread, the in-process watchdog and the signal catcher included, so a run hung for over an hour twice. `uitest-android.sh` now force-stops the app when the instrumentation output has not changed for `UITEST_STALL_S` (420 s); the pass ends abnormally, the stuck test is reported as `crashed`, and the run resumes. A pass is resumed after any abnormal end (`INSTRUMENTATION_RESULT: shortMsg=…`: "Process crashed", or an ANR such as `keyDispatchingTimedOut` when the main thread is the one stuck). Environmental (Waydroid libndk), not an app result.
+53. **Typing into the Android message field right after a chat opened was lost**: the composer resets the field while the chat opens. Without the old retry loop, the helper now waits for the field to be stable and lets the screen settle before the single `replaceText`.
 
 ### 15.4.1 Open flake: a CLI member's group join not completed (desktop, 2 of 5 runs)
 
 - `MemberInfoTest.memberInfo_changeRoleToAdmin` (run b18) and `memberInfo_removeMember` (run b15): bob sends `/j team` and never prints "#team: you joined the group" within 60 s (30 s in b15). No API call is in flight in the app.
 - Bob's agent database after the failure: the group connection's send queue is `confirmed` and its receive queue is `new`, so bob's confirmation was sent and alice's app never replied (no HELLO/secure). Alice's database was reset by the next test, so her side was not inspected.
 - Not reproduced in isolation yet. Next step: keep the app database of a failing test (copy before reset) and check whether alice's agent received the CONF and whether the chat layer called `allowConnection`.
+- 2026-10-19: the same stall happens between two CLI peers. In `ReceivedMessagesTest.groupRcv_consecutiveMessages_avatarOnce` (run s6), cath (CLI) sent `/j team` to bob's (CLI) group and printed nothing for about 80 s, and bob never printed "cath joined"; the hard watchdog then halted the JVM. So the stall is not in the app; it is in the core or the local server under load (that run had two JVMs on a loaded machine). The 240 s hard watchdog halts the whole JVM, so the remaining tests of that fork are not run (open item: fail the test instead of halting when the test thread is not in native code).
 
 ### 15.4.1a Open flake: group row preview not updated (Android, 1 of 2 runs)
 
@@ -1552,6 +1568,11 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 - `ForwardTest.forward_toNotes_showsSavedFrom` (rebased run b23, 2026-10-15): bob sends "hey", alice opens bob's chat right away; the chat list row shows "hey" with unread 1, but the open chat shows no items (only the "1" unread-below counter) for 10 s. Three reruns of the class passed.
 - Likely an app race between loading the opened chat's items and the new-item event (the item is in the chat preview, not in the open chat's list). Not resolved; next step is to capture `chatsContext.chatItems` on failure.
 
+### 15.4.1c Open: Android cannot reach the quoted reply in `reply_received_showsQuote_clickScrollsToOriginal`
+
+- On Android, while alice's chat is open, bob's 30 short messages and his reply arrive and the list stays where it was (top); the scroll-down arrow is shown. Tapping it through `ChatScreen.scrollToBottom()` (key `Ui.Chat.ScrollToBottom`) left the list at the top in the failure screenshot, and clicking the reply's quote then timed out with the node still moving. With two 60-line messages instead, Android positioned the chat inside the tall message. Marking the chat read and reopening it opened it at the first unread message.
+- Not resolved: whether the arrow tap is lost, or the app scrolls back (an animated `scrollToBottom` racing item loading), is not known. The test passes on desktop; on Android it is skipped with this reason (`assumeTrue`), so it shows as skipped, not passed. Next step: log `listState.firstVisibleItemIndex` around the arrow tap.
+
 ### 15.4.2 Test strength limits (second review, 2026-10-14)
 
 Under the minimal-app-code rule (item 31) some states are asserted through the model, not the UI. These tests pass if the model is right even when the UI fails to render the state:
@@ -1560,11 +1581,11 @@ Under the minimal-app-code rule (item 31) some states are asserted through the m
 - `profilesAddProfile` checks `chatModel.users`;
 - `createListDuplicateNameError` cannot see the error text because it is always composed (transparent when hidden, `TagListView.kt`).
 Harness behaviours that can hide an app defect:
-- `enterWhenSendable` presses Enter again if the field has not cleared after 5 s (needed for 15.5 item 2), so a dropped first Enter is not reported;
+- (fixed 2026-10-19, item 43) `enterWhenSendable` pressed Enter again if the field had not cleared after 5 s;
 - Android `pressEnter` on the message field taps Send; desktop `escape()` invokes the window back stack directly instead of sending an Esc key event;
 - `isEnabled` is always true for `SectionItemView` keys (a disabled item drops `clickable` and sets no Disabled semantics).
 Known harness limits (accepted for P1a):
-- the known-issue allowlist cannot tell a body-time "database closed" from a teardown one, because Compose reports uncaught coroutine exceptions only when the test ends;
+- (replaced 2026-10-19 by `@KnownAppIssue`, item 43) the known-issue allowlist could not tell a body-time "database closed" from a teardown one, because Compose reports uncaught coroutine exceptions only when the test ends;
 - Android `clipboardText()` falls back to the device clipboard, which is not cleared between tests;
 - `OnboardingSharedState.selectedOperatorIds` is not reset between tests (no current test depends on it);
 - `:common:desktopUiTest` run without `scripts/uitest.sh` is skipped and reports success with zero tests;
@@ -1592,6 +1613,10 @@ Fixed in the same review: `createGroup_opensChatAndInviteSheet` now checks the o
    - Allowlisted in the harness as a known app issue (15.4 item 28).
 
 4. **Leaving the QR scanner crashes the app when the camera cannot be initialised** (`QRCodeScanner.android.kt:57-60`). `onDispose` calls `cameraProviderFuture?.get()?.unbindAll()`; when CameraX initialisation failed (no camera; on real devices possibly a camera held by another app or a camera service error), `get()` throws `ExecutionException(InitializationException(CameraUnavailableException))` during disposal, which is uncaught. Seen on Waydroid (0 cameras) in `connectBannerCardOpensPasteLink`; the activity then never reaches DESTROYED. The listener at :89-124 calls `get()` the same way. Fix idea, not done: catch the failure around `get()` in both places.
+
+5. **"Enter password in search" never appears after hiding a profile** (`UserProfilesView.kt:130-140`, `ModalView.kt` `showInView`). The hide screen opens as a second modal over the profiles list; `ModalManager` composes only the top modal, so the profiles list is disposed while the hide screen is open and recreated when it closes. Its `profileHidden` (`rememberSaveable` in `UserPicker.kt`) is restored from the value saved at disposal (`false`); the hide callback sets `true` on the old state object, so the hint is never shown. Test: `HiddenProfilesTest.profilesHideShowsPasswordHint`, marked `@KnownAppIssue("15.5 item 5")`. Fix idea, not done: keep `profileHidden` outside the modal content (hoist it to the caller) or set it after the profiles modal is recomposed.
+
+6. **Android: Back on the invite-members sheet right after creating a group sometimes closes the group chat too** (`BackKeyTest.back_closesContactAndGroupInfo`, 2 of 3 runs on 2026-10-19; the screen returns to the chat list instead of team's chat). The sheet registers two Back handlers (`ModalView` and `AddGroupMembersView.kt:44`), and the chat under it registers its own on Android (`ChatView.kt` `if (appPlatform.isAndroid && chatsCtx.secondaryContextFilter == null) BackHandler`); Android gives Back to the most recently registered enabled handler, so a re-registration of the chat's handler after the sheet opened would close the chat. Mechanism plausible, not confirmed. The test is marked `@KnownAppIssue("15.5 item 6", intermittent = true)`.
 
 ### 15.6 Catalogue corrections applied from passing tests (exhaustive pass)
 

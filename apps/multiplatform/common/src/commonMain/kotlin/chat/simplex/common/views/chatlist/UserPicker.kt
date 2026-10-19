@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import chat.simplex.common.ui.ui
 import SectionItemView
 import TextIconSpaced
 import androidx.compose.foundation.*
@@ -307,6 +308,7 @@ fun UserPicker(
                 onSearchValueChanged = {
                   search.value = it
                 },
+                uiKey = Ui.Profiles.Bar,
                 content = {
                   UserProfilesView(chatModel, search, profileHidden) { block ->
                       if (authorized.value) {
@@ -431,10 +433,12 @@ fun UserProfilePickerItem(
   enabled: Boolean = remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote,
   onLongClick: () -> Unit = {},
   openSettings: () -> Unit = {},
+  uiKey: UiKey? = null,
   onClick: () -> Unit
 ) {
   Row(
     Modifier
+      .ui(uiKey)
       .fillMaxWidth()
       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(

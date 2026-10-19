@@ -26,7 +26,7 @@ At P1 the catalogue moves into the repo at `apps/multiplatform/common/src/deskto
 - Features that can't be tested in-process are rows too: their names go in the `Test case(s)` column like any other, and the `Needs` cell says `IGNORE: <reason>`; the reason must fall under a plan §11.3 bullet. The `@Ignore` string is the cell text after `IGNORE: `, verbatim, including any parenthetical. The traceability check requires a `@Test` method for every name; for `IGNORE` rows that method carries `@Ignore("<reason>")`.
 - **Needs apply to every name in the row.** A row whose tests need different things is split, so that counts and JUnit categories derived from Needs are exact.
 - **Needs cells contain only codes from the table below**, each optionally followed by `×N` (number of peers for `P`, of relays for `RELAY`, e.g. `P ×3`, `RELAY ×2`) and/or a short parenthetical detail (e.g. `FIXTURE (legacy address)`, `FD (wallpaper image)`). Setup states that are not harness capabilities (lock on, two users, four chats, a group) belong in the row's notes, not in Needs.
-- Section headings carry the section's test count, e.g. `### B. Composing and sending text, links, mentions, commands (29 tests)`; the file header states the totals; nothing follows the `## Count` table.
+- Section headings carry the section's test count, e.g. `### B. Composing and sending text, links, mentions, commands (28 tests)`; the file header states the totals; nothing follows the `## Count` table.
 
 ## Users and CLI output
 
@@ -39,7 +39,7 @@ At P1 the catalogue moves into the repo at `apps/multiplatform/common/src/deskto
 | Code | Meaning |
 |---|---|
 | `P` | CLI peer(s), the current build unless the row names a stable one |
-| `S` | also run with the stable-release CLI peer. These tests live in their class base's separate `open class <Base>CompatTest` (class map), whose subclass `<Base>CompatStableTest` overrides the peer version; never combined with `RELAY` (channels need current-build peers) |
+| `S` | also run with the stable-release CLI peer. These tests live in their class base's separate `open class <Base>CompatTest` (class map), whose subclass `<Base>CompatStableTest` overrides the peer version; never combined with `RELAY` (channels need current-build peers). S rows currently run only against the current CLI build; the stable-peer run is not wired (plan 0.5.11) |
 | `SMP` | local SMP server (always available, so never needed in a cell; stopping or starting it is `SRVCTL`) |
 | `SMP2` | a second local SMP server (private routing, manual server add, a peer on another server) |
 | `XFTP` | informational: the row transfers files through the local XFTP server. The server is always available (like `SMP`), so the code derives no category and requires nothing; it only marks file rows |
@@ -70,7 +70,7 @@ At P1 the catalogue moves into the repo at `apps/multiplatform/common/src/deskto
 
 ## Catalogue 05 (Android-only)
 
-`05-android-only.md` covers UI that exists only on Android or behaves materially differently there (added 2026-10-12). It is for the Android harness (`plans/ui-tests/2026-10-12-android-ui-test-automation.md`, Waydroid), not the desktop run: its tests are outside the desktop counts, class map and traceability check above, and the count tools read 01–04 only. It defines its own extra Needs codes (`PERM`, `SYSUI`, `SYSNTF`, `INTENTS`, `INTENT`, `BG`, `BACK`, `IME`, `VIEW`, `SHELL`, `ROT`) and IGNORE reasons at its top; rows of 01–04 carry over to Android unchanged unless `05-android-carryover.md` lists them (REPLACED by a 05 test, DESKTOP-ONLY, or ADAPT with the Android change; 357 of 1,177 listed, 2026-10-13).
+`05-android-only.md` covers UI that exists only on Android or behaves materially differently there (added 2026-10-12). It is for the Android harness (`plans/ui-tests/2026-10-12-android-ui-test-automation.md`, Waydroid), not the desktop run: its tests are outside the desktop counts, class map and traceability check above, and the count tools read 01–04 only. It defines its own extra Needs codes (`PERM`, `SYSUI`, `SYSNTF`, `INTENTS`, `INTENT`, `BG`, `BACK`, `IME`, `VIEW`, `SHELL`, `ROT`) and IGNORE reasons at its top; rows of 01–04 carry over to Android unchanged unless `05-android-carryover.md` lists them (REPLACED by a 05 test, DESKTOP-ONLY, or ADAPT with the Android change; 348 of 1,155 listed, 2026-10-19).
 
 ## Ownership of overlapping features
 
@@ -118,13 +118,13 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 
 | Cat | § | Sub-area | First test | Classes | Tests | Ignored |
 |---|---|---|---|---|---|---|
-| 01 | 1 | Onboarding | `onboardingWelcomeShowsDesktopActions` | `OnboardingTest` | 24 | 0 |
-| 01 | 2 | What's New | `whatsNewFromSettings` | `WhatsNewTest` | 6 | 0 |
-| 01 | 3 | Chat list | `chatListTitleAndProfileButton` | `ChatListToolbarSearchTest` | 18 | 0 |
-| 01 | 3 | Chat list | `unreadFilterToggle` | `ChatListFiltersListsTest` | 25 | 0 |
-| 01 | 3 | Chat list | `previewShowsLastTextMessage` | `ChatListRowsTest` | 22 | 0 |
-| 01 | 3 | Chat list | `contactMenuMarkRead` | `ChatListMenusPendingTest` | 15 | 0 |
-| 01 | 3 | Chat list | `contactRequestMenuAccept` | `ChatListRequestsCardsTest`, `ChatListRequestsCardsCompatTest`, `ChatListRequestsCardsCompatStableTest` | 26 | 0 |
+| 01 | 1 | Onboarding | `onboardingWhySimplexIsBuiltOpensHowItWorks` | `OnboardingTest` | 18 | 0 |
+| 01 | 2 | What's New | `whatsNewFromSettings` | `WhatsNewTest` | 5 | 0 |
+| 01 | 3 | Chat list | `chatListScrollToTopOnTitleClick` | `ChatListToolbarSearchTest` | 16 | 0 |
+| 01 | 3 | Chat list | `unreadFilterToggle` | `ChatListFiltersListsTest` | 24 | 0 |
+| 01 | 3 | Chat list | `previewShowsLastTextMessage` | `ChatListRowsTest` | 17 | 0 |
+| 01 | 3 | Chat list | `contactMenuMarkRead` | `ChatListMenusPendingTest` | 12 | 0 |
+| 01 | 3 | Chat list | `contactRequestMenuAccept` | `ChatListRequestsCardsTest`, `ChatListRequestsCardsCompatTest`, `ChatListRequestsCardsCompatStableTest` | 24 | 0 |
 | 01 | 4 | Servers summary | `serversSummaryOpensFromIndicator` | `ServersSummaryTest` | 10 | 0 |
 | 01 | 5 | User picker and profiles | `userPickerOpensAndShowsCurrentUser` | `UserPickerTest` | 11 | 0 |
 | 01 | 5 | User picker and profiles | `profilesListShowsAllVisible` | `ChatProfilesTest` | 21 | 0 |
@@ -134,13 +134,13 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 01 | 8 | Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) | `pasteLinkInvalidTextAlert` | `ConnectPlanTest`, `ConnectPlanCompatTest`, `ConnectPlanCompatStableTest` | 29 | 0 |
 | 01 | 9 | Connecting a prepared chat (compose area) | `preparedContactInvitationConnectButton` | `PreparedChatTest` | 11 | 0 |
 | 01 | 10 | Pending connection info screen | `pendingInfoInvitedShowsLinkQrShare` | `PendingConnectionTest` | 7 | 0 |
-| 01 | 11 | Address screens | `addressScreenNoAddressShowsCreate` | `AddressTest`, `AddressCompatTest`, `AddressCompatStableTest` | 23 | 0 |
+| 01 | 11 | Address screens | `addressScreenNoAddressShowsCreate` | `AddressTest` | 22 | 0 |
 | 01 | 12 | SimpleX name | `simplexNameEntryShownWithAddress` | `SimplexNameTest` | 8 | 0 |
 | 01 | 13 | Contact info screen | `contactInfoOpensFromChatHeader` | `ContactInfoTest` | 28 | 0 |
 | 01 | 14 | Preferences | `contactPrefsDisappearingMessagesAllow` | `ContactPreferencesTest` | 12 | 0 |
 | 01 | 15 | Delete contact variants | `deleteContactOnlyConversation` | `DeleteContactTest` | 10 | 0 |
 | 02 | A | Chat view shell, toolbar, banner | `directChat_opens_showsToolbarAndBanner` | `ChatShellTest` | 11 | 0 |
-| 02 | B | Composing and sending text, links, mentions, commands | `sendText_enter_peerReceives` | `ComposeTest`, `ComposeCompatTest`, `ComposeCompatStableTest` | 29 | 0 |
+| 02 | B | Composing and sending text, links, mentions, commands | `sendText_sendButton_peerReceives` | `ComposeTest` | 28 | 0 |
 | 02 | C | Live messages | `liveMessage_menuStart_alertConfirm_peerSeesStarted` | `LiveMessageTest` | 10 | 0 |
 | 02 | D | Timed / disappearing messages | `timed_send30s_bothSidesDelete` | `TimedMessageTest` | 6 | 0 |
 | 02 | E | Voice messages | `voice_record_send_peerReceivesVoice` | `VoiceMessageTest` | 11 | 0 |

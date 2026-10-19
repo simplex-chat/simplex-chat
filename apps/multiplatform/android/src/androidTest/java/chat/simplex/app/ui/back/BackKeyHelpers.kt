@@ -1,7 +1,6 @@
 package chat.simplex.app.ui.back
 
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.compose.ui.test.isDisplayed
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
@@ -9,6 +8,7 @@ import androidx.test.runner.lifecycle.Stage
 import chat.simplex.app.MainActivity
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTestApp
+import chat.simplex.common.ui.UiKey
 
 private fun liveMainActivities(): List<MainActivity> {
   var live = emptyList<MainActivity>()
@@ -19,9 +19,12 @@ private fun liveMainActivities(): List<MainActivity> {
   return live
 }
 
+internal fun UiScope.displayed(key: UiKey): Boolean = rule.onNode(matcher(key)).isDisplayed()
+
 internal fun mainActivityFinished(): Boolean = liveMainActivities().all { it.isFinishing }
 
 internal fun UiScope.backFromRoot() {
+  check(liveMainActivities().any { !it.isFinishing }) { "no running MainActivity before Back" }
   Espresso.pressBackUnconditionally()
   poll(what = "MainActivity to finish") { mainActivityFinished() }
 }
@@ -34,17 +37,4 @@ internal fun UiScope.relaunch(body: () -> Unit) {
   }
 }
 
-internal fun keyboardShown(): Boolean {
-  var shown = false
-  UiTestApp.onMain {
-    val decor = ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED).firstOrNull()?.window?.decorView
-    shown = decor != null && ViewCompat.getRootWindowInsets(decor)?.isVisible(WindowInsetsCompat.Type.ime()) == true
-  }
-  return shown
-}
 
-internal fun UiScope.hideKeyboard() {
-  runCatching { poll(timeoutMs = 2_000, what = "the soft keyboard to show", screenshot = false) { keyboardShown() } }
-  Espresso.closeSoftKeyboard()
-  poll(what = "the soft keyboard to hide") { !keyboardShown() }
-}

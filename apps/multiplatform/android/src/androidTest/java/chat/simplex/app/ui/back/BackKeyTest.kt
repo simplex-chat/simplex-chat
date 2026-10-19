@@ -1,10 +1,11 @@
 package chat.simplex.app.ui.back
 
 import chat.simplex.app.ui.harness.ChatScreen
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.connect
-import chat.simplex.app.ui.harness.whatsNewFromSettings
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.platform.chatController
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
@@ -17,11 +18,19 @@ class BackKeyTest : UiTest() {
   @Test fun back_chatToChatList() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
+    val bobId = alice.chatList.chatId("bob")
+    val bobRow = Ui.ChatList.Row(bobId)
     alice.chatList.open("bob")
-    waitFor(Ui.Chat.Bar.part("title"))
+    click(Ui.Chat.Message)
+    poll(what = "bob's chat covering the chat list, with the soft keyboard shown") { exists(bobRow) && !displayed(bobRow) && keyboardShown() }
+    typeInto(Ui.Chat.Message, "draft")
     escape()
-    poll(what = "the chat list") { chatModel.chatId.value == null && !exists(Ui.Chat.Bar.part("title")) }
-    check(!mainActivityFinished()) { "Back from a chat finished MainActivity" }
+    poll(what = "the soft keyboard to hide") { !keyboardShown() }
+    check(chatModel.chatId.value == bobId && exists(Ui.Chat.Bar.part("title"))) { "the first Back closed the chat" }
+    escape()
+    poll(what = "the chat list showing bob's row") { chatModel.chatId.value == null && !exists(Ui.Chat.Bar.part("title")) && displayed(bobRow) }
+    alice.chatList.open("bob")
+    poll(what = "the draft back in the message field") { editableText(Ui.Chat.Message) == "draft" }
   }
 
   @Test fun back_closesChatSearchBeforeChat() = uiTest {
@@ -31,14 +40,15 @@ class BackKeyTest : UiTest() {
     bob sends "@alice banana"
     val bobId = alice.chatList.chatId("bob")
     val chat = alice.chatList.open("bob")
-    chat.itemId("banana")
+    val apple = Ui.Chat.Item(chat.itemId("apple"))
+    val banana = Ui.Chat.Item(chat.itemId("banana"))
     chat.openSearch()
     typeInto(Ui.Chat.Bar.part("search"), "apple")
-    poll(what = "search results without `banana`") { chat.itemTexts().let { "apple" in it && "banana" !in it } }
+    poll(what = "search results showing `apple` without `banana`") { exists(apple) && !exists(banana) }
     hideKeyboard()
     escape()
-    poll(what = "the search to close and the full chat to return") {
-      !exists(Ui.Chat.Bar.part("search")) && exists(Ui.Chat.Bar.part("title")) && "banana" in chat.itemTexts()
+    poll(what = "the search to close and both messages to show again") {
+      !exists(Ui.Chat.Bar.part("search")) && exists(Ui.Chat.Bar.part("title")) && exists(apple) && exists(banana)
     }
     check(chatModel.chatId.value == bobId) { "the first Back left the chat" }
     escape()
@@ -61,10 +71,12 @@ class BackKeyTest : UiTest() {
     check(chatModel.chatId.value == bobId) { "Back in selection mode left the chat" }
   }
 
+  @KnownAppIssue("15.5 item 6", "the invite members sheet to close to team's chat", intermittent = true)
   @Test fun back_closesContactAndGroupInfo() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     val bobId = alice.chatList.chatId("bob")
+    val bobInvitee = Ui.InviteMembers.Contact((alice.chatList.chat("bob").chatInfo as ChatInfo.Direct).contact.contactId)
     alice.chatList.open("bob").info()
     waitFor(Ui.Info.Alias)
     escape()
@@ -73,26 +85,16 @@ class BackKeyTest : UiTest() {
     poll(what = "the chat list") { chatModel.chatId.value == null && !exists(Ui.Chat.Bar.part("title")) }
     alice.newChat().createGroup("team")
     val teamId = alice.chatList.chatId("team")
-    poll(what = "the invite members sheet over team") { chatModel.chatId.value == teamId && ModalManager.end.openModalCount() == 1 }
+    poll(what = "the invite members sheet listing bob over team") { chatModel.chatId.value == teamId && exists(bobInvitee) }
     hideKeyboard()
     escape()
-    poll(what = "the invite members sheet to close") { !ModalManager.end.hasModalsOpen() && exists(Ui.Chat.Bar.part("title")) }
+    poll(what = "the invite members sheet to close to team's chat") {
+      !exists(bobInvitee) && !ModalManager.end.hasModalsOpen() && chatModel.chatId.value == teamId && exists(Ui.Chat.Bar.part("title"))
+    }
     ChatScreen(this).info()
     waitFor(Ui.Info.Alias)
     escape()
     poll(what = "group info to close to team's chat") { !ModalManager.end.hasModalsOpen() && !exists(Ui.Info.Alias) && chatModel.chatId.value == teamId }
-  }
-
-  @Test fun back_hidesKeyboardFirst() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    val bobId = alice.chatList.chatId("bob")
-    alice.chatList.open("bob")
-    click(Ui.Chat.Message)
-    poll(what = "the soft keyboard to show") { keyboardShown() }
-    escape()
-    poll(what = "the soft keyboard to hide") { !keyboardShown() }
-    check(chatModel.chatId.value == bobId && exists(Ui.Chat.Bar.part("title"))) { "the first Back closed the chat" }
   }
 
   @Test fun back_clearsChatListSearch() = uiTest {
@@ -185,13 +187,5 @@ class BackKeyTest : UiTest() {
       poll(what = "Your network again") { seesText("Your network") }
       check(appPrefs.onboardingStage.get() == OnboardingStage.Step3_ChooseServerOperators) { "relaunch changed the onboarding stage" }
     }
-  }
-
-  @Test fun back_closesWhatsNew() = uiTest {
-    val alice = app("alice")
-    whatsNewFromSettings(alice)
-    poll(what = "What's new over Help & support") { ModalManager.start.openModalCount() == 3 && !exists(Ui.Help.WhatsNew) }
-    escape()
-    poll(what = "Help & support again") { ModalManager.start.openModalCount() == 2 && exists(Ui.Help.WhatsNew) }
   }
 }

@@ -12,12 +12,15 @@ class CliPeer(name: String, private val dir: File, private val smpServer: String
   private var proc: PtyProcess? = null
   private var reader: Thread? = null
 
+  fun createFile(fileName: String, content: String): String =
+    File(dir, "files").apply { mkdirs() }.resolve(fileName).apply { writeText(content) }.absolutePath
+
   fun start() {
     File(dir, "tmp").mkdirs()
     if (!File(dir, "simplex_v1_chat.db").exists()) {
       File(UiEnv.runDir, "peer-template").listFiles { f -> f.name.startsWith("simplex_v1_") }?.forEach { it.copyTo(File(dir, it.name)) }
     }
-    val args = mutableListOf(UiEnv.cli, "-d", File(dir, "simplex_v1").absolutePath, "--user-display-name", name, "-s", smpServer)
+    val args = mutableListOf(UiEnv.cli, "-d", File(dir, "simplex_v1").absolutePath, "--user-display-name", name, "-s", smpServer, "--xftp-server", TestServers.xftp1)
     if (flags.reactions) args += "--reactions"
     if (flags.markRead) args += "--mark-read"
     if (flags.fullLinks) args += "--show-full-links"

@@ -18,7 +18,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.AppPreferences
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.AppVersionText
 import chat.simplex.common.views.usersettings.SettingsActionItem
@@ -302,7 +304,7 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
       { onClick?.invoke() }
     } else null
     ),
-    modifier = Modifier.focusRequester(focusRequester).onPreviewKeyEvent {
+    modifier = Modifier.ui(Ui.DbError.Passphrase).focusRequester(focusRequester).onPreviewKeyEvent {
       if (onClick != null && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
         onClick()
         true
@@ -315,7 +317,7 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
 
 @Composable
 private fun ColumnScope.SaveAndOpenButton(enabled: Boolean, onClick: () -> Unit) {
-  TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
+  TextButton(onClick, Modifier.ui(Ui.DbError.Open).align(Alignment.CenterHorizontally), enabled = enabled) {
     Text(generalGetString(MR.strings.save_passphrase_and_open_chat))
   }
 }
@@ -334,7 +336,7 @@ private fun OpenDatabaseDirectoryButton() {
 
 @Composable
 private fun ColumnScope.OpenChatButton(enabled: Boolean, onClick: () -> Unit) {
-  TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
+  TextButton(onClick, Modifier.ui(Ui.DbError.Open).align(Alignment.CenterHorizontally), enabled = enabled) {
     Text(generalGetString(MR.strings.open_chat))
   }
 }

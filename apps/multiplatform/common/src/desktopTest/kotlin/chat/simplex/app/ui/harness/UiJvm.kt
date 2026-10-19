@@ -20,5 +20,6 @@ object UiJvm {
 object Peers {
   private val running = mutableListOf<CliPeer>()
   @Synchronized fun add(p: CliPeer) { running += p }
+  @Synchronized fun all(): List<CliPeer> = running.toList()
   @Synchronized fun stopAll() { running.forEach { runCatching { it.stop() } }; running.clear() }
 }

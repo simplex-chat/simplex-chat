@@ -830,6 +830,7 @@ fun BlockForAllButton(onClick: () -> Unit) {
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
+    uiKey = Ui.MemberInfo.BlockForAll,
   )
 }
 

@@ -64,6 +64,7 @@ object CommonUiState {
       setStatic("chat.simplex.common.views.chatlist.ChatListViewKt", "lazyListState", 0 to 0)
       setStatic("chat.simplex.common.views.chat.ChatViewKt", "reportsListState", null)
       AppLock.clearAuthState()
+      setStatic("chat.simplex.common.views.onboarding.OnboardingSharedState", "selectedOperatorIds", emptySet<Long>())
     }
     clearTransient(onMain)
   }

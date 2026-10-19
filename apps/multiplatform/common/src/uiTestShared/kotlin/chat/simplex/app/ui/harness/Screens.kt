@@ -5,6 +5,7 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.GroupMemberRole
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.views.helpers.ModalManager
 
 class App(private val s: UiScope) {
   val chatList = ChatListScreen(s)
@@ -55,7 +56,8 @@ class ChatListScreen(private val s: UiScope) {
 
   fun request(name: String): ChatListScreen {
     row(name)
-    s.poll(what = "the `Open to accept` request row for `$name`") { s.seesText("Open to accept", substring = true) }
+    val id = chatId(name)
+    s.poll(what = "the `Open to accept` request row for `$name`") { s.textsOf(Ui.ChatList.Row(id)).any { "Open to accept" in it } }
     return this
   }
 
@@ -70,7 +72,10 @@ class ChatListScreen(private val s: UiScope) {
   }
 
   fun gone(name: String) {
-    s.poll(what = "chat `$name` to disappear") { chatModel.chats.value.none { it.chatInfo.chatViewName == name } }
+    val id = chatModel.chats.value.firstOrNull { it.chatInfo.chatViewName == name }?.id
+    s.poll(what = "chat `$name` to disappear from the model and the list") {
+      chatModel.chats.value.none { it.chatInfo.chatViewName == name } && (id == null || !s.exists(Ui.ChatList.Row(id)))
+    }
   }
 
   fun open(name: String): ChatScreen {
@@ -136,7 +141,9 @@ class UserPickerScreen(private val s: UiScope) {
 
   fun switchTo(name: String) {
     s.click(Ui.UserPicker.User(chatModel.users.first { it.user.displayName == name }.user.userId))
-    s.poll(what = "`$name` to become the active user") { chatModel.currentUser.value?.displayName == name && !chatModel.switchingUsersAndHosts.value }
+    s.poll(what = "`$name` to become the active user and the user picker to close") {
+      chatModel.currentUser.value?.displayName == name && !chatModel.switchingUsersAndHosts.value && !s.exists(Ui.UserPicker.Sheet)
+    }
     s.quiesce()
   }
 }
@@ -223,6 +230,13 @@ class ChatScreen(private val s: UiScope) {
 
   fun item(id: Long): ChatItem? = chatModel.chatsContext.chatItems.value.firstOrNull { it.id == id }
 
+  fun scrollToBottom() {
+    s.settle()
+    if (!s.exists(Ui.Chat.ScrollToBottom)) return
+    s.click(Ui.Chat.ScrollToBottom)
+    s.poll(what = "the chat scrolled to the bottom") { !s.exists(Ui.Chat.ScrollToBottom) }
+  }
+
   fun itemTexts(): List<String> = chatModel.chatsContext.chatItems.value.map { it.content.text }
 
   fun menu(text: String, action: String) {
@@ -270,16 +284,7 @@ class ChatScreen(private val s: UiScope) {
   private fun enterWhenSendable() {
     s.poll(what = "the send button to be enabled") { s.isEnabled(Ui.Chat.Send) }
     s.pressEnter(Ui.Chat.Message)
-    if (fieldClears(ENTER_RETRY_MS)) return
-    if (!s.editableText(Ui.Chat.Message).isNullOrEmpty() && s.isEnabled(Ui.Chat.Send)) runCatching { s.pressEnter(Ui.Chat.Message) }
-    s.poll(what = "the message field to clear after the second Enter") { s.editableText(Ui.Chat.Message).isNullOrEmpty() }
-  }
-
-  private fun fieldClears(timeoutMs: Long): Boolean =
-    runCatching { s.poll(timeoutMs = timeoutMs, what = "the message field to clear", screenshot = false) { s.editableText(Ui.Chat.Message).isNullOrEmpty() } }.isSuccess
-
-  private companion object {
-    const val ENTER_RETRY_MS = 5_000L
+    s.poll(what = "the message field to clear after one Enter") { s.editableText(Ui.Chat.Message).isNullOrEmpty() }
   }
 }
 
@@ -300,21 +305,56 @@ class ContactInfoScreen(private val s: UiScope) {
 
 class GroupInfoScreen(private val s: UiScope) {
   fun member(name: String): MemberInfoScreen {
+    val id = memberId(name)
+    s.scrollTo(Ui.GroupInfo.Member(id))
+    s.click(Ui.GroupInfo.Member(id))
+    return MemberInfoScreen(s)
+  }
+
+  fun memberTexts(name: String): List<String> {
+    val id = chatModel.groupMembers.value.firstOrNull { it.memberProfile.displayName == name }?.groupMemberId ?: return emptyList()
+    s.scrollTo(Ui.GroupInfo.Member(id))
+    return s.textsOf(Ui.GroupInfo.Member(id))
+  }
+
+  fun ownMemberTexts(): List<String> {
+    val id = (chatModel.chats.value.first { it.id == chatModel.chatId.value }.chatInfo as ChatInfo.Group).groupInfo.membership.groupMemberId
+    s.scrollTo(Ui.GroupInfo.Member(id))
+    return s.textsOf(Ui.GroupInfo.Member(id))
+  }
+
+  fun createLink(): String {
+    s.click(Ui.GroupInfo.CreateLink)
+    s.waitFor(Ui.GroupLink.Share, CONNECT_TIMEOUT_MS)
+    s.click(Ui.GroupLink.Share)
+    var link: String? = null
+    s.poll(what = "the group link shared") { link = s.clipboardText()?.takeIf { it.isNotBlank() }; link != null }
+    s.escape()
+    s.poll(what = "the group link screen to close") { !s.exists(Ui.GroupLink.Share) }
+    return link!!
+  }
+
+  private fun memberId(name: String): Long {
     var id: Long? = null
     s.poll(what = "member `$name` in the model") {
       id = chatModel.groupMembers.value.firstOrNull { it.memberProfile.displayName == name }?.groupMemberId
       id != null
     }
-    s.scrollTo(Ui.GroupInfo.Member(id!!))
-    s.click(Ui.GroupInfo.Member(id!!))
-    return MemberInfoScreen(s)
+    return id!!
   }
 }
 
 class MemberInfoScreen(private val s: UiScope) {
+  fun blockForAll() {
+    s.click(Ui.MemberInfo.BlockForAll)
+    s.poll(what = "the `Block member for all?` alert with `Block for all`") { s.seesText("Block member for all?") && "Block for all" in s.textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared)) }
+    s.click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+  }
+
   fun changeRole(role: GroupMemberRole) {
     s.click(Ui.MemberInfo.Role)
     s.click(Ui.MemberInfo.Role.option(role))
+    s.poll(what = "the `Change role?` alert with `Change`") { s.seesText("Change role?") && "Change" in s.textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared)) }
     s.click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
   }
 
@@ -322,6 +362,16 @@ class MemberInfoScreen(private val s: UiScope) {
     s.click(Ui.MemberInfo.Remove)
     s.click(Ui.Alert.Option(Ui.AlertSource.Shared, "remove"))
   }
+}
+
+fun UiScope.emptyGroup(app: App, group: String): ChatScreen {
+  app.newChat().createGroup(group)
+  val id = app.chatList.chatId(group)
+  poll(what = "the invite members sheet over `$group`") { chatModel.chatId.value == id && ModalManager.end.hasModalsOpen() && seesText("Invite members") }
+  escape()
+  poll(what = "the invite members sheet to close") { !ModalManager.end.hasModalsOpen() && !seesText("Invite members") }
+  backToChatList()
+  return app.chatList.open(group)
 }
 
 fun UiScope.ownGroup(app: App, group: String, vararg members: CliPeer): ChatScreen {
