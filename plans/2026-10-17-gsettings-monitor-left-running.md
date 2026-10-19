@@ -25,7 +25,7 @@ Alternatives considered:
 - Stopping it at `exitProcess(0)` in `DesktopApp.kt`: misses SIGTERM/SIGHUP (session logout).
 - Upgrading the library: its current master still does not stop the monitor on exit.
 
-Not covered (no in-process code runs): SIGKILL, JVM crashes, native `exit()` — including Ctrl-C in a terminal, which the Haskell runtime handles and ends with a native exit.
+Not covered (no in-process code runs): SIGKILL, JVM crashes, native `exit()`. Ctrl-C in a terminal does not need it: the monitor is in the terminal's foreground process group, gets the SIGINT itself and exits; the app does not quit on the first Ctrl-C (the Haskell runtime takes it) and exits natively on a second one.
 
 Side effect: when the monitor is stopped, the library's thread reads end-of-file and throws a `NullPointerException` (`readLine()` returned null); on some exits the JVM prints its stack trace to stderr before the process ends.
 
