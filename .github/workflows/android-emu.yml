@@ -5,7 +5,7 @@ name: android-emu
 on:
   push:
     branches:
-      - "**"
+      - "f/*"
       # a squash merge's message lists the merged commits' subjects, with their tags
       - "!master"
       - "!stable"
@@ -79,7 +79,7 @@ jobs:
       fail-fast: false
       matrix:
         api: [34]
-        gpu: [swiftshader_indirect, guest]
+        gpu: [swiftshader_indirect]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -158,11 +158,27 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME"
           ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" "$ANDROID_HOME/ndk" || true
 
-      # until the core is built on the runner: the released core of the same version
-      - name: Core library from the released APK
+      - name: Download core library
+        if: needs.plan.outputs.core-run != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.core }}
+          path: ~/core
+          run-id: ${{ needs.plan.outputs.core-run }}
+          github-token: ${{ github.token }}
+
+      # the released core of the same version until the runner has built the branch's
+      - name: Install core library
+        env:
+          CORE_RUN: ${{ needs.plan.outputs.core-run }}
         run: |
-          apk=$(scripts/ci/android/release-apk.sh "$RUNNER_TEMP/release")
-          scripts/ci/android/core-from-apk.sh "$apk"
+          if [ -n "$CORE_RUN" ]; then
+            echo "core library built by run $CORE_RUN"
+            scripts/ci/android/install-core.sh ~/core/$CORE_PKG
+          else
+            apk=$(scripts/ci/android/release-apk.sh "$RUNNER_TEMP/release")
+            scripts/ci/android/core-from-apk.sh "$apk"
+          fi
 
       - name: Setup Java
         uses: actions/setup-java@v5

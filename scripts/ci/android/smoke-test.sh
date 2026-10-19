@@ -32,7 +32,8 @@ finish() {
 
 unzip -l "$apk" | grep -E ' lib/' || true
 started=$SECONDS
-adb install -r -g "$apk"
+# -t: a build with an injected ABI is marked test-only
+adb install -r -t -g "$apk"
 echo "installed in $((SECONDS - started)) s"
 adb shell pm dump "$package" | grep -E 'primaryCpuAbi|versionName|versionCode' || true
 
