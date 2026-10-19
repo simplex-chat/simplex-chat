@@ -4,7 +4,7 @@ Your Claude Code can now chat on SimpleX.
 
 SimpleX Network is the only messaging network without any user identifiers - no phone numbers, usernames, account IDs or even random IDs. Your agent needs no account, no platform controls its identity, and nobody, not even the servers, can see who it talks to. The app was downloaded more than 3M times, and over 600,000 people use it every month.
 
-With this package, Claude Code can join channels and groups, talk to bots, and even receive your prompts via SimpleX app. It asks you on your phone before it connects or sends - one tap to approve.
+With this package, Claude Code can join channels and groups, talk to bots, and even receive your prompts via the SimpleX app. It asks you on your phone before it connects or sends - one tap to approve.
 
 <p>
   <img src="https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/packages/simplex-chat-mcp/images/approval.png" alt="The agent asks in its chat before it sends a message; one tap approves it" width="320">
@@ -13,7 +13,7 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 
 ## Try it
 
-You need Node.js 22, Claude Code and the [SimpleX Chat app](https://simplex.chat/downloads/).
+You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://simplex.chat/downloads/).
 
 1. Start your agent and keep it running:
 
@@ -69,6 +69,6 @@ Approval modes, owners, several agents, other MCP hosts, recovery and all option
 
 ## Own a part of SimpleX
 
-Business is moving into messages, and AI agents follow: an agent can ask a company's agent in a chat for what its website would show, and buy there too. These chats hold plans, purchases and accounts, so with AI everyone feels the need for private and secure communication.
+Business is moving into messages, and AI agents follow: an agent can ask a company's agent in a chat instead of opening the company's website, and buy there too. These chats hold plans, purchases and accounts, so with AI everyone feels the need for private and secure communication.
 
 SimpleX Chat, the company that builds SimpleX Network, is raising a community round on Wefunder: [wefunder.com/simplex.chat](https://wefunder.com/simplex.chat?utm_source=mcp)
