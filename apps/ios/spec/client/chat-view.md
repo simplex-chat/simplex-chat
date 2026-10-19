@@ -189,7 +189,7 @@ Renders emoji-only messages (messages containing only emoji characters) in a lar
 
 **File**: [`Shared/Views/Chat/ChatItem/MsgContentView.swift`](../../Shared/Views/Chat/ChatItem/MsgContentView.swift)
 
-Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions).
+Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (headings, lists, quotes, code blocks, tables, rules) are drawn as a column of views by `MarkdownBlocksView`; code blocks and tables scroll sideways.
 
 ### DeletedItemView / MarkedDeletedItemView
 
@@ -238,6 +238,12 @@ Renders voice messages with waveform visualization, play/pause control, and dura
 
 Renders file attachments with filename, size, and download/open actions. Shows transfer progress during upload/download.
 
+### MarkdownFileView
+
+**File**: [`Shared/Views/Chat/ChatItem/MarkdownFileView.swift`](../../Shared/Views/Chat/ChatItem/MarkdownFileView.swift)
+
+Sheet with a viewer of Markdown files up to `MAX_MARKDOWN_VIEW_SIZE` (1 MB), formatted or as text, with Save. Opened by a tap on the file item, or when reception completes after the tap that started it.
+
 ### [CILinkView](../../Shared/Views/Chat/ChatItem/CILinkView.swift#L14)
 
 **File**: [`Shared/Views/Chat/ChatItem/CILinkView.swift`](../../Shared/Views/Chat/ChatItem/CILinkView.swift)
@@ -279,6 +285,7 @@ Detailed message information sheet (accessed via long-press menu "Info"):
 - Edit history (all previous versions of edited messages)
 - Forward chain info
 - Message timestamps (created, updated, deleted)
+- When the file expires, and below it, for a user without a badge, a button opening the badges sheet
 
 ---
 

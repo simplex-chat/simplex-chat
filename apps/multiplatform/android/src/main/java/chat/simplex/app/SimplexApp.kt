@@ -26,6 +26,11 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgeProduct
+import chat.simplex.common.views.badges.BadgePurchaseOutcome
+import chat.simplex.common.views.badges.BadgeStore
+import chat.simplex.common.views.badges.BadgeStoreProductId
+import chat.simplex.common.views.badges.BadgeStoreReceipt
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
@@ -115,6 +120,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
                 }
               }.onFailure { Log.e(TAG, it.stackTraceToString()) }
             }
+            BadgeStore.presentUnfinished()
           }
         }
         Lifecycle.Event.ON_RESUME -> {
@@ -347,6 +353,18 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
 
       override fun androidLoadPlayStoreCountry() = loadPlayStoreCountry()
+
+      override val androidHasPlatformStore: Boolean get() = hasPlatformStore
+
+      override suspend fun androidLoadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> = loadBadgeProducts(oneTimeIds, subscriptionIds)
+
+      override suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(id, invoiceId)
+
+      override suspend fun androidAcknowledgeBadgePurchase(receipt: BadgeStoreReceipt) = acknowledgeBadgePurchase(receipt)
+
+      override suspend fun androidFinishBadgePurchase(receipt: BadgeStoreReceipt) = finishBadgePurchase(receipt)
+
+      override suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = unfinishedBadgePurchases()
 
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
