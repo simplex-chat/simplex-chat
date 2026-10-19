@@ -23,7 +23,8 @@ Against that, the list's only bottom clearance is its trailing spacer:
 | `LazyColumnWithScrollBar` `contentPadding` | `0.dp` (default, not overridden) |
 
 The shortfall is `8.dp` (more at larger app font scales) plus the navigation bar — commonly 32–56.dp, and the rows are
-`DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8 = 58.dp`, so on Android with 3-button navigation nearly a whole row stays hidden; on desktop (no navigation bar) about 8.dp of it.
+`DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8 = 58.dp`, so on an Android phone drawing edge-to-edge with 3-button navigation nearly a whole row stays hidden; on desktop (no navigation bar) about 8.dp of it.
+The navigation-bar part is inferred from the code: on Waydroid (3-button navigation) the app sees no navigation bar inset, and only about 8.dp was hidden there too.
 It only shows once the list nearly fills the screen; with few profiles nothing is hidden,
 which is why it survived.
 
@@ -40,8 +41,8 @@ fully functional, so nothing draws attention to it.
 
 #7329 adds an **"Add profile"** row at the end of this list. That moves a deliberately
 sought affordance into the broken position: on a default Android install with enough
-profiles to scroll, the button the feature exists for is mostly hidden (fully with 3-button navigation). The feature
-is unusable on Android without this fix, so #7329 depends on it.
+profiles to scroll, the button the feature exists for is partly hidden, and with 3-button navigation on a phone mostly or fully hidden (inferred, as above). On such phones the
+feature is hard or impossible to use without this fix, so #7329 should land after it.
 
 Splitting it out anyway, because the defect is entirely pre-existing and worth fixing on
 its own terms: it is not caused by, and does not require, the new row.
