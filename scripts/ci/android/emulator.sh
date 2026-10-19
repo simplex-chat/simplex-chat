@@ -18,7 +18,9 @@ start() {
   emulator -accel-check
 
   local flags=(-avd ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -camera-back none -camera-front none -memory 4096 -cores 4)
-  if emulator -help 2>&1 | grep -q -- '-no-metrics'; then
+  local help
+  help=$(emulator -help 2>&1 || true)
+  if grep -q -- '-no-metrics' <<< "$help"; then
     flags+=(-no-metrics)
   fi
   echo "emulator ${flags[*]}"
@@ -28,7 +30,8 @@ start() {
 
   deadline=$((SECONDS + boot_secs))
   until [ "$(adb shell getprop sys.boot_completed 2> /dev/null | tr -d '\r')" = 1 ]; do
-    if ! kill -0 "$(cat "$RUNNER_TEMP/emulator.pid")" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
+    # the launcher starts qemu with the same arguments
+    if ! pgrep -f -- '-avd ci' > /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
       echo "error: Android did not boot in $boot_secs s"
       cat "$log"
       return 1

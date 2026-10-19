@@ -71,7 +71,8 @@ tag.id=google_apis
 PlayStore.enabled=false
 EOF
 
-if ldd "$sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64" | grep 'not found'; then
+# the emulator's launcher finds its own libraries under lib64; only system libraries can be missing
+if LD_LIBRARY_PATH=$(find "$sdk/emulator/lib64" -type d | paste -sd :) ldd "$sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64" | grep 'not found'; then
   echo "error: the emulator needs these libraries"
   exit 1
 fi

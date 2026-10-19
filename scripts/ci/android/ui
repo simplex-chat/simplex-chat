@@ -36,7 +36,8 @@ log() {
 dump() {
   local attempt
   for attempt in 1 2 3 4 5; do
-    if adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$state/ui.xml" && [ -s "$state/ui.xml" ]; then
+    adb shell rm -f /sdcard/ui.xml
+    if adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$state/ui.xml" && grep -q '<hierarchy' "$state/ui.xml"; then
       return 0
     fi
     sleep 1
@@ -79,7 +80,7 @@ shot() {
 
 launch() {
   local activity
-  activity=$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER "$package" | tr -d '\r' | tail -n 1)
+  activity=$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER "$package" | tr -d '\r' | tail -n 1)
   adb shell am start -W -n "$activity" | tr -d '\r'
 }
 
