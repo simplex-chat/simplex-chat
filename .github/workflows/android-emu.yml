@@ -1,0 +1,264 @@
+name: android-emu
+
+# Exploration spike for Android app tests on GitHub's runners. A push runs it only when its head commit's message
+# asks for it; [spike-core] also builds the core library with Nix, to time it.
+on:
+  push:
+    branches:
+      - "**"
+      # a squash merge's message lists the merged commits' subjects, with their tags
+      - "!master"
+      - "!stable"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  JAVA_VER: 17
+  CORE_PKG: android-core-arm64-v8a.tar.gz
+
+jobs:
+  plan:
+    name: choose jobs, find earlier builds
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[app-ci]') ||
+      contains(github.event.head_commit.message, '[app-ci:android]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      run-core: ${{ steps.jobs.outputs.core }}
+      core: ${{ steps.names.outputs.core }}
+      core-run: ${{ steps.core.outputs.run-id }}
+    steps:
+      - name: Choose jobs
+        id: jobs
+        env:
+          CORE: ${{ contains(github.event.head_commit.message, '[spike-core]') }}
+        run: echo "core=$CORE" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded
+      - name: Artifact names
+        id: names
+        run: echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: core
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.core }}"
+
+  arm64-probe:
+    name: arm64 Linux runner, virtualization
+    needs: plan
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    steps:
+      - name: Show runner
+        run: |
+          uname -m
+          lsb_release -ds
+          nproc
+          free -h
+          lscpu
+          ls -l /dev/kvm || echo "no /dev/kvm"
+          lsmod | grep -i kvm || echo "no kvm module loaded"
+          sudo dmesg | grep -iE 'kvm|hyp|el2' || true
+
+  release:
+    name: released APK, API ${{ matrix.api }}
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 34, 35]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+          grep -cwE 'vmx|svm' /proc/cpuinfo
+          ls -l /dev/kvm
+
+      - name: Download released APK
+        id: apk
+        run: |
+          apk=$(scripts/ci/android/release-apk.sh "$RUNNER_TEMP/release")
+          echo "apk=$apk" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Install emulator and system image
+        run: scripts/ci/android/install-sdk.sh ${{ matrix.api }} "$RUNNER_TEMP/android-sdk"
+
+      - name: Boot emulator
+        timeout-minutes: 15
+        run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/smoke-test"
+
+      - name: Run smoke test
+        timeout-minutes: 10
+        env:
+          APK: ${{ steps.apk.outputs.apk }}
+        run: scripts/ci/android/smoke-test.sh "$APK" "$RUNNER_TEMP/smoke-test"
+
+      - name: Stop emulator
+        if: ${{ !cancelled() }}
+        run: scripts/ci/android/emulator.sh stop
+
+      - name: Upload smoke test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-release-api${{ matrix.api }}-smoke-test
+          path: ${{ runner.temp }}/smoke-test
+          retention-days: 7
+          if-no-files-found: warn
+
+  apk:
+    name: debug APK for arm64-v8a
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+          submodules: recursive
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" "$ANDROID_HOME/ndk" || true
+
+      # until the core is built on the runner: the released core of the same version
+      - name: Core library from the released APK
+        run: |
+          apk=$(scripts/ci/android/release-apk.sh "$RUNNER_TEMP/release")
+          scripts/ci/android/core-from-apk.sh "$apk"
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      - name: Build APK
+        working-directory: apps/multiplatform
+        run: |
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a :android:assembleFossDebug
+          ls -la android/build/outputs/apk/foss/debug
+          unzip -l android/build/outputs/apk/foss/debug/android-foss-arm64-v8a-debug.apk | grep -E ' lib/'
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-app
+          path: apps/multiplatform/android/build/outputs/apk/foss/debug/android-foss-arm64-v8a-debug.apk
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+  app:
+    name: branch APK, API 34
+    needs: [plan, apk]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download APK
+        uses: actions/download-artifact@v8
+        with:
+          name: android-app
+          path: ${{ runner.temp }}/app
+
+      - name: Install emulator and system image
+        run: scripts/ci/android/install-sdk.sh 34 "$RUNNER_TEMP/android-sdk"
+
+      - name: Boot emulator
+        timeout-minutes: 15
+        run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/smoke-test"
+
+      - name: Run smoke test
+        timeout-minutes: 10
+        run: scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/app/android-foss-arm64-v8a-debug.apk" "$RUNNER_TEMP/smoke-test"
+
+      - name: Stop emulator
+        if: ${{ !cancelled() }}
+        run: scripts/ci/android/emulator.sh stop
+
+      - name: Upload smoke test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-smoke-test
+          path: ${{ runner.temp }}/smoke-test
+          retention-days: 7
+          if-no-files-found: warn
+
+  core-plan:
+    name: what Nix builds for the arm64 core
+    needs: plan
+    if: needs.plan.outputs.run-core == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Free disk space
+        run: scripts/ci/linux_util_free_space.sh
+
+      - name: Nix dry run
+        run: scripts/ci/android/build-core.sh --dry-run
+
+  core:
+    name: core library for Android arm64
+    needs: plan
+    if: needs.plan.outputs.run-core == 'true' && needs.plan.outputs.core-run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Free disk space
+        run: scripts/ci/linux_util_free_space.sh
+
+      - name: Build core library
+        run: scripts/ci/android/build-core.sh ~/core/${{ env.CORE_PKG }}
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.core }}
+          path: ~/core/${{ env.CORE_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error

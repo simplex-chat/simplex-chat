@@ -1,0 +1,152 @@
+#!/bin/bash
+
+# Drives the Android app in the emulator with adb, for the scripted cases and for an agent on the runner.
+# Text and positions come from uiautomator's accessibility tree; coordinates are screen pixels, as in the screenshots.
+# Screenshots, trees and a log of every command (steps.log) go to UI_OUT.
+#
+#   ui launch                     start the app and print how long its activity took to show
+#   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.xml (the tree), and print the text on screen
+#   ui text                       print the text on screen, one element per line after its centre x,y
+#   ui find <text>                print "x y left top right bottom", the element's centre and bounds; fail if it is not on screen
+#   ui wait <text> [secs]         wait up to secs (30) until the text is on screen
+#   ui click <x> <y>              tap at x,y
+#   ui click-text <text> [secs]   wait up to secs (20) for the text and tap its centre
+#   ui type <text>                type into the focused field
+#   ui key <key>...               press keys by their Android names without KEYCODE_ (ENTER, BACK, DEL)
+#   ui do <command> [args] -- <command> [args] ...
+#                                 run the commands in order, stopping at the first that fails
+#
+# Text is compared ignoring case, spaces and punctuation; an element that is exactly the text wins over one that contains it.
+
+set -euo pipefail
+# an agent on the runner runs this, and nothing it starts needs the agent's credentials
+unset CLAUDE_CODE_OAUTH_TOKEN
+
+: "${UI_OUT:?UI_OUT must be the output directory}"
+package=chat.simplex.app
+state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
+here=$(cd "$(dirname "$0")" && pwd)
+mkdir -p "$UI_OUT" "$state"
+
+log() {
+  echo "$(date -u +%H:%M:%S) $*" | tee -a "$UI_OUT/steps.log"
+}
+
+# uiautomator fails while the screen is changing ("could not get idle state"), so a dump is retried
+dump() {
+  local attempt
+  for attempt in 1 2 3 4 5; do
+    if adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$state/ui.xml" && [ -s "$state/ui.xml" ]; then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "error: uiautomator could not dump the screen" >&2
+  return 1
+}
+
+screen() {
+  dump
+  python3 "$here/screen-tree.py" "$state/ui.xml" "$@"
+}
+
+wait_for() {
+  local text=$1 deadline=$((SECONDS + $2))
+  until screen find "$text" 2> /dev/null; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+next_file() {
+  local n
+  n=$(find "$UI_OUT" -maxdepth 1 -name '[0-9][0-9]-*.png' | wc -l)
+  printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1"
+}
+
+shot() {
+  local f
+  f=$(next_file "$1")
+  adb exec-out screencap -p > "$f.png"
+  dump
+  cp "$state/ui.xml" "$f.xml"
+  python3 "$here/screen-tree.py" "$f.xml" lines > "$f.txt"
+  echo "::group::text on screen: $(basename "$f")"
+  cat "$f.txt"
+  echo "::endgroup::"
+  log "shot $(basename "$f").png"
+}
+
+launch() {
+  local activity
+  activity=$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER "$package" | tr -d '\r' | tail -n 1)
+  adb shell am start -W -n "$activity" | tr -d '\r'
+}
+
+case "${1:-}" in
+  launch)
+    log "launch"
+    launch
+    ;;
+  shot) shot "$2" ;;
+  text) screen lines ;;
+  find)
+    if ! pos=$(screen find "$2"); then
+      log "find \"$2\": not on screen" >&2
+      exit 1
+    fi
+    log "find \"$2\": $pos" > /dev/null
+    echo "$pos"
+    ;;
+  wait)
+    secs=${3:-30}
+    if ! pos=$(wait_for "$2" "$secs"); then
+      log "wait \"$2\": not on screen after $secs s"
+      exit 1
+    fi
+    read -r x y _ <<< "$pos"
+    log "wait \"$2\": at $x,$y"
+    ;;
+  click)
+    adb shell input tap "$2" "$3"
+    log "click $2,$3"
+    ;;
+  click-text)
+    secs=${3:-20}
+    if ! pos=$(wait_for "$2" "$secs"); then
+      log "click-text \"$2\": not on screen after $secs s"
+      exit 1
+    fi
+    read -r x y _ <<< "$pos"
+    adb shell input tap "$x" "$y"
+    log "click-text \"$2\" at $x,$y"
+    ;;
+  type)
+    # input text takes %s for a space, and the device shell would interpret the rest
+    adb shell input text "$(printf '%q' "${2// /%s}")"
+    log "type \"$2\""
+    ;;
+  key)
+    shift
+    for k in "$@"; do
+      adb shell input keyevent "KEYCODE_$k"
+    done
+    log "key $*"
+    ;;
+  do)
+    shift
+    command=()
+    for arg in "$@" --; do
+      if [ "$arg" != -- ]; then
+        command+=("$arg")
+      elif [ ${#command[@]} -gt 0 ]; then
+        "$0" "${command[@]}"
+        command=()
+      fi
+    done
+    ;;
+  *)
+    sed -n '3,/^$/s/^# \{0,1\}//p' "$0"
+    exit 1
+    ;;
+esac
