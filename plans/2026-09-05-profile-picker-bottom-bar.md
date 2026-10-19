@@ -42,8 +42,7 @@ fully functional, so nothing draws attention to it.
 #7329 adds an **"Add profile"** row at the end of this list. That moves a deliberately
 sought affordance into the broken position: on a default Android install with enough
 profiles to scroll, the button the feature exists for is partly hidden, and with 3-button navigation on a phone nearly or fully hidden (inferred, as above). On such phones the
-feature is hard to use without this fix (the row is fully visible only after typing a search
-that matches no profile), so #7329 should land after it.
+feature is hard to use without this fix, so #7329 should land after it.
 
 Splitting it out anyway, because the defect is entirely pre-existing and worth fixing on
 its own terms: it is not caused by, and does not require, the new row.
