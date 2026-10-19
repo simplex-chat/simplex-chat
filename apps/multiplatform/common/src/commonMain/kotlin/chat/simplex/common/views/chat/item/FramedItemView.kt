@@ -67,6 +67,7 @@ fun FramedItemView(
     MarkdownText(
       qi.text,
       qi.formattedText,
+      qi.markdownBlocks,
       toggleSecrets = true,
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
@@ -525,12 +526,13 @@ fun CIMarkdownText(
 ) {
   val chatInfo = chat.chatInfo
   val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
-  val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true)
+  val bases = remember(ci, linkMode) { itemDisplay(ci, linkMode)?.bases ?: listOf(0) }
+  val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true, bases)
   val flat = LocalFlatLayout.current
 
-  Box(Modifier.padding(vertical = if (flat) FLAT_TEXT_VERTICAL_PADDING else 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
+  Box(Modifier.padding(vertical = if (flat) FLAT_TEXT_VERTICAL_PADDING else 7.dp, horizontal = 12.dp)) {
     MarkdownText(
-      text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
+      text, if (text.isEmpty()) emptyList() else ci.formattedText, if (text.isEmpty()) null else ci.markdownBlocks, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
       meta = if (!flat || flatMetaVisible(ci, chatTTL, showViaProxy, MaterialTheme.colors.secondary)) ci.meta else null, chatTTL = chatTTL, linkMode = linkMode,
       mentions = ci.mentions, userMemberId = when {
@@ -539,8 +541,9 @@ fun CIMarkdownText(
       },
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
       stripLink = stripLink,
-      selectionRange = selection.highlightRange,
-      onTextLayoutResult = selection.onTextLayoutResult
+      selection = selection,
+      blockLayout = true,
+      cardColor = if (ci.chatDir.sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote
     )
   }
 }

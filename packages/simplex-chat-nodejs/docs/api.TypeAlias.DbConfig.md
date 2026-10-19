@@ -8,12 +8,10 @@
 
 > **DbConfig** = \{ `encryptionKey?`: `string`; `filePrefix`: `string`; `type`: `"sqlite"`; \} \| \{ `connectionString`: `string`; `schemaPrefix?`: `string`; `type`: `"postgres"`; \}
 
-Defined in: [src/api.ts:65](../src/api.ts#L65)
+Defined in: [src/api.ts:63](../src/api.ts#L63)
 
-Database configuration. The native library is built against exactly one
-backend (see `simplex_backend` / `SIMPLEX_BACKEND` at install time); this
-type makes the caller state which one they are targeting so field names
-can't lie about their meaning.
+Database configuration. `type` selects the libsimplex backend loaded by
+`ChatApi.init`; one backend per process.
 
 ## Union Members
 

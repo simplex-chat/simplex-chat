@@ -455,6 +455,7 @@ fun ComposeView(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
+  val emojiPickerShown = rememberSaveable { mutableStateOf(false) }
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   suspend fun fetchAndUpdateLinkPreview(url: String) {
@@ -1279,6 +1280,17 @@ fun ComposeView(
   val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason((ownerRelayState?.noActiveRelays ?: subscriberRelayState?.noActiveRelays) == true))
   val sendMsgEnabled = rememberUpdatedState(userCantSendReason.value == null)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
+  val emojiEnabled = sendMsgEnabled.value && composeState.value.preview !is ComposePreview.VoicePreview
+  LaunchedEffect(emojiEnabled) {
+    if (!emojiEnabled) emojiPickerShown.value = false
+  }
+  KeyChangeEffect(emojiPickerShown.value) {
+    if (!emojiPickerShown.value && emojiEnabled) focusRequester?.requestFocus()
+  }
+
+  fun onEmoji(emoji: String) {
+    if (!composeState.value.inProgress) onMessageChange(composeState.value.message.insertingEmoji(emoji))
+  }
 
   @Composable
   fun CommandsButton() {
@@ -1333,7 +1345,7 @@ fun ComposeView(
   }
 
   @Composable
-  fun AttachmentAndCommandsButtons() {
+  fun ComposeActionButtons() {
     val cInfo = chat.chatInfo
     Row(
       Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
@@ -1347,6 +1359,7 @@ fun ComposeView(
       if (showAttachment) {
         AttachmentButton()
       }
+      ComposeEmojiButton(emojiPickerShown, emojiEnabled, ::onEmoji)
     }
   }
 
@@ -1785,7 +1798,7 @@ fun ComposeView(
           ContextSendMessageToConnect(generalGetString(MR.strings.compose_send_direct_message_to_connect))
           Divider()
           Row(Modifier.flatComposeField().padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-            AttachmentAndCommandsButtons()
+            ComposeActionButtons()
             SendMsgView_(
               disableSendButton = disableSendButton,
               sendToConnect = { withApi { sendMemberContactInvitation() } }
@@ -1840,7 +1853,7 @@ fun ComposeView(
         )
       } else {
         Row(Modifier.flatComposeField().padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-          AttachmentAndCommandsButtons()
+          ComposeActionButtons()
           val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
             if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner && chat.chatInfo.groupChatScope() == null) generalGetString(MR.strings.compose_view_broadcast)
             else null

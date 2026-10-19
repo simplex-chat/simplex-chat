@@ -293,9 +293,12 @@ fun UserPicker(
 - **Android:** Renders as a slide-up overlay panel on the chat list, triggered by tapping the user profile button in the toolbar.
 - **Desktop:** Rendered inline in the left column of `DesktopScreen`, always accessible.
 - Closes automatically when any `ModalManager.start` modal opens.
+- On Desktop, when there is no active user and no mobile is in use (`desktopNoUserNoRemote`), the SimpleX address and Chat preferences rows and the divider below them are hidden.
+- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal draws nothing and closes itself when it is the top modal (`ModalManager.start.isLastModal`); if another screen covers it, it closes when the user goes back to it.
+- The Chat preferences row closes its modal the same way when there is no active user.
 - **Desktop flat layout:** The toolbar shows the profile button only when `chatModel.desktopNoUserNoRemote`, and hides the Settings menu button shown when there are no users (the rail has Settings). Clicking the active user's avatar in the rail opens the picker.
 
-Selecting another user calls [`switchToUser(user)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt#L650-L657), which closes all modals and calls `changeActiveUser` with progress. The rail uses the same function.
+Selecting another user calls [`switchToUser(user)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt#L670-L677), which closes all modals and calls `changeActiveUser` with progress. The rail uses the same function.
 
 [`profileSwitchAllowed(sharedContent)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ShareListView.kt#L225-L226) is false while sharing a forward, a chat link or the user address; `ShareListView` and the rail use it to block profile switching.
 

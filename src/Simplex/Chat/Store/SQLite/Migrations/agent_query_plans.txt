@@ -1431,6 +1431,10 @@ Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
 
+Query: SELECT msg_flags FROM messages WHERE conn_id = ? AND internal_snd_id IS NOT NULL AND msg_type = ? ORDER BY internal_id DESC LIMIT ?
+Plan:
+SEARCH messages USING PRIMARY KEY (conn_id=?)
+
 Query: SELECT ratchet_state FROM ratchets WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)

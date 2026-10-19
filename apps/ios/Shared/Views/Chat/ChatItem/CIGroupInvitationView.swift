@@ -115,7 +115,7 @@ struct CIGroupInvitationView: View {
         return HStack(alignment: .top) {
             ProfileImage(
                 imageStr: groupInvitation.groupProfile.image,
-                iconName: "person.2.circle.fill",
+                icon: Image(systemName: "person.2.circle.fill"),
                 size: 44,
                 color: color
             )
