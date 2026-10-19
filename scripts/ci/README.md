@@ -1,6 +1,6 @@
 # App tests on GitHub's runners
 
-Two workflows build the apps from a branch's own code and test them, only when asked: `ios-sim` (the iOS app in a simulator on a macOS runner) and `desktop-linux` (the desktop app on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md).
+Two workflows build the apps from a branch's own code and test them, only when asked: `ios-sim` (the iOS app in a simulator on a macOS runner) and `desktop-linux` (the desktop app on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan, and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md).
 
 ## Run tags
 
@@ -27,7 +27,7 @@ Actions → `ios-sim` or `desktop-linux` → Run workflow, on any branch, with c
 
 | Run | iOS | Desktop |
 |---|---|---|
-| Scripted test, builds reused | about 25 min, plus the wait for one of the repository's five macOS runners (minutes to an hour) | about 10 min |
+| Scripted test, builds reused | about 25 min, plus the wait for a macOS runner, which the team's builds share (minutes to an hour) | about 10 min |
 | The core rebuilt, after Haskell changes | 30–45 min more | about 25 min more |
 | With the test backend | 20–45 min more when it is rebuilt, then about 10 min to start | about 30 min more when it is rebuilt, then a few minutes to start |
 | With Claude on the smoke plan | 10–15 min more | about 4 min more |
