@@ -7,7 +7,7 @@ Issue #7755.
 `ChatModel.addTerminalItem(item, maxItems)` reads `terminalItems.value` for the size check, again for `subList`, and again for the append, without a lock. While no chat console is open, it runs on the caller's thread: `sendCmd` on the IO dispatcher, the receiver loop, and the migration receivers, several at once. (With a console open, writes are posted to the main thread.)
 
 Two concurrent calls can:
-- crash with `IndexOutOfBoundsException: toIndex = 201` in `subList`: another thread appended between the size check and `subList`, after an earlier race had already taken the list past the cap;
+- crash with `IndexOutOfBoundsException: toIndex = 201` in `subList`: another thread appended between the two reads of `terminalItems.value` in the `subList` line (that thread had skipped the trim on an out-of-date size check, so the list went past the cap);
 - lose a row: both read the same list and the second write replaces the first;
 - keep the list above the cap.
 
@@ -31,4 +31,4 @@ On Android the crash shows "View crashed"; on both platforms the command's resul
 
 ## Testing
 
-A JVM harness against the built desktop jars (not committed): several threads call `addTerminalItem` with the cap at 200; master loses rows and throws, the fix keeps exactly 200 with none lost. Desktop GUI regression of the chat console (commands, responses, rows added while closed, the cap, the console window); Android smoke test.
+To be done before the PR is opened, and replaced here with what was observed: a JVM harness against the built desktop jars (not committed), where several threads call `addTerminalItem` with the cap at 200, on master and on this fix; desktop GUI regression of the chat console (commands, responses, rows added while it is closed, the cap, the console window); Android smoke test.
