@@ -68,11 +68,6 @@ struct BadgesCheckOrderView: View {
                             Link("Privacy policy", destination: conditionsURL)
                         }
                         .font(.footnote)
-                        // hidden: the unfinished-transaction sweep already re-presents a charged purchase,
-                        // leaving only another profile's purchase to claim
-                        // RestorePurchasesButton()
-                        //     .padding(.top, 10)
-                        // footnote("Adds an App Store purchase of this Apple ID that no profile here has yet. A purchase still being added on another device may be added here instead.")
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }

@@ -71,6 +71,13 @@ fun BadgesSupportSimplexView(modalManager: ModalManager, unwindToDepth: Int) {
         } else {
           RedeemCodeButton(modalManager, unwindToDepth)
         }
+        RestorePurchasesButton(Modifier.padding(top = 10.dp))
+        Text(
+          stringResource(MR.strings.badges_restore_purchases_footnote),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary,
+          textAlign = TextAlign.Center
+        )
       } else {
         BuyInBrowserButton(modalManager, unwindToDepth)
         RedeemCodeButton(modalManager, unwindToDepth)

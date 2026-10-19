@@ -56,6 +56,13 @@ struct BadgesSupportSimplexView: View {
                         }
                     }
                     .frame(height: 22)
+                    RestorePurchasesButton()
+                        .padding(.top, 10)
+                    Text("If you were charged but have no badge, this adds it.")
+                        .font(.footnote)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
