@@ -2821,4 +2821,9 @@
     <string name="share_text_file_servers">خوادم الملفات: %s</string>
     <string name="group_invitations">دعوات المجموعات</string>
     <string name="forwarded_from">مُحوّلة مِن</string>
+    <string name="info_row_file_expires">الملف متاح حتى</string>
+    <string name="file_expired">انتهت صلاحية الملف</string>
+    <string name="large_file_incognito">لا يمكن إرسال الملفات التي يزيد حجمها عن %1$s في الدردشات الخفية.</string>
+    <string name="info_row_file_expired">الملف كان متاح حتى</string>
+    <string name="file_error_expired">كان الملف متاحًا حتى %1$s.</string>
 </resources>
