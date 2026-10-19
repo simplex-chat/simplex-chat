@@ -525,6 +525,7 @@ data UserServersError
   | USEStorageMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEProxyMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: Text, duplicateHost :: TransportHost}
+  | USETooManyHosts {protocol :: AProtocolType, tooManyHostsServer :: Text}
   | USEDuplicateChatRelayAddress {duplicateChatRelay :: Text, duplicateAddress :: ShortLinkContact}
   deriving (Show)
 
@@ -547,13 +548,16 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         noServers cond = not $ any srvEnabled $ userServers p $ filter cond uss
         srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
     serverErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [u] -> [UserServersError]
-    serverErrs p uss = mapMaybe duplicateErr_ srvs
+    serverErrs p uss = mapMaybe duplicateErr_ srvs <> hostsErrs
       where
         p' = AProtocolType p
         srvs = filter (\(AUS _ UserServer {deleted}) -> not deleted) $ userServers p uss
         duplicateErr_ (AUS _ srv@UserServer {server}) =
           USEDuplicateServer p' (safeDecodeUtf8 $ strEncode server)
             <$> find (`S.member` duplicateHosts) (srvHost srv)
+        hostsErrs = case p of
+          SPSMP -> [USETooManyHosts p' (safeDecodeUtf8 $ strEncode server) | AUS _ srv@UserServer {server} <- srvs, L.length (srvHost srv) > 2]
+          _ -> []
         duplicateHosts = snd $ foldl' addDuplicate (S.empty, S.empty) allHosts
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]

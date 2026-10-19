@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from simplex_chat._native import _libname, _libs_url, _platform_tag
-from simplex_chat._version import LIBS_VERSION
+from simplex_chat._version import LIBS_RELEASE
 
 
 @patch("sys.platform", "linux")
@@ -45,7 +45,7 @@ def test_url_sqlite(_):
     assert (
         _libs_url("sqlite")
         == "https://github.com/simplex-chat/simplex-chat-libs/releases/download/"
-        f"v{LIBS_VERSION}/simplex-chat-libs-linux-x86_64.zip"
+        f"{LIBS_RELEASE}/simplex-chat-libs-linux-x86_64.zip"
     )
 
 
@@ -54,5 +54,5 @@ def test_url_postgres(_):
     assert (
         _libs_url("postgres")
         == "https://github.com/simplex-chat/simplex-chat-libs/releases/download/"
-        f"v{LIBS_VERSION}/simplex-chat-libs-linux-x86_64-postgres.zip"
+        f"{LIBS_RELEASE}/simplex-chat-libs-linux-x86_64-postgres.zip"
     )
