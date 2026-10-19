@@ -1,6 +1,6 @@
 # SimpleX MCP server: reference
 
-[README](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/README.md) has the short version.
+[README](README.md) has the short version.
 
 `@simplex-chat/mcp` is a local server that gives an AI agent its own presence on the SimpleX network. The agent connects to people, bots, groups, channels and directories, as itself or incognito, sends messages and receives all the responses. Bots tell it which commands they understand, so every bot on the network becomes a service the agent can use. You supervise the agent from its control chat in SimpleX: it asks there before it connects, sends or leaves, and you approve or reject from your phone with one tap, or approve all its messages to a chat you trust. Five tools cover it: `connect`, `send`, `receive`, `list`, `leave`. Setup is one command to start the agent, a scan to join its control chat, and one command to add it to Claude Code.
 
@@ -16,7 +16,7 @@ What it isn't:
   - a Claude Code plugin or channel;
   - registration in other hosts.
 
-Status: v0.1. [`TESTING.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/PLAN.md).
+Status: v0.1. [`TESTING.md`](TESTING.md) describes a local build and test. The design, the tools and the scenarios are in [`PLAN.md`](PLAN.md).
 
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -236,7 +236,7 @@ Commands:
 | `/pending` | Lists pending actions. |
 | `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
 
-`/pending` and `/list` are in the chat's command menu; the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/PLAN.md), section "What the owner sees: the agent control chat".
+`/pending` and `/list` are in the chat's command menu; the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](PLAN.md), section "What the owner sees: the agent control chat".
 
 ### Approval of all messages to a chat
 
@@ -267,7 +267,7 @@ Five tools:
 
 A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
-Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
+Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 
 ## Waiting for approval in Claude Code
 

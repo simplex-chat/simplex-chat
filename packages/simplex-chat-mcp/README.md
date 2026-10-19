@@ -65,7 +65,7 @@ The agent is tested with Claude Code. Tell us which other apps and models you wa
 
 ## Reference
 
-Approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/REFERENCE.md).
+Approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
 
 ## Own a part of SimpleX
 
