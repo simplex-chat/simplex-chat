@@ -169,7 +169,7 @@ APISetUserChatLayout UserId (Maybe ChatLayout)    Library/Commands.hs:1659, as A
 
 ## 6. Storage
 
-Migration `M20261013_chat_layout`, SQLite and Postgres, registered in `Store/SQLite/Migrations.hs`, `Store/Postgres/Migrations.hs` and `simplex-chat.cabal`:
+Migration `M20261019_chat_layout`, SQLite and Postgres, registered in `Store/SQLite/Migrations.hs`, `Store/Postgres/Migrations.hs` and `simplex-chat.cabal`:
 
 ```
 contacts.chat_layout TEXT
@@ -182,7 +182,7 @@ users.chat_layout TEXT
 ```
 
 - The seven columns are dropped by the down migration.
-- `M20261013_chat_layout` is ordered after `M20261010_invite_member_via_group`. The migration is renamed to the date of its merge when a later migration name is merged first.
+- `M20261019_chat_layout` is ordered after `M20261018_autoincrement_ids` of master. The migration is renamed to the date of its merge when a later migration name is merged first.
 
 Reads:
 

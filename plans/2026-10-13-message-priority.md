@@ -183,7 +183,7 @@ limits        the role of the preference; a message of a blocked member is recei
 ```
 
 ## 6. Storage
-Migration `M20261013_msg_priority`, SQLite and Postgres, registered in `Store/SQLite/Migrations.hs`, `Store/Postgres/Migrations.hs` and `simplex-chat.cabal`. Its name is ordered after `20261010_invite_member_via_group` and after `20261013_chat_layout` of the chat layout patch (`migrations = sortOn name`, `Store/SQLite/Migrations.hs:363`). It is one `ADD COLUMN`; indexes are unchanged.
+Migration `M20261013_msg_priority`, SQLite and Postgres, registered in `Store/SQLite/Migrations.hs`, `Store/Postgres/Migrations.hs` and `simplex-chat.cabal`. Its name is ordered after `20261019_chat_layout` of the chat layout patch (`migrations = sortOn name`, `Store/SQLite/Migrations.hs:363`). It is one `ADD COLUMN`; indexes are unchanged.
 ```
 chat_items
   item_priority INTEGER NOT NULL DEFAULT 0    -- SMALLINT in Postgres
