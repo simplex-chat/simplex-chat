@@ -69,6 +69,8 @@ enum SecondaryItemsModelFilter {
     }
 }
 
+private let MAX_DROPPED_UPDATES = 100
+
 // analogue for ChatsContext in Kotlin
 // Spec: spec/state.md#ItemsModel
 class ItemsModel: ObservableObject {
@@ -85,8 +87,8 @@ class ItemsModel: ObservableObject {
     }
 
     let chatState = ActiveChatState()
-    var sndStatusesChatId: ChatId? = nil
-    var sndStatusesBeforeAdd: [Int64: CIStatus] = [:]
+    var droppedUpdatesChatId: ChatId? = nil
+    var droppedUpdates: [Int64: ChatItem] = [:]
 
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
@@ -98,6 +100,13 @@ class ItemsModel: ObservableObject {
 
     var lastItemsLoaded: Bool {
         chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
+    }
+
+    func withDroppedUpdates(_ items: [ChatItem]) -> [ChatItem] {
+        if droppedUpdates.isEmpty { return items }
+        return items.map { item in
+            if let kept = droppedUpdates.removeValue(forKey: item.id), kept.meta.updatedAt > item.meta.updatedAt { kept } else { item }
+        }
     }
 
     init(secondaryIMFilter: SecondaryItemsModelFilter? = nil) {
@@ -747,9 +756,12 @@ final class ChatModel: ObservableObject {
         // add to current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
             var ci = cItem
-            if let keptStatus = ciIM.sndStatusesBeforeAdd.removeValue(forKey: cItem.id),
-               shouldKeepOldSndCIStatus(oldStatus: keptStatus, newStatus: cItem.meta.itemStatus) {
-                ci.meta.itemStatus = keptStatus
+            if let kept = ciIM.droppedUpdates.removeValue(forKey: cItem.id) {
+                if kept.meta.updatedAt >= cItem.meta.updatedAt {
+                    ci = kept
+                } else if shouldKeepOldSndCIStatus(oldStatus: kept.meta.itemStatus, newStatus: cItem.meta.itemStatus) {
+                    ci.meta.itemStatus = kept.meta.itemStatus
+                }
             }
             _ = _upsertChatItem(ciIM, cInfo, ci, add: true)
         }
@@ -786,7 +798,7 @@ final class ChatModel: ObservableObject {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
                     lastItemId = pItem.id
-                    if pItem.id == cItem.id || (chatId == cInfo.id && im.lastItemsLoaded && cItem.id > max(pItem.id, im.reversedChatItems.lazy.map(\.id).max() ?? 0)) {
+                    if pItem.id == cItem.id || (chatId == cInfo.id && (im.chatState.splits.isEmpty || im.chatState.splits.last != im.reversedChatItems.first?.id) && cItem.id > max(pItem.id, im.reversedChatItems.lazy.map(\.id).max() ?? 0)) {
                         chat.chatItems = [cItem]
                     }
                 } else {
@@ -802,7 +814,7 @@ final class ChatModel: ObservableObject {
         }
         // update current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            let add = ciIM.lastItemsLoaded && cItem.id > max(lastItemId, ciIM.reversedChatItems.lazy.map(\.id).max() ?? 0)
+            let add = (ciIM.chatState.splits.isEmpty || ciIM.chatState.splits.last != ciIM.reversedChatItems.first?.id) && cItem.id > max(lastItemId, ciIM.reversedChatItems.lazy.map(\.id).max() ?? 0)
             itemAdded = _upsertChatItem(ciIM, cInfo, cItem, add: add)
         }
         return itemAdded
@@ -826,12 +838,18 @@ final class ChatModel: ObservableObject {
             ChatItemDummyModel.shared.sendUpdate()
             return true
         } else {
-            if cItem.chatDir.sent && !cItem.meta.itemStatus.isSndRcvd {
-                if ciIM.sndStatusesChatId != cInfo.id {
-                    ciIM.sndStatusesChatId = cInfo.id
-                    ciIM.sndStatusesBeforeAdd.removeAll()
-                }
-                ciIM.sndStatusesBeforeAdd[cItem.id] = cItem.meta.itemStatus
+            if ciIM.droppedUpdatesChatId != cInfo.id {
+                ciIM.droppedUpdatesChatId = cInfo.id
+                ciIM.droppedUpdates.removeAll()
+            }
+            var ci = cItem
+            if let kept = ciIM.droppedUpdates[cItem.id],
+               shouldKeepOldSndCIStatus(oldStatus: kept.meta.itemStatus, newStatus: cItem.meta.itemStatus) {
+                ci.meta.itemStatus = kept.meta.itemStatus
+            }
+            ciIM.droppedUpdates[cItem.id] = ci
+            if ciIM.droppedUpdates.count > MAX_DROPPED_UPDATES, let minId = ciIM.droppedUpdates.keys.min() {
+                ciIM.droppedUpdates.removeValue(forKey: minId)
             }
             return false
         }

@@ -137,6 +137,8 @@ data class FileToOpen(val fileId: Long, val inChatList: Boolean)
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
+private const val MAX_DROPPED_UPDATES = 100
+
 // Spec: spec/state.md#ChatModel
 @Stable
 object ChatModel {
@@ -424,8 +426,8 @@ object ChatModel {
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
     // set listener here that will be notified on every add/delete of a chat item
     val chatState = ActiveChatState()
-    private var sndStatusesChatId: String? = null
-    private val sndStatusesBeforeAdd = mutableMapOf<Long, CIStatus>()
+    private var droppedUpdatesChatId: String? = null
+    private val droppedUpdates = mutableMapOf<Long, ChatItem>()
 
     fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
     fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
@@ -633,11 +635,12 @@ object ChatModel {
       // add to current scope
       withContext(Dispatchers.Main) {
         if (chatItemBelongsToScope(cInfo, cItem)) {
-          val keptStatus = sndStatusesBeforeAdd.remove(cItem.id)
-          val ci = if (keptStatus != null && shouldKeepOldSndCIStatus(keptStatus, cItem.meta.itemStatus)) {
-            cItem.copy(meta = cItem.meta.copy(itemStatus = keptStatus))
-          } else {
-            cItem
+          val kept = droppedUpdates.remove(cItem.id)
+          val ci = when {
+            kept == null -> cItem
+            kept.meta.updatedAt >= cItem.meta.updatedAt -> kept
+            shouldKeepOldSndCIStatus(kept.meta.itemStatus, cItem.meta.itemStatus) -> cItem.copy(meta = cItem.meta.copy(itemStatus = kept.meta.itemStatus))
+            else -> cItem
           }
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
@@ -708,22 +711,37 @@ object ChatModel {
             }
             items[itemIndex] = ci
           } else if (
-            (chatState.splits.value.isEmpty() || chatState.splits.value.first() != items.lastOrNull()?.id)
+            (chatState.splits.value.isEmpty() || chatState.splits.value.last() != items.lastOrNull()?.id)
             && cItem.id > maxOf(lastItemId ?: 0, items.maxOfOrNull { it.id } ?: 0)
           ) {
             addToChatItems(cItem)
             itemAdded = true
-          } else if (cItem.chatDir.sent && cItem.meta.itemStatus !is CIStatus.SndRcvd) {
-            if (sndStatusesChatId != cInfo.id) {
-              sndStatusesChatId = cInfo.id
-              sndStatusesBeforeAdd.clear()
+          } else {
+            if (droppedUpdatesChatId != cInfo.id) {
+              droppedUpdatesChatId = cInfo.id
+              droppedUpdates.clear()
             }
-            sndStatusesBeforeAdd[cItem.id] = cItem.meta.itemStatus
+            val kept = droppedUpdates[cItem.id]
+            droppedUpdates[cItem.id] = if (kept != null && shouldKeepOldSndCIStatus(kept.meta.itemStatus, cItem.meta.itemStatus)) {
+              cItem.copy(meta = cItem.meta.copy(itemStatus = kept.meta.itemStatus))
+            } else {
+              cItem
+            }
+            if (droppedUpdates.size > MAX_DROPPED_UPDATES) {
+              droppedUpdates.remove(droppedUpdates.keys.min())
+            }
           }
         }
       }
       return  itemAdded
     }
+
+    fun withDroppedUpdates(items: List<ChatItem>): List<ChatItem> =
+      if (droppedUpdates.isEmpty()) {
+        items
+      } else {
+        items.map { item -> droppedUpdates.remove(item.id)?.takeIf { it.meta.updatedAt > item.meta.updatedAt } ?: item }
+      }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
       withContext(Dispatchers.Main) {
