@@ -207,6 +207,18 @@
         '';
       }); in
       let darwinOpenSSL = mobileRuntime.darwinCLibrary (pkgs.openssl.override { static = true; }); in
+      let iosArchiveConverter = mac2ios.packages.${system}.mac2ios.overrideAttrs (old: {
+        # Zippered compiler-rt objects may carry macOS and Mac Catalyst version
+        # commands. Retargeting both to iOS must leave one version family.
+        patches = (old.patches or []) ++ [ ./scripts/nix/mac2ios-version-commands.patch ];
+        nativeCheckInputs = (old.nativeCheckInputs or []) ++ [ pkgs.python3 ];
+        doCheck = true;
+        checkPhase = ''
+          runHook preCheck
+          make check
+          runHook postCheck
+        '';
+      }); in
       let iosPostInstall = bundleName: ''
         ${pkgs.tree}/bin/tree $out
         mkdir tmp
@@ -224,8 +236,10 @@
         ${pkgs.tree}/bin/tree $out/_pkg
         for pkg in $out/_pkg/*.a; do
           chmod +w $pkg
-          ${mac2ios.packages.${system}.mac2ios}/bin/mac2ios $pkg
+          ${iosArchiveConverter}/bin/mac2ios $pkg
           [[ "$pkg" == *simplex-chat* ]] && ${pkgs.stdenv.cc.targetPrefix}strip -x $pkg
+          # Reject malformed members before publishing an otherwise valid ZIP.
+          /usr/bin/nm -gU "$pkg" > /dev/null
           chmod -w $pkg
         done
 
@@ -668,6 +682,8 @@
             inherit pkgs;
             compiler = (compilerSelection pkgs).ghc914-sh;
           };
+        } // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+          ios-archive-converter = iosArchiveConverter;
         };
 
         devShell = let

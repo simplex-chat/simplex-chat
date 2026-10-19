@@ -187,6 +187,25 @@ simulator libraries retain their separate outputs. The existing iOS preparation
 scripts retag ARM64 archives with `mac2ios -s` when an Apple Silicon simulator is
 needed.
 
+The pinned archive converter is patched to normalize version commands before
+retargeting an object. A compiler-rt object can legitimately carry a macOS
+minimum-version command and a Mac Catalyst build-version command. Converting
+both to iOS leaves conflicting metadata, so the converter keeps the modern
+command's minimum version and SDK and removes the legacy command. Object data,
+section and symbol offsets, and archive member lengths stay unchanged. The
+converter's metadata regression runs during its Nix check phase. Each converted
+and stripped archive must also pass Apple's `nm` before ZIP creation; an archive
+parse error fails the build.
+
+Run the converter check without building GHC or the mobile libraries:
+
+```sh
+nix build .#checks.aarch64-darwin.ios-archive-converter --no-link -L
+```
+
+Use `x86_64-darwin` for an Intel builder. This check only rewrites and inspects
+object metadata; it does not execute the objects.
+
 The Cabal v2 builder stores ordinary package archives in its staged store.
 `link-mobile-library.sh` relinks the selected package and its dependencies before
 that store is pruned. iOS ZIPs contain both the plain `libHSsimplex-chat-*.a` and
