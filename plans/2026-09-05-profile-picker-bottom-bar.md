@@ -24,7 +24,7 @@ Against that, the list's only bottom clearance is its trailing spacer:
 
 The shortfall is `8.dp` (more at larger app font scales) plus the navigation bar — typically about 24.dp with gesture navigation and 48.dp with 3 buttons — and the rows are
 `DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8 = 58.dp`, so on an Android phone drawing edge-to-edge with 3-button navigation nearly the whole row stays hidden (all of it at larger app font scales); on desktop (no navigation bar) about 8.dp of it.
-The navigation-bar part is inferred from the code: on Waydroid (3-button navigation) the app sees no navigation bar inset: the fix leaves about 48.dp above the bar there, the same as on desktop.
+The navigation-bar part is inferred from the code: on Waydroid (3-button navigation) the app appears to see no navigation bar inset: on master only the last row's bottom few pixels were hidden there, not nearly a whole row.
 It only shows once the list nearly fills the screen; with few profiles nothing is hidden,
 which is why it survived.
 
