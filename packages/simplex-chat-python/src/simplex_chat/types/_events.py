@@ -84,6 +84,15 @@ class ReceivedGroupInvitation(TypedDict):
     fromMemberRole: "T.GroupMemberRole"
     memberRole: "T.GroupMemberRole"
 
+class ReceivedGroupInvitationViaGroup(TypedDict):
+    type: Literal["receivedGroupInvitationViaGroup"]
+    user: "T.User"
+    groupInfo: "T.GroupInfo"
+    viaGroupInfo: "T.GroupInfo"
+    viaMember: "T.GroupMember"
+    fromMemberRole: "T.GroupMemberRole"
+    memberRole: "T.GroupMemberRole"
+
 class UserJoinedGroup(TypedDict):
     type: Literal["userJoinedGroup"]
     user: "T.User"
@@ -352,6 +361,7 @@ ChatEvent = (
     | GroupChatItemsDeleted
     | ChatItemsStatusesUpdated
     | ReceivedGroupInvitation
+    | ReceivedGroupInvitationViaGroup
     | UserJoinedGroup
     | GroupUpdated
     | JoinedGroupMember
@@ -394,7 +404,7 @@ ChatEvent = (
     | ChatErrors
 )
 
-ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "serviceRequest", "serviceReplySent", "remoteCtrlSessionCode", "remoteCtrlStopped", "messageError", "chatError", "chatErrors"]
+ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "receivedGroupInvitationViaGroup", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "serviceRequest", "serviceReplySent", "remoteCtrlSessionCode", "remoteCtrlStopped", "messageError", "chatError", "chatErrors"]
 
 
 class OnEventDecorator(Protocol):
@@ -481,6 +491,12 @@ class OnEventDecorator(Protocol):
     def __call__(self, event: Literal["receivedGroupInvitation"], /) -> Callable[
         [Callable[["ReceivedGroupInvitation"], Awaitable[None]]],
         Callable[["ReceivedGroupInvitation"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["receivedGroupInvitationViaGroup"], /) -> Callable[
+        [Callable[["ReceivedGroupInvitationViaGroup"], Awaitable[None]]],
+        Callable[["ReceivedGroupInvitationViaGroup"], Awaitable[None]],
     ]: ...
 
     @overload

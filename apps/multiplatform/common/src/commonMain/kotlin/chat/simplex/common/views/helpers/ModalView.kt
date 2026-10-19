@@ -10,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import LocalCardScreen
 import chat.simplex.common.ui.theme.*
@@ -92,7 +91,10 @@ class ModalData(val keyboardCoversBar: Boolean = true) {
 enum class ModalViewId {
   SECONDARY_CHAT,
   CONTEXT_USER_PICKER_INCOGNITO,
-  CONTEXT_USER_PICKER_NEW_PROFILE
+  CONTEXT_USER_PICKER_NEW_PROFILE,
+  BADGE_LINK,
+  BADGE_REDEEM_CODE,
+  BADGES
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -116,6 +118,8 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   fun hasModalOpen(id: ModalViewId): Boolean = modalViews.any { it.id == id }
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
+
+  fun isLastModal(data: ModalData): Boolean = modalViews.getOrNull(modalViews.size - toRemove.size - 1)?.data === data
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     showCustomModal(id = id, forceAnimated = forceAnimated) { close ->
@@ -143,9 +147,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     modalViews.add(ModalViewHolder(id, anim, data, modal))
     _modalCount.value = modalViews.size - toRemove.size
 
-    if (placement == ModalPlacement.CENTER) {
-      ChatModel.chatId.value = null
-    } else if (placement == ModalPlacement.END) {
+    if (placement == ModalPlacement.END) {
       desktopExpandWindowToWidth(DEFAULT_START_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()) + DEFAULT_MIN_CENTER_MODAL_WIDTH + DEFAULT_END_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()))
     }
   }

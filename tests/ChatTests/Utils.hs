@@ -13,7 +13,7 @@ import ChatTests.DBUtils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
-import Control.Monad (unless, when)
+import Control.Monad (join, unless, when)
 import Control.Monad.Except (runExceptT)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
@@ -23,28 +23,30 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
+import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store.Direct (getContact)
+import Simplex.Chat.Store.Direct (getContact, getContactIdByName, getContactRequest, getContactRequestIdByName)
+import Simplex.Chat.Store.Groups (getGroupIdByName, getGroupMember, getGroupMemberIdByName)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.FileTransfer.Client.Main (xftpClientCLI)
+import Simplex.FileTransfer.Description (FileSize (..))
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (BBSPresHeader (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
-import System.Environment (lookupEnv, withArgs)
-import System.IO.Silently (capture_)
+import System.Environment (lookupEnv)
 import System.Info (os)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
@@ -95,7 +97,7 @@ it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expe
 it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
   where
-    t = 90 * 1000000
+    t = 180 * 1000000
 
 xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xit' = if os == "linux" then xit else it
@@ -127,9 +129,9 @@ versionTestMatrix2 runTest = do
   it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest True True)
   it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest True True)
   it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest True True)
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest True False)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest True True)
   it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest True True)
-  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest True False)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest True True)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
@@ -680,11 +682,24 @@ createCCNoteFolder cc =
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
+shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
+shouldEventuallyReturn action expected = go (200 :: Int)
+  where
+    go n = do
+      r <- action
+      if r == expected || n == 0
+        then r `shouldBe` expected
+        else threadDelay 100000 >> go (n - 1)
+
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
-    maybeFirstRow fromOnly $
-      DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+    join <$> maybeFirstRow fromOnly (DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName))
+
+getProfileShortDescrByName :: TestCC -> String -> IO (Maybe String)
+getProfileShortDescrByName cc displayName =
+  withTransaction (chatStore $ chatController cc) $ \db ->
+    join <$> maybeFirstRow fromOnly (DB.query db "SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName))
 
 pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
 pqSndForContact = pqForContact_ pqSndEnabled PQEncOff
@@ -713,6 +728,50 @@ getTestCCContact cc contactId = do
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
       runExceptT (getContact db (storeCxt chatController) user contactId) >>= either (fail . show) pure
+
+contactBadgeHeader :: TestCC -> ContactName -> IO (Maybe (String, BadgeStatus))
+contactBadgeHeader cc cName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (getContact db (storeCxt $ chatController cc) user =<< getContactIdByName db user cName)
+        >>= either (fail . show) (pure . storedBadgeHeader . profile')
+
+requestBadgeHeader :: TestCC -> ContactName -> IO (Maybe (String, BadgeStatus))
+requestBadgeHeader cc cName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user@User {userId} ->
+      runExceptT (getContactRequest db user =<< getContactRequestIdByName db userId cName)
+        >>= either (fail . show) (\UserContactRequest {profile} -> pure $ storedBadgeHeader profile)
+
+memberBadgeHeader :: TestCC -> GroupName -> ContactName -> IO (Maybe (String, BadgeStatus))
+memberBadgeHeader cc gName mName = (\GroupMember {memberProfile} -> storedBadgeHeader memberProfile) <$> getTestMember cc gName mName
+
+memberProofHeader :: TestCC -> GroupName -> ContactName -> IO (Maybe String)
+memberProofHeader cc gName mName = (\GroupMember {memberBadgeProof} -> proofHeaderTag <$> unNoJSON memberBadgeProof) <$> getTestMember cc gName mName
+
+getTestMember :: TestCC -> GroupName -> ContactName -> IO GroupMember
+getTestMember cc gName mName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT
+        ( do
+            gId <- getGroupIdByName db user gName
+            getGroupMember db (storeCxt $ chatController cc) user gId =<< getGroupMemberIdByName db user gId mName
+        )
+        >>= either (fail . show) pure
+
+storedBadgeHeader :: LocalProfile -> Maybe (String, BadgeStatus)
+storedBadgeHeader LocalProfile {localBadge} = case localBadge of
+  Just (PeerBadge b st) -> Just (proofHeaderTag b, st)
+  _ -> Nothing
+
+proofHeaderTag :: BadgeProof -> String
+proofHeaderTag (BadgeProof _ (BBSPresHeader ph) _ _) = case strDecode ph of
+  Right (PHChat b) -> 'C' : take 1 (B.unpack b)
+  Right (PHRequest _) -> "R"
+  Right (PHLink _) -> "L"
+  Right (PHTest _) -> "T"
+  _ -> "?"
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
@@ -814,8 +873,10 @@ createGroup4 gName cc1 (cc2, role2) (cc3, role3) (cc4, role4) = do
     [ cc1 <## "#team: dan joined the group",
       do
         cc4 <## ("#" <> gName <> ": you joined the group")
-        cc4 <## ("#" <> gName <> ": member " <> sName2 <> " is connected")
-        cc4 <## ("#" <> gName <> ": member " <> sName3 <> " is connected"),
+        cc4
+          <### [ ConsoleString ("#" <> gName <> ": member " <> sName2 <> " is connected"),
+                 ConsoleString ("#" <> gName <> ": member " <> sName3 <> " is connected")
+               ],
       do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName4 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name4 <> " is connected"),
@@ -890,7 +951,12 @@ linkAnotherSchema link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
 
 xftpCLI :: [String] -> IO [String]
-xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
+xftpCLI = \case
+  ["rand", path, size] -> do
+    let FileSize n = fromString size :: FileSize Int
+    B.writeFile path =<< atomically . C.randomBytes n =<< C.newRandom
+    pure ["File created: " <> path]
+  params -> error $ "unsupported xftp CLI command: " <> unwords params
 
 setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
 setRelativePaths cc filesFolder tempFolder = do

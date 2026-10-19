@@ -3,7 +3,7 @@ package chat.simplex.common.views.call
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

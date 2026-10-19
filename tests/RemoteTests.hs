@@ -232,8 +232,8 @@ storedBindingsTest = testRemote $ \compress mobile desktop -> do
   desktop ##> "/stop remote host new"
   desktop <## "ok"
 
-  desktop ##> ("/start remote host new addr=" <> localAddress <> " iface=\"lo\" port=52230")
-  desktop <## ("new remote host started on " <> localAddress <> ":52230")
+  desktop ##> ("/start remote host new addr=" <> localAddress <> " iface=\"lo\" port=" <> remoteTestPort desktop)
+  desktop <## ("new remote host started on " <> localAddress <> ":" <> remoteTestPort desktop)
   desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
@@ -286,17 +286,17 @@ remoteMessageTest = testRemote3 $ \compress mobile desktop bob -> do
 remoteStoreFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteStoreFileTest =
   testRemote3 $ \compress mobile desktop bob ->
-    withXFTPServer $ do
-      let mobileFiles = "./tests/tmp/mobile_files"
+    withXFTPServer mobile $ do
+      let mobileFiles = tmpFile mobile "mobile_files"
       mobile ##> ("/_files_folder " <> mobileFiles)
       mobile <## "ok"
-      let desktopFiles = "./tests/tmp/desktop_files"
+      let desktopFiles = tmpFile desktop "desktop_files"
       desktop ##> ("/_files_folder " <> desktopFiles)
       desktop <## "ok"
-      let desktopHostFiles = "./tests/tmp/remote_hosts_data"
+      let desktopHostFiles = tmpFile desktop "remote_hosts_data"
       desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
       desktop <## "ok"
-      let bobFiles = "./tests/tmp/bob_files"
+      let bobFiles = tmpFile bob "bob_files"
       bob ##> ("/_files_folder " <> bobFiles)
       bob <## "ok"
 
@@ -328,7 +328,7 @@ remoteStoreFileTest =
       runExceptT (remoteStoreFile rhClient "tests/fixtures/test.pdf" "../x") >>= \case
         Left (RPEInvalidBody _) -> pure ()
         r -> fail $ "expected RPEInvalidBody, got " <> show r
-      doesFileExist "./tests/tmp/x" `shouldReturn` False
+      doesFileExist (tmpFile mobile "x") `shouldReturn` False
       -- the undrained attachment did not break the session
       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
       desktop <## "file test_3.pdf stored on remote host 1"
@@ -353,8 +353,10 @@ remoteStoreFileTest =
         [ do
             desktop <## "completed uploading file 1 (test_1.pdf) for bob",
           do
-            bob <## "saving file 1 from alice to test_1.pdf"
-            bob <## "started receiving file 1 (test_1.pdf) from alice"
+            bob
+              <### [ "saving file 1 from alice to test_1.pdf",
+                     "started receiving file 1 (test_1.pdf) from alice"
+                   ]
             bob <## "completed receiving file 1 (test_1.pdf) from alice"
         ]
       B.readFile (bobFiles </> "test_1.pdf") `shouldReturn` src
@@ -381,8 +383,10 @@ remoteStoreFileTest =
         [ do
             desktop <## "completed uploading file 2 (test_2.pdf) for bob",
           do
-            bob <## "saving file 2 from alice to test_2.pdf"
-            bob <## "started receiving file 2 (test_2.pdf) from alice"
+            bob
+              <### [ "saving file 2 from alice to test_2.pdf",
+                     "started receiving file 2 (test_2.pdf) from alice"
+                   ]
             bob <## "completed receiving file 2 (test_2.pdf) from alice"
         ]
       B.readFile (bobFiles </> "test_2.pdf") `shouldReturn` src
@@ -398,8 +402,10 @@ remoteStoreFileTest =
         [ do
             bob <## "completed uploading file 3 (test.jpg) for alice",
           do
-            desktop <## "saving file 3 from bob to test.jpg"
-            desktop <## "started receiving file 3 (test.jpg) from bob"
+            desktop
+              <### [ "saving file 3 from bob to test.jpg",
+                     "started receiving file 3 (test.jpg) from bob"
+                   ]
             desktop <## "completed receiving file 3 (test.jpg) from bob"
         ]
       Just cfArgs'@(CFArgs key' nonce') <- J.decode . LB.pack <$> getTermLine desktop
@@ -426,13 +432,13 @@ remoteStoreFileTest =
       r `shouldContain` err
 
 remoteCLIFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
-remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer $ do
-  let mobileFiles = "./tests/tmp/mobile_files"
+remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer mobile $ do
+  let mobileFiles = tmpFile mobile "mobile_files"
   mobile ##> ("/_files_folder " <> mobileFiles)
   mobile <## "ok"
-  let bobFiles = "./tests/tmp/bob_files/"
+  let bobFiles = tmpFile bob "bob_files/"
   createDirectoryIfMissing True bobFiles
-  let desktopHostFiles = "./tests/tmp/remote_hosts_data"
+  let desktopHostFiles = tmpFile desktop "remote_hosts_data"
   desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
   desktop <## "ok"
 
@@ -456,8 +462,10 @@ remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer
     [ do
         bob <## "completed uploading file 1 (test.pdf) for alice",
       do
-        desktop <## "saving file 1 from bob to test.pdf"
-        desktop <## "started receiving file 1 (test.pdf) from bob"
+        desktop
+          <### [ "saving file 1 from bob to test.pdf",
+                 "started receiving file 1 (test.pdf) from bob"
+               ]
         desktop <## "completed receiving file 1 (test.pdf) from bob"
     ]
 
@@ -482,8 +490,10 @@ remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer
     [ do
         desktop <## "completed uploading file 2 (test.jpg) for bob",
       do
-        bob <## "saving file 2 from alice to ./tests/tmp/bob_files/test.jpg"
-        bob <## "started receiving file 2 (test.jpg) from alice"
+        bob
+          <### [ ConsoleString ("saving file 2 from alice to " <> bobFiles <> "test.jpg"),
+                 "started receiving file 2 (test.jpg) from alice"
+               ]
         bob <## "completed receiving file 2 (test.jpg) from alice"
     ]
 

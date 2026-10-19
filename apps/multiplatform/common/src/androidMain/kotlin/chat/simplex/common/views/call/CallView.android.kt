@@ -46,7 +46,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.google.accompanist.permissions.*
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
