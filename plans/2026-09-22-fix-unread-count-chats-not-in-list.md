@@ -99,10 +99,10 @@ the event is for the active user and host leaves all unread bookkeeping to
 
 ### 4. Why a few chats, and why until restart
 
-Only the **first** message into such a chat is lost. Once the entry exists, the next
-message finds it and increments 0 to 1, so the chat becomes visible again. What stays
-invisible is the set of chats that received exactly one message since the list was
-loaded.
+Only the **first** unread message into such a chat is lost. Once the entry exists, the next
+received unread message in its main scope finds it and increments 0 to 1, so the chat becomes
+visible again. What stays invisible is the set of chats that received no further unread
+main-scope message since the list was loaded.
 
 Any reload repairs the value of a chat it loads, because `/_get chats` returns the database's counts, and
 by then the chat's `chat_ts` is recent enough to be inside the 5000. Android reloads on
@@ -157,7 +157,7 @@ contexts (group reports, member support). Their `chats` list is never loaded fro
 backend, and every path that inserts into it does so with default stats, so this change
 would be the first to insert a chat there with a positive unread count. `ChatView` reads
 that count out of the list its context owns, for the unread divider and the two floating
-unread counters, so without the guard a main-scope message in the group whose reports or
+unread counters, so without the guard a received unread main-scope message in the group whose reports or
 member support view is open would raise all three inside that view. The guard is only
 needed on the stats: `increaseUnreadCounter` and `updateChatTagReadInPrimaryContext` are
 already no-ops in a secondary context — the first through the
@@ -201,7 +201,7 @@ separate change.
 - **A non-mention message in a mentions-only chat still does not light the filter**, and
   a muted chat never does, because `unreadTag` ignores `unreadCount` in those cases. The
   profile counter is a different matter: exactly as on the in-list branch, it is raised
-  for any received item, including one in a muted chat, whereas the core excludes muted
+  for any received unread item, including one in a muted chat, whereas the core excludes muted
   chats when it computes that counter for a profile, and excludes non-mentions in
   mentions-only groups. On iOS marking the whole chat read or clearing it does not take that `+1` back,
   because `decreaseUnreadCounter(user:chat:)` subtracts `unreadMentions` for a
