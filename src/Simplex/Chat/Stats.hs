@@ -7,7 +7,6 @@ module Simplex.Chat.Stats where
 
 import qualified Data.Aeson.TH as J
 import Data.List (partition)
-import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
@@ -131,7 +130,7 @@ data NtfServerSummary = NtfServerSummary
 -- - users are passed to exclude hidden users from totalServersSummary;
 -- - if currentUser is hidden, it should be accounted in totalServersSummary;
 -- - known is set only in user level summaries based on passed userSMPSrvs and userXFTPSrvs
-toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> NonEmpty SMPServer -> NonEmpty XFTPServer -> [NtfServer] -> PresentedServersSummary
+toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> [SMPServer] -> [XFTPServer] -> [NtfServer] -> PresentedServersSummary
 toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrvs userNtfSrvs = do
   let (userSMPSrvsSumms, allSMPSrvsSumms) = accSMPSrvsSummaries
       (userSMPCurr, userSMPPrev, userSMPProx) = smpSummsIntoCategories userSMPSrvsSumms

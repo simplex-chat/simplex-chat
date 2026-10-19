@@ -22,7 +22,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.call.RcvCallInvitation
 import kotlinx.datetime.Clock
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 object NtfManager {
   const val MessageChannel: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
@@ -136,7 +136,6 @@ object NtfManager {
       val actionPendingIntent: PendingIntent = PendingIntent.getBroadcast(SimplexApp.context, 0, actionIntent, flags)
       val actionButton = when (action) {
         NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(MR.strings.accept)
-        NotificationAction.ACCEPT_CONTACT_REQUEST_INCOGNITO -> generalGetString(MR.strings.accept_contact_incognito_button)
       }
       builder.addAction(0, actionButton, actionPendingIntent)
     }
@@ -179,7 +178,6 @@ object NtfManager {
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, CallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
-          .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/raw/ring_once")
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -316,7 +314,6 @@ object NtfManager {
       val m = SimplexApp.context.chatModel
       when (intent.action) {
         NotificationAction.ACCEPT_CONTACT_REQUEST.name -> ntfManager.acceptContactRequestAction(userId, incognito = false, chatId)
-        NotificationAction.ACCEPT_CONTACT_REQUEST_INCOGNITO.name -> ntfManager.acceptContactRequestAction(userId, incognito = true, chatId)
         RejectCallAction -> {
           val invitation = m.callInvitations[chatId]
           if (invitation != null) {

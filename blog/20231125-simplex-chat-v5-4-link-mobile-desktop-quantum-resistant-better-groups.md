@@ -40,7 +40,7 @@ This is only possible when both devices are connected to the same local network.
 
 **On desktop**
 
-If you don't have desktop app installed yet, [download it](../docs/DOWNLOADS.md) and create any chat profile - you don't need to use it, and when you create it there are no server requests sent and no accounts are created. Think about it as about user profile on your computer.
+If you don't have desktop app installed yet, [download it](https://simplex.chat/downloads/) and create any chat profile - you don't need to use it, and when you create it there are no server requests sent and no accounts are created. Think about it as about user profile on your computer.
 
 Then in desktop app settings choose *Link a mobile* - it will show a QR code.
 
@@ -133,7 +133,7 @@ Some links to answer the most common questions:
 
 [What are the risks to have identifiers assigned to the users](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users).
 
-[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-and-security-technical-details-and-limitations).
 
 [How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
 

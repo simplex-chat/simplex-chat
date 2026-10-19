@@ -1,19 +1,20 @@
 package chat.simplex.common.platform
 
+import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
-  ACCEPT_CONTACT_REQUEST,
-  ACCEPT_CONTACT_REQUEST_INCOGNITO
+  ACCEPT_CONTACT_REQUEST
 }
 
+// Spec: spec/services/notifications.md#ntfManager
 lateinit var ntfManager: NtfManager
 
 abstract class NtfManager {
@@ -31,27 +32,39 @@ abstract class NtfManager {
     msgText = generalGetString(MR.strings.notification_new_contact_request),
     image = cInfo.image,
     listOf(
-      NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, incognito = false, cInfo.id) },
-      NotificationAction.ACCEPT_CONTACT_REQUEST_INCOGNITO to { acceptContactRequestAction(user.userId, incognito = true, cInfo.id) }
+      NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, incognito = false, cInfo.id) }
     )
   )
 
-  fun notifyMessageReceived(user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
-    if (!cInfo.ntfsEnabled) return
-    displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+  fun notifyMessageReceived(rhId: Long?, user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
+    if (
+      cItem.showNotification &&
+      cInfo.ntfsEnabled(cItem) &&
+      (
+          allowedToShowNotification() ||
+              chatModel.chatId.value != cInfo.id ||
+              chatModel.remoteHostId() != rhId)
+    ) {
+      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem, cInfo.isChannel))
+    }
   }
 
   fun acceptContactRequestAction(userId: Long?, incognito: Boolean, chatId: ChatId) {
-    val isCurrentUser = ChatModel.currentUser.value?.userId == userId
-    val cInfo: ChatInfo.ContactRequest? = if (isCurrentUser) {
-      (ChatModel.getChat(chatId)?.chatInfo as? ChatInfo.ContactRequest) ?: return
-    } else {
-      null
-    }
     val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-    // TODO include remote host in notification
-    acceptContactRequest(null, incognito, apiId, cInfo, isCurrentUser, ChatModel)
-    cancelNotificationsForChat(chatId)
+    withLongRunningApi {
+      awaitChatStartedIfNeeded(chatModel)
+      // switching to the user the request was sent to, so that accepted contact is shown
+      if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
+        chatModel.clearOverlays.value = true
+      }
+      val isCurrentUser = chatModel.currentUser.value?.userId == userId
+      // TODO include remote host in notification
+      acceptContactRequest(null, incognito, apiId, isCurrentUser, chatModel)
+      cancelNotificationsForChat(chatId)
+    }
   }
 
   fun openChatAction(userId: Long?, chatId: ChatId) {
@@ -65,7 +78,7 @@ abstract class NtfManager {
       }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
-      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(null, cInfo, chatModel)
+      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(secondaryChatsCtx = null, rhId = null, cInfo)
     }
   }
 
@@ -84,6 +97,7 @@ abstract class NtfManager {
   }
 
   fun acceptCallAction(chatId: ChatId) {
+    AppLock.recheckAuthState()
     chatModel.clearOverlays.value = true
     val invitation = chatModel.callInvitations[chatId]
     if (invitation == null) {
@@ -117,16 +131,26 @@ abstract class NtfManager {
     }
   }
 
-  private fun hideSecrets(cItem: ChatItem): String {
+  private fun hideSecrets(cItem: ChatItem, isChannel: Boolean = false): String {
     val md = cItem.formattedText
     return if (md != null) {
       var res = ""
       for (ft in md) {
-        res += if (ft.format is Format.Secret) "..." else ft.text
+        res += when (ft.format) {
+          is Format.Secret -> "..."
+          is Format.Markup -> ft.format.token.previewText
+          is Format.Escape -> ""
+          else -> ft.text
+        }
       }
       res
     } else {
-      cItem.text
+      val mc = cItem.content.msgContent
+      if (mc is MsgContent.MCReport) {
+        generalGetString(MR.strings.notification_group_report).format(cItem.text(isChannel).ifEmpty { mc.reason.text })
+      } else {
+        cItem.text(isChannel)
+      }
     }
   }
 }

@@ -73,6 +73,7 @@ class NetworkObserver {
   }
 
   private fun setNetworkInfo(info: UserNetworkInfo) {
+    getWakeLock(timeout = 180000)
     Log.d(TAG, "Network changed: $info")
     noNetworkJob.cancel()
     if (info.online) {

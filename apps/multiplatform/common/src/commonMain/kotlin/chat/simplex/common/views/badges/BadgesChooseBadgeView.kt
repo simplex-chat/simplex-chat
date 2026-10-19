@@ -1,0 +1,166 @@
+package chat.simplex.common.views.badges
+
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
+import chat.simplex.common.model.BadgeType
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
+import chat.simplex.res.*
+
+// TODO [badges]: replace with types produced by the badge purchase API when it lands.
+enum class BadgeLevel {
+  Supporter,
+  Legend;
+
+  val title: StringResource
+    get() = when (this) {
+      Supporter -> MR.strings.badges_level_supporter
+      Legend -> MR.strings.badges_level_legend
+    }
+
+  val fileSize: StringResource
+    get() = when (this) {
+      Supporter -> MR.strings.badges_level_supporter_file_size
+      Legend -> MR.strings.badges_level_legend_file_size
+    }
+
+  val fileStorage: StringResource
+    get() = when (this) {
+      Supporter -> MR.strings.badges_level_supporter_file_storage
+      Legend -> MR.strings.badges_level_legend_file_storage
+    }
+
+  val summary: StringResource
+    get() = when (this) {
+      Supporter -> MR.strings.badges_level_supporter_summary
+      Legend -> MR.strings.badges_level_legend_summary
+    }
+
+  val badgeType: BadgeType
+    get() = when (this) {
+      Supporter -> BadgeType.Supporter
+      Legend -> BadgeType.Legend
+    }
+}
+
+@Composable
+fun BadgesChooseBadgeView(modalManager: ModalManager, unwindToDepth: Int) {
+  var selectedLevel by remember { mutableStateOf(BadgeLevel.Supporter) }
+
+  LaunchedEffect(Unit) { BadgeStore.load() }
+  CloseWhenSupportGivesWay(modalManager, unwindToDepth)
+
+  ColumnWithScrollBar(
+    Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    maxIntrinsicSize = true,
+  ) {
+    Text(
+      stringResource(MR.strings.badges_choose_your_badge_title),
+      style = MaterialTheme.typography.h1,
+      fontWeight = FontWeight.Bold,
+      color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Text(
+      stringResource(MR.strings.badges_choose_your_badge_lede),
+      style = MaterialTheme.typography.body1,
+      color = MaterialTheme.colors.secondary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    BadgeUserPreview(level = selectedLevel, modifier = Modifier.padding(top = 4.dp))
+
+    Spacer(Modifier.weight(1f).heightIn(min = 12.dp))
+
+    // IntrinsicSize.Max + fillMaxHeight on children so both cards match the taller card's height
+    // when 2-line labels at large fonts would otherwise size them differently.
+    Row(
+      Modifier.fillMaxWidth().height(IntrinsicSize.Max),
+      horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+      LevelCard(BadgeLevel.Supporter, selectedLevel, Modifier.weight(1f).fillMaxHeight()) { selectedLevel = it }
+      LevelCard(BadgeLevel.Legend, selectedLevel, Modifier.weight(1f).fillMaxHeight()) { selectedLevel = it }
+    }
+
+    Spacer(Modifier.weight(1f).heightIn(min = 12.dp))
+
+    // Nested Column with no spacing so the TextButtonBelowOnboardingButton sits directly under
+    // the action button (matches onboarding pattern where its own 7.5dp top padding is the gap).
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      ContinueButton(selectedLevel, modalManager, unwindToDepth)
+      // redeeming a code is here only when Support SimpleX offers the browser instead
+      if (badgeBrowserAllowed()) {
+        RedeemCodeButton(modalManager, unwindToDepth)
+      } else {
+        TextButtonBelowOnboardingButton("", null)
+      }
+    }
+  }
+}
+
+@Composable
+private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Modifier, onSelect: (BadgeLevel) -> Unit) {
+  val isSelected = level == selectedLevel
+  val borderColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
+  // Light: transparent so card matches page background. Dark: subtle gray tint for visible contrast.
+  val cardBackground = if (isInDarkTheme()) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+                       else MaterialTheme.colors.background
+  val shape = RoundedCornerShape(16.dp)
+  Column(
+    modifier
+      .clip(shape)
+      .background(cardBackground, shape)
+      .border(2.dp, borderColor, shape)
+      .clickable { onSelect(level) }
+      .padding(vertical = 16.dp, horizontal = 12.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(10.dp)
+  ) {
+    Image(
+      painterResource(badgeImage(level.badgeType)),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier.size(44.dp)
+    )
+    Text(stringResource(level.title), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    Text(BadgePeriod.Monthly.priceText(BadgeStore.price(level, BadgePeriod.Monthly)), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+      Text(stringResource(level.fileSize), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+      Text(stringResource(level.fileStorage), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+    }
+  }
+}
+
+@Composable
+private fun ContinueButton(selectedLevel: BadgeLevel, modalManager: ModalManager, unwindToDepth: Int) {
+  OnboardingActionButton(
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    labelId = MR.strings.badges_continue,
+    onboarding = null,
+    onclick = {
+      modalManager.showModal { BadgesHowLongView(selectedLevel, modalManager, unwindToDepth) }
+    }
+  )
+}
+

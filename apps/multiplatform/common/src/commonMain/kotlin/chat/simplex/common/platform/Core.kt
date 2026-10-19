@@ -8,33 +8,44 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
 import chat.simplex.common.views.helpers.DatabaseUtils.randomDatabasePassword
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import java.io.File
 import java.nio.ByteBuffer
 
 // ghc's rts
+// Spec: spec/architecture.md#initHS
 external fun initHS()
 // android-support
 external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
+// Spec: spec/architecture.md#chatMigrateInit
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatCloseStore(ctrl: ChatCtrl): String
-external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
-external fun chatSendRemoteCmd(ctrl: ChatCtrl, rhId: Int, msg: String): String
+external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
+external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
+external fun chatParseUri(str: String, safe: Int): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 external fun chatValidName(name: String): String
+external fun chatParseBadgeCode(code: String): String
 external fun chatJsonLength(str: String): Int
 external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
+
+// the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
+// The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
+fun parseBadgeCode(s: String): String? {
+  val canonical = chatParseBadgeCode(s)
+  return if (canonical.isEmpty()) null else canonical
+}
 
 val chatModel: ChatModel
   get() = chatController.chatModel
@@ -44,6 +55,7 @@ val appPreferences: AppPreferences
 
 val chatController: ChatController = ChatController
 
+// Spec: spec/architecture.md#initChatControllerOnStart
 fun initChatControllerOnStart() {
   withLongRunningApi {
     if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
@@ -54,7 +66,9 @@ fun initChatControllerOnStart() {
   }
 }
 
+// Spec: spec/architecture.md#initChatController
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
+  Log.d(TAG, "initChatController")
   try {
     if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
@@ -63,7 +77,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
-    var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    var migrated: Array<Any> = if (databaseBackend == "postgres") {
+      chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", MigrationConfirmation.Error.value)
+    } else {
+      chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    }
     var res: DBMigrationResult = runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
@@ -75,7 +93,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     if (rerunMigration) {
       chatModel.dbMigrationInProgress.value = true
-      migrated = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      migrated = if (databaseBackend == "postgres") {
+        chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", confirm.value)
+      } else {
+        chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      }
       res = runCatching {
         json.decodeFromString<DBMigrationResult>(migrated[0] as String)
       }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
@@ -83,7 +105,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     val ctrl = if (res is DBMigrationResult.OK) {
       migrated[1] as Long
     } else null
-    chatController.ctrl = ctrl
+    chatController.setChatCtrl(ctrl)
     chatModel.chatDbEncrypted.value = dbKey != ""
     chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
@@ -118,6 +140,16 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
     val user = chatController.apiGetActiveUser(null)
     chatModel.currentUser.value = user
+    chatModel.conditions.value = chatController.getServerOperators(null) ?: ServerOperatorConditionsDetail.empty
+    if (appPrefs.shouldImportAppSettings.get()) {
+      try {
+        val appSettings = controller.apiGetAppSettings(AppSettings.current.prepareForExport())
+        appSettings.importIntoApp()
+        appPrefs.shouldImportAppSettings.set(false)
+      } catch (e: Exception) {
+        Log.e(TAG, "Error while importing app settings: " + e.stackTraceToString())
+      }
+    }
     if (user == null) {
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.currentUser.value = null
@@ -138,7 +170,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     } else if (startChat().await()) {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
       val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
-        OnboardingStage.Step3_CreateSimpleXAddress
+        OnboardingStage.Step4_NetworkCommitments
       } else {
         savedOnboardingStage
       }
@@ -158,6 +190,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   }
 }
 
+// Spec: spec/architecture.md#chatInitTemporaryDatabase
 fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation: MigrationConfirmation = MigrationConfirmation.Error): Pair<DBMigrationResult, ChatCtrl?> {
   val dbKey = key ?: randomDatabasePassword()
   Log.d(TAG, "chatInitTemporaryDatabase path: $dbPath")
@@ -169,6 +202,7 @@ fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation:
   return res to migrated[1] as ChatCtrl
 }
 
+// Spec: spec/architecture.md#chatInitControllerRemovingDatabases
 fun chatInitControllerRemovingDatabases() {
   val dbPath = dbAbsolutePrefixPath
   // Remove previous databases, otherwise, can be .errorNotADatabase with null controller
@@ -183,7 +217,7 @@ fun chatInitControllerRemovingDatabases() {
   }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
 
   val ctrl = migrated[1] as Long
-  chatController.ctrl = ctrl
+  chatController.setChatCtrl(ctrl)
   // We need only controller, not databases
   File(dbPath + "_chat.db").delete()
   File(dbPath + "_agent.db").delete()

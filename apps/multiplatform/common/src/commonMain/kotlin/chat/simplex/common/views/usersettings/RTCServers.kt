@@ -23,7 +23,7 @@ import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.parseRTCIceServers
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun RTCServersView(
@@ -198,7 +198,7 @@ private fun howToButton() {
   val uriHandler = LocalUriHandler.current
   Row(
     verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier.clickable { uriHandler.openUriCatching("https://simplex.chat/docs/webrtc.html#configure-mobile-apps") }
+    modifier = Modifier.clickable { uriHandler.openExternalLink("https://simplex.chat/docs/webrtc.html#configure-mobile-apps") }
   ) {
     Text(stringResource(MR.strings.how_to), color = MaterialTheme.colors.primary)
     Icon(

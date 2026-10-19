@@ -1,0 +1,221 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
+module API.Docs.Responses where
+
+import API.Docs.Types
+import API.TypeInfo
+import Data.List (find)
+import GHC.Generics
+import Simplex.Chat.Controller
+import Simplex.Messaging.Parsers (dropPrefix)
+
+data CRDoc = CRDoc
+  { consName :: ConsName,
+    responseType :: ATUnionMember,
+    responseDescr :: String
+  }
+
+instance ConstructorName CRDoc where consName' CRDoc {consName} = consName
+
+chatResponsesDocs :: [CRDoc]
+chatResponsesDocs = map toResp chatResponsesDocsData
+  where
+    toResp (consName, responseDescr)
+      | consName == "CRChatCmdError" =
+          let field = toAPIField consName $ FieldInfo "chatError" (ti "ChatError")
+              responseType = ATUnionMember (dropPrefix "CR" consName) [field]
+           in CRDoc {consName, responseType, responseDescr}
+      | otherwise = case find ((consName ==) . consName') chatResponsesTypeInfo of
+          Just RecordTypeInfo {fieldInfos} ->
+            let fields = map (toAPIField consName) fieldInfos
+                responseType = ATUnionMember (dropPrefix "CR" consName) fields
+            in CRDoc {consName, responseType, responseDescr}
+          Nothing -> error $ "Missing response type info for " <> consName
+
+deriving instance Generic ChatResponse
+
+chatResponsesTypeInfo :: [RecordTypeInfo]
+chatResponsesTypeInfo = recordTypesInfo @ChatResponse
+
+chatResponsesDocsData :: [(ConsName, String)]
+chatResponsesDocsData =
+  [ ("CRAcceptingContactRequest", "Contact request accepted"),
+    ("CRActiveUser", "Active user profile"),
+    ("CRChatItemNotChanged", "Message not changed"),
+    ("CRChatItemReaction", "Message reaction"),
+    ("CRChatItemUpdated", "Message updated"),
+    ("CRChatItemsDeleted", "Messages deleted"),
+    ("CRChatMsgContent", "Chat card content that can be sent"),
+    ("CRChatRunning", ""),
+    ("CRChatStarted", ""),
+    ("CRChatStopped", ""),
+    ("CRCmdOk", "Ok"),
+    ("CRChatCmdError", "Command error (only used in WebSockets API)"), -- Haskell code uses Either, with error in Left
+    ("CRConnectionPlan", "Connection link information"),
+    ("CRContactAlreadyExists", ""),
+    ("CRContactConnectionDeleted", "Connection deleted"),
+    ("CRContactDeleted", ""),
+    ("CRContactPrefsUpdated", "Contact preferences updated"),
+    ("CRContactRequestRejected", ""),
+    ("CRContactsList", "Contacts"),
+    ("CRGroupDeletedUser", "User deleted group"),
+    ("CRGroupLink", ""),
+    ("CRGroupLinkCreated", ""),
+    ("CRGroupLinkDeleted", ""),
+    ("CRGroupCreated", ""),
+    ("CRPublicGroupCreated", ""),
+    ("CRPublicGroupCreationFailed", ""),
+    ("CRGroupRelays", ""),
+    ("CRGroupRelaysAdded", ""),
+    ("CRGroupRelaysAddFailed", ""),
+    ("CRRelayGroupAllowed", "Relay rejection cleared for a channel"),
+    ("CRGroupMembers", ""),
+    ("CRGroupUpdated", ""),
+    ("CRGroupsList", "Groups"),
+    ("CRGroupDomainVerified", ""),
+    ("CRInvitation", "One-time invitation"),
+    ("CRLeftMemberUser", "User left group"),
+    ("CRMemberAccepted", "Member accepted to group"),
+    ("CRMembersBlockedForAllUser", "Members blocked for all by admin"),
+    ("CRMembersRoleUser", "Members role changed by user"),
+    ("CRNewChatItems", "New messages"),
+    ("CRRcvFileAccepted", "File accepted to be received"),
+    ("CRRcvFileAcceptedSndCancelled", "File accepted, but no longer sent"),
+    ("CRRcvFileCancelled", "Cancelled receiving file"),
+    ("CRRemoteCtrlConnected", "Remote controller session connected."),
+    ("CRRemoteCtrlConnecting", "Remote controller is connecting."),
+    ("CRSentConfirmation", "Confirmation sent to one-time invitation"),
+    ("CRSentGroupInvitation", "Group invitation sent"),
+    ("CRSentGroupInvitationViaGroup", "Group invitation sent to member of another group"),
+    ("CRSentInvitation", "Invitation sent to contact address"),
+    ("CRSentInvitationToContact", "Invitation sent to contact (when connecting via SimpleX name to a known contact address)."),
+    ("CRServiceReplyAccepted", "Service reply accepted for delivery. `connectionId` correlates the reply delivery event."),
+    ("CRSndFileCancelled", "Cancelled sending file"),
+    ("CRStartedConnectionToContact", "Connection to contact started (when connecting via prepared contact)."),
+    ("CRStartedConnectionToGroup", "Connection to channel started (when connecting via channel link)."),
+    ("CRUserAcceptedGroupSent", "User accepted group invitation"),
+    ("CRUserContactLink", "User contact address"),
+    ("CRUserContactLinkCreated", "User contact address created"),
+    ("CRUserContactLinkDeleted", "User contact address deleted"),
+    ("CRUserContactLinkUpdated", "User contact address updated"),
+    ("CRUserDeletedMembers", "Members deleted"),
+    ("CRUserProfileUpdated", "User profile updated"),
+    ("CRUserProfileNoChange", "User profile was not changed"),
+    ("CRUsersList", "Users"),
+    ("CRApiChats", "Chat previews (paginated). Use this instead of CRContactsList / CRGroupsList when scanning at scale.")
+    -- ("CRApiChat", "Chat and messages"),
+    -- ("CRChatCleared", ""),
+    -- ("CRChatItemInfo", "Message information"),
+    -- ("CRChatItems", "The most recent messages"),
+    -- ("CRConnectionAliasUpdated", ""),
+    -- ("CRContactAliasUpdated", ""),
+    -- ("CRContactRatchetSyncStarted", "Contact encryption synchronization started"),
+    -- ("CRGroupAliasUpdated", ""),
+    -- ("CRGroupMemberRatchetSyncStarted", "Member encryption synchronization started"),
+    -- ("CRItemsReadForChat", "Messages marked as read"),
+    -- ("CRReactionMembers", "Members who set reaction on the message"),
+  ]
+
+undocumentedResponses :: [ConsName]
+undocumentedResponses =
+  [ "CRAgentQueuesInfo",
+    "CRAgentServersSummary",
+    "CRAgentSubs",
+    "CRAgentSubsDetails",
+    "CRAgentSubsTotal",
+    "CRAgentWorkersDetails",
+    "CRAgentWorkersSummary",
+    "CRApiChat",
+    "CRAppSettings",
+    "CRArchiveExported",
+    "CRArchiveImported",
+    "CRBadgeInvoice",
+    "CRBadgeLedger",
+    "CRBadgeRedeemed",
+    "CRBadgeState",
+    "CRBroadcastSent",
+    "CRCallInvitations",
+    "CRChatCleared",
+    "CRChatContentTypes",
+    "CRChatHelp",
+    "CRChatItemId",
+    "CRChatItemInfo",
+    "CRChatItems",
+    "CRChatItemTTL",
+    "CRChatRelayTestResult",
+    "CRChats",
+    "CRConnectionsDiff",
+    "CRChatTags",
+    "CRConnectionAliasUpdated",
+    "CRConnectionIncognitoUpdated",
+    "CRConnectionUserChanged",
+    "CRConnectionVerified",
+    "CRConnNtfMessages",
+    "CRContactAliasUpdated",
+    "CRContactCode",
+    "CRContactInfo",
+    "CRContactDomainVerified",
+    "CRContactRatchetSyncStarted",
+    "CRContactSwitchAborted",
+    "CRContactSwitchStarted",
+    "CRContactUserChanged",
+    "CRCurrentRemoteHost",
+    "CRCustomChatResponse",
+    "CRDebugLocks",
+    "CRFileTransferStatus",
+    "CRFileTransferStatusXFTP",
+    "CRForwardPlan",
+    "CRGroupAliasUpdated",
+    "CRGroupChatItemsDeleted",
+    "CRGroupDescription",
+    "CRGroupInfo",
+    "CRGroupMemberCode",
+    "CRGroupMemberInfo",
+    "CRGroupMemberRatchetSyncStarted",
+    "CRGroupMemberSwitchAborted",
+    "CRGroupMemberSwitchStarted",
+    "CRGroupProfile",
+    "CRGroupUserChanged",
+    "CRItemsReadForChat",
+    "CRJoinedGroupMember",
+    "CRMemberSupportChatRead",
+    "CRMemberSupportChatDeleted",
+    "CRMemberSupportChats",
+    "CRNetworkConfig",
+    "CRNewMemberContact",
+    "CRNewMemberContactSentInv",
+    "CRMemberContactAccepted",
+    "CRNewPreparedChat",
+    "CRNtfConns",
+    "CRNtfToken",
+    "CRNtfTokenStatus",
+    "CRQueueInfo",
+    "CRRcvStandaloneFileCreated",
+    "CRReactionMembers",
+    "CRRemoteCtrlList",
+    "CRRemoteFileStored",
+    "CRRemoteHostList",
+    "CRRemoteHostStarted",
+    "CRServerOperatorConditions",
+    "CRServerTestResult",
+    "CRServiceResponse",
+    "CRSlowSQLQueries",
+    "CRSndStandaloneFileCreated",
+    "CRSQLResult",
+    "CRStandaloneFileInfo",
+    "CRTagsUpdated",
+    "CRUsageConditions",
+    "CRUserPrivacy",
+    "CRUserProfile",
+    "CRUserProfileImage",
+    "CRUserServers",
+    "CRUserServersValidation",
+    "CRVersionInfo",
+    "CRWelcome"
+  ]

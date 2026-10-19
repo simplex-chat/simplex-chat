@@ -2,6 +2,7 @@
 // Created by Avently on 17.01.2023.
 // Copyright (c) 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
@@ -21,6 +22,7 @@ struct UserProfilesView: View {
     @State private var profileHidden = false
     @State private var profileAction: UserProfileAction?
     @State private var actionPassword = ""
+    @State private var navigateToProfileCreate = false
 
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
@@ -55,17 +57,6 @@ struct UserProfilesView: View {
     }
 
     var body: some View {
-        if authorized {
-            userProfilesView()
-        } else {
-            Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
-            .onAppear(perform: runAuth)
-        }
-    }
-
-    private func runAuth() { authorize(NSLocalizedString("Open user profiles", comment: "authentication reason"), $authorized) }
-
-    private func userProfilesView() -> some View {
         List {
             if profileHidden {
                 Button {
@@ -77,12 +68,14 @@ struct UserProfilesView: View {
             Section {
                 let users = filteredUsers()
                 let v = ForEach(users) { u in
-                    userView(u.user)
+                    userView(u)
                 }
                 if #available(iOS 16, *) {
                     v.onDelete { indexSet in
                         if let i = indexSet.first {
-                            confirmDeleteUser(users[i].user)
+                            withAuth {
+                                confirmDeleteUser(users[i].user)
+                            }
                         }
                     }
                 } else {
@@ -90,12 +83,22 @@ struct UserProfilesView: View {
                 }
 
                 if trimmedSearchTextOrPassword == "" {
-                    NavigationLink {
-                        CreateProfile()
-                    } label: {
+                    NavigationLink(
+                        destination: CreateProfile(),
+                        isActive: $navigateToProfileCreate
+                    ) {
                         Label("Add profile", systemImage: "plus")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(height: 38)
+                            .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAuth {
+                                    self.navigateToProfileCreate = true
+                                }
+                            }
+                            .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -32)
                     }
-                    .frame(height: 38)
                 }
             } footer: {
                 Text("Tap to activate profile.")
@@ -189,7 +192,25 @@ struct UserProfilesView: View {
     private var visibleUsersCount: Int {
         m.users.filter({ u in !u.user.hidden }).count
     }
-
+    
+    private func withAuth(_ action: @escaping () -> Void) {
+        if authorized {
+            action()
+        } else {
+            authenticate(
+                reason: NSLocalizedString("Change chat profiles", comment: "authentication reason")
+            ) { laResult in
+                switch laResult {
+                case .success, .unavailable:
+                    authorized = true
+                    AppSheetState.shared.scenePhaseActive = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: action)
+                case .failed: authorized = false
+                }
+            }
+        }
+    }
+    
     private func correctPassword(_ user: User, _ pwd: String) -> Bool {
         if let ph = user.viewPwdHash {
             return pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
@@ -201,11 +222,11 @@ struct UserProfilesView: View {
         !user.hidden ? nil : trimmedSearchTextOrPassword
     }
 
-    @ViewBuilder private func profileActionView(_ action: UserProfileAction) -> some View {
+    private func profileActionView(_ action: UserProfileAction) -> some View {
         let passwordValid = actionPassword == actionPassword.trimmingCharacters(in: .whitespaces)
         let passwordField = PassphraseField(key: $actionPassword, placeholder: "Profile password", valid: passwordValid)
         let actionEnabled: (User) -> Bool = { user in actionPassword != "" && passwordValid && correctPassword(user, actionPassword) }
-        List {
+        return List {
             switch action {
             case let .deleteUser(user, delSMPQueues):
                 actionHeader("Delete profile", user)
@@ -213,8 +234,10 @@ struct UserProfilesView: View {
                     passwordField
                     settingsRow("trash", color: theme.colors.secondary) {
                         Button("Delete chat profile", role: .destructive) {
-                            profileAction = nil
-                            Task { await removeUser(user, delSMPQueues, viewPwd: actionPassword) }
+                            withAuth {
+                                profileAction = nil
+                                Task { await removeUser(user, delSMPQueues, viewPwd: actionPassword) }
+                            }
                         }
                         .disabled(!actionEnabled(user))
                     }
@@ -231,8 +254,10 @@ struct UserProfilesView: View {
                     passwordField
                     settingsRow("lock.open", color: theme.colors.secondary) {
                         Button("Unhide chat profile") {
-                            profileAction = nil
-                            setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: actionPassword) }
+                            withAuth{
+                                profileAction = nil
+                                setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: actionPassword) }
+                            }
                         }
                         .disabled(!actionEnabled(user))
                     }
@@ -255,11 +280,13 @@ struct UserProfilesView: View {
 
     private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
         Button(title, role: .destructive) {
-            if let user = userToDelete {
-                if passwordEntryRequired(user) {
-                    profileAction = .deleteUser(user: user, delSMPQueues: delSMPQueues)
-                } else {
-                    alert = .deleteUser(user: user, delSMPQueues: delSMPQueues)
+            withAuth {
+                if let user = userToDelete {
+                    if passwordEntryRequired(user) {
+                        profileAction = .deleteUser(user: user, delSMPQueues: delSMPQueues)
+                    } else {
+                        alert = .deleteUser(user: user, delSMPQueues: delSMPQueues)
+                    }
                 }
             }
         }
@@ -272,6 +299,7 @@ struct UserProfilesView: View {
     private func removeUser(_ user: User, _ delSMPQueues: Bool, viewPwd: String?) async {
         do {
             if user.activeUser {
+                ChatModel.shared.removeWallpaperFilesFromAllChats(user)
                 if let newActive = m.users.first(where: { u in !u.user.activeUser && !u.user.hidden }) {
                     try await changeActiveUserAsync_(newActive.user.userId, viewPwd: nil)
                     try await deleteUser()
@@ -291,17 +319,20 @@ struct UserProfilesView: View {
             }
         } catch let error {
             logger.error("Error deleting user profile: \(error)")
-            let a = getErrorAlert(error, "Error deleting user profile")
-            alert = .error(title: a.title, error: a.message)
+            await MainActor.run {
+                showErrorAlert(error, NSLocalizedString("Error deleting user profile", comment: ""))
+            }
         }
 
         func deleteUser() async throws {
             try await apiDeleteUser(user.userId, delSMPQueues, viewPwd: viewPwd)
+            removeWallpaperFilesFromTheme(user.uiThemes)
             await MainActor.run { withAnimation { m.removeUser(user) } }
         }
     }
 
-    @ViewBuilder private func userView(_ user: User) -> some View {
+    @ViewBuilder private func userView(_ userInfo: UserInfo) -> some View {
+        let user = userInfo.user
         let v = Button {
             Task {
                 do {
@@ -315,16 +346,23 @@ struct UserProfilesView: View {
             HStack {
                 ProfileImage(imageStr: user.image, size: 38)
                     .padding(.trailing, 12)
-                Text(user.chatViewName)
+                NameWithBadge(Text(user.chatViewName), user.profile.localBadge)
                 Spacer()
                 if user.activeUser {
                     Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
-                } else if user.hidden {
-                    Image(systemName: "lock").foregroundColor(theme.colors.secondary)
-                } else if !user.showNtfs {
-                    Image(systemName: "speaker.slash").foregroundColor(theme.colors.secondary)
                 } else {
-                    Image(systemName: "checkmark").foregroundColor(.clear)
+                    if userInfo.unreadCount > 0 {
+                        userUnreadBadge(userInfo, theme: theme)
+                    }
+                    if user.hidden {
+                        Image(systemName: "lock").foregroundColor(theme.colors.secondary)
+                    } else if userInfo.unreadCount == 0 {
+                        if !user.showNtfs {
+                            Image(systemName: "speaker.slash").foregroundColor(theme.colors.secondary)
+                        } else {
+                            Image(systemName: "checkmark").foregroundColor(.clear)
+                        }
+                    }
                 }
             }
         }
@@ -332,30 +370,38 @@ struct UserProfilesView: View {
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if user.hidden {
                 Button("Unhide") {
-                    if passwordEntryRequired(user) {
-                        profileAction = .unhideUser(user: user)
-                    } else {
-                        setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: trimmedSearchTextOrPassword) }
+                    withAuth {
+                        if passwordEntryRequired(user) {
+                            profileAction = .unhideUser(user: user)
+                        } else {
+                            setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: trimmedSearchTextOrPassword) }
+                        }
                     }
                 }
                 .tint(.green)
             } else {
                 if visibleUsersCount > 1 {
                     Button("Hide") {
-                        selectedUser = user
+                        withAuth {
+                            selectedUser = user
+                        }
                     }
                     .tint(.gray)
                 }
                 Group {
                     if user.showNtfs {
                         Button("Mute") {
-                            setUserPrivacy(user, successAlert: showMuteProfileAlert ? .muteProfileAlert : nil) {
-                                try await apiMuteUser(user.userId)
+                            withAuth {
+                                setUserPrivacy(user, successAlert: showMuteProfileAlert ? .muteProfileAlert : nil) {
+                                    try await apiMuteUser(user.userId)
+                                }
                             }
                         }
                     } else {
                         Button("Unmute") {
-                            setUserPrivacy(user) { try await apiUnmuteUser(user.userId) }
+                            withAuth {
+                                setUserPrivacy(user) { try await apiUnmuteUser(user.userId) }
+                            }
                         }
                     }
                 }
@@ -367,7 +413,9 @@ struct UserProfilesView: View {
         } else {
             v.swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button("Delete", role: .destructive) {
-                    confirmDeleteUser(user)
+                    withAuth {
+                        confirmDeleteUser(user)
+                    }
                 }
             }
         }
@@ -389,8 +437,9 @@ struct UserProfilesView: View {
                     }
                 }
             } catch let error {
-                let a = getErrorAlert(error, "Error updating user privacy")
-                alert = .error(title: a.title, error: a.message)
+                await MainActor.run {
+                    showErrorAlert(error, NSLocalizedString("Error updating user privacy", comment: ""))
+                }
             }
         }
     }

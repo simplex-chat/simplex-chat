@@ -5,10 +5,12 @@
 //  Created by JRoberts on 15.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIGroupInvitationView
 struct CIGroupInvitationView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -37,6 +39,13 @@ struct CIGroupInvitationView: View {
 
                     Divider().frame(width: frameWidth)
 
+                    if chat.chatInfo.groupInfo != nil {
+                        Text(chatItem.chatDir.sent ? String.localizedStringWithFormat(NSLocalizedString("For %@ only", comment: ""), groupInvitation.localDisplayName) : NSLocalizedString("For you only", comment: ""))
+                            .font(.caption)
+                            .foregroundColor(theme.colors.secondary)
+                            .overlay(DetermineWidth())
+                    }
+
                     if action {
                         VStack(alignment: .leading, spacing: 2) {
                             groupInvitationText()
@@ -45,7 +54,7 @@ struct CIGroupInvitationView: View {
                                 Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
                                     .foregroundColor(inProgress ? theme.colors.secondary : chatIncognito ? .indigo : theme.colors.primary)
                                     .font(.callout)
-                                + Text("   ")
+                                + Text(verbatim: "   ")
                                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                             )
                             .overlay(DetermineWidth())
@@ -53,7 +62,7 @@ struct CIGroupInvitationView: View {
                     } else {
                         (
                             groupInvitationText()
-                            + Text("   ")
+                            + Text(verbatim: "   ")
                             + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                         )
                         .overlay(DetermineWidth())
@@ -84,12 +93,12 @@ struct CIGroupInvitationView: View {
         }
 
         if action {
-            v.onTapGesture {
+            v.simultaneousGesture(TapGesture().onEnded {
                 inProgress = true
                 joinGroup(groupInvitation.groupId) {
                     await MainActor.run { inProgress = false }
                 }
-            }
+            })
             .disabled(inProgress)
         } else {
             v
@@ -106,7 +115,7 @@ struct CIGroupInvitationView: View {
         return HStack(alignment: .top) {
             ProfileImage(
                 imageStr: groupInvitation.groupProfile.image,
-                iconName: "person.2.circle.fill",
+                icon: Image(systemName: "person.2.circle.fill"),
                 size: 44,
                 color: color
             )

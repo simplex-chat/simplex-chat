@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import LocalCardScreen
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -10,41 +11,96 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.AppLock
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
+import SectionItemView
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.WhatsNewView
-import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
-import chat.simplex.common.views.chat.item.CIFileViewScope
+import chat.simplex.common.views.chat.item.*
+import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.badges.*
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
+import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
-import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
+enum class PresetTagKind { GROUP_REPORTS, FAVORITES, CONTACTS, GROUPS, CHANNELS, BUSINESS, NOTES }
+
+sealed class ActiveFilter {
+  data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
+  data class UserTag(val tag: ChatTag) : ActiveFilter()
+  data object Unread: ActiveFilter()
+}
+
+private fun showBadgeAlertDismissAlert(title: String) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = title,
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withBGApi { chatModel.controller.ackBadgeAlert(snooze = true) }
+        }) {
+          Text(stringResource(MR.strings.badges_remind_me_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withBGApi { chatModel.controller.ackBadgeAlert(snooze = false) }
+        }) {
+          Text(stringResource(MR.strings.badges_dismiss), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
+}
+
+private fun showSupportSimpleXDismissAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.badges_banner_title),
+    text = generalGetString(MR.strings.badges_banner_dismiss_message),
+    onConfirm = { appPrefs.supporterBannerShown.set(true) }
+  )
+}
+
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
+  connectProgressManager.cancelConnectProgress()
   ModalManager.start.closeModals()
   ModalManager.end.closeModals()
   chatModel.newChatSheetVisible.value = true
@@ -55,7 +111,7 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
       chatModel.newChatSheetVisible.value = false
       close()
     }
-    ModalView(close, closeOnTop = !oneHandUI.value) {
+    ModalView(close, showAppBar = !oneHandUI.value) {
       if (appPlatform.isAndroid) {
         BackHandler {
           close()
@@ -73,80 +129,107 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 
 @Composable
 fun ToggleChatListCard() {
-  Column(
-    modifier = Modifier
-      .padding(16.dp)
-      .clip(RoundedCornerShape(18.dp))
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val onClose = {
+    appPrefs.oneHandUICardShown.set(true)
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.one_hand_ui),
+      text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+    )
+  }
+  val activeBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+    .copy(alpha = appPrefs.inAppBarsAlpha.get())
+  val selectedBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
+  Row(
+    Modifier
+      .padding(horizontal = 16.dp, vertical = 12.dp)
+      .fillMaxWidth()
+      .height(IntrinsicSize.Min)
+      .clip(RoundedCornerShape(percent = 50)),
+    horizontalArrangement = Arrangement.spacedBy(2.dp)
   ) {
-    Box(
-      modifier = Modifier
-        .background(MaterialTheme.appColors.sentMessage)
-    ) {
-      Box(
-        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
-        contentAlignment = Alignment.TopEnd
-      ) {
-        IconButton(
-          onClick = {
-            appPrefs.oneHandUICardShown.set(true)
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.one_hand_ui),
-              text = generalGetString(MR.strings.one_hand_ui_change_instruction),
-            )
-          }
-        ) {
-          Icon(
-            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
-          )
-        }
-      }
-      Column(
-        modifier = Modifier
-          .padding(horizontal = DEFAULT_PADDING)
-          .padding(top = DEFAULT_PADDING)
-      ) {
-        Row(
-          horizontalArrangement = Arrangement.Start,
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
-        }
-        Row(
-          Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
-
-          Spacer(Modifier.fillMaxWidth().weight(1f))
-
-          SharedPreferenceToggle(
-            appPrefs.oneHandUI,
-            enabled = true,
-            onChange = {
-              val c = CurrentColors.value.colors
-              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
-            }
-          )
-        }
-      }
+    ToolbarSegment(
+      icon = MR.images.ic_mobile_3,
+      text = stringResource(MR.strings.one_hand_ui_bottom_bar),
+      isSelected = oneHandUI.value,
+      selectedBg = selectedBg,
+      activeBg = activeBg,
+      modifier = Modifier.weight(1f)
+    ) { appPrefs.oneHandUI.set(true) }
+    Box(Modifier.weight(1f).fillMaxHeight()) {
+      ToolbarSegment(
+        icon = MR.images.ic_mobile_4,
+        text = stringResource(MR.strings.one_hand_ui_top_bar),
+        isSelected = !oneHandUI.value,
+        selectedBg = selectedBg,
+        activeBg = activeBg,
+        modifier = Modifier.fillMaxSize()
+      ) { appPrefs.oneHandUI.set(false) }
+      Icon(
+        painterResource(MR.images.ic_close), null,
+        Modifier
+          .align(Alignment.CenterEnd)
+          .padding(end = 4.dp)
+          .clip(CircleShape)
+          .clickable(onClick = onClose)
+          .padding(8.dp)
+          .size(16.dp),
+        tint = MaterialTheme.colors.secondary
+      )
     }
   }
 }
 
 @Composable
+private fun ToolbarSegment(
+  icon: ImageResource,
+  text: String,
+  isSelected: Boolean,
+  selectedBg: Color,
+  activeBg: Color,
+  modifier: Modifier = Modifier,
+  onClick: () -> Unit
+) {
+  Row(
+    modifier
+      .fillMaxHeight()
+      .background(if (isSelected) selectedBg else activeBg)
+      .then(if (!isSelected) Modifier.clickable(onClick = onClick) else Modifier)
+      .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      painterResource(icon), null, Modifier.size(20.dp),
+      tint = if (isSelected) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.width(8.dp))
+    Text(
+      text,
+      color = if (isSelected) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground,
+      style = MaterialTheme.typography.body1
+    )
+  }
+}
+
+// Spec: spec/client/chat-list.md#ChatListView
+@Composable
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+
   LaunchedEffect(Unit) {
-    if (shouldShowWhatsNew(chatModel)) {
+    val showWhatsNew = shouldShowWhatsNew(chatModel)
+    val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
+    if (showWhatsNew || showUpdatedConditions) {
+      // Requested here, so that the country is known by the time the modal opens
+      platform.androidLoadPlayStoreCountry()
       delay(1000L)
-      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close) }
+      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
     }
   }
 
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
-      if (chatModel.chatId.value != null) {
+      if (chatModel.chatId.value != null && !ModalManager.end.isLastModalOpen(ModalViewId.SECONDARY_CHAT)) {
         ModalManager.end.closeModalsExceptFirst()
       }
       AudioPlayer.stop()
@@ -154,74 +237,36 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-  Scaffold(
-    topBar = {
-      if (!oneHandUI.value) {
-        Column {
-          ChatListToolbar(
-            userPickerState,
-            stopped,
-            setPerformLA,
-          )
-          Divider()
-        }
+  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+  Box(Modifier.fillMaxSize()) {
+    if (oneHandUI.value) {
+      ChatListWithLoadingScreen(searchText, listState)
+      Column(Modifier.align(Alignment.BottomCenter)) {
+        ChatListToolbar(
+          userPickerState,
+          listState,
+          stopped,
+          setPerformLA,
+        )
       }
-    },
-    bottomBar = {
-      if (oneHandUI.value) {
-        Column {
-          Divider()
-          ChatListToolbar(
-            userPickerState,
-            stopped,
-            setPerformLA,
-            )
-        }
+    } else {
+      ChatListWithLoadingScreen(searchText, listState)
+      Column {
+        ChatListToolbar(
+          userPickerState,
+          listState,
+          stopped,
+          setPerformLA,
+        )
       }
-    },
-    contentColor = LocalContentColor.current,
-    floatingActionButton = {
-      if (!oneHandUI.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
-        FloatingActionButton(
-          onClick = {
-            if (!stopped) {
-              showNewChatSheet(oneHandUI)
-            }
-          },
-          Modifier
-            .padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp)
-            .size(AppBarHeight * fontSizeSqrtMultiplier),
-          elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp,
-            hoveredElevation = 0.dp,
-            focusedElevation = 0.dp,
-          ),
-          backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          contentColor = Color.White
-        ) {
-          Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(22.dp * fontSizeSqrtMultiplier))
-        }
-      }
-    }
-  ) {
-    Box(Modifier.padding(it)) {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-      ) {
-        if (!chatModel.desktopNoUserNoRemote) {
-          ChatList(chatModel, searchText = searchText)
-        }
-        if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-          Text(stringResource(
-            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
-        }
+      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+        NewChatSheetFloatingButton(oneHandUI, stopped)
       }
     }
   }
+
   if (searchText.value.text.isEmpty()) {
-    if (appPlatform.isDesktop) {
+    if (appPlatform.isDesktop && !oneHandUI.value) {
       val call = remember { chatModel.activeCall }.value
       if (call != null) {
         ActiveCallInteractiveArea(call)
@@ -229,6 +274,12 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   if (appPlatform.isAndroid) {
+    val wasAllowedToSetupNotifications = rememberSaveable { mutableStateOf(false) }
+    val canEnableNotifications = remember { derivedStateOf { chatModel.chatRunning.value == true } }
+    if (wasAllowedToSetupNotifications.value || canEnableNotifications.value) {
+      SetNotificationsModeAdditions()
+      LaunchedEffect(Unit) { wasAllowedToSetupNotifications.value = true }
+    }
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(
         chatModel = chatModel,
@@ -236,6 +287,217 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
         setPerformLA = AppLock::setPerformLA
       )
     }
+  }
+}
+
+@Composable
+private fun ChatListCard(
+  close: () -> Unit,
+  onCardClick: (() -> Unit)? = null,
+  content: @Composable BoxScope.() -> Unit
+) {
+  Column(
+    modifier = Modifier.clip(RoundedCornerShape(18.dp))
+  ) {
+    Box(
+      modifier = Modifier
+        .background(MaterialTheme.appColors.sentMessage)
+        .clickable {
+          onCardClick?.invoke()
+        }
+    ) {
+      Box(
+        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
+        contentAlignment = Alignment.TopEnd
+      ) {
+        IconButton(
+          onClick = {
+            close()
+          }
+        ) {
+          Icon(
+            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
+          )
+        }
+      }
+      content()
+    }
+  }
+}
+
+private const val BANNER_IMAGE_RATIO = 800f / 505f
+
+@Composable
+private fun BannerGradientBox(isDark: Boolean, content: @Composable () -> Unit) {
+  val stops = if (isDark) darkStops else lightStops
+  val scale = if (isDark) 1.5f else 1.2f
+  val gp = gradientPoints(1f / BANNER_IMAGE_RATIO, scale)
+  var size by remember { mutableStateOf(IntSize.Zero) }
+  val brush = remember(size, isDark) {
+    if (size.width > 0 && size.height > 0) {
+      Brush.linearGradient(
+        colorStops = stops,
+        start = Offset(gp.startX * size.width, gp.startY * size.height),
+        end = Offset(gp.endX * size.width, gp.endY * size.height)
+      )
+    } else {
+      Brush.linearGradient(colorStops = stops)
+    }
+  }
+  Box(
+    Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO).background(brush).onSizeChanged { size = it },
+    contentAlignment = Alignment.Center
+  ) { content() }
+}
+
+@Composable
+private fun ConnectBannerCard() {
+  val isDark = isInDarkTheme()
+  val labelBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+    .copy(alpha = appPrefs.inAppBarsAlpha.get())
+  val buttonSize = 30.dp * fontSizeSqrtMultiplier
+  val gap = 3.dp * fontSizeSqrtMultiplier
+
+  Column(horizontalAlignment = Alignment.End) {
+    IconButton(
+      onClick = { appPrefs.addressCreationCardShown.set(true) },
+      modifier = Modifier.size(buttonSize)
+    ) {
+      Icon(
+        painterResource(MR.images.ic_close),
+        contentDescription = stringResource(MR.strings.icon_descr_close_button),
+        modifier = Modifier
+          .size(buttonSize)
+          .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f), CircleShape)
+          .padding(buttonSize * 0.15f),
+        tint = MaterialTheme.colors.secondary
+      )
+    }
+    Spacer(Modifier.height(gap))
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .height(IntrinsicSize.Min)
+        .clip(RoundedCornerShape(18.dp))
+    ) {
+      Column(
+        Modifier.weight(1f).clickable {
+          ModalManager.start.showModalCloseable { close ->
+            NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
+          }
+        }
+      ) {
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isDark) MR.images.banner_create_link_light else MR.images.banner_create_link),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO)
+          )
+        } else {
+          BannerGradientBox(isDark) {
+            Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colors.primary)
+          }
+        }
+        Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+              Text(stringResource(MR.strings.new_1_time_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+            }
+          } else {
+            Text(stringResource(MR.strings.new_1_time_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+          }
+        }
+      }
+      Spacer(Modifier.width(2.dp).fillMaxHeight().background(MaterialTheme.colors.background))
+      Column(
+        Modifier.weight(1f).clickable {
+          ModalManager.start.showModalCloseable { close ->
+            NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
+          }
+        }
+      ) {
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isDark) MR.images.banner_paste_link_light else MR.images.banner_paste_link),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO)
+          )
+        } else {
+          BannerGradientBox(isDark) {
+            Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colors.primary)
+          }
+        }
+        Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+              Text(stringResource(if (appPlatform.isAndroid) MR.strings.scan_paste_link else MR.strings.paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+            }
+          } else {
+            Text(stringResource(if (appPlatform.isAndroid) MR.strings.scan_paste_link else MR.strings.paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
+  if (chatModel.chatRunning.value == null) {
+    Text(stringResource(MR.strings.loading_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+  } else if (shouldShowOnboarding()) {
+    if (appPlatform.isAndroid) AndroidOnboardingCards()
+  } else {
+    if (!chatModel.desktopNoUserNoRemote) {
+      ChatList(searchText = searchText, listState)
+    }
+    if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+      Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+    }
+  }
+}
+
+@Composable
+private fun AndroidOnboardingCards() {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val topPad = topPaddingToContent(false)
+  val bottomPad = if (oneHandUI.value) {
+    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
+  } else {
+    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+  }
+  Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
+    ConnectOnboardingView()
+  }
+}
+
+@Composable
+private fun BoxScope.NewChatSheetFloatingButton(oneHandUI: State<Boolean>, stopped: Boolean) {
+  FloatingActionButton(
+    onClick = {
+      if (!stopped) {
+        showNewChatSheet(oneHandUI)
+      }
+    },
+    Modifier
+      .navigationBarsPadding()
+      .padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
+      .align(Alignment.BottomEnd)
+      .size(AppBarHeight * fontSizeSqrtMultiplier),
+    elevation = FloatingActionButtonDefaults.elevation(
+      defaultElevation = 0.dp,
+      pressedElevation = 0.dp,
+      hoveredElevation = 0.dp,
+      focusedElevation = 0.dp,
+    ),
+    backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+    contentColor = Color.White
+  ) {
+    Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(22.dp * fontSizeSqrtMultiplier))
   }
 }
 
@@ -256,16 +518,70 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
+private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>, listState: LazyListState, stopped: Boolean, setPerformLA: (Boolean) -> Unit) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
-  if (oneHandUI.value) {
-    val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+  if (updatingProgress != null) {
+    barButtons.add {
+      val interactionSource = remember { MutableInteractionSource() }
+      val hovered = interactionSource.collectIsHoveredAsState().value
+      IconButton(onClick = {
+        chatModel.updatingRequest?.close()
+      }, Modifier.hoverable(interactionSource)) {
+        if (hovered) {
+          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
+        } else if (updatingProgress == -1f) {
+          CIFileViewScope.progressIndicator()
+        } else {
+          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
+        }
+      }
+    }
+  }
 
-    if (!stopped) {
+  if (stopped) {
+    barButtons.add {
+      IconButton(onClick = {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.chat_is_stopped_indication),
+          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
+        )
+      }) {
+        Icon(
+          painterResource(MR.images.ic_report_filled),
+          generalGetString(MR.strings.chat_is_stopped_indication),
+          tint = Color.Red,
+        )
+      }
+    }
+  } else {
+    if (connectProgressManager.showConnectProgress != null) {
+      barButtons.add {
+        Box(Modifier.padding(horizontal = DEFAULT_PADDING_HALF)) {
+          CIFileViewScope.progressIndicator()
+        }
+      }
+    }
+
+    if (oneHandUI.value) {
+      val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+
+      if (appPlatform.isDesktop && oneHandUI.value) {
+        val call = remember { chatModel.activeCall }
+        if (call.value != null) {
+          barButtons.add {
+            val c = call.value
+            if (c != null) {
+              ActiveCallInteractiveArea(c)
+              Spacer(Modifier.width(5.dp))
+            }
+          }
+        }
+      }
+
       barButtons.add {
         IconButton(
           onClick = {
@@ -290,44 +606,14 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     }
   }
 
-  if (updatingProgress != null) {
-    barButtons.add {
-      val interactionSource = remember { MutableInteractionSource() }
-      val hovered = interactionSource.collectIsHoveredAsState().value
-      IconButton(onClick = {
-        chatModel.updatingRequest?.close()
-      }, Modifier.hoverable(interactionSource)) {
-        if (hovered) {
-          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
-        } else if (updatingProgress == -1f) {
-          CIFileViewScope.progressIndicator()
-        } else {
-          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
-        }
-      }
-    }
-  } else if (stopped) {
-    barButtons.add {
-      IconButton(onClick = {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
-        )
-      }) {
-        Icon(
-          painterResource(MR.images.ic_report_filled),
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          tint = Color.Red,
-        )
-      }
-    }
-  }
   val clipboard = LocalClipboardManager.current
-  DefaultTopAppBar(
+  val scope = rememberCoroutineScope()
+  val canScrollToZero = remember { derivedStateOf { listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0 } }
+  DefaultAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
         NavigationButtonMenu {
-          ModalManager.start.showModalCloseable { close ->
+          ModalManager.start.showModalCloseable(cardScreen = true) { close ->
             SettingsView(chatModel, setPerformLA, close)
           }
         }
@@ -342,38 +628,39 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
       }
     },
     title = {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
-        Text(
-          stringResource(MR.strings.your_chats),
-          color = MaterialTheme.colors.onBackground,
-          fontWeight = FontWeight.SemiBold,
-        )
-        SubscriptionStatusIndicator(
-          click = {
-            ModalManager.start.closeModals()
-            ModalManager.start.showModalCloseable(
-              endButtons = {
-                val summary = serversSummary.value
-                if (summary != null) {
-                  ShareButton {
-                    val json = Json {
-                      prettyPrint = true
+      if (!shouldShowOnboarding()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
+          Text(
+            stringResource(MR.strings.your_chats),
+            color = MaterialTheme.colors.onBackground,
+            fontWeight = FontWeight.SemiBold,
+          )
+          SubscriptionStatusIndicator(
+            click = {
+              ModalManager.start.closeModals()
+              val summary = serversSummary.value
+              ModalManager.start.showModalCloseable(
+                endButtons = {
+                  if (summary != null) {
+                    ShareButton {
+                      val json = Json {
+                        prettyPrint = true
+                      }
+                      val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
+                      clipboard.shareText(text)
                     }
-
-                    val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
-                    clipboard.shareText(text)
                   }
                 }
-              }
-            ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
-          }
-        )
+              ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
+            }
+          )
+        }
       }
     },
-    onTitleClick = null,
-    showSearch = false,
+    onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,
+    onTop = !oneHandUI.value,
     onSearchValueChanged = {},
-    buttons = barButtons
+    buttons = { barButtons.forEach { it() } }
   )
 }
 
@@ -458,17 +745,24 @@ private fun BoxScope.unreadBadge(text: String? = "") {
 
 @Composable
 private fun ToggleFilterEnabledButton() {
-  val pref = remember { ChatController.appPrefs.showUnreadAndFavorites }
-  IconButton(onClick = { pref.set(!pref.get()) }) {
+  val showUnread = remember { chatModel.activeChatTagFilter }.value == ActiveFilter.Unread
+
+  IconButton(onClick = {
+    if (showUnread) {
+      chatModel.activeChatTagFilter.value = null
+    } else {
+      chatModel.activeChatTagFilter.value = ActiveFilter.Unread
+    }
+  }) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_filter_list),
       null,
-      tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
+      tint = if (showUnread) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
       modifier = Modifier
         .padding(3.dp)
-        .background(color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
-        .border(width = 1.dp, color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
+        .background(color = if (showUnread) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
+        .border(width = 1.dp, color = if (showUnread) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
         .padding(3.dp)
         .size(sp16)
     )
@@ -482,94 +776,150 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
+  } else if (isAppLink(uri)) {
+    // branched on the scheme before the connection dispatch, which an app link must never reach
+    // an app link must not tear down a redemption in flight
+    if (!isBadgeLinkIssuing()) openAppLink(rhId, uri)
   } else {
     withBGApi {
-      planAndConnect(rhId, uri, incognito = null, close = null)
+      chatModel.appOpenUrlConnecting.value = true
+      planAndConnect(rhId, uri, close = { ModalManager.closeAllModalsEverywhere() }, cleanup = { chatModel.appOpenUrlConnecting.value = false })
     }
+  }
+}
+
+// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+internal const val appLinkScheme = "simplexchat"
+internal const val connectionLinkScheme = "simplex"
+private const val badgeLinkPath = "/badge/code/"
+
+// the prefix of the raw text, not a parsed URI: a link that does not parse is still an app link
+fun isAppLink(uri: String): Boolean =
+  uri.startsWith("$appLinkScheme:", ignoreCase = true)
+
+fun isConnectionLink(uri: String): Boolean =
+  uri.startsWith("$connectionLinkScheme:", ignoreCase = true)
+
+// a link type added in a later version reaches this build too, so an unknown path asks for an update
+private fun openAppLink(rhId: Long?, uri: String) {
+  // a link that does not parse is dropped, as iOS never receives one; one that parses without
+  // a path, such as simplexchat:badge/code/X, is an unknown link on both platforms
+  val parsed = uriCreateOrNull(uri) ?: return
+  val path = parsed.path ?: ""
+  if (path.startsWith(badgeLinkPath)) {
+    openBadgeLink(rhId, path.removePrefix(badgeLinkPath))
+  } else {
+    AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.app_link_not_supported))
   }
 }
 
 @Composable
-private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-    val focusRequester = remember { FocusRequester() }
-    var focused by remember { mutableStateOf(false) }
-    Icon(
-      painterResource(MR.images.ic_search),
-      contentDescription = null,
-      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
-      tint = MaterialTheme.colors.secondary
-    )
-    SearchTextField(
-      Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
-      placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
-      alwaysVisible = true,
-      searchText = searchText,
-      enabled = !remember { searchShowingSimplexLink }.value,
-      trailingContent = null,
-    ) {
-      searchText.value = searchText.value.copy(it)
-    }
-    val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
-    if (hasText.value) {
-      val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
-      BackHandler(onBack = hideSearchOnBack)
-      KeyChangeEffect(chatModel.currentRemoteHost.value) {
-        hideSearchOnBack()
+private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>) {
+  Box {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+      val focusRequester = remember { FocusRequester() }
+      var focused by remember { mutableStateOf(false) }
+      Icon(
+        painterResource(MR.images.ic_search),
+        contentDescription = null,
+        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
+        tint = MaterialTheme.colors.secondary
+      )
+      SearchTextField(
+        Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+        placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
+        alwaysVisible = true,
+        searchText = searchText,
+        enabled = !remember { searchShowingSimplexLink }.value,
+        trailingContent = null,
+        // the clear button must line up with the filter icon it replaces, so no reduction here
+        reducedCloseButtonPadding = 0.dp,
+      ) {
+        searchText.value = searchText.value.copy(it)
       }
-    } else {
-      val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
-      if (chatModel.chats.value.isNotEmpty()) {
-        ToggleFilterEnabledButton() 
-      }
-      Spacer(Modifier.width(padding))
-    }
-    val focusManager = LocalFocusManager.current
-    val keyboardState = getKeyboardState()
-    LaunchedEffect(keyboardState.value) {
-      if (keyboardState.value == KeyboardState.Closed && focused) {
-        focusManager.clearFocus()
-      }
-    }
-    val view = LocalMultiplatformView()
-    LaunchedEffect(Unit) {
-      snapshotFlow { searchText.value.text }
-        .distinctUntilChanged()
-        .collect {
-          val link = strHasSingleSimplexLink(it.trim())
-          if (link != null) {
-            // if SimpleX link is pasted, show connection dialogue
-            hideKeyboard(view)
-            if (link.format is Format.SimplexLink) {
-              val linkText = link.simplexLinkText(link.format.linkType, link.format.smpHosts)
-              searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
-            }
-            searchShowingSimplexLink.value = true
-            searchChatFilteredBySimplexLink.value = null
-            connect(link.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
-          } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
-            if (it.isNotEmpty()) {
-              // if some other text is pasted, enter search mode
-              focusRequester.requestFocus()
-            } else if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(0)
-            }
-            searchShowingSimplexLink.value = false
-            searchChatFilteredBySimplexLink.value = null
-          }
+      val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
+      if (hasText.value) {
+        val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
+        BackHandler(onBack = hideSearchOnBack)
+        KeyChangeEffect(chatModel.currentRemoteHost.value) {
+          hideSearchOnBack()
         }
+      } else {
+        val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
+        if (chatModel.chats.value.isNotEmpty()) {
+          ToggleFilterEnabledButton()
+        }
+        Spacer(Modifier.width(padding))
+      }
+      val focusManager = LocalFocusManager.current
+      val keyboardState = getKeyboardState()
+      LaunchedEffect(keyboardState.value) {
+        if (keyboardState.value == KeyboardState.Closed && focused) {
+          focusManager.clearFocus()
+        }
+      }
+      val view = LocalMultiplatformView()
+      LaunchedEffect(Unit) {
+        snapshotFlow { searchText.value.text }
+          .distinctUntilChanged()
+          .collectLatest {
+            val target = strConnectTarget(it.trim())
+            if (target is ConnectTarget.Link) {
+              hideKeyboard(view)
+              searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
+              searchShowingSimplexLink.value = true
+              searchChatFilteredBySimplexLink.value = emptySet()
+              connectNameCandidate.value = null
+              connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
+            } else {
+              val candidate = nameSearchCandidate(it.trim())
+              connectNameCandidate.value = candidate
+              // clear the previous match immediately so the list falls back to text search during the debounce,
+              // instead of showing a stale filtered chat while the new search runs
+              searchChatFilteredBySimplexLink.value = emptySet()
+              if (candidate != null) {
+                // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
+                // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
+                // both and filter every known chat found; drop the row only when both types are already known.
+                delay(NAME_SEARCH_DEBOUNCE_MS)
+                val rhId = chatModel.remoteHostId()
+                val inProgress = mutableStateOf(false) // background search: no spinner, no error alerts
+                val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate", "#$candidate")
+                val ids = targets.mapNotNull { name ->
+                  knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
+                }
+                searchChatFilteredBySimplexLink.value = ids.toSet()
+                if (ids.size == targets.size) connectNameCandidate.value = null
+              } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
+                if (it.isNotEmpty()) {
+                  focusRequester.requestFocus()
+                } else {
+                  if (!chatModel.appOpenUrlConnecting.value) {
+                    connectProgressManager.cancelConnectProgress()
+                  }
+                  if (listState.layoutInfo.totalItemsCount > 0) {
+                    listState.scrollToItem(0)
+                  }
+                }
+                searchShowingSimplexLink.value = false
+                searchChatFilteredBySimplexLink.value = emptySet()
+              }
+            }
+          }
+      }
     }
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
   }
 }
 
-private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<Set<String>>, cleanup: (() -> Unit)?) {
   withBGApi {
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      incognito = null,
-      filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
-      filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },
+      filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
+      filterKnownGroup = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
       close = null,
       cleanup = cleanup,
     )
@@ -590,14 +940,51 @@ enum class ScrollDirection {
 }
 
 @Composable
-private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
-  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+fun BoxScope.StatusBarBackground() {
+  if (appPlatform.isAndroid) {
+    val bg = if (LocalCardScreen.current) canvasColorForCurrentTheme() else MaterialTheme.colors.background
+    Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(bg.copy(0.88f)))
+  }
+}
+
+@Composable
+fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor: Boolean, noAlpha: Boolean = false) {
+  if (appPlatform.isAndroid) {
+    val barPadding = WindowInsets.navigationBars.asPaddingValues()
+    val paddingBottom = barPadding.calculateBottomPadding()
+    val color = if (mixedColor) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f) else MaterialTheme.colors.background
+    val finalColor = color.copy(if (noAlpha) 1f else if (appBarOnBottom) remember { appPrefs.inAppBarsAlpha.state }.value else 0.6f)
+    Box(Modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
+  }
+}
+
+@Composable
+fun BoxScope.NavigationBarBackground(modifier: Modifier, color: Color = MaterialTheme.colors.background) {
+  val keyboardState = getKeyboardState()
+  if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
+    val barPadding = WindowInsets.navigationBars.asPaddingValues()
+    val paddingBottom = barPadding.calculateBottomPadding()
+    val finalColor = color.copy(0.6f)
+    Box(modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
+  }
+}
+
+@Composable
+private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
   val keyboardState by getKeyboardState()
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
+  val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
+  val supporterBannerTapped = remember { appPrefs.supporterBannerTapped.state }
+  val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
+  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
+  // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
+  val crowdfunding = crowdfundingAvailable()
+  val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -620,50 +1007,122 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
   val allChats = remember { chatModel.chats }
   // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
   // which is related to [derivedStateOf]. Using safe alternative instead
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
-  val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
-  val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
+  val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
+  val connectNameCandidate = remember { mutableStateOf<String?>(null) }
+  val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
+  val topPaddingToContent = topPaddingToContent(false)
+  val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
-    Modifier.fillMaxSize(),
+    if (!oneHandUI.value) Modifier.imePadding() else Modifier,
     listState,
     reverseLayout = oneHandUI.value
   ) {
+    item { Spacer(Modifier.height(blankSpaceSize)) }
     stickyHeader {
       Column(
         Modifier
+          .zIndex(1f)
           .offset {
-            val y = if (searchText.value.text.isEmpty()) {
-              val offsetMultiplier = if (oneHandUI.value) 1 else -1
-              if (
-                (oneHandUI.value && scrollDirection == ScrollDirection.Up) ||
-                (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
-              ) {
-                0
-              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier * listState.firstVisibleItemScrollOffset else offsetMultiplier * 1000
+            val offsetMultiplier = if (oneHandUI.value) 1 else -1
+            val y = if (searchText.value.text.isNotEmpty() || (appPlatform.isAndroid && keyboardState == KeyboardState.Opened) || scrollDirection == ScrollDirection.Up) {
+              if (listState.firstVisibleItemIndex == 0) -offsetMultiplier * listState.firstVisibleItemScrollOffset
+              else -offsetMultiplier * blankSpaceSize.roundToPx()
             } else {
-              0
+              when (listState.firstVisibleItemIndex) {
+                0 -> 0
+                1 -> offsetMultiplier * listState.firstVisibleItemScrollOffset
+                else -> offsetMultiplier * 1000
+              }
             }
             IntOffset(0, y)
           }
-          .background(MaterialTheme.colors.background),
+          .background(MaterialTheme.colors.background)
         ) {
         if (oneHandUI.value) {
-          Divider()
-        }
-        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-        if (!oneHandUI.value) {
+          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            Divider()
+            // bottom toolbar: search bar below, so on desktop the connect row goes below the tags
+            TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
+              TagsView(searchText)
+              Divider()
+              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+            }
+            ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+          }
+        } else {
+          ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
+          // top toolbar: search bar above, so on desktop the connect row goes above the tags
+          TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
+            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+            Divider()
+            TagsView(searchText)
+          }
           Divider()
         }
       }
     }
-    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() > 1) {
+    if (!oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
+      }
+    }
+    // one slot: a badge the user paid for ending outranks the pitch to get one
+    val alert = BadgeModel.alert.value
+    if (supportEnded() && alert != null) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            title = stringResource(MR.strings.badges_support_ended),
+            subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
+            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
+            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_support_ended)) }
+          )
+        }
+      }
+    } else if (badgeIssueFailed()) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            title = stringResource(MR.strings.badges_renewal_failed),
+            subtitle = stringResource(MR.strings.badges_tap_for_details),
+            warning = true,
+            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
+            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_renewal_failed)) }
+          )
+        }
+      }
+    } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            showDismiss = supporterBannerTapped.value,
+            onTap = {
+              appPrefs.supporterBannerTapped.set(true)
+              ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) }
+            },
+            onDismiss = ::showSupportSimpleXDismissAlert
+          )
+        }
+      }
+    } else if (chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          GetStakeBanner(
+            showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),
+            onTap = { openGetStake(ModalManager.start) },
+            onDismiss = { appPrefs.getStakeBannerDismissed.set(true) }
+          )
+        }
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
@@ -672,58 +1131,525 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() <= 1) {
+    if (!addressCreationCardShown.value) {
       item {
-        ToggleChatListCard()
+        ChatListFeatureCards()
       }
+    }
+    if (appPlatform.isAndroid) {
+      item { Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
     }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-      Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
+    Box(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
+      NoChatsView(searchText = searchText)
+    }
+  }
+  if (oneHandUI.value) {
+    StatusBarBackground()
+  } else {
+    NavigationBarBackground(oneHandUI.value, true)
+  }
+  if (!oneHandUICardShown.value) {
+    LaunchedEffect(chats.size) {
+      if (chats.size >= 3) {
+        appPrefs.oneHandUICardShown.set(true)
+      }
+    }
+  }
+
+  LaunchedEffect(activeFilter.value) {
+    searchText.value = TextFieldValue("")
+  }
+}
+
+// Default top-level part used to complete a bare name typed in the search field (search field only;
+// the message parser and the wire format are unchanged).
+private const val DEFAULT_NAME_TLD = "testing"
+// Shortest name that offers the button, so it is discoverable but does not flash on short prefixes.
+private const val MIN_NAME_LENGTH = 5
+// Wait this long after the last keystroke before the local name search runs.
+internal const val NAME_SEARCH_DEBOUNCE_MS = 300L
+
+private val nameLabelRegex = Regex("[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*")
+private fun isNameLabel(s: String): Boolean = s.length in 1..63 && nameLabelRegex.matches(s)
+
+// On-device candidate for connecting by SimpleX name: the string sent to the core to resolve it.
+// Mirrors the domain grammar (nameLabelP/mkDomain in SimplexName.hs): an optional @/# prefix, then
+// dot-separated ASCII labels; a dotless word is completed with the default top-level part. Returns
+// the string to send (keeping @/# so the type is preserved), or null when the text is not a name.
+internal fun nameSearchCandidate(str: String): String? {
+  val text = str.trim()
+  val prefix = text.firstOrNull()?.takeIf { it == '@' || it == '#' }
+  val core = if (prefix != null) text.substring(1) else text
+  val labels = core.split(".")
+  if (core.isEmpty() || labels.any { !isNameLabel(it) }) return null
+  return when {
+    labels.size > 1 -> text                                            // already has a top-level part
+    core.length >= MIN_NAME_LENGTH -> "${prefix ?: ""}$core.$DEFAULT_NAME_TLD"
+    else -> null
+  }
+}
+
+// The chat id a local (PRMNever) search resolved to — a contact, a business, or a channel — or null on a miss.
+// The core returns the correct type for @ vs # (getContactToConnect / type-filtered getGroupToConnect), so no
+// client-side type check is needed.
+internal suspend fun knownChatId(rhId: Long?, result: ConnectionPlanResult?): String? = when (val plan = result?.connectionPlan) {
+  is ConnectionPlan.ContactAddress -> (plan.contactAddressPlan as? ContactAddressPlan.Known)?.contact?.let { contact ->
+    // a name-resolved chat may be prepared in the store but not yet listed, so add it (as the tap path does)
+    if (chatModel.getContactChat(contact.contactId) == null) {
+      chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
+    }
+    contact.id
+  }
+  is ConnectionPlan.GroupLink -> (when (val g = plan.groupLinkPlan) {
+    is GroupLinkPlan.Known -> g.groupInfo
+    is GroupLinkPlan.OwnLink -> g.groupInfo
+    else -> null
+  })?.let { gInfo ->
+    if (chatModel.getGroupChat(gInfo.groupId) == null) {
+      chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(gInfo, groupChatScope = null), chatItems = emptyList()))
+    }
+    gInfo.id
+  }
+  else -> null
+}
+
+// The list tags and the connect-by-name row share one slot. When there is no name, the tags show; on
+// mobile the row replaces the tags while shown. On desktop both show, arranged by the caller (which
+// knows whether the search bar is above or below), passed as desktopView.
+@Composable
+private fun TagsOrConnectByName(
+  searchText: MutableState<TextFieldValue>,
+  connectNameCandidate: MutableState<String?>,
+  desktopView: @Composable (candidate: String) -> Unit,
+) {
+  val candidate = connectNameCandidate.value
+  when {
+    candidate == null -> TagsView(searchText)
+    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+    else -> desktopView(candidate)
+  }
+}
+
+@Composable
+internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldValue>, connectNameCandidate: MutableState<String?>, close: (() -> Unit)?) {
+  val view = LocalMultiplatformView()
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .clickable {
+        hideKeyboard(view)
+        withBGApi {
+          planAndConnect(
+            chatModel.remoteHostId(),
+            name,
+            close = close,
+            cleanup = {
+              searchText.value = TextFieldValue()
+              connectNameCandidate.value = null
+            },
+          )
+        }
+      }
+      .padding(vertical = DEFAULT_PADDING_HALF),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    // icon and text aligned with the search bar's icon and text (same paddings and icon size)
+    val icon = if (name.startsWith("@")) MR.images.ic_at else MR.images.ic_tag
+    Icon(painterResource(icon), null, Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.primary)
+    Text(String.format(generalGetString(MR.strings.connect_plan_connect_to_name), name), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
+  val activeFilter = remember { chatModel.activeChatTagFilter }.value
+
+  if (searchText.value.text.isBlank()) {
+    when (activeFilter) {
+      is ActiveFilter.PresetTag -> Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center) // this should not happen
+      is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+      is ActiveFilter.Unread -> {
+          Row(
+            Modifier.clip(shape = CircleShape).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Icon(
+              painterResource(MR.images.ic_filter_list),
+              null,
+              tint = MaterialTheme.colors.secondary
+            )
+            Text(generalGetString(MR.strings.no_unread_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+          }
+      }
+      null -> {
+        Text(generalGetString(MR.strings.no_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+      }
+    }
+  } else {
+    Text(generalGetString(MR.strings.no_chats_found), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+  }
+}
+
+@Composable
+private fun ChatListFeatureCards() {
+  val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+
+  if (!addressCreationCardShown.value && hasConversations(chatModel.chats.value)) {
+    Column(modifier = Modifier.padding(16.dp)) {
+      ConnectBannerCard()
     }
   }
 }
 
-fun filteredChats(
-  showUnreadAndFavorites: Boolean,
-  searchShowingSimplexLink: State<Boolean>,
-  searchChatFilteredBySimplexLink: State<String?>,
-  searchText: String,
-  chats: List<Chat>
-): List<Chat> {
-  val linkChatId = searchChatFilteredBySimplexLink.value
-  return if (linkChatId != null) {
-    chats.filter { it.id == linkChatId }
-  } else {
-    val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
-    if (s.isEmpty() && !showUnreadAndFavorites)
-      chats.filter { chat -> !chat.chatInfo.chatDeleted && chatContactType(chat) != ContactType.CARD }
-    else {
-      chats.filter { chat ->
-        when (val cInfo = chat.chatInfo) {
-          is ChatInfo.Direct -> chatContactType(chat) != ContactType.CARD && !chat.chatInfo.chatDeleted && (
-            if (s.isEmpty()) {
-              chat.id == chatModel.chatId.value || filtered(chat)
-            } else {
-              cInfo.anyNameContains(s)
-            })
-          is ChatInfo.Group -> if (s.isEmpty()) {
-            chat.id == chatModel.chatId.value || filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
+private val TAG_MIN_HEIGHT = 35.dp
+
+@Composable
+private fun TagsView(searchText: MutableState<TextFieldValue>) {
+  val userTags = remember { chatModel.userTags }
+  val presetTags = remember { chatModel.presetTags }
+  val collapsiblePresetTags = presetTags.filter { presetCanBeCollapsed(it.key) && it.value > 0 }
+  val alwaysShownPresetTags = presetTags.filter { !presetCanBeCollapsed(it.key) && it.value > 0 }
+  val activeFilter = remember { chatModel.activeChatTagFilter }
+  val unreadTags = remember { chatModel.unreadTags }
+  val rhId = chatModel.remoteHostId()
+
+  val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
+
+  TagsRow {
+    if (collapsiblePresetTags.size > 1) {
+      if (collapsiblePresetTags.size + alwaysShownPresetTags.size + userTags.value.size <= 3) {
+        PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
+          ExpandedTagFilterView(tag)
+        }
+      } else {
+        CollapsedTagsFilterView(searchText)
+        alwaysShownPresetTags.forEach { tag ->
+          ExpandedTagFilterView(tag.key)
+        }
+      }
+    }
+
+    userTags.value.forEach { tag ->
+      val current = when (val af = activeFilter.value) {
+        is ActiveFilter.UserTag -> af.tag == tag
+        else -> false
+      }
+      val interactionSource = remember { MutableInteractionSource() }
+      val showMenu = rememberSaveable { mutableStateOf(false) }
+      val saving = remember { mutableStateOf(false) }
+      Box {
+        Row(
+          rowSizeModifier
+            .clip(shape = CircleShape)
+            .combinedClickable(
+              onClick = {
+                if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
+                  chatModel.activeChatTagFilter.value = null
+                } else {
+                  chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
+                }
+              },
+              onLongClick = { showMenu.value = true },
+              interactionSource = interactionSource,
+              indication = LocalIndication.current,
+              enabled = !saving.value
+            )
+            .onRightClick { showMenu.value = true }
+            .padding(4.dp),
+          horizontalArrangement = Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          if (tag.chatTagEmoji != null) {
+            ReactionIcon(tag.chatTagEmoji, fontSize = 14.sp)
           } else {
-            cInfo.anyNameContains(s)
+            Icon(
+              painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
+              null,
+              Modifier.size(18.sp.toDp()),
+              tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
+            )
           }
-          is ChatInfo.Local -> s.isEmpty() || cInfo.anyNameContains(s)
-          is ChatInfo.ContactRequest -> s.isEmpty() || cInfo.anyNameContains(s)
-          is ChatInfo.ContactConnection -> (s.isNotEmpty() && cInfo.anyNameContains(s)) || (s.isEmpty() && chat.id == chatModel.chatId.value)
-          is ChatInfo.InvalidJSON -> chat.id == chatModel.chatId.value
+          Spacer(Modifier.width(4.dp))
+          Box {
+            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+            val invisibleText = buildAnnotatedString {
+              append(tag.chatTagText)
+              withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
+                append(badgeText)
+              }
+            }
+            Text(
+              text = invisibleText,
+              fontWeight = FontWeight.Medium,
+              fontSize = 15.sp,
+              color = Color.Transparent,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+            // Visible text with styles
+            val visibleText = buildAnnotatedString {
+              append(tag.chatTagText)
+              withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
+                append(badgeText)
+              }
+            }
+            Text(
+              text = visibleText,
+              fontWeight = if (current) FontWeight.Medium else FontWeight.Normal,
+              fontSize = 15.sp,
+              color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+          }
+        }
+        TagsDropdownMenu(rhId, tag, showMenu, saving)
+      }
+    }
+    val plusClickModifier = Modifier
+      .clickable {
+        ModalManager.start.showModalCloseable { close ->
+          TagListEditor(rhId = rhId, close = close)
+        }
+      }
+
+    if (userTags.value.isEmpty()) {
+      Row(rowSizeModifier.clip(shape = CircleShape).then(plusClickModifier).padding(start = 2.dp, top = 4.dp, end = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.secondary)
+        Spacer(Modifier.width(2.dp))
+        Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary, fontSize = 15.sp)
+      }
+    } else {
+      Box(rowSizeModifier, contentAlignment = Alignment.Center) {
+        Icon(
+          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(2.dp), tint = MaterialTheme.colors.secondary
+        )
+      }
+    }
+  }
+}
+
+@Composable
+expect fun TagsRow(content: @Composable() (() -> Unit))
+
+@Composable
+private fun ExpandedTagFilterView(tag: PresetTagKind) {
+  val activeFilter = remember { chatModel.activeChatTagFilter }
+  val active = when (val af = activeFilter.value) {
+    is ActiveFilter.PresetTag -> af.tag == tag
+    else -> false
+  }
+  val (icon, menuIcon, text) = presetTagLabel(tag, active)
+  val color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+
+  Row(
+    modifier = Modifier
+      .sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
+      .clip(shape = CircleShape)
+      .clickable {
+        if (activeFilter.value == ActiveFilter.PresetTag(tag)) {
+          chatModel.activeChatTagFilter.value = null
+        } else {
+          chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(tag)
+        }
+      }
+      .padding(horizontal = 5.dp, vertical = 4.dp)
+    ,
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.Center
+  ) {
+    Icon(
+      painterResource(menuIcon ?: icon),
+      stringResource(text),
+      Modifier.size(18.sp.toDp()),
+      tint = color
+    )
+    Spacer(Modifier.width(4.dp))
+    Box {
+      Text(
+        stringResource(text),
+        color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+        fontWeight = if (active) FontWeight.Medium else FontWeight.Normal,
+        fontSize = 15.sp
+      )
+      Text(
+        stringResource(text),
+        color = Color.Transparent,
+        fontWeight = FontWeight.Medium,
+        fontSize = 15.sp
+      )
+    }
+  }
+}
+
+
+@Composable
+private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
+  val activeFilter = remember { chatModel.activeChatTagFilter }
+  val presetTags = remember { chatModel.presetTags }
+  val showMenu = remember { mutableStateOf(false) }
+
+  val selectedPresetTag = when (val af = activeFilter.value) {
+    is ActiveFilter.PresetTag -> if (presetCanBeCollapsed(af.tag)) af.tag else null
+    else -> null
+  }
+
+  Box(Modifier
+    .clip(shape = CircleShape)
+    .size(TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
+    .clickable { showMenu.value = true },
+    contentAlignment = Alignment.Center
+  ) {
+    if (selectedPresetTag != null) {
+      val (icon, menuIcon, text) = presetTagLabel(selectedPresetTag, true)
+      Icon(
+        painterResource(menuIcon ?: icon),
+        stringResource(text),
+        Modifier.size(18.sp.toDp()),
+        tint = MaterialTheme.colors.primary
+      )
+    } else {
+      Icon(
+        painterResource(MR.images.ic_menu),
+        stringResource(MR.strings.chat_list_all),
+        tint = MaterialTheme.colors.secondary
+      )
+    }
+
+    val onCloseMenuAction = remember { mutableStateOf<(() -> Unit)>({}) }
+
+    DefaultDropdownMenu(showMenu = showMenu, onClosed = onCloseMenuAction) {
+      if (activeFilter.value != null || searchText.value.text.isNotBlank()) {
+        ItemAction(
+          stringResource(MR.strings.chat_list_all),
+          painterResource(MR.images.ic_menu),
+          onClick = {
+            onCloseMenuAction.value = {
+              searchText.value = TextFieldValue()
+              chatModel.activeChatTagFilter.value = null
+              onCloseMenuAction.value = {}
+            }
+            showMenu.value = false
+          }
+        )
+      }
+      PresetTagKind.entries.forEach { tag ->
+        if ((presetTags[tag] ?: 0) > 0 && presetCanBeCollapsed(tag)) {
+          ItemPresetFilterAction(tag, tag == selectedPresetTag, showMenu, onCloseMenuAction)
         }
       }
     }
   }
 }
 
-private fun filtered(chat: Chat): Boolean =
-  (chat.chatInfo.chatSettings?.favorite ?: false) ||
-      chat.chatStats.unreadChat ||
-      (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
+@Composable
+fun ItemPresetFilterAction(
+  presetTag: PresetTagKind,
+  active: Boolean,
+  showMenu: MutableState<Boolean>,
+  onCloseMenuAction: MutableState<(() -> Unit)>
+) {
+  val (icon, _, text) = presetTagLabel(presetTag, active)
+  ItemAction(
+    stringResource(text),
+    painterResource(icon),
+    color = if (active) MaterialTheme.colors.primary else Color.Unspecified,
+    onClick = {
+      onCloseMenuAction.value = {
+        chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(presetTag)
+        onCloseMenuAction.value = {}
+      }
+      showMenu.value = false
+    }
+  )
+}
+
+fun filteredChats(
+  searchShowingSimplexLink: State<Boolean>,
+  searchChatFilteredBySimplexLink: State<Set<String>>,
+  searchText: String,
+  chats: List<Chat>,
+  activeFilter: ActiveFilter? = null,
+): List<Chat> {
+  val linkChatIds = searchChatFilteredBySimplexLink.value
+  return if (linkChatIds.isNotEmpty()) {
+    chats.filter { it.id in linkChatIds }
+  } else {
+    val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
+    if (s.isEmpty())
+      chats.filter { chat -> chat.id == chatModel.chatId.value || (!chat.chatInfo.chatDeleted && !chat.chatInfo.contactCard && filtered(chat, activeFilter)) }
+    else {
+      chats.filter { chat ->
+        chat.id == chatModel.chatId.value ||
+          when (val cInfo = chat.chatInfo) {
+            is ChatInfo.Direct -> !cInfo.contact.chatDeleted && !chat.chatInfo.contactCard && cInfo.anyNameContains(s)
+            is ChatInfo.Group -> cInfo.anyNameContains(s)
+            is ChatInfo.Local -> cInfo.anyNameContains(s)
+            is ChatInfo.ContactRequest -> cInfo.anyNameContains(s)
+            is ChatInfo.ContactConnection -> cInfo.contactConnection.localAlias.lowercase().contains(s)
+            is ChatInfo.InvalidJSON -> false
+          }
+      }
+    }
+  }
+}
+
+private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
+  when (activeFilter) {
+    is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo, chat.chatStats)
+    is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
+    is ActiveFilter.Unread -> chat.unreadTag
+    else -> true
+  }
+
+fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat.ChatStats): Boolean =
+  when (tag) {
+    PresetTagKind.GROUP_REPORTS -> chatStats.reportsCount > 0
+    PresetTagKind.FAVORITES -> chatInfo.chatSettings?.favorite == true
+    PresetTagKind.CONTACTS -> when (chatInfo) {
+      is ChatInfo.Direct -> !chatInfo.contact.isContactCard && !chatInfo.contact.chatDeleted
+      is ChatInfo.ContactRequest -> true
+      is ChatInfo.ContactConnection -> true
+      is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Customer
+      else -> false
+    }
+    PresetTagKind.GROUPS -> when (chatInfo) {
+      is ChatInfo.Group -> chatInfo.groupInfo.businessChat == null && !chatInfo.groupInfo.isChannel
+      else -> false
+    }
+    PresetTagKind.CHANNELS -> when (chatInfo) {
+      is ChatInfo.Group -> chatInfo.groupInfo.isChannel
+      else -> false
+    }
+    PresetTagKind.BUSINESS -> when (chatInfo) {
+      is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Business
+      else -> false
+    }
+    PresetTagKind.NOTES -> when (chatInfo) {
+      is ChatInfo.Local -> !chatInfo.noteFolder.chatDeleted
+      else -> false
+    }
+  }
+
+private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Triple<ImageResource, ImageResource?, StringResource> =
+  when (tag) {
+    PresetTagKind.GROUP_REPORTS -> Triple(if (active) MR.images.ic_flag_filled else MR.images.ic_flag, null, MR.strings.chat_list_group_reports)
+    PresetTagKind.FAVORITES -> Triple(if (active) MR.images.ic_star_filled else MR.images.ic_star, null, MR.strings.chat_list_favorites)
+    PresetTagKind.CONTACTS -> Triple(if (active) MR.images.ic_person_filled else MR.images.ic_person, null, MR.strings.chat_list_contacts)
+    PresetTagKind.GROUPS -> Triple(if (active) MR.images.ic_group_filled else MR.images.ic_group, null, MR.strings.chat_list_groups)
+    PresetTagKind.CHANNELS -> Triple(if (active) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_bigtop_updates, MR.images.ic_bigtop_updates, MR.strings.chat_list_channels)
+    PresetTagKind.BUSINESS -> Triple(if (active) MR.images.ic_work_filled else MR.images.ic_work, null, MR.strings.chat_list_businesses)
+    PresetTagKind.NOTES -> Triple(if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed, null, MR.strings.chat_list_notes)
+  }
+
+private fun presetCanBeCollapsed(tag: PresetTagKind): Boolean = when (tag) {
+  PresetTagKind.GROUP_REPORTS -> false
+  else -> true
+}
+
+fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
+  scope.launch { try { listState.animateScrollToItem(0) } catch (e: Exception) { Log.e(TAG, e.stackTraceToString()) } }
+}

@@ -1,14 +1,17 @@
 module ChatTests.ChatList where
 
 import ChatClient
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Test.Hspec hiding (it)
 
-chatListTests :: SpecWith FilePath
+chatListTests :: SpecWith TestParams
 chatListTests = do
   it "get last chats" testPaginationLast
+  it "get last chats with max chats option" testMaxChats
   it "get chats before/after timestamp" testPaginationTs
   it "filter by search query" testFilterSearch
   it "filter favorite" testFilterFavorite
@@ -16,7 +19,7 @@ chatListTests = do
   it "filter favorite or unread" testFilterFavoriteOrUnread
   it "sort and filter chats of all types" testPaginationAllChatTypes
 
-testPaginationLast :: HasCallStack => FilePath -> IO ()
+testPaginationLast :: HasCallStack => TestParams -> IO ()
 testPaginationLast =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -32,7 +35,24 @@ testPaginationLast =
       alice <# "bob> hey"
       alice <# "@cath hey"
 
-testPaginationTs :: HasCallStack => FilePath -> IO ()
+testMaxChats :: HasCallStack => TestParams -> IO ()
+testMaxChats =
+  testChatOpts3 testOpts {coreOptions = testCoreOpts {maxChats = 1}} aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      alice <##> bob
+      connectUsers alice cath
+      cath <##> alice
+
+      alice ##> "/chats all"
+      alice <# "@cath hey"
+      alice ##> "/chats 2"
+      alice <# "bob> hey"
+      alice <# "@cath hey"
+      alice #$> ("/_get chats 1 pcc=on", chats, [("@cath", "hey")])
+      getChats_ alice "count=2" [("@cath", "hey"), ("@bob", "hey")]
+
+testPaginationTs :: HasCallStack => TestParams -> IO ()
 testPaginationTs =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -59,7 +79,7 @@ getChats_ :: HasCallStack => TestCC -> String -> [(String, String)] -> Expectati
 getChats_ cc query expected = do
   cc #$> ("/_get chats 1 pcc=on " <> query, chats, expected)
 
-testFilterSearch :: HasCallStack => FilePath -> IO ()
+testFilterSearch :: HasCallStack => TestParams -> IO ()
 testFilterSearch =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -75,7 +95,7 @@ testFilterSearch =
       getChats_ alice (query "bob") [("@bob", "hey")]
       getChats_ alice (query "Bob") [("@bob", "hey")]
 
-testFilterFavorite :: HasCallStack => FilePath -> IO ()
+testFilterFavorite :: HasCallStack => TestParams -> IO ()
 testFilterFavorite =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -99,7 +119,7 @@ testFilterFavorite =
       alice <## "ok"
       getChats_ alice query [("@bob", "hey")]
 
-testFilterUnread :: HasCallStack => FilePath -> IO ()
+testFilterUnread :: HasCallStack => TestParams -> IO ()
 testFilterUnread =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -123,7 +143,7 @@ testFilterUnread =
       alice <## "ok"
       getChats_ alice query [("@bob", "hey")]
 
-testFilterFavoriteOrUnread :: HasCallStack => FilePath -> IO ()
+testFilterFavoriteOrUnread :: HasCallStack => TestParams -> IO ()
 testFilterFavoriteOrUnread =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -154,7 +174,7 @@ testFilterFavoriteOrUnread =
       alice <## "ok"
       getChats_ alice query [("@cath", "hey"), ("@bob", "hey")]
 
-testPaginationAllChatTypes :: HasCallStack => FilePath -> IO ()
+testPaginationAllChatTypes :: HasCallStack => TestParams -> IO ()
 testPaginationAllChatTypes =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -193,20 +213,20 @@ testPaginationAllChatTypes =
 
       _ts6 <- iso8601Show <$> getCurrentTime
 
-      -- * (notes)
+      -- \* (notes)
       createCCNoteFolder alice
-      alice /* "psst"
+      alice >* "psst"
 
       ts7 <- iso8601Show <$> getCurrentTime
 
-      getChats_ alice "count=10" [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice "count=3" [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr)]
-      getChats_ alice ("after=" <> ts2 <> " count=2") [(":3", ""), ("<@cath", "")]
-      getChats_ alice ("before=" <> ts5 <> " count=2") [("#team", e2eeInfoNoPQStr), (":3", "")]
-      getChats_ alice ("after=" <> ts3 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr), (":3", "")]
-      getChats_ alice ("before=" <> ts4 <> " count=10") [(":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("after=" <> ts1 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("before=" <> ts7 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", e2eeInfoNoPQStr), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice "count=10" [("*", "psst"), ("@dan", "hey"), ("#team", "Chat with admins: on"), (":3", ""), ("@cath", "Audio/video calls: enabled"), ("@bob", "hey")]
+      getChats_ alice "count=3" [("*", "psst"), ("@dan", "hey"), ("#team", "Chat with admins: on")]
+      getChats_ alice ("after=" <> ts2 <> " count=2") [(":3", ""), ("@cath", "Audio/video calls: enabled")]
+      getChats_ alice ("before=" <> ts5 <> " count=2") [("#team", "Chat with admins: on"), (":3", "")]
+      getChats_ alice ("after=" <> ts3 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Chat with admins: on"), (":3", "")]
+      getChats_ alice ("before=" <> ts4 <> " count=10") [(":3", ""), ("@cath", "Audio/video calls: enabled"), ("@bob", "hey")]
+      getChats_ alice ("after=" <> ts1 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Chat with admins: on"), (":3", ""), ("@cath", "Audio/video calls: enabled"), ("@bob", "hey")]
+      getChats_ alice ("before=" <> ts7 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Chat with admins: on"), (":3", ""), ("@cath", "Audio/video calls: enabled"), ("@bob", "hey")]
       getChats_ alice ("after=" <> ts7 <> " count=10") []
       getChats_ alice ("before=" <> ts1 <> " count=10") []
 
@@ -218,16 +238,14 @@ testPaginationAllChatTypes =
       alice ##> "/_settings #1 {\"enableNtfs\":\"all\",\"favorite\":true}"
       alice <## "ok"
 
-      getChats_ alice queryFavorite [("#team", e2eeInfoNoPQStr), ("@bob", "hey")]
+      getChats_ alice queryFavorite [("#team", "Chat with admins: on"), ("@bob", "hey")]
       getChats_ alice ("before=" <> ts4 <> " count=1 " <> queryFavorite) [("@bob", "hey")]
-      getChats_ alice ("before=" <> ts5 <> " count=1 " <> queryFavorite) [("#team", e2eeInfoNoPQStr)]
+      getChats_ alice ("before=" <> ts5 <> " count=1 " <> queryFavorite) [("#team", "Chat with admins: on")]
       getChats_ alice ("after=" <> ts1 <> " count=1 " <> queryFavorite) [("@bob", "hey")]
-      getChats_ alice ("after=" <> ts4 <> " count=1 " <> queryFavorite) [("#team", e2eeInfoNoPQStr)]
+      getChats_ alice ("after=" <> ts4 <> " count=1 " <> queryFavorite) [("#team", "Chat with admins: on")]
 
       let queryUnread = "{\"type\": \"filters\", \"favorite\": false, \"unread\": true}"
 
-      getChats_ alice queryUnread [("<@cath", "")]
+      getChats_ alice queryUnread []
       getChats_ alice ("before=" <> ts2 <> " count=10 " <> queryUnread) []
-      getChats_ alice ("before=" <> ts3 <> " count=10 " <> queryUnread) [("<@cath", "")]
-      getChats_ alice ("after=" <> ts2 <> " count=10 " <> queryUnread) [("<@cath", "")]
-      getChats_ alice ("after=" <> ts3 <> " count=10 " <> queryUnread) []
+      getChats_ alice ("after=" <> ts2 <> " count=10 " <> queryUnread) []

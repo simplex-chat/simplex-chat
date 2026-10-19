@@ -33,6 +33,7 @@ data AppSettings = AppSettings
     privacyAskToApproveRelays :: Maybe Bool,
     privacyAcceptImages :: Maybe Bool,
     privacyLinkPreviews :: Maybe Bool,
+    privacySanitizeLinks :: Maybe Bool,
     privacyShowChatPreviews :: Maybe Bool,
     privacySaveLastDraft :: Maybe Bool,
     privacyProtectScreen :: Maybe Bool,
@@ -56,7 +57,8 @@ data AppSettings = AppSettings
     uiDarkColorScheme :: Maybe DarkColorScheme,
     uiCurrentThemeIds :: Maybe (Map ThemeColorScheme Text),
     uiThemes :: Maybe [UITheme],
-    oneHandUI :: Maybe Bool
+    oneHandUI :: Maybe Bool,
+    chatBottomBar :: Maybe Bool
   }
   deriving (Show)
 
@@ -82,6 +84,7 @@ defaultAppSettings =
       privacyAskToApproveRelays = Just True,
       privacyAcceptImages = Just True,
       privacyLinkPreviews = Just True,
+      privacySanitizeLinks = Just False,
       privacyShowChatPreviews = Just True,
       privacySaveLastDraft = Just True,
       privacyProtectScreen = Just False,
@@ -105,7 +108,8 @@ defaultAppSettings =
       uiDarkColorScheme = Just DCSSimplex,
       uiCurrentThemeIds = Nothing,
       uiThemes = Nothing,
-      oneHandUI = Just True
+      oneHandUI = Just True,
+      chatBottomBar = Just True
     }
 
 defaultParseAppSettings :: AppSettings
@@ -118,6 +122,7 @@ defaultParseAppSettings =
       privacyAskToApproveRelays = Nothing,
       privacyAcceptImages = Nothing,
       privacyLinkPreviews = Nothing,
+      privacySanitizeLinks = Nothing,
       privacyShowChatPreviews = Nothing,
       privacySaveLastDraft = Nothing,
       privacyProtectScreen = Nothing,
@@ -141,7 +146,8 @@ defaultParseAppSettings =
       uiDarkColorScheme = Nothing,
       uiCurrentThemeIds = Nothing,
       uiThemes = Nothing,
-      oneHandUI = Nothing
+      oneHandUI = Nothing,
+      chatBottomBar = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
@@ -154,6 +160,7 @@ combineAppSettings platformDefaults storedSettings =
       privacyAskToApproveRelays = p privacyAskToApproveRelays,
       privacyAcceptImages = p privacyAcceptImages,
       privacyLinkPreviews = p privacyLinkPreviews,
+      privacySanitizeLinks = p privacySanitizeLinks,
       privacyShowChatPreviews = p privacyShowChatPreviews,
       privacySaveLastDraft = p privacySaveLastDraft,
       privacyProtectScreen = p privacyProtectScreen,
@@ -177,7 +184,8 @@ combineAppSettings platformDefaults storedSettings =
       uiDarkColorScheme = p uiDarkColorScheme,
       uiCurrentThemeIds = p uiCurrentThemeIds,
       uiThemes = p uiThemes,
-      oneHandUI = p oneHandUI
+      oneHandUI = p oneHandUI,
+      chatBottomBar = p chatBottomBar
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
@@ -206,6 +214,7 @@ instance FromJSON AppSettings where
     privacyAskToApproveRelays <- p "privacyAskToApproveRelays"
     privacyAcceptImages <- p "privacyAcceptImages"
     privacyLinkPreviews <- p "privacyLinkPreviews"
+    privacySanitizeLinks <- p "privacySanitizeLinks"
     privacyShowChatPreviews <- p "privacyShowChatPreviews"
     privacySaveLastDraft <- p "privacySaveLastDraft"
     privacyProtectScreen <- p "privacyProtectScreen"
@@ -230,6 +239,7 @@ instance FromJSON AppSettings where
     uiCurrentThemeIds <- p "uiCurrentThemeIds"
     uiThemes <- p "uiThemes"
     oneHandUI <- p "oneHandUI"
+    chatBottomBar <- p "chatBottomBar"
     pure
       AppSettings
         { appPlatform,
@@ -239,6 +249,7 @@ instance FromJSON AppSettings where
           privacyAskToApproveRelays,
           privacyAcceptImages,
           privacyLinkPreviews,
+          privacySanitizeLinks,
           privacyShowChatPreviews,
           privacySaveLastDraft,
           privacyProtectScreen,
@@ -262,7 +273,8 @@ instance FromJSON AppSettings where
           uiDarkColorScheme,
           uiCurrentThemeIds,
           uiThemes,
-          oneHandUI
+          oneHandUI,
+          chatBottomBar
         }
     where
       p key = v .:? key <|> pure Nothing

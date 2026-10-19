@@ -14,6 +14,7 @@ struct DeveloperView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
     @State private var hintsUnchanged = hintDefaultsUnchanged()
+    @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -21,14 +22,16 @@ struct DeveloperView: View {
         VStack {
             List {
                 Section {
-                    ZStack(alignment: .leading) {
-                        Image(colorScheme == .dark ? "github_light" : "github")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .opacity(0.5)
-                            .colorMultiply(theme.colors.secondary)
-                        Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
-                            .padding(.leading, 36)
+                    ExternalLink(destination: URL(string: "https://github.com/simplex-chat/simplex-chat")!) {
+                        ZStack(alignment: .leading) {
+                            Image(colorScheme == .dark ? "github_light" : "github")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .opacity(0.5)
+                                .colorMultiply(theme.colors.secondary)
+                            Text("Install SimpleX Chat for terminal")
+                                .padding(.leading, 36)
+                        }
                     }
                     NavigationLink {
                         TerminalView()
@@ -45,7 +48,7 @@ struct DeveloperView: View {
                 } header: {
                     Text("")
                 } footer: {
-                    ((developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option."))
+                    ((developerTools ? Text("Show:") : Text("Hide:")) + textSpace + Text("Database IDs and Transport isolation option."))
                         .foregroundColor(theme.colors.secondary)
                 }
                 
@@ -54,8 +57,30 @@ struct DeveloperView: View {
                         settingsRow("internaldrive", color: theme.colors.secondary) {
                             Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
                         }
+                        NavigationLink {
+                            StorageView()
+                                .navigationTitle("Storage")
+                                .navigationBarTitleDisplayMode(.large)
+                        } label: {
+                            settingsRow("internaldrive", color: theme.colors.secondary) { Text("Storage") }
+                        }
                     } header: {
                         Text("Developer options")
+                    }
+                }
+                Section("Deprecated options") {
+                    settingsRow("link", color: theme.colors.secondary) {
+                        Picker("SimpleX links", selection: $simplexLinkMode) {
+                            ForEach(
+                                SimpleXLinkMode.values + (SimpleXLinkMode.values.contains(simplexLinkMode) ? [] : [simplexLinkMode])
+                            ) { mode in
+                                Text(mode.text)
+                            }
+                        }
+                    }
+                    .frame(height: 36)
+                    .onChange(of: simplexLinkMode) { mode in
+                        privacySimplexLinkModeDefault.set(mode)
                     }
                 }
             }
@@ -68,6 +93,11 @@ struct DeveloperView: View {
                 UserDefaults.standard.set(val, forKey: def)
             }
         }
+        for def in hintGroupDefaults {
+            if let val = groupAppDefaults[def] as? Bool {
+                groupDefaults.set(val, forKey: def)
+            }
+        }
         hintsUnchanged = true
     }
 }
@@ -75,6 +105,8 @@ struct DeveloperView: View {
 private func hintDefaultsUnchanged() -> Bool {
     hintDefaults.allSatisfy { def in
         appDefaults[def] as? Bool == UserDefaults.standard.bool(forKey: def)
+    } && hintGroupDefaults.allSatisfy { def in
+        groupAppDefaults[def] as? Bool == groupDefaults.bool(forKey: def)
     }
 }
 

@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -20,7 +21,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun VerifyCodeView(
@@ -29,20 +30,22 @@ fun VerifyCodeView(
   connectionVerified: Boolean,
   verify: suspend (String?) -> Pair<Boolean, String>?,
   close: () -> Unit,
+  verifyDescription: StringResource = MR.strings.to_verify_compare,
 ) {
   if (connectionCode != null) {
     VerifyCodeLayout(
       displayName,
       connectionCode,
       connectionVerified,
-      verifyCode = { newCode, cb ->
-        withBGApi {
-          val res = verify(newCode)
-          if (res != null) {
-            val (verified) = res
-            cb(verified)
-            if (verified) close()
-          }
+      verifyDescription,
+      verifyCode = { newCode ->
+        val res = verify(newCode)
+        if (res != null) {
+          val (verified) = res
+          if (verified) close()
+          verified
+        } else {
+          false
         }
       }
     )
@@ -54,13 +57,10 @@ private fun VerifyCodeLayout(
   displayName: String,
   connectionCode: String,
   connectionVerified: Boolean,
-  verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit,
+  verifyDescription: StringResource,
+  verifyCode: suspend (String?) -> Boolean,
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-      .padding(horizontal = DEFAULT_PADDING)
-  ) {
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.security_code), withPadding = false)
     val splitCode = splitToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {
@@ -72,7 +72,7 @@ private fun VerifyCodeLayout(
       }
     }
 
-    QRCode(connectionCode, padding = PaddingValues(vertical = DEFAULT_PADDING_HALF))
+    QRCode(connectionCode, small = true, padding = PaddingValues(vertical = DEFAULT_PADDING_HALF))
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
       Spacer(Modifier.weight(2f))
@@ -94,7 +94,7 @@ private fun VerifyCodeLayout(
     }
 
     Text(
-      generalGetString(MR.strings.to_verify_compare),
+      generalGetString(verifyDescription),
       Modifier.padding(bottom = DEFAULT_PADDING)
     )
 
@@ -104,7 +104,7 @@ private fun VerifyCodeLayout(
     ) {
       if (connectionVerified) {
         SimpleButton(generalGetString(MR.strings.clear_verification), painterResource(MR.images.ic_shield)) {
-          verifyCode(null) {}
+          withApi { verifyCode(null) }
         }
       } else {
         if (appPlatform.isAndroid) {
@@ -115,7 +115,8 @@ private fun VerifyCodeLayout(
           }
         }
         SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user)) {
-          verifyCode(connectionCode) { verified ->
+          withApi {
+            val verified = verifyCode(connectionCode)
             if (!verified) {
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(MR.strings.incorrect_code)

@@ -5,6 +5,7 @@
 //  Created by Avently on 23.02.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -96,12 +97,16 @@ struct MigrateToDevice: View {
     @Binding var migrationState: MigrationToState?
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateToDeviceViewAlert?
+    @State private var databaseAlert: DatabaseAlert? = nil
     private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
     // Prevent from hiding the view until migration is finished or app deleted
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
     @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
+
+    @State private var importingArchiveFromFileProgressIndicator = false
+    @State private var showFileImporter = false
 
     var body: some View {
         VStack {
@@ -175,6 +180,20 @@ struct MigrateToDevice: View {
                 return Alert(title: Text(title), message: Text(error))
             }
         }
+        .alert(item: $databaseAlert) { item in
+            switch item {
+            case .archiveImported:
+                let (title, message) = archiveImportedAlertText()
+                return Alert(title: Text(title), message: Text(message))
+            case let .archiveImportedWithErrors(errs):
+                let (title, message) = archiveImportedWithErrorsAlertText(errs: errs)
+                return Alert(title: Text(title), message: Text(message))
+            case let .error(title, error):
+                return Alert(title: Text(title), message: Text(error))
+            default: // not expected this branch to be called because this alert is used only for importArchive purpose
+                return Alert(title: Text("Error"))
+            }
+        }
         .interactiveDismissDisabled(backDisabled)
     }
 
@@ -200,6 +219,12 @@ struct MigrateToDevice: View {
                 Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
                     pasteLinkView()
                 }
+                Section(header: Text("Or import archive file").foregroundColor(theme.colors.secondary)) {
+                    archiveImportFromFileView()
+                }
+            }
+            if importingArchiveFromFileProgressIndicator {
+                progressView()
             }
         }
     }
@@ -219,6 +244,34 @@ struct MigrateToDevice: View {
         .disabled(!pasteboardHasStrings)
         .frame(maxWidth: .infinity, alignment: .center)
     }
+
+    private func archiveImportFromFileView() -> some View {
+        Button {
+            showFileImporter = true
+        } label: {
+            Label("Import database", systemImage: "square.and.arrow.down")
+        }
+        .disabled(importingArchiveFromFileProgressIndicator)
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.zip],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(files) = result, let fileURL = files.first {
+                Task {
+                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, $databaseAlert, true)
+                    if success {
+                        DatabaseView.startChat(
+                            Binding.constant(false),
+                            $importingArchiveFromFileProgressIndicator
+                        )
+                        hideView()
+                    }
+                }
+            }
+        }
+    }
+
 
     private func linkDownloadingView(_ link: String) -> some View {
         ZStack {
@@ -321,10 +374,12 @@ struct MigrateToDevice: View {
                     "Upgrade and open chat",
                      "",
                      .yesUp)
-                case .downgrade:
+                case let .downgrade(downMigrations):
                     ("Database downgrade",
                     "Downgrade and open chat",
-                     NSLocalizedString("Warning: you may lose some data!", comment: ""),
+                     ([NSLocalizedString("Warning: you may lose some data!", comment: "")]
+                        + downMigrationWarnings(downMigrations).reversed())
+                        .joined(separator: "\n"),
                     .yesUpDown)
                 case let .migrationError(mtrError):
                     ("Incompatible database version",
@@ -444,10 +499,10 @@ struct MigrateToDevice: View {
             chatReceiver = MigrationChatReceiver(ctrl: ctrl, databaseUrl: tempDatabaseUrl) { msg in
                 await MainActor.run {
                     switch msg {
-                    case let .rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer):
+                    case let .result(.rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer)):
                         migrationState = .downloadProgress(downloadedBytes: receivedSize, totalBytes: totalSize, fileId: rcvFileTransfer.fileId, link: link, archivePath: archivePath, ctrl: ctrl)
                         MigrationToDeviceState.save(.downloadProgress(link: link, archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
-                    case .rcvStandaloneFileComplete:
+                    case .result(.rcvStandaloneFileComplete):
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             // User closed the whole screen before new state was saved
                             if migrationState == nil {
@@ -457,10 +512,10 @@ struct MigrateToDevice: View {
                                 MigrationToDeviceState.save(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                             }
                         }
-                    case .rcvFileError:
+                    case .result(.rcvFileError):
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
-                    case .chatError(_, .error(.noRcvFileUser)):
+                    case .error(.error(.noRcvFileUser)):
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
                     default:
@@ -484,10 +539,10 @@ struct MigrateToDevice: View {
         Task {
             do {
                 if !hasChatCtrl() {
-                    chatInitControllerRemovingDatabases()
+                    try chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {
                     // cannot delete storage if chat is running
-                    try await apiStopChat()
+                    try await stopChatAsync()
                 }
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
@@ -571,7 +626,7 @@ struct MigrateToDevice: View {
             AlertManager.shared.showAlert(
                 Alert(
                     title: Text("Error migrating settings"),
-                    message: Text ("Some app settings were not migrated.") + Text("\n") + Text(responseError(error)))
+                    message: Text ("Some app settings were not migrated.") + textNewLine + Text(responseError(error)))
             )
         }
         hideView()
@@ -580,6 +635,8 @@ struct MigrateToDevice: View {
     private func hideView() {
         onboardingStageDefault.set(.onboardingComplete)
         m.onboardingStage = .onboardingComplete
+        m.migrationState = nil
+        MigrationToDeviceState.save(nil)
         dismiss()
     }
 
@@ -678,6 +735,8 @@ private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: 
         alert.wrappedValue = .wrongPassphrase()
     case .errorKeychain:
         alert.wrappedValue = .keychainError()
+    case .errorKeyGeneration:
+        alert.wrappedValue = .databaseError(message: NSLocalizedString("Cannot generate random database passphrase", comment: "alert message"))
     case let .errorSQL(_, error):
         alert.wrappedValue = .databaseError(message: error)
     case let .unknown(error):
@@ -697,11 +756,11 @@ private func progressView() -> some View {
 private class MigrationChatReceiver {
     let ctrl: chat_ctrl
     let databaseUrl: URL
-    let processReceivedMsg: (ChatResponse) async -> Void
+    let processReceivedMsg: (APIResult<ChatEvent>) async -> Void
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
 
-    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (APIResult<ChatEvent>) async -> Void) {
         self.ctrl = ctrl
         self.databaseUrl = databaseUrl
         self.processReceivedMsg = processReceivedMsg
@@ -718,7 +777,7 @@ private class MigrationChatReceiver {
         // TODO use function that has timeout
         if let msg = await chatRecvMsg(ctrl) {
             Task {
-                await TerminalItems.shared.add(.resp(.now, msg))
+                await TerminalItems.shared.addResult(msg)
             }
             logger.debug("processReceivedMsg: \(msg.responseType)")
             await processReceivedMsg(msg)

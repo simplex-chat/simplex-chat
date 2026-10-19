@@ -6,7 +6,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import dev.icerock.moko.resources.ImageResource
@@ -47,7 +46,7 @@ fun <T> ExposedDropDownSetting(
       horizontalArrangement = Arrangement.End
     ) {
       Text(
-        values.first { it.first == selection.value }.second + (if (label != null) " $label" else ""),
+        (values.firstOrNull { it.first == selection.value }?.second ?: "") + (if (label != null) " $label" else ""),
         Modifier.widthIn(max = maxWidth),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -107,6 +106,7 @@ fun <T> ExposedDropDownSettingWithIcon(
       expanded.value = !expanded.value && enabled.value
     }
   ) {
+    val ripple = remember { ripple(bounded = false, radius = boxSize / 2, color = background.lighter(0.1f)) }
     Box(
       Modifier
         .background(background, CircleShape)
@@ -115,13 +115,15 @@ fun <T> ExposedDropDownSettingWithIcon(
           onClick = {},
           role = Role.Button,
           interactionSource = remember { MutableInteractionSource() },
-          indication = rememberRipple(bounded = false, radius = boxSize / 2, color = background.lighter(0.1f)),
+          indication = ripple,
           enabled = enabled.value
         ),
       contentAlignment = Alignment.Center
     ) {
-      val choice = values.first { it.first == selection.value }
-      Icon(painterResource(choice.second), choice.third, Modifier.padding(boxSize * iconPaddingPercent).fillMaxSize(), tint = iconColor)
+      val choice = values.firstOrNull { it.first == selection.value }
+      if (choice != null) {
+        Icon(painterResource(choice.second), choice.third, Modifier.padding(boxSize * iconPaddingPercent).fillMaxSize(), tint = iconColor)
+      }
     }
     DefaultExposedDropdownMenu(
       modifier = Modifier.widthIn(min = minWidth),

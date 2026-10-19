@@ -2,6 +2,7 @@ package chat.simplex.common.views.helpers
 
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.res.*
 import kotlinx.serialization.*
 import java.io.File
 import java.security.SecureRandom
@@ -37,9 +38,11 @@ object DatabaseUtils {
       passphrase.set(null)
       initVector.set(null)
     }
+
+    fun storage(): String? = cryptor.keyStorage(alias)
   }
 
-  private fun hasAtLeastOneDatabase(rootDir: String): Boolean =
+  fun hasAtLeastOneDatabase(rootDir: String): Boolean =
     File(rootDir + File.separator + chatDatabaseFileName).exists() || File(rootDir + File.separator + agentDatabaseFileName).exists()
 
   fun hasOnlyOneDatabase(rootDir: String): Boolean =
@@ -74,6 +77,7 @@ object DatabaseUtils {
   }
 }
 
+// Spec: spec/database.md#DBMigrationResult
 @Serializable
 sealed class DBMigrationResult {
   @Serializable @SerialName("ok") object OK: DBMigrationResult()
@@ -106,6 +110,15 @@ data class UpMigration(
   val upName: String,
   // val withDown: Boolean
 )
+
+fun downMigrationWarnings(downMigrations: List<String>): List<String> {
+  val warnings = listOf(
+    "20260222_chat_relays" to MR.strings.down_migration_warning_chat_relays
+  )
+  return warnings.mapNotNull { (key, res) ->
+    if (downMigrations.contains(key)) generalGetString(res) else null
+  }
+}
 
 @Serializable
 sealed class MTRError {

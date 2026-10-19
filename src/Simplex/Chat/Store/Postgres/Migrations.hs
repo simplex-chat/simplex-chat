@@ -1,0 +1,123 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
+module Simplex.Chat.Store.Postgres.Migrations (migrations) where
+
+import Data.List (sortOn)
+import Data.Text (Text)
+import Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
+import Simplex.Chat.Store.Postgres.Migrations.M20250402_short_links
+import Simplex.Chat.Store.Postgres.Migrations.M20250512_member_admission
+import Simplex.Chat.Store.Postgres.Migrations.M20250513_group_scope
+import Simplex.Chat.Store.Postgres.Migrations.M20250526_short_links
+import Simplex.Chat.Store.Postgres.Migrations.M20250702_contact_requests_remove_cascade_delete
+import Simplex.Chat.Store.Postgres.Migrations.M20250704_groups_conn_link_prepared_connection
+import Simplex.Chat.Store.Postgres.Migrations.M20250709_profile_short_descr
+import Simplex.Chat.Store.Postgres.Migrations.M20250721_indexes
+import Simplex.Chat.Store.Postgres.Migrations.M20250729_member_contact_requests
+import Simplex.Chat.Store.Postgres.Migrations.M20250801_via_group_link_uri
+import Simplex.Chat.Store.Postgres.Migrations.M20250802_chat_peer_type
+import Simplex.Chat.Store.Postgres.Migrations.M20250813_delivery_tasks
+import Simplex.Chat.Store.Postgres.Migrations.M20250919_group_summary
+import Simplex.Chat.Store.Postgres.Migrations.M20250922_remove_unused_connections
+import Simplex.Chat.Store.Postgres.Migrations.M20251007_connections_sync
+import Simplex.Chat.Store.Postgres.Migrations.M20251017_chat_tags_cascade
+import Simplex.Chat.Store.Postgres.Migrations.M20251117_member_relations_vector
+import Simplex.Chat.Store.Postgres.Migrations.M20251128_migrate_member_relations
+import Simplex.Chat.Store.Postgres.Migrations.M20251230_strict_tables
+import Simplex.Chat.Store.Postgres.Migrations.M20260108_chat_indices
+import Simplex.Chat.Store.Postgres.Migrations.M20260122_has_link
+import Simplex.Chat.Store.Postgres.Migrations.M20260222_chat_relays
+import Simplex.Chat.Store.Postgres.Migrations.M20260403_item_viewed
+import Simplex.Chat.Store.Postgres.Migrations.M20260429_relay_request_retries
+import Simplex.Chat.Store.Postgres.Migrations.M20260507_relay_inactive_at
+import Simplex.Chat.Store.Postgres.Migrations.M20260514_relay_request_group_link_index
+import Simplex.Chat.Store.Postgres.Migrations.M20260515_public_group_access
+import Simplex.Chat.Store.Postgres.Migrations.M20260516_supporter_badges
+import Simplex.Chat.Store.Postgres.Migrations.M20260529_delivery_job_senders
+import Simplex.Chat.Store.Postgres.Migrations.M20260530_client_services
+import Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
+import Simplex.Chat.Store.Postgres.Migrations.M20260601_relay_sent_web_domain
+import Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
+import Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
+import Simplex.Chat.Store.Postgres.Migrations.M20260629_roster_catchup
+import Simplex.Chat.Store.Postgres.Migrations.M20260707_file_digest
+import Simplex.Chat.Store.Postgres.Migrations.M20260714_member_security_code
+import Simplex.Chat.Store.Postgres.Migrations.M20260715_profile_description
+import Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
+import Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
+import Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
+import Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
+import Simplex.Chat.Store.Postgres.Migrations.M20260822_forward_link
+import Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
+import Simplex.Chat.Store.Postgres.Migrations.M20260904_file_badges
+import Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
+import Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
+import Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
+import Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_bindings
+import Simplex.Chat.Store.Postgres.Migrations.M20261010_invite_member_via_group
+import Simplex.Chat.Store.Postgres.Migrations.M20261012_delivery_job_notification
+import Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts
+import Simplex.Messaging.Agent.Store.Shared (Migration (..))
+
+schemaMigrations :: [(String, Text, Maybe Text)]
+schemaMigrations =
+  [ ("20241220_initial", m20241220_initial, Nothing),
+    ("20250402_short_links", m20250402_short_links, Just down_m20250402_short_links),
+    ("20250512_member_admission", m20250512_member_admission, Just down_m20250512_member_admission),
+    ("20250513_group_scope", m20250513_group_scope, Just down_m20250513_group_scope),
+    ("20250526_short_links", m20250526_short_links, Just down_m20250526_short_links),
+    ("20250702_contact_requests_remove_cascade_delete", m20250702_contact_requests_remove_cascade_delete, Just down_m20250702_contact_requests_remove_cascade_delete),
+    ("20250704_groups_conn_link_prepared_connection", m20250704_groups_conn_link_prepared_connection, Just down_m20250704_groups_conn_link_prepared_connection),
+    ("20250709_profile_short_descr", m20250709_profile_short_descr, Just down_m20250709_profile_short_descr),
+    ("20250721_indexes", m20250721_indexes, Just down_m20250721_indexes),
+    ("20250729_member_contact_requests", m20250729_member_contact_requests, Just down_m20250729_member_contact_requests),
+    ("20250801_via_group_link_uri", m20250801_via_group_link_uri, Just down_m20250801_via_group_link_uri),
+    ("20250802_chat_peer_type", m20250802_chat_peer_type, Just down_m20250802_chat_peer_type),
+    ("20250813_delivery_tasks", m20250813_delivery_tasks, Just down_m20250813_delivery_tasks),
+    ("20250919_group_summary", m20250919_group_summary, Just down_m20250919_group_summary),
+    ("20250922_remove_unused_connections", m20250922_remove_unused_connections, Just down_m20250922_remove_unused_connections),
+    ("20251007_connections_sync", m20251007_connections_sync, Just down_m20251007_connections_sync),
+    ("20251017_chat_tags_cascade", m20251017_chat_tags_cascade, Just down_m20251017_chat_tags_cascade),
+    ("20251117_member_relations_vector", m20251117_member_relations_vector, Just down_m20251117_member_relations_vector),
+    ("20251128_migrate_member_relations", m20251128_migrate_member_relations, Just down_m20251128_migrate_member_relations),
+    ("20251230_strict_tables", m20251230_strict_tables, Just down_m20251230_strict_tables),
+    ("20260108_chat_indices", m20260108_chat_indices, Just down_m20260108_chat_indices),
+    ("20260122_has_link", m20260122_has_link, Just down_m20260122_has_link),
+    ("20260222_chat_relays", m20260222_chat_relays, Just down_m20260222_chat_relays),
+    ("20260403_item_viewed", m20260403_item_viewed, Just down_m20260403_item_viewed),
+    ("20260429_relay_request_retries", m20260429_relay_request_retries, Just down_m20260429_relay_request_retries),
+    ("20260507_relay_inactive_at", m20260507_relay_inactive_at, Just down_m20260507_relay_inactive_at),
+    ("20260514_relay_request_group_link_index", m20260514_relay_request_group_link_index, Just down_m20260514_relay_request_group_link_index),
+    ("20260515_public_group_access", m20260515_public_group_access, Just down_m20260515_public_group_access),
+    ("20260516_supporter_badges", m20260516_supporter_badges, Just down_m20260516_supporter_badges),
+    ("20260529_delivery_job_senders", m20260529_delivery_job_senders, Just down_m20260529_delivery_job_senders),
+    ("20260530_client_services", m20260530_client_services, Just down_m20260530_client_services),
+    ("20260531_member_removed_at", m20260531_member_removed_at, Just down_m20260531_member_removed_at),
+    ("20260601_relay_sent_web_domain", m20260601_relay_sent_web_domain, Just down_m20260601_relay_sent_web_domain),
+    ("20260602_group_roster", m20260602_group_roster, Just down_m20260602_group_roster),
+    ("20260603_simplex_name", m20260603_simplex_name, Just down_m20260603_simplex_name),
+    ("20260629_roster_catchup", m20260629_roster_catchup, Just down_m20260629_roster_catchup),
+    ("20260707_file_digest", m20260707_file_digest, Just down_m20260707_file_digest),
+    ("20260714_member_security_code", m20260714_member_security_code, Just down_m20260714_member_security_code),
+    ("20260715_profile_description", m20260715_profile_description, Just down_m20260715_profile_description),
+    ("20260716_signed_history", m20260716_signed_history, Just down_m20260716_signed_history),
+    ("20260720_server_roles", m20260720_server_roles, Just down_m20260720_server_roles),
+    ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection),
+    ("20260813_auto_accept_group_invitations", m20260813_auto_accept_group_invitations, Just down_m20260813_auto_accept_group_invitations),
+    ("20260822_forward_link", m20260822_forward_link, Just down_m20260822_forward_link),
+    ("20260828_file_expiry", m20260828_file_expiry, Just down_m20260828_file_expiry),
+    ("20260904_file_badges", m20260904_file_badges, Just down_m20260904_file_badges),
+    ("20260915_user_badges", m20260915_user_badges, Just down_m20260915_user_badges),
+    ("20260918_badge_issue_errors", m20260918_badge_issue_errors, Just down_m20260918_badge_issue_errors),
+    ("20260923_preferences_json", m20260923_preferences_json, Just down_m20260923_preferences_json),
+    ("20260925_badge_bindings", m20260925_badge_bindings, Just down_m20260925_badge_bindings),
+    ("20261010_invite_member_via_group", m20261010_invite_member_via_group, Just down_m20261010_invite_member_via_group),
+    ("20261012_delivery_job_notification", m20261012_delivery_job_notification, Just down_m20261012_delivery_job_notification),
+    ("20261016_badge_store_receipts", m20261016_badge_store_receipts, Just down_m20261016_badge_store_receipts)
+  ]
+
+-- | The list of migrations in ascending order by date
+migrations :: [Migration]
+migrations = sortOn name $ map migration schemaMigrations
+  where
+    migration (name, up, down) = Migration {name, up, down}

@@ -6,12 +6,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.*
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.media.*
 import android.os.Build
 import android.os.PowerManager
 import android.os.PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK
+import android.os.PowerManager.WakeLock
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.*
@@ -22,9 +22,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,16 +46,16 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.google.accompanist.permissions.*
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
+import java.io.Closeable
 
 // Should be destroy()'ed and set as null when call is ended. Otherwise, it will be a leak
 @SuppressLint("StaticFieldLeak")
@@ -72,56 +70,71 @@ fun activeCallDestroyWebView() = withApi {
   Log.d(TAG, "CallView: webview was destroyed")
 }
 
-@SuppressLint("SourceLockedOrientationActivity")
-@Composable
-actual fun ActiveCallView() {
-  val call = remember { chatModel.activeCall }.value
-  val scope = rememberCoroutineScope()
-  val proximityLock = remember {
+class ActiveCallState: Closeable {
+  val proximityLock: WakeLock? = screenOffWakeLock()
+  var wasConnected = false
+  val callAudioDeviceManager = CallAudioDeviceManagerInterface.new()
+  private var closed = false
+
+  init {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      callAudioDeviceManager.start()
+    }
+  }
+
+  override fun close() {
+    if (closed) return
+    closed = true
+    CallSoundsPlayer.stop()
+    if (wasConnected) {
+      CallSoundsPlayer.vibrate()
+    }
+    callAudioDeviceManager.stop()
+    dropAudioManagerOverrides()
+    if (proximityLock?.isHeld == true) {
+      proximityLock.release()
+    }
+  }
+
+  private fun screenOffWakeLock(): WakeLock? {
     val pm = (androidAppContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
-    if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
+    return if (pm.isWakeLockLevelSupported(PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
       pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, androidAppContext.packageName + ":proximityLock")
     } else {
       null
     }
   }
-  val wasConnected = rememberSaveable { mutableStateOf(false) }
+}
+
+
+// Spec: spec/services/calls.md#ActiveCallView
+@SuppressLint("SourceLockedOrientationActivity")
+@Composable
+actual fun ActiveCallView() {
+  val call = remember { chatModel.activeCall }.value
+  val callState = call?.androidCallState as ActiveCallState?
+  val scope = rememberCoroutineScope()
   LaunchedEffect(call) {
-    if (call?.callState == CallState.Connected && !wasConnected.value) {
+    if (call?.callState == CallState.Connected && callState != null && !callState.wasConnected) {
       CallSoundsPlayer.vibrate(2)
-      wasConnected.value = true
+      callState.wasConnected = true
     }
   }
-  val callAudioDeviceManager = remember { CallAudioDeviceManagerInterface.new() }
-  DisposableEffect(Unit) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      callAudioDeviceManager.start()
-    }
-    onDispose {
-      CallSoundsPlayer.stop()
-      if (wasConnected.value) {
-        CallSoundsPlayer.vibrate()
-      }
-      callAudioDeviceManager.stop()
-      dropAudioManagerOverrides()
-      if (proximityLock?.isHeld == true) {
-        proximityLock.release()
-      }
-    }
-  }
-  LaunchedEffect(chatModel.activeCallViewIsCollapsed.value) {
+  LaunchedEffect(callState, chatModel.activeCallViewIsCollapsed.value) {
+    callState ?: return@LaunchedEffect
     if (chatModel.activeCallViewIsCollapsed.value) {
-      if (proximityLock?.isHeld == true) proximityLock.release()
+      if (callState.proximityLock?.isHeld == true) callState.proximityLock.release()
     } else {
       delay(1000)
-      if (proximityLock?.isHeld == false) proximityLock.acquire()
+      if (callState.proximityLock?.isHeld == false) callState.proximityLock.acquire()
     }
   }
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
-      Log.d(TAG, "received from WebRTCView: $apiMsg")
+      Log.d(TAG, "received from WebRTCView: ${apiMsg.resp.javaClass.simpleName}")
       val call = chatModel.activeCall.value
       if (call != null) {
+        val callState = call.androidCallState as ActiveCallState
         Log.d(TAG, "has active call $call")
         val callRh = call.remoteHostId
         when (val r = apiMsg.resp) {
@@ -131,9 +144,9 @@ actual fun ActiveCallView() {
             updateActiveCall(call) { it.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities) }
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
               // Starting is delayed to make Android <= 11 working good with Bluetooth
-              callAudioDeviceManager.start()
+              callState.callAudioDeviceManager.start()
             } else {
-              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
+              callState.callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
             }
             CallSoundsPlayer.startConnectingCallSound(scope)
             activeCallWaitDeliveryReceipt(scope)
@@ -143,9 +156,9 @@ actual fun ActiveCallView() {
             updateActiveCall(call) { it.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities) }
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
               // Starting is delayed to make Android <= 11 working good with Bluetooth
-              callAudioDeviceManager.start()
+              callState.callAudioDeviceManager.start()
             } else {
-              callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
+              callState.callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
             }
           }
           is WCallResponse.Answer -> withBGApi {
@@ -154,13 +167,24 @@ actual fun ActiveCallView() {
             CallSoundsPlayer.stop()
           }
           is WCallResponse.Ice -> withBGApi {
-            chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
+            chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.session, r.iceCandidates)
           }
           is WCallResponse.Connection ->
-            try {
+            // the call is restored and NOT sent to the core
+            // Makes sure the core DOES NOT record the duration wrong if a reconnect happens
+            if (r.state.connectionState == "reconnecting") {
+              if (call.callState != CallState.Reconnecting) {
+                CallSoundsPlayer.startConnectingCallSound(scope)
+              }
+              updateActiveCall(call) { it.copy(callState = CallState.Reconnecting) }
+            } else try {
               val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
-                updateActiveCall(call) { it.copy(callState = CallState.Connected, connectedAt = Clock.System.now()) }
+                if (call.callState == CallState.Reconnecting) {
+                  CallSoundsPlayer.stop()
+                }
+                // connectedAt is only set ONCE, this way call duration is NOT reset when the call is restored from reconnecting
+                updateActiveCall(call) { it.copy(callState = CallState.Connected, connectedAt = it.connectedAt ?: Clock.System.now()) }
               }
               withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
             } catch (e: Throwable) {
@@ -228,14 +252,14 @@ actual fun ActiveCallView() {
       !chatModel.activeCallViewIsCollapsed.value -> true
       else -> false
     }
-    if (call != null && showOverlay) {
-      ActiveCallOverlay(call, chatModel, callAudioDeviceManager)
+    if (call != null && showOverlay && callState != null) {
+      ActiveCallOverlay(call, chatModel, callState.callAudioDeviceManager)
     }
   }
-  KeyChangeEffect(call?.localMediaSources?.hasVideo) {
-    if (call != null && call.hasVideo && callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
+  KeyChangeEffect(callState, call?.localMediaSources?.hasVideo) {
+    if (call != null && call.hasVideo && callState != null && callState.callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
       // enabling speaker on user action (peer action ignored) and not disabling it again
-      callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
+      callState.callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
     }
   }
   val context = LocalContext.current
@@ -243,16 +267,12 @@ actual fun ActiveCallView() {
     val activity = context as? Activity ?: return@DisposableEffect onDispose {}
     val prevVolumeControlStream = activity.volumeControlStream
     activity.volumeControlStream = AudioManager.STREAM_VOICE_CALL
-    // Lock orientation to portrait in order to have good experience with calls
-    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     chatModel.activeCallViewIsVisible.value = true
     // After the first call, End command gets added to the list which prevents making another calls
     chatModel.callCommand.removeAll { it is WCallCommand.End }
     keepScreenOn(true)
     onDispose {
       activity.volumeControlStream = prevVolumeControlStream
-      // Unlock orientation
-      activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
       chatModel.activeCallViewIsVisible.value = false
       chatModel.callCommand.clear()
       keepScreenOn(false)
@@ -264,8 +284,8 @@ actual fun ActiveCallView() {
 private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, callAudioDeviceManager: CallAudioDeviceManagerInterface) {
   ActiveCallOverlayLayout(
     call = call,
-    devices = remember { callAudioDeviceManager.devices }.value,
-    currentDevice = remember { callAudioDeviceManager.currentDevice },
+    devices = remember(callAudioDeviceManager) { callAudioDeviceManager.devices }.value,
+    currentDevice = remember(callAudioDeviceManager) { callAudioDeviceManager.currentDevice },
     dismiss = { withBGApi { chatModel.callManager.endCall(call) } },
     toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = !call.localMediaSources.mic)) },
     selectDevice = { callAudioDeviceManager.selectDevice(it.id) },
@@ -329,11 +349,14 @@ private fun ActiveCallOverlayLayout(
   flipCamera: () -> Unit
 ) {
   Column {
-    CloseSheetBar({ chatModel.activeCallViewIsCollapsed.value = true }, true, tintColor = Color(0xFFFFFFD8)) {
-      if (call.hasVideo) {
-        Text(call.contact.chatViewName, Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
-      }
-    }
+    CallAppBar(
+      title = {
+        if (call.hasVideo) {
+          Text(call.contact.chatViewName, Modifier.offset(x = (-4).dp).padding(end = DEFAULT_PADDING), color = Color(0xFFFFFFD8), style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
+        }
+      },
+      onBack = { chatModel.activeCallViewIsCollapsed.value = true }
+    )
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
       @Composable
       fun SelectSoundDevice(size: Dp) {
@@ -381,7 +404,7 @@ private fun ActiveCallOverlayLayout(
         DisabledBackgroundCallsButton()
       }
 
-      BoxWithConstraints(Modifier.padding(start = 6.dp, end = 6.dp, bottom = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
+      BoxWithConstraints(Modifier.navigationBarsPadding().padding(start = 6.dp, end = 6.dp, bottom = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
         val size = ((maxWidth - DEFAULT_PADDING_HALF * 4) / 5).coerceIn(0.dp, 60.dp)
         // limiting max width for tablets/wide screens, will be displayed in the center
         val padding = ((min(420.dp, maxWidth) - size * 5) / 4).coerceAtLeast(0.dp)
@@ -411,6 +434,7 @@ private fun ControlButton(icon: Painter, iconText: StringResource, enabled: Bool
 
 @Composable
 private fun ControlButtonWrap(enabled: Boolean = true, action: () -> Unit, background: Color = controlButtonsBackground(), size: Dp, content: @Composable () -> Unit) {
+  val ripple = remember { ripple(bounded = false, radius = size / 2, color = background.lighter(0.1f)) }
   Box(
     Modifier
       .background(background, CircleShape)
@@ -419,7 +443,7 @@ private fun ControlButtonWrap(enabled: Boolean = true, action: () -> Unit, backg
         onClick = action,
         role = Role.Button,
         interactionSource = remember { MutableInteractionSource() },
-        indication = rememberRipple(bounded = false, radius = size / 2, color = background.lighter(0.1f)),
+        indication = ripple,
         enabled = enabled
       ),
     contentAlignment = Alignment.Center
@@ -590,8 +614,9 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
       }
     }
   } else {
-    ModalView(background = Color.Black, showClose = false, close = {}) {
-      ColumnWithScrollBar(Modifier.fillMaxSize()) {
+    ModalView(background = Color.Black, showAppBar = false, close = {}) {
+      Column {
+        Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
         AppBarTitle(stringResource(MR.strings.permissions_required))
         Spacer(Modifier.weight(1f))
         val onClick = {
@@ -690,16 +715,17 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
   val wv = webView.value
   if (wv != null) {
     LaunchedEffect(Unit) {
-      snapshotFlow { callCommand.firstOrNull() }
-        .distinctUntilChanged()
-        .filterNotNull()
-        .collect {
-          while (callCommand.isNotEmpty()) {
-            val cmd = callCommand.removeFirst()
-            Log.d(TAG, "WebRTCView LaunchedEffect executing $cmd")
+      while (isActive) {
+        // waiting for the first command would miss a command equal to the previous one
+        snapshotFlow { callCommand.isNotEmpty() }.first { it }
+        while (callCommand.isNotEmpty()) {
+          val cmd = callCommand.removeFirstOrNull()
+          Log.d(TAG, "WebRTCView LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
+          if (cmd != null) {
             processCommand(wv, cmd)
           }
         }
+      }
     }
   }
   val assetLoader = WebViewAssetLoader.Builder()
@@ -768,7 +794,7 @@ class WebRTCInterface(private val onResponse: (WVAPIMessage) -> Unit) {
       // onResponse(message)
       onResponse(json.decodeFromString(message))
     } catch (e: Exception) {
-      Log.e(TAG, "failed parsing WebView message: $message")
+      Log.e(TAG, "failed parsing WebView message")
     }
   }
 }
@@ -827,7 +853,8 @@ fun PreviewActiveCallOverlayVideo() {
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "tcp")
-        )
+        ),
+        androidCallState = {}
       ),
       devices = emptyList(),
       currentDevice = remember { mutableStateOf(null) },
@@ -836,7 +863,7 @@ fun PreviewActiveCallOverlayVideo() {
       selectDevice = {},
       toggleVideo = {},
       toggleSound = {},
-      flipCamera = {}
+      flipCamera = {},
     )
   }
 }
@@ -857,7 +884,8 @@ fun PreviewActiveCallOverlayAudio() {
         connectionInfo = ConnectionInfo(
           RTCIceCandidate(RTCIceCandidateType.Host, "udp"),
           RTCIceCandidate(RTCIceCandidateType.Host, "udp")
-        )
+        ),
+        androidCallState = {}
       ),
       devices = emptyList(),
       currentDevice = remember { mutableStateOf(null) },

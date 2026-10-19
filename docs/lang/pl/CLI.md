@@ -133,7 +133,7 @@ cp scripts/cabal.project.local.linux cabal.project.local
 Na Macu:
 
 ```
-brew install openssl@1.1
+brew install openssl@3.0
 cp scripts/cabal.project.local.mac cabal.project.local
 ```
 

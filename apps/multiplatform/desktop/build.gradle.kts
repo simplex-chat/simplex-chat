@@ -1,9 +1,10 @@
+import org.gradle.internal.extensions.stdlib.toDefaultLowerCase
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 
 plugins {
   kotlin("multiplatform")
   id("org.jetbrains.compose")
+  id("org.jetbrains.kotlin.plugin.compose")
   id("io.github.tomtzook.gradle-cmake") version "1.2.2"
 }
 
@@ -39,12 +40,21 @@ compose {
       }
       mainClass = "chat.simplex.desktop.MainKt"
       nativeDistributions {
+        copyright = "(c) 2020-2026 SimpleX Chat"
         // For debugging via VisualVM
         if (debugJava) {
           modules("jdk.zipfs", "jdk.unsupported", "jdk.management.agent")
         } else {
           // 'jdk.unsupported' is for vlcj
           modules("jdk.zipfs", "jdk.unsupported")
+        }
+        val os = System.getProperty("os.name", "generic").toDefaultLowerCase()
+        // 'jdk.accessibility' provides Java Access Bridge on Windows - without it the app
+        // fails to start with "Failed to launch JVM" when assistive technologies are enabled
+        // in the system (see #4146). Packages are always built on the target OS, so only
+        // the Windows build needs to bundle it.
+        if (os.contains("win")) {
+          modules("jdk.accessibility")
         }
         //includeAllModules = true
         outputBaseDir.set(project.file("../release"))
@@ -71,6 +81,24 @@ compose {
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
+          infoPlist {
+            extraKeysRawXml = """
+              <key>NSMicrophoneUsageDescription</key>
+              <string>SimpleX needs microphone access to record voice messages</string>
+              <key>CFBundleURLTypes</key>
+              <array>
+                <dict>
+                  <key>CFBundleURLName</key>
+                  <string>$bundleID</string>
+                  <key>CFBundleURLSchemes</key>
+                  <array>
+                    <string>simplexchat</string>
+                    <string>simplex</string>
+                  </array>
+                </dict>
+              </array>
+            """
+          }
           val identity = rootProject.extra["desktop.mac.signing.identity"] as String?
           val keychain = rootProject.extra["desktop.mac.signing.keychain"] as String?
           val appleId = rootProject.extra["desktop.mac.notarization.apple_id"] as String?
@@ -89,7 +117,6 @@ compose {
             }
           }
         }
-        val os = System.getProperty("os.name", "generic").toLowerCaseAsciiOnly()
         if (os.contains("mac") || os.contains("win")) {
           packageName = "SimpleX"
         } else {

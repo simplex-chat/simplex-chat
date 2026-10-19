@@ -5,15 +5,17 @@
 //  Created by Evgeny on 21/11/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIChatFeatureView
 struct CIChatFeatureView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.revealed) var revealed: Bool
-    @ObservedObject var im = ItemsModel.shared
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     var feature: Feature
@@ -53,7 +55,7 @@ struct CIChatFeatureView: View {
     private func mergedFeatures() -> [FeatureInfo]? {
         var fs: [FeatureInfo] = []
         var icons: Set<String> = []
-        if var i = m.getChatItemIndex(chatItem) {
+        if var i = m.getChatItemIndex(im, chatItem) {
             while i < im.reversedChatItems.count,
                   let f = featureInfo(im.reversedChatItems[i]) {
                 if !icons.contains(f.icon) {
@@ -108,6 +110,7 @@ struct CIChatFeatureView_Previews: PreviewProvider {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
         CIChatFeatureView(
             chat: Chat.sampleData,
+            im: ItemsModel.shared,
             chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor(.secondary)
         ).environment(\.revealed, true)
     }

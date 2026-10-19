@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ChatHelp: View {
     @EnvironmentObject var chatModel: ChatModel
+    @State private var showNewChatSheet = false
     let dismissSettingsSheet: DismissAction
 
     var body: some View {
@@ -25,7 +26,9 @@ struct ChatHelp: View {
                 Button("connect to SimpleX Chat developers.") {
                     dismissSettingsSheet()
                     DispatchQueue.main.async {
-                        UIApplication.shared.open(simplexTeamURL)
+                        // simplexTeamURL targets this same app; route to the in-app connect flow
+                        // (UIApplication.shared.open is dropped for self-owned URLs in the foreground)
+                        ChatModel.shared.appOpenUrl = simplexTeamURL
                     }
                 }
                 .padding(.top, 2)
@@ -38,11 +41,12 @@ struct ChatHelp: View {
 
                 HStack(spacing: 8) {
                     Text("Tap button ")
-                    NewChatMenuButton()
+                    NewChatMenuButton(showNewChatSheet: $showNewChatSheet)
                     Text("above, then choose:")
                 }
 
-                Text("**Add contact**: to create a new invitation link, or connect via a link you received.")
+                Text("**Create 1-time link**: to create and share a new invitation link.")
+                Text("**Scan / Paste link**: to connect via a link you received.")
                 Text("**Create group**: to create a new group.")
             }
             .padding(.top, 24)

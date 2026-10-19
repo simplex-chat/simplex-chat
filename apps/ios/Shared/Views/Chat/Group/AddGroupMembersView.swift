@@ -5,6 +5,7 @@
 //  Created by JRoberts on 22.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
@@ -78,7 +79,18 @@ struct AddGroupMembersViewCommon: View {
                     let count = selectedContacts.count
                     Section {
                         if creatingGroup {
-                            groupPreferencesButton($groupInfo, true)
+                            MemberAdmissionButton(
+                                groupInfo: $groupInfo,
+                                admission: groupInfo.groupProfile.memberAdmission_,
+                                currentAdmission: groupInfo.groupProfile.memberAdmission_,
+                                creatingGroup: true
+                            )
+                            GroupPreferencesButton(
+                                groupInfo: $groupInfo,
+                                preferences: groupInfo.fullGroupPreferences,
+                                currentPreferences: groupInfo.fullGroupPreferences,
+                                creatingGroup: true
+                            )
                         }
                         rolePicker()
                         inviteMembersButton()
@@ -141,11 +153,12 @@ struct AddGroupMembersViewCommon: View {
     }()
 
     private func inviteMembersButton() -> some View {
-        Button {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Invite to group" : "Invite to chat"
+        return Button {
             inviteMembers()
         } label: {
             HStack {
-                Text("Invite to group")
+                Text(label)
                 Image(systemName: "checkmark")
             }
         }
@@ -161,18 +174,17 @@ struct AddGroupMembersViewCommon: View {
                 }
                 addedMembersCb(selectedContacts)
             } catch {
-                let a = getErrorAlert(error, "Error adding member(s)")
-                alert = .error(title: a.title, error: a.message)
+                await MainActor.run {
+                    showErrorAlert(error, NSLocalizedString("Error adding member(s)", comment: ""))
+                }
             }
         }
     }
 
     private func rolePicker() -> some View {
         Picker("New member role", selection: $selectedRole) {
-            ForEach(GroupMemberRole.allCases) { role in
-                if role <= groupInfo.membership.memberRole && role != .author {
-                    Text(role.text)
-                }
+            ForEach(GroupMemberRole.supportedRoles.filter({ $0 <= groupInfo.membership.memberRole })) { role in
+                Text(role.text(isChannel: groupInfo.isChannel))
             }
         }
         .frame(height: 36)
@@ -209,9 +221,12 @@ struct AddGroupMembersViewCommon: View {
             HStack{
                 ProfileImage(imageStr: contact.image, size: 30)
                     .padding(.trailing, 2)
-                Text(ChatInfo.direct(contact: contact).chatViewName)
-                    .foregroundColor(prohibitedToInviteIncognito ? theme.colors.secondary : theme.colors.onBackground)
-                    .lineLimit(1)
+                NameWithBadge(
+                    Text(ChatInfo.direct(contact: contact).chatViewName)
+                        .foregroundColor(prohibitedToInviteIncognito ? theme.colors.secondary : theme.colors.onBackground),
+                    contact.active ? contact.profile.localBadge : nil
+                )
+                .lineLimit(1)
                 Spacer()
                 Image(systemName: icon)
                     .foregroundColor(iconColor)
@@ -231,6 +246,7 @@ func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding, 
             .focused(focussed)
             .foregroundColor(onBackgroundColor)
             .frame(maxWidth: .infinity)
+            .autocorrectionDisabled(true)
         Image(systemName: "xmark.circle.fill")
             .resizable()
             .scaledToFit()

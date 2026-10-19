@@ -5,10 +5,12 @@
 //  Created by Evgeny on 28/05/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#IntegrityErrorItemView
 struct IntegrityErrorItemView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
@@ -31,8 +33,8 @@ struct IntegrityErrorItemView: View {
             case .msgBadHash:
                 AlertManager.shared.showAlert(Alert(
                     title: Text("Bad message hash"),
-                    message: Text("The hash of the previous message is different.") + Text("\n") +
-                        Text(decryptErrorReason) + Text("\n") +
+                    message: Text("The hash of the previous message is different.") + textNewLine +
+                        Text(decryptErrorReason) + textNewLine +
                         Text("Please report it to the developers.")
                 ))
             case .msgBadId: msgBadIdAlert()
@@ -47,7 +49,7 @@ struct IntegrityErrorItemView: View {
             message: Text("""
                 The ID of the next message is incorrect (less or equal to the previous).
                 It can happen because of some bug or when the connection is compromised.
-                """) + Text("\n") +
+                """) + textNewLine +
                 Text("Please report it to the developers.")
         ))
     }
@@ -71,7 +73,26 @@ struct CIMsgError: View {
         .padding(.vertical, 6)
         .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .textSelection(.disabled)
-        .onTapGesture(perform: onTap)
+        .simultaneousGesture(TapGesture().onEnded(onTap))
+    }
+}
+
+struct RcvMsgErrorItemView: View {
+    @ObservedObject var chat: Chat
+    var rcvMsgError: RcvMsgError
+    var chatItem: ChatItem
+
+    var body: some View {
+        CIMsgError(chat: chat, chatItem: chatItem) {
+            let message: LocalizedStringKey = switch rcvMsgError {
+                case let .dropped(attempts): "The app removed this message after \(attempts) attempts to receive it."
+                case let .parseError(parseError): "\(parseError)"
+                }
+            AlertManager.shared.showAlertMsg(
+                title: "Message error",
+                message: message
+            )
+        }
     }
 }
 

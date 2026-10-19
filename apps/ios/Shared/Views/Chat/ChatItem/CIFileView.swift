@@ -5,56 +5,63 @@
 //  Created by JRoberts on 28/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIFileView
 struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.showTimestamp) var showTimestamp: Bool
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
+    @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
+    @ObservedObject var chat: Chat
     let file: CIFile?
-    let edited: Bool
+    let meta: CIMeta
     var smallViewSize: CGFloat?
 
     var body: some View {
         if smallViewSize != nil {
             fileIndicator()
-            .onTapGesture(perform: fileAction)
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
         } else {
-            let metaReserve = edited
-            ? "                           "
-            : "                       "
-            Button(action: fileAction) {
-                HStack(alignment: .bottom, spacing: 6) {
-                    fileIndicator()
-                        .padding(.top, 5)
-                        .padding(.bottom, 3)
-                    if let file = file {
-                        let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(file.fileName)
-                                .lineLimit(1)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(theme.colors.onBackground)
-                            Text(prettyFileSize + metaReserve)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(theme.colors.secondary)
-                        }
-                    } else {
-                        Text(metaReserve)
+            // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
+            let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
+            let metaReserve = Text(verbatim: "   ") + ciMetaText(meta, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: file?.loaded, showSignature: showSignature, showFileEncryption: showFileEncryption)
+            HStack(alignment: .bottom, spacing: 6) {
+                fileIndicator()
+                    .padding(.top, 5)
+                    .padding(.bottom, 3)
+                if let file = file {
+                    let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(file.fileName)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(theme.colors.onBackground)
+                        (Text(prettyFileSize) + metaReserve)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(theme.colors.secondary)
                     }
+                } else {
+                    metaReserve.font(.caption)
                 }
-                .padding(.top, 4)
-                .padding(.bottom, 6)
-                .padding(.leading, 10)
-                .padding(.trailing, 12)
             }
+            .padding(.top, 4)
+            .padding(.bottom, 6)
+            .padding(.leading, 10)
+            .padding(.trailing, 12)
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
             .disabled(!itemInteractive)
         }
     }
 
+    @inline(__always)
     private var itemInteractive: Bool {
         if let file = file {
             switch (file.fileStatus) {
@@ -78,24 +85,21 @@ struct CIFileView: View {
         return false
     }
 
-    private func fileAction() {
+    private func fileAction(_ file: CIFile?) {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
             case .rcvInvitation, .rcvAborted:
-                if fileSizeValid(file) {
+                if let prohibited = file.fileProhibited {
+                    showProhibitedFileAlert(file, prohibited)
+                } else {
+                    m.openWhenReceived(file) { fileAction($0) }
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
                             await receiveFile(user: user, fileId: file.fileId)
                         }
                     }
-                } else {
-                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol), countStyle: .binary)
-                    AlertManager.shared.showAlertMsg(
-                        title: "Large file!",
-                        message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
-                    )
                 }
             case .rcvAccepted:
                 switch file.fileProtocol {
@@ -114,44 +118,40 @@ struct CIFileView: View {
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File error"),
-                    message: Text(rcvFileError.errorInfo)
-                ))
+                showFileErrorAlert(rcvFileError, file)
             case let .rcvWarning(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvWarning")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Temporary file error"),
-                    message: Text(rcvFileError.errorInfo)
-                ))
+                showFileErrorAlert(rcvFileError, temporary: true)
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case .sndComplete:
                 logger.debug("CIFileView fileAction - in .sndComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case let .sndError(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndError")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File error"),
-                    message: Text(sndFileError.errorInfo)
-                ))
+                showFileErrorAlert(sndFileError)
             case let .sndWarning(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndWarning")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Temporary file error"),
-                    message: Text(sndFileError.errorInfo)
-                ))
+                showFileErrorAlert(sndFileError, temporary: true)
             default: break
             }
+        }
+    }
+
+    private func openFile(_ file: CIFile, _ fileSource: CryptoFile) {
+        if isMarkdownFile(file) {
+            showMarkdownFile(file)
+        } else {
+            saveCryptoFile(fileSource)
         }
     }
 
@@ -175,10 +175,12 @@ struct CIFileView: View {
             case .sndError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .sndWarning: fileIcon("doc.fill", innerIcon: "exclamationmark.triangle.fill", innerIconSize: 10)
             case .rcvInvitation:
-                if fileSizeValid(file) {
-                    fileIcon("arrow.down.doc.fill", color: theme.colors.primary)
-                } else {
+                if !fileSizeValid(file) {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
+                } else if file.expired {
+                    fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
+                } else {
+                    fileIcon("arrow.down.doc.fill", color: theme.colors.primary)
                 }
             case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
             case let .rcvTransfer(rcvProgress, rcvTotal):
@@ -237,11 +239,25 @@ struct CIFileView: View {
     }
 }
 
+// the core decides whether a received file is above the size the sender's badge allows
 func fileSizeValid(_ file: CIFile?) -> Bool {
     if let file = file {
-        return file.fileSize <= getMaxFileSize(file.fileProtocol)
+        return file.fileProhibited == nil
     }
     return false
+}
+
+func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
+    let badgeIssue = switch prohibited.badgeStatus {
+    case .none, .some(.active): ""
+    case .some(.expired), .some(.expiredOld): NSLocalizedString("Contact's badge expired.", comment: "file alert")
+    case .some(.failed): NSLocalizedString("Contact's badge verification failed.", comment: "file alert")
+    case .some(.unknownKey): NSLocalizedString("No key to verify contact's badge.", comment: "file alert")
+    }
+    showAlert(
+        NSLocalizedString("Large file!", comment: "file alert title"),
+        message: largeFileMessage(file.fileSize, badgeIssue: badgeIssue)
+    )
 }
 
 func saveCryptoFile(_ fileSource: CryptoFile) {
@@ -268,8 +284,36 @@ func saveCryptoFile(_ fileSource: CryptoFile) {
     }
 }
 
+func showFileErrorAlert(_ err: FileError, _ file: CIFile? = nil, temporary: Bool = false) {
+    if let file, file.expired, let fileExpires = file.fileExpires, err == .auth || err == .noFile {
+        showAlert(
+            NSLocalizedString("File expired", comment: "file error alert title"),
+            message: String.localizedStringWithFormat(NSLocalizedString("File was available until %@.", comment: "file error text"), localTimestamp(fileExpires))
+        )
+        return
+    }
+    let title: String = if temporary {
+        NSLocalizedString("Temporary file error", comment: "file error alert title")
+    } else {
+        NSLocalizedString("File error", comment: "file error alert title")
+    }
+    if let btn = err.moreInfoButton {
+        showAlert(title, message: err.errorInfo) {
+            [
+                okAlertAction,
+                UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default, handler: { _ in
+                    UIApplication.shared.open(contentModerationPostLink)
+                })
+            ]
+        }
+    } else {
+        showAlert(title, message: err.errorInfo)
+    }
+}
+
 struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
+        let im = ItemsModel.shared
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
             meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
@@ -285,16 +329,16 @@ struct CIFileView_Previews: PreviewProvider {
             file: nil
         )
         Group {
-            ChatItemView(chat: Chat.sampleData, chatItem: sentFile)
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample())
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: fileChatItemWtFile)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: fileChatItemWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 360))

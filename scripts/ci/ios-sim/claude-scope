@@ -1,0 +1,10 @@
+# What claude-test.sh runs: one Claude session per layout (reachable, top), each with its cases, and each session's bounds.
+# A case runs in both layouts only when the layouts render it differently; the rest run in one.
+# entries-<layout> (optional) tells that session which directory entries and names its cases use, so none meets an entry already known.
+# backend: yes when the cases use the test backend; a run that asks for Claude must then start it too.
+backend: no
+model: claude-haiku-5-5
+layouts: reachable
+cases-reachable: S1-S3
+max-turns: 60
+max-budget-usd: 3

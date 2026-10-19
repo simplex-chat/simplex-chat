@@ -1,7 +1,7 @@
 package chat.simplex.common.views.migration
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,7 +30,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.LinkTextView
 import chat.simplex.common.views.newchat.SimpleXLinkQRCode
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
@@ -134,6 +135,7 @@ fun MigrateFromDeviceView(close: () -> Unit) {
       }
       close()
     },
+    cardScreen = true,
   ) {
     MigrateFromDeviceLayout(
       migrationState = migrationState,
@@ -149,9 +151,7 @@ private fun MigrateFromDeviceLayout(
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize(), maxIntrinsicSize = true
-  ) {
+  ColumnWithScrollBar(maxIntrinsicSize = true) {
     AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()
@@ -176,7 +176,7 @@ private fun SectionByState(
     is MigrationFromState.UploadProgress -> migrationState.UploadProgressView(s.uploadedBytes, s.totalBytes, s.ctrl, s.user, tempDatabaseFile, chatReceiver, s.archivePath)
     is MigrationFromState.UploadFailed -> migrationState.UploadFailedView(s.totalBytes, s.archivePath, chatReceiver.value)
     is MigrationFromState.LinkCreation -> LinkCreationView()
-    is MigrationFromState.LinkShown -> migrationState.LinkShownView(s.fileId, s.link, s.ctrl)
+    is MigrationFromState.LinkShown -> migrationState.LinkShownView(s.fileId, s.link, s.ctrl, chatReceiver.value)
     is MigrationFromState.Finished -> migrationState.FinishedView(s.chatDeletion)
   }
 }
@@ -184,7 +184,7 @@ private fun SectionByState(
 @Composable
 private fun MutableState<MigrationFromState>.ChatStopInProgressView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_stopping_chat).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_stopping_chat)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -194,9 +194,8 @@ private fun MutableState<MigrationFromState>.ChatStopInProgressView() {
 
 @Composable
 private fun MutableState<MigrationFromState>.ChatStopFailedView(reason: String) {
-  SectionView(stringResource(MR.strings.error_stopping_chat).uppercase()) {
+  SectionView(stringResource(MR.strings.error_stopping_chat)) {
     Text(reason)
-    SectionSpacer()
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_report_filled),
       text = stringResource(MR.strings.auth_stop_chat),
@@ -226,9 +225,9 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
     val view = LocalMultiplatformView()
     Column {
       ChatStoppedView()
-      SectionSpacer()
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.migrate_from_device_verify_database_passphrase).uppercase()) {
+      SectionView(stringResource(MR.strings.migrate_from_device_verify_database_passphrase)) {
         PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey, requestFocus = true)
 
         SettingsActionItemWithContent(
@@ -245,8 +244,8 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
             }
           }
         ) {}
-        SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
       }
+      SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
     }
     if (verifyingPassphrase.value) {
       ProgressView()
@@ -256,7 +255,7 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
 
 @Composable
 private fun MutableState<MigrationFromState>.UploadConfirmationView() {
-  SectionView(stringResource(MR.strings.migrate_from_device_confirm_upload).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_from_device_confirm_upload)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_ios_share),
       text = stringResource(MR.strings.migrate_from_device_archive_and_upload),
@@ -270,7 +269,7 @@ private fun MutableState<MigrationFromState>.UploadConfirmationView() {
 @Composable
 private fun MutableState<MigrationFromState>.ArchivingView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_archiving_database).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_archiving_database)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -281,7 +280,7 @@ private fun MutableState<MigrationFromState>.ArchivingView() {
 @Composable
 private fun MutableState<MigrationFromState>.DatabaseInitView(tempDatabaseFile: File, totalBytes: Long, archivePath: String) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_database_init).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_database_init)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -300,7 +299,7 @@ private fun MutableState<MigrationFromState>.UploadProgressView(
   archivePath: String,
 ) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_uploading_archive).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_from_device_uploading_archive)) {
       val ratio = uploadedBytes.toFloat() / max(totalBytes, 1)
       LargeProgressView(ratio, "${(ratio * 100).toInt()}%", stringResource(MR.strings.migrate_from_device_bytes_uploaded).format(formatBytes(uploadedBytes)))
     }
@@ -312,7 +311,7 @@ private fun MutableState<MigrationFromState>.UploadProgressView(
 
 @Composable
 private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, archivePath: String, chatReceiver: MigrationFromChatReceiver?) {
-  SectionView(stringResource(MR.strings.migrate_from_device_upload_failed).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_from_device_upload_failed)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_ios_share),
       text = stringResource(MR.strings.migrate_from_device_repeat_upload),
@@ -331,13 +330,13 @@ private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, 
 @Composable
 private fun LinkCreationView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_creating_archive_link).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_creating_archive_link)) {}
     ProgressView()
   }
 }
 
 @Composable
-private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl) {
+private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
   SectionView {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_close),
@@ -358,20 +357,20 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
           confirmText = generalGetString(MR.strings.continue_to_next_step),
           destructive = true,
           onConfirm = {
-            finishMigration(fileId, ctrl)
+            finishMigration(fileId, ctrl, chatReceiver)
           }
         )
       }
     ) {}
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   }
-  SectionSpacer()
-  SectionView(stringResource(MR.strings.show_QR_code).uppercase()) {
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
+  SectionDividerSpaced()
+  SectionView(stringResource(MR.strings.show_QR_code)) {
     SimpleXLinkQRCode(link, onShare = {})
   }
-  SectionSpacer()
-  SectionView(stringResource(MR.strings.migrate_from_device_or_share_this_file_link).uppercase()) {
+  SectionDividerSpaced()
+  SectionView(stringResource(MR.strings.migrate_from_device_or_share_this_file_link)) {
     LinkTextView(link, true)
   }
 }
@@ -379,7 +378,7 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
 @Composable
 private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_migration_complete).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_from_device_migration_complete)) {
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_play_arrow_filled),
         text = stringResource(MR.strings.migrate_from_device_start_chat),
@@ -412,13 +411,13 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
           )
         }
       ) {}
-      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
-      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     }
     if (chatDeletion) {
       ProgressView()
     }
   }
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
 }
 
 @Composable
@@ -452,6 +451,7 @@ private fun MutableState<MigrationFromState>.stopChat() {
       try {
         controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
         state = if (appPreferences.initialRandomDBPassphrase.get()) MigrationFromState.PassphraseNotSet else MigrationFromState.PassphraseConfirmation
+        platform.androidChatStopped()
       } catch (e: Exception) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.migrate_from_device_error_saving_settings),
@@ -469,12 +469,12 @@ private suspend fun MutableState<MigrationFromState>.verifyDatabasePassphrase(db
   val error = controller.testStorageEncryption(dbKey)
   if (error == null) {
     state = MigrationFromState.UploadConfirmation
-  } else if (((error.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorOpen)?.sqliteError is SQLiteError.ErrorNotADatabase) {
+  } else if (((error as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorOpen)?.sqliteError is SQLiteError.ErrorNotADatabase) {
     showErrorOnMigrationIfNeeded(DBMigrationResult.ErrorNotADatabase(""))
   } else {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.error),
-      text = generalGetString(MR.strings.migrate_from_device_error_verifying_passphrase) + " " + error.details
+      text = generalGetString(MR.strings.migrate_from_device_error_verifying_passphrase) + " " + error.string
     )
   }
 }
@@ -483,7 +483,7 @@ private fun MutableState<MigrationFromState>.exportArchive() {
   withLongRunningApi {
     try {
       getMigrationTempFilesDirectory().mkdir()
-      val (archivePath, archiveErrors) = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""), mutableStateOf(Instant.DISTANT_PAST), mutableStateOf(""))
+      val (archivePath, archiveErrors) = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""))
       if (archiveErrors.isEmpty()) {
         uploadArchive(archivePath)
       } else {
@@ -557,11 +557,12 @@ private fun MutableState<MigrationFromState>.startUploading(
 ) {
   withBGApi {
     chatReceiver.value = MigrationFromChatReceiver(ctrl, tempDatabaseFile) { msg ->
-      when (msg) {
+      val r = msg.result
+      when (r) {
         is CR.SndFileProgressXFTP -> {
           val s = state
           if (s is MigrationFromState.UploadProgress && s.uploadedBytes != s.totalBytes) {
-            state = MigrationFromState.UploadProgress(msg.sentSize, msg.totalSize, msg.fileTransferMeta.fileId, archivePath, ctrl, user)
+            state = MigrationFromState.UploadProgress(r.sentSize, r.totalSize, r.fileTransferMeta.fileId, archivePath, ctrl, user)
           }
         }
         is CR.SndFileRedirectStartXFTP -> {
@@ -579,7 +580,7 @@ private fun MutableState<MigrationFromState>.startUploading(
               requiredHostMode = cfg.requiredHostMode
             )
           )
-          state = MigrationFromState.LinkShown(msg.fileTransferMeta.fileId, data.addToLink(msg.rcvURIs[0]), ctrl)
+          state = MigrationFromState.LinkShown(r.fileTransferMeta.fileId, data.addToLink(r.rcvURIs[0]), ctrl)
         }
         is CR.SndFileError -> {
           AlertManager.shared.showAlertMsg(
@@ -619,9 +620,11 @@ private fun cancelMigration(fileId: Long, ctrl: ChatCtrl) {
   }
 }
 
-private fun MutableState<MigrationFromState>.finishMigration(fileId: Long, ctrl: ChatCtrl) {
+private fun MutableState<MigrationFromState>.finishMigration(fileId: Long, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
   withBGApi {
     cancelUploadedArchive(fileId, ctrl)
+    chatReceiver?.stopAndCleanUp()
+    getMigrationTempFilesDirectory().deleteRecursively()
     state = MigrationFromState.Finished(false)
   }
 }
@@ -657,6 +660,7 @@ private suspend fun startChatAndDismiss(dismiss: Boolean = true) {
     } else if (user != null) {
       startChat(user)
     }
+    platform.androidChatStartedAfterBeingOff()
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.error_starting_chat),
@@ -690,7 +694,7 @@ private class MigrationFromChatReceiver(
   val ctrl: ChatCtrl,
   val databaseUrl: File,
   var receiveMessages: Boolean = true,
-  val processReceivedMsg: suspend (CR) -> Unit
+  val processReceivedMsg: suspend (API) -> Unit
 ) {
   fun start() {
     Log.d(TAG, "MigrationChatReceiver startReceiver")
@@ -699,19 +703,18 @@ private class MigrationFromChatReceiver(
         try {
           val msg = ChatController.recvMsg(ctrl)
           if (msg != null && receiveMessages) {
-            val r = msg.resp
-            val rhId = msg.remoteHostId
-            Log.d(TAG, "processReceivedMsg: ${r.responseType}")
-            chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
+            val rhId = msg.rhId
+            Log.d(TAG, "processReceivedMsg: ${msg.responseType}")
+            chatModel.addTerminalItem(TerminalItem.resp(rhId, msg))
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
-              processReceivedMsg(r)
+              processReceivedMsg(msg)
             }
             if (finishedWithoutTimeout == null) {
-              Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
+              Log.e(TAG, "Timeout reached while processing received message: " + msg.responseType)
               if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
                 AlertManager.shared.showAlertMsg(
                   title = generalGetString(MR.strings.possible_slow_function_title),
-                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.resp.responseType + "\n" + Exception().stackTraceToString()),
+                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.responseType + "\n" + Exception().stackTraceToString()),
                   shareText = true
                 )
               }

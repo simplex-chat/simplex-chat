@@ -38,6 +38,7 @@ extension AppSettings {
             privacyLinkPreviewsGroupDefault.set(val)
             def.setValue(val, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
         }
+        if let val = privacySanitizeLinks { privacySanitizeLinksGroupDefault.set(val) }
         if let val = privacyShowChatPreviews { def.setValue(val, forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) }
         if let val = privacySaveLastDraft { def.setValue(val, forKey: DEFAULT_PRIVACY_SAVE_LAST_DRAFT) }
         if let val = privacyProtectScreen { def.setValue(val, forKey: DEFAULT_PRIVACY_PROTECT_SCREEN) }
@@ -65,6 +66,7 @@ extension AppSettings {
         if let val = uiCurrentThemeIds { currentThemeIdsDefault.set(val) }
         if let val = uiThemes { themeOverridesDefault.set(val.skipDuplicates()) }
         if let val = oneHandUI { groupDefaults.setValue(val, forKey: GROUP_DEFAULT_ONE_HAND_UI) }
+        if let val = chatBottomBar { groupDefaults.setValue(val, forKey: GROUP_DEFAULT_CHAT_BOTTOM_BAR) }
     }
 
     public static var current: AppSettings {
@@ -75,7 +77,8 @@ extension AppSettings {
         c.privacyEncryptLocalFiles = privacyEncryptLocalFilesGroupDefault.get()
         c.privacyAskToApproveRelays = privacyAskToApproveRelaysGroupDefault.get()
         c.privacyAcceptImages = privacyAcceptImagesGroupDefault.get()
-        c.privacyLinkPreviews = def.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+        c.privacyLinkPreviews = privacyLinkPreviewsGroupDefault.get()
+        c.privacySanitizeLinks = privacySanitizeLinksGroupDefault.get()
         c.privacyShowChatPreviews = def.bool(forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS)
         c.privacySaveLastDraft = def.bool(forKey: DEFAULT_PRIVACY_SAVE_LAST_DRAFT)
         c.privacyProtectScreen = def.bool(forKey: DEFAULT_PRIVACY_PROTECT_SCREEN)
@@ -100,6 +103,7 @@ extension AppSettings {
         c.uiCurrentThemeIds = currentThemeIdsDefault.get()
         c.uiThemes = themeOverridesDefault.get()
         c.oneHandUI = groupDefaults.bool(forKey: GROUP_DEFAULT_ONE_HAND_UI)
+        c.chatBottomBar = groupDefaults.bool(forKey: GROUP_DEFAULT_CHAT_BOTTOM_BAR)
         return c
     }
 }

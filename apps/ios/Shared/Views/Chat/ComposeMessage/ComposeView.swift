@@ -1,68 +1,86 @@
-//
-//  ComposeView.swift
-//  SimpleX
-//
-//  Created by Evgeny on 13/03/2022.
-//  Copyright © 2022 SimpleX Chat. All rights reserved.
-//
+// Spec: spec/client/compose.md
 
 import SwiftUI
 import SimpleXChat
 import SwiftyGif
 import PhotosUI
 
+let MAX_NUMBER_OF_MENTIONS = 3
+
+// Spec: spec/client/compose.md#ComposePreview
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
+    case chatLinkPreview(chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
     case mediaPreviews(mediaPreviews: [(String, UploadContent?)])
     case voicePreview(recordingFileName: String, duration: Int)
     case filePreview(fileName: String, file: URL)
 }
 
-enum ComposeContextItem {
+// Spec: spec/client/compose.md#ComposeContextItem
+enum ComposeContextItem: Equatable {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
     case forwardingItems(chatItems: [ChatItem], fromChatInfo: ChatInfo)
+    case reportedItem(chatItem: ChatItem, reason: ReportReason)
 }
 
+// Spec: spec/client/compose.md#VoiceMessageRecordingState
 enum VoiceMessageRecordingState {
     case noRecording
     case recording
     case finished
 }
 
+// Spec: spec/client/compose.md#LiveMessage
 struct LiveMessage {
     var chatItem: ChatItem
     var typedMsg: String
     var sentMsg: String?
 }
 
+typealias MentionedMembers = [String: CIMention]
+
+// Spec: spec/client/compose.md#ComposeState
 struct ComposeState {
     var message: String
+    var parsedMessage: [FormattedText]
     var liveMessage: LiveMessage? = nil
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
-    var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+    var progressByTimeout = false
+    var useLinkPreviews = true
+    var mentions: MentionedMembers = [:]
 
     init(
         message: String = "",
+        parsedMessage: [FormattedText] = [],
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
-        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
+        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
+        mentions: MentionedMembers = [:]
     ) {
         self.message = message
+        self.parsedMessage = parsedMessage
         self.liveMessage = liveMessage
         self.preview = preview
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
+        self.mentions = mentions
     }
 
     init(editingItem: ChatItem) {
-        self.message = editingItem.content.text
+        let text = if case let .chat(t, chatLink, _) = editingItem.content.msgContent {
+            stripTextLink(t, chatLink.connLinkStr)
+        } else {
+            editingItem.content.text
+        }
+        self.message = text
+        self.parsedMessage = editingItem.formattedText ?? FormattedText.plain(text)
         self.preview = chatItemPreview(chatItem: editingItem)
         self.contextItem = .editingItem(chatItem: editingItem)
         if let emc = editingItem.content.msgContent,
@@ -71,10 +89,12 @@ struct ComposeState {
         } else {
             self.voiceMessageRecordingState = .noRecording
         }
+        self.mentions = editingItem.mentions ?? [:]
     }
 
     init(forwardingItems: [ChatItem], fromChatInfo: ChatInfo) {
         self.message = ""
+        self.parsedMessage = []
         self.preview = .noPreview
         self.contextItem = .forwardingItems(chatItems: forwardingItems, fromChatInfo: fromChatInfo)
         self.voiceMessageRecordingState = .noRecording
@@ -82,18 +102,41 @@ struct ComposeState {
 
     func copy(
         message: String? = nil,
+        parsedMessage: [FormattedText]? = nil,
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
-        voiceMessageRecordingState: VoiceMessageRecordingState? = nil
+        voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
+        mentions: MentionedMembers? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
+            parsedMessage: parsedMessage ?? self.parsedMessage,
             liveMessage: liveMessage ?? self.liveMessage,
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
-            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
+            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState,
+            mentions: mentions ?? self.mentions
         )
+    }
+
+    func mentionMemberName(_ name: String) -> String {
+        var n = 0
+        var tryName = name
+        while mentions[tryName] != nil {
+            n += 1
+            tryName = "\(name)_\(n)"
+        }
+        return tryName
+    }
+
+    var memberMentions: [String: Int64] {
+        var result: [String: Int64] = [:]
+        for ft in parsedMessage {
+            if result.count >= MAX_NUMBER_OF_MENTIONS { break }
+            if case let .mention(name) = ft.format, let id = mentions[name]?.memberRef?.groupMemberId { result[name] = id }
+        }
+        return result
     }
 
     var editing: Bool {
@@ -117,12 +160,31 @@ struct ComposeState {
         }
     }
 
+    var reporting: Bool {
+        switch contextItem {
+        case .reportedItem: return true
+        default: return false
+        }
+    }
+
+    var submittingValidReport: Bool {
+        switch contextItem {
+        case let .reportedItem(_, reason):
+            switch reason {
+            case .other: return !message.isEmpty
+            default: return true
+            }
+        default: return false
+        }
+    }
+
     var sendEnabled: Bool {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
+        case .chatLinkPreview: return true
         case .filePreview: return true
-        default: return !message.isEmpty || forwarding || liveMessage != nil
+        default: return !whitespaceOnly || forwarding || liveMessage != nil || submittingValidReport
         }
     }
 
@@ -132,6 +194,7 @@ struct ComposeState {
 
     var linkPreviewAllowed: Bool {
         switch preview {
+        case .chatLinkPreview: return false
         case .mediaPreviews: return false
         case .voicePreview: return false
         case .filePreview: return false
@@ -175,7 +238,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || forwarding || liveMessage != nil || inProgress { return true }
+        if editing || forwarding || liveMessage != nil || inProgress || reporting { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -187,17 +250,32 @@ struct ComposeState {
         switch preview {
         case .noPreview: false
         case .linkPreview: false
+        case .chatLinkPreview: false
         case let .mediaPreviews(mediaPreviews): !mediaPreviews.isEmpty
         case .voicePreview: false
         case .filePreview: true
         }
     }
 
+    var placeholder: String? {
+        switch contextItem {
+        case let .reportedItem(_, reason):
+            return reason.text
+        default:
+            return nil
+        }
+    }
+
     var empty: Bool {
-        message == "" && noPreview
+        whitespaceOnly && noPreview
+    }
+
+    var whitespaceOnly: Bool {
+        message.allSatisfy { $0.isWhitespace }
     }
 }
 
+// Spec: spec/client/compose.md#chatItemPreview
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     switch chatItem.content.msgContent {
     case .text:
@@ -218,6 +296,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     }
 }
 
+// Spec: spec/client/compose.md#UploadContent
 enum UploadContent: Equatable {
     case simpleImage(image: UIImage)
     case animatedImage(image: UIImage)
@@ -259,17 +338,34 @@ enum UploadContent: Equatable {
     }
 }
 
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+func showLargeFileAlert(_ fileSize: Int64, incognito: Bool, senderProfile: LocalProfile?) {
+    let title = NSLocalizedString("Large file!", comment: "file alert title")
+    let message = largeFileMessage(fileSize, incognito: incognito, badgeIssue: expiredBadgeReason(fileSize, senderProfile))
+    if !incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge() {
+        showAlert(title, message: message) { [supportSimpleXAlertAction, okAlertAction] }
+    } else {
+        showAlert(title, message: message)
+    }
+}
+
+// Spec: spec/client/compose.md#ComposeView
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     @Binding var composeState: ComposeState
+    @Binding var showCommandsMenu: Bool
     @Binding var keyboardVisible: Bool
+    @Binding var keyboardHiddenDate: Date
+    @Binding var selectedRange: NSRange
 
-    @State var linkUrl: URL? = nil
+    @State var linkUrl: String? = nil
     @State var hasSimplexLink: Bool = false
-    @State var prevLinkUrl: URL? = nil
-    @State var pendingLinkUrl: URL? = nil
+    @State var prevLinkUrl: String? = nil
+    @State var pendingLinkUrl: String? = nil
     @State var cancelledLinks: Set<String> = []
 
     @Environment(\.colorScheme) private var colorScheme
@@ -289,102 +385,164 @@ struct ComposeView: View {
 
     @UserDefault(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
+    @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
+    @AppStorage(GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS, store: groupDefaults) private var useLinkPreviews = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, store: groupDefaults) private var linkPreviewsShowAlert = true
+    @State private var updatingCompose = false
+    @State private var relayListExpanded = false
+    @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
 
+    // Spec: spec/client/compose.md#body
     var body: some View {
         VStack(spacing: 0) {
             Divider()
-            if chat.chatInfo.contact?.nextSendGrpInv ?? false {
-                ContextInvitingContactMemberView()
+
+            if chat.chatInfo.nextConnectPrepared,
+               !composeState.inProgress,
+               let user = chatModel.currentUser {
+                ContextProfilePickerView(
+                    chat: chat,
+                    selectedUser: user
+                )
                 Divider()
             }
-            // preference checks should match checks in forwarding list
-            let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
-            let fileProhibited = composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
-            let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
-            if simplexLinkProhibited {
-                msgNotAllowedView("SimpleX links not allowed", icon: "link")
-                Divider()
-            } else if fileProhibited {
-                msgNotAllowedView("Files and media not allowed", icon: "doc")
-                Divider()
-            } else if voiceProhibited {
-                msgNotAllowedView("Voice messages not allowed", icon: "mic")
-                Divider()
-            }
-            contextItemView()
-            switch (composeState.editing, composeState.preview) {
-            case (true, .filePreview): EmptyView()
-            case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
-            default: previewView()
-            }
-            HStack (alignment: .bottom) {
-                let b = Button {
-                    showChooseSource = true
-                } label: {
-                    Image(systemName: "paperclip")
-                        .resizable()
-                }
-                .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
-                .frame(width: 25, height: 25)
-                .padding(.bottom, 12)
-                .padding(.leading, 12)
-                .tint(theme.colors.primary)
-                if case let .group(g) = chat.chatInfo,
-                   !g.fullGroupPreferences.files.on(for: g.membership) {
-                    b.disabled(true).onTapGesture {
-                        AlertManager.shared.showAlertMsg(
-                            title: "Files and media prohibited!",
-                            message: "Only group owners can enable files and media."
+
+            let ownerState = ownerRelayState
+            let subscriberState = subscriberRelayState
+            if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
+               ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
+                if gInfo.membership.memberRole == .owner {
+                    if let s = ownerState, s.relays.isEmpty || s.activeCount < s.relays.count {
+                        ownerChannelRelayBar(relays: s.relays, activeCount: s.activeCount, failedCount: s.failedCount, removedCount: s.removedCount)
+                    }
+                } else if let s = subscriberState {
+                    let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
+                    let resolvedCount = s.connectedCount + s.removedCount + s.failedCount
+                    if s.total == 0 || s.removedCount + s.failedCount > 0 || resolvedCount < s.total {
+                        subscriberChannelRelayBar(
+                            hostnames: s.hostnames,
+                            relayMembers: s.relayMembers,
+                            connectedCount: s.connectedCount,
+                            removedCount: s.removedCount,
+                            failedCount: s.failedCount,
+                            total: s.total,
+                            showProgress: showProgress
                         )
                     }
-                } else {
-                    b
                 }
-                ZStack(alignment: .leading) {
-                    SendMessageView(
-                        composeState: $composeState,
-                        sendMessage: { ttl in
-                            sendMessage(ttl: ttl)
-                            resetLinkPreview()
-                        },
-                        sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
-                        updateLiveMessage: updateLiveMessage,
-                        cancelLiveMessage: {
-                            composeState.liveMessage = nil
-                            chatModel.removeLiveDummy()
-                        },
-                        nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
-                        voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
-                        disableSendButton: simplexLinkProhibited || fileProhibited || voiceProhibited,
-                        showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
-                        startVoiceMessageRecording: {
-                            Task {
-                                await startVoiceMessageRecording()
-                            }
-                        },
-                        finishVoiceMessageRecording: finishVoiceMessageRecording,
-                        allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
-                        onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
-                        keyboardVisible: $keyboardVisible,
-                        sendButtonColor: chat.chatInfo.incognito
-                            ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
-                            : theme.colors.primary
-                    )
-                    .padding(.trailing, 12)
-                    .disabled(!chat.userCanSend)
+            }
 
-                    if chat.userIsObserver {
-                        Text("you are observer")
-                            .italic()
-                            .foregroundColor(theme.colors.secondary)
-                            .padding(.horizontal, 12)
-                            .onTapGesture {
-                                AlertManager.shared.showAlertMsg(
-                                    title: "You can't send messages!",
-                                    message: "Please contact group admin."
-                                )
-                            }
+            let userCantSendReason = chat.chatInfo.userCantSendReason(allRelaysBroken: (ownerState?.noActiveRelays ?? subscriberState?.noActiveRelays) ?? false)
+            let composeEnabled = (
+                userCantSendReason == nil ||
+                (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) ||
+                (chat.chatInfo.contact?.nextAcceptContactRequest ?? false)
+            )
+            Group {
+
+                if let groupInfo = chat.chatInfo.groupInfo,
+                   case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
+                   case let .memberSupport(member) = groupScopeInfo,
+                   let member = member,
+                   member.memberPending,
+                   composeState.contextItem == .noContextItem,
+                   composeState.noPreview {
+                    ContextPendingMemberActionsView(
+                        groupInfo: groupInfo,
+                        member: member
+                    )
+                    Divider()
+                }
+
+                if case let .reportedItem(_, reason) = composeState.contextItem {
+                    reportReasonView(reason)
+                    Divider()
+                }
+                // preference checks should match checks in forwarding list
+                let simplexLinkProhibited = im.secondaryIMFilter == nil && hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
+                let fileProhibited = im.secondaryIMFilter == nil && composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
+                let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
+                let disableSendButton = simplexLinkProhibited || fileProhibited || voiceProhibited
+                if simplexLinkProhibited {
+                    msgNotAllowedView("SimpleX links not allowed", icon: "link")
+                    Divider()
+                } else if fileProhibited {
+                    msgNotAllowedView("Files and media not allowed", icon: "doc")
+                    Divider()
+                } else if voiceProhibited {
+                    msgNotAllowedView("Voice messages not allowed", icon: "mic")
+                    Divider()
+                }
+                contextItemView()
+                switch (composeState.editing, composeState.preview) {
+                case (true, .filePreview): EmptyView()
+                case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
+                default: previewView()
+                }
+
+                let contact = chat.chatInfo.contact
+
+                if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
+                    if chat.chatInfo.groupInfo?.businessChat == nil {
+                        let isChannel = chat.chatInfo.groupInfo?.useRelays == true
+                        connectButtonView(
+                            isChannel ? "Join channel" : "Join group",
+                            icon: isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.fill",
+                            connect: connectPreparedGroup
+                        )
+                    } else {
+                        sendContactRequestView(disableSendButton, icon: "briefcase.fill", sendRequest: connectPreparedGroup)
+                    }
+                } else if contact?.nextSendGrpInv == true {
+                    contextSendMessageToConnect("Send direct message to connect")
+                    Divider()
+                    HStack (alignment: .center) {
+                        attachmentAndCommandsButtons().disabled(true)
+                        sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
+                    }
+                    .padding(.horizontal, 12)
+                } else if let contact,
+                          contact.nextConnectPrepared == true,
+                          let linkType = contact.preparedContact?.uiConnLinkType {
+                    switch linkType {
+                    case .inv:
+                        connectButtonView("Connect", icon: "person.fill.badge.plus", connect: sendConnectPreparedContact)
+                    case .con:
+                        if contact.isBot {
+                            connectButtonView("Connect", icon: "bolt.fill", connect: sendConnectPreparedContact)
+                        } else {
+                            sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
+                        }
+                    }
+                } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
+                    ContextContactRequestActionsView(contactRequestId: crId)
+                } else if let ct = contact, ct.nextAcceptContactRequest, let groupDirectInv = ct.groupDirectInv {
+                    ContextMemberContactActionsView(contact: ct, groupDirectInv: groupDirectInv)
+                } else {
+                    HStack (alignment: .center) {
+                        attachmentAndCommandsButtons()
+                        sendMessageView(
+                            disableSendButton,
+                            placeholder: chat.chatInfo.groupInfo.map { gi in
+                                gi.useRelays && gi.membership.memberRole >= .owner && chat.chatInfo.groupChatScope() == nil
+                                ? NSLocalizedString("Broadcast", comment: "compose placeholder for channel owner")
+                                : nil
+                            } ?? nil
+                        )
+                    }
+                    .padding(.horizontal, 12)
+                }
+
+            } // Group
+            .disabled(!composeEnabled)
+            .if(!composeEnabled) { v in
+                v.onTapGesture {
+                    if let reason = userCantSendReason {
+                        AlertManager.shared.showAlertMsg(
+                            title: "You can't send messages!",
+                            message: reason.alertMessage
+                        )
                     }
                 }
             }
@@ -395,24 +553,56 @@ struct ComposeView: View {
                 .ignoresSafeArea(.all, edges: .bottom)
         }
         .onChange(of: composeState.message) { msg in
-            if composeState.linkPreviewAllowed {
-                if msg.count > 0 {
-                    showLinkPreview(msg)
+            if updatingCompose {
+                updatingCompose = false
+                return
+            }
+            var parsedMsg = parseSimpleXMarkdown(msg)
+            if privacySanitizeLinks, let parsed = parsedMsg {
+                let r = sanitizeMessage(parsed)
+                if let sanitizedPos = r.sanitizedPos {
+                    updatingCompose = true
+                    composeState = composeState.copy(message: r.message, parsedMessage: r.parsedMsg)
+                    if sanitizedPos < selectedRange.location {
+                        selectedRange = NSRange(location: sanitizedPos, length: 0)
+                    }
+                    parsedMsg = r.parsedMsg
+                } else {
+                    composeState = composeState.copy(parsedMessage: parsedMsg)
+                }
+            } else {
+                composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
+            }
+            if composeState.linkPreviewAllowed && useLinkPreviews {
+                if !msg.isEmpty {
+                    showLinkPreview(parsedMsg)
                 } else {
                     resetLinkPreview()
                     hasSimplexLink = false
+                    composeState = composeState.copy(preview: .noPreview)
                 }
-            } else if msg.count > 0 && !chat.groupFeatureEnabled(.simplexLinks) {
-                (_, hasSimplexLink) = parseMessage(msg)
             } else {
-                hasSimplexLink = false
+                resetLinkPreview()
+                hasSimplexLink = !msg.isEmpty && !chat.groupFeatureEnabled(.simplexLinks) && getMessageLinks(parsedMsg).hasSimplexLink
+                if composeState.linkPreviewAllowed {
+                    composeState = composeState.copy(preview: .noPreview)
+                }
             }
         }
-        .onChange(of: chat.userCanSend) { canSend in
-            if !canSend {
+        .onChange(of: chat.chatInfo.sendMsgEnabled) { sendEnabled in
+            if !sendEnabled {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
                 clearState()
+            }
+        }
+        .onChange(of: composeState.inProgress) { inProgress in
+            if inProgress {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    composeState.progressByTimeout = composeState.inProgress
+                }
+            } else {
+                composeState.progressByTimeout = false
             }
         }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
@@ -490,11 +680,7 @@ struct ComposeView: View {
                         fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: maxFileSize, countStyle: .binary)
-                        AlertManager.shared.showAlertMsg(
-                            title: "Large file!",
-                            message: "Currently maximum supported file size is \(prettyMaxFileSize)."
-                        )
+                        showLargeFileAlert(Int64(fileSize ?? 0), incognito: sendIncognito, senderProfile: sendProfile)
                     }
                 } catch {
                     logger.error("ComposeView fileImporter error \(error.localizedDescription)")
@@ -550,6 +736,521 @@ struct ComposeView: View {
         }
     }
 
+    private var ownerRelayState: (relays: [GroupRelay], activeCount: Int, failedCount: Int, removedCount: Int, noActiveRelays: Bool)? {
+        guard let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
+              gInfo.membership.memberRole == .owner,
+              ![.memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus)
+        else { return nil }
+        guard channelRelaysModel.groupId == gInfo.groupId else { return nil }
+        let relays = channelRelaysModel.groupRelays
+        guard !relays.isEmpty else { return ([], 0, 0, 0, true) }
+        let relayMembers = relays.map { relay in
+            (relay, chatModel.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId })?.wrapped)
+        }
+        let removedCount = relayMembers.filter { (_, m) in relayMemberRemoved(m?.memberStatus) }.count
+        let activeCount = relayMembers.filter { (relay, m) in !relayMemberRemoved(m?.memberStatus) && relay.relayStatus == .active && m?.activeConn?.connFailedErr == nil }.count
+        let failedCount = relayMembers.filter { (_, m) in !relayMemberRemoved(m?.memberStatus) && m?.activeConn?.connFailedErr != nil }.count
+        let noActiveRelays = activeCount == 0 && (failedCount + removedCount) == relays.count
+        return (relays, activeCount, failedCount, removedCount, noActiveRelays)
+    }
+
+    private var subscriberRelayState: (hostnames: [String], relayMembers: [GMember], connectedCount: Int, removedCount: Int, failedCount: Int, total: Int, noActiveRelays: Bool)? {
+        guard let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
+              gInfo.membership.memberRole != .owner,
+              ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus)
+        else { return nil }
+        let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
+        let relayMembers = chatModel.groupMembers
+            .filter { $0.wrapped.memberRole == .relay && ![.memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) }
+            .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
+        let removedCount = relayMembers.filter { relayMemberRemoved($0.wrapped.memberStatus) }.count
+        let connectedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
+        let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
+        let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
+        guard total > 0 || chatModel.membersLoaded else { return nil }
+        let noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
+        return (hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
+    }
+
+    private var disabledText: LocalizedStringKey? {
+        chat.chatInfo.userCantSendReason(allRelaysBroken: (ownerRelayState?.noActiveRelays ?? subscriberRelayState?.noActiveRelays) ?? false)?.composeLabel
+    }
+
+    @ViewBuilder private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int, removedCount: Int) -> some View {
+        let total = relays.count
+        let allBroken = activeCount == 0 && (failedCount + removedCount) == total
+        let sorted = relays.map { relay in
+            (relay, chatModel.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId })?.wrapped)
+        }.sorted { relayDisplayName($0.0) < relayDisplayName($1.0) }
+        VStack(spacing: 0) {
+            relayBarHeader {
+                if !allBroken && activeCount + failedCount + removedCount < total {
+                    RelayProgressIndicator(active: activeCount, total: total)
+                }
+                if total == 0 {
+                    Text("No relays")
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                } else if allBroken {
+                    if removedCount == total {
+                        Text("All relays removed")
+                    } else if failedCount == total {
+                        Text("All relays failed")
+                    } else {
+                        Text("No active relays")
+                    }
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                } else if activeCount + failedCount + removedCount >= total {
+                    if failedCount > 0 && removedCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d relays not active", comment: "channel relay bar"), failedCount + removedCount))
+                    } else if failedCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d relays failed", comment: "channel relay bar"), failedCount))
+                    } else {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d relays removed", comment: "channel relay bar"), removedCount))
+                    }
+                } else if failedCount > 0 && removedCount > 0 {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d errors", comment: "channel relay bar"), activeCount, total, failedCount + removedCount))
+                } else if failedCount > 0 {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d failed", comment: "channel relay bar"), activeCount, total, failedCount))
+                } else if removedCount > 0 {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d removed", comment: "channel relay bar"), activeCount, total, removedCount))
+                } else {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel relay bar progress"), activeCount, total))
+                }
+            }
+            if relayListExpanded {
+                if allBroken {
+                    Text("Add relays to restore message delivery.")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.leading, 12)
+                        .padding(.trailing)
+                        .padding(.bottom, 4)
+                }
+                ForEach(sorted, id: \.0.id) { (relay, m) in
+                    if let err = m?.activeConn?.connFailedErr {
+                        Button {
+                            showAlert(
+                                NSLocalizedString("Relay connection failed", comment: "alert title"),
+                                message: err
+                            )
+                        } label: {
+                            ownerRelayDetailRow(relay, connFailed: true, memberStatus: m?.memberStatus)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        ownerRelayDetailRow(relay, connFailed: false, memberStatus: m?.memberStatus)
+                    }
+                }
+            }
+        }
+        .padding(.bottom, relayListExpanded ? 4 : 0)
+        .animation(nil, value: relayListExpanded)
+    }
+
+    private func ownerRelayDetailRow(_ relay: GroupRelay, connFailed: Bool, memberStatus: GroupMemberStatus?) -> some View {
+        relayBarDetailRow {
+            Text(relayDisplayName(relay)).foregroundColor(theme.colors.secondary)
+            Spacer()
+            relayStatusIndicator(relay.relayStatus, connFailed: connFailed, memberStatus: memberStatus)
+        }
+    }
+
+    @ViewBuilder private func subscriberChannelRelayBar(
+        hostnames: [String],
+        relayMembers: [GMember],
+        connectedCount: Int,
+        removedCount: Int,
+        failedCount: Int,
+        total: Int,
+        showProgress: Bool
+    ) -> some View {
+        let errorCount = removedCount + failedCount
+        let allBroken = connectedCount == 0 && errorCount == total
+        VStack(spacing: 0) {
+            relayBarHeader {
+                if total == 0 {
+                    Text("No relays")
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                } else if allBroken {
+                    if removedCount == total {
+                        Text("All relays removed")
+                    } else if failedCount == total {
+                        Text("All relays failed")
+                    } else {
+                        Text("No active relays")
+                    }
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                } else {
+                    if showProgress && connectedCount + errorCount < total {
+                        RelayProgressIndicator(active: connectedCount, total: total)
+                    }
+                    if connectedCount + removedCount + failedCount >= total, removedCount + failedCount > 0 {
+                        if failedCount > 0 && removedCount > 0 {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("%d relays not active", comment: "channel subscriber relay bar"), failedCount + removedCount))
+                        } else if failedCount > 0 {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("%d relays failed", comment: "channel subscriber relay bar"), failedCount))
+                        } else if removedCount > 0 {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("%d relays removed", comment: "channel subscriber relay bar"), removedCount))
+                        }
+                    } else if failedCount > 0 && removedCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d errors", comment: "channel subscriber relay bar"), connectedCount, total, errorCount))
+                    } else if failedCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d failed", comment: "channel subscriber relay bar"), connectedCount, total, failedCount))
+                    } else if removedCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d removed", comment: "channel subscriber relay bar"), connectedCount, total, removedCount))
+                    } else {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, total))
+                    }
+                }
+            }
+            if relayListExpanded {
+                if allBroken {
+                    Text("Waiting for channel owner to add relays.")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.leading, 12)
+                        .padding(.trailing)
+                        .padding(.bottom, 4)
+                }
+                if relayMembers.isEmpty {
+                    ForEach(hostnames, id: \.self) { relay in
+                        relayBarDetailRow {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(relay)))
+                                .foregroundColor(theme.colors.secondary)
+                            Spacer()
+                        }
+                    }
+                } else {
+                    ForEach(relayMembers) { member in
+                        let m = member.wrapped
+                        let host = m.relayLink.map { hostFromRelayLink($0) }
+                        let failedErr = m.activeConn?.connFailedErr
+                        if let err = failedErr {
+                            Button {
+                                showAlert(
+                                    NSLocalizedString("Relay connection failed", comment: "alert title"),
+                                    message: err
+                                )
+                            } label: {
+                                subscriberRelayDetailRow(m, host: host, connFailed: true)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            subscriberRelayDetailRow(m, host: host, connFailed: false)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.bottom, relayListExpanded ? 4 : 0)
+        .animation(nil, value: relayListExpanded)
+    }
+
+    private func subscriberRelayDetailRow(_ m: GroupMember, host: String?, connFailed: Bool) -> some View {
+        relayBarDetailRow {
+            Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), host ?? m.chatViewName))
+                .foregroundColor(theme.colors.secondary)
+            Spacer()
+            let status = relayConnStatus(m)
+            Circle()
+                .fill(status.color)
+                .frame(width: 8, height: 8)
+            Text(status.text)
+                .foregroundColor(theme.colors.secondary)
+            if connFailed {
+                Image(systemName: "exclamationmark.circle")
+                    .foregroundColor(.accentColor)
+            }
+        }
+    }
+
+    private func relayBarHeader<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        Button {
+            withAnimation(nil) { relayListExpanded.toggle() }
+        } label: {
+            HStack(spacing: 8) {
+                content()
+                Spacer()
+                Image(systemName: relayListExpanded ? "chevron.down" : "chevron.up")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(theme.colors.secondary)
+                    .opacity(0.7)
+            }
+            .font(.callout)
+            .foregroundColor(theme.colors.secondary)
+            .padding(.top, 8)
+            .padding(.bottom, relayListExpanded ? 4 : 8)
+            .padding(.leading, 12)
+            .padding(.trailing)
+        }
+    }
+
+    private func relayBarDetailRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack {
+            content()
+        }
+        .font(.caption)
+        .padding(.leading, 12)
+        .padding(.trailing)
+        .padding(.vertical, 2)
+    }
+
+
+    private func relayMemberRemoved(_ status: GroupMemberStatus?) -> Bool {
+        status.map { [.memLeft, .memRemoved, .memGroupDeleted].contains($0) } ?? false
+    }
+
+    private func connectButtonView(_ label: LocalizedStringKey, icon: String, connect: @escaping () -> Void) -> some View {
+        Button(action: connect) {
+            ZStack(alignment: .trailing) {
+                Label(label, systemImage: icon)
+                    .frame(maxWidth: .infinity)
+                if composeState.progressByTimeout && chat.chatInfo.groupInfo?.useRelays != true {
+                    ProgressView()
+                        .padding()
+                }
+            }
+        }
+        .frame(height: 57)
+        .disabled(composeState.inProgress)
+    }
+
+    private func sendContactRequestView(_ disableSendButton: Bool, icon: String, sendRequest: @escaping () -> Void) -> some View {
+        HStack (alignment: .center) {
+            sendMessageView(
+                disableSendButton,
+                placeholder: NSLocalizedString("Add message", comment: "placeholder for sending contact request"),
+                sendToConnect: sendRequest
+            )
+            if composeState.whitespaceOnly {
+                Button(action: sendRequest) {
+                    HStack {
+                        Text("Connect").fontWeight(.medium)
+                        Image(systemName: icon)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .disabled(composeState.inProgress)
+            }
+        }
+        .padding(.horizontal, 12)
+    }
+
+    // Spec: spec/client/compose.md#sendMessageView
+    private func sendMessageView(_ disableSendButton: Bool, placeholder: String? = nil, sendToConnect: (() -> Void)? = nil) -> some View {
+        ZStack(alignment: .leading) {
+            SendMessageView(
+                placeholder: disabledText != nil ? nil : placeholder,
+                composeState: $composeState,
+                selectedRange: $selectedRange,
+                sendMessage: { ttl in
+                    sendMessage(ttl: ttl)
+                    resetLinkPreview()
+                },
+                sendSignedMessage: {
+                    sendMessage(ttl: nil, sign: true)
+                    resetLinkPreview()
+                },
+                sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
+                updateLiveMessage: updateLiveMessage,
+                cancelLiveMessage: {
+                    composeState.liveMessage = nil
+                    chatModel.removeLiveDummy()
+                },
+                sendToConnect: sendToConnect,
+                hideSendButton: chat.chatInfo.nextConnect && chat.chatInfo.contact?.nextSendGrpInv != true && composeState.whitespaceOnly,
+                voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
+                disableSendButton: disableSendButton,
+                showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
+                startVoiceMessageRecording: {
+                    Task {
+                        await startVoiceMessageRecording()
+                    }
+                },
+                finishVoiceMessageRecording: finishVoiceMessageRecording,
+                allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
+                showSign: chat.chatInfo.groupInfo?.useRelays == true,
+                onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
+                keyboardVisible: $keyboardVisible,
+                keyboardHiddenDate: $keyboardHiddenDate,
+                sendButtonColor: chat.chatInfo.incognito
+                ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
+                : theme.colors.primary
+            )
+            .disabled(!chat.chatInfo.sendMsgEnabled)
+
+            if let disabledText {
+                Text(disabledText)
+                    .italic()
+                    .foregroundColor(theme.colors.secondary)
+                    .padding(.horizontal, 12)
+            }
+        }
+    }
+
+    @ViewBuilder private func attachmentAndCommandsButtons() -> some View {
+        let msg = composeState.message.trimmingCharacters(in: .whitespaces)
+        let showAttachment = chat.chatInfo.contact?.profile.peerType != .bot || chat.chatInfo.featureEnabled(.files)
+        let showCommands = chat.chatInfo.useCommands && (!showAttachment || msg.isEmpty || msg.starts(with: "/"))
+        if showCommands {
+            commandsButton()
+        }
+        if showAttachment {
+            attachmentButton()
+                .padding(.trailing, 3)
+                .if(showCommands) { v in v.padding(.leading, 3) }
+        }
+    }
+
+    private func commandsButton() -> some View {
+        Button {
+            showCommandsMenu.toggle()
+        } label: {
+            Text(verbatim: "//")
+                .font(.title3)
+                .italic()
+                .contentShape(Rectangle())
+        }
+        .disabled(!chat.chatInfo.sendMsgEnabled || chat.chatInfo.menuCommands.isEmpty)
+        .frame(width: 25, height: 25)
+        .tint(theme.colors.primary)
+        .padding(.bottom, 2)
+    }
+
+    @ViewBuilder private func attachmentButton() -> some View {
+        let b = Button {
+            showChooseSource = true
+        } label: {
+            Image(systemName: "paperclip")
+                .resizable()
+        }
+            .disabled(composeState.attachmentDisabled || !chat.chatInfo.sendMsgEnabled)
+            .frame(width: 25, height: 25)
+            .tint(theme.colors.primary)
+        if im.secondaryIMFilter == nil,
+           !chat.chatInfo.featureEnabled(.files) {
+            b.disabled(true).onTapGesture {
+                AlertManager.shared.showAlertMsg(
+                    title: "Files and media prohibited!",
+                    message: chat.chatInfo.groupInfo == nil ? nil : "Only group owners can enable files and media."
+                )
+            }
+        } else {
+            b
+        }
+    }
+
+    private func sendMemberContactInvitation() {
+        Task {
+            do {
+                await MainActor.run { hideKeyboard() }
+                if let mc = connectCheckLinkPreview() {
+                    await sending()
+                    let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+                    await MainActor.run {
+                        self.chatModel.updateContact(contact)
+                        clearState()
+                    }
+                } else {
+                    AlertManager.shared.showAlertMsg(title: "Empty message!")
+                }
+            } catch {
+                await MainActor.run { composeState.inProgress = false }
+                logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
+            }
+        }
+    }
+
+    private func sendConnectPreparedContactRequest() {
+        hideKeyboard()
+        let empty = composeState.whitespaceOnly
+        AlertManager.shared.showAlert(Alert(
+            title: Text("Send contact request?"),
+            message: Text("You will be able to send messages **only after your request is accepted**."),
+            primaryButton: .default(
+                Text(empty ? "Send request without message" : "Send request"),
+                action: sendConnectPreparedContact
+            ),
+            secondaryButton:
+                empty
+                ? .cancel(Text("Add message"), action: hideKeyboard)
+                : .cancel()
+        ))
+    }
+
+    private func sendConnectPreparedContact() {
+        Task {
+            await MainActor.run { hideKeyboard() }
+            await sending()
+            let mc = connectCheckLinkPreview()
+            let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+            if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
+                await MainActor.run {
+                    self.chatModel.updateContact(contact)
+                    clearState()
+                }
+            } else {
+                await MainActor.run { composeState.inProgress = false }
+            }
+        }
+    }
+
+    private func connectPreparedGroup() {
+        Task {
+            await MainActor.run { hideKeyboard() }
+            await sending()
+            let mc = connectCheckLinkPreview()
+            let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+            if let (groupInfo, relayResults) = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
+                await MainActor.run {
+                    self.chatModel.updateGroup(groupInfo)
+                    self.chatModel.channelRelayHostnames.removeValue(forKey: groupInfo.groupId)
+                    self.chatModel.groupMembers = relayResults.map { GMember($0.relayMember) }
+                    self.chatModel.populateGroupMembersIndexes()
+                    clearState()
+                }
+            } else {
+                await MainActor.run { composeState.inProgress = false }
+            }
+        }
+    }
+
+    @inline(__always)
+    private func connectCheckLinkPreview() -> MsgContent? {
+        let msgText = composeState.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        return msgText.isEmpty ? nil : checkLinkPreview_(msgText)
+    }
+
+    @inline(__always)
+    private func checkLinkPreview() -> MsgContent {
+        checkLinkPreview_(composeState.message.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private func checkLinkPreview_(_ msgText: String) -> MsgContent {
+        switch (composeState.preview) {
+        case let .linkPreview(linkPreview: linkPreview):
+            if let parsedMsg = parseSimpleXMarkdown(msgText),
+               let url = getMessageLinks(parsedMsg).url,
+               let linkPreview = linkPreview,
+               url == linkPreview.uri {
+                return .link(text: msgText, preview: linkPreview)
+            } else {
+                return .text(msgText)
+            }
+        default:
+            return .text(msgText)
+        }
+    }
+
+    // Spec: spec/client/compose.md#addMediaContent
     private func addMediaContent(_ content: UploadContent) async {
         if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
             var newMedia: [(String, UploadContent?)] = []
@@ -574,10 +1275,16 @@ struct ComposeView: View {
         }
     }
 
-    private var maxFileSize: Int64 {
-        getMaxFileSize(.xftp)
+    // no badge is presented in incognito chats, so it does not raise the limit there
+    private var sendIncognito: Bool {
+        chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
     }
 
+    private var sendProfile: LocalProfile? { sendIncognito ? nil : chatModel.currentUser?.profile }
+
+    private var maxFileSize: Int64 { getMaxFileSize(.xftp, sendProfile) }
+
+    // Spec: spec/client/compose.md#sendLiveMessage
     private func sendLiveMessage() async {
         let typedMsg = composeState.message
         let lm = composeState.liveMessage
@@ -595,6 +1302,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#updateLiveMessage
     private func updateLiveMessage() async {
         let typedMsg = composeState.message
         if let liveMessage = composeState.liveMessage {
@@ -613,6 +1321,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#liveMessageToSend
     private func liveMessageToSend(_ lm: LiveMessage, _ t: String) -> String? {
         let s = t != lm.typedMsg ? truncateToWords(t) : t
         return s != lm.sentMsg && (lm.sentMsg != nil || !s.isEmpty) ? s : nil
@@ -640,6 +1349,15 @@ struct ComposeView: View {
             ComposeLinkView(
                 linkPreview: preview,
                 cancelPreview: cancelLinkPreview,
+                cancelEnabled: !composeState.inProgress
+            )
+            Divider()
+        case let .chatLinkPreview(chatLink, _):
+            ComposeChatLinkView(
+                chatLink: chatLink,
+                cancelPreview: {
+                    composeState = composeState.copy(preview: .noPreview)
+                },
                 cancelEnabled: !composeState.inProgress
             )
             Divider()
@@ -687,6 +1405,38 @@ struct ComposeView: View {
         .background(.thinMaterial)
     }
 
+    private func contextSendMessageToConnect(_ s: LocalizedStringKey) -> some View {
+        HStack {
+            Image(systemName: "message")
+                .foregroundColor(theme.colors.secondary)
+            Text(s)
+        }
+        .padding(12)
+        .frame(minHeight: 54)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(ToolbarMaterial.material(toolbarMaterial))
+    }
+
+    private func reportReasonView(_ reason: ReportReason) -> some View {
+        let reportText = switch reason {
+        case .spam: NSLocalizedString("Report spam: only group moderators will see it.", comment: "report reason")
+        case .profile: NSLocalizedString("Report member profile: only group moderators will see it.", comment: "report reason")
+        case .community: NSLocalizedString("Report violation: only group moderators will see it.", comment: "report reason")
+        case .illegal: NSLocalizedString("Report content: only group moderators will see it.", comment: "report reason")
+        case .other: NSLocalizedString("Report other: only group moderators will see it.", comment: "report reason")
+        case .unknown: "" // Should never happen
+        }
+
+        return Text(reportText)
+            .italic()
+            .font(.caption)
+            .padding(12)
+            .frame(minHeight: 44)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+    }
+
+
     @ViewBuilder private func contextItemView() -> some View {
         switch composeState.contextItem {
         case .noContextItem:
@@ -715,37 +1465,49 @@ struct ComposeView: View {
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
             Divider()
+        case let .reportedItem(chatItem: reportedItem, _):
+            ContextItemView(
+                chat: chat,
+                contextItems: [reportedItem],
+                contextIcon: "flag",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
+                contextIconForeground: Color.red
+            )
+            Divider()
         }
     }
 
-    private func sendMessage(ttl: Int?) {
+    // Spec: spec/client/compose.md#sendMessage
+    private func sendMessage(ttl: Int?, sign: Bool = false) {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            _ = await sendMessageAsync(nil, live: false, ttl: ttl)
+            _ = await sendMessageAsync(nil, live: false, ttl: ttl, sign: sign)
         }
     }
 
-    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?) async -> ChatItem? {
+    // Spec: spec/client/compose.md#sendMessageAsync
+    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?, sign: Bool = false) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
+        let mentions = composeState.memberMentions
         if !live {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
         }
-        if chat.chatInfo.contact?.nextSendGrpInv ?? false {
-            await sendMemberContactInvitation()
-        } else if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
+        if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
-                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
+                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions, sign: sign)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
+        } else if case let .reportedItem(chatItem, reason) = composeState.contextItem {
+            sent = await send(reason, chatItemId: chatItem.id)
         } else {
             var quoted: Int64? = nil
             if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
@@ -754,10 +1516,15 @@ struct ComposeView: View {
 
             switch (composeState.preview) {
             case .noPreview:
-                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
+                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
+            case let .chatLinkPreview(chatLink, ownerSig):
+                let linkStr = chatLink.connLinkStr
+                let text = msgText.isEmpty ? linkStr : msgText + "\n" + linkStr
+                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case let .mediaPreviews(media):
+                // TODO: CHECK THIS
                 let last = media.count - 1
                 var msgs: [ComposedMessage] = []
                 if last >= 0 {
@@ -777,15 +1544,15 @@ struct ComposeView: View {
                 if msgs.isEmpty {
                     msgs = [ComposedMessage(quotedItemId: quoted, msgContent: .text(msgText))]
                 }
-                sent = await send(msgs, live: live, ttl: ttl).last
+                sent = await send(msgs, live: live, ttl: ttl, sign: sign).last
 
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 let file = voiceCryptoFile(recordingFileName)
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions, sign: sign)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
-                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions, sign: sign)
                 }
             }
         }
@@ -793,7 +1560,7 @@ struct ComposeView: View {
             let wasForwarding = composeState.forwarding
             clearState(live: live)
             if wasForwarding,
-               chatModel.draftChatId == chat.chatInfo.id,
+               chatModel.draftChatId == draftChatId(chat.chatInfo.id, chat.chatInfo.groupChatScope()),
                let draft = chatModel.draft {
                 composeState = draft
             }
@@ -813,23 +1580,6 @@ struct ComposeView: View {
                 nil
             }
         }
-        
-        func sending() async {
-            await MainActor.run { composeState.inProgress = true }
-        }
-
-        func sendMemberContactInvitation() async {
-            do {
-                let mc = checkLinkPreview()
-                let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
-                await MainActor.run {
-                    self.chatModel.updateContact(contact)
-                }
-            } catch {
-                logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
-                AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
-            }
-        }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
             if let oldMsgContent = ei.content.msgContent {
@@ -839,8 +1589,9 @@ struct ComposeView: View {
                         let chatItem = try await apiUpdateChatItem(
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
+                            scope: chat.chatInfo.groupChatScope(),
                             itemId: ei.id,
-                            msg: mc,
+                            updatedMessage: UpdatedMessage(msgContent: mc, mentions: composeState.memberMentions),
                             live: live
                         )
                         await MainActor.run {
@@ -872,6 +1623,11 @@ struct ComposeView: View {
                 return .voice(text: msgText, duration: duration)
             case .file:
                 return .file(msgText)
+            case .report(_, let reason):
+                return .report(text: msgText, reason: reason)
+            case let .chat(_, chatLink, ownerSig):
+                let text = msgText.isEmpty ? chatLink.connLinkStr : msgText + "\n" + chatLink.connLinkStr
+                return .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }
@@ -892,22 +1648,64 @@ struct ComposeView: View {
             }
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
+        func send(_ reportReason: ReportReason, chatItemId: Int64) async -> ChatItem? {
+            if let chatItems = await apiReportMessage(
+                groupId: chat.chatInfo.apiId,
+                chatItemId: chatItemId,
+                reportReason: reportReason,
+                reportText: msgText
+            ) {
+                if showReportsInSupportChatAlertDefault.get() {
+                    await MainActor.run {
+                        showReportsInSupportChatAlert()
+                    }
+                }
+                return chatItems.first
+            }
+
+            return nil
+        }
+
+        func showReportsInSupportChatAlert() {
+            showAlert(
+                NSLocalizedString("Report sent to moderators", comment: "alert title"),
+                message: NSLocalizedString("You can view your reports in Chat with admins.", comment: "alert message"),
+                actions: {[
+                    UIAlertAction(
+                        title: NSLocalizedString("Don't show again", comment: "alert action"),
+                        style: .default,
+                        handler: { _ in
+                            showReportsInSupportChatAlertDefault.set(false)
+                        }
+                    ),
+                    UIAlertAction(
+                        title: NSLocalizedString("Ok", comment: "alert action"),
+                        style: .default
+                    )
+                ]}
+            )
+        }
+
+        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64], sign: Bool = false) async -> ChatItem? {
             await send(
-                [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)],
+                [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc, mentions: mentions)],
                 live: live,
-                ttl: ttl
+                ttl: ttl,
+                sign: sign
             ).first
         }
 
-        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] {
+        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?, sign: Bool = false) async -> [ChatItem] {
             if let chatItems = chat.chatInfo.chatType == .local
                 ? await apiCreateChatItems(noteFolderId: chat.chatInfo.apiId, composedMessages: msgs)
                 : await apiSendMessages(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
+                    scope: chat.chatInfo.groupChatScope(),
+                    sendAsGroup: chat.chatInfo.sendAsGroup,
                     live: live,
                     ttl: ttl,
+                    sign: sign,
                     composedMessages: msgs
                 ) {
                 await MainActor.run {
@@ -930,8 +1728,11 @@ struct ComposeView: View {
             if let chatItems = await apiForwardChatItems(
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
+                toScope: chat.chatInfo.groupChatScope(),
+                sendAsGroup: chat.chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false,
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
+                fromScope: fromChatInfo.groupChatScope(),
                 itemIds: forwardedItems.map { $0.id },
                 ttl: ttl
             ) {
@@ -954,23 +1755,13 @@ struct ComposeView: View {
                 return []
             }
         }
-
-        func checkLinkPreview() -> MsgContent {
-            switch (composeState.preview) {
-            case let .linkPreview(linkPreview: linkPreview):
-                if let url = parseMessage(msgText).url,
-                   let linkPreview = linkPreview,
-                   url == linkPreview.uri {
-                    return .link(text: msgText, preview: linkPreview)
-                } else {
-                    return .text(msgText)
-                }
-            default:
-                return .text(msgText)
-            }
-        }
     }
 
+    func sending() async {
+        await MainActor.run { composeState.inProgress = true }
+    }
+
+    // Spec: spec/client/compose.md#startVoiceMessageRecording
     private func startVoiceMessageRecording() async {
         startingRecording = true
         let fileName = generateNewFileName("voice", "m4a")
@@ -1011,6 +1802,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#finishVoiceMessageRecording
     private func finishVoiceMessageRecording() {
         audioRecorder?.stop()
         audioRecorder = nil
@@ -1021,6 +1813,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#allowVoiceMessagesToContact
     private func allowVoiceMessagesToContact() {
         if case let .direct(contact) = chat.chatInfo {
             allowFeatureToContact(contact, .voice)
@@ -1046,12 +1839,14 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#cancelVoiceMessageRecording
     private func cancelVoiceMessageRecording(_ fileName: String) {
         stopPlayback.toggle()
         audioRecorder?.stop()
         removeFile(fileName)
     }
 
+    // Spec: spec/client/compose.md#clearState
     private func clearState(live: Bool = false) {
         if live {
             composeState.inProgress = false
@@ -1065,21 +1860,24 @@ struct ComposeView: View {
         startingRecording = false
     }
 
+    // Spec: spec/client/compose.md#saveCurrentDraft
     private func saveCurrentDraft() {
         chatModel.draft = composeState
-        chatModel.draftChatId = chat.id
+        chatModel.draftChatId = draftChatId(chat.id, chat.chatInfo.groupChatScope())
     }
 
+    // Spec: spec/client/compose.md#clearCurrentDraft
     private func clearCurrentDraft() {
-        if chatModel.draftChatId == chat.id {
+        if chatModel.draftChatId == draftChatId(chat.id, chat.chatInfo.groupChatScope()) {
             chatModel.draft = nil
             chatModel.draftChatId = nil
         }
     }
 
-    private func showLinkPreview(_ s: String) {
+    // Spec: spec/client/compose.md#showLinkPreview
+    private func showLinkPreview(_ parsedMsg: [FormattedText]?) {
         prevLinkUrl = linkUrl
-        (linkUrl, hasSimplexLink) = parseMessage(s)
+        (linkUrl, hasSimplexLink) = getMessageLinks(parsedMsg)
         if let url = linkUrl {
             if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
@@ -1096,45 +1894,83 @@ struct ComposeView: View {
         }
     }
 
-    private func parseMessage(_ msg: String) -> (url: URL?, hasSimplexLink: Bool) {
-        guard let parsedMsg = parseSimpleXMarkdown(msg) else { return (nil, false) }
-        let url: URL? = if let uri = parsedMsg.first(where: { ft in
-            ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
-        }) {
-            URL(string: uri.text)
-        } else {
-            nil
-        }
+    // Spec: spec/client/compose.md#getMessageLinks
+    private func getMessageLinks(_ parsedMsg: [FormattedText]?) -> (url: String?, hasSimplexLink: Bool) {
+        guard let parsedMsg else { return (nil, false) }
         let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
-        return (url, simplexLink)
+        for ft in parsedMsg {
+            if let link = ft.linkUri, !cancelledLinks.contains(link) && !isSimplexLink(link) {
+                return (link, simplexLink)
+            }
+        }
+        return (nil, simplexLink)
     }
 
     private func isSimplexLink(_ link: String) -> Bool {
-        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat")
+        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex:/")
     }
 
     private func cancelLinkPreview() {
-        if let pendingLink = pendingLinkUrl?.absoluteString {
+        if let pendingLink = pendingLinkUrl {
             cancelledLinks.insert(pendingLink)
         }
-        if let uri = composeState.linkPreview?.uri.absoluteString {
+        if let uri = composeState.linkPreview?.uri {
             cancelledLinks.insert(uri)
         }
         pendingLinkUrl = nil
         composeState = composeState.copy(preview: .noPreview)
     }
 
-    private func loadLinkPreview(_ url: URL) {
-        if pendingLinkUrl == url {
-            composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))
-            getLinkPreview(url: url) { linkPreview in
-                if let linkPreview = linkPreview,
-                   pendingLinkUrl == url {
-                    composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
-                    pendingLinkUrl = nil
+    // Spec: spec/client/compose.md#loadLinkPreview
+    private func loadLinkPreview(_ urlStr: String) {
+        if pendingLinkUrl == urlStr, let url = URL(string: urlStr) {
+            if linkPreviewsShowAlert {
+                showLinkPreviewsConfirmAlert { enable in
+                    if let enable {
+                        linkPreviewsShowAlert = false
+                        useLinkPreviews = enable
+                        UserDefaults.standard.set(enable, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+                        if enable {
+                            fetchLinkPreview(url, urlStr: urlStr)
+                        } else {
+                            pendingLinkUrl = nil
+                            composeState = composeState.copy(preview: .noPreview)
+                        }
+                    } else {
+                        cancelLinkPreview()
+                    }
+                }
+                return
+            }
+            fetchLinkPreview(url, urlStr: urlStr)
+        }
+    }
+
+    private func fetchLinkPreview(_ url: URL, urlStr: String) {
+        composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))
+        getLinkPreview(url: url) { linkPreview in
+            if let linkPreview, pendingLinkUrl == urlStr {
+                composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    composeState = composeState.copy(preview: .noPreview)
                 }
             }
+            pendingLinkUrl = nil
         }
+    }
+
+    private func showLinkPreviewsConfirmAlert(onChoice: @escaping (Bool?) -> Void) {
+        showAlert(
+            NSLocalizedString("Enable link previews?", comment: "alert title"),
+            message: NSLocalizedString("Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.", comment: "alert message"),
+            actions: {
+                [
+                    UIAlertAction(title: NSLocalizedString("Disable", comment: "alert button"), style: .destructive) { _ in onChoice(false) },
+                    UIAlertAction(title: NSLocalizedString("Enable", comment: "alert button"), style: .default) { _ in onChoice(true) }
+                ]
+            }
+        )
     }
 
     private func resetLinkPreview() {
@@ -1145,24 +1981,31 @@ struct ComposeView: View {
     }
 }
 
-struct ComposeView_Previews: PreviewProvider {
-    static var previews: some View {
-        let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
-        @State var composeState = ComposeState(message: "hello")
-
-        return Group {
-            ComposeView(
-                chat: chat,
-                composeState: $composeState,
-                keyboardVisible: Binding.constant(true)
-            )
-            .environmentObject(ChatModel())
-            ComposeView(
-                chat: chat,
-                composeState: $composeState,
-                keyboardVisible: Binding.constant(true)
-            )
-            .environmentObject(ChatModel())
+func sanitizeMessage(_ parsedMsg: [FormattedText]) -> (message: String, parsedMsg: [FormattedText], sanitizedPos: Int?) {
+    var pos: Int = 0
+    var updatedMsg = ""
+    var sanitizedPos: Int? = nil
+    let updatedParsedMsg = parsedMsg.map { ft in
+        var updated = ft
+        switch ft.format {
+        case .uri:
+            if let sanitized = parseSanitizeUri(ft.text, safe: true)?.uriInfo?.sanitized {
+                updated = FormattedText(text: sanitized, format: .uri)
+                pos += updated.text.count
+                sanitizedPos = pos
+            }
+        case let .hyperLink(text, uri):
+            if let sanitized = parseSanitizeUri(uri, safe: true)?.uriInfo?.sanitized {
+                let updatedText = if let text { "[\(text)](\(sanitized))" } else { sanitized }
+                updated = FormattedText(text: updatedText, format: .hyperLink(showText: text, linkUri: sanitized))
+                pos += updated.text.count
+                sanitizedPos = pos
+            }
+        default:
+            pos += ft.text.count
         }
+        updatedMsg += updated.text
+        return updated
     }
+    return (message: updatedMsg, parsedMsg: updatedParsedMsg, sanitizedPos: sanitizedPos)
 }

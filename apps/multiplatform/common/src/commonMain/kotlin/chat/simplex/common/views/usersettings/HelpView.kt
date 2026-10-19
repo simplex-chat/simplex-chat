@@ -12,7 +12,7 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chatlist.ChatHelpView
 import chat.simplex.common.views.helpers.AppBarTitle
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun HelpView(userDisplayName: String) {
@@ -21,11 +21,7 @@ fun HelpView(userDisplayName: String) {
 
 @Composable
 fun HelpLayout(userDisplayName: String) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING),
-  ){
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)){
     AppBarTitle(String.format(stringResource(MR.strings.personal_welcome), userDisplayName), withPadding = false)
     ChatHelpView()
   }

@@ -5,7 +5,6 @@ import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewWithoutMinPadding
-import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -25,14 +24,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
+import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.*
 
 @Composable
 fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
@@ -54,14 +54,27 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
         GroupPreferencesView(chatModel, rhId, groupInfo.id, close)
       }
     },
+    openMemberAdmission = {
+      ModalManager.end.showCustomModal { close ->
+        MemberAdmissionView(
+          chat.simplex.common.platform.chatModel,
+          rhId,
+          groupInfo.id,
+          close
+        )
+      }
+    },
     inviteMembers = {
       allowModifyMembers = false
       withLongRunningApi(slow = 120_000) {
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
-            withChats {
-              upsertGroupMember(rhId, groupInfo, member)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, member)
+            }
+            withContext(Dispatchers.Main) {
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, member)
             }
           } else {
             break
@@ -82,15 +95,16 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
 
 fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
   val s = search.trim().lowercase()
-  val memberContactIds = chatModel.groupMembers
+  val memberContactIds = chatModel.groupMembers.value
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
   return chatModel.chats.value
     .asSequence()
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
+    .filter { it.sendMsgEnabled }
     .map { it.contact }
-    .filter { c -> c.sendMsgEnabled && !c.nextSendGrpInv && c.contactId !in memberContactIds && c.anyNameContains(s)
+    .filter { c -> !c.sendMsgToConnect && c.contactId !in memberContactIds && c.anyNameContains(s)
     }
     .sortedBy { it.displayName.lowercase() }
     .toList()
@@ -106,6 +120,7 @@ fun AddGroupMembersLayout(
   allowModifyMembers: Boolean,
   searchText: MutableState<TextFieldValue>,
   openPreferences: () -> Unit,
+  openMemberAdmission: () -> Unit,
   inviteMembers: () -> Unit,
   clearSelection: () -> Unit,
   addContact: (Long) -> Unit,
@@ -126,14 +141,12 @@ fun AddGroupMembersLayout(
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
-      Text(generalGetString(MR.strings.group_main_profile_sent), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2)
+      val textId = if (groupInfo.businessChat == null) MR.strings.group_main_profile_sent else MR.strings.chat_main_profile_sent
+      Text(generalGetString(textId), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2)
     }
   }
 
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.button_add_members))
     profileText()
     Spacer(Modifier.size(DEFAULT_PADDING))
@@ -142,12 +155,12 @@ fun AddGroupMembersLayout(
       horizontalArrangement = Arrangement.Center
     ) {
       ChatInfoToolbarTitle(
-        ChatInfo.Group(groupInfo),
+        ChatInfo.Group(groupInfo, groupChatScope = null),
         imageSize = 60.dp,
         iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight
       )
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (contactsToAdd.isEmpty() && searchText.value.text.isEmpty()) {
       Row(
@@ -163,6 +176,9 @@ fun AddGroupMembersLayout(
     } else {
       SectionView {
         if (creatingGroup) {
+          SectionItemView(openMemberAdmission) {
+            Text(stringResource(MR.strings.set_member_admission))
+          }
           SectionItemView(openPreferences) {
             Text(stringResource(MR.strings.set_group_preferences))
           }
@@ -171,14 +187,15 @@ fun AddGroupMembersLayout(
         if (creatingGroup && selectedContacts.isEmpty()) {
           SkipInvitingButton(close)
         } else {
-          InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
+          val titleId = if (groupInfo.businessChat == null) MR.strings.invite_to_group_button else MR.strings.invite_to_chat_button
+          InviteMembersButton(titleId, inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
         }
       }
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
-      SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.select_contacts).uppercase()) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.select_contacts)) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
         }
@@ -209,9 +226,9 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = GroupMemberRole.values()
-      .filter { it <= groupInfo.membership.memberRole && it != GroupMemberRole.Author }
-      .map { it to it.text }
+    val values = GroupMemberRole.selectableRoles
+      .filter { it <= groupInfo.membership.memberRole }
+      .map { it to it.text(isChannel = groupInfo.isChannel) }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.new_member_role),
       values,
@@ -223,10 +240,10 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
 }
 
 @Composable
-fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
+fun InviteMembersButton(titleId: StringResource, onClick: () -> Unit, disabled: Boolean) {
   SettingsActionItem(
     painterResource(MR.images.ic_check),
-    stringResource(MR.strings.invite_to_group_button),
+    stringResource(titleId),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
@@ -336,9 +353,10 @@ fun ContactCheckRow(
   ) {
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-    Text(
+    NameWithBadge(
       contact.chatViewName,
-      modifier = Modifier.weight(10f, fill = true),
+      if (contact.active) contact.profile.localBadge else null,
+      Modifier.weight(10f, fill = true),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
       color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
@@ -373,6 +391,7 @@ fun PreviewAddGroupMembersLayout() {
       allowModifyMembers = true,
       searchText = remember { mutableStateOf(TextFieldValue("")) },
       openPreferences = {},
+      openMemberAdmission = {},
       inviteMembers = {},
       clearSelection = {},
       addContact = {},

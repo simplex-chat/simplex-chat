@@ -12,6 +12,7 @@ import SimpleXChat
 struct ChatInfoToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var m: ChatModel
     @ObservedObject var chat: Chat
     var imageSize: CGFloat = 32
 
@@ -22,14 +23,31 @@ struct ChatInfoToolbar: View {
                 Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
                 Spacer().frame(width: 16)
             }
-            ChatInfoImage(
-                chat: chat,
-                size: imageSize,
-                color: Color(uiColor: .tertiaryLabel)
-            )
+            ZStack(alignment: .bottomTrailing) {
+                ChatInfoImage(
+                    chat: chat,
+                    size: imageSize,
+                    color: Color(uiColor: .tertiaryLabel)
+                )
+                if chat.chatStats.reportsCount > 0 {
+                    Image(systemName: "flag.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .red)
+                } else if chat.supportUnreadCount > 0 {
+                    Image(systemName: "flag.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, theme.colors.primary)
+                }
+            }
             .padding(.trailing, 4)
             let t = Text(cInfo.displayName).font(.headline)
-            (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
+            NameWithBadge((cInfo.contact?.verified == true ? contactVerifiedShield + t : t), cInfo.nameBadge, .headline)
                 .lineLimit(1)
                 .if (cInfo.fullName != "" && cInfo.displayName != cInfo.fullName) { v in
                     VStack(spacing: 0) {
@@ -39,18 +57,87 @@ struct ChatInfoToolbar: View {
                             .padding(.top, -2)
                     }
                 }
+                .if (channelSubscriberCount != nil) { v in
+                    VStack(spacing: 0) {
+                        v
+                        if let count = channelSubscriberCount {
+                            Text(subscriberCountStr(count))
+                                .font(.caption)
+                                .foregroundColor(theme.colors.secondary)
+                                .lineLimit(1)
+                                .padding(.top, -2)
+                        }
+                    }
+                }
+            if let contact = chat.chatInfo.contact,
+               contact.ready && contact.active,
+               let chatSubStatus = m.chatSubStatus,
+               chatSubStatus != .active {
+                SubStatusView(status: chatSubStatus)
+                    .padding(.leading, 4)
+            }
         }
         .foregroundColor(theme.colors.onBackground)
         .frame(width: 220)
     }
 
+    private var channelSubscriberCount: Int64? {
+        if case let .group(groupInfo, _) = chat.chatInfo,
+           groupInfo.useRelays,
+           let count = groupInfo.groupSummary.publicMemberCount,
+           count > 0 {
+            count
+        } else {
+            nil
+        }
+    }
+
     private var contactVerifiedShield: Text {
-        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+        (Text(Image(systemName: "checkmark.shield")) + textSpace)
             .font(.caption)
             .foregroundColor(theme.colors.secondary)
             .baselineOffset(1)
             .kerning(-2)
     }
+
+    struct SubStatusView: View {
+        @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+        @EnvironmentObject var theme: AppTheme
+        var status: SubscriptionStatus
+
+        var body: some View {
+            switch status {
+            case .active: EmptyView()
+            case .pending: ProgressView()
+            case .removed: subStatusError()
+            case .noSub: subStatusError()
+            }
+        }
+
+        @ViewBuilder private func subStatusError() -> some View {
+            let dynamicChatInfoSize = dynamicSize(userFont).chatInfoSize
+            Image(systemName: "exclamationmark.circle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
+                .foregroundColor(theme.colors.secondary)
+        }
+    }
+}
+
+public func subscriberCountStr(_ count: Int64) -> String {
+    count == 1
+        ? String.localizedStringWithFormat(NSLocalizedString("%d subscriber", comment: "channel subscriber count"), count)
+        : String.localizedStringWithFormat(NSLocalizedString("%d subscribers", comment: "channel subscriber count"), count)
+}
+
+public func ownersContributorsCountStr(_ count: Int, withContributors: Bool) -> String {
+    if withContributors {
+        return String.localizedStringWithFormat(NSLocalizedString("%d owners & contributors", comment: "channel members count"), count)
+    }
+    return count == 1
+        ? String.localizedStringWithFormat(NSLocalizedString("%d owner", comment: "channel owners count"), count)
+        : String.localizedStringWithFormat(NSLocalizedString("%d owners", comment: "channel owners count"), count)
 }
 
 struct ChatInfoToolbar_Previews: PreviewProvider {

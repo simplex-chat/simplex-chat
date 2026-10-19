@@ -10,6 +10,8 @@ import android.os.*
 import android.os.SystemClock
 import android.provider.Settings
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -27,7 +29,7 @@ import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlin.system.exitProcess
@@ -110,7 +112,7 @@ class SimplexService: Service() {
     val title = generalGetString(MR.strings.simplex_service_notification_title)
     val text = generalGetString(MR.strings.simplex_service_notification_text)
     notificationManager = createNotificationChannel()
-    val newNtf = createNotification(title, text)
+    val newNtf = createServiceNotification(title, text)
     serviceNotification = newNtf
     return newNtf
   }
@@ -137,15 +139,23 @@ class SimplexService: Service() {
         if (chatDbStatus != DBMigrationResult.OK) {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
           showPassphraseNotification(chatDbStatus)
+          androidAppContext.getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
           safeStopService()
           return@withLongRunningApi
         }
         saveServiceState(self, ServiceState.STARTED)
-        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
-            acquire()
-          }
-        }
+// Permanent wakelock prevents deep sleep and results in high battery usage.
+// Instead, the app relies on being whitelisted for unrestricted battery usage,
+// and also takes wakelock on network events and on network information changes, which allows it to reconnect.
+// Network events and information changes are delivered even when device is in deep sleep.
+// Possibly, we may need to additionally use "alarms" to wake the app periodically,
+// but in all pre-release tests the app was reliably delivering messages in deep sleep, even restored dropped connections.
+//
+//        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+//          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+//            acquire()
+//          }
+//        }
       } finally {
         isCheckingNewMessages = false
       }
@@ -165,7 +175,7 @@ class SimplexService: Service() {
     return null
   }
 
-  private fun createNotification(title: String, text: String): Notification {
+  private fun createServiceNotification(title: String, text: String): Notification {
     val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let { notificationIntent ->
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
@@ -178,6 +188,7 @@ class SimplexService: Service() {
       .setContentIntent(pendingIntent)
       .setSilent(true)
       .setShowWhen(false) // no date/time
+      .setOngoing(true) // Starting SDK 33 / Android 13, foreground notifications can be swiped away
 
     // Shows a button which opens notification channel settings
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -243,6 +254,29 @@ class SimplexService: Service() {
     override fun onReceive(context: Context, intent: Intent) {
       Log.d(TAG, "AutoRestartReceiver: onReceive called")
       scheduleStart(context)
+    }
+  }
+
+  // restart on app update
+  class AppUpdateReceiver: BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+      // If notification service is enabled and battery optimization is disabled, restart the service on app update
+      if (SimplexApp.context.allowToStartServiceAfterAppExit()) {
+        Log.d(TAG, "AppUpdateReceiver: onReceive called")
+        scheduleStart(context)
+      }
+    }
+
+    companion object {
+      fun toggleReceiver(enable: Boolean) {
+        Log.d(TAG, "AppUpdateReceiver: toggleReceiver enabled: $enable")
+        val component = ComponentName(BuildConfig.APPLICATION_ID, AppUpdateReceiver::class.java.name)
+        SimplexApp.context.packageManager.setComponentEnabledSetting(
+          component,
+          if (enable) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+          PackageManager.DONT_KILL_APP
+        )
+      }
     }
   }
 
@@ -462,50 +496,70 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
-    private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode, showOffAlert: Boolean) = AlertManager.shared.showAlert {
-      val ignoreOptimization = {
-        AlertManager.shared.hideAlert()
-        askAboutIgnoringBatteryOptimization()
+    private var showingIgnoreNotification = false
+    private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode, showOffAlert: Boolean) {
+      // that's workaround for situation when the app receives onPause/onResume events multiple times
+      // (for example, after showing system alert for enabling notifications) which triggers showing that alert multiple times
+      if (showingIgnoreNotification) {
+        return
       }
-      val disableNotifications = {
-        AlertManager.shared.hideAlert()
-        disableNotifications(mode, showOffAlert)
-      }
-      AlertDialog(
-        onDismissRequest = disableNotifications,
-        title = {
-          Row {
-            Icon(
-              painterResource(MR.images.ic_bolt),
-              contentDescription =
-              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
-            )
-            Text(
-              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications) else stringResource(MR.strings.periodic_notifications),
-              fontWeight = FontWeight.Bold
-            )
-          }
-        },
-        text = {
-          Column {
-            Text(
-              if (mode == NotificationsMode.SERVICE) annotatedStringResource(MR.strings.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(MR.strings.periodic_notifications_desc),
-              Modifier.padding(bottom = 8.dp)
-            )
-            Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
-          }
-        },
-        dismissButton = {
-          TextButton(onClick = disableNotifications) { Text(stringResource(MR.strings.disable_notifications_button), color = MaterialTheme.colors.error) }
-        },
-        confirmButton = {
-          TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.turn_off_battery_optimization_button)) }
+      showingIgnoreNotification = true
+      AlertManager.shared.showAlert {
+        val ignoreOptimization = {
+          AlertManager.shared.hideAlert()
+          showingIgnoreNotification = false
+          askAboutIgnoringBatteryOptimization()
         }
-      )
+        val disableNotifications = {
+          AlertManager.shared.hideAlert()
+          showingIgnoreNotification = false
+          disableNotifications(mode, showOffAlert)
+        }
+        AlertDialog(
+          onDismissRequest = disableNotifications,
+          title = {
+            Row {
+              Icon(
+                painterResource(MR.images.ic_bolt),
+                contentDescription =
+                  if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
+              )
+              Text(
+                if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications) else stringResource(MR.strings.periodic_notifications),
+                fontWeight = FontWeight.Bold
+              )
+            }
+          },
+          text = {
+            Column {
+              Text(
+                if (mode == NotificationsMode.SERVICE) annotatedStringResource(MR.strings.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(MR.strings.periodic_notifications_desc),
+                Modifier.padding(bottom = 8.dp)
+              )
+              Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
+
+              if (platform.androidIsXiaomiDevice() && (mode == NotificationsMode.PERIODIC || mode == NotificationsMode.SERVICE)) {
+                Text(
+                  annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization),
+                  Modifier.padding(top = 8.dp)
+                )
+              }
+            }
+          },
+          dismissButton = {
+            TextButton(onClick = disableNotifications) { Text(stringResource(MR.strings.disable_notifications_button), color = MaterialTheme.colors.error) }
+          },
+          confirmButton = {
+            TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.turn_off_battery_optimization_button)) }
+          },
+          shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        )
+      }
     }
 
     private fun showBGServiceNoticeSystemRestricted(mode: NotificationsMode, showOffAlert: Boolean) = AlertManager.shared.showAlert {
@@ -546,7 +600,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
@@ -573,7 +628,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
       val scope = rememberCoroutineScope()
       DisposableEffect(Unit) {
@@ -617,13 +673,14 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
     fun isBackgroundAllowed(): Boolean = isIgnoringBatteryOptimizations() && !isBackgroundRestricted()
 
-    fun isIgnoringBatteryOptimizations(): Boolean {
+    private fun isIgnoringBatteryOptimizations(): Boolean {
       val powerManager = androidAppContext.getSystemService(Application.POWER_SERVICE) as PowerManager
       return powerManager.isIgnoringBatteryOptimizations(androidAppContext.packageName)
     }
@@ -668,6 +725,8 @@ class SimplexService: Service() {
       }
       ChatController.appPrefs.notificationsMode.set(NotificationsMode.OFF)
       StartReceiver.toggleReceiver(false)
+      AppUpdateReceiver.toggleReceiver(false)
+      androidAppContext.getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       MessagesFetcherWorker.cancelAll()
       safeStopService()
     }

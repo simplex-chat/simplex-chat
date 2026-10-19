@@ -1,0 +1,363 @@
+# Chat List Specification
+
+Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt`
+
+---
+
+## Table of Contents
+
+1. [Overview](#1-overview)
+2. [ChatListView Composable](#2-chatlistview-composable)
+3. [Data Sources](#3-data-sources)
+4. [Filter System](#4-filter-system)
+5. [Chat Preview](#5-chat-preview)
+6. [ChatListNavLinkView](#6-chatlistnavlinkview)
+7. [Tag System](#7-tag-system)
+8. [UserPicker](#8-userpicker)
+9. [Source Files](#9-source-files)
+10. [Crowdfunding Banner](#10-crowdfunding-banner)
+
+---
+
+## Executive Summary
+
+The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 179 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
+
+---
+
+## 1. Overview
+
+```
+ChatListView
+|-- ChatListToolbar               (top or bottom app bar)
+|   |-- UserProfileButton         (opens UserPicker)
+|   |-- Title ("Your chats")
+|   |-- SubscriptionStatusIndicator
+|   +-- NewChatButton / StoppedIndicator
+|-- ChatListWithLoadingScreen
+|   |-- ChatList (LazyColumnWithScrollBar)
+|   |   |-- Spacer (top/bottom padding)
+|   |   |-- stickyHeader
+|   |   |   |-- ChatListSearchBar (search input + filter toggle)
+|   |   |   +-- TagsView          (preset + custom tag chips)
+|   |   |-- ChatListNavLinkView[] (per-chat row items)
+|   |   +-- ChatListFeatureCards  (one-hand UI card, address card)
+|   +-- EmptyState text
+|-- NewChatSheetFloatingButton    (FAB, standard mode only)
+|-- UserPicker                    (slide-in panel, Android)
++-- ActiveCallInteractiveArea     (desktop, in-call banner)
+```
+
+---
+
+<a id="ChatListView"></a>
+
+## 2. ChatListView Composable
+
+**Location:** [`ChatListView.kt#L179`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L179)
+
+```kotlin
+fun ChatListView(
+  chatModel: ChatModel,
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  setPerformLA: (Boolean) -> Unit,
+  stopped: Boolean
+)
+```
+
+### Initialization
+
+- Shows "What's New" modal on first launch after update (line ~185), with a 1-second delay.
+- On desktop, closing a chat resets audio/video players (line ~193).
+
+### Layout Modes
+
+The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
+
+| Mode | Toolbar Position | List Direction | FAB | Search/Tags Position |
+|---|---|---|---|---|
+| **Standard** (`oneHandUI = false`) | Top | Top-to-bottom | Bottom-right FAB | Below toolbar |
+| **One-hand** (`oneHandUI = true`) | Bottom | Bottom-to-top (reversed) | Integrated in toolbar | Above toolbar |
+
+### State
+
+| State | Type | Purpose |
+|---|---|---|
+| `searchText` | `MutableState<TextFieldValue>` | Search query (saved across recomposition) |
+| `listState` | `LazyListState` | Scroll position (persisted in `lazyListState` var) |
+| `oneHandUI` | `State<Boolean>` | One-hand UI mode toggle |
+
+### Android-specific
+
+- `SetNotificationsModeAdditions`: Notification permission setup (line ~243).
+- `UserPicker`: Overlay side panel for user switching (line ~247).
+
+---
+
+## 3. Data Sources
+
+| Source | Location | Description |
+|---|---|---|
+| `chatModel.chats` | `ChatModel.chatsContext.chats` | Full list of `Chat` objects for the active user |
+| `chatModel.activeChatTagFilter` | `ChatModel.activeChatTagFilter` | Currently active filter (`PresetTag`, `UserTag`, or `Unread`) |
+| `chatModel.userTags` | `ChatModel.userTags` | User-created custom tags |
+| `chatModel.presetTags` | `ChatModel.presetTags` | Map of `PresetTagKind` to count |
+| `chatModel.unreadTags` | `ChatModel.unreadTags` | Map of tag ID to unread count |
+| `chatModel.chatId` | `ChatModel.chatId` | Currently selected chat ID (highlights row) |
+| `chatModel.currentUser` | `ChatModel.currentUser` | Active user profile |
+| `chatModel.users` | `ChatModel.users` | All user profiles (for UserPicker) |
+| `chatModel.showChatPreviews` | `ChatModel.showChatPreviews` | Privacy toggle for message previews |
+
+---
+
+## 4. Filter System
+
+### Active Filter Types
+
+Defined as sealed class `ActiveFilter` (line ~59):
+
+```kotlin
+sealed class ActiveFilter {
+  data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
+  data class UserTag(val tag: ChatTag) : ActiveFilter()
+  data object Unread : ActiveFilter()
+}
+```
+
+### PresetTagKind Enum
+
+| Value | Description |
+|---|---|
+| `GROUP_REPORTS` | Groups with active reports (moderator-visible) |
+| `FAVORITES` | Chats marked as favorite |
+| `CONTACTS` | Direct (1:1) chats |
+| `GROUPS` | Group chats |
+| `BUSINESS` | Business-type chats |
+| `NOTES` | Local note folders |
+
+### Search Filtering
+
+The `filteredChats` function (line ~1474) applies filters in this order:
+
+1. **SimpleX link match:** If a pasted link resolved to a known contact/group, show only that chat.
+2. **Text search:** Case-insensitive match against `chat.chatInfo.chatViewName`, `chat.chatInfo.fullName`, and `chat.chatInfo.localAlias`.
+3. **Active filter:**
+   - `PresetTag`: Matches chat type and characteristics (e.g., `CONTACTS` filters `ChatInfo.Direct`, `GROUPS` filters `ChatInfo.Group`).
+   - `UserTag`: Matches chats whose `chatTags` contain the tag ID.
+   - `Unread`: Matches chats with `unreadCount > 0` or `unreadChat == true`.
+
+### Search Bar
+
+`ChatListSearchBar` (line ~765) provides:
+- Text input with search icon.
+- SimpleX link detection: When a pasted string contains a single SimpleX link, it triggers `planAndConnect` for connection, suppressing normal search.
+- Unread filter toggle button (right side, when search is empty).
+
+---
+
+<a id="ChatPreviewView"></a>
+
+## 5. Chat Preview
+
+**Location:** [`ChatPreviewView.kt#L41`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatPreviewView.kt#L41)
+
+```kotlin
+fun ChatPreviewView(
+  chat: Chat,
+  showChatPreviews: Boolean,
+  chatModelDraft: ComposeState?,
+  chatModelDraftChatId: ChatId?,
+  currentUserProfileDisplayName: String?,
+  disabled: Boolean,
+  linkMode: SimplexLinkMode,
+  inProgress: Boolean,
+  progressByTimeout: Boolean,
+  defaultClickAction: () -> Unit
+)
+```
+
+### Layout
+
+Each chat preview row contains:
+
+| Element | Position | Content |
+|---|---|---|
+| Profile image | Left | `ChatInfoImage` with overlay icons for inactive contacts/groups |
+| Title row | Top-right of image | Chat name (bold), verified shield (direct), timestamp |
+| Preview row | Below title | Last message preview or draft indicator, unread badge |
+| Unread badge | Right | Circular badge with count, or dot for muted chats |
+
+### Draft Display
+
+When `chatModelDraftChatId` matches the chat ID, the preview shows a draft indicator (pencil icon) with the draft message text instead of the last chat item.
+
+### Inactive Indicators
+
+- Inactive contacts: cancel icon overlay on profile image.
+- Left/removed/deleted groups: cancel icon overlay.
+
+---
+
+<a id="ChatListNavLinkView"></a>
+
+## 6. ChatListNavLinkView
+
+**Location:** [`ChatListNavLinkView.kt#L37`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L37)
+
+Routes each chat to the appropriate click action and context menu based on `chat.chatInfo`:
+
+| ChatInfo Type | Click Action | Context Menu |
+|---|---|---|
+| `ChatInfo.Direct` | `directChatAction` (opens chat) | `ContactMenuItems`: mark read/unread, mute, favorite, tag, clear, delete |
+| `ChatInfo.Group` | `groupChatAction` (opens chat or joins) | `GroupMenuItems`: mark read/unread, mute, favorite, tag, clear, leave, delete |
+| `ChatInfo.Local` | `noteFolderChatAction` (opens notes) | `NoteFolderMenuItems`: mark read, clear, delete |
+| `ChatInfo.ContactRequest` | `contactRequestAlertDialog` (accept/reject) | `ContactRequestMenuItems`: reject |
+| `ChatInfo.ContactConnection` | Sets `chatModel.chatId` (opens connection info) | `ContactConnectionMenuItems`: delete |
+| `ChatInfo.InvalidJSON` | Sets `chatModel.chatId` | No menu |
+
+### Selection Highlight
+
+On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) receives a highlight background. `nextChatSelected` state is used to suppress the bottom divider when the next chat in the list is selected.
+
+---
+
+## 7. Tag System
+
+### TagsView
+
+**Location:** [`ChatListView.kt#L1214`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1214)
+
+Renders a horizontally scrollable row of tag chips (via `TagsRow`, which is a platform-specific `expect` composable).
+
+Layout logic:
+- If there are more than 1 collapsible preset tags and the total tag count exceeds 3, preset tags collapse into a `CollapsedTagsFilterView` dropdown.
+- Otherwise, each preset tag renders as an `ExpandedTagFilterView` chip.
+- User tags render as individual chips with emoji or label icon, bold when active.
+- A "+" button at the end opens `TagListEditor` for creating new tags.
+
+### Tag Interactions
+
+- **Single tap:** Toggles the tag filter on `chatModel.activeChatTagFilter`.
+- **Long press / right-click (user tags):** Opens dropdown menu with edit/delete/reorder options.
+- **Unread dot:** Shown on tags that have chats with unread messages.
+
+<a id="TagListView"></a>
+
+### TagListView
+
+**Location:** [`TagListView.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt#L47)
+
+Full-screen tag management view opened from the "+" button or long-press menu.
+
+```kotlin
+fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode: Boolean)
+```
+
+- Displays all user tags in a `LazyColumnWithScrollBar`.
+- Supports drag-and-drop reordering via `rememberDragDropState` (calls `apiReorderChatTags`).
+- Each tag row shows emoji/icon, name, chat count, and a checkbox if opened for a specific chat (to assign/unassign tags).
+- "Create list" button opens `TagListEditor` modal.
+
+---
+
+<a id="UserPicker"></a>
+
+## 8. UserPicker
+
+**Location:** [`UserPicker.kt#L46`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt#L46)
+
+```kotlin
+fun UserPicker(
+  chatModel: ChatModel,
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  setPerformLA: (Boolean) -> Unit
+)
+```
+
+### Behavior
+
+- **Android:** Renders as a slide-up overlay panel on the chat list, triggered by tapping the user profile button in the toolbar.
+- **Desktop:** Rendered inline in the left column of `DesktopScreen`, always accessible.
+- Closes automatically when any `ModalManager.start` modal opens.
+- On Desktop, when there is no active user and no mobile is in use (`desktopNoUserNoRemote`), the SimpleX address and Chat preferences rows and the divider below them are hidden.
+- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal draws nothing and closes itself when it is the top modal (`ModalManager.start.isLastModal`); if another screen covers it, it closes when the user goes back to it.
+- The Chat preferences row closes its modal the same way when there is no active user.
+
+### Content
+
+| Section | Content |
+|---|---|
+| **Active user** | Profile image, display name, "active" indicator |
+| **Other users** | List of non-hidden user profiles sorted by `activeOrder`; tapping switches user |
+| **Remote hosts** | Connected remote devices (desktop linking) |
+| **Settings** | Opens `SettingsView` modal |
+| **Color mode** | `ColorModeSwitcher` for theme toggle |
+| **Add profile** | Opens `CreateProfile` flow |
+| **Lock** | Locks app (calls `AppLock.setPerformLA`) |
+
+### State Machine
+
+Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow` to coordinate animation between the parent screen and the picker overlay.
+
+---
+
+## 9. Source Files
+
+| File | Description |
+|---|---|
+| `ChatListView.kt` | Main chat list view, toolbar, search, tags, filtering |
+| `ChatListNavLinkView.kt` | Per-chat row routing and context menus |
+| `ChatPreviewView.kt` | Chat preview row layout (image, title, last message) |
+| `ChatHelpView.kt` | Empty-state help content |
+| `ContactConnectionView.kt` | Pending connection preview row |
+| `ContactRequestView.kt` | Contact request preview row |
+| `ServersSummaryView.kt` | Server connection status summary |
+| `ShareListNavLinkView.kt` | Share target list row (forwarding) |
+| `ShareListView.kt` | Share target list (forwarding flow) |
+| `TagListView.kt` | Tag management and assignment view |
+| `UserPicker.kt` | User switching side panel |
+| `GetStakeBanner.kt` | Crowdfunding banner and the shared banner card chrome |
+
+---
+
+<a id="GetStakeBanner"></a>
+
+## 10. Crowdfunding Banner
+
+**Location:** [`GetStakeBanner.kt#L31`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L31)
+
+```kotlin
+fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)
+```
+
+Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` — always outside Play Store builds, and in Play builds only while the store country is the US or not yet known — and only while `getStakeBannerDismissed` is false.
+
+### Placement
+
+| Where | Condition | Layout |
+|-------|-----------|--------|
+| Chat list | in `ChatList`'s `LazyColumn`, after `ToggleChatListCard` and before the chats | `Box(Modifier.zIndex(1f).padding(16.dp))` |
+| Onboarding | inside `ConnectOnboardingView` (`views/newchat/OnboardingCards.kt`), below the pager, so it shares the pages' width limit on desktop and their dimming while a start modal is open; opens the page in `ModalManager.center` on desktop, `ModalManager.start` on Android | `padding(start/end = DEFAULT_PADDING, bottom = 8.dp)`, in a `Column` where the pager takes `weight(1f)` |
+
+The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded()`), the renewal-failure alert (`badgeIssueFailed()`), the pitch, then the Wefunder banner. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeExpired`, `BadgeIssueFailed`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alerts have no such check: an alert takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`.
+
+`crowdfundingAvailable()` launches an effect to load the store country, so both call sites read it in the composable body rather than inside the `LazyColumn` builder.
+
+### Dismissal
+
+| Preference | Set by | Effect |
+|------------|--------|--------|
+| `getStakeBannerTapped` | `openGetStake()` | the dismiss X appears from then on, while there are chats |
+| `getStakeBannerDismissed` | the dismiss X | hides the banner in both placements |
+| `supporterBannerTapped` | tapping the supporter pitch | the pitch's dismiss X appears from then on |
+| `supporterBannerShown` | the pitch's dismiss X, through its "You can support SimpleX later in Settings." alert, and a successful code redemption | hides the pitch |
+
+The two badge alert banners always offer the X; only the pitch waits to be tapped once, so a user who has not looked at it cannot dismiss it unseen.
+
+Both are in `AppPreferences.hintPreferences`, so "Reset all hints" restores the banner. The X is never offered below the onboarding cards, so the banner cannot be dismissed before the user has a chat.
+
+Tapping the card runs `openGetStake()`, which opens `GetStakeView(showFirstImage = true)` as a card modal — `showFirstImage` decides whether the page repeats the first slide's image, which only What's New shows above its own link.
+
+### Shared card chrome
+
+`Modifier.bannerCard(onTap)` (size state, gradient brush, `heightIn`, `clip`, `background`, `clickable`) and `BannerDismissButton` are declared separately from `GetStakeBanner` so other banners can adopt the same chrome; the paddings stay with the caller. The gradient reuses `gradientPoints`, `lightStops` and `darkStops` from `views/newchat/OnboardingCards.kt`.

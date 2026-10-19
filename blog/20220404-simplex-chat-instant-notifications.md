@@ -68,7 +68,7 @@ So, for Android we can now deliver instant message notifications without comprom
 
 Please let us know what needs to be improved - it's only the first version of instant notifications for Android!
 
-## Our iOS approach has one trade-off
+## iOS notifications require a server
 
 iOS is much more protective of what apps are allowed to run on the devices, and the solution that worked on Android is not viable on iOS.
 

@@ -1,9 +1,7 @@
 package chat.simplex.common.views.newchat
 
-import SectionDivider
 import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionView
 import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -14,8 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
@@ -32,56 +29,53 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chatlist.ScrollDirection
+import chat.simplex.common.views.chat.item.CIFileViewScope
+import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
-import java.net.URI
 
 @Composable
 fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val keyboardState by getKeyboardState()
-  val showToolbarInOneHandUI = remember { derivedStateOf { keyboardState == KeyboardState.Closed && oneHandUI.value } }
-
-  Scaffold(
-    bottomBar = {
-      if (showToolbarInOneHandUI.value) {
-        Column {
-          Divider()
-          CloseSheetBar(
-            close = close,
-            showClose = true,
-            endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
-            arrangement = Arrangement.Bottom,
-            closeBarTitle = generalGetString(MR.strings.new_message),
-            barPaddingValues = PaddingValues(horizontal = 0.dp)
-          )
-        }
-      }
+  DisposableEffect(Unit) {
+    onDispose {
+      connectProgressManager.cancelConnectProgress()
     }
-  ) {
-    Column(
-      modifier = Modifier.fillMaxSize().padding(it)
-    ) {
-      val closeAll = { ModalManager.start.closeModals() }
+  }
 
-      Column(modifier = Modifier.fillMaxSize()) {
-        NewChatSheetLayout(
-          addContact = {
-            ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
-          },
-          scanPaste = {
-            ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
-          },
-          createGroup = {
-            ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
-          },
-          rh = rh,
-          close = close
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+
+  Box {
+    val closeAll = { ModalManager.start.closeModals() }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+      NewChatSheetLayout(
+        addContact = {
+          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll) }
+        },
+        scanPaste = {
+          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
+        },
+        createGroup = {
+          ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
+        },
+        createChannel = {
+          ModalManager.start.showCustomModal { close -> AddChannelView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
+        },
+        rh = rh,
+        close = close
+      )
+    }
+    if (oneHandUI.value) {
+      Column(Modifier.align(Alignment.BottomCenter)) {
+        DefaultAppBar(
+          navigationButton = { NavigationButtonBack(onButtonClicked = close) },
+          fixedTitleText = generalGetString(MR.strings.new_chat),
+          onTop = false,
         )
       }
     }
@@ -89,7 +83,7 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
 }
 
 enum class ContactType {
-  CARD, REQUEST, RECENT, CHAT_DELETED, UNLISTED
+  CARD, CONTACT_WITH_REQUEST, REQUEST, RECENT, CHAT_DELETED, UNLISTED
 }
 
 fun chatContactType(chat: Chat): ContactType {
@@ -97,9 +91,9 @@ fun chatContactType(chat: Chat): ContactType {
     is ChatInfo.ContactRequest -> ContactType.REQUEST
     is ChatInfo.Direct -> {
       val contact = cInfo.contact
-
       when {
-        contact.activeConn == null && contact.profile.contactLink != null && contact.active -> ContactType.CARD
+        contact.nextAcceptContactRequest -> ContactType.CONTACT_WITH_REQUEST
+        contact.isContactCard -> ContactType.CARD
         contact.chatDeleted -> ContactType.CHAT_DELETED
         contact.contactStatus == ContactStatus.Active -> ContactType.RECENT
         else -> ContactType.UNLISTED
@@ -119,6 +113,7 @@ private fun ModalData.NewChatSheetLayout(
   addContact: () -> Unit,
   scanPaste: () -> Unit,
   createGroup: () -> Unit,
+  createChannel: () -> Unit,
   close: () -> Unit,
 ) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -141,9 +136,10 @@ private fun ModalData.NewChatSheetLayout(
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
-  val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+  val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
+  val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-  val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.RECENT, ContactType.REQUEST) }
+  val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.CONTACT_WITH_REQUEST, ContactType.REQUEST, ContactType.RECENT) }
   val contactTypes by remember(searchText.value.text.isEmpty()) {
     derivedStateOf { contactTypesSearchTargets(baseContactTypes, searchText.value.text.isEmpty()) }
   }
@@ -187,168 +183,273 @@ private fun ModalData.NewChatSheetLayout(
     derivedStateOf { filterContactTypes(chatModel.chats.value, deletedContactTypes) }
   }
 
-  LazyColumnWithScrollBar(
-    Modifier.fillMaxSize(),
-    listState,
-    reverseLayout = oneHandUI.value
-  ) {
-    if (!oneHandUI.value) {
-      item {
-        Box(contentAlignment = Alignment.Center) {
-          val bottomPadding = DEFAULT_PADDING
-          AppBarTitle(
-            stringResource(MR.strings.new_message),
-            hostDevice(rh?.remoteHostId),
-            bottomPadding = bottomPadding
-          )
-        }
-      }
-    }
-    stickyHeader {
-      Column(
-        Modifier
-          .offset {
-            val y = if (searchText.value.text.isEmpty()) {
-              val offsetMultiplier = if (oneHandUI.value) 1 else -1
+  val actionButtonsOriginal = listOf(
+    Triple(
+      painterResource(MR.images.ic_add_link),
+      stringResource(MR.strings.create_1_time_link),
+      addContact,
+    ),
+    Triple(
+      painterResource(MR.images.ic_qr_code),
+      if (appPlatform.isAndroid) stringResource(MR.strings.scan_paste_link) else stringResource(MR.strings.paste_link),
+      scanPaste,
+    ),
+    Triple(
+      painterResource(MR.images.ic_group),
+      stringResource(MR.strings.create_group_button),
+      createGroup,
+    ),
+    Triple(
+      painterResource(MR.images.ic_bigtop_updates),
+      stringResource(MR.strings.create_channel_button),
+      createChannel,
+    )
+  )
 
-              if (
-                (oneHandUI.value && scrollDirection == ScrollDirection.Up) ||
-                (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
-                ) {
-                0
-              } else if (oneHandUI.value && listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset
-              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 0) {
-                0
-              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 1) {
-                -listState.firstVisibleItemScrollOffset
-              } else {
-                offsetMultiplier * 1000
-              }
-            } else {
-              0
-            }
-            IntOffset(0, y)
-          }
-          .background(MaterialTheme.colors.background)
-      ) {
-        Divider()
-        ContactsSearchBar(
-          listState = listState,
-          searchText = searchText,
-          searchShowingSimplexLink = searchShowingSimplexLink,
-          searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-          close = close,
-        )
-        if (!oneHandUI.value) {
-          Divider()
-        }
-      }
-    }
-    item {
-      if (searchText.value.text.isEmpty()) {
-        Spacer(Modifier.padding(bottom = 27.dp))
-      }
-
-      val actionButtonsOriginal = listOf(
-        Triple(
-          painterResource(MR.images.ic_add_link),
-          stringResource(MR.strings.add_contact_tab),
-          addContact,
-        ),
-        Triple(
-          painterResource(MR.images.ic_qr_code),
-          if (appPlatform.isAndroid) stringResource(MR.strings.scan_paste_link) else stringResource(MR.strings.paste_link),
-          scanPaste,
-        ),
-        Triple(
-          painterResource(MR.images.ic_group),
-          stringResource(MR.strings.create_group_button),
-          createGroup,
-        )
-      )
-
-      val actionButtons by remember(oneHandUI.value) {
-        derivedStateOf {
-          if (oneHandUI.value) actionButtonsOriginal.asReversed() else actionButtonsOriginal
-        }
-      }
-
-      if (searchText.value.text.isEmpty()) {
-        Row {
-          SectionView {
-            actionButtons.map {
-              NewChatButton(
-                icon = it.first,
-                text = it.second,
-                click = it.third,
-              )
-            }
-          }
-        }
-        if (deletedChats.isNotEmpty()) {
-          SectionDividerSpaced(maxBottomPadding = false)
-          SectionView {
-            SectionItemView(
-              click = {
-                ModalManager.start.showCustomModal { closeDeletedChats ->
-                  ModalView(
-                    close = closeDeletedChats,
-                    closeOnTop = !oneHandUI.value,
-                  ) {
-                    DeletedContactsView(rh = rh, closeDeletedChats = closeDeletedChats, close = {
-                      ModalManager.start.closeModals()
-                    })
-                  }
-                }
-              }
-            ) {
-              Icon(
-                painterResource(MR.images.ic_inventory_2),
-                contentDescription = stringResource(MR.strings.deleted_chats),
-                tint = MaterialTheme.colors.secondary,
-              )
-              TextIconSpaced(false)
-              Text(text = stringResource(MR.strings.deleted_chats), color = MaterialTheme.colors.onBackground)
-            }
-          }
-        }
-      }
+  @Composable
+  fun DeletedChatsItem(actionButtons: List<Triple<Painter, String, () -> Unit>>) {
+    if (searchText.value.text.isEmpty()) {
+      Spacer(Modifier.padding(bottom = 27.dp))
     }
 
-    item {
-      if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
-        if (!oneHandUI.value) {
-          SectionDividerSpaced()
-          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {}
-        } else {
-          SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
-          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {}
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        }
-      }
-    }
-
-    item {
-      if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
-        Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
-          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Text(
-              generalGetString(MR.strings.no_filtered_contacts),
-              color = MaterialTheme.colors.secondary
+    if (searchText.value.text.isEmpty()) {
+      Row {
+        SectionView {
+          actionButtons.map {
+            NewChatButton(
+              icon = it.first,
+              text = it.second,
+              click = it.third,
             )
           }
         }
       }
-    }
-
-    itemsIndexed(filteredContactChats) { index, chat ->
-      val nextChatSelected = remember(chat.id, filteredContactChats) {
-        derivedStateOf {
-          chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+      if (deletedChats.isNotEmpty()) {
+        SectionDividerSpaced(maxBottomPadding = false)
+        SectionView {
+          SectionItemView(
+            click = {
+              ModalManager.start.showCustomModal { closeDeletedChats ->
+                ModalView(
+                  close = closeDeletedChats,
+                  showAppBar = !oneHandUI.value,
+                ) {
+                  if (oneHandUI.value) {
+                    BackHandler(onBack = closeDeletedChats)
+                  }
+                  DeletedContactsView(rh = rh, closeDeletedChats = closeDeletedChats, close = {
+                    ModalManager.start.closeModals()
+                  })
+                }
+              }
+            }
+          ) {
+            Icon(
+              painterResource(MR.images.ic_inventory_2),
+              contentDescription = stringResource(MR.strings.deleted_chats),
+              tint = MaterialTheme.colors.secondary,
+            )
+            TextIconSpaced(false)
+            Text(text = stringResource(MR.strings.deleted_chats), color = MaterialTheme.colors.onBackground)
+          }
         }
       }
-      ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
+    }
+  }
+
+  @Composable
+  fun NoFilteredContactsItem() {
+    if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
+      Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          Text(
+            generalGetString(MR.strings.no_filtered_contacts),
+            color = MaterialTheme.colors.secondary
+          )
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun OneHandLazyColumn() {
+    val blankSpaceSize = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
+    LazyColumnWithScrollBar(
+      state = listState,
+      reverseLayout = oneHandUI.value
+    ) {
+      item { Spacer(Modifier.height(blankSpaceSize)) }
+      stickyHeader {
+        val scrolledSomething by remember { derivedStateOf { listState.firstVisibleItemScrollOffset > 0 || listState.firstVisibleItemIndex > 0 } }
+        Column(
+          Modifier
+            .zIndex(1f)
+            .offset {
+              val y = if (searchText.value.text.isNotEmpty() || (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)) {
+                if (listState.firstVisibleItemIndex == 0) -minOf(listState.firstVisibleItemScrollOffset, blankSpaceSize.roundToPx())
+                else -blankSpaceSize.roundToPx()
+              } else {
+                when (listState.firstVisibleItemIndex) {
+                  0 -> 0
+                  1 -> listState.firstVisibleItemScrollOffset
+                  else -> 1000
+                }
+              }
+              IntOffset(0, y)
+            }
+            // show background when something is scrolled because otherwise the bar is transparent.
+            // not using background always because of gradient in SimpleX theme
+            .background(
+              if (scrolledSomething && (keyboardState == KeyboardState.Opened || searchText.value.text.isNotEmpty())) {
+                MaterialTheme.colors.background
+              } else {
+                Color.Unspecified
+              }
+            )
+        ) {
+          Divider()
+          Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier))) {
+            ContactsSearchBar(
+              listState = listState,
+              searchText = searchText,
+              searchShowingSimplexLink = searchShowingSimplexLink,
+              searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              connectNameCandidate = connectNameCandidate,
+              close = close,
+            )
+            connectNameCandidate.value?.let { candidate ->
+              Divider()
+              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+            }
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+          }
+        }
+      }
+      item {
+        DeletedChatsItem(actionButtonsOriginal.asReversed())
+      }
+      item {
+        if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
+          SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+          SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {}
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        }
+      }
+      item {
+        NoFilteredContactsItem()
+      }
+      itemsIndexed(filteredContactChats) { index, chat ->
+        val nextChatSelected = remember(chat.id, filteredContactChats) {
+          derivedStateOf {
+            chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+          }
+        }
+        ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
+      }
+      if (appPlatform.isAndroid) {
+        item {
+          Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun NonOneHandLazyColumn() {
+    val blankSpaceSize = topPaddingToContent(false)
+    LazyColumnWithScrollBar(
+      Modifier.imePadding(),
+      state = listState,
+      reverseLayout = false
+    ) {
+      item {
+        Box(Modifier.padding(top = blankSpaceSize)) {
+          AppBarTitle(
+            stringResource(MR.strings.new_chat),
+            hostDevice(rh?.remoteHostId),
+            bottomPadding = DEFAULT_PADDING
+          )
+        }
+      }
+      stickyHeader {
+        val scrolledSomething by remember { derivedStateOf { listState.firstVisibleItemScrollOffset > 0 || listState.firstVisibleItemIndex > 0 } }
+        Column(
+          Modifier
+            .zIndex(1f)
+            .offset {
+              val y = if (searchText.value.text.isNotEmpty() || (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)) {
+                if (listState.firstVisibleItemIndex == 0) (listState.firstVisibleItemScrollOffset - (listState.layoutInfo.visibleItemsInfo[0].size - blankSpaceSize.roundToPx())).coerceAtLeast(0)
+                else blankSpaceSize.roundToPx()
+              } else {
+                when (listState.firstVisibleItemIndex) {
+                  0 -> 0
+                  1 -> -listState.firstVisibleItemScrollOffset
+                  else -> -1000
+                }
+              }
+              IntOffset(0, y)
+            }
+            // show background when something is scrolled because otherwise the bar is transparent.
+            // not using background always because of gradient in SimpleX theme
+            .background(
+              if (scrolledSomething && (keyboardState == KeyboardState.Opened || searchText.value.text.isNotEmpty())) {
+                MaterialTheme.colors.background
+              } else {
+                Color.Unspecified
+              }
+            )
+        ) {
+          Divider()
+          ContactsSearchBar(
+            listState = listState,
+            searchText = searchText,
+            searchShowingSimplexLink = searchShowingSimplexLink,
+            searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+            connectNameCandidate = connectNameCandidate,
+            close = close,
+          )
+          connectNameCandidate.value?.let { candidate ->
+            Divider()
+            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+          }
+          Divider()
+        }
+      }
+      item {
+        DeletedChatsItem(actionButtonsOriginal)
+      }
+      item {
+        if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
+          SectionDividerSpaced()
+          SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {}
+        }
+      }
+      item {
+        NoFilteredContactsItem()
+      }
+      itemsIndexed(filteredContactChats) { index, chat ->
+        val nextChatSelected = remember(chat.id, filteredContactChats) {
+          derivedStateOf {
+            chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+          }
+        }
+        ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
+      }
+      if (appPlatform.isAndroid) {
+        item {
+          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+        }
+      }
+    }
+  }
+
+  Box {
+    if (oneHandUI.value) {
+      OneHandLazyColumn()
+      StatusBarBackground()
+    } else {
+      NonOneHandLazyColumn()
+      NavigationBarBackground(oneHandUI.value, true)
     }
   }
 }
@@ -376,7 +477,8 @@ private fun ContactsSearchBar(
   listState: LazyListState,
   searchText: MutableState<TextFieldValue>,
   searchShowingSimplexLink: MutableState<Boolean>,
-  searchChatFilteredBySimplexLink: MutableState<String?>,
+  searchChatFilteredBySimplexLink: MutableState<Set<String>>,
+  connectNameCandidate: MutableState<String?>,
   close: () -> Unit,
 ) {
   var focused by remember { mutableStateOf(false) }
@@ -395,9 +497,18 @@ private fun ContactsSearchBar(
       alwaysVisible = true,
       searchText = searchText,
       trailingContent = null,
+      // the clear button must line up with the filter icon it replaces, so no reduction here
+      reducedCloseButtonPadding = 0.dp,
     ) {
       searchText.value = searchText.value.copy(it)
     }
+
+    if (connectProgressManager.showConnectProgress != null) {
+      Box(Modifier.padding(end = DEFAULT_PADDING_HALF)) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.75f)
+      }
+    }
+
     val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
     if (hasText.value) {
       val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
@@ -426,33 +537,37 @@ private fun ContactsSearchBar(
       snapshotFlow { searchText.value.text }
         .distinctUntilChanged()
         .collect {
-          val link = strHasSingleSimplexLink(it.trim())
-          if (link != null) {
-            // if SimpleX link is pasted, show connection dialogue
+          val target = strConnectTarget(it.trim())
+          if (target is ConnectTarget.Link) {
             hideKeyboard(view)
-            if (link.format is Format.SimplexLink) {
-              val linkText =
-                link.simplexLinkText(link.format.linkType, link.format.smpHosts)
-              searchText.value =
-                searchText.value.copy(linkText, selection = TextRange.Zero)
-            }
+            searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
             searchShowingSimplexLink.value = true
-            searchChatFilteredBySimplexLink.value = null
+            searchChatFilteredBySimplexLink.value = emptySet()
+            connectNameCandidate.value = null
             connect(
-              link = link.text,
+              link = target.text,
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
               close = close,
               cleanup = { searchText.value = TextFieldValue() }
             )
-          } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
-            if (it.isNotEmpty()) {
-              // if some other text is pasted, enter search mode
-              focusRequester.requestFocus()
-            } else if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(0)
+          } else {
+            // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke. The
+            // simplex-name filter is chat-list only: this contacts/deleted view is a scoped subset, so a
+            // resolved chat id (channel, business, unlisted or active-only contact) may not be present in it.
+            val candidate = nameSearchCandidate(it.trim())
+            connectNameCandidate.value = candidate
+            if (candidate == null && (!searchShowingSimplexLink.value || it.isEmpty())) {
+              if (it.isNotEmpty()) {
+                focusRequester.requestFocus()
+              } else {
+                connectProgressManager.cancelConnectProgress()
+                if (listState.layoutInfo.totalItemsCount > 0) {
+                  listState.scrollToItem(0)
+                }
+              }
+              searchShowingSimplexLink.value = false
+              searchChatFilteredBySimplexLink.value = emptySet()
             }
-            searchShowingSimplexLink.value = false
-            searchChatFilteredBySimplexLink.value = null
           }
         }
     }
@@ -478,13 +593,12 @@ private fun ToggleFilterButton() {
   }
 }
 
-private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, close: () -> Unit, cleanup: (() -> Unit)?) {
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<Set<String>>, close: () -> Unit, cleanup: (() -> Unit)?) {
   withBGApi {
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      incognito = null,
-      filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
+      filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
       close = close,
       cleanup = cleanup,
     )
@@ -494,15 +608,15 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
 private fun filteredContactChats(
   showUnreadAndFavorites: Boolean,
   searchShowingSimplexLink: State<Boolean>,
-  searchChatFilteredBySimplexLink: State<String?>,
+  searchChatFilteredBySimplexLink: State<Set<String>>,
   searchText: String,
   contactChats: List<Chat>
 ): List<Chat> {
-  val linkChatId = searchChatFilteredBySimplexLink.value
+  val linkChatIds = searchChatFilteredBySimplexLink.value
   val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
 
-  return if (linkChatId != null) {
-    contactChats.filter { it.id == linkChatId }
+  return if (linkChatIds.isNotEmpty()) {
+    contactChats.filter { it.id in linkChatIds }
   } else {
     contactChats.filter { chat ->
       filterChat(
@@ -554,30 +668,13 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 @Composable
 private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val keyboardState by getKeyboardState()
-  val showToolbarInOneHandUI = remember { derivedStateOf { keyboardState == KeyboardState.Closed && oneHandUI.value } }
-
-  Scaffold(
-    bottomBar = {
-      if (showToolbarInOneHandUI.value) {
-        Column {
-          Divider()
-          CloseSheetBar(
-            close = closeDeletedChats,
-            showClose = true,
-            endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
-            arrangement = Arrangement.Bottom,
-            closeBarTitle = generalGetString(MR.strings.deleted_chats),
-            barPaddingValues = PaddingValues(horizontal = 0.dp)
-          )
-        }
-      }
-    }
-  ) { contentPadding ->
+  Box {
     val listState = remember { appBarHandler.listState }
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val searchShowingSimplexLink = remember { mutableStateOf(false) }
-    val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+    val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
+    // deleted contacts are not connected to by name, so this candidate only stops per-keystroke resolution
+    val connectNameCandidate = remember { mutableStateOf<String?>(null) }
     val showUnreadAndFavorites = remember { appPrefs.showUnreadAndFavorites.state }.value
     val allChats by remember(chatModel.chats.value) {
       derivedStateOf { filterContactTypes(chatModel.chats.value, listOf(ContactType.CHAT_DELETED)) }
@@ -590,57 +687,95 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
       contactChats = allChats
     )
 
-    LazyColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-      contentPadding = contentPadding,
-      reverseLayout = oneHandUI.value,
-    ) {
-      item {
-        if (!oneHandUI.value) {
-          Box(contentAlignment = Alignment.Center) {
-            val bottomPadding = DEFAULT_PADDING
-            AppBarTitle(
-              stringResource(MR.strings.deleted_chats),
-              hostDevice(rh?.remoteHostId),
-              bottomPadding = bottomPadding
-            )
-          }
-        }
-      }
-      item {
-        if (!oneHandUI.value) {
-          Divider()
-        }
-        ContactsSearchBar(
-          listState = listState,
-          searchText = searchText,
-          searchShowingSimplexLink = searchShowingSimplexLink,
-          searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-          close = close,
-        )
-        Divider()
-      }
-
-      item {
-        if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
-          Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-              Text(
-                generalGetString(MR.strings.no_filtered_contacts),
-                color = MaterialTheme.colors.secondary,
+    Box {
+      val topPaddingToContent = topPaddingToContent(false)
+      LazyColumnWithScrollBar(
+        if (!oneHandUI.value) Modifier.imePadding() else Modifier,
+        contentPadding = PaddingValues(
+          top = if (!oneHandUI.value) topPaddingToContent else 0.dp,
+          bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+        ),
+        reverseLayout = oneHandUI.value,
+      ) {
+        item {
+          if (!oneHandUI.value) {
+            Box(contentAlignment = Alignment.Center) {
+              val bottomPadding = DEFAULT_PADDING
+              AppBarTitle(
+                stringResource(MR.strings.deleted_chats),
+                hostDevice(rh?.remoteHostId),
+                bottomPadding = bottomPadding
               )
             }
           }
         }
-      }
+        item {
+          if (!oneHandUI.value) {
+            Divider()
+            ContactsSearchBar(
+              listState = listState,
+              searchText = searchText,
+              searchShowingSimplexLink = searchShowingSimplexLink,
+              searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              connectNameCandidate = connectNameCandidate,
+              close = close,
+            )
+          } else {
+            Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+              ContactsSearchBar(
+                listState = listState,
+                searchText = searchText,
+                searchShowingSimplexLink = searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+                connectNameCandidate = connectNameCandidate,
+                close = close,
+              )
+              Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+            }
+          }
+          Divider()
+        }
 
-      itemsIndexed(filteredContactChats) { index, chat ->
-        val nextChatSelected = remember(chat.id, filteredContactChats) {
-          derivedStateOf {
-            chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+        item {
+          if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
+            Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+              Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text(
+                  generalGetString(MR.strings.no_filtered_contacts),
+                  color = MaterialTheme.colors.secondary,
+                )
+              }
+            }
           }
         }
-        ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = false)
+
+        itemsIndexed(filteredContactChats) { index, chat ->
+          val nextChatSelected = remember(chat.id, filteredContactChats) {
+            derivedStateOf {
+              chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+            }
+          }
+          ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = false)
+        }
+        if (appPlatform.isAndroid) {
+          item {
+            Spacer(if (oneHandUI.value) Modifier.windowInsetsTopHeight(WindowInsets.statusBars) else Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+          }
+        }
+      }
+      if (oneHandUI.value) {
+        StatusBarBackground()
+      } else {
+        NavigationBarBackground(oneHandUI.value, true)
+      }
+    }
+    if (oneHandUI.value) {
+      Column(Modifier.align(Alignment.BottomCenter)) {
+        DefaultAppBar(
+          navigationButton = { NavigationButtonBack(onButtonClicked = closeDeletedChats) },
+          fixedTitleText = generalGetString(MR.strings.deleted_chats),
+          onTop = false,
+        )
       }
     }
   }

@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 08/02/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/notifications.md
 
 import Foundation
 import UserNotifications
@@ -12,7 +13,6 @@ import UIKit
 import SimpleXChat
 
 let ntfActionAcceptContact = "NTF_ACT_ACCEPT_CONTACT"
-let ntfActionAcceptContactIncognito = "NTF_ACT_ACCEPT_CONTACT_INCOGNITO"
 let ntfActionAcceptCall = "NTF_ACT_ACCEPT_CALL"
 let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
 
@@ -23,9 +23,11 @@ enum NtfCallAction {
     case reject
 }
 
+// Spec: spec/services/notifications.md#NtfManager
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
+    public var navigatingToChat = false
     private var granted = false
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
@@ -48,6 +50,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         handler()
     }
 
+    // Spec: spec/services/notifications.md#processNotificationResponse
     func processNotificationResponse(_ ntfResponse: UNNotificationResponse) {
         let chatModel = ChatModel.shared
         let content = ntfResponse.notification.request.content
@@ -58,13 +61,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             logger.debug("NtfManager.processNotificationResponse changeActiveUser")
             changeActiveUser(userId, viewPwd: nil)
         }
-        if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
+        if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
            let chatId = content.userInfo["chatId"] as? String {
-            let incognito = action == ntfActionAcceptContactIncognito
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-                Task { await acceptContactRequest(incognito: incognito, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
             } else {
-                chatModel.ntfContactRequest = NTFContactRequest(incognito: incognito, chatId: chatId)
+                chatModel.ntfContactRequest = NTFContactRequest(chatId: chatId)
             }
         } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
             if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
@@ -74,7 +76,10 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             }
         } else {
             if let chatId = content.targetContentIdentifier {
-                ItemsModel.shared.loadOpenChat(chatId)
+                self.navigatingToChat = true
+                ItemsModel.shared.loadOpenChat(chatId) {
+                    self.navigatingToChat = false
+                }
             }
         }
     }
@@ -147,6 +152,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         return false
     }
 
+    // Spec: spec/services/notifications.md#registerCategories
     func registerCategories() {
         logger.debug("NtfManager.registerCategories")
         UNUserNotificationCenter.current().setNotificationCategories([
@@ -156,10 +162,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                     UNNotificationAction(
                         identifier: ntfActionAcceptContact,
                         title: NSLocalizedString("Accept", comment: "accept contact request via notification"),
-                        options: .foreground
-                    ), UNNotificationAction(
-                        identifier: ntfActionAcceptContactIncognito,
-                        title: NSLocalizedString("Accept incognito", comment: "accept contact request via notification"),
                         options: .foreground
                     )
                 ],
@@ -199,20 +201,29 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("SimpleX encrypted message or connection event", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryManyEvents,
+                actions: [],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New events", comment: "notification")
             )
         ])
     }
 
-    func requestAuthorization(onDeny denied: (()-> Void)? = nil, onAuthorized authorized: (()-> Void)? = nil) {
+    // Spec: spec/services/notifications.md#requestAuthorization
+    func requestAuthorization(onDeny denied: (()-> Void)? = nil, onAuthorized authorized: (()-> Void)? = nil, whenDone: (() -> Void)? = nil) {
         logger.debug("NtfManager.requestAuthorization")
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             switch settings.authorizationStatus {
             case .denied:
                 denied?()
+                whenDone?()
             case .authorized:
                 self.granted = true
                 authorized?()
+                whenDone?()
             default:
                 center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
                     if let error = error {
@@ -221,38 +232,44 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                         self.granted = granted
                         authorized?()
                     }
+                    whenDone?()
                 }
             }
         }
     }
 
+    // Spec: spec/services/notifications.md#notifyContactRequest
     func notifyContactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
-        addNotification(createContactRequestNtf(user, contactRequest))
+        addNotification(createContactRequestNtf(user, contactRequest, 0))
     }
 
     func notifyContactConnected(_ user: any UserLike, _ contact: Contact) {
         logger.debug("NtfManager.notifyContactConnected")
-        addNotification(createContactConnectedNtf(user, contact))
+        addNotification(createContactConnectedNtf(user, contact, 0))
     }
 
+    // Spec: spec/services/notifications.md#notifyMessageReceived
     func notifyMessageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
-        if cInfo.ntfsEnabled {
-            addNotification(createMessageReceivedNtf(user, cInfo, cItem))
+        if cInfo.ntfsEnabled(chatItem: cItem) {
+            addNotification(createMessageReceivedNtf(user, cInfo, cItem, 0))
         }
     }
 
+    // Spec: spec/services/notifications.md#notifyCallInvitation
     func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
-        addNotification(createCallInvitationNtf(invitation))
+        addNotification(createCallInvitationNtf(invitation, 0))
     }
 
+    // Spec: spec/services/notifications.md#setNtfBadgeCount
     func setNtfBadgeCount(_ count: Int) {
         UIApplication.shared.applicationIconBadgeNumber = count
         ntfBadgeCountGroupDefault.set(count)
     }
 
+    // Spec: spec/services/notifications.md#changeNtfBadgeCount
     func changeNtfBadgeCount(by count: Int = 1) {
         setNtfBadgeCount(max(0, UIApplication.shared.applicationIconBadgeNumber + count))
     }

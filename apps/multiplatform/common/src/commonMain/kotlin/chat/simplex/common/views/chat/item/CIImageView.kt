@@ -8,13 +8,16 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
@@ -23,9 +26,10 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.common.views.chat.chatViewScrollState
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import kotlin.math.roundToInt
 
 @Composable
 fun CIImageView(
@@ -37,6 +41,7 @@ fun CIImageView(
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+  val previewBitmap = remember(image) { base64ToBitmap(image) }
   @Composable
   fun progressIndicator() {
     CircularProgressIndicator(
@@ -77,7 +82,11 @@ fun CIImageView(
           is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndWarning -> fileIcon(painterResource(MR.images.ic_warning_filled), MR.strings.icon_descr_file)
-          is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
+          is CIFileStatus.RcvInvitation ->
+            if (file.expired && fileSizeValid(file))
+              fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+            else
+              fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
           is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_image)
           is CIFileStatus.RcvTransfer -> progressIndicator()
           is CIFileStatus.RcvComplete -> {}
@@ -89,12 +98,6 @@ fun CIImageView(
         }
       }
     }
-  }
-
-  @Composable
-  fun imageViewFullWidth(): Dp {
-    val approximatePadding = 100.dp
-    return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
   }
 
   @Composable
@@ -111,18 +114,18 @@ fun CIImageView(
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
       contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
 
   @Composable
-  fun ImageView(painter: Painter, image: String, fileSource: CryptoFile?, onClick: () -> Unit) {
+  fun ImageView(painter: Painter, image: String, onClick: () -> Unit) {
     // On my Android device Compose fails to display 6000x6000 px WebP image with exception:
     // IllegalStateException: Recording currently in progress - missing #endRecording() call?
     // but can display 5000px image. Using even lower value here just to feel safer.
     // It happens to WebP because it's not compressed while sending since it can be animated.
-    if (painter.intrinsicSize.width <= 4320 && painter.intrinsicSize.height <= 4320) {
+    if (painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width <= 4320 && painter.intrinsicSize.height <= 4320) {
       Image(
         painter,
         contentDescription = stringResource(MR.strings.image_descr),
@@ -135,25 +138,21 @@ fun CIImageView(
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
       Box(Modifier
-        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+        .width(if (painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
-        imageView(base64ToBitmap(image), onClick = {
-          if (fileSource != null) {
-            openFile(fileSource)
-          }
-        })
+        imageView(previewBitmap, onClick = onClick)
         Icon(
           painterResource(MR.images.ic_open_in_new),
           contentDescription = stringResource(MR.strings.image_descr),
@@ -162,13 +161,6 @@ fun CIImageView(
         )
       }
     }
-  }
-
-  fun fileSizeValid(): Boolean {
-    if (file != null) {
-      return file.fileSize <= getMaxFileSize(file.fileProtocol)
-    }
-    return false
   }
 
   suspend fun imageAndFilePath(file: CIFile?): Triple<ImageBitmap, ByteArray, String>? {
@@ -181,47 +173,66 @@ fun CIImageView(
     return null
   }
 
+  val view = LocalMultiplatformView()
+  if (file != null) {
+    OpenWhenReceivedEffect(file, smallView) {
+      hideKeyboard(view)
+      ModalManager.fullscreen.showCustomModal(animated = false) { close ->
+        ImageFullScreenView(imageProvider, close)
+      }
+    }
+  }
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
-      .desktopModifyBlurredState(!smallView, blurred, showMenu),
+      .then(
+        if (!smallView) {
+          val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+          // Height follows the measured (clamped) width, not nominal w, else wide images get an empty strip below.
+          Modifier.width(w).layout { measurable, constraints ->
+            val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
+            val height = (width * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
+            val placeable = measurable.measure(Constraints.fixed(width, height))
+            layout(width, height) { placeable.place(0, 0) }
+          }
+        } else Modifier
+      )
+      .desktopModifyBlurredState(blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
-    val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember {
-      mutableStateOf(
-        if (chatModel.connectedToRemote()) null else runBlocking { imageAndFilePath(file) }
-      )
-    }
-    if (chatModel.connectedToRemote()) {
-      LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
-        withBGApi {
+    val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember { mutableStateOf(null) }
+    // Hidden media is not worth reading, decoding at full size and caching.
+    val revealed = !blurHidesMedia(!smallView, blurred)
+    if (revealed) {
+      if (chatModel.connectedToRemote()) {
+        LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
+          withBGApi {
+            if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
+              res.value = imageAndFilePath(file)
+            }
+          }
+        }
+      } else {
+        LaunchedEffect(file) {
           if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-            res.value = imageAndFilePath(file)
+            res.value = withContext(Dispatchers.IO) { imageAndFilePath(file) }
           }
         }
       }
-    } else {
-      KeyChangeEffect(file) {
-        if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-          res.value = imageAndFilePath(file)
-        }
-      }
     }
-    val loaded = res.value
+    val loaded = if (revealed) res.value else null
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, onClick) })
     } else {
-      imageView(base64ToBitmap(image), onClick = {
+      imageView(previewBitmap, onClick = {
         if (file != null) {
           when {
             file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted ->
-              if (fileSizeValid()) {
-                receiveFile(file.fileId)
+              if (file.fileProhibited != null) {
+                showProhibitedFileAlert(file, file.fileProhibited)
               } else {
-                AlertManager.shared.showAlertMsg(
-                  generalGetString(MR.strings.large_file),
-                  String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
-                )
+                chatModel.openWhenReceived(file, smallView)
+                receiveFile(file.fileId)
               }
             file.fileStatus is CIFileStatus.RcvAccepted ->
               when (file.fileProtocol) {
@@ -238,25 +249,13 @@ fun CIImageView(
                 FileProtocol.LOCAL -> {}
               }
             file.fileStatus is CIFileStatus.RcvError ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.file_error),
-                file.fileStatus.rcvFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.rcvFileError, file)
             file.fileStatus is CIFileStatus.RcvWarning ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.temporary_file_error),
-                file.fileStatus.rcvFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
             file.fileStatus is CIFileStatus.SndError ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.file_error),
-                file.fileStatus.sndFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.sndFileError)
             file.fileStatus is CIFileStatus.SndWarning ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.temporary_file_error),
-                file.fileStatus.sndFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
             file.fileStatus is CIFileStatus.RcvTransfer -> {} // ?
             file.fileStatus is CIFileStatus.RcvComplete -> {} // ?
             file.fileStatus is CIFileStatus.RcvCancelled -> {} // TODO
@@ -276,6 +275,12 @@ fun CIImageView(
   }
 }
 
+@Composable
+fun imageViewFullWidth(): Dp {
+  val approximatePadding = 100.dp
+  return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
+}
+
 private fun showDownloadButton(status: CIFileStatus?): Boolean =
   status is CIFileStatus.RcvInvitation || status is CIFileStatus.RcvAborted
 
@@ -286,5 +291,6 @@ expect fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  blurred: State<Boolean>,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 )

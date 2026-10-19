@@ -8,7 +8,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.views.localauth.LocalAuthView
 import chat.simplex.common.views.usersettings.LAMode
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 sealed class LAResult {
   object Success: LAResult()
@@ -51,7 +51,7 @@ fun authenticateWithPasscode(
       close()
       completed(LAResult.Error(generalGetString(MR.strings.authentication_cancelled)))
     }
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
       LocalAuthView(ChatModel, LocalAuthRequest(promptTitle, promptSubtitle, password, selfDestruct && ChatController.appPrefs.selfDestruct.get()) {
         close()
         completed(it)

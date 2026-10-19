@@ -1,7 +1,6 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionItemViewWithoutMinPadding
@@ -31,12 +30,12 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
 @Composable
-fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>) {
+fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, withAuth: (block: () -> Unit) -> Unit) {
   val searchTextOrPassword = rememberSaveable { search }
   val users by remember { derivedStateOf { m.users.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
@@ -48,8 +47,10 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
     addUser = {
-      ModalManager.center.showModalCloseable { close ->
-        CreateProfile(m, close)
+      withAuth {
+        ModalManager.center.showModalCloseable { close ->
+          CreateProfile(m, close)
+        }
       }
     },
     activateUser = { user ->
@@ -64,68 +65,78 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     removeUser = { user ->
-      val text = buildAnnotatedString {
-        append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-          append(user.displayName)
+      withAuth {
+        val text = buildAnnotatedString {
+          append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
+          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append(user.displayName)
+          }
+          append(":")
         }
-        append(":")
-      }
-      AlertManager.shared.showAlertDialogButtonsColumn(
-        title = generalGetString(MR.strings.users_delete_question),
-        text = text,
-        buttons = {
-          Column {
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              removeUser(m, user, users, true, searchTextOrPassword.value.trim())
-            }) {
-              Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-            }
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              removeUser(m, user, users, false, searchTextOrPassword.value.trim())
-            }
-            ) {
-              Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        AlertManager.shared.showAlertDialogButtonsColumn(
+          title = generalGetString(MR.strings.users_delete_question),
+          text = text,
+          buttons = {
+            Column {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                removeUser(m, user, users, true, searchTextOrPassword.value.trim())
+              }) {
+                Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+              }
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                removeUser(m, user, users, false, searchTextOrPassword.value.trim())
+              }
+              ) {
+                Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+              }
             }
           }
-        }
-      )
+        )
+      }
     },
     unhideUser = { user ->
-      if (passwordEntryRequired(user, searchTextOrPassword.value)) {
-        ModalManager.start.showModalCloseable(true) { close ->
-          ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
-            withBGApi {
-              setUserPrivacy(m) { m.controller.apiUnhideUser(user, pwd) }
-              close()
+      withAuth {
+        if (passwordEntryRequired(user, searchTextOrPassword.value)) {
+          ModalManager.start.showModalCloseable(true) { close ->
+            ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
+              withBGApi {
+                setUserPrivacy(m) { m.controller.apiUnhideUser(user, pwd) }
+                close()
+              }
             }
           }
+        } else {
+          withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user, searchTextOrPassword.value.trim()) } }
         }
-      } else {
-        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user, searchTextOrPassword.value.trim()) } }
       }
     },
     muteUser = { user ->
-      withBGApi {
-        setUserPrivacy(m, onSuccess = {
-          if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
-        }) { m.controller.apiMuteUser(user) }
+      withAuth {
+        withBGApi {
+          setUserPrivacy(m, onSuccess = {
+            if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
+          }) { m.controller.apiMuteUser(user) }
+        }
       }
     },
     unmuteUser = { user ->
-      withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
+      withAuth {
+        withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
+      }
     },
     showHiddenProfile = { user ->
-      ModalManager.start.showModalCloseable(true) { close ->
-        HiddenProfileView(m, user) {
-          profileHidden.value = true
-          withBGApi {
-            delay(10_000)
-            profileHidden.value = false
+      withAuth {
+        ModalManager.start.showModalCloseable(true) { close ->
+          HiddenProfileView(m, user) {
+            profileHidden.value = true
+            withBGApi {
+              delay(10_000)
+              profileHidden.value = false
+            }
+            close()
           }
-          close()
         }
       }
     }
@@ -138,7 +149,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
 @Composable
 private fun UserProfilesLayout(
   users: List<User>,
-  filteredUsers: List<User>,
+  filteredUsers: List<UserInfo>,
   searchTextOrPassword: MutableState<String>,
   profileHidden: MutableState<Boolean>,
   visibleUsersCount: Int,
@@ -151,10 +162,7 @@ private fun UserProfilesLayout(
   unmuteUser: (User) -> Unit,
   showHiddenProfile: (User) -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-  ) {
+  ColumnWithScrollBar {
     if (profileHidden.value) {
       SectionView {
         SettingsActionItem(painterResource(MR.images.ic_lock_open_right), stringResource(MR.strings.enter_password_to_show), click = {
@@ -168,7 +176,7 @@ private fun UserProfilesLayout(
     SectionView {
       for (user in filteredUsers) {
         UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
-        SectionDivider()
+        Divider(Modifier.padding(horizontal = 8.dp))
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
         SectionItemView(addUser, minHeight = 68.dp) {
@@ -198,7 +206,7 @@ private fun UserProfilesLayout(
 
 @Composable
 private fun UserView(
-  user: User,
+  userInfo: UserInfo,
   visibleUsersCount: Int,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
@@ -208,7 +216,8 @@ private fun UserView(
   showHiddenProfile: (User) -> Unit,
 ) {
   val showMenu = remember { mutableStateOf(false) }
-  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }) {
+  val user = userInfo.user
+  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }, unreadCount = userInfo.unreadCount) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -252,10 +261,7 @@ enum class UserProfileAction {
 
 @Composable
 private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (String) -> Unit) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-  ) {
+  ColumnWithScrollBar {
     val actionPassword = rememberSaveable { mutableStateOf("") }
     val passwordValid by remember { derivedStateOf { actionPassword.value == actionPassword.value.trim() } }
     val actionEnabled by remember { derivedStateOf { actionPassword.value != "" && passwordValid && correctPassword(user, actionPassword.value) } }
@@ -271,7 +277,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
     @Composable fun PasswordAndAction(label: StringResource, color: Color = MaterialTheme.colors.primary) {
       SectionView() {
         SectionItemViewWithoutMinPadding {
-          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true)
+          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true, contentType = null)
         }
         SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
           Text(generalGetString(label), color = if (actionEnabled) color else MaterialTheme.colors.secondary)
@@ -296,7 +302,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
   }
 }
 
-fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
+fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<UserInfo> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->
@@ -305,7 +311,7 @@ fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
     } else {
       correctPassword(u.user, s)
     }
-  }.map { it.user }
+  }
 }
 
 private fun visibleUsersCount(m: ChatModel): Int = m.users.filter { u -> !u.user.hidden }.size
@@ -340,6 +346,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
   try {
     when {
       user.activeUser -> {
+        removeWallpaperFilesFromAllChats(user)
         val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
         if (newActive != null) {
           m.controller.changeActiveUser_(user.remoteHostId, newActive.userId, null)
@@ -359,6 +366,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
         m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
       }
     }
+    removeWallpaperFilesFromTheme(user.uiThemes)
     m.removeUser(user)
     ntfManager.cancelNotificationsForUser(user.userId)
   } catch (e: Exception) {

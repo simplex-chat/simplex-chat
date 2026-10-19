@@ -5,6 +5,7 @@
 //  Created by Evgeny on 10/04/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/architecture.md
 
 import SwiftUI
 
@@ -28,7 +29,7 @@ struct PasscodeEntry: View {
         }
     }
 
-    @ViewBuilder private func passwordView() -> some View {
+    private func passwordView() -> some View {
         Text(
             password == ""
             ? " "

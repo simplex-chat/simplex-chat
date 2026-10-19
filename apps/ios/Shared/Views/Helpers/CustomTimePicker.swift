@@ -220,6 +220,35 @@ struct DropdownCustomTimePicker: View {
     }
 }
 
+struct WrappedPicker<SelectionValue: Hashable, Content: View, Label: View>: View {
+    var selection: Binding<SelectionValue>
+    @ViewBuilder var content: () -> Content
+    @ViewBuilder var label: () -> Label
+
+    init(_ title: LocalizedStringKey, selection: Binding<SelectionValue>, @ViewBuilder content: @escaping () -> Content) where Label == Text {
+        self.selection = selection
+        self.content = content
+        self.label = { Text(title) }
+    }
+
+    init(selection: Binding<SelectionValue>, @ViewBuilder content: @escaping () -> Content, @ViewBuilder label: @escaping () -> Label)  {
+        self.selection = selection
+        self.content = content
+        self.label = label
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            label()
+            Spacer()
+            Picker(selection: selection, content: content) {
+                EmptyView()
+            }
+            .frame(height: 36)
+        }
+    }
+}
+
 struct CustomTimePicker_Previews: PreviewProvider {
     static var previews: some View {
         CustomTimePicker(

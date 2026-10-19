@@ -5,6 +5,7 @@
 //  Created by Avently on 14.02.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -177,7 +178,7 @@ struct MigrateFromDevice: View {
             case let .archiveExportedWithErrors(archivePath, errs):
                 return Alert(
                     title: Text("Chat database exported"),
-                    message: Text("You may migrate the exported database.") + Text(verbatim: "\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                    message: Text("You may migrate the exported database.") + textNewLine + Text("Some file(s) were not exported:") + Text(archiveErrorsText(errs)),
                     dismissButton: .default(Text("Continue")) {
                         Task { await uploadArchive(path: archivePath) }
                     }
@@ -222,7 +223,8 @@ struct MigrateFromDevice: View {
     }
 
     private func passphraseNotSetView() -> some View {
-        DatabaseEncryptionView(useKeychain: $useKeychain, migration: true)
+        DatabaseEncryptionView(useKeychain: $useKeychain, migration: true, stopChatRunBlockStartChat: { _, _ in
+        })
             .onChange(of: initialRandomDBPassphrase) { initial in
                 if !initial {
                     migrationState = .uploadConfirmation
@@ -519,15 +521,15 @@ struct MigrateFromDevice: View {
             chatReceiver = MigrationChatReceiver(ctrl: ctrl, databaseUrl: tempDatabaseUrl) { msg in
                 await MainActor.run {
                     switch msg {
-                    case let .sndFileProgressXFTP(_, _, fileTransferMeta, sentSize, totalSize):
+                    case let .result(.sndFileProgressXFTP(_, _, fileTransferMeta, sentSize, totalSize)):
                         if case let .uploadProgress(uploaded, total, _, _, _) = migrationState, uploaded != total {
                             migrationState = .uploadProgress(uploadedBytes: sentSize, totalBytes: totalSize, fileId: fileTransferMeta.fileId, archivePath: archivePath, ctrl: ctrl)
                         }
-                    case .sndFileRedirectStartXFTP:
+                    case .result(.sndFileRedirectStartXFTP):
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             migrationState = .linkCreation
                         }
-                    case let .sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs):
+                    case let .result(.sndStandaloneFileComplete(_, fileTransferMeta, rcvURIs)):
                         let cfg = getNetCfg()
                         let proxy: NetworkProxy? = if cfg.socksProxy == nil {
                             nil
@@ -545,7 +547,7 @@ struct MigrateFromDevice: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             migrationState = .linkShown(fileId: fileTransferMeta.fileId, link: data.addToLink(link: rcvURIs[0]), archivePath: archivePath, ctrl: ctrl)
                         }
-                    case .sndFileError:
+                    case .result(.sndFileError):
                         alert = .error(title: "Upload failed", error: "Check your internet connection and try again")
                         migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
                     default:
@@ -690,7 +692,7 @@ private struct PassphraseConfirmationView: View {
                 migrationState = .uploadConfirmation
             }
         } catch let error {
-            if case .chatCmdError(_, .errorDatabase(.errorOpen(.errorNotADatabase))) = error as? ChatResponse {
+            if case .errorDatabase(.errorOpen(.errorNotADatabase)) = error as? ChatError {
                 showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
             } else {
                 alert = .error(title: "Error", error: NSLocalizedString("Error verifying passphrase:", comment: "") + " " + String(responseError(error)))
@@ -707,6 +709,8 @@ private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: 
         alert.wrappedValue = .wrongPassphrase()
     case .errorKeychain:
         alert.wrappedValue = .keychainError()
+    case .errorKeyGeneration:
+        alert.wrappedValue = .databaseError(message: NSLocalizedString("Cannot generate random database passphrase", comment: "alert message"))
     case let .errorSQL(_, error):
         alert.wrappedValue = .databaseError(message: error)
     case let .unknown(error):
@@ -732,11 +736,11 @@ func chatStoppedView() -> some View {
 private class MigrationChatReceiver {
     let ctrl: chat_ctrl
     let databaseUrl: URL
-    let processReceivedMsg: (ChatResponse) async -> Void
+    let processReceivedMsg: (APIResult<ChatEvent>) async -> Void
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
 
-    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (APIResult<ChatEvent>) async -> Void) {
         self.ctrl = ctrl
         self.databaseUrl = databaseUrl
         self.processReceivedMsg = processReceivedMsg
@@ -751,9 +755,9 @@ private class MigrationChatReceiver {
 
     func receiveMsgLoop() async {
         // TODO use function that has timeout
-        if let msg = await chatRecvMsg(ctrl) {
+        if let msg: APIResult<ChatEvent> = await chatRecvMsg(ctrl) {
             Task {
-                await TerminalItems.shared.add(.resp(.now, msg))
+                await TerminalItems.shared.addResult(msg)
             }
             logger.debug("processReceivedMsg: \(msg.responseType)")
             await processReceivedMsg(msg)

@@ -1,0 +1,37 @@
+name: "Prebuilt steps for build"
+description: "Reusable steps for multiple jobs"
+inputs:
+   java_ver:
+     required: true
+     description: "Java version to install"
+   ghc_ver:
+     required: true
+     description: "GHC version to install"
+   github_ref:
+     required: true
+     description: "Git reference"
+   cabal_ver:
+     required: false
+     default: 3.10.2.0
+     description: "GHC version to install"
+outputs:
+  cabal-store:
+    description: "Cabal store path"
+    value: ${{ steps.setup.outputs.cabal-store }}
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Haskell
+      id: setup
+      uses: simplex-chat/setup-haskell-action@v2
+      with:
+        ghc-version: ${{ inputs.ghc_ver }}
+        cabal-version: ${{ inputs.cabal_ver }}
+
+    - name: Setup Java
+      if: startsWith(inputs.github_ref, 'refs/tags/v')
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'corretto'
+        java-version: ${{ inputs.java_ver }}
+        cache: 'gradle'

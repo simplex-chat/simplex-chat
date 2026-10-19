@@ -9,9 +9,19 @@
 import SwiftUI
 
 extension View {
+    @inline(__always)
     @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
         if condition {
             transform(self)
+        } else {
+            self
+        }
+    }
+
+    @inline(__always)
+    @ViewBuilder func compactSectionSpacing() -> some View {
+        if #available(iOS 17, *) {
+            self.listSectionSpacing(.compact)
         } else {
             self
         }
@@ -36,9 +46,9 @@ struct PrivacyBlur: ViewModifier {
                 .overlay {
                     if (blurred && enabled) {
                         Color.clear.contentShape(Rectangle())
-                            .onTapGesture {
+                            .simultaneousGesture(TapGesture().onEnded {
                                 blurred = false
-                            }
+                            })
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .chatViewWillBeginScrolling)) { _ in

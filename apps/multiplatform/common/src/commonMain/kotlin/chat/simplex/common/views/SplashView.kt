@@ -6,11 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-fun SplashView() {
+fun SplashView(nonTransparent: Boolean = false) {
   Surface(
     Modifier
       .fillMaxSize(),
-    color = MaterialTheme.colors.background,
+    color = if (nonTransparent) MaterialTheme.colors.background.copy(1f) else MaterialTheme.colors.background,
     contentColor = LocalContentColor.current
   ) {
 //    Image(

@@ -12,7 +12,7 @@ import SimpleXChat
 struct ProfileImage: View {
     @EnvironmentObject var theme: AppTheme
     var imageStr: String? = nil
-    var iconName: String = "person.crop.circle.fill"
+    var icon: Image = Image(systemName: "person.crop.circle.fill")
     var size: CGFloat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
     var backgroundColor: Color? = nil
@@ -24,11 +24,16 @@ struct ProfileImage: View {
             clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius, blurred: blurred)
         } else {
             let c = color.asAnotherColorFromSecondaryVariant(theme)
-            Image(systemName: iconName)
+            icon
                 .resizable()
                 .foregroundColor(c)
+                .scaledToFit()
                 .frame(width: size, height: size)
-                .background(Circle().fill(backgroundColor != nil ? backgroundColor! : .clear))
+                .background(
+                    Circle()
+                        .fill(backgroundColor != nil ? backgroundColor! : .clear)
+                        .frame(width: size - 2, height: size - 2) // less than size of Image to avoid slightly visible border
+                )
         }
     }
 }

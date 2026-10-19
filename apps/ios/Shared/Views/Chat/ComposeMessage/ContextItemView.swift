@@ -15,6 +15,7 @@ struct ContextItemView: View {
     let contextItems: [ChatItem]
     let contextIcon: String
     let cancelContextItem: () -> Void
+    var contextIconForeground: Color? = nil
     var showSender: Bool = true
 
     var body: some View {
@@ -23,7 +24,7 @@ struct ContextItemView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 16, height: 16)
-                .foregroundColor(theme.colors.secondary)
+                .foregroundColor(contextIconForeground ?? theme.colors.secondary)
             if let singleItem = contextItems.first, contextItems.count == 1 {
                 if showSender, let sender = singleItem.memberDisplayName {
                      VStack(alignment: .leading, spacing: 4) {
@@ -69,8 +70,10 @@ struct ContextItemView: View {
             .lineLimit(lines)
     }
 
-    private func contextMsgPreview(_ contextItem: ChatItem) -> Text {
-        return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
+    private func contextMsgPreview(_ contextItem: ChatItem) -> some View {
+        let r = messageText(contextItem.text, contextItem.formattedText, markdownBlocks: contextItem.markdownBlocks, sender: nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: nil, backgroundColor: UIColor(background), stripLink: contextItem.content.msgContent?.chatLinkStr)
+        let t = attachment() + Text(AttributedString(r.string))
+        return t.if(r.hasSecrets, transform: hiddenSecretsView)
 
         func attachment() -> Text {
             let isFileLoaded = if let fileSource = getLoadedFileSource(contextItem.file) {
@@ -80,12 +83,15 @@ struct ContextItemView: View {
             case .file: return isFileLoaded ? image("doc.fill") : Text("")
             case .image: return image("photo")
             case .voice: return isFileLoaded ? image("play.fill") : Text("")
+            case let .chat(_, chatLink, _):
+                let hasText = contextItem.text != chatLink.connLinkStr
+                return image(chatLink.smallIconName) + Text(chatLink.displayName) + Text(verbatim: hasText ? " - " : "")
             default: return Text("")
             }
         }
 
         func image(_ s: String) -> Text {
-            Text(Image(systemName: s)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ")
+            Text(Image(systemName: s)).foregroundColor(Color(uiColor: .tertiaryLabel)) + textSpace
         }
     }
 }
@@ -93,6 +99,6 @@ struct ContextItemView: View {
 struct ContextItemView_Previews: PreviewProvider {
     static var previews: some View {
         let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
-        return ContextItemView(chat: Chat.sampleData, contextItems: [contextItem], contextIcon: "pencil.circle", cancelContextItem: {})
+        return ContextItemView(chat: Chat.sampleData, contextItems: [contextItem], contextIcon: "pencil.circle", cancelContextItem: {}, contextIconForeground: Color.red)
     }
 }

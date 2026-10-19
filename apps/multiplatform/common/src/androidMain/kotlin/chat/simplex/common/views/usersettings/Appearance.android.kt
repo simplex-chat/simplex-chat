@@ -31,7 +31,8 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
-import chat.simplex.res.MR
+import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.delay
@@ -75,9 +76,7 @@ fun AppearanceScope.AppearanceLayout(
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
     SectionView(stringResource(MR.strings.settings_section_title_interface), contentPadding = PaddingValues()) {
       val context = LocalContext.current
@@ -106,9 +105,11 @@ fun AppearanceScope.AppearanceLayout(
       }
       //      }
 
-      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) {
-        val c = CurrentColors.value.colors
-        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) { enabled ->
+        if (enabled) appPrefs.chatBottomBar.set(true)
+      }
+      if (remember { appPrefs.oneHandUI.state }.value) {
+        SettingsPreferenceItem(icon = null, stringResource(MR.strings.chat_bottom_bar), ChatModel.controller.appPrefs.chatBottomBar)
       }
     }
 
@@ -116,14 +117,17 @@ fun AppearanceScope.AppearanceLayout(
     ThemesSection(systemDarkTheme)
 
     SectionDividerSpaced()
+    AppToolbarsSection()
+
+    SectionDividerSpaced()
     MessageShapeSection()
 
     SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_icon), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+    SectionView(stringResource(MR.strings.settings_section_title_icon), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
@@ -147,18 +151,18 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     FontScaleSection()
 
     SectionBottomSpacer()
   }
 }
 
-private fun findEnabledIcon(): AppIcon = AppIcon.values().first { icon ->
+private fun findEnabledIcon(): AppIcon = AppIcon.values().firstOrNull { icon ->
   androidAppContext.packageManager.getComponentEnabledSetting(
     ComponentName(APPLICATION_ID, "chat.simplex.app.MainActivity_${icon.name.lowercase()}")
   ).let { it == COMPONENT_ENABLED_STATE_DEFAULT || it == COMPONENT_ENABLED_STATE_ENABLED }
-}
+} ?: AppIcon.DEFAULT
 
 @Preview
 @Composable

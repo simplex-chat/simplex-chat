@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct AddGroupView: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -23,7 +24,7 @@ struct AddGroupView: View {
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
     @State private var showInvalidNameAlert = false
-    @State private var groupLink: String?
+    @State private var groupLink: GroupLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
 
     var body: some View {
@@ -66,29 +67,40 @@ struct AddGroupView: View {
     func createGroupView() -> some View {
         List {
             Group {
-                ZStack(alignment: .center) {
-                    ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, size: 128)
-                        if profile.image != nil {
-                            Button {
-                                profile.image = nil
-                            } label: {
-                                Image(systemName: "multiply")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 12)
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    ZStack(alignment: .center) {
+                        ZStack(alignment: .topTrailing) {
+                            ProfileImage(imageStr: profile.image, icon: Image(systemName: "person.2.circle.fill"), size: 128)
+                            if profile.image != nil {
+                                Button {
+                                    profile.image = nil
+                                } label: {
+                                    Image(systemName: "multiply")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 12)
+                                }
                             }
                         }
-                    }
 
-                    editImageButton { showChooseSource = true }
-                        .buttonStyle(BorderlessButtonStyle()) // otherwise whole "list row" is clickable
+                        editImageButton { showChooseSource = true }
+                            .buttonStyle(BorderlessButtonStyle()) // otherwise whole "list row" is clickable
+                    }
+                    .padding(.horizontal, 10) // Offsets transparent space built into 3D asset
+                    #if SIMPLEX_ASSETS
+                    Spacer(minLength: 0)
+                    Image(colorScheme == .light ? "create-group" : "create-group-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 140)
+                    #endif
+                    Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))
 
             Section {
                 groupNameTextField()
@@ -104,8 +116,11 @@ struct AddGroupView: View {
                 }
                 .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .onTapGesture(perform: hideKeyboard)
+                .onTapGesture {
+                    focusDisplayName = false
+                }
             }
+            .compactSectionSpacing()
         }
         .onAppear() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -161,18 +176,14 @@ struct AddGroupView: View {
             } else {
                 Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
             }
-            textField("Enter group name…", text: $profile.displayName)
+            TextField("Enter group name…", text: $profile.displayName)
+                .padding(.leading, 36)
                 .focused($focusDisplayName)
                 .submitLabel(.continue)
                 .onSubmit {
                     if canCreateProfile() { createGroup() }
                 }
         }
-    }
-
-    func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
-        TextField(placeholder, text: text)
-            .padding(.leading, 36)
     }
 
     func sharedGroupProfileInfo(_ incognito: Bool) -> Text {
@@ -185,19 +196,15 @@ struct AddGroupView: View {
     }
 
     func createGroup() {
-        hideKeyboard()
+        focusDisplayName = false
         do {
             profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
             profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
             let gInfo = try apiNewGroup(incognito: incognitoDefault, groupProfile: profile)
             Task {
-                let groupMembers = await apiListMembers(gInfo.groupId)
-                await MainActor.run {
-                    m.groupMembers = groupMembers.map { GMember.init($0) }
-                    m.populateGroupMembersIndexes()
-                }
+                await m.loadGroupMembers(gInfo)
             }
-            let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
+            let c = Chat(chatInfo: .group(groupInfo: gInfo, groupChatScope: nil), chatItems: [])
             m.addChat(c)
             withAnimation {
                 groupInfo = gInfo
@@ -221,6 +228,8 @@ struct AddGroupView: View {
     }
 }
 
+// Using this method may freeze the app in some cases, so it should be avoided when possible, especially when combined with .focussed modifier.
+// It also must only be called from background thread.
 func hideKeyboard() {
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }

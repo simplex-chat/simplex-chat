@@ -3,10 +3,11 @@ package chat.simplex.common.views.call
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.io.Closeable
 import java.net.URI
 import kotlin.collections.ArrayList
 
@@ -20,29 +21,32 @@ data class Call(
   val localMediaSources: CallMediaSources = CallMediaSources(mic = true, camera = initialCallType == CallMediaType.Video),
   val localCapabilities: CallCapabilities? = null,
   val peerMediaSources: CallMediaSources = CallMediaSources(),
-  val sharedKey: String? = null,
+  val hasSharedKey: Boolean = false,
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null,
   var connectedAt: Instant? = null,
 
   // When a user has audio call, and then he wants to enable camera but didn't grant permissions for using camera yet,
   // we show permissions view without enabling camera before permissions are granted. After they are granted, enabling camera
-  val wantsToEnableCamera: Boolean = false
+  val wantsToEnableCamera: Boolean = false,
+
+  val androidCallState: Closeable
 ) {
-  val encrypted: Boolean get() = localEncrypted && sharedKey != null
+  val encrypted: Boolean get() = localEncrypted && hasSharedKey
   private val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
 
   val encryptionStatus: String get() = when(callState) {
     CallState.WaitCapabilities -> ""
     CallState.InvitationSent -> generalGetString(if (localEncrypted) MR.strings.status_e2e_encrypted else MR.strings.status_no_e2e_encryption)
-    CallState.InvitationAccepted -> generalGetString(if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_contact_has_e2e_encryption)
-    else -> generalGetString(if (!localEncrypted) MR.strings.status_no_e2e_encryption else if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_e2e_encrypted)
+    CallState.InvitationAccepted -> generalGetString(if (!hasSharedKey) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_contact_has_e2e_encryption)
+    else -> generalGetString(if (!localEncrypted) MR.strings.status_no_e2e_encryption else if (!hasSharedKey) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_e2e_encrypted)
   }
 
   val hasVideo: Boolean
     get() = localMediaSources.hasVideo || peerMediaSources.hasVideo
 }
 
+// Spec: spec/services/calls.md#CallState
 enum class CallState {
   WaitCapabilities,
   InvitationSent,
@@ -52,6 +56,7 @@ enum class CallState {
   AnswerReceived,
   Negotiated,
   Connected,
+  Reconnecting,
   Ended;
 
   val text: String get() = when(this) {
@@ -63,6 +68,7 @@ enum class CallState {
     AnswerReceived -> generalGetString(MR.strings.callstate_received_confirmation)
     Negotiated -> generalGetString(MR.strings.callstate_connecting)
     Connected -> generalGetString(MR.strings.callstate_connected)
+    Reconnecting -> generalGetString(MR.strings.callstate_reconnecting)
     Ended -> generalGetString(MR.strings.callstate_ended)
   }
 }
@@ -87,7 +93,7 @@ sealed class WCallCommand {
   @Serializable @SerialName("start") data class Start(val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
   @Serializable @SerialName("offer") data class Offer(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
   @Serializable @SerialName("answer") data class Answer (val answer: String, val iceCandidates: String): WCallCommand()
-  @Serializable @SerialName("ice") data class Ice(val iceCandidates: String): WCallCommand()
+  @Serializable @SerialName("ice") data class Ice(val iceCandidates: String, val session: String? = null): WCallCommand()
   @Serializable @SerialName("media") data class Media(val source: CallMediaSource, val enable: Boolean): WCallCommand()
   @Serializable @SerialName("camera") data class Camera(val camera: VideoCamera): WCallCommand()
   @Serializable @SerialName("description") data class Description(val state: String, val description: String): WCallCommand()
@@ -100,7 +106,7 @@ sealed class WCallResponse {
   @Serializable @SerialName("capabilities") data class Capabilities(val capabilities: CallCapabilities): WCallResponse()
   @Serializable @SerialName("offer") data class Offer(val offer: String, val iceCandidates: String, val capabilities: CallCapabilities): WCallResponse()
   @Serializable @SerialName("answer") data class Answer(val answer: String, val iceCandidates: String): WCallResponse()
-  @Serializable @SerialName("ice") data class Ice(val iceCandidates: String): WCallResponse()
+  @Serializable @SerialName("ice") data class Ice(val iceCandidates: String, val session: String? = null): WCallResponse()
   @Serializable @SerialName("connection") data class Connection(val state: ConnectionState): WCallResponse()
   @Serializable @SerialName("connected") data class Connected(val connectionInfo: ConnectionInfo): WCallResponse()
   @Serializable @SerialName("peerMedia") data class PeerMedia(val source: CallMediaSource, val enabled: Boolean): WCallResponse()
@@ -112,7 +118,7 @@ sealed class WCallResponse {
 
 @Serializable data class WebRTCCallOffer(val callType: CallType, val rtcSession: WebRTCSession)
 @Serializable data class WebRTCSession(val rtcSession: String, val rtcIceCandidates: String)
-@Serializable data class WebRTCExtraInfo(val rtcIceCandidates: String)
+@Serializable data class WebRTCExtraInfo(val rtcSession: String? = null, val rtcIceCandidates: String)
 @Serializable data class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
 @Serializable data class RcvCallInvitation(
   val remoteHostId: Long?,

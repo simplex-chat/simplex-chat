@@ -19,10 +19,11 @@ import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import java.awt.Frame
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File
@@ -31,8 +32,11 @@ import kotlin.system.exitProcess
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() {
-  val closedByError = mutableStateOf(true)
-  while (closedByError.value) {
+  // Probe SystemTray off the EDT — the lazy's first read would otherwise block the
+  // EDT during composition; JDK-8322750's GNOME detection forks a subprocess.
+  trayIsAvailable
+  while (true) {
+    val closedByError = mutableStateOf(false)
     application(exitProcessOnExit = false) {
       CompositionLocalProvider(
         LocalWindowExceptionHandlerFactory provides WindowExceptionHandlerFactory { window ->
@@ -43,8 +47,9 @@ fun showApp() {
               shareText = true
             )
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
-            window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
+            // Must precede dispatchEvent — handleCloseRequest reads this flag.
             closedByError.value = true
+            window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
             includeMoreFailedComposables()
             // If the left side of screen has open modal, it's probably caused the crash
             if (ModalManager.start.hasModalsOpen()) {
@@ -55,8 +60,15 @@ fun showApp() {
               // Better to not close fullscreen since it can contain passcode
             } else {
               // The last possible cause that can be closed
-              chatModel.chatId.value = null
-              chatModel.chatItems.clear()
+              withApi {
+                withContext(Dispatchers.Main) {
+                  chatModel.chatId.value = null
+                  chatModel.chatsContext.chatItems.clearAndNotify()
+                }
+                withContext(Dispatchers.Main) {
+                  chatModel.secondaryChatsContext.value = null
+                }
+              }
             }
             chatModel.activeCall.value?.let {
               withBGApi {
@@ -66,9 +78,11 @@ fun showApp() {
           }
         }
       ) {
+        SimplexTray()
         AppWindow(closedByError)
       }
     }
+    if (!closedByError.value) break
   }
   exitProcess(0)
 }
@@ -108,7 +122,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   simplexWindowState.windowState = windowState
   // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
-    Window(state = windowState, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { closedByError.value = false; exitApplication() }, onKeyEvent = {
+    Window(state = windowState, visible = simplexWindowState.windowVisible.value, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { handleCloseRequest(closedByError) }, onKeyEvent = {
       if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
         simplexWindowState.backstack.lastOrNull()?.invoke() != null
       } else {
@@ -164,13 +178,14 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         // Shows toast in insertion order with preferred delay per toast. New one will be shown once previous one expires
         LaunchedEffect(toast, toasts.size) {
           delay(toast.second)
-          simplexWindowState.toasts.removeFirst()
+          simplexWindowState.toasts.removeFirstOrNull()
         }
       }
       var windowFocused by remember { simplexWindowState.windowFocused }
-      LaunchedEffect(windowFocused) {
+      val showCallView = ChatModel.showCallView.value
+      LaunchedEffect(windowFocused, showCallView) {
         val delay = ChatController.appPrefs.laLockDelay.get()
-        if (!windowFocused && ChatModel.showAuthScreen.value && delay > 0) {
+        if (!windowFocused && !showCallView && ChatModel.showAuthScreen.value && delay > 0) {
           delay(delay * 1000L)
           // Trigger auth state check when delay ends (and if it ends)
           AppLock.recheckAuthState()
@@ -198,17 +213,62 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, height =
       768.dp)
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
+        val data = remember { ModalData() }
         SimpleXTheme {
-          TerminalView(true) { hiddenUntilRestart = true }
-          ModalManager.floatingTerminal.showInView()
-          DisposableEffect(Unit) {
-            onDispose {
-              ModalManager.floatingTerminal.closeModals()
+          CompositionLocalProvider(LocalAppBarHandler provides data.appBarHandler) {
+            ModalView({ hiddenUntilRestart = true }) {
+              TerminalView(true)
+            }
+            ModalManager.floatingTerminal.showInView()
+            DisposableEffect(Unit) {
+              onDispose {
+                ModalManager.floatingTerminal.closeModals()
+              }
             }
           }
         }
       }
     }
+  }
+}
+
+// Not invoked for macOS Cmd+Q — that goes through AWT's default QuitHandler and
+// exits the process directly. Intentional: Cmd+Q is canonical "always quit" on macOS.
+private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Boolean>) {
+  // Crash dispatch — bypass user-facing policy and exit; outer loop will restart.
+  if (closedByError.value) {
+    exitApplication()
+    return
+  }
+  val pref = ChatController.appPrefs.closeBehavior
+  when (pref.get()) {
+    CloseBehavior.Quit -> exitApplication()
+    CloseBehavior.MinimizeToTray -> if (trayIsAvailable && singleInstanceLock) {
+      simplexWindowState.windowVisible.value = false
+    } else exitApplication()
+    CloseBehavior.Ask -> if (trayIsAvailable && singleInstanceLock) {
+      requestCloseBehavior()
+    } else {
+      // Tray unavailable — Minimize is not a real option; remember Quit and exit.
+      pref.set(CloseBehavior.Quit)
+      exitApplication()
+    }
+  }
+}
+
+fun showWindow() {
+  simplexWindowState.windowVisible.value = true
+  simplexWindowState.window?.apply {
+    // During a crash restart this is the disposed window, and showing it would bring it back.
+    if (!isDisplayable) return
+    // Clear ICONIFIED so a minimized window un-minimizes; preserves MAXIMIZED_BOTH
+    // when set. toFront() alone does not un-minimize on any AWT platform.
+    extendedState = extendedState and Frame.ICONIFIED.inv()
+    // The window is made visible before the activation below; the next recomposition would be too late.
+    isVisible = true
+    toFront()
+    requestFocus()
+    if (desktopPlatform.isLinux()) requestX11Activation(this)
   }
 }
 
@@ -220,6 +280,7 @@ class SimplexWindowState {
   val saveDialog = DialogState<File?>()
   val toasts = mutableStateListOf<Pair<String, Long>>()
   var windowFocused = mutableStateOf(true)
+  val windowVisible = mutableStateOf(true)
   var window: ComposeWindow? = null
 }
 

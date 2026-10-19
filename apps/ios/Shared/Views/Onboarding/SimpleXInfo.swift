@@ -5,71 +5,91 @@
 //  Created by Evgeny on 07/05/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
 
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
-    @State private var showHowItWorks = false
+    @State private var showWhyBuilt = false
+    @State private var createProfileNavLinkActive = false
     var onboarding: Bool
 
     var body: some View {
         GeometryReader { g in
-            ScrollView {
-                VStack(alignment: .leading) {
-                    Image(colorScheme == .light ? "logo" : "logo-light")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: g.size.width * 0.67)
-                        .padding(.bottom, 8)
-                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
+            VStack(alignment: .center, spacing: 10) {
+                Image(colorScheme == .light ? "logo" : "logo-light")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: (g.size.width - 50) * 0.55)
+                    .padding(.leading, 4)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
 
-                    VStack(alignment: .leading) {
-                        Text("The next generation of private messaging")
-                            .font(.title2)
-                            .padding(.bottom, 30)
-                            .padding(.horizontal, 40)
-                            .frame(maxWidth: .infinity)
-                            .multilineTextAlignment(.center)
-                        infoRow("privacy", "Privacy redefined",
-                                "The 1st platform without any user identifiers – private by design.", width: 48)
-                        infoRow("shield", "Immune to spam and abuse",
-                                "People can connect to you only via the links you share.", width: 46)
-                        infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
-                                "Open-source protocol and code – anybody can run the servers.", width: 44)
-                    }
+                #if SIMPLEX_ASSETS
+                Image(colorScheme == .light ? "intro" : "intro-light")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                #else
+                ZStack {
+                    let gp = OnboardingCardView.gradientPoints(aspectRatio: 1.0, scale: colorScheme == .light ? 1.2 : 1.5)
+                    LinearGradient(
+                        stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
+                        startPoint: gp.start,
+                        endPoint: gp.end
+                    )
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 72))
+                        .foregroundColor(theme.colors.primary)
+                }
+                .aspectRatio(1.0, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .padding(.horizontal, 25)
+                .frame(maxWidth: .infinity)
+                #endif
 
-                    Spacer()
-                    if onboarding {
-                        OnboardingActionButton()
-                        Spacer()
+                Text("Be free\nin your network")
+                    .font(.largeTitle)
+                    .bold()
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                        Button {
-                            m.migrationState = .pasteOrScanLink
-                        } label: {
-                            Label("Migrate from another device", systemImage: "tray.and.arrow.down")
-                                .font(.subheadline)
-                        }
-                        .padding(.bottom, 8)
-                        .frame(maxWidth: .infinity)
-                    }
+                Text("Private and secure messaging.")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundColor(theme.colors.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("The first network where you own\nyour contacts and groups.")
+                    .font(.footnote)
+                    .foregroundColor(theme.colors.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if onboarding {
+                    Spacer(minLength: 0)
+
+                    createFirstProfileButton()
+                        .padding(.vertical, 10)
 
                     Button {
-                        showHowItWorks = true
+                        showWhyBuilt = true
                     } label: {
-                        Label("How it works", systemImage: "info.circle")
-                            .font(.subheadline)
+                        Label("Why SimpleX is built.", systemImage: "info.circle")
+                            .font(.headline)
                     }
-                    .padding(.bottom, 8)
-                    .frame(maxWidth: .infinity)
-
                 }
-                .frame(minHeight: g.size.height)
             }
+            .padding(.horizontal, 25)
+            .padding(.top, 28)
+            .padding(.bottom, 20)
+            .frame(minHeight: g.size.height)
             .sheet(isPresented: Binding(
-                get: { m.migrationState != nil },
+                get: { m.migrationState != nil && !createProfileNavLinkActive },
                 set: { _ in
                     m.migrationState = nil
                     MigrationToDeviceState.save(nil) }
@@ -82,77 +102,44 @@ struct SimpleXInfo: View {
                     .modifier(ThemedBackground(grouped: true))
                 }
             }
-            .sheet(isPresented: $showHowItWorks) {
-                HowItWorks(onboarding: onboarding)
+            .sheet(isPresented: $showWhyBuilt) {
+                WhySimpleX(
+                    onboarding: onboarding,
+                    createProfileNavLinkActive: $createProfileNavLinkActive
+                )
             }
+        }
+        .onAppear() {
+            setLastVersionDefault()
         }
         .frame(maxHeight: .infinity)
-        .padding()
+        .navigationBarHidden(true) // necessary on iOS 15
     }
 
-    private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
-        HStack(alignment: .top) {
-            Image(image)
-                .resizable()
-                .scaledToFit()
-                .frame(width: width, height: 54)
-                .frame(width: 54)
-                .padding(.top, 4)
-                .padding(.leading, 4)
-                .padding(.trailing, 10)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.headline)
-                Text(text).frame(minHeight: 40, alignment: .top)
+    private func createFirstProfileButton() -> some View {
+        ZStack {
+            Button {
+                createProfileNavLinkActive = true
+            } label: {
+                Text("Get started")
             }
+            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+
+            NavigationLink(isActive: $createProfileNavLinkActive) {
+                CreateFirstProfile()
+                    .modifier(ThemedBackground())
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
-        .padding(.bottom, 20)
-        .padding(.trailing, 6)
     }
 }
 
-struct OnboardingActionButton: View {
-    @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+let textSpace = Text(verbatim: " ")
 
-    var body: some View {
-        if m.currentUser == nil {
-            actionButton("Create your profile", onboarding: .step2_CreateProfile)
-        } else {
-            actionButton("Make a private connection", onboarding: .onboardingComplete)
-        }
-    }
-
-    private func actionButton(_ label: LocalizedStringKey, onboarding: OnboardingStage) -> some View {
-        Button {
-            withAnimation {
-                onboardingStageDefault.set(onboarding)
-                m.onboardingStage = onboarding
-            }
-        } label: {
-            HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom)
-    }
-
-    private func actionButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button {
-            withAnimation {
-                action()
-            }
-        } label: {
-            HStack {
-                Text(label).font(.title2)
-                Image(systemName: "greaterthan")
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom)
-    }
-}
+let textNewLine = Text(verbatim: "\n")
 
 struct SimpleXInfo_Previews: PreviewProvider {
     static var previews: some View {

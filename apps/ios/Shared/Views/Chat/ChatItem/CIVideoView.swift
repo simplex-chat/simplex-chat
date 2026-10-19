@@ -5,12 +5,14 @@
 //  Created by Avently on 30/03/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import AVKit
 import SimpleXChat
 import Combine
 
+// Spec: spec/client/chat-view.md#CIVideoView
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
     private let chatItem: ChatItem
@@ -47,57 +49,57 @@ struct CIVideoView: View {
         let file = chatItem.file
         ZStack(alignment: smallView ? .topLeading : .center) {
             ZStack(alignment: .topLeading) {
-                if let file = file, let preview = preview, let decrypted = urlDecrypted, smallView {
-                    smallVideoView(decrypted, file, preview)
-                } else if let file = file, let preview = preview, let player = player, let decrypted = urlDecrypted {
-                    videoView(player, decrypted, file, preview, duration)
-                } else if let file = file, let defaultPreview = preview, file.loaded && urlDecrypted == nil, smallView {
-                    smallVideoViewEncrypted(file, defaultPreview)
-                } else if let file = file, let defaultPreview = preview, file.loaded && urlDecrypted == nil {
-                    videoViewEncrypted(file, defaultPreview, duration)
-                } else if let preview, let file {
-                    Group { if smallView { smallViewImageView(preview, file) } else { imageView(preview) } }
-                        .onTapGesture {
-                            switch file.fileStatus {
-                            case .rcvInvitation, .rcvAborted:
-                                receiveFileIfValidSize(file: file, receiveFile: receiveFile)
-                            case .rcvAccepted:
-                                switch file.fileProtocol {
-                                case .xftp:
-                                    AlertManager.shared.showAlertMsg(
-                                        title: "Waiting for video",
-                                        message: "Video will be received when your contact completes uploading it."
-                                    )
-                                case .smp:
-                                    AlertManager.shared.showAlertMsg(
-                                        title: "Waiting for video",
-                                        message: "Video will be received when your contact is online, please wait or check later!"
-                                    )
-                                case .local: ()
-                                }
-                            case .rcvTransfer: () // ?
-                            case .rcvComplete: () // ?
-                            case .rcvCancelled: () // TODO
-                            default: ()
-                            }
+                if let file, let preview {
+                    if let urlDecrypted {
+                        if smallView {
+                            smallVideoView(urlDecrypted, file, preview)
+                        } else if let player {
+                            videoView(player, urlDecrypted, file, preview, duration)
                         }
+                    } else if file.loaded {
+                        if smallView {
+                            smallVideoViewEncrypted(file, preview)
+                        } else {
+                            videoViewEncrypted(file, preview, duration)
+                        }
+                    } else {
+                        Group { if smallView { smallViewImageView(preview, file) } else { imageView(preview) } }
+                            .simultaneousGesture(TapGesture().onEnded {
+                                switch file.fileStatus {
+                                case .rcvInvitation, .rcvAborted:
+                                    receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                                case .rcvAccepted:
+                                    switch file.fileProtocol {
+                                    case .xftp:
+                                        AlertManager.shared.showAlertMsg(
+                                            title: "Waiting for video",
+                                            message: "Video will be received when your contact completes uploading it."
+                                        )
+                                    case .smp:
+                                        AlertManager.shared.showAlertMsg(
+                                            title: "Waiting for video",
+                                            message: "Video will be received when your contact is online, please wait or check later!"
+                                        )
+                                    case .local: ()
+                                    }
+                                case .rcvTransfer: () // ?
+                                case .rcvComplete: () // ?
+                                case .rcvCancelled: () // TODO
+                                default: ()
+                                }
+                            })
+                    }
                 }
                 if !smallView {
                     durationProgress()
                 }
             }
             if !blurred, let file, showDownloadButton(file.fileStatus) {
-                if !smallView {
-                    Button {
-                        receiveFileIfValidSize(file: file, receiveFile: receiveFile)
-                    } label: {
-                        playPauseIcon("play.fill")
-                    }
-                } else if !file.showStatusIconInSmallView {
+                if !smallView || !file.showStatusIconInSmallView {
                     playPauseIcon("play.fill")
-                        .onTapGesture {
+                        .simultaneousGesture(TapGesture().onEnded {
                             receiveFileIfValidSize(file: file, receiveFile: receiveFile)
-                        }
+                        })
                 }
             }
         }
@@ -115,6 +117,25 @@ struct CIVideoView: View {
         }
         .onDisappear {
             showFullScreenPlayer = false
+        }
+    }
+
+    private func playReceived(_ file: CIFile) {
+        setupPlayer(file)
+        if urlDecrypted == nil {
+            decrypt(file: file, completed: playVideo)
+        } else {
+            playVideo()
+        }
+    }
+
+    private func playVideo() {
+        if smallView {
+            showFullScreenPlayer = urlDecrypted != nil
+        } else if let urlDecrypted {
+            m.stopPreviousRecPlay = urlDecrypted
+            videoPlaying = true
+            player?.play()
         }
     }
 
@@ -151,27 +172,26 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 imageView(defaultPreview)
-                .onTapGesture {
+                .simultaneousGesture(TapGesture().onEnded {
                     decrypt(file: file) {
                         showFullScreenPlayer = urlDecrypted != nil
                     }
-                }
+                })
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenPlayer = false
                 }
                 if !blurred {
                     if !decryptionInProgress {
-                        Button {
-                            decrypt(file: file) {
-                                if urlDecrypted != nil {
-                                    videoPlaying = true
-                                    player?.play()
+                        playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
+                            .simultaneousGesture(TapGesture().onEnded {
+                                decrypt(file: file) {
+                                    if urlDecrypted != nil {
+                                        videoPlaying = true
+                                        player?.play()
+                                    }
                                 }
-                            }
-                        } label: {
-                            playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
-                        }
-                        .disabled(!canBePlayed)
+                            })
+                            .disabled(!canBePlayed)
                     } else {
                         videoDecryptionProgress()
                     }
@@ -186,7 +206,8 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 VideoPlayerView(player: player, url: url, showControls: false)
-                .frame(width: w, height: w * preview.size.height / preview.size.width)
+                .frame(width: w, height: w * heightRatio(preview.size))
+                .clipped()
                 .onChange(of: m.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
@@ -194,29 +215,30 @@ struct CIVideoView: View {
                     }
                 }
                 .modifier(PrivacyBlur(enabled: !videoPlaying, blurred: $blurred))
-                .onTapGesture {
-                    switch player.timeControlStatus {
-                    case .playing:
-                        player.pause()
-                        videoPlaying = false
-                    case .paused:
-                        if canBePlayed {
-                            showFullScreenPlayer = true
+                .if(!blurred) { v in
+                    v.simultaneousGesture(TapGesture().onEnded {
+                        switch player.timeControlStatus {
+                        case .playing:
+                            player.pause()
+                            videoPlaying = false
+                        case .paused:
+                            if canBePlayed {
+                                showFullScreenPlayer = true
+                            }
+                        default: ()
                         }
-                    default: ()
-                    }
+                    })
                 }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenPlayer = false
                 }
                 if !videoPlaying && !blurred {
-                    Button {
-                        m.stopPreviousRecPlay = url
-                        player.play()
-                    } label: {
-                        playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
-                    }
-                    .disabled(!canBePlayed)
+                    playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
+                        .simultaneousGesture(TapGesture().onEnded {
+                            m.stopPreviousRecPlay = url
+                            player.play()
+                        })
+                        .disabled(!canBePlayed)
                 }
             }
             fileStatusIcon()
@@ -235,7 +257,7 @@ struct CIVideoView: View {
         return ZStack(alignment: .topLeading) {
             let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
             smallViewImageView(preview, file)
-                .onTapGesture {
+                .onTapGesture { // this is shown in chat list, where onTapGesture works
                     decrypt(file: file) {
                         showFullScreenPlayer = urlDecrypted != nil
                     }
@@ -256,7 +278,7 @@ struct CIVideoView: View {
     private func smallVideoView(_ url: URL, _ file: CIFile, _ preview: UIImage) -> some View {
         return ZStack(alignment: .topLeading) {
             smallViewImageView(preview, file)
-                .onTapGesture {
+                .onTapGesture { // this is shown in chat list, where onTapGesture works
                     showFullScreenPlayer = true
                 }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
@@ -313,8 +335,9 @@ struct CIVideoView: View {
         return ZStack(alignment: .topTrailing) {
             Image(uiImage: img)
             .resizable()
-            .scaledToFit()
-            .frame(width: w)
+            .scaledToFill()
+            .frame(width: w, height: w * heightRatio(img.size))
+            .clipped()
             .modifier(PrivacyBlur(blurred: $blurred))
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 fileStatusIcon()
@@ -354,21 +377,15 @@ struct CIVideoView: View {
             case .sndCancelled: fileIcon("xmark", 10, 13)
             case let .sndError(sndFileError):
                 fileIcon("xmark", 10, 13)
-                    .onTapGesture {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("File error"),
-                            message: Text(sndFileError.errorInfo)
-                        ))
-                    }
+                    .simultaneousGesture(TapGesture().onEnded {
+                        showFileErrorAlert(sndFileError)
+                    })
             case let .sndWarning(sndFileError):
                 fileIcon("exclamationmark.triangle.fill", 10, 13)
-                    .onTapGesture {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("Temporary file error"),
-                            message: Text(sndFileError.errorInfo)
-                        ))
-                    }
-            case .rcvInvitation: fileIcon("arrow.down", 10, 13)
+                    .simultaneousGesture(TapGesture().onEnded {
+                        showFileErrorAlert(sndFileError, temporary: true)
+                    })
+            case .rcvInvitation: fileIcon(file.expired && fileSizeValid(file) ? "xmark" : "arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case let .rcvTransfer(rcvProgress, rcvTotal):
                 if file.fileProtocol == .xftp && rcvProgress < rcvTotal {
@@ -381,20 +398,14 @@ struct CIVideoView: View {
             case .rcvCancelled: fileIcon("xmark", 10, 13)
             case let .rcvError(rcvFileError):
                 fileIcon("xmark", 10, 13)
-                    .onTapGesture {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("File error"),
-                            message: Text(rcvFileError.errorInfo)
-                        ))
-                    }
+                    .simultaneousGesture(TapGesture().onEnded {
+                        showFileErrorAlert(rcvFileError, file)
+                    })
             case let .rcvWarning(rcvFileError):
                 fileIcon("exclamationmark.triangle.fill", 10, 13)
-                    .onTapGesture {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("Temporary file error"),
-                            message: Text(rcvFileError.errorInfo)
-                        ))
-                    }
+                    .simultaneousGesture(TapGesture().onEnded {
+                        showFileErrorAlert(rcvFileError, temporary: true)
+                    })
             case .invalid: fileIcon("questionmark", 10, 13)
             }
         }
@@ -429,9 +440,14 @@ struct CIVideoView: View {
 
     // TODO encrypt: where file size is checked?
     private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
-        Task {
-            if let user = m.currentUser {
-                await receiveFile(user, file.fileId, false, false)
+        if let prohibited = file.fileProhibited {
+            showProhibitedFileAlert(file, prohibited)
+        } else {
+            m.openWhenReceived(file, open: playReceived)
+            Task {
+                if let user = m.currentUser {
+                    await receiveFile(user, file.fileId, false, false)
+                }
             }
         }
     }
@@ -441,7 +457,7 @@ struct CIVideoView: View {
             Color.black.edgesIgnoringSafeArea(.all)
             VideoPlayer(player: fullPlayer)
             .overlay(alignment: .topLeading, content: {
-                Button(action: { showFullScreenPlayer = false },
+                Button(action: { showFullScreenPlayer = false }, // this is used in full screen player, Button works here
                     label: {
                         Image(systemName: "multiply")
                         .resizable()

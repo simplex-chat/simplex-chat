@@ -8,26 +8,50 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
+import chat.simplex.common.acquireSingleInstance
+import chat.simplex.common.installOpenUriHandler
+import chat.simplex.common.linkFromArgs
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp
+import chat.simplex.common.singleInstanceLock
+import chat.simplex.common.startShowFileWatcher
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
 import java.io.File
 
-fun main() {
-  // Disable hardware acceleration
-  //System.setProperty("skiko.renderApi", "SOFTWARE")
-  initHaskell()
-  runMigrations()
-  setupUpdateChecker()
-  initApp()
-  tmpDir.deleteRecursively()
-  tmpDir.mkdir()
-  return showApp()
+fun main(args: Array<String>) {
+  try {
+    val link = linkFromArgs(args)
+    if (!acquireSingleInstance(link)) return
+    link?.let { chatModel.appOpenUrl.value = null to it }
+    // started after the launch link is stored, so a link it forwards later is not overwritten
+    if (singleInstanceLock) startShowFileWatcher()
+    // Clean shared temp dirs only in the owning instance (not in a Files.desktop val
+    // initializer, which a transient second instance would also run). Early: before settings writes.
+    preferencesTmpDir.deleteRecursively()
+    // Disable hardware acceleration
+    //System.setProperty("skiko.renderApi", "SOFTWARE")
+    initHaskell()
+    runMigrations()
+    setupUpdateChecker()
+    initApp()
+    registerLinkSchemes()
+    tmpDir.deleteRecursively()
+    tmpDir.mkdir()
+    // Only the owning instance cleans tmpDir on exit (see preferencesTmpDir above).
+    tmpDir.deleteOnExit()
+    // installOpenUriHandler and showApp stay inside the try: whichever touches AWT first makes the process's
+    // first AWT init, a known startup failure cause (#4146); later crashes go to showApp's WindowExceptionHandler.
+    if (desktopPlatform.isMac()) installOpenUriHandler()
+    return showApp()
+  } catch (e: Throwable) {
+    showStartupError(e) // the jpackage launcher otherwise hides the error behind "Failed to launch JVM" (#4146)
+    throw e
+  }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -77,7 +101,7 @@ private fun initHaskell() {
 
 private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
   val mainLibs = arrayOf(
-    "libcrypto-1_1-x64.dll",
+    "libcrypto-3-x64.dll",
     "libsimplex.dll",
     "libapp-lib.dll"
   )

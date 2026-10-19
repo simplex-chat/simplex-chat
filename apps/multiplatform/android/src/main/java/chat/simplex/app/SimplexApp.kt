@@ -7,6 +7,7 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
+import android.view.View
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -16,17 +17,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.*
 import androidx.work.*
+import chat.simplex.app.MainActivity.Companion.OLD_ANDROID_UI_FLAGS
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
 import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgeProduct
+import chat.simplex.common.views.badges.BadgePurchaseOutcome
+import chat.simplex.common.views.badges.BadgeStore
+import chat.simplex.common.views.badges.BadgeStoreProductId
+import chat.simplex.common.views.badges.BadgeStoreReceipt
 import chat.simplex.common.views.call.*
-import chat.simplex.common.views.chatlist.statusBarColorAfterCall
+import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -45,6 +51,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onCreate() {
     super.onCreate()
+    AppContextProvider.initialize(this)
     if (ProcessPhoenix.isPhoenixProcess(this)) {
       return
     } else {
@@ -68,9 +75,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
     context = this
     initHaskell(packageName)
     initMultiplatform()
+    reconfigureBroadcastReceivers()
     runMigrations()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
+    deleteOldChatArchive()
 
     // Present screen for continue migration if it wasn't finished yet
     if (chatModel.migrationState.value != null) {
@@ -89,7 +98,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
-            withChats {
+            withContext(Dispatchers.Main) {
               kotlin.runCatching {
                 val currentUserId = chatModel.currentUser.value?.userId
                 val chats = ArrayList(chatController.apiGetChats(chatModel.remoteHostId()))
@@ -102,10 +111,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
                     /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
                     if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
                   }
-                  updateChats(chats)
+                  chatModel.chatsContext.updateChats(chats)
                 }
               }.onFailure { Log.e(TAG, it.stackTraceToString()) }
             }
+            BadgeStore.presentUnfinished()
           }
         }
         Lifecycle.Event.ON_RESUME -> {
@@ -148,6 +158,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
   * */
   fun schedulePeriodicServiceRestartWorker() = CoroutineScope(Dispatchers.Default).launch {
     if (!allowToStartServiceAfterAppExit()) {
+      getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       return@launch
     }
     val workerVersion = chatController.appPrefs.autoRestartWorkerVersion.get()
@@ -169,6 +180,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   fun schedulePeriodicWakeUp() = CoroutineScope(Dispatchers.Default).launch {
     if (!allowToStartPeriodically()) {
+      MessagesFetcherWorker.cancelAll(withLog = false)
       return@launch
     }
     MessagesFetcherWorker.scheduleWork()
@@ -210,6 +222,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           appPrefs.backgroundServiceNoticeShown.set(false)
         }
         SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+        SimplexService.AppUpdateReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
         CoroutineScope(Dispatchers.Default).launch {
           if (mode == NotificationsMode.SERVICE) {
             SimplexService.start()
@@ -224,7 +237,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
             SimplexService.safeStopService()
           }
         }
-
+        if (mode != NotificationsMode.SERVICE) {
+          getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
+        }
         if (mode != NotificationsMode.PERIODIC) {
           MessagesFetcherWorker.cancelAll()
         }
@@ -241,6 +256,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
 
       override fun androidChatStopped() {
+        getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
         SimplexService.safeStopService()
         MessagesFetcherWorker.cancelAll()
       }
@@ -274,79 +290,32 @@ class SimplexApp: Application(), LifecycleEventObserver {
         uiModeManager.setApplicationNightMode(mode)
       }
 
-      override fun androidSetDrawerStatusAndNavBarColor(
-        isLight: Boolean,
-        drawerShadingColor: Color,
-        toolbarOnTop: Boolean,
-        navBarColor: Color,
-      ) {
-        val window = mainActivity.get()?.window ?: return
-
-        @Suppress("DEPRECATION")
-        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
-        // Blend status bar color to the animated color
-        val colors = CurrentColors.value.colors
-        val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
-        var statusBar = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
-        var statusBarLight = isLight
-
-        // SimplexGreen while in call
-        if (window.statusBarColor == SimplexGreen.toArgb()) {
-          statusBarColorAfterCall.intValue = statusBar
-          statusBar = SimplexGreen.toArgb()
-          statusBarLight = false
-        }
-        window.statusBarColor = statusBar
-        val navBar = navBarColor.toArgb()
-        if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
-          windowInsetController?.isAppearanceLightStatusBars = statusBarLight
-        }
-        if (window.navigationBarColor != navBar) {
-          window.navigationBarColor = navBar
-        }
-        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
-          windowInsetController?.isAppearanceLightNavigationBars = isLight
-        }
-      }
-
-      override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
+      override fun androidSetStatusAndNavigationBarAppearance(isLightStatusBar: Boolean, isLightNavBar: Boolean, blackNavBar: Boolean, themeBackgroundColor: Color) {
         val window = mainActivity.get()?.window ?: return
         @Suppress("DEPRECATION")
+        val statusLight = isLightStatusBar && chatModel.activeCall.value == null
+        val navBarLight = isLightNavBar || windowOrientation() == WindowOrientation.LANDSCAPE
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
-
-        var statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
-        } else {
-          if (CurrentColors.value.base == DefaultTheme.SIMPLEX) {
-            backgroundColor.lighter(0.4f)
+        if (windowInsetController?.isAppearanceLightStatusBars != statusLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusLight
+        }
+        window.navigationBarColor = Color.Transparent.toArgb()
+        if (windowInsetController?.isAppearanceLightNavigationBars != navBarLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = navBarLight
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+          window.decorView.systemUiVisibility = if (statusLight && navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
+          } else if (statusLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or OLD_ANDROID_UI_FLAGS
+          } else if (navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
           } else {
-            backgroundColor
+            OLD_ANDROID_UI_FLAGS
           }
-        }).toArgb()
-        var statusBarLight = isLight
-
-        // SimplexGreen while in call
-        if (window.statusBarColor == SimplexGreen.toArgb()) {
-          statusBarColorAfterCall.intValue = statusBar
-          statusBar = SimplexGreen.toArgb()
-          statusBarLight = false
-        }
-        val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+          window.navigationBarColor = if (blackNavBar) Color.Black.toArgb() else themeBackgroundColor.toArgb()
         } else {
-          backgroundColor
-        }).toArgb()
-        if (window.statusBarColor != statusBar) {
-          window.statusBarColor = statusBar
-        }
-        if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
-          windowInsetController?.isAppearanceLightStatusBars = statusBarLight
-        }
-        if (window.navigationBarColor != navBar) {
-          window.navigationBarColor = navBar
-        }
-        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
-          windowInsetController?.isAppearanceLightNavigationBars = isLight
+          window.navigationBarColor = Color.Transparent.toArgb()
         }
       }
 
@@ -376,6 +345,22 @@ class SimplexApp: Application(), LifecycleEventObserver {
         NetworkObserver.shared.restartNetworkObserver()
       }
 
+      override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
+
+      override fun androidLoadPlayStoreCountry() = loadPlayStoreCountry()
+
+      override val androidHasPlatformStore: Boolean get() = hasPlatformStore
+
+      override suspend fun androidLoadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> = loadBadgeProducts(oneTimeIds, subscriptionIds)
+
+      override suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(id, invoiceId)
+
+      override suspend fun androidAcknowledgeBadgePurchase(receipt: BadgeStoreReceipt) = acknowledgeBadgePurchase(receipt)
+
+      override suspend fun androidFinishBadgePurchase(receipt: BadgeStoreReceipt) = finishBadgePurchase(receipt)
+
+      override suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = unfinishedBadgePurchases()
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {
@@ -401,6 +386,18 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         return true
       }
+
+      override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
+
+      override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
+
+      override val androidIsPlayStoreBuild: Boolean get() = BuildConfig.PLAY_STORE
     }
   }
+
+  // Make sure that receivers enabled state is in actual state (same as in prefs)
+  private fun reconfigureBroadcastReceivers() {
+    val mode = appPrefs.notificationsMode.get()
+    SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+    SimplexService.AppUpdateReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)}
 }

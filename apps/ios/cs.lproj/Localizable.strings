@@ -1,19 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" " = " ";
-
-/* No comment provided by engineer. */
-"  " = "  ";
-
-/* No comment provided by engineer. */
-"   " = "   ";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (lze kopírovat)";
 
 /* No comment provided by engineer. */
@@ -26,37 +11,28 @@
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- více stabilní doručování zpráv.\n- o trochu lepší skupiny.\n- a více!";
 
 /* No comment provided by engineer. */
+"- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- volitelně informuje smazané kontakty.\n- profilová jména s mezerami.\n- a více!";
+
+/* No comment provided by engineer. */
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- 5 minutové hlasové zprávy.\n- vlastní čas mizení.\n- historie úprav.";
-
-/* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
 
 /* No comment provided by engineer. */
 "!1 colored!" = "!1 barevný!";
 
 /* No comment provided by engineer. */
-"." = ".";
+"(new)" = "(nový)";
 
 /* No comment provided by engineer. */
-"(" = "(";
-
-/* No comment provided by engineer. */
-")" = ")";
-
-/* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Přispějte](https://github.com/simplex-chat/simplex-chat#contribute)";
+"(this device v%@)" = "(toto zařízení v%@)";
 
 /* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Pošlete nám e-mail](mailto:chat@simplex.chat)";
 
 /* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Hvězda na GitHubu](https://github.com/simplex-chat/simplex-chat)";
+"**Create 1-time link**: to create and share a new invitation link." = "**Vytvořit jednorázový odkaz**: pro vytvoření a sdílení nové pozvánky.";
 
 /* No comment provided by engineer. */
-"**Add new contact**: to create your one-time QR Code for your contact." = "**Přidat nový kontakt**: pro vytvoření jednorázového QR kódu nebo odkazu pro váš kontakt.";
+"**Create group**: to create a new group." = "**Vytvořit skupinu**: pro vytvoření nové skupiny.";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e šifrovaný** audio hovor";
@@ -65,19 +41,25 @@
 "**e2e encrypted** video call" = "**e2e šifrovaný** videohovor";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Soukromější**: kontrolovat nové zprávy každých 20 minut. Token zařízení je sdílen se serverem SimpleX Chat, ale ne kolik máte kontaktů nebo zpráv.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Soukromější**: kontrolovat nové zprávy každých 20 minut. Token zařízení je sdílen se serverem SimpleX Chat, ale ne kolik máte kontaktů nebo zpráv.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Nejsoukromější**: nepoužívejte server oznámení SimpleX Chat, pravidelně kontrolujte zprávy na pozadí (závisí na tom, jak často aplikaci používáte).";
+"**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Nejsoukromější**: nepoužívejte server oznámení SimpleX Chat, pravidelně kontrolujte zprávy na pozadí (závisí na tom, jak často aplikaci používáte).";
 
 /* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Upozornění**: Pokud heslo ztratíte, NEBUDETE jej moci obnovit ani změnit.";
 
 /* No comment provided by engineer. */
-"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Doporučeno**: Token zařízení a oznámení se odesílají na oznamovací server SimpleX Chat, ale nikoli obsah, velikost nebo od koho jsou zprávy.";
+"**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Doporučeno**: Token zařízení a oznámení se odesílají na oznamovací server SimpleX Chat, ale nikoli obsah, velikost nebo od koho jsou zprávy.";
+
+/* No comment provided by engineer. */
+"**Scan / Paste link**: to connect via a link you received." = "**Skenovat / Vložit odkaz**: pro připojení pomocí odkazu který jste obdrželi.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Upozornění**: Okamžitě doručovaná oznámení vyžadují přístupové heslo uložené v Klíčence.";
+
+/* No comment provided by engineer. */
+"**Warning**: the archive will be removed." = "**Varování**: archiv bude odstraněn.";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*tučně*";
@@ -121,6 +103,9 @@
 /* No comment provided by engineer. */
 "%@ connected" = "%@ připojen";
 
+/* No comment provided by engineer. */
+"%@ downloaded" = "%@ staženo";
+
 /* notification title */
 "%@ is connected!" = "%@ je připojen!";
 
@@ -130,8 +115,23 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ je ověřený";
 
+/* No comment provided by engineer. */
+"%@ server" = "%@ server";
+
+/* No comment provided by engineer. */
+"%@ servers" = "%@ servery";
+
+/* No comment provided by engineer. */
+"%@ uploaded" = "%@ nahrán";
+
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
+
+/* format for date separator in chat */
+"%@, %@" = "%1$@, %2$@";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld members" = "%@, %@ a %lld členů";
 
 /* No comment provided by engineer. */
 "%@, %@ and %lld other members connected" = "%@, %@ a %lld ostatní členové připojeni";
@@ -142,8 +142,23 @@
 /* time interval */
 "%d days" = "%d dní";
 
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%d soubor(y) stále stahován(y).";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "%d soubor(y) se nepodařilo stáhnout.";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%d soubor(y) smazán(y).";
+
+/* forward confirmation reason */
+"%d file(s) were not downloaded." = "%d soubor(y) nestažen(y).";
+
 /* time interval */
 "%d hours" = "%d hodin";
+
+/* alert title */
+"%d messages not forwarded" = "%d zprávy nebyly přeposlány";
 
 /* time interval */
 "%d min" = "%d minuty";
@@ -153,6 +168,9 @@
 
 /* time interval */
 "%d sec" = "%d sek";
+
+/* delete after time */
+"%d seconds(s)" = "%d sekund";
 
 /* integrity error chat item */
 "%d skipped message(s)" = "%d přeskočené zprávy";
@@ -173,16 +191,28 @@
 "%lld file(s) with total size of %@" = "%lld soubor(y) s celkovou velikostí %@";
 
 /* No comment provided by engineer. */
+"%lld group events" = "%lld událostí skupiny";
+
+/* No comment provided by engineer. */
 "%lld members" = "%lld členové";
+
+/* No comment provided by engineer. */
+"%lld messages blocked" = "%lld zprávy blokovaný";
+
+/* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld zprávy blokovaný adminem";
+
+/* No comment provided by engineer. */
+"%lld messages marked deleted" = "%lld zprávy označeno jako smazáno";
+
+/* No comment provided by engineer. */
+"%lld messages moderated by %@" = "%lld zprávy moderované %@";
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld minut";
 
 /* No comment provided by engineer. */
 "%lld new interface languages" = "%d nové jazyky rozhraní";
-
-/* No comment provided by engineer. */
-"%lld second(s)" = "%lld vteřin";
 
 /* No comment provided by engineer. */
 "%lld seconds" = "%lld vteřin";
@@ -223,10 +253,14 @@
 /* No comment provided by engineer. */
 "~strike~" = "\\~stávka~";
 
+/* time to disappear */
+"0 sec" = "0 sek";
+
 /* No comment provided by engineer. */
 "0s" = "0s";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 day" = "1 den";
 
 /* time interval */
@@ -235,11 +269,19 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 minutu";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 month" = "1 měsíc";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 week" = "1 týden";
+
+/* delete after time */
+"1 year" = "1 rok";
+
+/* No comment provided by engineer. */
+"1-time link can be used *with one contact only* - share in person or via any messenger." = "Jednorázový odkaz lze použít *pouze s jedním kontaktem* - sdílejte osobně nebo prostřednictvím libovolného komunikátoru.";
 
 /* No comment provided by engineer. */
 "5 minutes" = "5 minut";
@@ -260,7 +302,7 @@
 "A new random profile will be shared." = "Nový náhodný profil bude sdílen.";
 
 /* No comment provided by engineer. */
-"A separate TCP connection will be used **for each chat profile you have in the app**." = "Samostatné připojení TCP bude použito **pro každý chat profil, který máte v aplikaci**.";
+"A separate TCP connection will be used **for each chat profile you have in the app**." = "Samostatné připojení TCP bude použito **pro každý profil chatu, který máte v aplikaci**.";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "**pro každý kontakt a člena skupiny** bude použito samostatné připojení TCP.\n**Upozornění**: Pokud máte mnoho připojení, spotřeba baterie a provozu může být podstatně vyšší a některá připojení mohou selhat.";
@@ -275,10 +317,7 @@
 "Abort changing address?" = "Přerušit změnu adresy?";
 
 /* No comment provided by engineer. */
-"About SimpleX" = "O SimpleX";
-
-/* No comment provided by engineer. */
-"About SimpleX address" = "O SimpleX adrese";
+"About operators" = "O operátorech";
 
 /* No comment provided by engineer. */
 "About SimpleX Chat" = "O SimpleX chat";
@@ -287,28 +326,50 @@
 "above, then choose:" = "výše, pak vyberte:";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+alert action
+swipe action */
 "Accept" = "Přijmout";
+
+/* alert action */
+"Accept as member" = "Přijmout za člena";
+
+/* alert action */
+"Accept as observer" = "Přijmout jako pozorovatele";
+
+/* No comment provided by engineer. */
+"Accept conditions" = "Přijmout podmínky";
 
 /* No comment provided by engineer. */
 "Accept connection request?" = "Přijmout kontakt?";
 
+/* alert title */
+"Accept contact request" = "Přijmout žádost o kontakt";
+
 /* notification body */
 "Accept contact request from %@?" = "Přijmout žádost o kontakt od %@?";
 
-/* accept contact request via notification
-   swipe action */
+/* alert action
+swipe action */
 "Accept incognito" = "Přijmout inkognito";
+
+/* alert title */
+"Accept member" = "Přijmout člena";
 
 /* call status */
 "accepted call" = "přijatý hovor";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Přidejte adresu do svého profilu, aby ji vaše kontakty mohly sdílet s dalšími lidmi. Aktualizace profilu bude zaslána vašim kontaktům.";
+"Accepted conditions" = "Přijaté podmínky";
+
+/* token status text */
+"Active" = "Aktivní";
 
 /* No comment provided by engineer. */
-"Add preset servers" = "Přidejte přednastavené servery";
+"Active connections" = "Aktivní spojení";
+
+/* No comment provided by engineer. */
+"Add friends" = "Přidat přátele";
 
 /* No comment provided by engineer. */
 "Add profile" = "Přidat profil";
@@ -320,10 +381,28 @@
 "Add servers by scanning QR codes." = "Přidejte servery skenováním QR kódů.";
 
 /* No comment provided by engineer. */
+"Add team members" = "Přidat členy týmu";
+
+/* No comment provided by engineer. */
 "Add to another device" = "Přidat do jiného zařízení";
 
 /* No comment provided by engineer. */
+"Add to list" = "Přidat do seznamu";
+
+/* No comment provided by engineer. */
 "Add welcome message" = "Přidat uvítací zprávu";
+
+/* No comment provided by engineer. */
+"Add your team members to the conversations." = "Přidat členy týmu do konverzace.";
+
+/* No comment provided by engineer. */
+"Added message servers" = "Přidané servery zpráv";
+
+/* No comment provided by engineer. */
+"Additional accent" = "Další zbarvení";
+
+/* No comment provided by engineer. */
+"Additional accent 2" = "Další zbarvení 2";
 
 /* No comment provided by engineer. */
 "Address" = "Adresa";
@@ -331,14 +410,26 @@
 /* No comment provided by engineer. */
 "Address change will be aborted. Old receiving address will be used." = "Změna adresy bude přerušena. Budou použity staré přijímací adresy.";
 
+/* No comment provided by engineer. */
+"Address or 1-time link?" = "Adresa nebo jednorázový odkaz?";
+
+/* No comment provided by engineer. */
+"Address settings" = "Nastavení adresy";
+
 /* member role */
 "admin" = "správce";
+
+/* No comment provided by engineer. */
+"Admins can block a member for all." = "Správci mohou blokovat člena pro všechny.";
 
 /* No comment provided by engineer. */
 "Admins can create the links to join groups." = "Správci mohou vytvářet odkazy pro připojení ke skupinám.";
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "Pokročilá nastavení sítě";
+
+/* No comment provided by engineer. */
+"Advanced settings" = "Pokročilá nastavení";
 
 /* chat item text */
 "agreeing encryption for %@…" = "povoluji šifrování pro %@…";
@@ -347,19 +438,37 @@
 "agreeing encryption…" = "povoluji šifrování…";
 
 /* No comment provided by engineer. */
+"All" = "Vše";
+
+/* No comment provided by engineer. */
 "All app data is deleted." = "Všechna data aplikace jsou smazána.";
 
 /* No comment provided by engineer. */
 "All chats and messages will be deleted - this cannot be undone!" = "Všechny chaty a zprávy budou smazány – tuto akci nelze vrátit zpět!";
 
+/* alert message */
+"All chats will be removed from the list %@, and the list deleted." = "Všechny chaty budou odstraněny ze seznamu %@ a seznam bude smazán.";
+
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Všechna data se při zadání vymažou.";
+
+/* No comment provided by engineer. */
+"All data is kept private on your device." = "Všechna data jsou uchována ve vašem zařízení.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Všichni členové skupiny zůstanou připojeni.";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Všechny zprávy budou smazány – tuto akci nelze vrátit zpět! Zprávy budou smazány POUZE pro vás.";
+
+/* No comment provided by engineer. */
+"All new messages from %@ will be hidden!" = "Všechny nové zprávy od %@ budou skryté!";
+
+/* profile dropdown */
+"All profiles" = "Všechny profily";
+
+/* No comment provided by engineer. */
+"All servers" = "Všechny servery";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Všechny vaše kontakty zůstanou připojeny.";
@@ -372,6 +481,9 @@
 
 /* No comment provided by engineer. */
 "Allow calls only if your contact allows them." = "Povolte hovory, pouze pokud je váš kontakt povolí.";
+
+/* No comment provided by engineer. */
+"Allow calls?" = "Povolit volání?";
 
 /* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Povolte mizící zprávy, pouze pokud vám to váš kontakt dovolí.";
@@ -392,10 +504,19 @@
 "Allow sending disappearing messages." = "Povolit odesílání mizících zpráv.";
 
 /* No comment provided by engineer. */
+"Allow sharing" = "Povolit sdílení";
+
+/* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Povolit nevratné smazání odeslaných zpráv. (24 hodin)";
 
 /* No comment provided by engineer. */
+"Allow to report messsages to moderators." = "Povolit nahlášení zpráv moderátorům.";
+
+/* No comment provided by engineer. */
 "Allow to send files and media." = "Povolit odesílání souborů a médii.";
+
+/* No comment provided by engineer. */
+"Allow to send SimpleX links." = "Povolit odesílání SimpleX odkazů.";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "Povolit odesílání hlasových zpráv.";
@@ -419,25 +540,43 @@
 "Allow your contacts to send disappearing messages." = "Umožněte svým kontaktům odesílat mizící zprávy.";
 
 /* No comment provided by engineer. */
+"Allow your contacts to send files and media." = "Povolit vašim kontaktům odesílání souborů a médii.";
+
+/* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Povolte svým kontaktům odesílání hlasových zpráv.";
 
 /* No comment provided by engineer. */
 "Already connected?" = "Již připojeno?";
 
+/* new chat sheet title */
+"Already connecting!" = "Již připojováno!";
+
+/* new chat sheet title */
+"Already joining the group!" = "Již se ke skupině připojujete!";
+
 /* pref value */
 "always" = "vždy";
+
+/* No comment provided by engineer. */
+"Always use private routing." = "Vždy používat soukromé směrování.";
 
 /* No comment provided by engineer. */
 "Always use relay" = "Spojení přes relé";
 
 /* No comment provided by engineer. */
-"An empty chat profile with the provided name is created, and the app opens as usual." = "Vytvořit prázdný chat profil se zadaným názvem a otevřít aplikaci jako obvykle.";
+"An empty chat profile with the provided name is created, and the app opens as usual." = "Vytvořit prázdný profil chatu se zadaným názvem a otevřít aplikaci jako obvykle.";
+
+/* report reason */
+"Another reason" = "Jiný důvod";
 
 /* No comment provided by engineer. */
 "Answer call" = "Přijmout hovor";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Sestavení aplikace: %@";
+
+/* No comment provided by engineer. */
+"App data migration" = "Přenos dat aplikace";
 
 /* No comment provided by engineer. */
 "App encrypts new local files (except videos)." = "Aplikace šifruje nové místní soubory (s výjimkou videí).";
@@ -459,6 +598,21 @@
 
 /* No comment provided by engineer. */
 "Appearance" = "Vzhled";
+
+/* No comment provided by engineer. */
+"Apply" = "Použít";
+
+/* No comment provided by engineer. */
+"Archive" = "Archiv";
+
+/* No comment provided by engineer. */
+"Archive all reports?" = "Archivovat všechny hlášení?";
+
+/* No comment provided by engineer. */
+"Archive and upload" = "Archivovat a nahrát";
+
+/* No comment provided by engineer. */
+"Archived contacts" = "Archivované kontakty";
 
 /* No comment provided by engineer. */
 "Attach" = "Připojit";
@@ -502,6 +656,9 @@
 /* No comment provided by engineer. */
 "Back" = "Zpět";
 
+/* No comment provided by engineer. */
+"Background" = "Pozadí";
+
 /* integrity error chat item */
 "bad message hash" = "špatný hash zprávy";
 
@@ -515,7 +672,49 @@
 "Bad message ID" = "Špatné ID zprávy";
 
 /* No comment provided by engineer. */
+"Be free in your network." = "Buďte svobodní ve své síti.";
+
+/* No comment provided by engineer. */
+"Because we destroyed the power to know who you are. So that your power can never be taken." = "Protože jsme zničili sílu vědět, kdo jste. Aby vám vaši moc nikdo nemohl vzít.";
+
+/* No comment provided by engineer. */
+"Better calls" = "Lepší volání";
+
+/* No comment provided by engineer. */
+"Better groups" = "Lepší skupiny";
+
+/* No comment provided by engineer. */
+"Better groups performance" = "Lepší výkon skupin";
+
+/* No comment provided by engineer. */
+"Better message dates." = "Lepší datumy zpráv.";
+
+/* No comment provided by engineer. */
 "Better messages" = "Lepší zprávy";
+
+/* No comment provided by engineer. */
+"Better networking" = "Lepší sítě";
+
+/* No comment provided by engineer. */
+"Better notifications" = "Lepší upozornění";
+
+/* No comment provided by engineer. */
+"Better privacy and security" = "Lepší soukromí a zabezpečení";
+
+/* No comment provided by engineer. */
+"Better security ✅" = "Lepší zabezpečení ✅";
+
+/* No comment provided by engineer. */
+"Block member" = "Blokovat člena";
+
+/* No comment provided by engineer. */
+"Block member?" = "Blokovat člena?";
+
+/* No comment provided by engineer. */
+"Blocked by admin" = "Blokován správcem";
+
+/* No comment provided by engineer. */
+"Blur media" = "Rozmazat média";
 
 /* No comment provided by engineer. */
 "bold" = "tučně";
@@ -533,13 +732,19 @@
 "Both you and your contact can send disappearing messages." = "Vy i váš kontakt můžete posílat mizící zprávy.";
 
 /* No comment provided by engineer. */
+"Both you and your contact can send files and media." = "Vy i vaše kontakty můžete posílat soubory a média.";
+
+/* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Hlasové zprávy můžete posílat vy i váš kontakt.";
 
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulharský, finský, thajský a ukrajinský - díky uživatelům a [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
+/* chat link info line */
+"Business address" = "Obchodní adresa";
+
 /* No comment provided by engineer. */
-"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Podle chat profilu (výchozí) nebo [podle připojení](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
+"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Podle profilu chatu (výchozí) nebo [podle připojení](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
 "Call already ended!" = "Hovor již skončil!";
@@ -554,7 +759,19 @@
 "calling…" = "volání…";
 
 /* No comment provided by engineer. */
-"Calls" = "Hovory";
+"Calls prohibited!" = "Volání zakázáno!";
+
+/* No comment provided by engineer. */
+"Camera not available" = "Kamera není k dispozici";
+
+/* No comment provided by engineer. */
+"Can't call contact" = "Kontaktu nelze volat";
+
+/* No comment provided by engineer. */
+"Can't call member" = "Členu nelze volat";
+
+/* alert title */
+"Can't change profile" = "Nelze změnit profil";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Nelze pozvat kontakt!";
@@ -562,8 +779,16 @@
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Nelze pozvat kontakty!";
 
-/* alert button */
+/* No comment provided by engineer. */
+"Can't message member" = "Členu nelze poslat zprávu";
+
+/* alert action
+alert button
+new chat action */
 "Cancel" = "Zrušit";
+
+/* No comment provided by engineer. */
+"Cancel migration" = "Zrušit přesun";
 
 /* feature offered item */
 "cancelled %@" = "zrušeno %@";
@@ -571,20 +796,32 @@
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Nelze získat přístup ke klíčence pro uložení hesla databáze";
 
+/* No comment provided by engineer. */
+"Cannot forward message" = "Zprávu nelze přeposlat";
+
 /* alert title */
 "Cannot receive file" = "Nelze přijmout soubor";
 
+/* snd error text */
+"Capacity exceeded - recipient did not receive previously sent messages." = "Kapacita překročena - příjemce neobdrží dříve poslané zprávy.";
+
+/* No comment provided by engineer. */
+"Cellular" = "Mobilní";
+
 /* No comment provided by engineer. */
 "Change" = "Změnit";
+
+/* alert title */
+"Change automatic message deletion?" = "Změnit automatické mazání zpráv?";
+
+/* authentication reason */
+"Change chat profiles" = "Změnit profily chatu";
 
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Změnit přístupovou frázi databáze?";
 
 /* authentication reason */
 "Change lock mode" = "Změnit zamykání";
-
-/* No comment provided by engineer. */
-"Change member role?" = "Změnit roli člena?";
 
 /* authentication reason */
 "Change passcode" = "Změnit heslo";
@@ -602,7 +839,7 @@
 "Change self-destruct mode" = "Změnit režim sebedestrukce";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Změnit sebedestrukční heslo";
 
 /* chat item text */
@@ -621,7 +858,7 @@
 "changing address…" = "změna adresy…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Chat se archivuje";
+"Chat colors" = "Barvy chatu";
 
 /* No comment provided by engineer. */
 "Chat console" = "Konzola pro chat";
@@ -633,6 +870,9 @@
 "Chat database deleted" = "Databáze chatu odstraněna";
 
 /* No comment provided by engineer. */
+"Chat database exported" = "Chat databáze exportována";
+
+/* No comment provided by engineer. */
 "Chat database imported" = "Importovaná databáze chatu";
 
 /* No comment provided by engineer. */
@@ -640,6 +880,9 @@
 
 /* No comment provided by engineer. */
 "Chat is stopped" = "Chat je zastaven";
+
+/* No comment provided by engineer. */
+"Chat migrated!" = "Chat přesunut!";
 
 /* No comment provided by engineer. */
 "Chat preferences" = "Předvolby chatu";
@@ -650,7 +893,7 @@
 /* No comment provided by engineer. */
 "Chats" = "Chaty";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Check server address and try again." = "Zkontrolujte adresu serveru a zkuste to znovu.";
 
 /* No comment provided by engineer. */
@@ -704,26 +947,30 @@
 /* No comment provided by engineer. */
 "Confirm password" = "Potvrdit heslo";
 
-/* server test step */
+/* No comment provided by engineer. */
+"Confirm upload" = "Potvrdit nahrání";
+
+/* relay test step
+server test step */
 "Connect" = "Připojit";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "Spojit se inkognito";
+"Connect automatically" = "Připojit automaticky";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "připojit se k vývojářům SimpleX Chat.";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
+"Connect to yourself?\nThis is your own one-time link!" = "Připojit se k sobě?\nToto je váš vlastní jednorázový odkaz!";
+
+/* new chat sheet title */
 "Connect via link" = "Připojte se prostřednictvím odkazu";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "Připojit se jednorázovým odkazem";
 
 /* No comment provided by engineer. */
 "connected" = "připojeno";
-
-/* rcv group event chat item */
-"connected directly" = "připojeno přímo";
 
 /* No comment provided by engineer. */
 "connecting" = "připojování";
@@ -749,25 +996,25 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Připojování k serveru... (chyba: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "připojení…";
 
 /* No comment provided by engineer. */
 "Connection" = "Připojení";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Chyba připojení";
-
-/* No comment provided by engineer. */
-"Connection error (AUTH)" = "Chyba spojení (AUTH)";
 
 /* chat list item title (it should not be shown */
 "connection established" = "spojení navázáno";
 
+/* conn error description */
+"Connection link removed" = "Chyba spojení";
+
 /* No comment provided by engineer. */
 "Connection request sent!" = "Požadavek na připojení byl odeslán!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Časový limit připojení";
 
 /* connection information */
@@ -803,20 +1050,17 @@
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Kontakty mohou označit zprávy ke smazání; vy je budete moci zobrazit.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Pokračovat";
+
+/* No comment provided by engineer. */
+"Contribute" = "Přispějte";
 
 /* No comment provided by engineer. */
 "Copy" = "Kopírovat";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Verze jádra: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "Vytvořit";
-
-/* No comment provided by engineer. */
-"Create an address to let people connect with you." = "Vytvořit adresu, aby se s vámi lidé mohli spojit.";
 
 /* server test step */
 "Create file" = "Vytvořit soubor";
@@ -830,20 +1074,17 @@
 /* No comment provided by engineer. */
 "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Vytvořit nový profil v [desktop app](https://simplex.chat/downloads/). 💻";
 
+/* No comment provided by engineer. */
+"Create profile" = "Vytvořte si profil";
+
 /* server test step */
 "Create queue" = "Vytvořit frontu";
-
-/* No comment provided by engineer. */
-"Create secret group" = "Vytvořit tajnou skupinu";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "Vytvořit SimpleX adresu";
 
 /* No comment provided by engineer. */
 "Create your profile" = "Vytvořte si profil";
-
-/* No comment provided by engineer. */
-"Created on %@" = "Vytvořeno na %@";
 
 /* No comment provided by engineer. */
 "creator" = "tvůrce";
@@ -926,13 +1167,11 @@
 /* time unit */
 "days" = "dní";
 
-/* No comment provided by engineer. */
-"Decentralized" = "Decentralizované";
-
 /* message decrypt error item */
 "Decryption error" = "Chyba dešifrování";
 
-/* pref value */
+/* delete after time
+pref value */
 "default (%@)" = "výchozí (%@)";
 
 /* No comment provided by engineer. */
@@ -941,8 +1180,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "výchozí (ano)";
 
-/* chat item action
-   swipe action */
+/* alert action
+swipe action */
 "Delete" = "Smazat";
 
 /* No comment provided by engineer. */
@@ -958,16 +1197,10 @@
 "Delete all files" = "Odstranit všechny soubory";
 
 /* No comment provided by engineer. */
-"Delete archive" = "Smazat archiv";
+"Delete chat profile" = "Smazat profil chatu";
 
 /* No comment provided by engineer. */
-"Delete chat archive?" = "Smazat archiv chatu?";
-
-/* No comment provided by engineer. */
-"Delete chat profile" = "Smazat chat profil";
-
-/* No comment provided by engineer. */
-"Delete chat profile?" = "Smazat chat profil?";
+"Delete chat profile?" = "Smazat profil chatu?";
 
 /* No comment provided by engineer. */
 "Delete connection" = "Smazat připojení";
@@ -1014,7 +1247,8 @@
 /* No comment provided by engineer. */
 "Delete message?" = "Smazat zprávu?";
 
-/* No comment provided by engineer. */
+/* alert action
+alert button */
 "Delete messages" = "Smazat zprávy";
 
 /* No comment provided by engineer. */
@@ -1063,10 +1297,7 @@
 "Description" = "Popis";
 
 /* No comment provided by engineer. */
-"Develop" = "Vyvinout";
-
-/* No comment provided by engineer. */
-"Developer tools" = "Nástroje pro vývojáře";
+"Developer" = "Nástroje pro vývojáře";
 
 /* No comment provided by engineer. */
 "Device" = "Zařízení";
@@ -1090,7 +1321,7 @@
 "Direct messages" = "Přímé zprávy";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "Přímé zprávy mezi členy jsou v této skupině zakázány.";
+"Direct messages between members are prohibited." = "Přímé zprávy mezi členy jsou v této skupině zakázány.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Vypnout (zachovat přepsání)";
@@ -1114,7 +1345,7 @@
 "Disappearing messages are prohibited in this chat." = "Mizící zprávy jsou v tomto chatu zakázány.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "Mizící zprávy jsou v této skupině zakázány.";
+"Disappearing messages are prohibited." = "Mizící zprávy jsou v této skupině zakázány.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "Zmizí v";
@@ -1140,7 +1371,7 @@
 /* No comment provided by engineer. */
 "Don't enable" = "Nepovolovat";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Znovu neukazuj";
 
 /* No comment provided by engineer. */
@@ -1167,13 +1398,13 @@
 /* No comment provided by engineer. */
 "Edit group profile" = "Upravit profil skupiny";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Zapnout";
 
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "Povolit (zachovat přepsání)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "Povolit automatické mazání zpráv?";
 
 /* No comment provided by engineer. */
@@ -1184,9 +1415,6 @@
 
 /* No comment provided by engineer. */
 "Enable lock" = "Povolit zámek";
-
-/* No comment provided by engineer. */
-"Enable notifications" = "Povolit upozornění";
 
 /* No comment provided by engineer. */
 "Enable periodic notifications?" = "Povolit pravidelná oznámení?";
@@ -1309,9 +1537,6 @@
 "Error accepting contact request" = "Chyba při přijímání žádosti o kontakt";
 
 /* No comment provided by engineer. */
-"Error accessing database file" = "Chyba přístupu k souboru databáze";
-
-/* No comment provided by engineer. */
 "Error adding member(s)" = "Chyba přidávání člena(ů)";
 
 /* No comment provided by engineer. */
@@ -1320,7 +1545,7 @@
 /* No comment provided by engineer. */
 "Error changing role" = "Chyba při změně role";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "Chyba změny nastavení";
 
 /* No comment provided by engineer. */
@@ -1341,19 +1566,19 @@
 /* No comment provided by engineer. */
 "Error decrypting file" = "Chyba dešifrování souboru";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "Chyba při mazání databáze chatu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Chyba při mazání chatu!";
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Chyba při mazání připojení";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "Chyba při mazání databáze";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "Chyba při mazání staré databáze";
 
 /* No comment provided by engineer. */
@@ -1371,26 +1596,20 @@
 /* No comment provided by engineer. */
 "Error encrypting database" = "Chyba šifrování databáze";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "Chyba při exportu databáze chatu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "Chyba při importu databáze chatu";
 
 /* No comment provided by engineer. */
 "Error joining group" = "Chyba při připojování ke skupině";
 
-/* No comment provided by engineer. */
-"Error loading %@ servers" = "Chyba načítání %@ serverů";
-
 /* alert title */
 "Error receiving file" = "Chyba při příjmu souboru";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "Chyba při odebrání člena";
-
-/* No comment provided by engineer. */
-"Error saving %@ servers" = "Chyba při ukládání serverů %@";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "Chyba při ukládání profilu skupiny";
@@ -1446,7 +1665,10 @@
 /* No comment provided by engineer. */
 "Error: " = "Chyba: ";
 
-/* alert message */
+/* alert message
+conn error description
+file error text
+snd error text */
 "Error: %@" = "Chyba: %@";
 
 /* No comment provided by engineer. */
@@ -1501,7 +1723,7 @@
 "Files and media" = "Soubory a média";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "Soubory a média jsou zakázány v této skupině.";
+"Files and media are prohibited." = "Soubory a média jsou zakázány v této skupině.";
 
 /* No comment provided by engineer. */
 "Files and media prohibited!" = "Soubory a média jsou zakázány!";
@@ -1514,6 +1736,10 @@
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Najděte chaty rychleji";
+
+/* relay test error
+server test error */
+"Fingerprint in server address does not match certificate." = "Otisk certifikátu v adrese serveru neodpovídá.";
 
 /* No comment provided by engineer. */
 "Fix" = "Opravit";
@@ -1578,29 +1804,11 @@
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Skupinová pozvánka již není platná, byla odstraněna odesílatelem.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Odkaz na skupinu";
 
 /* No comment provided by engineer. */
 "Group links" = "Odkazy na skupiny";
-
-/* No comment provided by engineer. */
-"Group members can add message reactions." = "Členové skupin mohou přidávat reakce na zprávy.";
-
-/* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)";
-
-/* No comment provided by engineer. */
-"Group members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
-
-/* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Členové skupiny mohou posílat mizící zprávy.";
-
-/* No comment provided by engineer. */
-"Group members can send files and media." = "Členové skupiny mohou posílat soubory a média.";
-
-/* No comment provided by engineer. */
-"Group members can send voice messages." = "Členové skupiny mohou posílat hlasové zprávy.";
 
 /* notification */
 "Group message:" = "Skupinová zpráva:";
@@ -1636,7 +1844,7 @@
 "Hidden" = "Skryté";
 
 /* No comment provided by engineer. */
-"Hidden chat profiles" = "Skryté chat profily";
+"Hidden chat profiles" = "Skryté profily chatu";
 
 /* No comment provided by engineer. */
 "Hidden profile password" = "Hesla skrytých profilů";
@@ -1658,9 +1866,6 @@
 
 /* time unit */
 "hours" = "hodin";
-
-/* No comment provided by engineer. */
-"How it works" = "Jak to funguje";
 
 /* No comment provided by engineer. */
 "How SimpleX works" = "Jak SimpleX funguje";
@@ -1700,9 +1905,6 @@
 
 /* No comment provided by engineer. */
 "Immediately" = "Ihned";
-
-/* No comment provided by engineer. */
-"Immune to spam and abuse" = "Odolná vůči spamu a zneužití";
 
 /* No comment provided by engineer. */
 "Import" = "Import";
@@ -1768,13 +1970,13 @@
 "Initial role" = "Počáteční role";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Nainstalujte [SimpleX Chat pro terminál](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Nainstalujte SimpleX Chat pro terminál";
+
+/* No comment provided by engineer. */
+"Instant" = "Okamžitě";
 
 /* No comment provided by engineer. */
 "Instant push notifications will be hidden!\n" = "Okamžitá oznámení budou skryta!\n";
-
-/* No comment provided by engineer. */
-"Instantly" = "Okamžitě";
 
 /* No comment provided by engineer. */
 "Interface" = "Rozhranní";
@@ -1785,13 +1987,13 @@
 /* No comment provided by engineer. */
 "invalid chat data" = "neplatná chat data";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Neplatný odkaz na spojení";
 
 /* invalid chat item */
 "invalid data" = "neplatné údaje";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid server address!" = "Neplatná adresa serveru!";
 
 /* item status text */
@@ -1837,7 +2039,7 @@
 "Irreversible message deletion is prohibited in this chat." = "Nevratné mazání zpráv je v tomto chatu zakázáno.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "Nevratné mazání zpráv je v této skupině zakázáno.";
+"Irreversible message deletion is prohibited." = "Nevratné mazání zpráv je v této skupině zakázáno.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Umožňuje mít v jednom profilu chatu mnoho anonymních spojení bez jakýchkoli sdílených údajů mezi nimi.";
@@ -1864,9 +2066,9 @@
 "Join" = "Připojte se na";
 
 /* No comment provided by engineer. */
-"join as %@" = "připojit se jako %@";
+"Join as %@" = "připojit se jako %@";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "Připojit ke skupině";
 
 /* No comment provided by engineer. */
@@ -1887,7 +2089,7 @@
 /* No comment provided by engineer. */
 "Large file!" = "Velký soubor!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Zjistit více";
 
 /* swipe action */
@@ -1921,9 +2123,6 @@
 "Live messages" = "Živé zprávy";
 
 /* No comment provided by engineer. */
-"Local" = "Místní";
-
-/* No comment provided by engineer. */
 "Local name" = "Místní název";
 
 /* No comment provided by engineer. */
@@ -1936,22 +2135,13 @@
 "Lock mode" = "Režim zámku";
 
 /* No comment provided by engineer. */
-"Make a private connection" = "Vytvořte si soukromé připojení";
-
-/* No comment provided by engineer. */
 "Make one message disappear" = "Nechat jednu zprávu zmizet";
 
 /* No comment provided by engineer. */
 "Make profile private!" = "Změnit profil na soukromý!";
 
 /* No comment provided by engineer. */
-"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Ujistěte se, že adresy %@ serverů jsou ve správném formátu, oddělené řádky a nejsou duplicitní (%@).";
-
-/* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Ujistěte se, že adresy serverů WebRTC ICE jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.";
-
-/* No comment provided by engineer. */
-"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Mnoho lidí se ptalo: *Pokud SimpleX nemá žádné uživatelské identifikátory, jak může doručovat zprávy?*";
 
 /* No comment provided by engineer. */
 "Mark deleted for everyone" = "Označit jako smazané pro všechny";
@@ -1980,14 +2170,26 @@
 /* rcv group event chat item */
 "member connected" = "připojeno";
 
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Role člena se změní na \"%@\". Všichni členové skupiny budou upozorněni.";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Role člena se změní na \"%@\". Člen obdrží novou pozvánku.";
-
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Člen bude odstraněn ze skupiny - toto nelze vzít zpět!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Členové skupin mohou přidávat reakce na zprávy.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Členové skupiny mohou posílat mizící zprávy.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Členové skupiny mohou posílat soubory a média.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Členové skupiny mohou posílat hlasové zprávy.";
 
 /* item status text */
 "Message delivery error" = "Chyba doručení zprávy";
@@ -2005,7 +2207,7 @@
 "Message reactions are prohibited in this chat." = "Reakce na zprávy jsou v tomto chatu zakázány.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Reakce na zprávy jsou v této skupině zakázány.";
+"Message reactions are prohibited." = "Reakce na zprávy jsou v této skupině zakázány.";
 
 /* notification */
 "message received" = "zpráva přijata";
@@ -2032,7 +2234,7 @@
 "Migration is completed" = "Přenesení dokončeno";
 
 /* No comment provided by engineer. */
-"Migrations: %@" = "Migrace: %@";
+"Migrations:" = "Migrace:";
 
 /* time unit */
 "minutes" = "minut";
@@ -2065,9 +2267,9 @@
 "Most likely this connection is deleted." = "Pravděpodobně je toto spojení smazáno.";
 
 /* No comment provided by engineer. */
-"Multiple chat profiles" = "Více chatovacích profilů";
+"Multiple chat profiles" = "Více profilů chatu";
 
-/* swipe action */
+/* notification label action */
 "Mute" = "Ztlumit";
 
 /* No comment provided by engineer. */
@@ -2082,10 +2284,10 @@
 /* No comment provided by engineer. */
 "Network settings" = "Nastavení sítě";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Stav sítě";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "nikdy";
 
 /* notification */
@@ -2093,9 +2295,6 @@
 
 /* notification */
 "New contact:" = "Nový kontakt:";
-
-/* No comment provided by engineer. */
-"New database archive" = "Archiv nové databáze";
 
 /* No comment provided by engineer. */
 "New desktop app!" = "Nová desktopová aplikace!";
@@ -2158,10 +2357,19 @@
 "No permission to record voice message" = "Nemáte oprávnění nahrávat hlasové zprávy";
 
 /* No comment provided by engineer. */
+"No push server" = "Místní";
+
+/* No comment provided by engineer. */
 "No received or sent files" = "Žádné přijaté ani odeslané soubory";
 
 /* copied message info in history */
 "no text" = "žádný text";
+
+/* No comment provided by engineer. */
+"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Nikdo nesledoval vaše konverzace. Nikdo nevytvořil mapu, kde jste byli. Soukromí nikdy nebylo funkcí - byl to způsob života.";
+
+/* No comment provided by engineer. */
+"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nejde o to mít lepší zámek na dveřích někoho jiného. Ani o to mít nájemce, který respektuje vaše soukromí, ale vede evidenci všech vašich návštěvníků. Nejste host. Jste doma. Ani král k vám nemůže vstoupit - jste suverén.";
 
 /* No comment provided by engineer. */
 "Notifications" = "Oznámení";
@@ -2176,8 +2384,9 @@
 "observer" = "pozorovatel";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+member criteria value
+time to disappear */
 "off" = "vypnuto";
 
 /* blur media */
@@ -2189,14 +2398,13 @@
 /* feature offered item */
 "offered %@: %@" = "nabídl %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button
+new chat action */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
 "Old database" = "Stará databáze";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Archiv staré databáze";
 
 /* group pref value */
 "on" = "zapnuto";
@@ -2214,7 +2422,7 @@
 "Onion hosts will not be used." = "Onion hostitelé nebudou použiti.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy odeslané s **2vrstvým šifrováním typu end-to-end**.";
+"Only client devices store user profiles, contacts, groups, and messages." = "Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy odeslané s **2vrstvým šifrováním typu end-to-end**.";
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Předvolby skupiny mohou měnit pouze vlastníci skupiny.";
@@ -2255,10 +2463,11 @@
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Hlasové zprávy může odesílat pouze váš kontakt.";
 
-/* No comment provided by engineer. */
+/* alert action
+alert button */
 "Open" = "Otevřít";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Otevřete chat";
 
 /* authentication reason */
@@ -2266,12 +2475,6 @@
 
 /* No comment provided by engineer. */
 "Open Settings" = "Otevřít nastavení";
-
-/* authentication reason */
-"Open user profiles" = "Otevřít uživatelské profily";
-
-/* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Protokol a kód s otevřeným zdrojovým kódem - servery může provozovat kdokoli.";
 
 /* member role */
 "owner" = "vlastník";
@@ -2301,10 +2504,7 @@
 "peer-to-peer" = "peer-to-peer";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Lidé se s vámi mohou spojit pouze prostřednictvím odkazů, které sdílíte.";
-
-/* No comment provided by engineer. */
-"Periodically" = "Pravidelně";
+"Periodic" = "Pravidelně";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Chyba dešifrování";
@@ -2321,7 +2521,7 @@
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Zkontrolujte, zda jste použili správný odkaz, nebo požádejte kontakt, aby vám poslal jiný.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Zkontrolujte síťové připojení pomocí %@ a zkuste to znovu.";
 
 /* No comment provided by engineer. */
@@ -2354,26 +2554,14 @@
 /* No comment provided by engineer. */
 "Polish interface" = "Polské rozhraní";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Je možné, že otisk certifikátu v adrese serveru je nesprávný";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Zachování posledního návrhu zprávy s přílohami.";
-
-/* No comment provided by engineer. */
-"Preset server" = "Přednastavený server";
 
 /* No comment provided by engineer. */
 "Preset server address" = "Přednastavená adresa serveru";
 
 /* No comment provided by engineer. */
 "Preview" = "Náhled";
-
-/* No comment provided by engineer. */
-"Privacy & security" = "Ochrana osobních údajů a zabezpečení";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Nové vymezení soukromí";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Soukromé názvy souborů";
@@ -2386,9 +2574,6 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "Heslo profilu";
-
-/* No comment provided by engineer. */
-"Profile update will be sent to your contacts." = "Aktualizace profilu bude zaslána vašim kontaktům.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Zákaz audio/video hovorů.";
@@ -2418,7 +2603,7 @@
 "Protect app screen" = "Ochrana obrazovky aplikace";
 
 /* No comment provided by engineer. */
-"Protect your chat profiles with a password!" = "Chraňte své chat profily heslem!";
+"Protect your chat profiles with a password!" = "Chraňte své profily chatu pomocí hesla!";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Časový limit protokolu";
@@ -2438,20 +2623,14 @@
 /* swipe action */
 "Read" = "Číst";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Přečíst více";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Další informace naleznete v [Uživatelské příručce](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+"Read more in our GitHub repository." = "Přečtěte si více v našem GitHub repozitáři.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Přečtěte si více v [Uživatelské příručce](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Přečtěte si více v našem [GitHub repozitáři](https://github.com/simplex-chat/simplex-chat#readme).";
-
-/* No comment provided by engineer. */
-"Read more in our GitHub repository." = "Další informace najdete v našem repozitáři GitHub.";
+"Read more in User Guide." = "Více informací v průvodci uživatele.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Informace o dodání jsou zakázány";
@@ -2467,9 +2646,6 @@
 
 /* No comment provided by engineer. */
 "received confirmation…" = "obdržel potvrzení…";
-
-/* notification */
-"Received file event" = "Událost přijatého souboru";
 
 /* message info title */
 "Received message" = "Přijatá zpráva";
@@ -2501,14 +2677,15 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Snížení spotřeby baterie";
 
-/* reject incoming call via notification
-   swipe action */
+/* alert action
+reject incoming call via notification
+swipe action */
 "Reject" = "Odmítnout";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Odmítnout kontakt (odesílatel NEBUDE upozorněn)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Odmítnout žádost o kontakt";
 
 /* call status */
@@ -2520,13 +2697,13 @@
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Přenosový server chrání vaši IP adresu, ale může sledovat dobu trvání hovoru.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Odstranit";
 
 /* No comment provided by engineer. */
 "Remove member" = "Odstranit člena";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Odebrat člena?";
 
 /* No comment provided by engineer. */
@@ -2566,7 +2743,7 @@
 "Reset to defaults" = "Obnovení výchozího nastavení";
 
 /* No comment provided by engineer. */
-"Restart the app to create a new chat profile" = "Restartujte aplikaci pro vytvoření nového chat profilu";
+"Restart the app to create a new chat profile" = "Restartujte aplikaci pro vytvoření nového profilu chatu";
 
 /* No comment provided by engineer. */
 "Restart the app to use imported chat database" = "Restartujte aplikaci pro použití importované databáze chatu";
@@ -2599,16 +2776,23 @@
 "Role" = "Role";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Role člena se změní na \"%@\". Všichni členové skupiny budou upozorněni.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Role člena se změní na \"%@\". Člen obdrží novou pozvánku.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Spustit chat";
 
-/* alert button
-   chat item action */
+/* alert action
+alert button
+chat item action */
 "Save" = "Uložit";
 
 /* alert button */
 "Save (and notify contacts)" = "Uložit (a informovat kontakty)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Uložit a upozornit kontakt";
 
 /* No comment provided by engineer. */
@@ -2616,9 +2800,6 @@
 
 /* No comment provided by engineer. */
 "Save and update group profile" = "Uložit a aktualizovat profil skupiny";
-
-/* No comment provided by engineer. */
-"Save archive" = "Uložit archiv";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Uložení profilu skupiny";
@@ -2629,7 +2810,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Uložit přístupovou frázi do Klíčenky";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Uložit předvolby?";
 
 /* No comment provided by engineer. */
@@ -2638,7 +2819,7 @@
 /* No comment provided by engineer. */
 "Save servers" = "Uložit servery";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save servers?" = "Uložit servery?";
 
 /* No comment provided by engineer. */
@@ -2708,9 +2889,6 @@
 "Send delivery receipts to" = "Potvrzení o doručení zasílat na";
 
 /* No comment provided by engineer. */
-"send direct message" = "odeslat přímou zprávu";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "Odeslat přímou zprávu pro připojení";
 
 /* No comment provided by engineer. */
@@ -2726,9 +2904,6 @@
 "Send notifications" = "Odeslat oznámení";
 
 /* No comment provided by engineer. */
-"Send notifications:" = "Odeslat oznámení:";
-
-/* No comment provided by engineer. */
 "Send questions and ideas" = "Zasílání otázek a nápadů";
 
 /* No comment provided by engineer. */
@@ -2741,10 +2916,7 @@
 "Sender cancelled file transfer." = "Odesílatel zrušil přenos souboru.";
 
 /* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "Odesílatel možná smazal požadavek připojení.";
-
-/* No comment provided by engineer. */
-"Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Odesílání potvrzení o doručení bude povoleno pro všechny kontakty ve všech viditelných chat profilech.";
+"Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Odesílání potvrzení o doručení bude povoleno pro všechny kontakty ve všech viditelných profilech chatu.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts." = "Odesílání potvrzení o doručení bude povoleno pro všechny kontakty.";
@@ -2773,9 +2945,6 @@
 /* copied message info */
 "Sent at: %@" = "Posláno v: % @";
 
-/* notification */
-"Sent file event" = "Odeslaná událost souboru";
-
 /* message info title */
 "Sent message" = "Poslaná zpráva";
 
@@ -2783,10 +2952,10 @@
 "Sent messages will be deleted after set time." = "Odeslané zprávy se po uplynutí nastavené doby odstraní.";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo";
+"Server requires authorization to create queues, check password." = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo.";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo";
+"Server requires authorization to upload, check password." = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Test serveru se nezdařil!";
@@ -2821,7 +2990,8 @@
 /* No comment provided by engineer. */
 "Settings" = "Nastavení";
 
-/* chat item action */
+/* alert action
+chat item action */
 "Share" = "Sdílet";
 
 /* No comment provided by engineer. */
@@ -2831,13 +3001,7 @@
 "Share address" = "Sdílet adresu";
 
 /* No comment provided by engineer. */
-"Share address with contacts?" = "Sdílet adresu s kontakty?";
-
-/* No comment provided by engineer. */
 "Share link" = "Sdílet odkaz";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Sdílet s kontakty";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Ukaž hovory v historii telefonu";
@@ -2909,6 +3073,9 @@
 "Somebody" = "Někdo";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Hvězda na GitHubu";
+
+/* No comment provided by engineer. */
 "Start chat" = "Začít chat";
 
 /* No comment provided by engineer. */
@@ -2919,9 +3086,6 @@
 
 /* No comment provided by engineer. */
 "Stop" = "Zastavit";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Zastavte chat pro povolení akcí databáze";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Zastavení chatu pro export, import nebo smazání databáze chatu. Během zastavení chatu nebudete moci přijímat a odesílat zprávy.";
@@ -2938,10 +3102,10 @@
 /* No comment provided by engineer. */
 "Stop sending file?" = "Zastavit odesílání souboru?";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Stop sharing" = "Přestat sdílet";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Stop sharing address?" = "Přestat sdílet adresu?";
 
 /* authentication reason */
@@ -2952,9 +3116,6 @@
 
 /* No comment provided by engineer. */
 "Submit" = "Odeslat";
-
-/* No comment provided by engineer. */
-"Support SimpleX Chat" = "Podpořte SimpleX Chat";
 
 /* No comment provided by engineer. */
 "System" = "Systém";
@@ -2989,7 +3150,8 @@
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Test selhal v kroku %@.";
 
 /* No comment provided by engineer. */
@@ -2998,7 +3160,7 @@
 /* No comment provided by engineer. */
 "Test servers" = "Testovací servery";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Tests failed!" = "Testy selhaly!";
 
 /* No comment provided by engineer. */
@@ -3009,9 +3171,6 @@
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Díky uživatelům - přispívejte prostřednictvím Weblate!";
-
-/* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "1. Platforma bez identifikátorů uživatelů - soukromá už od záměru.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Aplikace vás může upozornit na přijaté zprávy nebo žádosti o kontakt - povolte to v nastavení.";
@@ -3044,22 +3203,28 @@
 "The message will be marked as moderated for all members." = "Zpráva bude pro všechny členy označena jako moderovaná.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "Nová generace soukromých zpráv";
-
-/* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Stará databáze nebyla během přenášení odstraněna, lze ji smazat.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Profil je sdílen pouze s vašimi kontakty.";
+"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "Nejstarší lidská svoboda - mluvit s druhým člověkem, aniž by byl sledován - postavena na infrastruktuře, která ji nemůže zradit.";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Druhé zaškrtnutí jsme přehlédli! ✅";
 
 /* No comment provided by engineer. */
+"The sender deleted the connection request." = "Odesílatel možná smazal požadavek připojení.";
+
+/* alert message */
 "The sender will NOT be notified" = "Odesílatel NEBUDE informován";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Servery pro nová připojení vašeho aktuálního chat profilu **%@**.";
+"The servers for new connections of your current chat profile **%@**." = "Servery pro nová připojení vašeho aktuálního profilu chatu **%@**.";
+
+/* No comment provided by engineer. */
+"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Pak jsme se přesunuli na internet a každá platforma chtěla o vás něco vědět - vaše jméno, vaše číslo, vaše přátele. Smířili jsme se s tím, že cenou za komunikaci s ostatními je dát někomu vědět, s kým mluvíme. Každá generace, lidská i technická, to tak měla - telefon, e-mail, komunikátory, sociální sítě. Zdálo se, že je to jediný možný způsob.";
+
+/* No comment provided by engineer. */
+"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "Existuje i jiný způsob. Síť bez telefonních čísel. Bez uživatelských jmen. Bez účtů. Bez jakékoli uživatelské identity. Síť, která spojuje lidi a přenáší šifrované zprávy, aniž by bylo známo, kdo je připojen.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Toto nastavení je pro váš aktuální profil **%@**.";
@@ -3086,7 +3251,7 @@
 "This group no longer exists." = "Tato skupina již neexistuje.";
 
 /* No comment provided by engineer. */
-"This setting applies to messages in your current chat profile **%@**." = "Toto nastavení platí pro zprávy ve vašem aktuálním chat profilu **%@**.";
+"This setting applies to messages in your current chat profile **%@**." = "Toto nastavení platí pro zprávy ve vašem aktuálním profilu chatu **%@**.";
 
 /* No comment provided by engineer. */
 "To ask any questions and to receive updates:" = "Chcete-li položit jakékoli dotazy a dostávat aktuality:";
@@ -3098,19 +3263,19 @@
 "To make a new connection" = "Vytvoření nového připojení";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Pro ochranu soukromí namísto ID uživatelů používaných všemi ostatními platformami má SimpleX identifikátory pro fronty zpráv, oddělené pro každý z vašich kontaktů.";
-
-/* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "K ochraně časového pásma používají obrazové/hlasové soubory UTC.";
 
 /* No comment provided by engineer. */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Chcete-li chránit své informace, zapněte zámek SimpleX Lock.\nPřed zapnutím této funkce budete vyzváni k dokončení ověření.";
 
 /* No comment provided by engineer. */
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Pro ochranu soukromí namísto ID uživatelů používaných všemi ostatními platformami má SimpleX identifikátory pro fronty zpráv, oddělené pro každý z vašich kontaktů.";
+
+/* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Chcete-li nahrávat hlasové zprávy, udělte povolení k použití mikrofonu.";
 
 /* No comment provided by engineer. */
-"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Chcete-li odhalit svůj skrytý profil, zadejte celé heslo do vyhledávacího pole na stránce **Chat profily**.";
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Chcete-li odhalit svůj skrytý profil, zadejte celé heslo do vyhledávacího pole na stránce **Profily chatu**.";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Pro podporu doručování okamžitých upozornění musí být přenesena chat databáze.";
@@ -3123,12 +3288,6 @@
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Izolace transportu";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Pokus o připojení k serveru používanému k přijímání zpráv od tohoto kontaktu (chyba: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Pokus o připojení k serveru používanému pro příjem zpráv od tohoto kontaktu.";
 
 /* No comment provided by engineer. */
 "Turn off" = "Vypnout";
@@ -3149,7 +3308,7 @@
 "Unhide" = "Odkrýt";
 
 /* No comment provided by engineer. */
-"Unhide chat profile" = "Odkrýt chat profil";
+"Unhide chat profile" = "Odkrýt profil chatu";
 
 /* No comment provided by engineer. */
 "Unhide profile" = "Odkrýt profil";
@@ -3173,15 +3332,12 @@
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Při nepoužívání rozhraní volání iOS, povolte režim Nerušit, abyste se vyhnuli vyrušování.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji.\nChcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.";
-
-/* No comment provided by engineer. */
 "Unlock" = "Odemknout";
 
 /* authentication reason */
 "Unlock app" = "Odemknout aplikaci";
 
-/* swipe action */
+/* notification label action */
 "Unmute" = "Zrušit ztlumení";
 
 /* swipe action */
@@ -3211,10 +3367,7 @@
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Použít hostitele .onion";
 
-/* No comment provided by engineer. */
-"Use chat" = "Použijte chat";
-
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "Použít aktuální profil";
 
 /* No comment provided by engineer. */
@@ -3223,7 +3376,7 @@
 /* No comment provided by engineer. */
 "Use iOS call interface" = "Použít rozhraní volání iOS";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "Použít nový inkognito profil";
 
 /* No comment provided by engineer. */
@@ -3234,9 +3387,6 @@
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Používat servery SimpleX Chat.";
-
-/* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "Ověření zabezpečení připojení";
@@ -3287,7 +3437,7 @@
 "Voice messages are prohibited in this chat." = "Hlasové zprávy jsou v tomto chatu zakázány.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "Hlasové zprávy jsou v této skupině zakázány.";
+"Voice messages are prohibited." = "Hlasové zprávy jsou v této skupině zakázány.";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "Hlasové zprávy jsou zakázány!";
@@ -3332,9 +3482,6 @@
 "When available" = "Když je k dispozici";
 
 /* No comment provided by engineer. */
-"When people request to connect, you can accept or reject it." = "Když někdo požádá o připojení, můžete žádost přijmout nebo odmítnout.";
-
-/* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Pokud s někým sdílíte inkognito profil, bude tento profil použit pro skupiny, do kterých vás pozve.";
 
 /* No comment provided by engineer. */
@@ -3358,14 +3505,20 @@
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Již máte profil chatu se stejným zobrazovacím názvem. Zvolte prosím jiné jméno.";
 
+/* new chat alert */
+"You are a member" = "Jste člen";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Již jste připojeni k %@.";
 
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Jste připojeni k serveru, který se používá k přijímání zpráv od tohoto kontaktu.";
+/* new chat alert */
+"You are an admin" = "Jste správce";
 
-/* No comment provided by engineer. */
-"you are invited to group" = "jste pozváni do skupiny";
+/* new chat alert */
+"You are an observer" = "Jste pozorovatel";
+
+/* new chat alert */
+"You are an owner" = "Jste vlastník";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Jste pozváni do skupiny";
@@ -3383,9 +3536,6 @@
 "You can enable later via Settings" = "Můžete povolit později v Nastavení";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Můžete je povolit později v nastavení Soukromí & Bezpečnosti aplikace";
-
-/* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.";
 
 /* notification body */
@@ -3395,13 +3545,10 @@
 "You can set lock screen notification preview via settings." = "Náhled oznámení na zamykací obrazovce můžete změnit v nastavení.";
 
 /* No comment provided by engineer. */
-"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Můžete sdílet odkaz nebo QR kód - ke skupině se bude moci připojit kdokoli. O členy skupiny nepřijdete, pokud ji později odstraníte.";
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Můžete sdílet odkaz nebo QR kód - ke skupině se bude moci připojit kdokoli. O členy skupiny nepřijdete, pokud odkaz později smažete.";
 
 /* No comment provided by engineer. */
 "You can share this address with your contacts to let them connect with **%@**." = "Tuto adresu můžete sdílet s vašimi kontakty, abyse se mohli spojit s **%@**.";
-
-/* No comment provided by engineer. */
-"You can share your address as a link or QR code - anybody can connect to you." = "Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Chat můžete zahájit prostřednictvím aplikace Nastavení / Databáze nebo restartováním aplikace";
@@ -3412,7 +3559,7 @@
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "K formátování zpráv můžete použít markdown:";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Nemůžete posílat zprávy!";
 
 /* chat item text */
@@ -3426,9 +3573,6 @@
 
 /* snd group event chat item */
 "you changed role of %@ to %@" = "změnili jste roli z %1$@ na %2$@";
-
-/* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Sami řídíte, přes který server(y) **přijímat** zprávy, své kontakty – servery, které používáte k odesílání zpráv.";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Nemohli jste být ověřeni; Zkuste to prosím znovu.";
@@ -3470,6 +3614,9 @@
 "you shared one-time link incognito" = "sdíleli jste jednorázový odkaz inkognito";
 
 /* No comment provided by engineer. */
+"You were born without an account" = "Narodili jste se bez účtu.";
+
+/* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Ke skupině budete připojeni, až bude zařízení hostitele skupiny online, vyčkejte prosím nebo se podívejte později!";
 
 /* No comment provided by engineer. */
@@ -3500,19 +3647,16 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Pro tuto skupinu používáte inkognito profil - abyste zabránili sdílení svého hlavního profilu, není pozvání kontaktů povoleno";
 
 /* No comment provided by engineer. */
-"Your %@ servers" = "Vaše servery %@";
-
-/* No comment provided by engineer. */
 "Your calls" = "Vaše hovory";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Vaše chatovací databáze";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Vaše chat databáze není šifrována – nastavte přístupovou frázi pro její šifrování.";
 
 /* No comment provided by engineer. */
-"Your chat profiles" = "Vaše chat profily";
+"Your chat profiles" = "Vaše profily chatu";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji.\nChcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kontakt odeslal soubor, který je větší než aktuálně podporovaná maximální velikost (%@).";
@@ -3522,6 +3666,9 @@
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Vaše kontakty zůstanou připojeny.";
+
+/* No comment provided by engineer. */
+"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "Vaše konverzace patří vám, jako tomu bylo vždy před internetem. Síť není místo, které navštěvujete. Je to místo, které vytváříte a vlastníte. A nikdo vám ho nemůže vzít, ať už je soukromé, nebo veřejné.";
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Vaše aktuální chat databáze bude ODSTRANĚNA a NAHRAZENA importovanou.";
@@ -3542,16 +3689,13 @@
 "Your profile **%@** will be shared." = "Váš profil **%@** bude sdílen.";
 
 /* No comment provided by engineer. */
+"Your profile is stored on your device and only shared with your contacts." = "Profil je sdílen pouze s vašimi kontakty.";
+
+/* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty. Servery SimpleX nevidí váš profil.";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Váš profil, kontakty a doručené zprávy jsou uloženy ve vašem zařízení.";
-
-/* No comment provided by engineer. */
 "Your random profile" = "Váš náhodný profil";
-
-/* No comment provided by engineer. */
-"Your server" = "Váš server";
 
 /* No comment provided by engineer. */
 "Your server address" = "Adresa vašeho serveru";
@@ -3561,10 +3705,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Vaše SimpleX adresa";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "Vaše servery SMP";
-
-/* No comment provided by engineer. */
-"Your XFTP servers" = "Vaše XFTP servery";
 

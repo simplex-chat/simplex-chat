@@ -14,7 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 
@@ -74,10 +74,7 @@ private fun SetDeliveryReceiptsLayout(
   userCount: Int,
 ) {
   Box(Modifier.padding(top = DEFAULT_PADDING)) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-      horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
       AppBarTitle(stringResource(MR.strings.delivery_receipts_title))
 
       Spacer(Modifier.weight(1f))

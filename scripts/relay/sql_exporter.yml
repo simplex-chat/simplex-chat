@@ -1,0 +1,71 @@
+global:
+  min_interval: 0s
+  max_connections: 3
+  max_idle_connections: 3
+
+target:
+  name: chat_relay
+  # Replaced by SQLEXPORTER_TARGET_DSN. A non-empty value is required here
+  # because the DSN is validated before environment variables are applied.
+  data_source_name: "postgresql://replaced-by-env"
+  collectors: [chat_relay]
+
+collectors:
+  - collector_name: chat_relay
+    metrics:
+      - metric_name: chat_relay_channels
+        type: gauge
+        help: "Channels by relay status."
+        key_labels: [status]
+        values: [channels]
+        query: |
+          SELECT relay_own_status AS status, count(*) AS channels
+          FROM simplex_v1_chat_schema.groups
+          WHERE relay_own_status IS NOT NULL
+          GROUP BY relay_own_status
+
+      - metric_name: chat_relay_published_channels
+        type: gauge
+        help: "Served channels that have a public address."
+        values: [channels]
+        query: |
+          SELECT count(*) AS channels
+          FROM simplex_v1_chat_schema.groups g
+          JOIN simplex_v1_chat_schema.group_profiles gp
+            ON gp.group_profile_id = g.group_profile_id
+          WHERE gp.public_group_id IS NOT NULL
+            AND g.relay_own_status IN ('active', 'accepted')
+
+      - metric_name: chat_relay_members
+        type: gauge
+        help: "Members across all channels."
+        values: [members]
+        query: |
+          SELECT count(*) AS members FROM simplex_v1_chat_schema.group_members
+
+      - metric_name: chat_relay_pending_deliveries
+        type: gauge
+        help: "Messages queued for delivery."
+        values: [deliveries]
+        query: |
+          SELECT count(*) AS deliveries
+          FROM simplex_v1_chat_schema.msg_deliveries
+          WHERE delivery_status = 'snd_pending'
+
+      - metric_name: chat_relay_oldest_pending_delivery_seconds
+        type: gauge
+        help: "Age of the oldest message queued for delivery."
+        values: [age]
+        query: |
+          SELECT COALESCE(EXTRACT(EPOCH FROM (now() - min(created_at))), 0) AS age
+          FROM simplex_v1_chat_schema.msg_deliveries
+          WHERE delivery_status = 'snd_pending'
+
+      - metric_name: chat_relay_messages_24h
+        type: gauge
+        help: "Chat items created in the last 24 hours."
+        values: [messages]
+        query: |
+          SELECT count(*) AS messages
+          FROM simplex_v1_chat_schema.chat_items
+          WHERE created_at > now() - interval '24 hours'

@@ -268,7 +268,7 @@ struct ConnectDesktopView: View {
     private func ctrlDeviceNameText(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> Text {
         var t = Text(rc?.deviceViewName ?? session.ctrlAppInfo?.deviceName ?? "")
         if (rc == nil) {
-            t = t + Text(" ") + Text("(new)").italic()
+            t = t + textSpace + Text("(new)").italic()
         }
         return t
     }
@@ -277,7 +277,7 @@ struct ConnectDesktopView: View {
         let v = session.ctrlAppInfo?.appVersionRange.maxVersion
         var t = Text("v\(v ?? "")")
         if v != session.appVersion {
-            t = t + Text(" ") + Text("(this device v\(session.appVersion))").italic()
+            t = t + textSpace + Text("(this device v\(session.appVersion))").italic()
         }
         return t
     }
@@ -456,12 +456,12 @@ struct ConnectDesktopView: View {
                 }
             } catch let e {
                 await MainActor.run {
-                    switch e as? ChatResponse {
-                    case .chatCmdError(_, .errorRemoteCtrl(.badInvitation)): alert = .badInvitationError
-                    case .chatCmdError(_, .error(.commandError)): alert = .badInvitationError
-                    case let .chatCmdError(_, .errorRemoteCtrl(.badVersion(v))): alert = .badVersionError(version: v)
-                    case .chatCmdError(_, .errorAgent(.RCP(.version))): alert = .badVersionError(version: nil)
-                    case .chatCmdError(_, .errorAgent(.RCP(.ctrlAuth))): alert = .desktopDisconnectedError
+                    switch e as? ChatError {
+                    case .errorRemoteCtrl(.badInvitation): alert = .badInvitationError
+                    case .error(.commandError): alert = .badInvitationError
+                    case let .errorRemoteCtrl(.badVersion(v)): alert = .badVersionError(version: v)
+                    case .errorAgent(.RCP(.version)): alert = .badVersionError(version: nil)
+                    case .errorAgent(.RCP(.ctrlAuth)): alert = .desktopDisconnectedError
                     default: errorAlert(e)
                     }
                 }
@@ -535,8 +535,7 @@ struct ConnectDesktopView: View {
     }
 
     private func errorAlert(_ error: Error) {
-        let a = getErrorAlert(error, "Error")
-        alert = .error(title: a.title, error: a.message)
+        showErrorAlert(error, NSLocalizedString("Error", comment: ""))
     }
 }
 

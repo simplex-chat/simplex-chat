@@ -7,16 +7,15 @@
 //
 
 import Foundation
+import SwiftUI
 
 public protocol ChatLike {
-    var chatInfo: ChatInfo { get}
-    var chatItems: [ChatItem] { get }
-    var chatStats: ChatStats { get }
+    var chatInfo: ChatInfo { get }
 }
 
 extension ChatLike {
     public func groupFeatureEnabled(_ feature: GroupFeature) -> Bool {
-        if case let .group(groupInfo) = self.chatInfo {
+        if case let .group(groupInfo, _) = self.chatInfo {
             let p = groupInfo.fullGroupPreferences
             return switch feature {
             case .timedMessages: p.timedMessages.on
@@ -27,6 +26,9 @@ extension ChatLike {
             case .files: p.files.on(for: groupInfo.membership)
             case .simplexLinks: p.simplexLinks.on(for: groupInfo.membership)
             case .history: p.history.on
+            case .support: p.support.on
+            case .reports: p.reports.on
+            case .signMessages: p.signMessages.on
             }
         } else {
             return true
@@ -53,11 +55,11 @@ extension ChatLike {
     }
 }
 
-public func filterChatsToForwardTo<C: ChatLike>(chats: [C]) -> [C] {
+public func filterChatsToForwardTo<C: ChatLike>(chats: [C], includeLocal: Bool = true) -> [C] {
     var filteredChats = chats.filter { c in
         c.chatInfo.chatType != .local && canForwardToChat(c.chatInfo)
     }
-    if let privateNotes = chats.first(where: { $0.chatInfo.chatType == .local }) {
+    if includeLocal, let privateNotes = chats.first(where: { $0.chatInfo.chatType == .local }) {
         filteredChats.insert(privateNotes, at: 0)
     }
     return filteredChats
@@ -81,22 +83,22 @@ public func foundChat(_ chat: ChatLike, _ searchStr: String) -> Bool {
 
 private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
     switch cInfo {
-    case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
-    case let .group(groupInfo): groupInfo.sendMsgEnabled
-    case let .local(noteFolder): noteFolder.sendMsgEnabled
+    case let .direct(contact): cInfo.sendMsgEnabled && !contact.sendMsgToConnect
+    case .group: cInfo.sendMsgEnabled
+    case .local: cInfo.sendMsgEnabled
     case .contactRequest: false
     case .contactConnection: false
     case .invalidJSON: false
     }
 }
 
-public func chatIconName(_ cInfo: ChatInfo) -> String {
+public func chatIcon(_ cInfo: ChatInfo) -> Image {
     switch cInfo {
-    case .direct: "person.crop.circle.fill"
-    case .group: "person.2.circle.fill"
-    case .local: "folder.circle.fill"
-    case .contactRequest: "person.crop.circle.fill"
-    default:  "circle.fill"
+    case let .direct(contact): contact.chatIcon
+    case let .group(groupInfo, _): Image(systemName: groupInfo.chatIconName)
+    case .local: Image(systemName: "folder.circle.fill")
+    case .contactRequest: Image(systemName: "person.crop.circle.fill")
+    default:  Image(systemName: "circle.fill")
     }
 }
 

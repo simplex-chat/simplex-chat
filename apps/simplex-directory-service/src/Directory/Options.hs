@@ -1,33 +1,64 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Directory.Options
   ( DirectoryOpts (..),
+    MigrateLog (..),
     getDirectoryOpts,
+    directoryOpts,
     mkChatOpts,
   )
 where
 
+import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatOpts (..), ChatCmdLog (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
+    adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
-    directoryLog :: Maybe FilePath,
-    serviceName :: String,
+    ownersGroup :: Maybe KnownGroup,
+    noAddress :: Bool, -- skip creating address
+    blockedWordsFile :: Maybe FilePath,
+    blockedFragmentsFile :: Maybe FilePath,
+    blockedExtensionRules :: Maybe FilePath,
+    nameSpellingFile :: Maybe FilePath,
+    profileNameLimit :: Int,
+    captchaGenerator :: Maybe FilePath,
+    voiceCaptchaGenerator :: Maybe FilePath,
+    serviceName :: T.Text,
+    clientService :: Bool,
+    runCLI :: Bool,
     searchResults :: Int,
+    webFolder :: Maybe FilePath,
+    linkCheckInterval :: Int,
+    prohibitedToObserver :: Bool,
+    alwaysCaptcha :: Bool,
+    alwaysObserver :: Bool,
+    knocking :: Bool,
     testing :: Bool
   }
 
+data MigrateLog = MLCheck | MLImport | MLExport | MLListing
+
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
-directoryOpts appDir defaultDbFileName = do
-  coreOptions <- coreChatOptsP appDir defaultDbFileName
+directoryOpts appDir defaultDbName = do
+  coreOptions <- coreChatOptsP appDir defaultDbName
+  adminUsers <-
+    option
+      parseKnownContacts
+      ( long "admin-users"
+          <> metavar "ADMIN_USERS"
+          <> value []
+          <> help "Comma-separated list of admin-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
+      )
   superUsers <-
     option
       parseKnownContacts
@@ -35,35 +66,153 @@ directoryOpts appDir defaultDbFileName = do
           <> metavar "SUPER_USERS"
           <> help "Comma-separated list of super-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
       )
-  directoryLog <-
-    Just
-      <$> strOption
-        ( long "directory-file"
-            <> metavar "DIRECTORY_FILE"
-            <> help "Append only log for directory state"
+  ownersGroup <-
+    optional $
+      option
+        parseKnownGroup
+        ( long "owners-group"
+            <> metavar "OWNERS_GROUP"
+            <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
+        )
+  noAddress <-
+    switch
+      ( long "no-address"
+          <> help "skip checking and creating service address"
+      )
+  blockedWordsFile <-
+    optional $
+      strOption
+        ( long "blocked-words-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of words not allowed in profiles"
+        )
+  blockedFragmentsFile <-
+    optional $
+      strOption
+        ( long "blocked-fragments-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of word fragments not allowed in profiles"
+        )
+  blockedExtensionRules <-
+    optional $
+      strOption
+        ( long "blocked-extenstion-rules"
+            <> metavar "BLOCKED_EXTENSION_RULES"
+            <> help "Substitions to extend the list of blocked words"
+        )
+  nameSpellingFile <-
+    optional $
+      strOption
+        ( long "name-spelling-file"
+            <> metavar "NAME_SPELLING_FILE"
+            <> help "File with the character substitions to match in profile names"
+        )
+  profileNameLimit <-
+    option
+      auto
+      ( long "profile-name-limit"
+          <> metavar "PROFILE_NAME_LIMIT"
+          <> help "Max length of profile name that will be allowed to connect and to join groups"
+          <> value maxBound
+      )
+  captchaGenerator <-
+    optional $
+      strOption
+        ( long "captcha-generator"
+            <> metavar "CAPTCHA_GENERATOR"
+            <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
+        )
+  voiceCaptchaGenerator <-
+    optional $
+      strOption
+        ( long "voice-captcha-generator"
+            <> metavar "VOICE_CAPTCHA_GENERATOR"
+            <> help "Executable to generate voice captcha, accepts text as parameter, writes audio file, outputs file_path and duration_seconds to stdout"
         )
   serviceName <-
     strOption
       ( long "service-name"
           <> metavar "SERVICE_NAME"
-          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX-Directory)"
-          <> value "SimpleX-Directory"
+          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX Directory)"
+          <> value "SimpleX Directory"
+      )
+  clientService <-
+    switch
+      ( long "client-service"
+          <> help "Use client service certificate"
+      )
+  runCLI <-
+    switch
+      ( long "run-cli"
+          <> help "Run directory service as CLI"
+      )
+  webFolder <-
+    optional $
+      strOption
+        ( long "web-folder"
+            <> metavar "WEB_FOLDER"
+            <> help "Folder to store static web assets"
+        )
+  linkCheckInterval <-
+    option
+      auto
+      ( long "link-check-interval"
+          <> metavar "SECONDS"
+          <> help "Interval in seconds to check public group link data (default: 1800)"
+          <> value 1800
+      )
+  prohibitedToObserver <-
+    switch
+      ( long "prohibited-to-observer"
+          <> help "Set a member to observer (and delete the message) when they post content prohibited by the group's settings"
+      )
+  alwaysCaptcha <-
+    switch
+      ( long "always-captcha"
+          <> help "Require a captcha from joining members in all groups, regardless of per-group filter settings"
+      )
+  alwaysObserver <-
+    switch
+      ( long "always-observer"
+          <> help "Make joining members observers in all groups, regardless of per-group setting in directory"
+      )
+  knocking <-
+    switch
+      ( long "knocking"
+          <> help "Require admin review (knocking) before joining members are admitted in all groups, regardless of group preference"
       )
   pure
     DirectoryOpts
       { coreOptions,
+        adminUsers,
         superUsers,
-        directoryLog,
-        serviceName,
+        ownersGroup,
+        noAddress,
+        blockedWordsFile,
+        blockedFragmentsFile,
+        blockedExtensionRules,
+        nameSpellingFile,
+        profileNameLimit,
+        captchaGenerator,
+        voiceCaptchaGenerator,
+        serviceName = T.pack serviceName,
+        clientService,
+        runCLI,
         searchResults = 10,
+        webFolder,
+        linkCheckInterval,
+        prohibitedToObserver,
+        alwaysCaptcha,
+        alwaysObserver,
+        knocking,
         testing = False
       }
 
 getDirectoryOpts :: FilePath -> FilePath -> IO DirectoryOpts
-getDirectoryOpts appDir defaultDbFileName =
+getDirectoryOpts appDir defaultDbName =
   execParser $
     info
-      (helper <*> versionOption <*> directoryOpts appDir defaultDbFileName)
+      (helper <*> versionOption <*> directoryOpts appDir defaultDbName)
       (header versionStr <> fullDesc <> progDesc "Start SimpleX Directory Service with DB_FILE, DIRECTORY_FILE and SUPER_USERS options")
   where
     versionStr = versionString versionNumber
@@ -71,10 +220,9 @@ getDirectoryOpts appDir defaultDbFileName =
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
 mkChatOpts :: DirectoryOpts -> ChatOpts
-mkChatOpts DirectoryOpts {coreOptions} =
+mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
   ChatOpts
     { coreOptions,
-      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
@@ -82,9 +230,12 @@ mkChatOpts DirectoryOpts {coreOptions} =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = False,
+      showFullLinks = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      maintenance = False
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False, clientService},
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }

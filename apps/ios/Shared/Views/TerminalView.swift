@@ -18,7 +18,9 @@ struct TerminalView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State var composeState: ComposeState = ComposeState()
+    @State var selectedRange = NSRange()
     @State private var keyboardVisible = false
+    @State private var keyboardHiddenDate = Date.now
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
     @State private var scrolled = false
@@ -96,10 +98,12 @@ struct TerminalView: View {
 
                 SendMessageView(
                     composeState: $composeState,
+                    selectedRange: $selectedRange,
                     sendMessage: { _ in consoleSendMessage() },
                     showVoiceMessageButton: false,
                     onMediaAdded: { _ in },
-                    keyboardVisible: $keyboardVisible
+                    keyboardVisible: $keyboardVisible,
+                    keyboardHiddenDate: $keyboardHiddenDate
                 )
                 .padding(.horizontal, 12)
             }
@@ -141,18 +145,18 @@ struct TerminalView: View {
     }
     
     func consoleSendMessage() {
-        let cmd = ChatCommand.string(composeState.message)
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
-            let resp = ChatResponse.chatCmdError(user_: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
+            let resp: APIResult<ChatResponse2> = APIResult.error(ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
             Task {
-                await TerminalItems.shared.addCommand(.now, cmd, resp)
+                await TerminalItems.shared.addCommand(.now, .string(composeState.message), resp)
             }
         } else {
+            let cmd = composeState.message
             DispatchQueue.global().async {
                 Task {
-                    composeState.inProgress = true
-                    _ = await chatSendCmd(cmd)
-                    composeState.inProgress = false
+                    await MainActor.run { composeState.inProgress = true }
+                    await sendTerminalCmd(cmd)
+                    await MainActor.run { composeState.inProgress = false }
                 }
             }
         }
@@ -160,12 +164,38 @@ struct TerminalView: View {
     }
 }
 
+func sendTerminalCmd(_ cmd: String) async {
+    let start: Date = .now
+    await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+        let d = sendSimpleXCmdStr(cmd, retryNum: 0)
+        Task {
+            guard let d else {
+                await TerminalItems.shared.addCommand(start, ChatCommand.string(cmd), APIResult<ChatResponse2>.error(.invalidJSON(json: nil)))
+                return
+            }
+            let r0: APIResult<ChatResponse0> = decodeAPIResult(d)
+            guard case .invalid = r0 else {
+                await TerminalItems.shared.addCommand(start, .string(cmd), r0)
+                return
+            }
+            let r1: APIResult<ChatResponse1> = decodeAPIResult(d)
+            guard case .invalid = r1 else {
+                await TerminalItems.shared.addCommand(start, .string(cmd), r1)
+                return
+            }
+            let r2: APIResult<ChatResponse2> = decodeAPIResult(d)
+            await TerminalItems.shared.addCommand(start, .string(cmd), r2)
+        }
+        cont.resume(returning: ())
+    }
+}
+
 struct TerminalView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.terminalItems = [
-            .resp(.now, ChatResponse.response(type: "contactSubscribed", json: "{}")),
-            .resp(.now, ChatResponse.response(type: "newChatItems", json: "{}"))
+            .err(.now, APIResult<ChatResponse2>.invalid(type: "contactSubscribed", json: "{}".data(using: .utf8)!).unexpected),
+            .err(.now, APIResult<ChatResponse2>.invalid(type: "newChatItems", json: "{}".data(using: .utf8)!).unexpected)
         ]
         return NavigationView {
             TerminalView()

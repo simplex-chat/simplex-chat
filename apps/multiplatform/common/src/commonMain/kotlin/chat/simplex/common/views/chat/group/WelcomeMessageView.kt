@@ -7,9 +7,7 @@ import SectionTextFooter
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,13 +26,10 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.GroupInfo
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.chatJsonLength
-import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
-import chat.simplex.res.MR
-import kotlinx.coroutines.delay
+import chat.simplex.common.platform.*
+import chat.simplex.res.*
+import kotlinx.coroutines.*
 
 private const val maxByteCount = 1200
 
@@ -50,11 +45,11 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
         welcome = null
       }
       val groupProfileUpdated = gInfo.groupProfile.copy(description = welcome)
-      val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated)
+      val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated, gInfo.useRelays)
       if (res != null) {
         gInfo = res
-        withChats {
-          updateGroup(rhId, res)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, res)
         }
         welcomeText.value = welcome ?: ""
       }
@@ -95,13 +90,11 @@ private fun GroupWelcomeLayout(
   linkMode: SimplexLinkMode,
   save: () -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     val editMode = remember { mutableStateOf(true) }
     AppBarTitle(stringResource(MR.strings.group_welcome_title))
     val wt = rememberSaveable { welcomeText }
-    if (groupInfo.canEdit) {
+    if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
       if (editMode.value) {
         val focusRequester = remember { FocusRequester() }
         TextEditor(
@@ -153,13 +146,16 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
   val uriHandler = LocalUriHandler.current
   Column {
     SelectionContainer(Modifier.fillMaxWidth()) {
+      val parsed = if (markdown) remember(text) { parseToMarkdownText(text) } else null
       MarkdownText(
         text,
-        formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
+        formattedText = parsed?.formattedText,
+        markdownBlocks = parsed?.markdownBlocks,
         toggleSecrets = false,
         modifier = Modifier.fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
         linkMode = linkMode, uriHandler = uriHandler,
-        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp)
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+        blockLayout = true
       )
     }
   }

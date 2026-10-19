@@ -5,6 +5,7 @@
 //  Created by Evgeny on 20/06/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -109,15 +110,15 @@ struct MigrateToAppGroupView: View {
                         do {
                             resetChatCtrl()
                             try initializeChat(start: true)
-                            onboardingStageDefault.set(.step4_SetNotificationsMode)
-                            chatModel.onboardingStage = .step4_SetNotificationsMode
+                            onboardingStageDefault.set(.step4_NetworkCommitments)
+                            chatModel.onboardingStage = .step4_NetworkCommitments
                             setV3DBMigration(.ready)
                         } catch let error {
                             dbContainerGroupDefault.set(.documents)
                             setV3DBMigration(.migration_error)
                             migrationError = "Error starting chat: \(responseError(error))"
                         }
-                        deleteOldArchive()
+                        deleteOldChatArchive()
                     } label: {
                         Text("Start chat")
                             .font(.title)
@@ -235,14 +236,16 @@ func exportChatArchive(_ storagePath: URL? = nil) async throws -> (URL, [Archive
     try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
     let errs = try await apiExportArchive(config: config)
     if storagePath == nil {
-        deleteOldArchive()
+        deleteOldChatArchive()
         UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
         chatArchiveTimeDefault.set(archiveTime)
     }
     return (archivePath, errs)
 }
 
-func deleteOldArchive() {
+/// Deprecated. Remove in the end of 2025. All unused archives should be deleted for the most users til then.
+/// Remove DEFAULT_CHAT_ARCHIVE_NAME and DEFAULT_CHAT_ARCHIVE_TIME as well
+func deleteOldChatArchive() {
     let d = UserDefaults.standard
     if let archiveName = d.string(forKey: DEFAULT_CHAT_ARCHIVE_NAME) {
         do {

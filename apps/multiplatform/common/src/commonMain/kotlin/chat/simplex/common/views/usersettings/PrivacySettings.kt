@@ -1,10 +1,11 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -14,11 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
@@ -30,8 +32,8 @@ import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
+import kotlinx.coroutines.*
 
 enum class LAMode {
   SYSTEM,
@@ -55,16 +57,71 @@ fun PrivacySettingsView(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
-    val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_privacy))
     PrivacyDeviceSection(showSettingsModal, setPerformLA)
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
-      SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_travel_explore),
+        stringResource(MR.strings.send_link_previews),
+        chatModel.controller.appPrefs.privacyLinkPreviews,
+        onChange = { _ -> chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) } // to avoid showing alert to current users, show alert in v6.5
+      )
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_link),
+        stringResource(MR.strings.sanitize_links_toggle),
+        chatModel.controller.appPrefs.privacySanitizeLinks
+      )
+    }
+    SectionDividerSpaced()
+
+    SectionView(stringResource(MR.strings.settings_section_title_files)) {
+      SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      BlurRadiusOptions(remember { appPrefs.privacyMediaBlurRadius.state }) {
+        appPrefs.privacyMediaBlurRadius.set(it)
+      }
+    }
+
+    val currentUser = chatModel.currentUser.value
+    if (currentUser != null && !chatModel.desktopNoUserNoRemote) {
+      SectionDividerSpaced()
+      AutoAcceptSection(
+        currentUser = currentUser,
+        setAutoAcceptMemberContacts = { enable ->
+          withApi {
+            chatModel.controller.apiSetUserAutoAcceptMemberContacts(currentUser, enable)
+            chatModel.currentUser.value = currentUser.copy(autoAcceptMemberContacts = enable)
+          }
+        },
+        setAutoAcceptGroupInvitations = { enable ->
+          withApi {
+            chatModel.controller.apiSetUserAutoAcceptGroupInvitations(currentUser, enable)
+            chatModel.currentUser.value = currentUser.copy(autoAcceptGroupInvitations = enable)
+          }
+        }
+      )
+    }
+
+    SectionDividerSpaced()
+    SectionView {
+      SettingsActionItem(
+        painterResource(MR.images.ic_more_horiz),
+        stringResource(MR.strings.more_privacy),
+        showSettingsModal { MorePrivacyView(it) }
+      )
+    }
+    SectionBottomSpacer()
+  }
+}
+
+@Composable
+fun MorePrivacyView(chatModel: ChatModel) {
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.more_privacy))
+
+    SectionView(stringResource(MR.strings.settings_section_title_chats)) {
       SettingsPreferenceItem(
         painterResource(MR.images.ic_chat_bubble),
         stringResource(MR.strings.privacy_show_last_messages),
@@ -83,10 +140,17 @@ fun PrivacySettingsView(
             chatModel.draftChatId.value = null
           }
         })
-      SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
-        simplexLinkMode.set(it)
-        chatModel.simplexLinkMode.value = it
-      })
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_tag),
+        stringResource(MR.strings.verify_simplex_names),
+        chatModel.controller.appPrefs.privacyVerifySimplexNames
+      )
+      // hidden until message signing is user-facing (recipient-only stage)
+//      SettingsPreferenceItem(
+//        painterResource(MR.images.ic_verified),
+//        stringResource(MR.strings.show_signature),
+//        chatModel.controller.appPrefs.privacyShowSignature
+//      )
     }
     SectionDividerSpaced()
 
@@ -94,11 +158,8 @@ fun PrivacySettingsView(
       SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
-      SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      BlurRadiusOptions(remember { appPrefs.privacyMediaBlurRadius.state }) {
-        appPrefs.privacyMediaBlurRadius.set(it)
-      }
       SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.show_encryption), chatModel.controller.appPrefs.privacyShowEncryption)
     }
     SectionTextFooter(
       if (chatModel.controller.appPrefs.privacyAskToApproveRelays.state.value) {
@@ -107,9 +168,34 @@ fun PrivacySettingsView(
         stringResource(MR.strings.without_tor_or_vpn_ip_address_will_be_visible_to_file_servers)
       }
     )
+    SectionDividerSpaced()
+
+    SectionView(stringResource(MR.strings.notifications)) {
+      val previewModes = remember { notificationPreviewModes() }
+      val notificationPreviewMode = remember { chatModel.notificationPreviewMode }
+      SettingsActionItemWithContent(
+        painterResource(MR.images.ic_visibility_off),
+        stringResource(MR.strings.settings_notification_preview_mode_title),
+        click = {
+          ModalManager.start.showModalCloseable(true) {
+            NotificationPreviewView(notificationPreviewMode) { mode ->
+              chatModel.controller.appPrefs.notificationPreviewMode.set(mode.name)
+              chatModel.notificationPreviewMode.value = mode
+            }
+          }
+        }
+      ) {
+        Text(
+          previewModes.firstOrNull { it.value == notificationPreviewMode.value }?.title ?: "",
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          color = MaterialTheme.colors.secondary
+        )
+      }
+    }
 
     val currentUser = chatModel.currentUser.value
-    if (currentUser != null) {
+    if (currentUser != null && !chatModel.desktopNoUserNoRemote) {
       fun setSendReceiptsContacts(enable: Boolean, clearOverrides: Boolean) {
         withLongRunningApi(slow = 60_000) {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
@@ -118,15 +204,15 @@ fun PrivacySettingsView(
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
             // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            withChats {
-              for (i in 0 until chats.size) {
-                val chat = chats[i]
+            withContext(Dispatchers.Main) {
+              for (i in 0 until chatModel.chatsContext.chats.size) {
+                val chat = chatModel.chatsContext.chats[i]
                 if (chat.chatInfo is ChatInfo.Direct) {
                   var contact = chat.chatInfo.contact
                   val sendRcpts = contact.chatSettings.sendRcpts
                   if (sendRcpts != null && sendRcpts != enable) {
                     contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                    updateContact(currentUser.remoteHostId, contact)
+                    chatModel.chatsContext.updateContact(currentUser.remoteHostId, contact)
                   }
                 }
               }
@@ -142,16 +228,16 @@ fun PrivacySettingsView(
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {
-            withChats {
+            withContext(Dispatchers.Main) {
               // For loop here is to prevent ConcurrentModificationException that happens with forEach
-              for (i in 0 until chats.size) {
-                val chat = chats[i]
+              for (i in 0 until chatModel.chatsContext.chats.size) {
+                val chat = chatModel.chatsContext.chats[i]
                 if (chat.chatInfo is ChatInfo.Group) {
                   var groupInfo = chat.chatInfo.groupInfo
                   val sendRcpts = groupInfo.chatSettings.sendRcpts
                   if (sendRcpts != null && sendRcpts != enable) {
                     groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                    updateGroup(currentUser.remoteHostId, groupInfo)
+                    chatModel.chatsContext.updateGroup(currentUser.remoteHostId, groupInfo)
                   }
                 }
               }
@@ -160,49 +246,47 @@ fun PrivacySettingsView(
         }
       }
 
-      if (!chatModel.desktopNoUserNoRemote) {
-        SectionDividerSpaced(maxTopPadding = true)
-        DeliveryReceiptsSection(
-          currentUser = currentUser,
-          setOrAskSendReceiptsContacts = { enable ->
-            val contactReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
-              if (chat.chatInfo is ChatInfo.Direct) {
-                val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
-                count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
-              } else {
-                count
-              }
-            }
-            if (contactReceiptsOverrides == 0) {
-              setSendReceiptsContacts(enable, clearOverrides = false)
+      SectionDividerSpaced()
+      DeliveryReceiptsSection(
+        currentUser = currentUser,
+        setOrAskSendReceiptsContacts = { enable ->
+          val contactReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
+            if (chat.chatInfo is ChatInfo.Direct) {
+              val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
+              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
             } else {
-              showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
-            }
-          },
-          setOrAskSendReceiptsGroups = { enable ->
-            val groupReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
-              if (chat.chatInfo is ChatInfo.Group) {
-                val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
-                count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
-              } else {
-                count
-              }
-            }
-            if (groupReceiptsOverrides == 0) {
-              setSendReceiptsGroups(enable, clearOverrides = false)
-            } else {
-              showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
+              count
             }
           }
-        )
-      }
+          if (contactReceiptsOverrides == 0) {
+            setSendReceiptsContacts(enable, clearOverrides = false)
+          } else {
+            showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
+          }
+        },
+        setOrAskSendReceiptsGroups = { enable ->
+          val groupReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
+            if (chat.chatInfo is ChatInfo.Group) {
+              val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
+              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+            } else {
+              count
+            }
+          }
+          if (groupReceiptsOverrides == 0) {
+            setSendReceiptsGroups(enable, clearOverrides = false)
+          } else {
+            showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
+          }
+        }
+      )
     }
     SectionBottomSpacer()
   }
 }
 
 @Composable
-private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
+fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
   val modeValues = listOf(SimplexLinkMode.DESCRIPTION, SimplexLinkMode.FULL)
   val pickerValues = modeValues + if (modeValues.contains(simplexLinkModeState.value)) emptyList() else listOf(simplexLinkModeState.value)
   val values = remember {
@@ -255,6 +339,44 @@ expect fun PrivacyDeviceSection(
 )
 
 @Composable
+private fun AutoAcceptSection(
+  currentUser: User,
+  setAutoAcceptMemberContacts: (Boolean) -> Unit,
+  setAutoAcceptGroupInvitations: (Boolean) -> Unit
+) {
+  // legacy string key names, reused for their values so this section stays translated
+  SectionView(stringResource(MR.strings.auto_accept_contact)) {
+    SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.settings_section_title_contact_requests_from_groups)) {
+      DefaultSwitch(
+        checked = currentUser.autoAcceptMemberContacts,
+        onCheckedChange = { enable ->
+          setAutoAcceptMemberContacts(enable)
+        }
+      )
+    }
+    SettingsActionItemWithContent(painterResource(MR.images.ic_group), stringResource(MR.strings.group_invitations)) {
+      DefaultSwitch(
+        checked = currentUser.autoAcceptGroupInvitations,
+        onCheckedChange = { enable ->
+          setAutoAcceptGroupInvitations(enable)
+        }
+      )
+    }
+  }
+  SectionTextFooter(
+    remember(currentUser.displayName) {
+      buildAnnotatedString {
+        append(generalGetString(MR.strings.these_settings_are_for_your_current_profile) + " ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+          append(currentUser.displayName)
+        }
+        append(".")
+      }
+    }
+  )
+}
+
+@Composable
 private fun DeliveryReceiptsSection(
   currentUser: User,
   setOrAskSendReceiptsContacts: (Boolean) -> Unit,
@@ -263,7 +385,7 @@ private fun DeliveryReceiptsSection(
   SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts)) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.receipts_section_contacts)) {
       DefaultSwitch(
-        checked = currentUser.sendRcptsContacts ?: false,
+        checked = currentUser.sendRcptsContacts,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsContacts(enable)
         }
@@ -271,7 +393,7 @@ private fun DeliveryReceiptsSection(
     }
     SettingsActionItemWithContent(painterResource(MR.images.ic_group), stringResource(MR.strings.receipts_section_groups)) {
       DefaultSwitch(
-        checked = currentUser.sendRcptsSmallGroups ?: false,
+        checked = currentUser.sendRcptsSmallGroups,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsGroups(enable)
         }
@@ -281,7 +403,7 @@ private fun DeliveryReceiptsSection(
   SectionTextFooter(
     remember(currentUser.displayName) {
       buildAnnotatedString {
-        append(generalGetString(MR.strings.receipts_section_description) + " ")
+        append(generalGetString(MR.strings.these_settings_are_for_your_current_profile) + " ")
         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
           append(currentUser.displayName)
         }
@@ -424,7 +546,7 @@ fun SimplexLockView(
             }
             LAMode.PASSCODE -> {
               ModalManager.fullscreen.showCustomModal { close ->
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
                   SetAppPasscodeView(
                     submit = {
                       laLockDelay.set(30)
@@ -468,7 +590,7 @@ fun SimplexLockView(
       when (laResult) {
         LAResult.Success -> {
           ModalManager.fullscreen.showCustomModal { close ->
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
               SetAppPasscodeView(
                 reason = generalGetString(MR.strings.la_app_passcode),
                 submit = {
@@ -492,7 +614,7 @@ fun SimplexLockView(
       when (laResult) {
         LAResult.Success -> {
           ModalManager.fullscreen.showCustomModal { close ->
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
               SetAppPasscodeView(
                 passcodeKeychain = ksSelfDestructPassword,
                 prohibitedPasscodeKeychain = ksAppPassword,
@@ -514,9 +636,7 @@ fun SimplexLockView(
     }
   }
 
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.chat_lock))
     SectionView {
       EnableLock(remember { appPrefs.performLA.state }) { performLAToggle ->
@@ -529,7 +649,7 @@ fun SimplexLockView(
             }
             LAMode.PASSCODE -> {
               ModalManager.fullscreen.showCustomModal { close ->
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
                   SetAppPasscodeView(
                     submit = {
                       laLockDelay.set(30)
@@ -573,46 +693,46 @@ fun SimplexLockView(
           }
         }
       }
-      if (performLA.value && laMode.value == LAMode.PASSCODE) {
-        SectionDividerSpaced()
-        SectionView(stringResource(MR.strings.self_destruct_passcode).uppercase()) {
-          val openInfo = {
-            ModalManager.start.showModal {
-              SelfDestructInfoView()
-            }
+    }
+    if (performLA.value && laMode.value == LAMode.PASSCODE) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.self_destruct_passcode)) {
+        val openInfo = {
+          ModalManager.start.showModal {
+            SelfDestructInfoView()
           }
-          SettingsActionItemWithContent(null, null, click = openInfo) {
-            SharedPreferenceToggleWithIcon(
-              stringResource(MR.strings.enable_self_destruct),
-              painterResource(MR.images.ic_info),
-              openInfo,
-              remember { selfDestructPref.state }.value
-            ) {
-              toggleSelfDestruct(selfDestructPref)
-            }
+        }
+        SettingsActionItemWithContent(null, null, click = openInfo) {
+          SharedPreferenceToggleWithIcon(
+            stringResource(MR.strings.enable_self_destruct),
+            painterResource(MR.images.ic_info),
+            openInfo,
+            remember { selfDestructPref.state }.value
+          ) {
+            toggleSelfDestruct(selfDestructPref)
           }
+        }
 
-          if (remember { selfDestructPref.state }.value) {
-            Column(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
-              Text(
-                stringResource(MR.strings.self_destruct_new_display_name),
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-              )
-              ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
-              LaunchedEffect(selfDestructDisplayName.value) {
-                val new = selfDestructDisplayName.value
-                if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
-                  selfDestructDisplayNamePref.set(new)
-                }
+        if (remember { selfDestructPref.state }.value) {
+          Column(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
+            Text(
+              stringResource(MR.strings.self_destruct_new_display_name),
+              fontSize = 16.sp,
+              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+            )
+            ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
+            LaunchedEffect(selfDestructDisplayName.value) {
+              val new = selfDestructDisplayName.value
+              if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
+                selfDestructDisplayNamePref.set(new)
               }
             }
-            SectionItemView({ changeSelfDestructPassword() }) {
-              Text(
-                stringResource(MR.strings.change_self_destruct_passcode),
-                color = MaterialTheme.colors.primary
-              )
-            }
+          }
+          SectionItemView({ changeSelfDestructPassword() }) {
+            Text(
+              stringResource(MR.strings.change_self_destruct_passcode),
+              color = MaterialTheme.colors.primary
+            )
           }
         }
       }
@@ -642,7 +762,7 @@ private fun EnableSelfDestruct(
   selfDestruct: SharedPreference<Boolean>,
   close: () -> Unit
 ) {
-  Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+  Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
     SetAppPasscodeView(
       passcodeKeychain = ksSelfDestructPassword, prohibitedPasscodeKeychain = ksAppPassword, title = generalGetString(MR.strings.set_passcode), reason = generalGetString(MR.strings.enabled_self_destruct_passcode),
       submit = {

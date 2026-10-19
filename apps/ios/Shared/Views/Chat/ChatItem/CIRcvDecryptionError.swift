@@ -5,12 +5,14 @@
 //  Created by Evgeny on 15/04/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
 let decryptErrorReason: LocalizedStringKey = "It can happen when you or your connection used the old database backup."
 
+// Spec: spec/client/chat-view.md#CIRcvDecryptionError
 struct CIRcvDecryptionError: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -45,7 +47,7 @@ struct CIRcvDecryptionError: View {
         viewBody()
             .onAppear {
                 // for direct chat ConnectionStats are populated on opening chat, see ChatView onAppear
-                if case let .group(groupInfo) = chat.chatInfo,
+                if case let .group(groupInfo, _) = chat.chatInfo,
                    case let .groupRcv(groupMember) = chatItem.chatDir {
                     do {
                         let (member, stats) = try apiGroupMemberInfoSync(groupInfo.apiId, groupMember.groupMemberId)
@@ -68,7 +70,7 @@ struct CIRcvDecryptionError: View {
             }
     }
 
-    @ViewBuilder private func viewBody() -> some View {
+    private func viewBody() -> some View {
         Group {
             if case let .direct(contact) = chat.chatInfo,
                let contactStats = contact.activeConn?.connectionStats {
@@ -83,7 +85,7 @@ struct CIRcvDecryptionError: View {
                 } else {
                     basicDecryptionErrorItem()
                 }
-            } else if case let .group(groupInfo) = chat.chatInfo,
+            } else if case let .group(groupInfo, _) = chat.chatInfo,
                       case let .groupRcv(groupMember) = chatItem.chatDir,
                       let mem = m.getGroupMember(groupMember.groupMemberId),
                       let memberStats = mem.wrapped.activeConn?.connectionStats {
@@ -121,11 +123,11 @@ struct CIRcvDecryptionError: View {
                     Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath"))
                         .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
-                    + Text(" ")
+                    + textSpace
                     + Text("Fix connection")
                         .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
-                    + Text("   ")
+                    + Text(verbatim: "   ")
                     + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                 )
             }
@@ -133,7 +135,7 @@ struct CIRcvDecryptionError: View {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
-        .onTapGesture(perform: { onClick() })
+        .simultaneousGesture(TapGesture().onEnded(onClick))
         .padding(.vertical, 6)
         .textSelection(.disabled)
     }
@@ -144,14 +146,14 @@ struct CIRcvDecryptionError: View {
                 Text(chatItem.content.text)
                     .foregroundColor(.red)
                     .italic()
-                + Text("   ")
+                + Text(verbatim: "   ")
                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
             }
             .padding(.horizontal, 12)
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
-        .onTapGesture(perform: { onClick() })
+        .simultaneousGesture(TapGesture().onEnded(onClick))
         .padding(.vertical, 6)
         .textSelection(.disabled)
     }
@@ -161,13 +163,13 @@ struct CIRcvDecryptionError: View {
         let why = Text(decryptErrorReason)
         switch msgDecryptError {
         case .ratchetHeader:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .tooManySkipped:
-            message = Text("\(msgCount) messages skipped.") + Text("\n") + why
+            message = Text("\(msgCount) messages skipped.") + textNewLine + why
         case .ratchetEarlier:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .other:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .ratchetSync:
             message = Text("Encryption re-negotiation failed.")
         }
@@ -183,9 +185,8 @@ struct CIRcvDecryptionError: View {
                 }
             } catch let error {
                 logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
                 }
             }
         }
@@ -200,9 +201,8 @@ struct CIRcvDecryptionError: View {
                 }
             } catch let error {
                 logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
                 }
             }
         }

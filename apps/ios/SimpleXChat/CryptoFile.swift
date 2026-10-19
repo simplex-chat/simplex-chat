@@ -4,6 +4,7 @@
 //
 //  Created by Evgeny on 05/09/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
+// Spec: spec/services/files.md
 //
 
 import Foundation
@@ -13,18 +14,20 @@ enum WriteFileResult: Decodable {
     case error(writeError: String)
 }
 
+// Spec: spec/services/files.md#writeCryptoFile
 public func writeCryptoFile(path: String, data: Data) throws -> CryptoFileArgs {
     let ptr: UnsafeMutableRawPointer = malloc(data.count)
     memcpy(ptr, (data as NSData).bytes, data.count)
     var cPath = path.cString(using: .utf8)!
     let cjson = chat_write_file(getChatCtrl(), &cPath, ptr, Int32(data.count))!
-    let d = fromCString(cjson).data(using: .utf8)!
+    let d = dataFromCString(cjson)! // TODO [unsafe]
     switch try jsonDecoder.decode(WriteFileResult.self, from: d) {
     case let .result(cfArgs): return cfArgs
-    case let .error(err): throw RuntimeError(err)
+    case let .error(err): throw RuntimeError(err) // TODO [unsafe]
     }
 }
 
+// Spec: spec/services/files.md#readCryptoFile
 public func readCryptoFile(path: String, cryptoArgs: CryptoFileArgs) throws -> Data {
     var cPath = path.cString(using: .utf8)!
     var cKey = cryptoArgs.fileKey.cString(using: .utf8)!
@@ -47,17 +50,19 @@ public func readCryptoFile(path: String, cryptoArgs: CryptoFileArgs) throws -> D
     }
 }
 
+// Spec: spec/services/files.md#encryptCryptoFile
 public func encryptCryptoFile(fromPath: String, toPath: String) throws -> CryptoFileArgs {
     var cFromPath = fromPath.cString(using: .utf8)!
     var cToPath = toPath.cString(using: .utf8)!
     let cjson = chat_encrypt_file(getChatCtrl(), &cFromPath, &cToPath)!
-    let d = fromCString(cjson).data(using: .utf8)!
+    let d = dataFromCString(cjson)! // TODO [unsafe]
     switch try jsonDecoder.decode(WriteFileResult.self, from: d) {
     case let .result(cfArgs): return cfArgs
-    case let .error(err): throw RuntimeError(err)
+    case let .error(err): throw RuntimeError(err) // TODO [unsafe]
     }
 }
 
+// Spec: spec/services/files.md#decryptCryptoFile
 public func decryptCryptoFile(fromPath: String, cryptoArgs: CryptoFileArgs, toPath: String) throws {
     var cFromPath = fromPath.cString(using: .utf8)!
     var cKey = cryptoArgs.fileKey.cString(using: .utf8)!

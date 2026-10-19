@@ -5,12 +5,14 @@
 //  Created by Evgeny on 05/05/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/calls.md
 
 import SwiftUI
 import WebKit
 import SimpleXChat
 import AVFoundation
 
+// Spec: spec/services/calls.md#ActiveCallView
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
@@ -159,10 +161,10 @@ struct ActiveCallView: View {
                         CallSoundsPlayer.shared.stop()
                     }
                 }
-            case let .ice(iceCandidates):
+            case let .ice(iceCandidates, session):
                 Task {
                     do {
-                        try await apiSendCallExtraInfo(call.contact, iceCandidates)
+                        try await apiSendCallExtraInfo(call.contact, session, iceCandidates)
                     } catch {
                         logger.error("apiSendCallExtraInfo \(responseError(error))")
                     }
@@ -170,15 +172,24 @@ struct ActiveCallView: View {
             case let .connection(state):
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
-                    call.direction == .outgoing
-                    ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
-                    : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
+                    // connectedAt is kept on reconnection, so that call duration is not reset
+                    if call.connectedAt == nil {
+                        call.direction == .outgoing
+                        ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
+                        : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
+                        call.connectedAt = .now
+                    }
                     call.callState = .connected
-                    call.connectedAt = .now
+                    CallSoundsPlayer.shared.stop()
                     if !wasConnected {
                         CallSoundsPlayer.shared.vibrate(long: false)
                         wasConnected = true
                     }
+                } else if state.connectionState == "reconnecting" {
+                    if call.callState != .reconnecting {
+                        CallSoundsPlayer.shared.startConnectingCallSound()
+                    }
+                    call.callState = .reconnecting
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
@@ -188,17 +199,22 @@ struct ActiveCallView: View {
                     m.activeCall = nil
                     m.activeCallViewIsCollapsed = false
                 }
-                Task {
-                    do {
-                        try await apiCallStatus(call.contact, state.connectionState)
-                    } catch {
-                        logger.error("apiCallStatus \(responseError(error))")
+                // "reconnecting" is not a core call status
+                if state.connectionState != "reconnecting" {
+                    Task {
+                        do {
+                            try await apiCallStatus(call.contact, state.connectionState)
+                        } catch {
+                            logger.error("apiCallStatus \(responseError(error))")
+                        }
                     }
                 }
             case let .connected(connectionInfo):
                 call.callState = .connected
                 call.connectionInfo = connectionInfo
-                call.connectedAt = .now
+                if call.connectedAt == nil {
+                    call.connectedAt = .now
+                }
                 if !wasConnected {
                     CallSoundsPlayer.shared.vibrate(long: false)
                     wasConnected = true
@@ -243,7 +259,7 @@ struct ActiveCallView: View {
                 ChatReceiver.shared.messagesChannel = nil
                 return
             }
-            if case let .chatItemsStatusesUpdated(_, chatItems) = msg,
+            if case let .result(.chatItemsStatusesUpdated(_, chatItems)) = msg,
                chatItems.contains(where: { ci in
                    ci.chatInfo.id == call.contact.id &&
                    ci.chatItem.content.isSndCall &&
@@ -282,6 +298,7 @@ struct ActiveCallView: View {
     }
 }
 
+// Spec: spec/services/calls.md#ActiveCallOverlay
 struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
@@ -350,6 +367,7 @@ struct ActiveCallOverlay: View {
         }
     }
 
+    // Spec: spec/services/calls.md#audioCallInfoView
     private func audioCallInfoView(_ call: Call) -> some View {
         VStack {
             Text(call.contact.chatViewName)
@@ -361,7 +379,7 @@ struct ActiveCallOverlay: View {
                 HStack {
                     Text(call.encryptionStatus)
                     if let connInfo = call.connectionInfo {
-                        Text("(") + Text(connInfo.text) + Text(")")
+                        Text(verbatim: "(") + Text(connInfo.text) + Text(verbatim: ")")
                     }
                 }
             }
@@ -390,7 +408,7 @@ struct ActiveCallOverlay: View {
                 HStack {
                     Text(call.encryptionStatus)
                     if let connInfo = call.connectionInfo {
-                        Text("(") + Text(connInfo.text) + Text(")")
+                        Text(verbatim: "(") + Text(connInfo.text) + Text(verbatim: ")")
                     }
                 }
             }
@@ -399,6 +417,7 @@ struct ActiveCallOverlay: View {
         }
     }
 
+    // Spec: spec/services/calls.md#endCallButton
     private func endCallButton() -> some View {
         let cc = CallController.shared
         return callButton("phone.down.fill", .red, padding: 10) {
@@ -467,7 +486,7 @@ struct ActiveCallOverlay: View {
         .disabled(call.initialCallType == .audio && client.activeCall?.peerHasOldVersion == true)
     }
 
-    @ViewBuilder private func flipCameraButton() -> some View {
+    private func flipCameraButton() -> some View {
         controlButton(call, "arrow.triangle.2.circlepath", padding: 12) {
                 Task {
                     if await WebRTCClient.isAuthorized(for: .video) {
@@ -477,11 +496,11 @@ struct ActiveCallOverlay: View {
         }
     }
 
-    @ViewBuilder private func controlButton(_ call: Call, _ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
+    private func controlButton(_ call: Call, _ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
         callButton(imageName, call.peerMediaSources.hasVideo ? Color.black.opacity(0.2) : Color.white.opacity(0.2), padding: padding, perform)
     }
 
-    @ViewBuilder private func audioDevicePickerButton() -> some View {
+    private func audioDevicePickerButton() -> some View {
         AudioDevicePicker()
             .opacity(0.8)
             .scaleEffect(2)

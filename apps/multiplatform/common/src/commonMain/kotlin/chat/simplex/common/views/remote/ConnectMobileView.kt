@@ -35,7 +35,8 @@ import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.common.views.usersettings.networkAndServers.validPort
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -89,9 +90,9 @@ fun ConnectMobileLayout(
   connectDesktop: () -> Unit,
   deleteHost: (RemoteHostInfo) -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
-    SectionView(generalGetString(MR.strings.this_device_name).uppercase()) {
+    SectionView(generalGetString(MR.strings.this_device_name)) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
       PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
@@ -99,7 +100,7 @@ fun ConnectMobileLayout(
       }
       SectionDividerSpaced()
     }
-    SectionView(stringResource(MR.strings.devices).uppercase()) {
+    SectionView(stringResource(MR.strings.devices)) {
       if (chatModel.localUserCreated.value == true) {
         SettingsActionItemWithContent(text = stringResource(MR.strings.this_device), icon = painterResource(MR.images.ic_desktop), click = connectDesktop) {
           if (connectedHost.value == null) {
@@ -176,7 +177,15 @@ private fun ConnectMobileViewLayout(
   refreshQrCode: () -> Unit = {},
   UnderQrLayout: @Composable () -> Unit = {},
 ) {
-  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+  @Composable
+  fun ScrollableLayout(content: @Composable ColumnScope.() -> Unit) {
+    if (LocalAppBarHandler.current != null) {
+      ColumnWithScrollBar(content = content)
+    } else {
+      ColumnWithScrollBarNoAppBar(content = content)
+    }
+  }
+  ScrollableLayout {
     if (title != null) {
       AppBarTitle(title)
     }
@@ -206,7 +215,7 @@ private fun ConnectMobileViewLayout(
         Spacer(Modifier.height(DEFAULT_PADDING))
       }
       if (deviceName != null || sessionCode != null) {
-        SectionView(stringResource(MR.strings.connected_mobile).uppercase()) {
+        SectionView(stringResource(MR.strings.connected_mobile)) {
           SelectionContainer {
             Text(
               deviceName ?: stringResource(MR.strings.new_mobile_device),
@@ -219,7 +228,7 @@ private fun ConnectMobileViewLayout(
       }
 
       if (sessionCode != null) {
-        SectionView(stringResource(MR.strings.verify_code_on_mobile).uppercase()) {
+        SectionView(stringResource(MR.strings.verify_code_on_mobile)) {
           SelectionContainer {
             Text(
               sessionCode.substring(0, 23),

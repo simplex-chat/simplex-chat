@@ -1,9 +1,16 @@
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
@@ -12,24 +19,91 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.text.font.FontWeight
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SelectableCard
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
-import chat.simplex.res.MR
+import chat.simplex.res.*
+
+val SectionCardShape = RoundedCornerShape(16.dp)
+val CARD_PADDING = 18.dp
+val ICON_TEXT_SPACING = 8.dp
+
+val LocalCardScreen = staticCompositionLocalOf { false }
+
+val itemHPadding: Dp
+  @Composable get() = if (LocalCardScreen.current) CARD_PADDING else DEFAULT_PADDING
 
 @Composable
-fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, content: (@Composable ColumnScope.() -> Unit)) {
+private fun CardColumnLayout(
+  contentPadding: PaddingValues = PaddingValues(),
+  cardShape: Shape = SectionCardShape,
+  content: @Composable () -> Unit
+) {
+  val dividerColor = canvasColorForCurrentTheme()
+  val dividerPx = with(LocalDensity.current) { 2.dp.toPx() }
+  val childBottoms = remember { mutableListOf<Float>() }
+  Layout(
+    content = content,
+    modifier = Modifier
+      .padding(horizontal = CARD_PADDING)
+      .fillMaxWidth()
+      .clip(cardShape)
+      .background(sectionCardColor())
+      .padding(contentPadding)
+      .drawBehind {
+        for (i in 0 until childBottoms.size - 1) {
+          val y = childBottoms[i]
+          drawLine(dividerColor, Offset(0f, y), Offset(size.width, y), strokeWidth = dividerPx)
+        }
+      }
+  ) { measurables, constraints ->
+    val placeables = measurables.map { it.measure(constraints) }
+    childBottoms.clear()
+    var y = 0f
+    placeables.forEach { p ->
+      y += p.height
+      childBottoms.add(y)
+    }
+    layout(constraints.maxWidth, y.toInt()) {
+      var yPos = 0
+      placeables.forEach { p ->
+        p.placeRelative(0, yPos)
+        yPos += p.height
+      }
+    }
+  }
+}
+
+@Composable
+private fun CardColumn(
+  contentPadding: PaddingValues = PaddingValues(),
+  cardShape: Shape = SectionCardShape,
+  content: @Composable () -> Unit
+) {
+  if (LocalCardScreen.current) {
+    CardColumnLayout(contentPadding, cardShape, content)
+  } else {
+    Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
+  }
+}
+
+@Composable
+fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, cardShape: Shape = SectionCardShape, content: (@Composable ColumnScope.() -> Unit)) {
+  val card = LocalCardScreen.current
   Column {
     if (title != null) {
       Text(
         title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = headerBottomPadding), fontSize = 12.sp
+        modifier = Modifier.padding(start = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING, bottom = if (card) 8.dp else headerBottomPadding),
+        fontSize = if (card) 14.sp else 12.sp,
+        fontWeight = if (card) FontWeight.Medium else FontWeight.Normal
       )
     }
-    Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
+    CardColumn(contentPadding, cardShape) { content() }
   }
 }
 
@@ -40,16 +114,40 @@ fun SectionView(
   iconTint: Color = MaterialTheme.colors.secondary,
   leadingIcon: Boolean = false,
   padding: PaddingValues = PaddingValues(),
+  onIconClick: (() -> Unit)? = null,
   content: (@Composable ColumnScope.() -> Unit)
 ) {
+  val card = LocalCardScreen.current
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
-    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-      if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
-      Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
-      if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
+    val interactionSource = remember { MutableInteractionSource() }
+    val iconClickable = if (onIconClick != null) Modifier.clickable(interactionSource = interactionSource, indication = ripple(bounded = false, radius = iconSize * 0.75f), onClick = onIconClick) else Modifier
+    Row(Modifier.padding(start = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+      if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize).then(iconClickable), tint = iconTint)
+      Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = if (card) 14.sp else 12.sp, fontWeight = if (card) FontWeight.Medium else FontWeight.Normal)
+      if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize).then(iconClickable), tint = iconTint)
     }
-    Column(Modifier.padding(padding).fillMaxWidth()) { content() }
+    CardColumn(padding) { content() }
+  }
+}
+
+@Composable
+fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () -> Unit)?, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, content: (@Composable ColumnScope.() -> Unit)) {
+  val card = LocalCardScreen.current
+  Column {
+    if (title != null || titleButton != null) {
+      val hPadding = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING
+      Row(modifier = Modifier.padding(start = hPadding, end = hPadding, bottom = if (card) 8.dp else headerBottomPadding).fillMaxWidth()) {
+        if (title != null) {
+          Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = if (card) 14.sp else 12.sp, fontWeight = if (card) FontWeight.Medium else FontWeight.Normal)
+        }
+        if (titleButton != null) {
+          Spacer(modifier = Modifier.weight(1f))
+          titleButton()
+        }
+      }
+    }
+    CardColumn(contentPadding) { content() }
   }
 }
 
@@ -73,7 +171,7 @@ fun <T> SectionViewSelectable(
       }
     }
   }
-  SectionTextFooter(values.first { it.value == currentValue.value }.description)
+  SectionTextFooter(values.firstOrNull { it.value == currentValue.value }?.description ?: AnnotatedString(""))
 }
 
 @Composable
@@ -103,9 +201,9 @@ fun SectionItemView(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
-    PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+    PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -126,9 +224,9 @@ fun SectionItemViewWithoutMinPadding(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding)
   else
-    PaddingValues(horizontal = DEFAULT_PADDING),
+    PaddingValues(horizontal = itemHPadding),
   content: (@Composable RowScope.() -> Unit)
 ) {
   SectionItemView(click, minHeight, disabled, extraPadding, padding, content)
@@ -142,9 +240,9 @@ fun SectionItemViewLongClickable(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
-    PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+    PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -167,7 +265,7 @@ fun SectionItemViewSpaceBetween(
   click: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null,
   minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
-  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
+  padding: PaddingValues = PaddingValues(horizontal = itemHPadding),
   disabled: Boolean = false,
   content: (@Composable RowScope.() -> Unit)
 ) {
@@ -203,7 +301,7 @@ fun <T> SectionItemWithValue(
       horizontalArrangement = Arrangement.End
     ) {
       Text(
-        values.first { it.value == currentValue.value }.title + (if (label != null) " $label" else ""),
+        (values.firstOrNull { it.value == currentValue.value }?.title ?: "") + (if (label != null) " $label" else ""),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         color = MaterialTheme.colors.secondary
@@ -239,19 +337,18 @@ fun SectionCustomFooter(padding: PaddingValues = PaddingValues(start = DEFAULT_P
 }
 
 @Composable
-fun SectionDivider() {
-  Divider(Modifier.padding(horizontal = 8.dp))
-}
-
-@Composable
 fun SectionDividerSpaced(maxTopPadding: Boolean = false, maxBottomPadding: Boolean = true) {
-  Divider(
-    Modifier.padding(
-      start = DEFAULT_PADDING_HALF,
-      top = if (maxTopPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp,
-      end = DEFAULT_PADDING_HALF,
-      bottom = if (maxBottomPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp)
-  )
+  if (LocalCardScreen.current) {
+    Spacer(Modifier.height(30.dp))
+  } else {
+    Divider(
+      Modifier.padding(
+        start = DEFAULT_PADDING_HALF,
+        top = if (maxTopPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp,
+        end = DEFAULT_PADDING_HALF,
+        bottom = if (maxBottomPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp)
+    )
+  }
 }
 
 @Composable
@@ -266,11 +363,11 @@ fun SectionBottomSpacer() {
 
 @Composable
 fun TextIconSpaced(extraPadding: Boolean = false) {
-  Spacer(Modifier.padding(horizontal = if (extraPadding) 17.dp else DEFAULT_PADDING_HALF))
+  Spacer(Modifier.padding(horizontal = if (extraPadding) 17.dp else if (LocalCardScreen.current) ICON_TEXT_SPACING else DEFAULT_PADDING_HALF))
 }
 
 @Composable
-fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null, textColor: Color = MaterialTheme.colors.onBackground, padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING)) {
+fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null, textColor: Color = MaterialTheme.colors.onBackground, padding: PaddingValues = PaddingValues(horizontal = itemHPadding)) {
   SectionItemViewSpaceBetween(padding = padding) {
     Row {
       val iconSize = with(LocalDensity.current) { 21.sp.toDp() }

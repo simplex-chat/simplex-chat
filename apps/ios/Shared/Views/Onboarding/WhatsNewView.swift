@@ -5,192 +5,218 @@
 //  Created by Evgeny on 24/12/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
+import StoreKit
+import SimpleXChat
 
 private struct VersionDescription {
     var version: String
     var post: URL?
-    var features: [FeatureDescription]
+    var features: [Feature]
 }
 
-private struct FeatureDescription {
-    var icon: String?
-    var title: LocalizedStringKey
-    var description: LocalizedStringKey?
+private enum Feature: Identifiable {
+    case feature(Description)
+    case view(FeatureView)
+    
+    var id: LocalizedStringKey {
+        switch self {
+        case let .feature(d): d.title
+        case let .view(v): v.title
+        }
+    }
+}
+
+private struct Description {
+    let icon: String?
+    let title: LocalizedStringKey
+    let description: LocalizedStringKey?
     var subfeatures: [(icon: String, description: LocalizedStringKey)] = []
 }
+
+private struct FeatureView {
+    let icon: String?
+    let title: LocalizedStringKey
+    let view: () -> any View
+}
+
+let isInUS = {
+    let code = SKStorefront().countryCode
+    return code == "USA" || code == ""
+}()
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
         version: "v4.2",
         post: URL(string: "https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "checkmark.shield",
                 title: "Security assessment",
                 description: "SimpleX Chat security was audited by Trail of Bits."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "person.2",
                 title: "Group links",
                 description: "Admins can create the links to join groups."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "checkmark",
                 title: "Auto-accept contact requests",
                 description: "With optional welcome message."
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v4.3",
         post: URL(string: "https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "mic",
                 title: "Voice messages",
                 description: "Max 30 seconds, received instantly."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "trash.slash",
                 title: "Irreversible message deletion",
                 description: "Your contacts can allow full message deletion."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "externaldrive.connected.to.line.below",
                 title: "Improved server configuration",
                 description: "Add servers by scanning QR codes."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "eye.slash",
                 title: "Improved privacy and security",
                 description: "Hide app screen in the recent apps."
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v4.4",
         post: URL(string: "https://simplex.chat/blog/20230103-simplex-chat-v4.4-disappearing-messages.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "stopwatch",
                 title: "Disappearing messages",
                 description: "Sent messages will be deleted after set time."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "ellipsis.circle",
                 title: "Live messages",
                 description: "Recipients see updates as you type them."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "checkmark.shield",
                 title: "Verify connection security",
                 description: "Compare security codes with your contacts."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "camera",
                 title: "GIFs and stickers",
                 description: "Send them from gallery or custom keyboards."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "character",
                 title: "French interface",
                 description: "Thanks to the users – contribute via Weblate!"
-            )
+            )),
         ]
     ),
     VersionDescription(
         version: "v4.5",
         post: URL(string: "https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "person.crop.rectangle.stack",
                 title: "Multiple chat profiles",
                 description: "Different names, avatars and transport isolation."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "rectangle.and.pencil.and.ellipsis",
                 title: "Message draft",
                 description: "Preserve the last message draft, with attachments."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "network.badge.shield.half.filled",
                 title: "Transport isolation",
                 description: "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "lock.doc",
                 title: "Private filenames",
                 description: "To protect timezone, image/voice files use UTC."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "battery.25",
                 title: "Reduced battery usage",
                 description: "More improvements are coming soon!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "character",
                 title: "Italian interface",
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
-            )
+            )),
         ]
     ),
     VersionDescription(
         version: "v4.6",
         post: URL(string: "https://simplex.chat/blog/20230328-simplex-chat-v4-6-hidden-profiles.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "lock",
                 title: "Hidden chat profiles",
                 description: "Protect your chat profiles with a password!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "phone.arrow.up.right",
                 title: "Audio and video calls",
                 description: "Fully re-implemented - work in background!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "flag",
                 title: "Group moderation",
                 description: "Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "plus.message",
                 title: "Group welcome message",
                 description: "Set the message shown to new members!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "battery.50",
                 title: "Further reduced battery usage",
                 description: "More improvements are coming soon!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "character",
                 title: "Chinese and Spanish interface",
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v5.0",
         post: URL(string: "https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "arrow.up.doc",
                 title: "Videos and files up to 1gb",
                 description: "Fast and no wait until the sender is online!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "lock",
                 title: "App passcode",
                 description: "Set it instead of system authentication."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "character",
                 title: "Polish interface",
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
-            ),
+            )),
         ]
     ),
     // Also
@@ -200,240 +226,240 @@ private let versionDescriptions: [VersionDescription] = [
         version: "v5.1",
         post: URL(string: "https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "face.smiling",
                 title: "Message reactions",
                 description: "Finally, we have them! 🚀"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "arrow.up.message",
                 title: "Better messages",
                 description: "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "lock",
                 title: "Self-destruct passcode",
                 description: "All data is erased when it is entered."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "character",
                 title: "Japanese interface",
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v5.2",
         post: URL(string: "https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "checkmark",
                 title: "Message delivery receipts!",
                 description: "The second tick we missed! ✅"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "star",
                 title: "Find chats faster",
                 description: "Filter unread and favorite chats."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "exclamationmark.arrow.triangle.2.circlepath",
                 title: "Keep your connections",
                 description: "Fix encryption after restoring backups."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "stopwatch",
                 title: "Make one message disappear",
                 description: "Even when disabled in the conversation."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "gift",
                 title: "A few more things",
                 description: "- more stable message delivery.\n- a bit better groups.\n- and more!"
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v5.3",
         post: URL(string: "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "desktopcomputer",
                 title: "New desktop app!",
                 description: "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "lock",
                 title: "Encrypt stored files & media",
                 description: "App encrypts new local files (except videos)."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "magnifyingglass",
                 title: "Discover and join groups",
                 description: "- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "theatermasks",
                 title: "Simplified incognito mode",
                 description: "Toggle incognito when connecting."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "character",
                 title: "\(4) new interface languages",
                 description: "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v5.4",
         post: URL(string: "https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "desktopcomputer",
                 title: "Link mobile and desktop apps! 🔗",
                 description: "Via secure quantum resistant protocol."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "person.2",
                 title: "Better groups",
                 description: "Faster joining and more reliable messages."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "theatermasks",
                 title: "Incognito groups",
                 description: "Create a group using a random profile."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "hand.raised",
                 title: "Block group members",
                 description: "To hide unwanted messages."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "gift",
                 title: "A few more things",
                 description: "- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!"
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v5.5",
         post: URL(string: "https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "folder",
                 title: "Private notes",
                 description: "With encrypted files and media."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "link",
                 title: "Paste link to connect!",
                 description: "Search bar accepts invitation links."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "bubble.left.and.bubble.right",
                 title: "Join group conversations",
                 description: "Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "battery.50",
                 title: "Improved message delivery",
                 description: "With reduced battery usage."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "character",
                 title: "Turkish interface",
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v5.6",
         post: URL(string: "https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "key",
                 title: "Quantum resistant encryption",
                 description: "Enable in direct chats (BETA)!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "tray.and.arrow.up",
                 title: "App data migration",
                 description: "Migrate to another device via QR code."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "phone",
                 title: "Picture-in-picture calls",
                 description: "Use the app while in the call."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "hand.raised",
                 title: "Safer groups",
                 description: "Admins can block a member for all."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "character",
                 title: "Hungarian interface",
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
-            ),
+            )),
         ]
     ),
     VersionDescription(
         version: "v5.7",
         post: URL(string: "https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "key",
                 title: "Quantum resistant encryption",
                 description: "Will be enabled in direct chats!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "arrowshape.turn.up.forward",
                 title: "Forward and save messages",
                 description: "Message source remains private."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "music.note",
                 title: "In-call sounds",
                 description: "When connecting audio and video calls."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "person.crop.square",
                 title: "Shape profile images",
                 description: "Square, circle, or anything in between."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "antenna.radiowaves.left.and.right",
                 title: "Network management",
                 description: "More reliable network connection."
-            )
+            )),
         ]
     ),
     VersionDescription(
         version: "v5.8",
         post: URL(string: "https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "arrow.forward",
                 title: "Private message routing 🚀",
                 description: "Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "network.badge.shield.half.filled",
                 title: "Safely receive files",
                 description: "Confirm files from unknown servers."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "battery.50",
                 title: "Improved message delivery",
                 description: "With reduced battery usage."
-            )
+            )),
         ]
     ),
     VersionDescription(
         version: "v6.0",
         post: URL(string: "https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: nil,
                 title: "New chat experience 🎉",
                 description: nil,
@@ -444,8 +470,8 @@ private let versionDescriptions: [VersionDescription] = [
                     ("platter.filled.bottom.and.arrow.down.iphone", "Use the app with one hand."),
                     ("paintpalette", "Color chats with the new themes."),
                 ]
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: nil,
                 title: "New media options",
                 description: nil,
@@ -454,39 +480,39 @@ private let versionDescriptions: [VersionDescription] = [
                     ("play.circle", "Play from the chat list."),
                     ("circle.filled.pattern.diagonalline.rectangle", "Blur for better privacy.")
                 ]
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "arrow.forward",
                 title: "Private message routing 🚀",
                 description: "It protects your IP address and connections."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "network",
                 title: "Better networking",
                 description: "Connection and servers status."
-            )
+            )),
         ]
     ),
     VersionDescription(
         version: "v6.1",
         post: URL(string: "https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html"),
         features: [
-            FeatureDescription(
+            .feature(Description(
                 icon: "checkmark.shield",
                 title: "Better security ✅",
                 description: "SimpleX protocols reviewed by Trail of Bits."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "video",
                 title: "Better calls",
                 description: "Switch audio and video during the call."
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: "bolt",
                 title: "Better notifications",
                 description: "Improved delivery, reduced traffic usage.\nMore improvements are coming soon!"
-            ),
-            FeatureDescription(
+            )),
+            .feature(Description(
                 icon: nil,
                 title: "Better user experience",
                 description: nil,
@@ -497,9 +523,195 @@ private let versionDescriptions: [VersionDescription] = [
                     ("arrowshape.turn.up.right", "Forward up to 20 messages at once."),
                     ("flag", "Delete or moderate up to 200 messages.")
                 ]
-            ),
+            )),
         ]
     ),
+    VersionDescription(
+        version: "v6.2",
+        post: URL(string: "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html"),
+        features: [
+            .view(FeatureView(
+                icon: nil,
+                title: "Network decentralization",
+                view: { NewOperatorsView() }
+            )),
+            .feature(Description(
+                icon: "briefcase",
+                title: "Business chats",
+                description: "Privacy for your customers."
+            )),
+            .feature(Description(
+                icon: "bolt",
+                title: "More reliable notifications",
+                description: "Delivered even when Apple drops them."
+            )),
+        ]
+    ),
+    VersionDescription(
+        version: "v6.3",
+        post: URL(string: "https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html"),
+        features: [
+            .feature(Description(
+                icon: "at",
+                title: "Mention members 👋",
+                description: "Get notified when mentioned."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "Send private reports",
+                description: "Help admins moderating their groups."
+            )),
+            .feature(Description(
+                icon: "list.bullet",
+                title: "Organize chats into lists",
+                description: "Don't miss important messages."
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better privacy and security",
+                description: nil,
+                subfeatures: [
+                    ("eye.slash", "Private media file names."),
+                    ("trash", "Set message expiration in chats.")
+                ]
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better groups performance",
+                description: nil,
+                subfeatures: [
+                    ("bolt", "Faster sending messages."),
+                    ("person.2.slash", "Faster deletion of groups.")
+                ]
+            )),
+        ]
+    ),
+    VersionDescription(
+        version: "v6.4",
+        post: URL(string: "https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html"),
+        features: [
+            .feature(Description(
+                icon: "person",
+                title: "Connect faster! 🚀",
+                description: "Message instantly once you tap Connect."
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 17, *) {"person.bubble"} else  {"person.crop.square"} }(),
+                title: "Review group members",
+                description: "Chat with members before they join."
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 16, *) {"questionmark.bubble"} else {"questionmark.square"} }(),
+                title: "Chat with admins",
+                description: "Send your private feedback to groups."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "New group role: Moderator",
+                description: "Removes messages and blocks members."
+            )),
+            .feature(Description(
+                icon: "battery.50",
+                title: "Improved message delivery",
+                description: "Less traffic on mobile networks."
+            )),
+        ]
+    ),
+    VersionDescription(
+        version: "v6.4.1",
+        post: URL(string: "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html"),
+        features: [
+            .feature(Description(
+                icon: "hand.wave",
+                title: "Welcome your contacts 👋",
+                description: "Set profile bio and welcome message."
+            )),
+            .feature(Description(
+                icon: "stopwatch",
+                title: "Keep your chats clean",
+                description: "Enable disappearing messages by default."
+            )),
+            .view(FeatureView(
+                icon: nil,
+                title: "Short SimpleX address",
+                view: { CreateUpdateAddressShortLink() }
+            ))
+        ]
+    ),
+    VersionDescription(
+        version: "v6.5",
+        post: URL(string: "https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"),
+        features: [
+            .feature(Description(
+                icon: nil,
+                title: "Public channels - speak freely 🚀",
+                description: nil,
+                subfeatures: [
+                    ("antenna.radiowaves.left.and.right", "Reliability: many relays per channel."),
+                    ("server.rack", "Ownership: you can run your own relays."),
+                    ("key.2.on.ring", "Security: owners hold channel keys."),
+                    ("person.badge.shield.checkmark", "Privacy: for owners and subscribers."),
+                ]
+            )),
+            .feature(Description(
+                icon: "link.badge.plus",
+                title: "Easier to invite your friends 👋",
+                description: "We made connecting simpler for new users."
+            )),
+            .feature(Description(
+                icon: "network.badge.shield.half.filled",
+                title: "Safe web links",
+                description: "- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking."
+            )),
+            .feature(Description(
+                icon: "network",
+                title: "Non-profit governance",
+                description: "To make SimpleX Network last."
+            ))
+        ]
+    ),
+    VersionDescription(
+        version: isInUS ? "v7.0.1" : "v7.0",
+        post: URL(string: "https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html"),
+        features: (isInUS ? [
+            .view(FeatureView(
+                icon: nil,
+                title: "You can now invest in SimpleX Chat",
+                view: { InvestInSimpleXChat() }
+            ))
+        ] : []) + [
+            .feature(Description(
+                icon: "at",
+                title: "SimpleX public names (BETA)",
+                description: "Public names for your channel or business."
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better channels 📢",
+                description: nil,
+                subfeatures: [
+                    ("person.badge.plus", "Add contributors."),
+                    ("globe", "Create web preview."),
+                    ("server.rack", "Manage your relays."),
+                    ("text.alignleft", "Easier to read."),
+                ]
+            ))
+        ]
+    ),
+    // TODO [badges] restore when badges ship, with final copy and the Read more link.
+    /*
+    VersionDescription(
+        version: "v7.1",
+        post: nil,
+        features: [
+            .view(FeatureView(
+                icon: nil,
+                title: "Supporter badge",
+                view: { SupporterBadgeWhatsNew() }
+            ))
+        ]
+    ),
+    */
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -514,14 +726,267 @@ func shouldShowWhatsNew() -> Bool {
     return v != lastVersion
 }
 
+fileprivate struct SupporterBadgeWhatsNew: View {
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Supporter badge ❤️")
+                    .font(.title3)
+                    .bold()
+                Text("Help keep the network running — send files up to 2 GB.")
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(10)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            heroThumbnail()
+        }
+    }
+
+    @ViewBuilder
+    private func heroThumbnail() -> some View {
+        #if SIMPLEX_ASSETS
+        Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 110, height: 110)
+        #else
+        Image("badge-supporter")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 72, height: 72)
+        #endif
+    }
+}
+
+fileprivate struct NewOperatorsView: View {
+    var body: some View {
+        VStack(alignment: .leading) {
+            Image((operatorsInfo[.flux] ?? ServerOperator.dummyOperatorInfo).largeLogo)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 48)
+            Text("The second preset operator in the app!")
+                .multilineTextAlignment(.leading)
+                .lineLimit(10)
+            HStack {
+                Text("Enable Flux in Network & servers settings for better metadata privacy.")
+            }
+        }
+    }
+}
+
+fileprivate struct CreateUpdateAddressShortLink: View {
+    @EnvironmentObject private var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @State private var showAddressSheet = false
+    @State private var progressIndicator = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 4) {
+                Image(systemName: "link")
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(theme.colors.secondary)
+                    .frame(minWidth: 30, alignment: .center)
+                Text("Short SimpleX address").font(.title3).bold()
+            }
+            Group {
+                if let addr = chatModel.userAddress {
+                    if addr.shouldBeUpgraded {
+                        HStack(spacing: 8) {
+                            Button("Upgrade your address") { upgradeAndShareAddressAlert(progressIndicator: $progressIndicator) }
+                            if progressIndicator {
+                                ProgressView()
+                            }
+                        }
+                    } else {
+                        Button("Share your address") { addr.shareAddress(short: true) }
+                    }
+                } else {
+                    Button("Create your address") { showAddressSheet = true }
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .lineLimit(10)
+        }
+        .sheet(isPresented: $showAddressSheet) {
+            NavigationView {
+                UserAddressView(autoCreate: true)
+                    .navigationTitle("SimpleX address")
+                    .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
+            }
+        }
+    }
+}
+
+fileprivate struct InvestInSimpleXChat: View {
+    @EnvironmentObject var theme: AppTheme
+    @State private var showGetStakeSheet = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("You can now invest in SimpleX Chat! 🚀").font(.title3).bold()
+            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
+                .multilineTextAlignment(.leading)
+                .onTapGesture { showGetStakeSheet = true }
+            #if SIMPLEX_ASSETS
+            Image("crowdfunding_1")
+                .resizable()
+                .scaledToFit()
+                .cornerRadius(12)
+                .padding(.vertical, 4)
+                .onTapGesture { showGetStakeSheet = true }
+            #endif
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(isPresented: $showGetStakeSheet) {
+            GetStakeView(fromSettings: false, showFirstImage: false)
+        }
+    }
+}
+
+fileprivate let getStakeSlides: [(image: String, heading: String, info: String?, text: String)] = [
+    (
+        "crowdfunding_1",
+        "The first and the only messaging network without any user IDs",
+        nil,
+        "By investing, you can benefit from the company growth, and help us build the future of private and secure communications."
+    ),
+    (
+        "crowdfunding_2",
+        "480,000+ users joined on their own",
+        nil,
+        "SimpleX users have been more than doubling every year without any paid marketing, and donated over $650,000."
+    ),
+    (
+        "crowdfunding_3",
+        "Developers already bet on SimpleX success",
+        "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
+        "Every service developers build on SimpleX Network may increase its value, and bring new users to SimpleX Chat."
+    ),
+    (
+        "crowdfunding_4",
+        "Revenue plan: free for users, channels & businesses pay",
+        "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
+        "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
+    ),
+]
+
+private let wefunderURL = URL(string: "https://wefunder.com/simplex.chat?utm_source=app")!
+
+private let simplexCrowdfundingURL = URL(string: "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im")!
+
+struct GetStakeView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var chatModel: ChatModel
+    var fromSettings: Bool
+    var showFirstImage: Bool
+
+    var body: some View {
+        ZoomablePageView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text(verbatim: "Invest in\nSimpleX Chat")
+                    .font(.largeTitle)
+                    .bold()
+                    .fixedSize(horizontal: false, vertical: true)
+                    .if(!fromSettings) { $0.padding(.top) }
+                if showFirstImage {
+                    slideImage(getStakeSlides[0])
+                }
+                (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
+                    .multilineTextAlignment(.leading)
+                    .onTapGesture {
+                        UIApplication.shared.open(wefunderURL)
+                    }
+                .padding(.bottom)
+                ForEach(getStakeSlides[1...3], id: \.image) { slide in
+                    VStack(alignment: .leading) {
+                        slideImage(slide)
+                        Text(slide.text)
+                    }
+                    .padding(.bottom)
+                }
+
+                Button {
+                    UIApplication.shared.open(wefunderURL)
+                } label: {
+                    Text(verbatim: "Learn more on Wefunder")
+                }
+                .buttonStyle(OnboardingButtonStyle())
+
+                Button {
+                    dismiss()
+                    DispatchQueue.main.async {
+                        ChatModel.shared.appOpenUrl = simplexCrowdfundingURL
+                    }
+                } label: {
+                    Text(verbatim: "or ask SimpleX team")
+                        .font(.callout)
+                }
+                .disabled(chatModel.chatRunning != true)
+                .frame(maxWidth: .infinity)
+            }
+            .padding()
+        }
+        .ignoresSafeArea(edges: .bottom)
+        .modifier(ThemedBackground(grouped: true))
+    }
+
+    @ViewBuilder
+    func slideImage(_ slide: (image: String, heading: String, info: String?, text: String?)) -> some View {
+        #if SIMPLEX_ASSETS
+        Image(slide.image)
+            .resizable()
+            .scaledToFit()
+            .cornerRadius(12)
+        #else
+        Text(slide.heading).font(.title3).bold()
+        if let info = slide.info {
+            Text(info)
+        }
+        #endif
+    }
+}
+
+private enum WhatsNewViewSheet: Identifiable {
+    case showConditions
+
+    var id: String {
+        switch self {
+        case .showConditions: return "showConditions"
+        }
+    }
+}
+
 struct WhatsNewView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @State var currentVersion = versionDescriptions.count - 1
     @State var currentVersionNav = versionDescriptions.count - 1
     var viaSettings = false
+    var updatedConditions: Bool
+    @State private var sheetItem: WhatsNewViewSheet? = nil
 
     var body: some View {
+        whatsNewView()
+            .sheet(item: $sheetItem) { item in
+                switch item {
+                case .showConditions:
+                    UsageConditionsView(
+                        currUserServers: Binding.constant([]),
+                        userServers: Binding.constant([])
+                    )
+                    .modifier(ThemedBackground(grouped: true))
+                }
+            }
+    }
+
+    private func whatsNewView() -> some View {
         VStack {
             TabView(selection: $currentVersion) {
                 ForEach(Array(versionDescriptions.enumerated()), id: \.0) { (i, v) in
@@ -532,25 +997,34 @@ struct WhatsNewView: View {
                                 .foregroundColor(theme.colors.secondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical)
-                            ForEach(v.features, id: \.title) { f in
-                                featureDescription(f)
-                                    .padding(.bottom, 8)
+                            ForEach(v.features) { f in
+                                switch f {
+                                case let .feature(d): featureDescription(d).padding(.bottom, 8)
+                                case let .view(v): AnyView(v.view()).padding(.bottom, 8)
+                                }
                             }
                             if let post = v.post {
-                                Link(destination: post) {
+                                ExternalLink(destination: post) {
                                     HStack {
                                         Text("Read more")
                                         Image(systemName: "arrow.up.right.circle")
                                     }
                                 }
                             }
+                            if updatedConditions {
+                                Button("View updated conditions") {
+                                    sheetItem = .showConditions
+                                }
+                            }
                             if !viaSettings {
                                 Spacer()
+
                                 Button("Ok") {
                                     dismiss()
                                 }
                                 .font(.title3)
                                 .frame(maxWidth: .infinity, alignment: .center)
+
                                 Spacer()
                             }
                         }
@@ -568,20 +1042,24 @@ struct WhatsNewView: View {
             currentVersionNav = currentVersion
         }
     }
-
-    private func featureDescription(_ f: FeatureDescription) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if let icon = f.icon {
-                HStack(alignment: .center, spacing: 4) {
-                    Image(systemName: icon)
-                        .symbolRenderingMode(.monochrome)
-                        .foregroundColor(theme.colors.secondary)
-                        .frame(minWidth: 30, alignment: .center)
-                    Text(f.title).font(.title3).bold()
-                }
-            } else {
-                Text(f.title).font(.title3).bold()
+    
+    @ViewBuilder private func featureHeader(_ icon: String?, _ title: LocalizedStringKey) -> some View {
+        if let icon {
+            HStack(alignment: .center, spacing: 4) {
+                Image(systemName: icon)
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(theme.colors.secondary)
+                    .frame(minWidth: 30, alignment: .center)
+                Text(title).font(.title3).bold()
             }
+        } else {
+            Text(title).font(.title3).bold()
+        }
+    }
+
+    private func featureDescription(_ f: Description) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            featureHeader(f.icon, f.title)
             if let d = f.description {
                 Text(d)
                     .multilineTextAlignment(.leading)
@@ -636,6 +1114,6 @@ struct WhatsNewView: View {
 
 struct NewFeaturesView_Previews: PreviewProvider {
     static var previews: some View {
-        WhatsNewView()
+        WhatsNewView(updatedConditions: false)
     }
 }
