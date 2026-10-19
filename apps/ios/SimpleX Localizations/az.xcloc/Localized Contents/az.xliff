@@ -4578,7 +4578,7 @@ servers warning</note>
       </trans-unit>
       <trans-unit id="Forward" xml:space="preserve" approved="no">
         <source>Forward</source>
-        <target state="translated">İrəli</target>
+        <target state="translated">Yönləndir</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Forward %d message(s)?" xml:space="preserve" approved="no">
@@ -5404,7 +5404,7 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
       </trans-unit>
       <trans-unit id="Keep conversation" xml:space="preserve" approved="no">
         <source>Keep conversation</source>
-        <target state="translated">Söhbəti davam etdirin</target>
+        <target state="translated">Söhbəti saxla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve" approved="no">
@@ -5589,7 +5589,7 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
       </trans-unit>
       <trans-unit id="Lock after" xml:space="preserve" approved="no">
         <source>Lock after</source>
-        <target state="translated">Sonradan kilidlə</target>
+        <target state="translated">Kilidləmə vaxtı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Lock mode" xml:space="preserve" approved="no">
@@ -5619,17 +5619,17 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
       </trans-unit>
       <trans-unit id="Mark deleted for everyone" xml:space="preserve" approved="no">
         <source>Mark deleted for everyone</source>
-        <target state="translated">Hamı üçün silindi</target>
+        <target state="translated">Hamı üçün silinmiş kimi işarələ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark read" xml:space="preserve" approved="no">
         <source>Mark read</source>
-        <target state="translated">Mark oxudu</target>
+        <target state="translated">Oxunmuş kimi işarələ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark verified" xml:space="preserve" approved="no">
         <source>Mark verified</source>
-        <target state="translated">Mark təsdiqləndi</target>
+        <target state="translated">Təsdiqlənmiş kimi işarələ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve" approved="no">
@@ -5879,7 +5879,7 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
       </trans-unit>
       <trans-unit id="Messages are protected by **end-to-end encryption**." xml:space="preserve" approved="no">
         <source>Messages are protected by **end-to-end encryption**.</source>
-        <target state="translated">Mesajlar uçdan-uca şifrələmə ilə qorunur.</target>
+        <target state="translated">Mesajlar **uçdan-uca şifrələmə** ilə qorunur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages from %@ will be shown!" xml:space="preserve" approved="no">
@@ -5889,7 +5889,7 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
       </trans-unit>
       <trans-unit id="Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." xml:space="preserve" approved="no">
         <source>Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages.</source>
-        <target state="translated">Bu kanaldakı mesajlar ** uçtan-uca şifrələnməyib**. Çat ötürücüləri bu mesajları görə bilər.</target>
+        <target state="translated">Bu kanaldakı mesajlar **uçdan-uca şifrələnməyib**. Çat ötürücüləri bu mesajları görə bilər.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." xml:space="preserve" approved="no">

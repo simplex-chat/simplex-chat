@@ -641,7 +641,7 @@
     <string name="group_member_role_moderator">moderator</string>
     <string name="group_member_role_owner">xwedî</string>
     <string name="group_member_status_rejected">redkirî</string>
-    <string name="group_member_status_removed">derxist</string>
+    <string name="group_member_status_removed">derxistî</string>
     <string name="group_member_status_left">derketiye</string>
     <string name="group_member_status_unknown_short">nayê zanîn</string>
     <string name="past_member_vName">Endam %1$s</string>
@@ -817,7 +817,7 @@
     <string name="callstate_received_answer">cewab stand…</string>
     <string name="callstate_received_confirmation">tesdîqkirin stand…</string>
     <string name="rcv_group_event_member_deleted">%1$s hat jêbirin</string>
-    <string name="rcv_group_event_user_deleted">te derxist</string>
+    <string name="rcv_group_event_user_deleted">tu derxistî</string>
     <string name="rcv_group_event_1_member_connected">%s hat girêdan</string>
     <string name="rcv_group_event_2_members_connected">%s û %s hatin girêdan</string>
     <string name="rcv_group_event_n_members_connected">%s, %s û %d endamên dî hatin girêdan</string>
@@ -829,7 +829,7 @@
     <string name="ttl_h">%dst</string>
     <string name="ttl_w">%dḧ</string>
     <string name="feature_roles_owners">xwedî</string>
-    <string name="relay_conn_status_removed">derxist</string>
+    <string name="relay_conn_status_removed">derxistî</string>
     <string name="relay_status_rejected">redkirî</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="thousand_abbreviation">hez.</string>
