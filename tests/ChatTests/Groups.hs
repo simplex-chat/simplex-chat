@@ -8463,6 +8463,12 @@ testUpdatedMentionNames = do
       `shouldBe` "hello @'Alice Jones' @robert"
     test (mm [("alice", Just "alice"), ("cath", Just "alice")]) "hello @alice @cath"
       `shouldBe` "hello @alice @alice_1"
+  it "replace changed names outside code" $ \_ -> do
+    let t = "- hello\n| x | @bob |\n|---|---|\n```\n@bob\n```"
+        t' = "- hello\n| x | @robert |\n|---|---|\n```\n@bob\n```"
+        (mc', ft', _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) (mm [("bob", Just "robert")])
+    msgContentText mc' `shouldBe` t'
+    ft' `shouldBe` parseMaybeMarkdownList t'
   where
     test mentionsMap t =
       let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentionsMap

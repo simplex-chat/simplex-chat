@@ -32,6 +32,7 @@ async function initDirectory() {
   liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn));
   newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn));
   topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn));
+  document.getElementById('directory').addEventListener('click', handleCodeClick);
   window.addEventListener('popstate', applyHash);
 
   function applyHash() {
@@ -229,7 +230,7 @@ function displayEntries(entries) {
 
   for (let entry of entries) {
     try {
-      const { entryType, displayName, simplexName, groupLink, shortDescr, welcomeMessage, imageFile } = entry;
+      const { entryType, displayName, simplexName, groupLink, shortDescr, shortDescrBlocks, welcomeMessage, welcomeMessageBlocks, imageFile } = entry;
       const entryDiv = document.createElement('div');
       entryDiv.className = 'entry w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#0B2A59] mb-8';
 
@@ -248,11 +249,11 @@ function displayEntries(entries) {
         textContainer.appendChild(simplexNameElement);
       }
 
-      const welcomeMessageHTML = welcomeMessage ? renderMarkdown(welcomeMessage) : undefined;
-      const shortDescrHTML = shortDescr ? renderMarkdown(shortDescr) : undefined;
+      const welcomeMessageHTML = welcomeMessage ? renderMarkdown(welcomeMessage, welcomeMessageBlocks) : undefined;
+      const shortDescrHTML = shortDescr ? renderMarkdown(shortDescr, shortDescrBlocks) : undefined;
       if (shortDescrHTML && welcomeMessageHTML?.includes(shortDescrHTML) !== true) {
         const descrElement = document.createElement('p');
-        descrElement.innerHTML = renderMarkdown(shortDescr);
+        descrElement.innerHTML = shortDescrHTML;
         textContainer.appendChild(descrElement);
       }
 
@@ -338,7 +339,7 @@ function displayEntries(entries) {
         imgLinkElement.href = groupLinkUri;
       }
       imgLinkElement.target = "_blank";
-      imgLinkElement.rel = "noopener";
+      imgLinkElement.rel = groupLink.connShortLink ? "noopener simplex" : "noopener";
       imgLinkElement.title = `Join ${displayName}`;
 
       const imgElement = document.createElement('img');
