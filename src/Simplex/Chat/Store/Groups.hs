@@ -2127,7 +2127,7 @@ createJoiningMember
   User {userId, userContactId}
   GroupInfo {groupId, membership}
   cReqChatVRange
-  p@Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences}
+  p@Profile {displayName, fullName, shortDescr, description, image, contactLink, peerType, preferences}
   presHeader_
   cReqXContactId_
   cReqMemberId_
@@ -2141,8 +2141,8 @@ createJoiningMember
       liftIO $
         DB.execute
           db
-          "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-          ((displayName, fullName, shortDescr, description, image, contactLink, userId, currentTs, currentTs) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
+          "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          ((displayName, fullName, shortDescr, description, image, contactLink, peerType, userId, currentTs, currentTs) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
       profileId <- liftIO $ insertedRowId db
       r@(groupMemberId, _) <- case cReqMemberId_ of
         Just memberId -> do
@@ -2500,13 +2500,13 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
   createNewMember_ db user (groupId' gInfo) newMember badgeVerified currentTs
 
 createNewMemberProfile_ :: DB.Connection -> StoreCxt -> User -> Profile -> Maybe ProofPresHeader -> UTCTime -> ExceptT StoreError IO (Text, ProfileId, Profile, Maybe Bool)
-createNewMemberProfile_ db cxt User {userId} p@Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences} presHeader_ createdAt =
+createNewMemberProfile_ db cxt User {userId} p@Profile {displayName, fullName, shortDescr, description, image, contactLink, peerType, preferences} presHeader_ createdAt =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     (p'@Profile {badge}, badgeVerified) <- profileBadgeVerified presHeader_ (badgeKeys cxt) Nothing p
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-      ((displayName, fullName, shortDescr, description, image, contactLink, userId, createdAt, createdAt) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((displayName, fullName, shortDescr, description, image, contactLink, peerType, userId, createdAt, createdAt) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
     profileId <- insertedRowId db
     pure $ Right (ldn, profileId, p', badgeVerified)
 

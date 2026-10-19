@@ -3,8 +3,19 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import {core} from "../src/index";
+import * as libs from "../src/libs";
+import * as simplex from "../src/simplex";
 
 describe("Core tests", () => {
+  let libPath: string;
+  let addonPath: string;
+  // the first run downloads libsimplex
+  beforeAll(async () => {
+    const libsDir = await libs.resolveLibsDir("sqlite");
+    libPath = libs.libPath(libsDir);
+    addonPath = await libs.resolveAddonPath();
+    await core.loadLibrary("sqlite");
+  }, 300000);
   const tmpDir = "./tests/tmp";
   const dbPath = path.join(tmpDir, "simplex_v1");
   const templateDir = path.join(os.tmpdir(), `simplex-core-test-${process.pid}`);
@@ -140,9 +151,10 @@ describe("Core tests", () => {
     const start = Date.now();
     await fs.promises.stat(tmpDir);
     expect(Date.now() - start).toBeLessThan(200);
+    // one receiver thread per controller runs the 4 receives in turn
     await Promise.all(receives);
     await stopAndClose(ctrl);
-  }, 10000);
+  }, 30000);
 
   const itOnLinux = process.platform === "linux" ? it : it.skip;
 
@@ -174,7 +186,7 @@ describe("Core tests", () => {
     expect(elapsed).toBeLessThan(1800);
     await stopAndClose(ctrlA);
     await stopAndClose(ctrlB);
-  }, 10000);
+  });
 
   it("should receive events of one controller in order", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
@@ -188,7 +200,7 @@ describe("Core tests", () => {
       {type: "timedAction", action: "second"}
     ]);
     await stopAndClose(ctrl);
-  }, 10000);
+  });
 
   it("should close the store while a receive is in flight", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
@@ -206,27 +218,61 @@ describe("Core tests", () => {
     expect({closed, timerDelayBelow100ms: timerDelay < 100}).toEqual({closed: false, timerDelayBelow100ms: true});
     await close;
     expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
-  }, 10000);
+  });
+
+  it("should accept loading libsimplex again from the same path", () => {
+    expect(() => simplex.load(addonPath, libPath)).not.toThrow();
+  });
+
+  it("should refuse to load libsimplex from another path", () => {
+    expect(() => simplex.load(addonPath, path.resolve("other", "libsimplex.so"))).toThrow(`libsimplex already loaded from ${libPath}`);
+  });
+
+  it("should load libsimplex after a failed load and in several workers", () => {
+    const addon = path.resolve(__dirname, "..", "build", "Release", "simplex.node");
+    const childDbPath = path.resolve(tmpDir, "simplex_workers");
+    const script = `
+      const {Worker} = require("worker_threads");
+      const simplex = require(${JSON.stringify(addon)});
+      try { simplex.load(${JSON.stringify(addon)}) } catch (e) { console.log(JSON.stringify(e.message.endsWith("does not export hs_init_with_rtsopts"))) }
+      const load = ${JSON.stringify(`require(${JSON.stringify(addon)}).load(${JSON.stringify(libPath)})`)};
+      const workers = Array.from({length: 4}, () => new Worker(load, {eval: true}));
+      Promise.all(workers.map((w) => new Promise((resolve, reject) => w.on("exit", resolve).on("error", reject))))
+        .then(async (codes) => {
+          simplex.load(${JSON.stringify(libPath)});
+          const [ctrl] = await simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp");
+          await simplex.chat_send_cmd(ctrl, "/_stop");
+          console.log(JSON.stringify({codes, closed: await simplex.chat_close_store(ctrl) === ""}));
+        });
+    `;
+    const child = spawnSync(process.execPath, ["-e", script], {timeout: 30000, encoding: "utf8"});
+    if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
+    expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
+      .toEqual({status: 0, signal: null, stdout: 'true\n{"codes":[0,0,0,0],"closed":true}'});
+  }, 35000);
 
   it("should let the process exit while a receiver is idle", () => {
     const childDbPath = path.resolve(dbPath);
     const script = `
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
         .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
         .then((res) => console.log("received " + JSON.stringify(res)));
     `;
-    const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 10000, encoding: "utf8"});
+    const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 25000, encoding: "utf8"});
     if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
     expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
       .toEqual({status: 0, signal: null, stdout: 'received ""'});
-  }, 15000);
+  });
 
   it("should not crash when closing stopped controllers repeatedly", async () => {
     const script = `
       const fs = require("fs"), path = require("path");
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       (async () => {
+        // a new database runs every migration, each committed with a disk flush that takes up to 30 ms on CI runners
         const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
         for (let i = 0; i < 40; i++) {
           const [ctrl] = await simplex.chat_migrate_init(path.join(dir, "simplex"), "key", "yesUp");
@@ -235,6 +281,7 @@ describe("Core tests", () => {
           const res = await simplex.chat_close_store(ctrl);
           if (res !== "") throw new Error("close failed: " + res);
         }
+        fs.rmSync(dir, {recursive: true, force: true});
       })();
     `;
     const runChild = () => new Promise<{code: number | null, signal: NodeJS.Signals | null, stderr: string}>((resolve) => {
