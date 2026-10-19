@@ -1276,6 +1276,7 @@ object ChatModel {
     }
   }
 
+  @Synchronized
   private fun addTerminalItem(item: TerminalItem, maxItems: Int) {
     if (terminalItems.value.size >= maxItems) {
       terminalItems.value = terminalItems.value.subList(1, terminalItems.value.size)
