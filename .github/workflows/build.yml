@@ -1117,7 +1117,7 @@ jobs:
 
       - name: Build library
         id: mac_lib_build
-        if: ${{ !cancelled() && (needs.maybe-release.outputs.libs_tag || github.event_name == 'pull_request') && steps.mac_cli_build.outcome == 'success' }}
+        if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
         shell: bash
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
@@ -1132,7 +1132,7 @@ jobs:
           (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Upload library
-        if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag && steps.mac_lib_build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.mac_lib_build.outcome == 'success' }}
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
