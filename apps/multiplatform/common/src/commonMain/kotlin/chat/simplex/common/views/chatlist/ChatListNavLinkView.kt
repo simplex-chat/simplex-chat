@@ -969,6 +969,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
     }
     else -> null
   }
+  val chatInfoBefore = chatModel.getChat(chatInfo.id)?.chatInfo ?: chatInfo
   withBGApi {
     val res = when (newChatInfo) {
       is ChatInfo.Direct -> with(newChatInfo) {
@@ -983,7 +984,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       val wasFavorite = chatInfo.chatSettings?.favorite ?: false
       chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withContext(Dispatchers.Main) {
-        val chat = chatModel.getChat(chatInfo.id)
+        val chat = chatModel.getChat(chatInfo.id)?.copy(chatInfo = chatInfoBefore)
         chatModel.chatsContext.updateChatInfo(remoteHostId, newChatInfo)
         val updatedChat = chatModel.getChat(chatInfo.id)
         if (chat != null && updatedChat != null) {
