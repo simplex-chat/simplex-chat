@@ -29,8 +29,9 @@ The rule is applied when the database is opened (after the file paths are set, a
 ## Accepted gaps
 
 - `.bak` copies made during a passphrase change or migration, and `temp_files` re-created by the NSE or SE, are excluded at the next update.
-- Files in `app_files` are backed up as stored; they are unencrypted when "Encrypt local files" is off.
-- `/db decrypt` in the developer console (it needs the chat stopped) removes the database encryption without updating `chatDbEncrypted` or the keychain, so it can leave the container included while the database is unencrypted, and the toggle can still include it in that session. The launch rule does not detect it (the keychain still holds the old passphrase, or the passphrase is not stored), and opening the database with the old passphrase fails before the rule is applied, so the container is excluded only when the app next opens the database successfully.
+- Files in `app_files` are backed up as stored; they are unencrypted when "Encrypt local files" is off. The app group's settings file is backed up too; it includes the SOCKS proxy setting, which may contain credentials.
+- A database created by the share extension after a delete with the chat stopped (random passphrase) stays in an included container until the chat is started or the app relaunches.
+- `/db decrypt` in the developer console (it needs the chat stopped) removes the database encryption without updating `chatDbEncrypted` or the keychain, so it can leave the container included while the database is unencrypted, and the toggle can still include it in that session. When the passphrase is stored in the keychain, the launch rule does not detect it and opening with the stored passphrase fails before the rule is applied, so the container is excluded only when the app next opens the database successfully; when it is not stored, the next open (with an empty key) succeeds and excludes it. `/_db import` in the developer console has the same effect for an unencrypted archive: the key stays in the keychain, so the container stays included until the database is next opened successfully.
 
 ## Verification
 
