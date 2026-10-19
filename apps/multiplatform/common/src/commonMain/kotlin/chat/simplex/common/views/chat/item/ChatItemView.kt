@@ -34,7 +34,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
@@ -449,7 +449,7 @@ fun ChatItemView(
                     }
                     if (cItem.file != null && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded))) {
                       SaveContentItemAction(cItem, saveFileLauncher, showMenu)
-                    } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file, ciSenderProfile(cItem, chat.chatInfo))) {
+                    } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file)) {
                       ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), onClick = {
                         withBGApi {
                           Log.d(TAG, "ChatItemView downloadFileAction")
@@ -720,11 +720,11 @@ fun ChatItemView(
                   DeleteItemMenu()
                 }
                 is CIContent.RcvGroupInvitation -> {
-                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
+                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, groupChat = cInfo is ChatInfo.Group, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
                   DeleteItemMenu()
                 }
                 is CIContent.SndGroupInvitation -> {
-                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
+                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, groupChat = cInfo is ChatInfo.Group, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
                   DeleteItemMenu()
                 }
                 is CIContent.RcvDirectEventContent -> {

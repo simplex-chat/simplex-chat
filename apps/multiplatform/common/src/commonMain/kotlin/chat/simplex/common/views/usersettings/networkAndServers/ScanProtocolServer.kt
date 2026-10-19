@@ -9,7 +9,7 @@ import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.common.views.newchat.showWrongQRCodeAlert
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 expect fun ScanProtocolServer(rhId: Long?, onNext: (UserServer) -> Unit)

@@ -25,6 +25,7 @@ This file is generated automatically.
 [Group events](#group-events)
 - Main events
   - [ReceivedGroupInvitation](#receivedgroupinvitation)
+  - [ReceivedGroupInvitationViaGroup](#receivedgroupinvitationviagroup)
   - [UserJoinedGroup](#userjoinedgroup)
   - [GroupUpdated](#groupupdated)
   - [JoinedGroupMember](#joinedgroupmember)
@@ -71,6 +72,10 @@ This file is generated automatically.
 [Service events](#service-events)
 - [ServiceRequest](#servicerequest)
 - [ServiceReplySent](#servicereplysent)
+
+[Remote control events](#remote-control-events)
+- [RemoteCtrlSessionCode](#remotectrlsessioncode)
+- [RemoteCtrlStopped](#remotectrlstopped)
 
 [Error events](#error-events)
 - [MessageError](#messageerror)
@@ -276,6 +281,22 @@ Received group invitation.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - contact: [Contact](./TYPES.md#contact)
+- fromMemberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+
+---
+
+
+### ReceivedGroupInvitationViaGroup
+
+Received group invitation from member of another group.
+
+**Record type**:
+- type: "receivedGroupInvitationViaGroup"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- viaGroupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- viaMember: [GroupMember](./TYPES.md#groupmember)
 - fromMemberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
@@ -789,6 +810,37 @@ Correlate `connectionId` with the connection ID from the response to [APISendSer
 **Record type**:
 - type: "serviceReplySent"
 - connectionId: string
+
+---
+
+
+## Remote control events
+
+Bots that act as remote control hosts receive these events during the remote control session lifecycle.
+
+
+### RemoteCtrlSessionCode
+
+Remote controller session code ready for verification.
+
+Use [VerifyRemoteCtrlSession](./COMMANDS.md#verifyremotectrlsession) to complete the connection.
+
+**Record type**:
+- type: "remoteCtrlSessionCode"
+- remoteCtrl_: [RemoteCtrlInfo](./TYPES.md#remotectrlinfo)?
+- sessionCode: string
+
+---
+
+
+### RemoteCtrlStopped
+
+Remote controller session stopped.
+
+**Record type**:
+- type: "remoteCtrlStopped"
+- rcsState: [RemoteCtrlSessionState](./TYPES.md#remotectrlsessionstate)
+- rcStopReason: [RemoteCtrlStopReason](./TYPES.md#remotectrlstopreason)
 
 ---
 

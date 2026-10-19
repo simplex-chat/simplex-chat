@@ -3,7 +3,7 @@ package chat.simplex.common.views.newchat
 import chat.simplex.common.model.ScannedLinkType
 import chat.simplex.common.model.SimplexLinkType
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 // Shown when a scanner (or the Migrate paste field) is handed a valid SimpleX
 // code of a kind it does not accept: name what it actually is and where to use

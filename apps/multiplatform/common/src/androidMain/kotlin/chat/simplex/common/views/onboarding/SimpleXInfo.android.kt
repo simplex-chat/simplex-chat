@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.model.User
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 actual fun OnboardingActionButton(user: User?, onboardingStage: SharedPreference<OnboardingStage>, onclick: (() -> Unit)?) {

@@ -10,11 +10,15 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AgentServiceError](#agentserviceerror)
+- [AppVersionRange](#appversionrange)
 - [AutoAccept](#autoaccept)
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
+- [BadgeRedeemError](#badgeredeemerror)
+- [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
+- [BlockToken](#blocktoken)
 - [BlockingInfo](#blockinginfo)
 - [BlockingReason](#blockingreason)
 - [BrokerErrorType](#brokererrortype)
@@ -77,6 +81,7 @@ This file is generated automatically.
 - [CreatedConnLink](#createdconnlink)
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
+- [CtrlAppInfo](#ctrlappinfo)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
@@ -85,6 +90,7 @@ This file is generated automatically.
 - [FileError](#fileerror)
 - [FileErrorType](#fileerrortype)
 - [FileInvitation](#fileinvitation)
+- [FileProhibited](#fileprohibited)
 - [FileProtocol](#fileprotocol)
 - [FileStatus](#filestatus)
 - [FileTransferMeta](#filetransfermeta)
@@ -100,7 +106,6 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
-- [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
 - [GroupLinkOwner](#grouplinkowner)
 - [GroupLinkPlan](#grouplinkplan)
@@ -115,7 +120,6 @@ This file is generated automatically.
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
 - [GroupRelay](#grouprelay)
-- [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
@@ -128,8 +132,10 @@ This file is generated automatically.
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
+- [ListEntry](#listentry)
 - [LocalBadge](#localbadge)
 - [LocalProfile](#localprofile)
+- [MarkdownBlock](#markdownblock)
 - [MemberCriteria](#membercriteria)
 - [MsgChatLink](#msgchatlink)
 - [MsgContent](#msgcontent)
@@ -169,12 +175,17 @@ This file is generated automatically.
 - [RcvGroupEvent](#rcvgroupevent)
 - [RcvMsgError](#rcvmsgerror)
 - [RelayCapabilities](#relaycapabilities)
+- [RelayConnectionResult](#relayconnectionresult)
 - [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
+- [RemoteCtrlInfo](#remotectrlinfo)
+- [RemoteCtrlSessionState](#remotectrlsessionstate)
+- [RemoteCtrlStopReason](#remotectrlstopreason)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
 - [SecurityCode](#securitycode)
+- [SegmentRange](#segmentrange)
 - [SimplePreference](#simplepreference)
 - [SimplexDomain](#simplexdomain)
 - [SimplexDomainClaim](#simplexdomainclaim)
@@ -194,6 +205,7 @@ This file is generated automatically.
 - [SubscriptionStatus](#subscriptionstatus)
 - [SupportGroupPreference](#supportgrouppreference)
 - [SwitchPhase](#switchphase)
+- [TableAlign](#tablealign)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
 - [TransportError](#transporterror)
@@ -387,6 +399,17 @@ BadSignature:
 
 ---
 
+## AppVersionRange
+
+Remote controller app version range (min and max as version strings).
+
+**Record type**:
+- minVersion: string
+- maxVersion: string
+
+
+---
+
 ## AutoAccept
 
 **Record type**:
@@ -416,6 +439,65 @@ BadSignature:
 
 ---
 
+## BadgeRedeemError
+
+**Discriminated union type**:
+
+InvalidCode:
+- type: "invalidCode"
+
+InvalidReceipt:
+- type: "invalidReceipt"
+
+ServiceNotConfigured:
+- type: "serviceNotConfigured"
+
+BadgeActive:
+- type: "badgeActive"
+
+ServiceError:
+- type: "serviceError"
+- serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
+
+InvalidResponse:
+- type: "invalidResponse"
+- message: string
+
+UnknownKeyIndex:
+- type: "unknownKeyIndex"
+
+CredentialNotVerified:
+- type: "credentialNotVerified"
+
+
+---
+
+## BadgeServiceErrorCode
+
+**Enum type**:
+- "bad_request"
+- "unsupported_version"
+- "unknown_purchase_key"
+- "unknown_offer_id"
+- "offer_disabled"
+- "offer_mismatch"
+- "product_unavailable"
+- "payment_not_entitled"
+- "payment_pending"
+- "provider_unavailable"
+- "provider_not_configured"
+- "rate_limited"
+- "code_invalid"
+- "code_used"
+- "code_expired"
+- "receipt_invalid"
+- "receipt_used"
+- "test_purchase"
+- "internal"
+
+
+---
+
 ## BadgeStatus
 
 **Enum type**:
@@ -434,6 +516,64 @@ BadSignature:
 - "supporter"
 - "legend"
 - "investor"
+
+
+---
+
+## BlockToken
+
+**Discriminated union type**:
+
+LineBreak:
+- type: "lineBreak"
+
+SoftBreak:
+- type: "softBreak"
+
+HardBreak:
+- type: "hardBreak"
+
+ParagraphBreak:
+- type: "paragraphBreak"
+- lineBreaks: int
+
+Indent:
+- type: "indent"
+
+HeadingMark:
+- type: "headingMark"
+- level: int
+
+HeadingClose:
+- type: "headingClose"
+
+HeadingUnderline:
+- type: "headingUnderline"
+- level: int
+
+ListMark:
+- type: "listMark"
+- number: string?
+
+QuoteMark:
+- type: "quoteMark"
+
+FenceMark:
+- type: "fenceMark"
+- language: string?
+
+RowMark:
+- type: "rowMark"
+
+CellMark:
+- type: "cellMark"
+
+DelimiterRow:
+- type: "delimiterRow"
+- columns: [[TableAlign](#tablealign)]
+
+RuleMark:
+- type: "ruleMark"
 
 
 ---
@@ -748,6 +888,7 @@ LocalRcv:
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
 - fileExpires: UTCTime?
+- fileProhibited: [FileProhibited](#fileprohibited)?
 
 
 ---
@@ -929,6 +1070,7 @@ GroupLink:
 - sentAt: UTCTime
 - content: [MsgContent](#msgcontent)
 - formattedText: [[FormattedText](#formattedtext)]?
+- markdownBlocks: [[MarkdownBlock](#markdownblock)]?
 
 
 ---
@@ -1341,6 +1483,10 @@ CommandError:
 - type: "commandError"
 - message: string
 
+BadgeRedeemError:
+- type: "badgeRedeemError"
+- badgeRedeemError: [BadgeRedeemError](#badgeredeemerror)
+
 AgentCommandError:
 - type: "agentCommandError"
 - message: string
@@ -1423,6 +1569,7 @@ ContactConnection:
 - content: [CIContent](#cicontent)
 - mentions: {string : [CIMention](#cimention)}
 - formattedText: [[FormattedText](#formattedtext)]?
+- markdownBlocks: [[MarkdownBlock](#markdownblock)]?
 - quotedItem: [CIQuote](#ciquote)?
 - reactions: [[CIReactionCount](#cireactioncount)]
 - file: [CIFile](#cifile)?
@@ -1463,6 +1610,7 @@ Search:
 - "human"
 - "bot"
 - "business"
+- "agent"
 
 
 ---
@@ -1968,6 +2116,18 @@ connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Py
 
 ---
 
+## CtrlAppInfo
+
+Remote controller application info.
+
+**Record type**:
+- appVersionRange: [AppVersionRange](#appversionrange)
+- deviceName: string
+- compression: bool
+
+
+---
+
 ## DroppedMsg
 
 **Record type**:
@@ -2125,6 +2285,16 @@ NO_FILE:
 - fileConnReq: string?
 - fileInline: [InlineFileMode](#inlinefilemode)?
 - fileDescr: [FileDescr](#filedescr)?
+- fileBadge: [BadgeProof](#badgeproof)?
+
+
+---
+
+## FileProhibited
+
+**Record type**:
+- maxSize: int64
+- badgeStatus: [BadgeStatus](#badgestatus)?
 
 
 ---
@@ -2178,10 +2348,13 @@ NO_FILE:
 
 ## Format
 
+The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars.
+
 **Discriminated union type**:
 
 Bold:
 - type: "bold"
+- singleStar: bool
 
 Italic:
 - type: "italic"
@@ -2234,6 +2407,13 @@ Email:
 
 Phone:
 - type: "phone"
+
+Escape:
+- type: "escape"
+
+Markup:
+- type: "markup"
+- token: [BlockToken](#blocktoken)
 
 
 ---
@@ -2395,18 +2575,7 @@ MemberSupport:
 - rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-- groupKeys: [GroupKeys](#groupkeys)?
 - groupDomainVerified: bool?
-
-
----
-
-## GroupKeys
-
-**Record type**:
-- publicGroupId: string
-- groupRootKey: [GroupRootKey](#grouprootkey)
-- memberPrivKey: string
 
 
 ---
@@ -2632,21 +2801,6 @@ UpdateRequired:
 
 ---
 
-## GroupRootKey
-
-**Discriminated union type**:
-
-Private:
-- type: "private"
-- rootPrivKey: string
-
-Public:
-- type: "public"
-- rootPubKey: string
-
-
----
-
 ## GroupShortLinkData
 
 **Record type**:
@@ -2800,6 +2954,16 @@ Unknown:
 
 ---
 
+## ListEntry
+
+**Record type**:
+- number: string?
+- content: [SegmentRange](#segmentrange)
+- items: [[ListEntry](#listentry)]
+
+
+---
+
 ## LocalBadge
 
 **Record type**:
@@ -2825,6 +2989,45 @@ Unknown:
 - localAlias: string
 - contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 - contactDomainVerified: bool?
+
+
+---
+
+## MarkdownBlock
+
+**Discriminated union type**:
+
+Paragraph:
+- type: "paragraph"
+- content: [SegmentRange](#segmentrange)
+
+Heading:
+- type: "heading"
+- level: int
+- content: [SegmentRange](#segmentrange)
+
+CodeBlock:
+- type: "codeBlock"
+- language: string?
+- content: [SegmentRange](#segmentrange)
+
+Quote:
+- type: "quote"
+- content: [SegmentRange](#segmentrange)
+
+List:
+- type: "list"
+- items: [[ListEntry](#listentry)]
+
+Table:
+- type: "table"
+- columns: [[TableAlign](#tablealign)]
+- header: [[SegmentRange](#segmentrange)]
+- rows: [[[SegmentRange](#segmentrange)]]
+
+Rule:
+- type: "rule"
+- mark: [SegmentRange](#segmentrange)
 
 
 ---
@@ -3442,6 +3645,7 @@ Cancelled:
 - fileId: int64
 - xftpRcvFile: [XFTPRcvFile](#xftprcvfile)?
 - fileInvitation: [FileInvitation](#fileinvitation)
+- fileProhibited: [FileProhibited](#fileprohibited)?
 - fileStatus: [RcvFileStatus](#rcvfilestatus)
 - fileType: [FileType](#filetype)
 - rcvFileInline: [InlineFileMode](#inlinefilemode)?
@@ -3551,6 +3755,15 @@ ParseError:
 
 ---
 
+## RelayConnectionResult
+
+**Record type**:
+- relayMember: [GroupMember](#groupmember)
+- relayError: [ChatError](#chaterror)?
+
+
+---
+
 ## RelayProfile
 
 **Record type**:
@@ -3572,6 +3785,62 @@ ParseError:
 - "active"
 - "inactive"
 - "rejected"
+
+
+---
+
+## RemoteCtrlInfo
+
+**Record type**:
+- remoteCtrlId: int64
+- ctrlDeviceName: string
+- sessionState: [RemoteCtrlSessionState](#remotectrlsessionstate)?
+
+
+---
+
+## RemoteCtrlSessionState
+
+**Discriminated union type**:
+
+Starting:
+- type: "starting"
+
+Searching:
+- type: "searching"
+
+Connecting:
+- type: "connecting"
+
+PendingConfirmation:
+- type: "pendingConfirmation"
+- sessionCode: string
+
+Connected:
+- type: "connected"
+- sessionCode: string
+
+
+---
+
+## RemoteCtrlStopReason
+
+**Discriminated union type**:
+
+DiscoveryFailed:
+- type: "discoveryFailed"
+- chatError: [ChatError](#chaterror)
+
+ConnectionFailed:
+- type: "connectionFailed"
+- chatError: [ChatError](#chaterror)
+
+SetupFailed:
+- type: "setupFailed"
+- chatError: [ChatError](#chaterror)
+
+Disconnected:
+- type: "disconnected"
 
 
 ---
@@ -3640,6 +3909,15 @@ A_SERVICE:
 **Record type**:
 - securityCode: string
 - verifiedAt: UTCTime
+
+
+---
+
+## SegmentRange
+
+**Record type**:
+- from: int
+- to: int
 
 
 ---
@@ -4261,6 +4539,17 @@ NoSub:
 - "confirmed"
 - "secured"
 - "completed"
+
+
+---
+
+## TableAlign
+
+**Enum type**:
+- "none"
+- "left"
+- "center"
+- "right"
 
 
 ---

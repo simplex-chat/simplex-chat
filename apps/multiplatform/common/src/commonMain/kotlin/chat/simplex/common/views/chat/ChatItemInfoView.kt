@@ -29,9 +29,11 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
 import chat.simplex.common.views.chat.item.*
+import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.serialization.encodeToString
 
@@ -50,17 +52,19 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
   @Composable
-  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
+  fun TextBubble(text: String, formattedText: List<FormattedText>?, markdownBlocks: List<MarkdownBlock>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
     if (text != "") {
       MarkdownText(
-        text, if (text.isEmpty()) emptyList() else formattedText,
+        text, if (text.isEmpty()) emptyList() else formattedText, markdownBlocks,
         sender = sender,
         mentions = mentions,
         userMemberId = userMemberId,
         senderBold = true,
         toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
-        onLinkLongClick = { showMenu.value = true }
+        onLinkLongClick = { showMenu.value = true },
+        blockLayout = true,
+        cardColor = if (sent) appColors.sentQuote else appColors.receivedQuote
       )
     } else {
       Text(
@@ -83,7 +87,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, ciVersion.formattedText, sender = null, showMenu = showMenu, mentions = ci.mentions,
+          TextBubble(text, ciVersion.formattedText, ciVersion.markdownBlocks, sender = null, showMenu = showMenu, mentions = ci.mentions,
             userMemberId = when {
               chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
               else -> null
@@ -135,7 +139,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, qi.formattedText, sender = qi.sender(null), showMenu)
+          TextBubble(text, qi.formattedText, qi.markdownBlocks, sender = qi.sender(null), showMenu)
         }
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
@@ -277,6 +281,11 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (file?.fileExpires != null) {
         val expiresRes = if (file.expired) MR.strings.info_row_file_expired else MR.strings.info_row_file_expires
         InfoRow(stringResource(expiresRes), localTimestamp(file.fileExpires))
+        if (noShownBadge()) {
+          SectionItemView(::openBadgesView) {
+            Text(stringResource(MR.strings.badges_larger_files_longer), color = MaterialTheme.colors.primary)
+          }
+        }
       }
       if (ci.meta.msgVerified?.verified == true) {
         val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
