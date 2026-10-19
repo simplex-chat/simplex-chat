@@ -238,7 +238,7 @@ struct DirectorySearchRow: View {
         HStack(spacing: 8) {
             ProfileImage(
                 imageStr: entry.image,
-                iconName: isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill",
+                icon: Image(systemName: isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"),
                 size: 42
             )
             VStack(alignment: .leading, spacing: 2) {
@@ -289,7 +289,7 @@ struct NameSearchRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            ProfileImage(imageStr: result.image, iconName: result.iconName, size: 42)
+            ProfileImage(imageStr: result.image, icon: Image(systemName: result.iconName), size: 42)
             VStack(alignment: .leading, spacing: 2) {
                 if let profileName = result.profileName {
                     (Text(profileName).fontWeight(.bold) + Text(verbatim: " (\(result.simplexName))").foregroundColor(theme.colors.secondary))
