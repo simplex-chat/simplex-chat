@@ -58,10 +58,10 @@ Desktop, master build vs PR build. The active count is not visible here (no tray
 - A mentions-only group: a plain message leaves the PR grey, a mention lights both.
 - After a restart, mark a muted chat read, then receive a message in another (unmuted) chat: grey on master (negative count), lit on the PR.
 - After a restart, unmute a chat with unread: grey on master, lit on the PR.
-- Mentions-only group, a mention deleted by the sender: the Unread filter and the list chip dot keep the group on master, clear it on the PR.
+- Mentions-only group, a mention deleted by the sender: the Unread filter keeps the group on master and clears it on the PR.
 
 Regression on both builds: unread badges and mark read/unread, mute and favorite, list chip dots, clear, "keep conversation" delete, a second profile's picker badge, the chat item TTL change, the Unread filter.
 
-Android: on resume after new messages, the chat list shows them and the other profile's badge is unchanged; no crashes.
+Android: on resume after new messages, the chat list shows them and the other profile's picker badge includes its new message, on both builds (the app stays alive in the background, so the re-read on resume is not exercised); no crashes.
 
 iOS: reviewed by reading, not built.
