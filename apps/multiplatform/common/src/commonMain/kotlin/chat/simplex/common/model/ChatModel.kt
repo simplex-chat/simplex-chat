@@ -737,13 +737,6 @@ object ChatModel {
       return  itemAdded
     }
 
-    fun withDroppedUpdates(rhId: Long?, chatId: String, items: List<ChatItem>): List<ChatItem> =
-      if (droppedUpdates.isEmpty() || droppedUpdatesChat != (rhId to chatId)) {
-        items
-      } else {
-        items.map { item -> droppedUpdates.remove(item.id)?.takeIf { it.meta.updatedAt > item.meta.updatedAt } ?: item }
-      }
-
     fun clearDroppedUpdates() {
       droppedUpdatesChat = null
       droppedUpdates.clear()

@@ -77,7 +77,7 @@ suspend fun processLoadedChat(
         }
       }
       withContext(Dispatchers.Main) {
-        chatsCtx.chatItems.replaceAll(chatsCtx.withDroppedUpdates(chat.remoteHostId, chat.id, chat.chatItems))
+        chatsCtx.chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.id
         splits.value = newSplits
         if (chat.chatItems.isNotEmpty()) {
@@ -103,7 +103,7 @@ suspend fun processLoadedChat(
       newItems.addAll(insertAt, chat.chatItems)
       withContext(Dispatchers.Main) {
         if (chatWasSwitched(chat, pagination, openAroundItemId)) return@withContext
-        chatsCtx.chatItems.replaceAll(chatsCtx.withDroppedUpdates(chat.remoteHostId, chat.id, newItems))
+        chatsCtx.chatItems.replaceAll(newItems)
         splits.value = newSplits
         chatState.moveUnreadAfterItem(oldUnreadSplitIndex, newUnreadSplitIndex, oldItems)
       }
@@ -123,7 +123,7 @@ suspend fun processLoadedChat(
       newItems.addAll(indexToAdd, chat.chatItems)
       withContext(Dispatchers.Main) {
         if (chatWasSwitched(chat, pagination, openAroundItemId)) return@withContext
-        chatsCtx.chatItems.replaceAll(chatsCtx.withDroppedUpdates(chat.remoteHostId, chat.id, newItems))
+        chatsCtx.chatItems.replaceAll(newItems)
         splits.value = newSplits
         chatState.moveUnreadAfterItem(splits.value.firstOrNull() ?: newItems.last().id, newItems)
         // loading clear bottom area, updating number of unread items after the newest loaded item
@@ -146,7 +146,7 @@ suspend fun processLoadedChat(
 
       withContext(Dispatchers.Main) {
         if (chatWasSwitched(chat, pagination, openAroundItemId)) return@withContext
-        chatsCtx.chatItems.replaceAll(chatsCtx.withDroppedUpdates(chat.remoteHostId, chat.id, newItems))
+        chatsCtx.chatItems.replaceAll(newItems)
         splits.value = newSplits
         unreadAfterItemId.value = chat.chatItems.last().id
         totalAfter.value = navInfo.afterTotal
@@ -170,7 +170,7 @@ suspend fun processLoadedChat(
       newItems.addAll(chat.chatItems)
       withContext(Dispatchers.Main) {
         if (chatWasSwitched(chat, pagination, openAroundItemId)) return@withContext
-        chatsCtx.chatItems.replaceAll(chatsCtx.withDroppedUpdates(chat.remoteHostId, chat.id, newItems))
+        chatsCtx.chatItems.replaceAll(newItems)
         chatState.splits.value = newSplits
         unreadAfterNewestLoaded.value = 0
       }

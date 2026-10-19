@@ -50,7 +50,7 @@ func apiLoadMessages(
             chatModel.addChat(chat)
         }
         await MainActor.run {
-            im.reversedChatItems = im.withDroppedUpdates(chat.id, chat.chatItems.reversed())
+            im.reversedChatItems = chat.chatItems.reversed()
             if im.secondaryIMFilter == nil {
                 chatModel.updateChatInfo(chat.chatInfo)
             }
@@ -80,7 +80,7 @@ func apiLoadMessages(
         let newReversed: [ChatItem] = newItems.reversed()
         await MainActor.run {
             if chatWasSwitched(chat, pagination, openAroundItemId) { return }
-            im.reversedChatItems = im.withDroppedUpdates(chat.id, newReversed)
+            im.reversedChatItems = newReversed
             im.chatState.splits = modifiedSplits.newSplits
             im.chatState.moveUnreadAfterItem(modifiedSplits.oldUnreadSplitIndex, modifiedSplits.newUnreadSplitIndex, oldItems)
         }
@@ -101,7 +101,7 @@ func apiLoadMessages(
         let newReversed: [ChatItem] = newItems.reversed()
         await MainActor.run {
             if chatWasSwitched(chat, pagination, openAroundItemId) { return }
-            im.reversedChatItems = im.withDroppedUpdates(chat.id, newReversed)
+            im.reversedChatItems = newReversed
             im.chatState.splits = newSplits
             im.chatState.moveUnreadAfterItem(im.chatState.splits.first ?? new.last!.id, new)
             // loading clear bottom area, updating number of unread items after the newest loaded item
@@ -125,7 +125,7 @@ func apiLoadMessages(
         let orderedSplits = newSplits
         await MainActor.run {
             if chatWasSwitched(chat, pagination, openAroundItemId) { return }
-            im.reversedChatItems = im.withDroppedUpdates(chat.id, newReversed)
+            im.reversedChatItems = newReversed
             im.chatState.splits = orderedSplits
             im.chatState.unreadAfterItemId = chat.chatItems.last!.id
             im.chatState.totalAfter = navInfo.afterTotal
@@ -151,7 +151,7 @@ func apiLoadMessages(
         let items = newItems
         await MainActor.run {
             if chatWasSwitched(chat, pagination, openAroundItemId) { return }
-            im.reversedChatItems = im.withDroppedUpdates(chat.id, items.reversed())
+            im.reversedChatItems = items.reversed()
             im.chatState.splits = newSplits
             if im.secondaryIMFilter == nil {
                 chatModel.updateChatInfo(chat.chatInfo)

@@ -102,13 +102,6 @@ class ItemsModel: ObservableObject {
         chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
     }
 
-    func withDroppedUpdates(_ chatId: ChatId, _ items: [ChatItem]) -> [ChatItem] {
-        if droppedUpdates.isEmpty || droppedUpdatesChatId != chatId { return items }
-        return items.map { item in
-            if let kept = droppedUpdates.removeValue(forKey: item.id), kept.meta.updatedAt > item.meta.updatedAt { kept } else { item }
-        }
-    }
-
     func clearDroppedUpdates() {
         droppedUpdatesChatId = nil
         droppedUpdates.removeAll()
