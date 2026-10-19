@@ -758,7 +758,7 @@ data Profile = Profile
   }
   deriving (Eq, Show)
 
-data ChatPeerType = CPTHuman | CPTBot | CPTBusiness | CPTUnknown Text
+data ChatPeerType = CPTHuman | CPTBot | CPTBusiness | CPTAgent | CPTUnknown Text
   deriving (Eq, Show)
 
 instance FromJSON ChatPeerType where
@@ -777,11 +777,13 @@ instance TextEncoding ChatPeerType where
     "human" -> CPTHuman
     "bot" -> CPTBot
     "business" -> CPTBusiness
+    "agent" -> CPTAgent
     tag -> CPTUnknown tag
   textEncode = \case
     CPTHuman -> "human"
     CPTBot -> "bot"
     CPTBusiness -> "business"
+    CPTAgent -> "agent"
     CPTUnknown tag -> tag
 
 data ChatLayout = CLClassic | CLTerminal | CLUnknown Text

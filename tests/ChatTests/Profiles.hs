@@ -32,7 +32,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
-import Simplex.Chat.Types (AgentConnId (..), ChatLayout (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), Profile (..), GroupRejectionReason (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Types (AgentConnId (..), ChatLayout (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), Profile (..), GroupRejectionReason (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -133,6 +133,8 @@ chatProfileTests = do
     it "connection incognito unchanged errors" testConnectionIncognitoUnchangedErrors
     it "set, reset, set connection incognito" testSetResetSetConnectionIncognito
     it "join group incognito" testJoinGroupIncognito
+    it "join group incognito as bot" $ testJoinGroupIncognitoPeerType (Just CPTBot)
+    it "join group incognito as human" $ testJoinGroupIncognitoPeerType Nothing
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
     it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
     it "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
@@ -2386,11 +2388,7 @@ testPlanAddressContactViaAddress =
           bob @@@ [("@alice", "")]
 
           -- GUI api
-#if defined(dbPostgres)
           bob ##> "/_connect contact 1 4"
-#else
-          bob ##> "/_connect contact 1 2"
-#endif
           connecting alice bob
   where
     connecting alice bob = do
@@ -2448,11 +2446,7 @@ testPlanAddressContactViaShortAddress =
           bob @@@ [("@alice", "")]
 
           -- GUI api
-#if defined(dbPostgres)
           bob ##> "/_connect contact 1 4"
-#else
-          bob ##> "/_connect contact 1 2"
-#endif
           connecting alice bob
   where
     connecting alice bob = do
@@ -3084,14 +3078,8 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to other user
-#if defined(dbPostgres)
     alice ##> "/_set conn user :2 3"
     alice <## "connection 2 changed from user alisa to user alisa2, new link:"
-#else
-    -- connection ID does not change in SQLite because table has no auto-increment
-    alice ##> "/_set conn user :1 3"
-    alice <## "connection 1 changed from user alisa to user alisa2, new link:"
-#endif
     alice <## ""
     _shortInv <- getTermLine alice
     alice <## ""
@@ -3133,14 +3121,8 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to initial user
-#if defined(dbPostgres)
     alice ##> "/_set conn user :2 1"
     alice <## "connection 2 changed from user alisa to user alice, new link:"
-#else
-    -- connection ID does not change in SQLite because table has no auto-increment
-    alice ##> "/_set conn user :1 1"
-    alice <## "connection 1 changed from user alisa to user alice, new link:"
-#endif
     alice <## ""
     _shortInv <- getTermLine alice
     alice <## ""
@@ -3178,16 +3160,9 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection to incognito and make sure it's attached to the newly created user profile
-#if defined(dbPostgres)
     alice ##> "/_set incognito :2 on"
     _ <- getTermLine alice
     alice <## "connection 2 changed to incognito"
-#else
-    -- connection ID does not change in SQLite because table has no auto-increment
-    alice ##> "/_set incognito :1 on"
-    _ <- getTermLine alice
-    alice <## "connection 1 changed to incognito"
-#endif
     bob ##> ("/connect " <> inv)
     bob <## "confirmation sent!"
     alisaIncognito <- getTermLine alice
@@ -5184,6 +5159,36 @@ testShortLinkConnectPreparedGroupIncognito = testChat3 aliceProfile bobProfile c
       cath #> "#team 3"
       alice <# "#team cath> 3"
       bob ?<# "#team cath> 3"
+
+testJoinGroupIncognitoPeerType :: HasCallStack => Maybe ChatPeerType -> TestParams -> IO ()
+testJoinGroupIncognitoPeerType peerType_ = testChat3 aliceProfile bobProfile {peerType = peerType_} cathProfile test
+  where
+    test alice bob cath = do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect directly"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1 incognito=on"
+      bobIncognito <- getTermLine bob
+      bob <## "#team: connection started incognito"
+      alice <## (bobIncognito <> ": accepting request to join group #team...")
+      concurrentlyN_
+        [ alice <## ("#team: " <> bobIncognito <> " joined the group"),
+          do
+            bob <## "#team: joining the group..."
+            bob <## ("#team: you joined the group incognito as " <> bobIncognito)
+            bob <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## ("#team: alice added " <> bobIncognito <> " to the group (connecting...)")
+            cath <## ("#team: new member " <> bobIncognito <> " is connected")
+        ]
+      forM_ [alice, cath] $ \cc -> do
+        GroupMember {memberProfile} <- getTestMember cc "team" (T.pack bobIncognito)
+        peerType (fromLocalProfile memberProfile) `shouldBe` peerType_
 
 testShortLinkChangePreparedGroupUser :: HasCallStack => TestParams -> IO ()
 testShortLinkChangePreparedGroupUser = testChat3 aliceProfile bobProfile cathProfile test

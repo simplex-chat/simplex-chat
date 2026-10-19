@@ -25,7 +25,7 @@
           "metadata": {"comment": "profile bio (160 characters)"}
         },
         "contactLink": {"ref": "connReqUri"},
-        "peerType": {"enum": ["human", "bot"]},
+        "peerType": {"enum": ["human", "bot", "agent"]},
         "preferences": {
           "optionalProperties": {
             "commands": {
@@ -365,6 +365,9 @@
         "rtcExtraInfo": {
           "properties": {
             "rtcIceCandidates": {"type": "string"}
+          },
+          "optionalProperties": {
+            "rtcSession": {"type": "string"}
           }
         }
       }

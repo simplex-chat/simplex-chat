@@ -1,409 +1,867 @@
-# Block markdown: core
+# Block Markdown: core
 
-Date: 2026-10-13. Revised: 2026-10-14.
+Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, two passes over the whole text. Revised: 2026-10-18, CommonMark syntax (S4, S6), soft breaks (S5), block lines then inline content.
 
-The core parses the blocks of standard Markdown in every message text. `formattedText` is a list of blocks; the inline formats of a block are parsed per line, as now.
+Each message text is parsed in two passes. In pass 1, the lines of the text are grouped into blocks. The content of the lines of a block is joined with "\n" and parsed by the inline parser of master; each "\n" is then replaced by the break token and the syntax tokens of the next line. Pass 2 divides the tokens at the breaks between blocks and builds the block structure. `formattedText` is the joined token list; the text of each token is its source. `markdownBlocks` is the block structure: index ranges into `formattedText`.
 
-## Syntax
+References are to master at 382dc7480. Haskell paths without a directory are in `src/Simplex/Chat/`.
+
+## 1. Syntax
 
 ### Lines
 
 ```
-line break    LF; the text is divided by T.lines (Markdown.hs:162), as now; a final line break is dropped
-CR            a CR at a line end is syntax
-tab           4 columns of indentation
-indentation   spaces and tabs before the content of a line
+line break    "\n", with an optional "\r" before it
+final         one line break at the text end is removed before pass 1, as by T.lines (Markdown.hs:162)
+line          the text between two line breaks, or between a line break and the text start or end
+hard break    two or more spaces, or an odd number of backslashes, before a line break, when the next line is a continuation of the block (section 3)
+              CommonMark 0.31.2 section 6.7, examples 633, 634
+soft break    a line break before a line that is a continuation of a paragraph, a list entry or a quote, without a hard break
+              CommonMark 0.31.2, section "Soft line breaks"
+indentation   spaces and tabs at a line start
+              tab stops every 4 columns
+blank line    white space only
 ```
+
+- Drawing of line breaks in messages with blocks: rendering plan, section 3.
 
 ### Line kinds
 
-The content of a line is tested in this order. Every kind is recognized at any indentation.
+Tested in this order at a line start, at any indentation:
 
 ```
-escaped     "\" as the first character, or between the digits and the delimiter of a list number,
-            in a line that is a fence, heading, quote, rule or list item when this "\" is removed
-            the line is a paragraph line; the "\" is syntax
-fence       3 or more "`", then an info string without "`"
-heading     1 to 6 "#", a space or tab, then text with a character other than white space
-quote       ">"; one space or tab after it is syntax; the rest of the line is the quote text
-rule        3 or more of one of "-", "*", "_"; spaces and tabs between and after them
-list item   "-", "*" or "+", or 1 to 9 digits and "." or ")"
-            then a space or tab, then text with a character other than white space
-table       a line with "|", when the next line is a delimiter row with the same number of cells
-row         a line with "|", while a table is open
-blank       white space only
-paragraph   any other line
+code line    a line inside a code block, until its closing fence
+table start  a line with "|", when the next line is a delimiter row with the same number of cells
+fence        3 or more "`", then an info string without "`"
+             or 3 or more "~", then an info string
+             when a line follows it; a fence line at the text end is text
+heading      1 to 6 "#", a space, then text with a character other than white space
+             closing sequence: a space or a tab, one or more "#", then white space only, at the line end
+underline    "=" only, or "-" only, then white space only, when the open block is a paragraph
+             CommonMark 0.31.2 section 4.3 (setext heading underline)
+rule         3 or more of one of "-", "*", "_", with spaces and tabs between and after them
+list item    a marker, a space, then text with a character other than white space
+             marker: "-", "*", "+", or 1 to 9 digits and "." or ")"
+quote        ">", then text with a character other than white space
+             or blank quote lines before such a line
+             after a paragraph line: such a line, or one blank quote line before it
+table row    a line with "|", while a table is open
+blank        white space only
+paragraph    any other line
 ```
 
-- Delimiter row: at least one `|`; every trimmed cell is `:?-+:?`.
-- Inside a code block every line is a code line, until its closing fence.
+- Delimiter row: a line with "|" where every cell, trimmed, is `:?-+:?`.
+- The line after a closing fence is tested anew.
 
 ### Blocks
 
 ```
-Paragraph   consecutive paragraph lines and the blank lines between them, until a line of a kind other than paragraph and blank
-            line breaks and blank lines are text, as now
-            blank lines before its first line and after its last line are dropped
-            a paragraph line is text as written, indentation included, as now
-            paragraph lines directly after a list item are lines of the item
-Heading     one heading line; level: the number of "#"
 CodeBlock   a fence line, the code lines after it, and the closing fence line
-            closing fence: at least as many "`" as the opening fence, then white space only; at any indentation
+            closing fence: at least as many of the character of the opening fence, then white space only, at any indentation
             without a closing fence the block is closed at the end of the text
-            code: the code lines with line breaks between them
-            in a code line the indentation up to the column of the opening fence is syntax
-            language: the first word of the info string; absent for an empty info string
-Quote       consecutive quote lines
-            content: their quote texts with line breaks between them
-            quote texts of white space only at the start and at the end of a quote are dropped
-            a quote with such texts only is a paragraph of its lines
-ListItem    one list item line and the paragraph lines directly after it
-            content: the text after the marker and the white space after the marker, then the following lines with line breaks between them
-            the indentation of a following line is syntax
-            number: the digits and the delimiter, as written; absent for "-", "*" and "+"
-            indent: by the list stack below
-Table       a table line, its delimiter row and the row lines directly after it
-            columns: one per delimiter cell; "-" is one or more "-"
-              ":-:"   center
-              "-:"    right
-              ":-"    left
-              "-"     none
-            rows: the header row, then the body rows
-            each row has one cell per column; a missing cell is empty
-            in a longer row the last cell is the text from the start of its column to the end of the row
-            cells are divided at each "|" other than "\|"; the "|" at the line start and at the line end are optional
-            a cell is trimmed; the "\" of "\|" is dropped
+            in a code line the white space up to the column of the opening fence is syntax
+            a tab that crosses that column is syntax
+            language: the first word of the info string
+            language is absent for an empty info string
+Heading     one heading line
+            level: the number of "#"
+            the closing sequence is syntax
+            or: the lines of a paragraph and the underline after them
+            level: 1 for "=", 2 for "-"
 Rule        one rule line
+List        consecutive list items, blank lines between them included
+ListEntry   a list item line and its continuation lines (section 3)
+            content: the text after the marker and the space, then the continuation lines without their indentation
+            number: the digits and the delimiter, as written
+            number is absent for "-", "*" and "+"
+Quote       consecutive quote lines, and the paragraph lines that are continuations of them (section 3)
+            CommonMark 0.31.2 section 5.1, example 247
+            text of a quote line: after ">" and one optional space or tab
+            a text of white space only is syntax
+            the lines with texts of white space only at its start and at its end are outside its content
+Table       a table start line, its delimiter row, and the table rows after them
+            columns: one per delimiter cell
+            "-" below: one or more "-"
+              ":-:"   TACenter
+              "-:"    TARight
+              ":-"    TALeft
+              "-"     TANone
+            header: the cells of the table start line
+            rows: the cells of each table row
+            cells are divided at each "|"
+            the "|" at the line start and at the line end are optional
+            in a row longer than the header, the last cell is the text from the start of its column to the end of the row, without a "|" at the line end
+            the white space around the text of a cell is syntax
+Paragraph   consecutive paragraph lines (section 3)
+            a paragraph line is text as written, indentation included, as now
 ```
 
-List stack:
+List nesting:
 
 ```
-items        marker columns of the open list items
-item at c    items with a column above c are closed
-             c is added when items is empty or its last column is below c
-indent       number of items, less 1; at most maxListIndent
-items = []   at a fence, heading, quote, rule, table or paragraph line at column 0 of a block other than a list item
+parent        the nearest entry before it with a smaller column, in the same List
+depth         at most 7 (maxListDepth)
+              an entry below depth 7: added at depth 7
+blank line    the List continues
+other block   the List ends
 ```
 
-- Each line of the content of a paragraph, heading, quote, list item and table cell is parsed by `markdownP` (`Markdown.hs:205-378`), as now (`:162-163`). A format is within one line.
-- Code is text.
-
-### Existing syntax
+Content:
 
 ```
-#secret#   a heading has a space or tab after "#" (secretP, Markdown.hs:242-249)
-#name      the same (nameRefP, :252-265)
-*bold*     a list item has a space or tab after "*" (md, :231-235)
-+phone     a list item has a space or tab after "+" (phoneP, :310-316)
-/command   a one-line text with "/" first is one command (:149-157); tested before blocks
-           in other lines a command is inline, as now
+inline       the lines of a paragraph, of a list entry, of a quote: one text (section 3, inlineLines)
+             the text of a heading line
+             each cell
+code         each code line after its syntax: one segment without format
 ```
 
-### Inline
+### Inline formats across line breaks
 
-`markdownP` (`Markdown.hs:205-378`):
+Decided 2026-10-17.
 
 ```
-**x**         Strong (boldP, :236-241)
-*x*           Bold, as now
-~~x~~         StrikeThrough; the edge rule of ~x~ (md, :231-235)
-[text](uri)   text: ended by "]" or "["; a text ended by "[" is text; punctuation test below
-              uri: until ")" or white space; "(" ")" pairs inside, one level
+formats     Bold, Italic, StrikeThrough, Snippet, Secret, Small, Colored
+across      a format is continued into the next line when that line is a continuation of the block (section 3)
+            one segment of the format per line
+            the line break and the syntax of the next line between them
+            never across a blank line
+            "*", "_", "~": across lines when the content does not start or end with white space; otherwise as now, within the line
+within      headings and cells: within one line
+            links, SimpleX links, names, mentions, commands, e-mails, phones: within one line
 ```
 
-Link text, `sowLinkP` (`:281-293`):
+Bold, decided 2026-10-18:
 
-- A link with one address in the text and another in the URI is rejected by the punctuation test (`:284-285`): a text with punctuation is a link only when the URI equals the text, or `https://` and the text.
-- Ignored by the test, as now: the characters of `-_`. Added: the characters of `,;!?'"()&`.
-- Every other punctuation character is tested as now.
+```
+*x*      Bold, singleStar = True
+**x**    Bold, singleStar = False
+```
 
-### Excluded: text, as now
+- `*x*` is drawn as italic in messages with blocks (rendering plan, section 3).
+
+### Inline syntax of GFM
+
+Decided 2026-10-18 (S4, S6). In all messages, with and without blocks:
+
+```
+~~x~~          StrikeThrough                                   GFM example 491
+__x__          Bold, singleStar = False                        GFM example 391
+`x`            Snippet                                         CommonMark section 6.1, GFM example 339
+`` x ` y ``    a run of backticks, the content, a run of the same length
+               one space removed at each end when the content starts and ends with a space and is not spaces only
+               a space at one end only: kept (CommonMark example 332); spaces only: kept (example 334)
+               master's check of spaces at the ends (Markdown.hs:231-235): not applied to Snippet
+<x>            as [x](x) (sowLinkP, Markdown.hs:281-293), its text "<x>"    GFM example 603
+               x an e-mail address: HyperLink {showText = Just x, linkUri = "mailto:" <> x}
+\c             c an ASCII punctuation character: Escape "\", then c without format     CommonMark examples 12, 14
+               not in code blocks and snippets
+               "\" before a line break: a hard break (section 1, Lines)
+```
+
+### Text, as now
 
 ```
 raw HTML
 images ![alt](uri)
-setext headings; "---" under a text line is a rule
 indented code
-"~~~" fences
-__x__
-closing "#" characters of a heading: text of the heading
-a list, a fence or a quote marker inside a quote
-lazy continuation of a quote; a line without ">" ends the quote
-inline backslash escapes
-hard break syntax; every line break is a line break
+a list marker inside a quote
+a fence inside a quote
+a quote marker inside a quote
 nested inline formats
-emphasis with its start inside a word (fragmentP, Markdown.hs:209-226)
 ```
 
 ### Incomplete syntax in a live message
 
 ```
+fence line at the text end        paragraph line
+                                  a code block once a line follows
 open code fence                   code to the end of the text
-table header row                  last line of a paragraph; a table once the delimiter row is complete
-rule characters at the text end   rule; text once another character is added to the line
-block marker before its text      text; a block once a space and text are added
-">" alone                         paragraph; a quote once text is added
+table header row                  paragraph line
+                                  a table once the delimiter row is complete
+rule characters at the text end   rule
+                                  text once another character is added to the line
+block marker before its text      text
+                                  a block once text is added
+open format at the text end       text
+                                  a format once it is closed
 ```
 
-## Types
+- Each version of a live message is parsed from its whole text (`Store/Messages.hs:2583`).
+
+## 2. Types
 
 `Markdown.hs`:
 
 ```haskell
 data Format
-  = Bold
-  | ...
-  | Strong
+  = Bold {singleStar :: BoolDef}
+  | ...                                  -- present constructors, unchanged
+  | Phone
+  | Escape
+  | Markup {token :: BlockToken}
   | Unknown {json :: J.Value}
 
-data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
-
-type InlineMarkdown = [FormattedText]
+data BlockToken
+  = LineBreak
+  | SoftBreak
+  | HardBreak
+  | ParagraphBreak {lineBreaks :: Int}
+  | Indent
+  | HeadingMark {level :: Int}
+  | HeadingClose
+  | HeadingUnderline {level :: Int}
+  | ListMark {number :: Maybe Text}
+  | QuoteMark
+  | FenceMark {language :: Maybe Text}
+  | RowMark
+  | CellMark
+  | DelimiterRow {columns :: [TableAlign]}
+  | RuleMark
+  deriving (Eq, Show)
 
 data MarkdownBlock
-  = Paragraph {content :: InlineMarkdown}
-  | Heading {level :: Int, content :: InlineMarkdown}
-  | CodeBlock {language :: Maybe Text, code :: Text}
-  | Quote {content :: InlineMarkdown}
-  | ListItem {number :: Maybe Text, indent :: Int, content :: InlineMarkdown}
-  | Table {columns :: [TableAlign], rows :: [[InlineMarkdown]]}
-  | Rule
+  = Paragraph {content :: SegmentRange}
+  | Heading {level :: Int, content :: SegmentRange}
+  | CodeBlock {language :: Maybe Text, content :: SegmentRange}
+  | Quote {content :: SegmentRange}
+  | List {items :: NonEmpty ListEntry}
+  | Table {columns :: NonEmpty TableAlign, header :: [SegmentRange], rows :: [[SegmentRange]]}
+  | Rule {mark :: SegmentRange}
   | UnknownBlock {json :: J.Value}
+  deriving (Eq, Show)
 
-type MarkdownList = [MarkdownBlock]
+data ListEntry = ListEntry {number :: Maybe Text, content :: SegmentRange, items :: [ListEntry]}
+  deriving (Eq, Show)
+
+data SegmentRange = SegmentRange {from :: Int, to :: Int}
+  deriving (Eq, Show)
 
 data TableAlign = TANone | TALeft | TACenter | TARight
+  deriving (Eq, Show)
 
-data ParsedMarkdown = ParsedMarkdown {formattedText :: Maybe InlineMarkdown}
+data ParsedMarkdown = ParsedMarkdown
+  { formattedText :: Maybe MarkdownList,
+    markdownBlocks :: Maybe (NonEmpty MarkdownBlock)
+  }
 ```
 
-- `InlineMarkdown` is the type that `MarkdownList` named (`:141`).
-- `Format` is inline only; `Strong` is added (`:51-69`).
-- The name and the type name of `formattedText :: Maybe MarkdownList` are unchanged in `ChatItem`, `CIQuote` and `ChatItemVersion` (`Messages.hs:265, 614, 1362`). The code that creates and passes it is unchanged; its JSON is a list of blocks.
-- Files of the web channel preview and of the directory listing have the source form: `WebMessage.formattedText`, `shortDescription` and `welcomeMessage` (`Web.hs:103, 114-115`), `DirectoryEntry.shortDescr` and `welcomeMessage` (`Directory/Listing.hs:94-95`) are `Maybe InlineMarkdown`; their JSON is unchanged (open question 2).
-- JSON: `MarkdownBlock` with `sumTypeJSON fstToLower`, as `Format` (`:536`); an unknown tag is decoded as `UnknownBlock`, as in `Format` (`:538-539`); `TableAlign` with `enumJSON (dropPrefix "TA")`.
-- `indent` is defined in `Help.hs` (`:34-35`); there `Simplex.Chat.Markdown` is imported with `hiding (indent)` (`:23`). In the other modules that import `Simplex.Chat.Markdown` without a list (`Styled.hs`, `Messages.hs`, `View.hs`, `Store/Messages.hs`, `Terminal/Output.hs`, `Library/Internal.hs`, `Library/Commands.hs`, `Directory/Listing.hs`, `tests/MarkdownTests.hs`, `bots/src/API/Docs/Types.hs`), `content`, `code`, `level`, `number`, `columns`, `rows` and `language` are local names only.
+- `FormattedText` is unchanged.
+- `MarkdownList` is unchanged: `[FormattedText]`.
+- Markup token: a segment with format `Markup`.
+- `Escape`: the backslash of a backslash escape; text `"\"`.
+- `markdownText` (`Markdown.hs:472-491`):
+  - a markup token, `Escape`: its text
+  - `Bold`: `*x*` when `singleStar`, `**x**` otherwise (`Markdown.hs:476`)
+  - `Snippet`: delimited by a backtick run longer than any backtick run in its text, with a space inside each delimiter when the text starts or ends with a backtick, or starts and ends with a space and is not spaces only (`Markdown.hs:479`)
+- `SegmentRange`: `[from, to)` into `formattedText`.
+- JSON of `BlockToken` and `MarkdownBlock`: `sumTypeJSON fstToLower`, as `Format` (`Markdown.hs:536`).
+- An unknown block tag is decoded as `UnknownBlock`, as in `Format` (`Markdown.hs:538-539`).
+- An unknown token tag: the format is decoded as `Unknown`.
+- `Bold` without `singleStar` in JSON is decoded with `singleStar = False`: the field type is `BoolDef` (`Types.hs:2313-2318`).
+- JSON of `ListEntry`, `SegmentRange` and `ParsedMarkdown`: `defaultJSON`.
+- JSON of `TableAlign`: `enumJSON (dropPrefix "TA")`.
+- Field names equal to local names in importing modules (`-Werror=name-shadowing`, simplex-chat.cabal:362) are hidden in those imports.
 
-Values; `C` is a list of `FormattedText`, as now; `language` and `number` are omitted when absent:
-
-```
-paragraph    {"type":"paragraph","content":C}
-             {"_owsf":true,"paragraph":{"content":C}}
-heading      {"type":"heading","level":2,"content":C}
-             {"_owsf":true,"heading":{"level":2,"content":C}}
-codeBlock    {"type":"codeBlock","language":"bash","code":"ls -l"}
-             {"_owsf":true,"codeBlock":{"language":"bash","code":"ls -l"}}
-quote        {"type":"quote","content":C}
-             {"_owsf":true,"quote":{"content":C}}
-listItem     {"type":"listItem","number":"2.","indent":0,"content":C}
-             {"_owsf":true,"listItem":{"number":"2.","indent":0,"content":C}}
-table        {"type":"table","columns":["none","center"],"rows":[[C,C],[C,C]]}
-             {"_owsf":true,"table":{"columns":["none","center"],"rows":[[C,C],[C,C]]}}
-rule         {"type":"rule"}
-             {"_owsf":true,"rule":{}}
-strong       {"type":"strong"}
-             {"_owsf":true,"strong":{}}
-```
-
-## Core
-
-### Parser
+Values:
 
 ```
-parseMaybeMarkdownList :: Text -> Maybe MarkdownList       blocks; signature as now (Markdown.hs:148)
-parseMaybeInlineMarkdown :: Text -> Maybe InlineMarkdown    source form
-markdownSegments :: MarkdownList -> InlineMarkdown         one-text form ("Rendering contract")
+bold             {"type":"bold","singleStar":true}
+escape           {"type":"escape"}
+lineBreak        {"type":"markup","token":{"type":"lineBreak"}}
+softBreak        {"type":"markup","token":{"type":"softBreak"}}
+hardBreak        {"type":"markup","token":{"type":"hardBreak"}}
+headingClose     {"type":"markup","token":{"type":"headingClose"}}
+headingUnderline {"type":"markup","token":{"type":"headingUnderline","level":1}}
+paragraphBreak   {"type":"markup","token":{"type":"paragraphBreak","lineBreaks":2}}
+headingMark      {"type":"markup","token":{"type":"headingMark","level":2}}
+listMark         {"type":"markup","token":{"type":"listMark","number":"2."}}
+fenceMark        {"type":"markup","token":{"type":"fenceMark","language":"bash"}}
+delimiterRow     {"type":"markup","token":{"type":"delimiterRow","columns":["none","center"]}}
+paragraph        {"type":"paragraph","content":{"from":1,"to":4}}
+codeBlock        {"type":"codeBlock","language":"bash","content":{"from":2,"to":5}}
+list             {"type":"list","items":[{"number":"1.","content":{"from":4,"to":9},"items":[]}]}
+table            {"type":"table","columns":["none"],"header":[{"from":1,"to":2}],"rows":[[{"from":6,"to":7}]]}
+rule             {"type":"rule","mark":{"from":2,"to":3}}
 ```
 
-- The one-line command rule (`:149-157`) is applied first: blocks `Just [Paragraph [command]]`; source form `Just [command]`.
-- Both parse functions are built from one pass over the lines, `markdownLines`. Each line is divided into parts, in source order:
+- `language` and `number` are omitted when absent.
+
+## 3. Pass 1: tokens
 
 ```
-syntax   markers, indentation of block lines, fence lines, delimiter rows, "|", CR, the "\" of an escape
-inline   text parsed by markdownP
-code     code text
+input      the text without its final line break
+output     segments in source order
+           the concatenation of their texts is the input
 ```
 
-- Blocks: built from the inline and code parts by "Blocks"; syntax parts are dropped.
-- Source form: syntax and code parts are segments without format; inline parts are the segments of `markdownP`; a line break between lines; adjacent segments with the same format are joined, as now (`acc`, `:164-167`).
-- `T.concat (map markdownText ft)` of the source form is the text, except, as now, the final line break and colour names written as digits (`:494-505`), and, new, `~~x~~` written `~x~`.
-- `Nothing`: for blocks, when the result is empty or one Paragraph of segments without format; for the source form, when every segment is without format, as now (`:159`).
-- `markdownP`: `strongP` (renamed `boldP`), with `Strong`; `strikeP`; `sowLinkP` as in "Inline"; the fragments of a run are joined once, in place of `mconcat` (`:206`); in `phoneP` (`:310-316`) the repetition of segments is ended with a failure as soon as the length of `s` is over 22.
-- `markdownText` (`:472-505`): `Strong` is `**t**`.
-- `parseMarkdownList` (`:169-170`) and `styleMarkdownList` (`Styled.hs:9, 38-41`) are removed. `View.hs:2474`: `msgPlain = map (styleMarkdown . parseMarkdown) . T.lines`, output as now.
-
-### Limits and cost
+Block parsers, tested in this order at a line start:
 
 ```
-maxListIndent   6      deeper items have indent 6
-maxSegments     8192   counted before segments are joined; for blocks and for the source form
+tableP  fenceP  headingP  ruleP  listItemP  quoteP  paragraphP
 ```
 
-- When the number of segments would exceed `maxSegments`, the line where it is exceeded and the lines after it are one segment without format: in blocks, a last Paragraph; in the source form, the last segment.
-- The time of both parse functions is linear in the text length. Text sizes:
-  - 65,536 bytes in a compressed message (`maxDecompressedMsgLength`, `Protocol.hs:945`)
-  - `maxMsgParts × maxEncodedMsgLength` = 124,816 bytes with `2026-10-13-message-parts.md` (`Protocol.hs:930`)
-  - any size in a note folder item (`Library/Commands.hs:5125-5155`)
+- Block start (`blockStartP`): a table start, a fence, a heading line, a rule, a list item line, a quote start.
+- Between blocks: `LineBreak`, or `ParagraphBreak` with the blank lines.
 
-### Consumers
+Continuation lines:
 
 ```
-site                                                        form            change
-mentionedNames (Markdown.hs:71-76)                          blocks          over markdownSegments
-hasLinks (Markdown.hs:192-193)                              blocks          over markdownSegments
-prohibitedSimplexLinks (Library/Internal.hs:426-433)        blocks          over markdownSegments
-getMessageMentions (Library/Internal.hs:356-363)            blocks          unchanged
-updatedMentionNames (Library/Internal.hs:291-322)           source form     the names are changed in parseMaybeInlineMarkdown of the text of mc
-                                                                            the returned list: parseMaybeMarkdownList of the new text
-removeSimplexLink (Library/Internal.hs:1370-1381)           source form     parseMaybeInlineMarkdown
-chatParseMarkdown (Mobile.hs:395-396)                       source form     parseMaybeInlineMarkdown; JSON as now
-msgText (Terminal/Output.hs:231-237)                        blocks          texts of markdownSegments; Secret as "..."
-WebMessage.formattedText (Web.hs:103, 325)                  source form     parseMaybeInlineMarkdown (msgContentText mc)
-toFormattedText (Web.hs:426-431; :114-115, 252-253)         source form     parseMaybeInlineMarkdown
-descriptionContainsLink (Directory/Listing.hs:59-60)        blocks          over markdownSegments
-toFormattedText (Directory/Listing.hs:197-198; :94-95)      source form     parseMaybeInlineMarkdown
-withoutLink (Directory/Service.hs:598-600)                  source form     parseMaybeInlineMarkdown
-groupLinkUri (Directory/Service.hs:1074)                    blocks          over markdownSegments
+block        next line                                            its syntax tokens
+paragraph    text, not a block start, not an underline            none: the indentation is content
+list item    text, not a block start                              Indent, when indented
+quote        a quote line with text                               QuoteMark
+             a blank quote line                                   QuoteMark: the whole line
+             after a line with text: a line with text,            none
+               without ">", not a block start
+table        a line with "|", not a block start                   the row tokens
+code         each line before the closing fence                   Indent, then the code
 ```
 
-- Unchanged: `msgContentTexts`, `ciContentTexts` (`Library/Internal.hs:365-369`), the parse sites of `Store/Messages.hs` (`:693, 1122, 2305, 2334, 2426, 2583, 3373`), `has_link` (`Library/Internal.hs:3013, 3044, 3088-3096`; `Library/Commands.hs:2674`), `DCSearchGroup` (`Directory/Events.hs:106, 169, 201-205`).
-- The list returned by `updatedMentionNames` is used at `Library/Internal.hs:225-226` only; at `Library/Internal.hs:1537` and `Library/Commands.hs:1136` the new text is parsed by `msgContentTexts`.
+- An unindented line after a list item is a continuation of it (B11; CommonMark 0.31.2 section 5.2, rule 5).
+- A paragraph line after a quote line is a continuation of the quote (CommonMark 0.31.2 section 5.1, example 247).
 
-### Terminal
-
-- `Styled.hs`, `sgr` (`:71-79`): `Strong` as `Bold`.
-- The terminal prints the source lines with their inline formats, as now (`View.hs:2473-2474`).
-- The suffixes of `appendLast` are appended to the last line of `ttyMsgContent` (`View.hs:2374, 2412`), in this order: `msgVerifiedStr`; ` (incomplete)` of `2026-10-13-message-parts.md`.
-
-## Web, libraries and docs
-
-- Web channel preview (`Web.hs`) and directory listing (`Directory/Listing.hs`) files: lists of the source form, JSON as now.
-- `website/src/js/simplex-lib.jsc:57-128` `renderMarkdown`, used by the channel preview (`channel-preview.jsc:990, 1522`) and the directory page (`directory.jsc:251-261`): `strong` is `<strong>`; in a cached older script `strong` text is written as plain text (`:119-120`).
-- `bots/src/API/Docs/Types.hs`, `chatTypesDocsData` (`:289-290`): `(sti @MarkdownBlock, STUnion, "", ["UnknownBlock"], "", "")`; `(sti @TableAlign, STEnum, "TA", [], "", "")`; `Generic` instances (`:523-524`). Description of `Format`: `bold` is `*x*`, `strong` is `**x**`.
-- `bots/api/TYPES.md` and the type files of both libraries are written by `tests/APIDocs.hs` (`testGenerate`, `:153-157`), with the types of the other plans.
-- `bots/README.md`, new section "Message formatting": the syntax of "Syntax"; `formattedText` is a list of blocks; `*x*` is italic in the terminal layout; `**x**` is bold in both layouts.
-
-## Compatibility
-
-Protocol and storage: unchanged. A peer with an older core shows the source text with inline formats. Items stored earlier are parsed when read (`Store/Messages.hs:1122, 2334, 2426`). Texts drawn differently after the change; a marker at a line start is written with `\`:
+Inline content of a paragraph, a list item, a quote (`inlineLines`):
 
 ```
-text                          now       after
-# of users: 5                 text      heading
-8) nice                       text      list item "8)"
-- a                           text      list item; the same for "+ a" and "* a"
-> cmd                         text      quote
----                           text      rule; the same for "***" and "___"
-a line with "|" above "-|-"   text      table
-~~x~~                         text      strikethrough
-[a, b](uri)                   text      link
+lines       the text of each line after its syntax tokens
+hard break  two or more spaces, or an odd number of "\", at the end of a line with a next line: removed from the line
+runs        consecutive lines with text; a blank line is a run alone
+parse       each run joined with "\n", parsed by markdownP; the runs joined with "\n"
+breaks      each "\n" replaced by the break token and the syntax tokens of the next line
+            a segment with "\n" is divided there; empty parts without a format are dropped
+break       HardBreak: after a hard break, or with a blank line before or after it
+            SoftBreak: otherwise
 ```
 
-- `has_link` is written when an item is created (`Library/Internal.hs:3013, 3044`); the flags of old items are unchanged. A URI in code is text. A SimpleX link in code is found by `hasObfuscatedSimplexLink` (`Library/Internal.hs:429`), as now.
-- `updatedMentionNames` (`Library/Internal.hs:225, 1537`; `Library/Commands.hs:1136`): `~~x~~` is written `~x~`; a mention in code is kept, and is renamed by an older core. In a text with mentions renamed by an older core, `**x**` is written `*x*` (`Markdown.hs:476`); it is italic in the terminal layout.
-- `removeSimplexLink`: a SimpleX link in code of a profile description is text; the description is dropped by `hasObfuscatedSimplexLink` (`Library/Internal.hs:1375, 1381`).
-- Bots: `formattedText` of an item, a quote and an item version is a list of blocks; the segments are in `content` and in the cells. In bot code that reads `formattedText` as a list of segments, blocks are read in their place. `**x**` has the tag `strong`. A name of `mentions` that is only in code is rejected with `SEInvalidMention` (`Library/Internal.hs:330-331`).
-- Remote desktop: the host JSON is decoded by the controller core (`Remote/Protocol.hs:185`). A controller with an older core fails to decode a block list as `[FormattedText]`: a response with such an item fails with `RPEInvalidJSON`, and a chat with a formatted item is not loaded; such an event is delivered to the controller app as an error (`Remote.hs:236-245`). A controller with this core and a host with an older core fail in the same way. Versions: `Remote.hs:77-91`; open question 3.
-- The JSON change of `formattedText` and its effect on bots and on desktop controllers of another release are accepted (2026-10-14).
-- Release 1, remote desktop: an older controller decodes the tag `strong` as `Unknown` (`Markdown.hs:538-539`); its text is drawn as plain text.
-- Release 1: `Strong` (constructor, `strongP`, `sgr`, `markdownText`, JSON tag `strong`, type docs, website) with part 1 of the rendering plan; release 2: every other change of this plan.
+- `markdownP` keeps each "\n" of its input in the texts of its segments.
 
-## Tests
-
-`tests/MarkdownTests.hs`; the operators `==>>` and `<<==>>` (`:48-55`) are applied to `parseMaybeInlineMarkdown`; a new operator is applied to `parseMaybeMarkdownList` and a block list:
+Texts of the markup tokens:
 
 ```
-heading     each level; "#", "# " and "#x": paragraph
-list        each bullet marker; numbers as written, with each delimiter
-            nesting by 2, 3 and 4 columns; indent above maxListIndent
-            a continuation line; a blank line between items
-            a fence under a numbered item: CodeBlock after the item
-quote       ">" with and without a space after it; "> > x"; "> - a" and "> ```": text
-            ">" alone: paragraph
-code        open at the end of the text; an info string of two words
-            a closing fence with white space after it; a fence in a list item
+LineBreak          a line break between two blocks
+SoftBreak          a soft break (section 1)
+HardBreak          a hard break (section 1): the spaces or the backslash, and the line break
+                   the line break before and after a blank quote line inside a quote
+                   the line break between the lines of a code block, between the lines of a table, before a setext underline
+ParagraphBreak n   a line break and the blank lines after it, each with its line break
+                   the blank lines at the text start, with their line breaks
+                   n: the number of "\n"
+Indent             the indentation of a continuation line of a list item
+                   in a code line: the white space up to the column of the opening fence
+HeadingMark        the indentation, the "#" run, the space
+HeadingClose       the closing sequence of a heading line (section 1)
+HeadingUnderline   the underline line (section 1); level 1 for "=", 2 for "-"
+ListMark           the indentation, the marker, the space
+QuoteMark          the indentation, ">", the optional space or tab
+                   in a quote line with a text of white space only: also that text
+FenceMark          the opening or the closing fence line
+RowMark            the indentation, the "|" at the line start, the white space before the first cell
+                   empty in a row without them
+CellMark           after a cell before the last: its white space, the "|", the white space before the next cell
+                   after the last cell: its white space, the "|" at the line end, the white space after it
+                   empty after a last cell without them
+DelimiterRow       the delimiter row
+RuleMark           the rule line
+```
+
+- Inside a code block the lines are divided by `HardBreak` only, blank code lines and spaces at line ends included.
+- Spaces at a line end before a line break other than a hard break: content, as now.
+
+Tokens of a line, in order:
+
+```
+paragraph line   inline content, the indentation included
+heading          HeadingMark, inline content, HeadingClose when present
+underline        HeadingUnderline
+list item        ListMark, inline content
+continuation     Indent when indented, inline content
+quote line       QuoteMark, inline content
+fence line       FenceMark
+code line        Indent when indented, one segment without format when not empty
+table row        RowMark, then for each cell: inline content, CellMark
+delimiter row    DelimiterRow
+rule             RuleMark
+```
+
+Changes to `Markdown.hs`:
+
+```
+parseMaybeMarkdownList (148-167)   formattedText of parsedMarkdown
+parsedMarkdown                     new: the command rule (149-157), as now
+                                   T.lines (162), intercalate (163): replaced by pass 1
+                                   the join (164-167): joinSegments, markup tokens not joined
+documentP, block parsers           new (above)
+inlineLines                        new (above)
+fragmentP (209)                    '\n': "\n" without format
+'*' case (214)                     doubleP '*' (Bold False); then formattedP '*' (Bold True)
+'_' case (215)                     doubleP '_' (Bold False); then formattedP '_' Italic
+'~' case (216)                     doubleP '~' StrikeThrough; then formattedP '~' StrikeThrough
+'`' case (217)                     code span (section 1), in place of formattedP '`' Snippet
+'<' case                           new: autolink (section 1); then wordP
+'\' case                           new: escape (section 1); then wordP
+formattedP (228-230)               content to the delimiter within the line, as now
+                                   without the delimiter in the line: across lines (section 1)
+boldP (236-241)                    doubleP: "**", "__", "~~"
+                                   white space at the content ends by isSpace
+secret (245-249)                   white space at the content ends by isSpace
+styledP (267-272)                  the space after the style: not "\n"
+                                   white space at the content ends by isSpace
+sowLinkP (281-293)                 the format of the link: hyperLinkFormat, shared with autolinks
+wordP (320)                        to a space, "\n", or a backslash before an ASCII punctuation character
+secretFallback (251)               to a space or "\n"
+nameRefP (253)                     to a space or "\n"
+inParens (294)                     within one line
+displayNameTextP_ (512-517)        a quoted name: within one line
+parseMarkdown (176-177)            unchanged: the inline parser, used by msgPlain (View.hs:2474)
+```
+
+## 4. Pass 2: blocks
+
+```
+blocks         the tokens divided at LineBreak and ParagraphBreak; empty parts dropped
+kind           by the first token of a block
+                 HeadingMark   Heading
+                 ListMark      list entry: the column of its indentation, its number
+                 QuoteMark     Quote
+                 FenceMark     CodeBlock
+                 RowMark       Table
+                 RuleMark      Rule: mark, the range of the RuleMark token
+                 other         Paragraph; Heading when the last token is HeadingUnderline
+lists          consecutive list entries: one List, nested by column (section 1)
+```
+
+Ranges:
+
+```
+content    from the first segment without Markup to the last
+           the breaks and the markup between them included
+code       from the token after the line break of the opening fence to the line break before the closing fence, excluded
+           without a closing fence: to the end
+cell       from the token after its RowMark or CellMark to its CellMark
+           empty for an empty cell
+row        from a RowMark to the next RowMark
+columns    the DelimiterRow
+```
+
+### Texts without blocks
+
+Decided 2026-10-17.
+
+```
+condition   pass 1 yields no markup other than LineBreak, SoftBreak, HardBreak and ParagraphBreak
+            or more than 2000 markup tokens (maxMarkupTokens; decided 2026-10-18)
+result      each markup token a segment without format, joined by joinSegments
+            Nothing when no segment has a format, as now
+            markdownBlocks: Nothing
+```
+
+- `Escape` is an inline format: kept in texts without blocks.
+
+### Example
+
+Text:
+
+```
+# Plan
+- buy *milk*
+  and eggs
+  - nested
+
+> a
+> b
+```
+
+`formattedText`:
+
+```
+0   headingMark 1      "# "
+1                      "Plan"
+2   lineBreak          "\n"
+3   listMark           "- "
+4                      "buy "
+5   bold               "milk"
+6   softBreak          "\n"
+7   indent             "  "
+8                      "and eggs"
+9   lineBreak          "\n"
+10  listMark           "  - "
+11                     "nested"
+12  paragraphBreak 2   "\n\n"
+13  quoteMark          "> "
+14                     "a"
+15  softBreak          "\n"
+16  quoteMark          "> "
+17                     "b"
+```
+
+`markdownBlocks`:
+
+```
+Heading 1      [1, 2)
+List
+  ListEntry    [4, 9)
+    ListEntry  [11, 12)
+Quote          [14, 18)
+```
+
+Format across a line break, `"> *a\n> b*"`:
+
+```
+0   quoteMark   "> "
+1   bold        "a"
+2   softBreak   "\n"
+3   quoteMark   "> "
+4   bold        "b"
+Quote [1, 5)
+```
+
+## 5. Records and parse sites
+
+`Markdown.hs`:
+
+```haskell
+parsedMarkdown :: Text -> ParsedMarkdown
+parseMaybeMarkdownList :: Text -> Maybe MarkdownList     -- formattedText of parsedMarkdown
+```
+
+Field `markdownBlocks :: Maybe (NonEmpty MarkdownBlock)` after `formattedText`:
+
+```
+ChatItem            Messages.hs:265
+CIQuote             Messages.hs:614
+ChatItemVersion     Messages.hs:1362
+ParsedMarkdown      Markdown.hs:143
+WebMessage          Web.hs:103
+```
+
+Other new fields, of the same type:
+
+```
+WebChannelPreview   Web.hs:114-115                 shortDescriptionBlocks, welcomeMessageBlocks
+DirectoryEntry      Directory/Listing.hs:94-95     shortDescrBlocks, welcomeMessageBlocks
+```
+
+`(Text, Maybe MarkdownList)` becomes `(Text, ParsedMarkdown)`:
+
+```
+Library/Internal.hs:365, 368          msgContentTexts, ciContentTexts
+Library/Internal.hs:2993              itemTexts
+Library/Internal.hs:3030, 3034, 3037  saveRcvChatItem, ciContentNoParse, saveRcvChatItem'
+Library/Internal.hs:3088              mkChatItem_
+Library/Internal.hs:3406, 3416        createLocalChatItems
+Library/Commands.hs:5155, 5263        ComposedMessageReq and its list
+```
+
+- `ciContentNoParse` (`Library/Internal.hs:3034-3035`): `ParsedMarkdown Nothing Nothing`.
+
+Parse sites:
+
+```
+Store/Messages.hs:693, 2305                       CIQuote: parsedMarkdown of the quoted text
+Store/Messages.hs:1122, 2334, 2426, 2583          ChatItem: parsedMarkdown of the item text
+Store/Messages.hs:3373                            ChatItemVersion
+Store/Messages.hs:1284, 1630, 1870, 2864, 2936    markdownBlocks = Nothing, with formattedText = Nothing
+Library/Internal.hs:226                           CIQuote: markdownBlocks of the quoted item
+Library/Commands.hs:4931                          CIQuote: markdownBlocks of the quoted item
+Messages.hs:1369-1379                             mkItemVersion: markdownBlocks of the item
+Web.hs:252-253, 325                               parsedMarkdown of the description texts; its two fields set the two sibling fields of the record
+                                                  toFormattedText (426-431) removed: equal to parseMaybeMarkdownList
+Directory/Listing.hs:143-144, 197-198             toFormattedText returns the list and the blocks; they set the two sibling fields of the record
+Store/Messages.hs:693, 2305                       mkCIQuote (Messages.hs): CIQuote with the parsed text of its content
+Mobile.hs:396                                     chatParseMarkdown: J.encode . parsedMarkdown . safeDecodeUtf8
+```
+
+- In `updatedMentionNames` (`Library/Internal.hs:291-322`), segments are mapped one to one, so the ranges of `markdownBlocks` are valid for its result.
+
+## 6. Consumers
+
+Unchanged:
+
+```
+mentionedNames (Markdown.hs:71-76)                    a mention in code is text
+hasLinks (Markdown.hs:192-193)                        a link in code is text
+styleMarkdownList, styleFormat (Styled.hs:38-47)      markup: its text without style (sgr, Styled.hs:71-79)
+updatedMentionNames (Library/Internal.hs:291-322)     segments mapped one to one
+prohibitedSimplexLinks (Library/Internal.hs:426-429)
+removeSimplexLink (Library/Internal.hs:1369-1380)     the kept text includes the markup texts
+hasObfuscatedSimplexLink (Markdown.hs:195-203)        a SimpleX link in code is found in the whole text
+msgText (Terminal/Output.hs:231-237)
+Directory/Listing.hs:52-60
+Directory/Service.hs:599-600
+Directory/Events.hs:106
+msgPlain (View.hs:2474)                               parseMarkdownList per line, as now
+```
+
+`Bold {singleStar}` sites:
+
+```
+sgr (Styled.hs:73)          Bold {}: bold, as now
+bold' (View.hs:2172)        styled (Bold False)
+Help.hs:312                 markdown (Bold True) "bold text"
+```
+
+## 6a. Directory service
+
+```
+spam filter reply (Directory/Service.hs:1160-1163)   each command line ends with two spaces: hard breaks between the command lines
+tests/Bots/DirectoryTests.hs                        unchanged: the terminal output of the tests has no trailing spaces
+```
+
+## 7. Docs and libraries
+
+`bots/src/API/Docs/Types.hs`:
+
+```
+chatTypesDocsData, next to :288-289    (sti @BlockToken, STUnion, "", [], "", "")
+                                       (sti @MarkdownBlock, STUnion, "", ["UnknownBlock"], "", "")
+                                       (sti @ListEntry, STRecord, "", [], "", "")
+                                       (sti @SegmentRange, STRecord, "", [], "", "")
+                                       (sti @TableAlign, STEnum, "TA", [], "", "")
+the Format entry (:288)                description: markup tokens, their text as source syntax; Escape; Bold singleStar
+next to :521-522                       deriving instance Generic for BlockToken, MarkdownBlock, ListEntry, SegmentRange, TableAlign
+```
+
+Written by the "Bot API docs" test (`tests/APIDocs.hs`):
+
+```
+bots/api/TYPES.md
+the type files of the TypeScript library
+the type files of the Python library
+```
+
+## 8. Compatibility
+
+- Protocol: unchanged.
+- Storage: unchanged.
+- A peer with an older core shows the source text with inline formats.
+- Items stored earlier are parsed when read (`Store/Messages.hs:1122, 2334, 2426`). Texts drawn as blocks after the change:
+
+```
+text                          now     after
+# of users: 5                 text    heading
+8) nice                       text    list item "8)"
+- a                           text    list item
++ a                           text    list item
+* a                           text    list item
+> cmd                         text    quote
+---                           text    rule
+***                           text    rule
+___                           text    rule
+a line with "|" above "-|-"   text    table
+*a                            text    bold, across lines
+b*
+Title                         text    heading 2
+---
+Title                         text    heading 1
+===
+~~~ fences                    text    code block
+\# a                          text    "# a", the "\" not drawn
+~~x~~                         text    strike-through
+__x__                         text    bold
+``x``                         text    code
+` a `                         text    code "a"
+<https://x.y>                 text    link
+```
+
+- A quote continued by a line without ">": the line is drawn in the quote.
+
+- In texts with blocks, after the change: `*x*` drawn as italic; single line breaks in paragraphs, list items and quotes drawn as spaces (rendering plan, section 3).
+- `has_link` of earlier items is unchanged.
+- A link in code is text.
+- A SimpleX link in code is found by `hasObfuscatedSimplexLink` (`Library/Internal.hs:429, 1375, 1380`).
+- A SimpleX link in code of a compose field: not found by the app checks of the segments (`ComposeView.kt:435-445`, `ShareListView.kt:81-84`, `ChatUtils.swift:104-113`); the core rejects the message where SimpleX links are prohibited (`Library/Internal.hs:429`), accepted.
+- A group link in code of a directory group description: not found by `descriptionContainsLink` (`Directory/Listing.hs:60`); the link line is added to the listing (`Directory/Listing.hs:129-134`), accepted.
+- A format across lines, rewritten by `updatedMentionNames`: delimiters on each line, `"> *a\n> b*"` written as `"> *a*\n> *b*"`.
+
+Costs:
+
+```
+JSON          each line break and each block syntax: one markup segment, in texts with blocks
+              markdownBlocks: the ranges of the blocks
+parsing       one parse of the whole text, on each read of an item
+```
+
+Consumers of earlier releases:
+
+```
+web pages     a markup token: its text, by the default case (website/src/js/simplex-lib.jsc:119-120)
+              new fields ignored
+bots          the text of each segment, as now
+              the Format union has one more type; records have new fields
+apps          remote desktop only: minRemoteCtrlVersion and minRemoteHostVersion (Remote.hs:77-82) are the version of the release, set at its version change
+```
+
+## 9. Tests
+
+`tests/MarkdownTests.hs`:
+
+```
+operators       ==>> (:48-49), <<== (:51-52), <<==>> (:54-55): unchanged
+                multilineMarkdownList (:463-481): unchanged
+new operator    ===> for parsedMarkdown: formattedText and markdownBlocks
+new spec        blockMarkdown
+```
+
+`blockMarkdown`, the tokens and the blocks of each text:
+
+```
+heading     each level
+            "#", "# ", "#x", "#\tx#": no blocks
+            closing sequence: "# a #", "# a ##  "; "# a#": "a#" as content
+setext      "a\n===": heading 1; "a\n---": heading 2; "a\nb\n=": heading 1 of two lines
+            "- - -" under a text line: rule
+            "===" under a list item, a quote, a heading, at the text start: text
+list        each bullet marker
+            numbers as written, with each delimiter
+            nesting by 2, 3 and 4 columns
+            tab indentation
+            depth above 7
+            an indented continuation line
+            an unindented continuation line
+            a blank line between items: one list
+            a paragraph after a list
+            a list item after a heading
+quote       ">" with and without a space after it
+            ">" alone: no blocks
+            "> a\n>\n> b": one quote with an empty line
+            ">\n> a\n>": the empty lines outside the content
+            "> > b": "> b" is text
+            "> a\nb": one quote, SoftBreak
+            "> a\nb\n> c": one quote
+            "> a\n\nb": a quote and a paragraph
+code        closed
+            "~~~" fences; "```" not closed by "~~~"; an info string with "`" after "~~~"
+            open at the end of the text
+            an empty code line, blank code lines at its end
+            an info string of two words
+            indentation of the fence
+            a tab across the column of the fence
+            a closing fence with white space after it
             inline syntax in code: text
-rule        each character; "- - -"; "---" under a text line
-table       each alignment; "\|" in a cell; a row shorter and a row longer than the header
-            a header row without a delimiter row: paragraph; a table ended by a line without "|"
-paragraph   blank lines between lines: text; blank lines before a heading: dropped
-escaped     "\" before each block marker and in a list number: paragraph
-source      each case above: <<==>> round trip of the source form
-existing    every present case with a block character at a line start: unchanged in the source form
-            CRLF line breaks
-inline      "**x**", with the double asterisk cases (:77-89): Strong
-            "~~x~~"
-            a URI with parentheses
-            link text "Hello, world!": link
-            link text "example . com": text
-            link text with "[": text
-consumers   mentionedNames: a mention in a table cell is found; a mention in code is ignored
-            hasLinks: a URI in code
-            markdownSegments: each block kind
-limits      a text over maxSegments: the rest is one segment without format
-            texts of 65,536 and 124,816 bytes, each parsed within a time bound:
-              "[ " repeated
-              "1 " repeated
-              one line of words
-live        property: for a text and a longer text with it as a prefix, the blocks before the last two blocks of the first result are equal
+            "```", "```\n", "a\n```": no blocks
+            "```\n```", "```\n\n```", "```\n   \n```", "```\n```\nx": code blocks
+rule        each character
+            "- - -"
+            "---" under a text line
+table       each alignment
+            a row shorter than the header
+            a row longer than the header, with and without "|" at its end
+            an empty cell, a cell of white space only, "||" between cells
+            rows without "|" at the line start: empty RowMark
+            indented rows
+            "a | b\n- | -": a table
+            a header row without a delimiter row: no blocks
+            a table ended by a line without "|"
+paragraph   a paragraph line with indentation: Indent as text
+            blank lines before the first block and after the last block
+across      bold, italic, strike-through, snippet, secret, colored across a line break: in a paragraph, a quote, a list item
+            not across a blank line, a heading line, a cell
+            an unclosed format: the delimiter and the rest of the line as text; formats on the next lines kept
+            a delimiter with white space at the content end across lines: as now, within the line
+breaks      ParagraphBreak counts
+            CR before each line break, in each block kind
+            final line break removed
+            hard break: two and three spaces, and a backslash, before a line break in a paragraph, a list item, a quote
+            one space before a line break: SoftBreak, the space as content
+            two spaces or a backslash before a blank line, at the text end, in code: content
+            SoftBreak in a paragraph, a list entry, a quote; HardBreak between table rows and code lines; LineBreak between blocks
+escapes     "C:\dir\file.txt": text, one word
+bold        "*x*": singleStar True
+            "**x**", "__x__": singleStar False
+gfm         "~~x~~": StrikeThrough
+            "`` x ` y ``": Snippet "x ` y"; "```a```" in a line: Snippet "a"; "`` a`": text
+            "` a `": Snippet "a"; "` a`": Snippet " a"; "` `": Snippet " "; "`  a  `": Snippet " a "
+            "<https://x.y>": HyperLink, text "<https://x.y>"; "<a@b.c>": HyperLink to "mailto:a@b.c"; "<x>": text
+escapes     "\*a*": Escape, "*a*" as text; "\# a" at a line start: no heading
+            "a\_b": Escape inside a word; "\a": text
+            in code and snippets: text
+            in a text without blocks: kept
+command     "/link 1": as now
+live        "```", then "```\nls": no blocks, then a code block
             "---", then "---x"
             an opening fence, then three backticks in the same line
-            a delimiter row, then more text in the same line
+            a delimiter row, then more text in it
 ```
 
-- `tests/ChatTests/Groups.hs:8348-8372`, `testUpdatedMentionNames`: a text with a list, a table and a code block, with a renamed mention outside code and in code: the new text is the source with the new name outside code.
-- `tests/JSONFixtures.hs`, `tests/JSONTests.hs:29`: a block list of each constructor in both encodings, for `owsf2tagged`; each constructor is encoded and decoded; an unknown block tag is `UnknownBlock`. `tests/MobileTests.hs:168-169`: unchanged.
-- `removeSimplexLink`: a link in code and in a table cell.
-- Directory `linkOnlyChange` (`Directory/Service.hs:588-600`): a description with block syntax.
-- `tests/ChatTests/Direct.hs`: a message with a code block and a list is printed with its source lines.
-
-## Rendering contract
-
-Guarantees of the parser output. Drawing and call sites: `2026-10-13-block-markdown-rendering.md`.
-
-- Blocks are in source order. Paragraph, Heading, Quote and ListItem have content with a character other than white space. A Table has the header row; each row has one cell per column. `level` is 1 to 6; `indent` is 0 to `maxListIndent`.
-- Line breaks in content are text of segments without format. A segment with a format is within one line.
-- `Nothing`: a text without formats and blocks. One Paragraph: a text with inline formats only; it is drawn as now. A list of Paragraphs only is drawn as one text, its one-text form.
-- One-text form, `markdownSegments`; the apps use the same rules:
+Properties, for each text above:
 
 ```
-block          segments
-paragraph      content
-heading        content
-quote          content
-list item      without format: 2 spaces per indent, "•" for a bullet or the number, a space; then content
-code block     code, without format
-table          each row: its cells with " | " between them; a line break between rows
-rule           "———", without format
-unknownBlock   none, and no line break before it
-between blocks a line break
+source      T.concat (map markdownText formattedText) is the text without its final line break, except:
+              colour names       written as digits, as now (Markdown.hs:295-309, 494-503)
+              formats across lines, delimited on each line; an empty part at a line break written as empty delimiters
+              ~~x~~              written ~x~
+              __x__              written **x**
+              code spans         written with the delimiters of markdownText (section 2)
+ranges      within formattedText, in source order, not overlapping
+content     each segment without markup is in one content range or one cell
 ```
 
-- Live message: after text is appended, the blocks before the last two blocks of the previous result are unchanged: "x\n---", then "x\n---x", changes a Paragraph and a Rule into one Paragraph. The last block can be a CodeBlock without a closing fence.
+Consumers:
 
-## Later
+```
+mentionedNames            a mention in a list item, a quote, a heading, a table cell is found
+                          a mention in code and in a snippet is not found
+hasLinks                  a URI in a list item and a table cell is found; in code not found
+SimpleX links             in a list item and a table cell: a SimplexLink segment
+                          in code: no segment; found by hasObfuscatedSimplexLink
+                          the text without SimpleX link segments, as removeSimplexLink (Library/Internal.hs:1369-1380)
+markdownText              each markup token
+```
 
-- Code highlighting, a later patch: one tokenizer for all languages, with comments, strings, numbers, keywords and punctuation. `code` is one text; token ranges over it can be added to `CodeBlock` as an optional field. The field is ignored by earlier decoders: Kotlin `ignoreUnknownKeys` (`SimpleXAPI.kt:6567`), Swift `Decodable`, aeson records.
+- The consumers above are tested on parsed text in `tests/MarkdownTests.hs`; chat tests are not added.
+
+Other modules:
+
+```
+tests/ChatTests/Groups.hs:8427        testUpdatedMentionNames
+                                        text: a list, a table, a code block
+                                        a renamed mention outside code
+                                        the same mention in code
+                                        the new text: the source with the new name outside code
+tests/JSONFixtures.hs                 a message with a heading, a list and a bold segment, in both encodings
+tests/JSONTests.hs                    the fixtures, for owsf2tagged
+                                      a round trip of each block and each markup token
+                                      an unknown block tag is UnknownBlock
+```
+
+Linear time:
+
+```
+phone numbers          the scan ends after 22 characters (master: to the end of the digit groups)
+link text "[x]"        the scan ends at "[" or a line break
+link target "(x)"      the scan ends at white space
+autolink "<x>"         the scan ends at "<" or white space
+segment joining        each run of equal formats joined once (T.concat)
+block starts           a table start: two lines; a fence: one line and a line break
+table cells            one pass over the row and cell marks
+```
+
+- Tests: the bounded scans keep master's results; texts of 4000 repetitions of each adversarial pattern are parsed; 1000 list items have blocks, 1001 have none.
 
 ## Interfaces
 
-- The names and JSON tags of "Types"; the three functions of "Parser"; `maxListIndent`, `maxSegments`; the one-text form of "Rendering contract".
-- `2026-10-13-block-markdown-rendering.md`: owner of the Kotlin and iOS types, of the block views and of the one-text form in the apps.
-- `2026-10-13-flat-chat-layout-ui.md`: owner of the rule for `Bold`. Layout names in the code: `CLClassic`, `CLTerminal` (`Types.hs:782`).
-- `2026-10-13-message-read-more.md`: the teaser is a prefix of the block list; only its last block is cut.
-- `2026-10-13-message-parts.md`: `hasObfuscatedSimplexLink` is changed by that plan (windows). Both parse functions have `maxSegments` as their only limit, for a text of any length; the whole text is parsed after each part and head, in linear time.
+```
+types       Format: Markup, Escape, Bold {singleStar}
+            BlockToken
+            MarkdownBlock
+            ListEntry
+            SegmentRange
+            TableAlign
+            ParsedMarkdown: markdownBlocks
+records     markdownBlocks: ChatItem, CIQuote, ChatItemVersion, WebMessage
+            shortDescriptionBlocks, welcomeMessageBlocks: WebChannelPreview
+            shortDescrBlocks, welcomeMessageBlocks: DirectoryEntry
+functions   parsedMarkdown
+            parseMaybeMarkdownList: formattedText of parsedMarkdown
+constants   maxListDepth 7
+            maxMarkupTokens 2000
+```
 
-## Depends on
+`2026-10-13-block-markdown-rendering.md`:
 
-- `2026-10-13-block-markdown-rendering.md`: release 1: `Strong` with part 1 of the rendering plan (Kotlin and iOS `Format.strong`, `Format.style`, `MarkdownText`, `messageText`, the `MarkdownBlock` app types, `markdownSegments`); release 2: blocks with part 2.
-- `2026-10-13-message-priority.md`, `2026-10-13-message-parts.md`: the order of the terminal suffixes ("Terminal").
-
-## Open questions
-
-1. Stored and new texts with a block marker at a line start (`# x`, `- a`, `> x`, `8) x`, `---`) are drawn as blocks after the upgrade. Recommended: accept, with the `\` escape in the same release.
-2. Web channel preview and directory page: the source form, block syntax drawn as written, in this release; block rendering in the website later, with a script for both forms. Recommended: as stated.
-3. Remote desktop with cores of two releases fails to decode responses ("Compatibility"). `minRemoteCtrlVersion` and `minRemoteHostVersion` (`Remote.hs:77-82`) can be raised to the release with blocks; the pair is then refused with a version error (`Remote.hs:174, 494-497`). Recommended: raise both.
-4. Dialect: a single line break is a line break; nested blocks, nested inline formats and emphasis inside a word are text; punctuation `, ; ! ? ' " ( ) &` is accepted in link text; list indent 6, 8192 segments; a block marker is recognized at any indentation. Recommended: as listed.
-5. Maximum text of one item: 8 parts (124,816 bytes, 16 items per recipient queue) or 32 parts (499,264 bytes, 4 items). Recommended: 8.
-6. Release grouping: three releases: (1) message priority, chat layout, terminal layout, read more, `Strong` with rendering part 1; (2) blocks of the core with rendering part 2; (3) message parts. Recommended: yes.
+```
+the Kotlin types
+the iOS types
+the web page script
+the drawing of the blocks
+```

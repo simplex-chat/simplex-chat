@@ -229,6 +229,7 @@ public enum ChatPeerType: Hashable {
     case human
     case bot
     case business
+    case agent
     case unknown(String)
 
     public var text: String {
@@ -236,6 +237,7 @@ public enum ChatPeerType: Hashable {
         case .human: "human"
         case .bot: "bot"
         case .business: "business"
+        case .agent: "agent"
         case let .unknown(s): s
         }
     }
@@ -247,6 +249,7 @@ extension ChatPeerType: Codable {
         case "human": self = .human
         case "bot": self = .bot
         case "business": self = .business
+        case "agent": self = .agent
         case let s: self = .unknown(s)
         }
     }
@@ -291,6 +294,14 @@ extension ChatLayout: Codable {
     public func encode(to encoder: Encoder) throws {
         var c = encoder.singleValueContainer()
         try c.encode(text)
+    }
+}
+
+public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
+    switch peerType {
+    case .bot: Image(systemName: "cube.fill")
+    case .agent: Image("agent")
+    default: Image(systemName: "person.crop.circle.fill")
     }
 }
 
@@ -404,6 +415,24 @@ public enum BadgeIssueFailure: Decodable, Hashable {
         case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
         case let .unexpected(message):
             String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "badge renewal error"), message)
+        }
+    }
+
+    public var purchaseText: String {
+        switch self {
+        case let .serviceError(code, _):
+            badgeServiceErrorText(code)
+                ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the purchase: %@", comment: "badge purchase error"), code.text)
+        case .invalidCredential: NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        case .serviceTimeout, .network, .unexpected: text
+        }
+    }
+
+    public var purchaseAlertTitle: String {
+        switch self {
+        case .serviceError(.testPurchase, _):
+            NSLocalizedString("Sandbox purchase", comment: "alert title")
+        default: NSLocalizedString("Purchase error", comment: "alert title")
         }
     }
 
@@ -2564,8 +2593,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         activeConn?.customUserProfileId != nil
     }
 
-    public var chatIconName: String {
-        isBot ? "cube.fill" : "person.crop.circle.fill"
+    public var chatIcon: Image {
+        peerTypeIcon(profile.peerType)
     }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {
@@ -3820,11 +3849,12 @@ public struct CIReaction: Decodable, Hashable {
 }
 
 public struct ChatItem: Identifiable, Decodable, Hashable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, markdownBlocks: [MarkdownBlock]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
+        self.markdownBlocks = markdownBlocks
         self.mentions = mentions
         self.quotedItem = quotedItem
         self.reactions = reactions
@@ -3835,6 +3865,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var meta: CIMeta
     public var content: CIContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var mentions: [String: CIMention]?
     public var quotedItem: CIQuote?
     public var reactions: [CIReactionCount]
@@ -3844,7 +3875,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, mentions, quotedItem, reactions, file
+        case chatDir, meta, content, formattedText, markdownBlocks, mentions, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }
@@ -4886,6 +4917,7 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
     public var sentAt: Date
     public var content: MsgContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var text: String {
         switch (content.text, content) {
         case let ("", .voice(_, duration)): return durationText(duration)
@@ -5699,14 +5731,119 @@ public struct FormattedText: Decodable, Hashable {
     public var linkUri: String? {
         switch format {
         case .uri: text
-        case let .hyperLink(_, linkUri): linkUri
+        case let .hyperLink(_, linkUri): isEmailLink ? nil : linkUri
         default: nil
+        }
+    }
+
+    public var isEmailLink: Bool {
+        if case let .hyperLink(_, linkUri) = format { linkUri.hasPrefix("mailto:") } else { false }
+    }
+}
+
+public enum BlockToken: Decodable, Hashable {
+    case lineBreak
+    case softBreak
+    case hardBreak
+    case paragraphBreak(lineBreaks: Int)
+    case indent
+    case headingMark(level: Int)
+    case headingClose
+    case headingUnderline(level: Int)
+    case listMark(number: String?)
+    case quoteMark
+    case fenceMark(language: String?)
+    case rowMark
+    case cellMark
+    case delimiterRow(columns: [TableAlign])
+    case ruleMark
+
+    public var drawnText: String {
+        switch self {
+        case .softBreak: " "
+        case .lineBreak, .hardBreak: "\n"
+        case let .paragraphBreak(lineBreaks): String(repeating: "\n", count: lineBreaks)
+        default: ""
+        }
+    }
+
+    public var previewText: String {
+        switch self {
+        case .softBreak, .hardBreak, .cellMark: " "
+        case .lineBreak, .paragraphBreak: "\n"
+        case let .listMark(number): (number ?? "•") + " "
+        default: ""
         }
     }
 }
 
+public enum MarkdownBlock: Decodable, Hashable {
+    case paragraph(content: SegmentRange)
+    case heading(level: Int, content: SegmentRange)
+    case codeBlock(language: String?, content: SegmentRange)
+    case quote(content: SegmentRange)
+    case list(items: [ListEntry])
+    case table(columns: [TableAlign], header: [SegmentRange], rows: [[SegmentRange]])
+    case rule(mark: SegmentRange)
+}
+
+public struct ListEntry: Decodable, Hashable {
+    public var number: String?
+    public var content: SegmentRange
+    public var items: [ListEntry]
+}
+
+public struct SegmentRange: Decodable, Hashable {
+    public var from: Int
+    public var to: Int
+}
+
+public enum TableAlign: String, Decodable, Hashable {
+    case none
+    case left
+    case center
+    case right
+}
+
+public struct BlockTextRange {
+    public var range: SegmentRange
+    public var inRow: Bool
+}
+
+extension MarkdownBlock {
+    public var textRanges: [BlockTextRange] {
+        switch self {
+        case let .paragraph(content), let .heading(_, content), let .codeBlock(_, content), let .quote(content):
+            [BlockTextRange(range: content, inRow: false)]
+        case let .list(items):
+            listEntries(items, 0).map { BlockTextRange(range: $0.entry.content, inRow: false) }
+        case let .table(_, header, rows):
+            ([header] + rows).flatMap { row in row.enumerated().map { c, cell in BlockTextRange(range: cell, inRow: c > 0) } }
+        case .rule:
+            []
+        }
+    }
+}
+
+public func listEntries(_ items: [ListEntry], _ level: Int) -> [(entry: ListEntry, level: Int)] {
+    items.flatMap { [(entry: $0, level: level)] + listEntries($0.items, level + 1) }
+}
+
+public func blockTextRanges(_ blocks: [MarkdownBlock]) -> [BlockTextRange] {
+    blocks.flatMap { $0.textRanges }
+}
+
+public func headingSegments(_ size: Int, _ blocks: [MarkdownBlock]) -> [Bool] {
+    var bold = [Bool](repeating: false, count: size)
+    for case let .heading(_, content) in blocks {
+        let from = min(max(content.from, 0), size)
+        for i in from..<max(from, min(content.to, size)) { bold[i] = true }
+    }
+    return bold
+}
+
 public enum Format: Decodable, Equatable, Hashable {
-    case bold
+    case bold(singleStar: Bool)
     case italic
     case strikeThrough
     case snippet
@@ -5722,6 +5859,8 @@ public enum Format: Decodable, Equatable, Hashable {
     case modal(modalName: String, text: String)
     case email
     case phone
+    case escape
+    case markup(token: BlockToken)
     case unknown
 
     // client-only format that opens a modal when tapped, see openMarkdownModal
@@ -6425,6 +6564,7 @@ public struct ChatItemVersion: Decodable, Hashable {
     public var chatItemVersionId: Int64
     public var msgContent: MsgContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var itemVersionTs: Date
     public var createdAt: Date
 }

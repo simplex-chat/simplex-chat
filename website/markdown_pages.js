@@ -20,6 +20,7 @@ const htmlPages = new Set([
   "blog",
   "links",
   "directory",
+  "downloads",
 ])
 
 const removedTags = new Set([

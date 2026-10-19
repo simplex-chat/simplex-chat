@@ -288,7 +288,9 @@ These message are used for WebRTC calls:
 
 3. `x.call.answer`: to continue with call connection the initiating clients must reply with `x.call.answer` message. This message contains WebRTC answer and collected ICE candidates. Additional ICE candidates can be sent in `x.call.extra` message.
 
-4. `x.call.end` message is sent to notify the other party that the call is terminated.
+4. `x.call.extra` with `rtcSession` property: when an established connection is lost, the client that sent `x.call.offer` restarts ICE and sends the new offer in `rtcSession` of `x.call.extra`. The other client replies with the answer in `rtcSession` of `x.call.extra`. Clients that do not support it ignore this property, and the call ends when reconnection times out.
+
+5. `x.call.end` message is sent to notify the other party that the call is terminated.
 
 Call messages have their own version, independent of the chat protocol version. The initiating client sends the range of call versions it supports in `callVRange` property of `x.call.inv`. The receiving client chooses the highest version supported by both clients and sends it in `callVersion` property of `x.call.offer`. The initiating client rejects the offer if this version is not in the range it sent. A missing range or version means version 1.
 

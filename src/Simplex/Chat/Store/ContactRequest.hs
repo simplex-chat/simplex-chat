@@ -76,7 +76,7 @@ createOrUpdateContactRequest
   invId
   cReqChatVRange@(VersionRange minV maxV)
   presHeader_
-  profile@Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences}
+  profile@Profile {displayName, fullName, shortDescr, description, image, contactLink, peerType, preferences}
   xContactId_
   welcomeMsgId_
   requestMsg_
@@ -174,8 +174,8 @@ createOrUpdateContactRequest
           liftIO $
             DB.execute
               db
-              "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-              ((displayName, fullName, shortDescr, description, image, contactLink, userId) :. ("" :: LocalAlias, currentTs, currentTs) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
+              "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+              ((displayName, fullName, shortDescr, description, image, contactLink, peerType, userId) :. ("" :: LocalAlias, currentTs, currentTs) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
           profileId <- liftIO $ insertedRowId db
           liftIO $
             DB.execute
@@ -247,6 +247,7 @@ createOrUpdateContactRequest
                   description = ?,
                   image = ?,
                   contact_link = ?,
+                  chat_peer_type = ?,
                   updated_at = ?,
                   badge_proof = ?,
                   badge_pres_header = ?,
@@ -264,7 +265,7 @@ createOrUpdateContactRequest
                   AND contact_request_id = ?
               )
             |]
-              ((displayName, fullName, shortDescr, description, image, contactLink, currentTs) :. badgeToRow badge badgeVerified :. (userId, contactRequestId))
+              ((displayName, fullName, shortDescr, description, image, contactLink, peerType, currentTs) :. badgeToRow badge badgeVerified :. (userId, contactRequestId))
           updateRequest currentTs =
             if displayName == oldDisplayName
               then

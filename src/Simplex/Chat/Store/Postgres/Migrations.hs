@@ -57,6 +57,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_bindings
 import Simplex.Chat.Store.Postgres.Migrations.M20261010_invite_member_via_group
 import Simplex.Chat.Store.Postgres.Migrations.M20261012_delivery_job_notification
 import Simplex.Chat.Store.Postgres.Migrations.M20261013_chat_layout
+import Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -113,7 +114,8 @@ schemaMigrations =
     ("20260925_badge_bindings", m20260925_badge_bindings, Just down_m20260925_badge_bindings),
     ("20261010_invite_member_via_group", m20261010_invite_member_via_group, Just down_m20261010_invite_member_via_group),
     ("20261012_delivery_job_notification", m20261012_delivery_job_notification, Just down_m20261012_delivery_job_notification),
-    ("20261013_chat_layout", m20261013_chat_layout, Just down_m20261013_chat_layout)
+    ("20261013_chat_layout", m20261013_chat_layout, Just down_m20261013_chat_layout),
+    ("20261016_badge_store_receipts", m20261016_badge_store_receipts, Just down_m20261016_badge_store_receipts)
   ]
 
 -- | The list of migrations in ascending order by date

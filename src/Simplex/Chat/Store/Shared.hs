@@ -323,14 +323,14 @@ createConnection_ db userId connType entityId acId connStatus connChatVersion pe
     ent ct = if connType == ct then entityId else Nothing
 
 createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
-createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, shortDescr, description, image} = do
+createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, shortDescr, description, image, peerType} = do
   DB.execute
     db
     [sql|
-      INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, user_id, incognito, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?)
+      INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, chat_peer_type, user_id, incognito, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
     |]
-    (displayName, fullName, shortDescr, description, image, userId, Just (BI True), createdAt, createdAt)
+    (displayName, fullName, shortDescr, description, image, peerType, userId, Just (BI True), createdAt, createdAt)
   insertedRowId db
 
 updateConnSupportPQ :: DB.Connection -> Int64 -> PQSupport -> PQEncryption -> IO ()
