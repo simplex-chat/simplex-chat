@@ -33,7 +33,7 @@ Evgeny Poberezkin
 This document defines how a website publishes the SimpleX channels and contact addresses of its owner:
 
 - the link relation types `simplex-channel` and `simplex-contact`, for the HTML elements `link`, `a` and `area`, and for the HTTP `Link` header field;
-- the well-known URI `simplex.json`: a JSON document with the owner's channels and contact addresses, their audience and the update frequency of each channel.
+- the well-known URI `simplex.json`: a JSON document with the owner's channels and contact addresses, their audience, the update frequency of each channel and the protocols each contact address serves.
 
 People and software agents subscribe to a channel to receive updates, and connect to a contact address to send requests. [Agent protocols over SimpleX](./agent-protocols.md) defines the requests an agent sends to a contact address, and an `llms.txt` section with the same addresses.
 
@@ -170,7 +170,7 @@ A site with only channels or only contact addresses omits the other list.
 ## Processing
 
 - A consumer MUST ignore unknown fields and unknown `audience` values.
-- A consumer MUST ignore an entry without `link`, and a link of a type other than the one its relation type or its list requires.
+- A consumer MUST ignore a link of a type other than the one its relation type or its list requires.
 - The values on the website are hints. The data retrieved with the link is authoritative: an audience, an update frequency or protocols declared there [AGENTS] take precedence over the website's values.
 - A consumer MAY connect by `link` or by `name`. Resolving a name reveals interest in it to one names router, and verifies that the name's record and the profile's claim match [NAMES].
 

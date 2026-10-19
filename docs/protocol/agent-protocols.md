@@ -56,8 +56,8 @@ JSON schemas use JSON Type Definition [RFC8927]. Whitespace in JSON examples is 
 A website owner publishes channels for updates and contact addresses for requests [WEB]. An agent:
 
 1. reads the addresses from the website: link relations, `/.well-known/simplex.json` or `llms.txt`;
-2. retrieves the profile with the link, without connecting;
-3. reads the profile's declarations;
+2. retrieves the link data with the link, without connecting;
+3. reads the declarations;
 4. subscribes to a channel, connects to a contact address, or sends a Service RPC request to it.
 
 ```mermaid
@@ -70,7 +70,7 @@ sequenceDiagram
     A->>W: GET /.well-known/simplex.json
     W-->>A: channels and contacts
     A->>R: retrieve link data
-    R-->>A: profile with declarations
+    R-->>A: link data with declarations
     alt chat transport
         A->>B: connect, then /_call messages
         B-->>A: replies
@@ -117,7 +117,7 @@ For SimpleX entries, the type `updates` requires a channel link, and the type `c
 
 ## Profile declarations
 
-A profile declares the protocols it serves in its preferences. A channel declares its audience and its update frequency in its public group record. A contact address declares the peers it serves in its link data.
+A profile or a group declares the protocols it serves in its preferences. A channel declares its audience and its update frequency in its public group record. A contact address declares the peers it serves in its link data.
 
 ### protocols
 
@@ -151,7 +151,7 @@ JSON Type Definition schema [RFC8927] of the `protocols` key:
 - An absent transport is false.
 - Clients MUST ignore unknown keys.
 
-A declaration in `preferences` applies to direct chats with the profile and to Service RPC requests to its contact address. A declaration in `groupPreferences` applies to the group chat, where members with the owner role answer. In a business chat, `protocols` of the business profile MUST be copied into the chat's `groupPreferences`, as `commands` are.
+A declaration in `preferences` applies to direct chats with the profile and to Service RPC requests to its contact address. A declaration in `groupPreferences` states that the group's owners serve the protocol in the group chat. Other members can serve a protocol in a group without a declaration, because the core removes preferences from member profiles in groups. In a business chat, `protocols` of the business profile MUST be copied into the chat's `groupPreferences`, as `commands` are.
 
 `commands` remains the command menu for people. `/_call` is not added to it. The underscore marks a command for software, as in the API of the core, and leaves `/call` free for bots' commands for people.
 
@@ -219,12 +219,12 @@ A binding defines the protocol's request and response messages, including how, a
 /_call @<member> <protocol> <request>
 ```
 
-- `<protocol>`: a protocol name that the recipient declares with `transports.chat`.
+- `<protocol>`: the name of a protocol the recipient serves.
 - `<request>`: the protocol's request message, a JSON object.
 - `@<member>`: optional, in a group: a mention of the called member [CHAT].
 - In a group, a command with a mention is answered by the mentioned member. A command without a mention is a broadcast: each member that serves the protocol answers it.
 - A command is the text of a text message. One space separates its parts.
-- A bot that declares `transports.chat` for a protocol MUST answer `/_call` for it.
+- A bot that declares `transports.chat` for a protocol MUST answer each `/_call` for it that mentions the bot or mentions nobody.
 
 ### Replies
 
