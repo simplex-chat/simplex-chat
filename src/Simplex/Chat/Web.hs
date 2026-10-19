@@ -16,6 +16,7 @@ module Simplex.Chat.Web
     webPreviewWorker,
     writeCorsConfig,
     removeStaleFiles,
+    publicGroupIdFileName,
     channelContentChanged,
     channelProfileUpdated,
     channelRemoved,
@@ -24,12 +25,13 @@ module Simplex.Chat.Web
 where
 
 import Control.Concurrent.STM (check, flushTQueue)
-import Control.Exception (SomeException, catch)
+import Control.Exception (SomeException)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except (runExceptT)
 import Data.Either (rights)
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
@@ -42,8 +44,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Controller (ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), mkStoreCxt)
-import Simplex.Chat.Markdown (FormattedText (..), MarkdownList, parseMaybeMarkdownList)
+import Simplex.Chat.Controller (ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), storeCxt)
+import Simplex.Chat.Markdown (MarkdownBlock, MarkdownList, ParsedMarkdown (..), parsedMarkdown)
 import Simplex.Chat.Messages
   ( CChatItem (..),
     CIDirection (..),
@@ -75,7 +77,7 @@ import Simplex.Chat.Types
   )
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (catchOwn, eitherToMaybe, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (catchOwn, catchOwn', eitherToMaybe, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Parsers (defaultJSON)
 import System.Directory (createDirectoryIfMissing, listDirectory, removeFile, renameFile)
 import System.FilePath (dropExtension, takeExtension, (</>))
@@ -100,6 +102,7 @@ data WebMessage = WebMessage
     ts :: UTCTime,
     content :: MsgContent,
     formattedText :: Maybe MarkdownList,
+    markdownBlocks :: Maybe (NonEmpty MarkdownBlock),
     file :: Maybe WebFileInfo,
     quote :: Maybe QuotedMsg,
     reactions :: [CIReactionCount],
@@ -111,7 +114,9 @@ data WebMessage = WebMessage
 data WebChannelPreview = WebChannelPreview
   { channel :: GroupProfile,
     shortDescription :: Maybe MarkdownList,
+    shortDescriptionBlocks :: Maybe (NonEmpty MarkdownBlock),
     welcomeMessage :: Maybe MarkdownList,
+    welcomeMessageBlocks :: Maybe (NonEmpty MarkdownBlock),
     members :: [WebMemberProfile],
     subscribers :: Maybe Int64,
     messages :: [WebMessage],
@@ -137,7 +142,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     seedRoutinePending wps
     forever $ workerLoop wps `catchOwn` \e -> logError ("web preview worker error: " <> tshow e)
   where
-    cxt = mkStoreCxt (config cc)
+    cxt = storeCxt cc
 
     workerLoop wps@WebPreviewState {priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal} = do
       drainRemovals
@@ -150,7 +155,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
         drainRemovals = atomically (tryReadTQueue filesToRemove) >>= \case
           Nothing -> pure ()
           Just f -> do
-            removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
+            removeFile (webJsonDir </> f) `catchOwn'` \(_ :: SomeException) -> pure ()
             drainRemovals
 
         -- flush the whole queue and render each group once: a burst of changes in one
@@ -202,7 +207,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     renderOneGroup WebPreviewState {publishableGroupIds} gId = do
       publishable <- atomically $ M.member gId <$> readTVar publishableGroupIds
       when publishable $
-        renderOrRemoveStale `catch` \(e :: SomeException) ->
+        renderOrRemoveStale `catchOwn'` \(e :: SomeException) ->
           logError $ "web preview: error rendering group " <> T.pack (show gId) <> ": " <> T.pack (show e)
       where
         renderOrRemoveStale = do
@@ -217,7 +222,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
                 modifyTVar' publishableGroupIds (M.delete gId)
                 pure $ pgFileName <$> pg
               forM_ fName $ \f ->
-                removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
+                removeFile (webJsonDir </> f) `catchOwn'` \(_ :: SomeException) -> pure ()
               logInfo $ "web preview: group " <> T.pack (show gId) <> " no longer publishable"
 
     findUser f = go users
@@ -246,10 +251,14 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
       let rendered = mapMaybe toRenderedItem $ rights items
           msgs = map fst rendered
           senders = collectSenders $ map memberToProfile owners <> concatMap snd rendered
+          ParsedMarkdown shortDescription shortDescriptionBlocks = maybe (ParsedMarkdown Nothing Nothing) parsedMarkdown sd
+          ParsedMarkdown welcomeMessage welcomeMessageBlocks = maybe (ParsedMarkdown Nothing Nothing) parsedMarkdown wd
           preview = WebChannelPreview
             { channel = gp,
-              shortDescription = toFormattedText =<< sd,
-              welcomeMessage = toFormattedText =<< wd,
+              shortDescription,
+              shortDescriptionBlocks,
+              welcomeMessage,
+              welcomeMessageBlocks,
               members = senders,
               subscribers,
               messages = msgs,
@@ -262,7 +271,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
       pure $ corsEntry publicGroupId <$> publicGroupAccess
     Nothing -> pure Nothing
   where
-    cxt = mkStoreCxt (config cc)
+    cxt = storeCxt cc
 
 channelContentChanged :: ChatController -> Int64 -> STM ()
 channelContentChanged cc gId =
@@ -306,7 +315,7 @@ channelRemoved cc gId =
     void $ tryPutTMVar wakeSignal ()
 
 toRenderedItem :: CChatItem 'CTGroup -> Maybe (WebMessage, [WebMemberProfile])
-toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed, itemForwarded, itemEdited}, content, formattedText, quotedItem, reactions, file})
+toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed, itemForwarded, itemEdited}, content, formattedText, markdownBlocks, quotedItem, reactions, file})
   | isJust itemTimed = Nothing
   | otherwise = case ciMsgContent content of
       Just mc | not (isReport mc) ->
@@ -322,6 +331,7 @@ toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed,
                     ts = itemTs,
                     content = mc,
                     formattedText,
+                    markdownBlocks,
                     file = webFileInfo <$> file,
                     quote = quotedItem >>= ciQuoteToQuotedMsg,
                     reactions,
@@ -416,16 +426,11 @@ removeStaleFiles dir activeFiles = do
         let f' = if takeExtension f == ".tmp" then dropExtension f else f
             base = dropExtension f'
          in takeExtension f' == ".json" && not (null base) && all isBase64Url base
-      isBase64Url c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_'
+      isBase64Url c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '='
   allFiles <- S.filter isPreviewFile . S.fromList <$> listDirectory dir
-  mapM_ (\f -> removeFile (dir </> f)) $ S.difference allFiles activeFiles
-
-toFormattedText :: Text -> Maybe MarkdownList
-toFormattedText t = case parseMaybeMarkdownList t of
-  Just fts | any hasFormat fts -> Just fts
-  _ -> Nothing
-  where
-    hasFormat (FormattedText fmt _) = isJust fmt
+  forM_ (S.difference allFiles activeFiles) $ \f ->
+    removeFile (dir </> f) `catchOwn'` \(e :: SomeException) ->
+      logError $ "web preview: error removing stale file " <> T.pack f <> ": " <> tshow e
 
 publicGroupIdFileName :: B64UrlByteString -> String
 publicGroupIdFileName = B.unpack . strEncode
