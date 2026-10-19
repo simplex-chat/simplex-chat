@@ -18,7 +18,7 @@ export function startHttp({port, token, factory}: HttpOptions): Promise<Server> 
   const server = createServer((req, res) => {
     if (!validHost(req, res) || !validOrigin(req, res)) return
     if (!authorized(req.headers.authorization)) return plain(res, 401)
-    if (new URL(req.url ?? "/", "http://localhost").pathname !== "/mcp") return plain(res, 404)
+    if (requestPath(req.url) !== "/mcp") return plain(res, 404)
     mcp(req, res).catch(error => {
       logError("HTTP request", error)
       res.destroy()
@@ -47,6 +47,14 @@ export function stopHttp(server: Server): Promise<void> {
   const closed = new Promise<void>(resolve => server.close(() => resolve()))
   server.closeAllConnections()
   return closed
+}
+
+function requestPath(target: string | undefined): string | undefined {
+  try {
+    return new URL(target ?? "/", "http://localhost").pathname
+  } catch {
+    return undefined
+  }
 }
 
 function plain(res: ServerResponse, status: number): void {

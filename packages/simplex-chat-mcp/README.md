@@ -232,7 +232,7 @@ Commands:
 | `/approve #9 all` | Approves all the agent's messages to chat #9: the pending ones and later ones. |
 | `/revoke #9` | Ends that approval: each message to #9 needs approval again. |
 | `/pending` | Lists pending actions. |
-| `/list` | Lists the agent's chats and which of them are approved for all messages. |
+| `/list` | Lists the agent's 100 most recent chats, one line each, and which of them are approved for all messages; a last line counts the older chats. |
 
 `/pending` and `/list` are in the chat's command menu; the cards carry the others. Each command includes its number, because the app sends a tapped command as a new message, without a quote. Every card form and reply is listed in [`PLAN.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/PLAN.md), section "What the owner sees: the agent control chat".
 
@@ -263,7 +263,7 @@ Five tools:
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
 
-A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
+A `send` to a chat that `list` shows with `connected: false` is refused before any card. A `send` is refused with `text: too long for its approval card; shorten it.` when its card, in its longest outcome form, would exceed 15000 bytes in the SimpleX message, which holds at most 15602; a text of many lines or multi-byte characters reaches it below 12000 characters.
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tools' inputs, results and errors are in [`PLAN.md`](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-mcp/PLAN.md), section "What the agent sees: tools", and the call sequences of the scenarios in section "Sequence diagrams".
 

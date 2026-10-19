@@ -15,6 +15,9 @@ const controlCommands: T.ChatBotCommand[] = [
 const commandsReply = "Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands."
 const cardTooLong = "text: too long for its approval card; shorten it."
 const maxCardLength = 15_000
+const listedChats = 100
+const maxLineLength = 100
+const truncationMark = "…"
 const longestError = "€".repeat(600)
 const greeting = "I'm your agent. I ask here before I connect or send."
 const noOwners = "No owners in the agent control chat."
@@ -211,12 +214,15 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   private async chatsText(): Promise<string> {
-    const lines = (await this.tools.agentChats()).map(({chatInfo}) => {
+    const chats = await this.tools.agentChats()
+    const lines = chats.slice(0, listedChats).map(({chatInfo}) => {
       const approvedBy = this.standingApprover(chatInfo)
       const approval = approvedBy === undefined ? "" : `, approved for this chat by ${approvedBy}`
       const connection = isConnected(chatInfo) ? "" : ", not connected"
-      return `${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approval}${connection}`
+      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approval}${connection}`)
     })
+    const rest = chats.length - lines.length
+    if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
     return lines.length > 0 ? lines.join("\n") : "No chats."
   }
 
@@ -481,6 +487,18 @@ function largestCard(action: Action, mode: Actions["mode"], approver: string): n
 
 function encodedLength(text: string): number {
   return [...text].reduce((length, c) => length + (/["\\\n\r\t]/.test(c) ? 2 : c < " " ? 6 : Buffer.byteLength(c)), 0)
+}
+
+function truncatedLine(line: string): string {
+  if (encodedLength(line) <= maxLineLength) return line
+  let length = encodedLength(truncationMark)
+  let kept = ""
+  for (const c of line) {
+    length += encodedLength(c)
+    if (length > maxLineLength) break
+    kept += c
+  }
+  return `${kept}${truncationMark}`
 }
 
 function chatName(subject: Subject): string {

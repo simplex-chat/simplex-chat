@@ -39,7 +39,7 @@ flowchart LR
     files["files.ts"]
     log["log.ts"]
     lib["simplex-chat<br/>ChatApi"]
-    core["SimpleX core<br/>libsimplex core-7.1.0.11"]
+    core["SimpleX core<br/>libsimplex core-7.1.0.12"]
   end
   cli["cli.ts"] --> serve
   cli --> register["register.ts"]
@@ -277,7 +277,7 @@ The profile, chats, items and members are stored by the core in `DATA/simplex_ch
 | `DATA/server.json` | `{name, port, expireHours}` | 0600 at creation | every start, after the user exists ([serve.ts:90](../src/serve.ts#L90)) | `register` |
 | `DATA/lock` | PID and a newline | 0600 | start ([files.ts:57](../src/files.ts#L57)) | next start |
 
-The core library is downloaded once into `CACHE/core-7.1.0.11/sqlite`, and the Node.js add-on into `CACHE/<add-on release>/`, each with a `Downloading ...` line on stderr. CACHE is `$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat`; on macOS `~/Library/Caches/simplex-chat`; on Windows `%LOCALAPPDATA%\simplex-chat` ([libs.ts:39-46](../../simplex-chat-nodejs/src/libs.ts#L39-L46), [:87](../../simplex-chat-nodejs/src/libs.ts#L87), [:107](../../simplex-chat-nodejs/src/libs.ts#L107), [:114](../../simplex-chat-nodejs/src/libs.ts#L114), [:127](../../simplex-chat-nodejs/src/libs.ts#L127)).
+The core library is downloaded once into `CACHE/core-7.1.0.12/sqlite`, and the Node.js add-on into `CACHE/<add-on release>/`, each with a `Downloading ...` line on stderr. CACHE is `$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat`; on macOS `~/Library/Caches/simplex-chat`; on Windows `%LOCALAPPDATA%\simplex-chat` ([libs.ts:39-46](../../simplex-chat-nodejs/src/libs.ts#L39-L46), [:87](../../simplex-chat-nodejs/src/libs.ts#L87), [:107](../../simplex-chat-nodejs/src/libs.ts#L107), [:114](../../simplex-chat-nodejs/src/libs.ts#L114), [:127](../../simplex-chat-nodejs/src/libs.ts#L127)).
 
 ---
 

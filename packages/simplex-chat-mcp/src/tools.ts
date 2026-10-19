@@ -573,6 +573,7 @@ export class AgentTools {
   private async send(input: SendInput, call: ToolCall): Promise<object | undefined> {
     const {chat} = input
     const {chatInfo} = await this.knownChat(chat)
+    if (!isConnected(chatInfo)) throw new ToolError(`The agent is not connected to ${chat} and can't post; list shows connected: false.`)
     if (chatInfo.type === "group") {
       const role = chatInfo.groupInfo.membership.memberRole
       if (role === T.GroupMemberRole.Observer || role === T.GroupMemberRole.Relay) throw new ToolError(`The agent has role ${role} in ${chat} and can't post.`)

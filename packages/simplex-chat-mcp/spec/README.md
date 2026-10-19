@@ -17,7 +17,7 @@
 
 `@simplex-chat/mcp` is a local server that gives an MCP host one SimpleX profile per process. The host reaches it with Streamable HTTP on `127.0.0.1` and a bearer token. The server exposes five tools: `connect`, `send`, `receive`, `list` and `leave`.
 
-The SimpleX core (libsimplex, release `core-7.1.0.11`) runs inside the same Node.js process, loaded by the `simplex-chat` library. The core keeps the profile, chats and connections in two SQLite databases of the data folder. The MCP protocol is served by the MCP TypeScript SDK (`@modelcontextprotocol/server` 2.3.1 and `@modelcontextprotocol/node` 2.1.1).
+The SimpleX core (libsimplex, release `core-7.1.0.12`) runs inside the same Node.js process, loaded by the `simplex-chat` library. The core keeps the profile, chats and connections in two SQLite databases of the data folder. The MCP protocol is served by the MCP TypeScript SDK (`@modelcontextprotocol/server` 2.3.1 and `@modelcontextprotocol/node` 2.1.1).
 
 `connect`, `send` and `leave` are actions. In mode `requests` the server posts each action as a card in the agent control chat, a SimpleX group created and owned by the agent's profile. An owner approves or rejects the card with a command in that chat, and the server performs the action after the approval. An owner can also approve all messages to one chat in advance. In mode `host` the server performs actions at once and marks the three tools for the host's own confirmation.
 

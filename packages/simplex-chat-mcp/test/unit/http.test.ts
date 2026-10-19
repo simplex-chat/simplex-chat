@@ -1,5 +1,5 @@
 import {Server, request as httpRequest} from "http"
-import {AddressInfo} from "net"
+import {AddressInfo, connect} from "net"
 import {McpServer} from "@modelcontextprotocol/server"
 import {Actions, Mode} from "../../src/actions"
 import {startHttp, stopHttp} from "../../src/http"
@@ -61,6 +61,19 @@ function statusWithHost(host: string): Promise<number> {
   })
 }
 
+function rawStatusLine(target: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const {port} = server.address() as AddressInfo
+    const socket = connect(port, "127.0.0.1", () => {
+      socket.write(`POST ${target} HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nAuthorization: Bearer ${token}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n`)
+    })
+    let response = ""
+    socket.on("data", chunk => (response += chunk))
+    socket.on("end", () => resolve(response.split("\r\n")[0]))
+    socket.on("error", reject)
+  })
+}
+
 async function body(response: Response): Promise<any> {
   const text = await response.text()
   if (!response.headers.get("content-type")?.startsWith("text/event-stream")) return JSON.parse(text)
@@ -86,6 +99,12 @@ describe("HTTP", () => {
     await start()
     expect((await post(modern("tools/list"), modernHeaders("tools/list"), "/other")).status).toBe(404)
     expect((await fetch(`${url}/mcp`, {headers: auth})).status).toBe(405)
+  })
+
+  it("answers a request target that is not a URL with 404, and keeps serving", async () => {
+    await start()
+    expect(await rawStatusLine("http://[")).toBe("HTTP/1.1 404 Not Found")
+    expect((await post(modern("tools/list"), modernHeaders("tools/list"))).status).toBe(200)
   })
 })
 

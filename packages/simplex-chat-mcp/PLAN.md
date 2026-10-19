@@ -103,7 +103,7 @@ The MCP SDK serves the protocol: `createMcpHandler` of `@modelcontextprotocol/se
 layer                         who                                      what
 listener                      http.ts                                  127.0.0.1:PORT; Node limits lifted for hours-long calls: requestTimeout 0, timeout 0, headersTimeout 60 s, keepAliveTimeout 5 s
 bearer token                  http.ts, before the SDK                  Authorization: Bearer <DIR/token>, compared in constant time; otherwise 401
-path                          http.ts                                  /mcp only; otherwise 404
+path                          http.ts                                  /mcp only; otherwise 404, a request target that is not a URL included
 Origin, Host                  SDK middleware                           localhostOriginValidation (no Origin, or a localhost origin on any port), localhostHostValidation; otherwise 403
 protocol                      SDK                                      both eras, header and version errors, 405, body limit, cache hints (ttlMs, cacheScope), JSON or SSE per call, SSE keep-alive
 cancellation                  SDK                                      the client closing the response stream aborts ctx.mcpReq.signal (toNodeHandler ties the Request signal to res "close")
@@ -121,11 +121,12 @@ npm name       @simplex-chat/mcp
 binary         simplex-mcp -> dist/cli.js
 licence        AGPL-3.0
 Node.js        22
-chat library   simplex-chat 7.1.0-beta.6.3
-types          @simplex-chat/types ^0.12.1
+chat library   simplex-chat 7.1.0-beta.6.4
+types          @simplex-chat/types ^7.1.0-beta.6.1
 MCP SDK        @modelcontextprotocol/server 2.3.1, @modelcontextprotocol/node 2.1.1
 QR code        qrcode ^1.5
 tests          jest with ts-jest, as packages/simplex-chat-nodejs; end to end with a local smp-server (SMP_SERVER), as steward test/e2e
+prepack        dist deleted, then tsc, so npm pack and npm publish ship no build output of deleted sources
 ```
 
 ```
@@ -211,7 +212,7 @@ NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits an
 
 ```
 $ npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
-Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.11/simplex-chat-libs-linux-x86_64.zip ...
+Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.12/simplex-chat-libs-linux-x86_64.zip ...
 Downloading the Node.js add-on from https://github.com/simplex-chat/simplex-chat-libs/releases/download/... ...
 SimpleX MCP server 0.1.0, agent "my-agent"
 Data folder: /home/alice/.simplex-mcp/my-agent
@@ -396,7 +397,7 @@ command             result
 /approve CHAT all   the standing approval of CHAT by the sender; its pending sends are approved
 /revoke CHAT        the standing approval of CHAT is removed
 /pending            one line per pending action: "2  send to bot SimpleX Directory  expires 2026-10-18 09:15 UTC"; "No pending actions." when none
-/list               one line per chat of the agent, as list returns them
+/list               one line per chat of the agent, as list returns them: the 100 most recent chats, each line cut to 100 bytes as encoded in the message, "…" included; then "K older chats are not shown." ("1 older chat is not shown.") when more exist
 ```
 
 `/list`:
@@ -612,6 +613,7 @@ unknown chat                       No chat #13. list shows the agent's chats.
 not a link or name                 Not a SimpleX link or name: <target>
 link not joinable                  <target> can't be joined now: <plan type>.
 message not for an address         message: <target> is not a contact or business address with short link data, or its contact exists without a connection.
+chat not connected (send)          The agent is not connected to @2 and can't post; list shows connected: false.
 role below author                  The agent has role observer in #12 and can't post.
 reply_to not in chat               reply_to: #15 has no item 999.
 mention not a member               mention: #15 has no member 45. (in a contact chat: mention: @4 is a contact chat; mentions apply to groups and channels.)
@@ -797,7 +799,8 @@ approve CHAT all: CHAT not a chat of the agent: reply "No chat CHAT. ..."; other
                   (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'"
 revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
 pending:          reply with the pending actions
-list:             reply with one line per chat of list(): CHAT, the type and name, ", approved for this chat by NAME" while the approval applies, ", not connected"
+list:             reply with one line per chat of list(), the 100 most recent: CHAT, the type and name, ", approved for this chat by NAME" while the approval applies, ", not connected";
+                  each line cut to 100 encoded bytes with "…"; then "K older chats are not shown." when more exist (worst case about 10.3 KB, below the 15602-byte message)
 ```
 
 - Owner commands run one at a time, in arrival order: a command awaits the custom data write of the one before it.
@@ -945,6 +948,7 @@ newChatItems        wake the waiting send and receive calls of that chat
 send(input, ctx):
   chat is the agent control chat: tool error "unknown chat"
   r = /_get chat <chat> count=0; a store error: tool error "unknown chat"
+  r.chat.chatInfo not connected (as connected in list()): tool error "chat not connected"
   group or channel, r.chat.chatInfo.groupInfo.membership role below author: tool error "role below author"
   reply_to i: /_get chat <chat> around=<i> count=0 fails or has no item i: tool error "reply_to not in chat"
   mention, chat a contact chat: tool error "mention not a member"
@@ -1221,11 +1225,11 @@ Unit:
 ```
 test        covers
 options     defaults, ranges, NAME, --display-name at the first and a later start, --owners with and without a list, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; chat references over 15 digits; names with line breaks and escape sequences; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; mode host without approvals
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; mode host without approvals
 actions     every transition; attach rule; open counts; counter written before the card; stop edits pending and performing cards; standing approval: performed at once, outcome card posted; 20 pending; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form
-messages    message fields; responses with idle and wait; receive with new messages under a concurrent call, stopping at limit + 1; leave of @N and #N, pending membership included; approved in list; an approval whose approver is no longer one; a group-role failure; the connect wait cap
-http        401 without token; 403 with another Origin; 404 for other paths; SDK validation errors
+messages    message fields; responses with idle and wait; receive with new messages under a concurrent call, stopping at limit + 1; leave of @N and #N, pending membership included; approved in list; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; the connect wait cap
+http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; SDK validation errors
 register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors
 files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json
 log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors

@@ -280,6 +280,19 @@ describe("chat list in the agent control chat", () => {
     const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
     expect(await control.ownerCommand(alice, {keyword: "list", params: ""})).toBe("No chats.")
   })
+
+  it("lists the 100 most recent chats, each line at most 100 bytes, and counts the older ones", async () => {
+    const {control, chat} = await setup()
+    chat.chats.set("#7", {chatInfo: groupChat(group(7, "😀".repeat(30), member(1, "agent"))), items: []})
+    for (let i = 100; i < 200; i++) chat.chats.set(`@${i}`, {chatInfo: direct(contact(i, `contact ${i}`)), items: []})
+    const lines = (await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")
+    expect(lines).toHaveLength(101)
+    expect(lines.slice(0, 4)).toEqual(["@4  bot SimpleX Directory", "#2  business ep", `#7  group ${"😀".repeat(21)}…`, "@100  contact contact 100"])
+    expect(lines.at(-1)).toBe("3 older chats are not shown.")
+    chat.chats.delete("@198")
+    chat.chats.delete("@199")
+    expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n").at(-1)).toBe("1 older chat is not shown.")
+  })
 })
 
 describe("member announcements", () => {

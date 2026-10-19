@@ -14,15 +14,16 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "test": "jest test/unit",
     "test:e2e": "jest test/e2e"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "^2.1.1",
     "@modelcontextprotocol/server": "^2.3.1",
-    "@simplex-chat/types": "^0.12.1",
+    "@simplex-chat/types": "^7.1.0-beta.6.1",
     "qrcode": "^1.5",
-    "simplex-chat": "7.1.0-beta.6.3"
+    "simplex-chat": "7.1.0-beta.6.4"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

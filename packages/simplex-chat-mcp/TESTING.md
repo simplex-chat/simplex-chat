@@ -19,7 +19,7 @@ SMP_SERVER=/code/steward/node_modules/.cache/smp-server/smp-server-v7.1.0-beta.3
 ### On your own machine
 
 1. Check out simplex-chat master; the package is `packages/simplex-chat-mcp`.
-2. In that folder: `npm install`, then `npx tsc`.
+2. In that folder: `npm install`, then `npx tsc`. `tsc` leaves the output of deleted sources in `dist`; `npm pack` and `npm publish` delete `dist` first and build it again (script `prepack`).
 3. `node dist/cli.js serve my-agent --display-name "My Agent"`. At the first start, `simplex-chat` downloads libsimplex and its Node.js add-on, with a `Downloading ...` line each on stderr.
 4. Tests: `npx jest test/unit`; `npx jest test/e2e` downloads smp-server v7.1.0-beta.3 on Linux, and elsewhere takes `SMP_SERVER=/path/to/smp-server`.
 
