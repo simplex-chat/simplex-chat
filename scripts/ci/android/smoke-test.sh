@@ -229,8 +229,8 @@ create_local_chat() {
   "$ui" wait "$local_chat" 10
   "$ui" shot new-group
   "$ui" click-text "Create group" 10
-  # the app offers to invite members once it has created the group
-  "$ui" wait "Skip inviting members" 30
+  # the app offers to invite members once it has created the group; without contacts it has no "Skip inviting members"
+  "$ui" wait "Invite members" 30
   "$ui" shot group-created
   "$ui" relaunch
   "$ui" wait "$search_field" 30

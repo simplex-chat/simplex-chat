@@ -22,7 +22,7 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 
 **B. A group, and the chat list with the toolbar at the bottom.**
 
-1. Click "Start new chat" (the round button in the bottom toolbar), then "Create group". The name field under "Enter group name:" has the focus: type `seeded notes` and click "Create group". Wait for "Skip inviting members", which shows once the group exists.
+1. Click "Start new chat" (the round button in the bottom toolbar), then "Create group". The name field under "Enter group name:" has the focus: type `seeded notes` and click "Create group". Wait for "Invite members", which shows once the group exists.
 2. Run `ui relaunch`: it restarts the app and waits for the chat list. Take a shot.
 3. Check, noting the evidence (screenshot names, positions):
    - "seeded notes" is listed;
