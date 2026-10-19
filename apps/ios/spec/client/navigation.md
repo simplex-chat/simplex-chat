@@ -184,9 +184,9 @@ When the user taps a notification:
 3. Sets `ChatModel.chatId = chatId` to navigate to the conversation
 4. If the app was in background: the notification response is stored in `ChatModel.notificationResponse` and processed when the app becomes active
 
-### [URL Deep Link](../../Shared/ContentView.swift#L281)
+### [URL Deep Link](../../Shared/ContentView.swift#L288)
 
-SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Shared/ContentView.swift#L439):
+SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Shared/ContentView.swift#L456):
 
 ```swift
 .onOpenURL { url in
@@ -198,7 +198,7 @@ SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Sh
 }
 ```
 
-URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1181).
+URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1319).
 
 App links use the app's own scheme, `simplexchat:`, for everything that is not a connection link. `connectViaUrl_()` branches on that scheme before the path switch, so an app link never reaches `planAndConnect()`, and `openAppLink()` dispatches on its path. A badge link (`simplexchat:/badge/code/<code>`) goes to `openBadgeLink()` in [`BadgesRedeemCodeView.swift`](../../Shared/Views/Badges/BadgesRedeemCodeView.swift), which presents `BadgesRedeemLinkView` as an app sheet. The sheet names the active profile and asks before redeeming, since any web page can send the link and a profile holds one badge at a time. On *Add badge* it redeems the code into that profile and then shows `BadgesView`; *Cancel* sends nothing. If that profile already shows a badge (read from `BadgeModel` when the sheet renders), which core would refuse, the sheet does not offer to add it: it says nothing was added, says where a code for another badge is (on the page it was bought on, under *Show code*), and offers *View your badge*; it cannot tell a repeated link for the badge it shows from another badge's code, so it asserts neither. While the code is being redeemed, *Dismiss* or a swipe closes the sheet without cancelling anything; if the redemption then succeeds with the sheet closed or covered, an alert says the badge was added and names the profile, unless the profile is hidden and no longer active, when nothing is shown (`showBadgeAddedAlert()`, which the store lane shares). While the sheet shows a redemption in flight (`isBadgeLinkIssuing()`), `connectViaUrl_()` ignores a further app link; otherwise it dismisses the sheets as for any link, which replaces an earlier badge link sheet. Any other path is a link type from a later version, and gets an alert asking to check for app updates. An app link can carry a secret, so `onOpenURL` logs it as "app link" rather than the URL.
 
@@ -253,7 +253,7 @@ ZStack {
 
 ## 7. Authentication Gate
 
-### [Local Authentication](../../Shared/ContentView.swift#L359)
+### [Local Authentication](../../Shared/ContentView.swift#L366)
 
 When [`DEFAULT_PERFORM_LA`](../../Shared/ContentView.swift#L44) is enabled:
 
@@ -267,8 +267,8 @@ When [`DEFAULT_PERFORM_LA`](../../Shared/ContentView.swift#L44) is enabled:
 - Custom numeric passcode
 - Custom alphanumeric passcode
 
-### [Extended Authentication](../../Shared/ContentView.swift#L351)
-- After successful auth, a grace period prevents re-auth for brief background/foreground cycles ([`unlockedRecently()`](../../Shared/ContentView.swift#L351))
+### [Extended Authentication](../../Shared/ContentView.swift#L358)
+- After successful auth, a grace period prevents re-auth for brief background/foreground cycles ([`unlockedRecently()`](../../Shared/ContentView.swift#L358))
 - [`contentAccessAuthenticationExtended`](../../Shared/ContentView.swift#L35) is computed at `ContentView.init` to avoid render-time race conditions
 - The `enteredBackgroundAuthenticated` timestamp tracks when the app was last authenticated in background
 
@@ -276,7 +276,7 @@ When [`DEFAULT_PERFORM_LA`](../../Shared/ContentView.swift#L44) is enabled:
 
 ## 8. [Onboarding Flow](../../Shared/Views/Onboarding/OnboardingView.swift#L13)
 
-First-launch experience controlled by [`ChatModel.onboardingStage`](../../Shared/Views/Onboarding/OnboardingView.swift#L46):
+First-launch experience controlled by [`ChatModel.onboardingStage`](../../Shared/Views/Onboarding/OnboardingView.swift#L47):
 
 ```swift
 enum OnboardingStage: String, Identifiable {
@@ -324,7 +324,7 @@ Migration state (`ChatModel.migrationState != nil`) takes precedence over onboar
 
 ## 10. Relay URL Interception
 
-**Source:** [`Shared/ContentView.swift`](../../Shared/ContentView.swift#L454)
+**Source:** [`Shared/ContentView.swift`](../../Shared/ContentView.swift#L471)
 
 In `connectViaUrl_()`, relay address links (URL path `/r`) are intercepted before processing:
 

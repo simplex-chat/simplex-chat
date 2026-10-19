@@ -198,7 +198,7 @@ class ChatTagsModel: ObservableObject {
 |------|------|------|-------------|
 | [`PresetTag`](../../Shared/Views/ChatList/ChatListView.swift#L36) | ChatListView.swift | 36 | Enum of built-in filter categories |
 | [`ActiveFilter`](../../Shared/Views/ChatList/ChatListView.swift#L53) | ChatListView.swift | 53 | Enum wrapping preset, user-tag, or unread filter |
-| [`setActiveFilter()`](../../Shared/Views/ChatList/ChatListView.swift#L1357) | ChatListView.swift | 1346 | Applies a filter and persists selection |
+| [`setActiveFilter()`](../../Shared/Views/ChatList/ChatListView.swift#L1357) | ChatListView.swift | 1357 | Applies a filter and persists selection |
 
 ### Tag Management Commands
 - `apiCreateChatTag(tag: ChatTagData)` -- create tag
@@ -239,15 +239,15 @@ Search is available via pull-down gesture or search button in the navigation bar
 
 | Action | Icon | Handler | Line | API | Condition |
 |--------|------|---------|------|-----|-----------|
-| Pin / Unpin | pin | [`toggleFavoriteButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L353) | 347 | `apiSetChatSettings` (favorite) | Always |
-| Read / Unread | envelope | [`markReadButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L333) | 328 | `apiChatRead` / `apiChatUnread` | Always |
+| Pin / Unpin | pin | [`toggleFavoriteButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L353) | 353 | `apiSetChatSettings` (favorite) | Always |
+| Read / Unread | envelope | [`markReadButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L333) | 333 | `apiChatRead` / `apiChatUnread` | Always |
 
 ### Trailing Swipe (right-to-left)
 
 | Action | Icon | Handler | Line | API | Condition |
 |--------|------|---------|------|-----|-----------|
-| Mute / Unmute | bell.slash | [`toggleNtfsButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L372) | 365 | `apiSetChatSettings` (enableNtfs) | Always |
-| Clear | trash | [`clearChatButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L393) | 385 | `apiClearChat` | Has messages |
+| Mute / Unmute | bell.slash | [`toggleNtfsButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L372) | 372 | `apiSetChatSettings` (enableNtfs) | Always |
+| Clear | trash | [`clearChatButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L393) | 393 | `apiClearChat` | Has messages |
 | Delete | trash.fill | -- | -- | `apiDeleteChat` | Not active chat |
 | Tag | tag | -- | -- | `apiSetChatTags` | Always |
 
@@ -312,7 +312,7 @@ The two badge alert banners always offer the X; only the pitch waits to be tappe
 
 Both are in `hintDefaults`, so "Reset all hints" in the developer settings restores the banner. The X is never offered in the onboarding branch, so the banner cannot be dismissed before the user has a chat.
 
-Tapping the card opens [`GetStakeView`](../../Shared/Views/Onboarding/WhatsNewView.swift#L834) as an `appSheet`.
+Tapping the card opens [`GetStakeView`](../../Shared/Views/Onboarding/WhatsNewView.swift#L884) as an `appSheet`.
 
 ### Shared card chrome
 
