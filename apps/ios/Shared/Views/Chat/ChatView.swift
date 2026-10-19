@@ -1818,7 +1818,7 @@ struct ChatView: View {
             if let pinned = model.pinned {
                 Group {
                     if pinned.showGroupAsSender {
-                        ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                        ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                     } else {
                         MemberProfileImage(pinned.member, size: memberImageSize, backgroundColor: theme.colors.background)
                     }
