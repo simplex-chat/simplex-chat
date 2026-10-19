@@ -4,33 +4,33 @@
 
 ## Running it
 
-The workflow runs only when asked, on any branch:
+The workflow runs only when asked, on any branch, by a run tag in the pushed commit's message or by hand from the Actions tab: [App tests on GitHub's runners](../README.md) lists the tags and inputs.
 
-- **Dispatch** it from the Actions tab (workflow "ios-sim", "Run workflow"), with the inputs `claude` (also run the Claude session) and `backend` (also start the test backend), both off by default.
-- **Push** a commit whose message carries a tag: `[app-ci]` runs the scripted tests of both apps (iOS and desktop), `[app-ci:ios]` only this one; `[claude-test]` (both apps) or `[claude-test:ios]` runs the scripted test and then the Claude session; add `[ci-backend]` to build and start the test backend. Only the pushed head commit counts, and a tag matches anywhere in its message, body included, so don't quote a tag in a message that shouldn't run it.
-
-A push without a tag starts nothing and doesn't cancel a running test; a newer requested run on the same branch cancels the older one. Pushes to master and stable never start it, because a squash merge's message lists the merged commits' subjects with their tags; dispatch it there instead. Which branches may run the Claude session is decided only by the `app-sim-claude` environment's branch rule in the repository settings: on a branch it doesn't allow, a run that asks for Claude fails at the environment check, and because the app job holds the environment, its scripted test fails with it. Ask for Claude only on branches the rule allows.
-
-Results: the job log, the job summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log), `ios-sim-backend-logs` and `ios-sim-claude-test` (per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
+Results: the job logs, the Claude job's summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log), `ios-sim-backend-logs` and `ios-sim-claude-test` (the Claude job's smoke test in `smoke-test/`, and per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
 
 ## How long it takes, what it costs
 
-- `plan` (ubuntu, 15 s) names the core library and the backend after their sources, `hashFiles` over the Haskell sources, `cabal.project`, `simplex-chat.cabal` and the build script, and reuses an artifact of the same name that an earlier run of the same branch uploaded (30 days). So every run builds the core library, and the backend when asked, from the branch's own Haskell code, and rebuilds only when those sources change.
-- `core` (macOS, 35–45 min when not reused): `build-core.sh` builds `lib:simplex-chat` with cabal and the iOS flags, as the Nix iOS build does, into the package `scripts/ios/prepare.sh` expects, and `prepare-libs.sh` marks it for the simulator (`mac2ios`).
-- `backend` (macOS, 20–30 min when not reused, only when asked): `build-backend.sh` builds `simplex-chat`, `simplex-directory-service` and `smp-server`.
-- `app` (macOS): the Xcode build 8–22 min, the smoke test about 10 min, the backend start about 10 min when asked, Claude as long as its plan needs.
+- `plan` (ubuntu-24.04, 10 s) reads what the run asks for, names the core library and the backend after their sources, `hashFiles` over the Haskell sources, `cabal.project`, `simplex-chat.cabal` and the build script, and reuses an artifact of the same name that an earlier run of the same branch uploaded (30 days). So every run builds the core library, and the backend when asked, from the branch's own Haskell code, and rebuilds only when those sources change.
+- `core` (macOS, 30–45 min when not reused): `build-core.sh` builds `lib:simplex-chat` with cabal and the iOS flags, as the Nix iOS build does, into the package `scripts/ios/prepare.sh` expects, and `prepare-libs.sh` marks it for the simulator (`mac2ios`).
+- `backend` (macOS, 20–45 min when not reused, only when asked): `build-backend.sh` builds `simplex-chat`, `simplex-directory-service` and `smp-server`.
+- `app` (macOS): the Xcode build 8–22 min, the smoke test about 10 min, the backend start about 10 min when asked.
+- `claude` (macOS, only when asked, after `app` passed): a new simulator with the app job's build and the smoke test, about 7 min, then the sessions (the smoke plan's took 2.6 min).
 
-A run with reused builds and no extras takes about 26 minutes plus the wait for a macOS runner. Hosted minutes are free for this public repository; the limit is the repository's five concurrent macOS jobs, shared with PR builds (each `build.yml` run takes two), so queue waits can be long. Caches are evicted within hours (the repository is over its cache limit); the artifacts are what make runs fast.
+A run with reused builds and no extras takes about 25 minutes plus the wait for a macOS runner. Hosted minutes are free for this public repository; the limit is the repository's five concurrent macOS jobs, shared with PR builds (each `build.yml` run takes two), so queue waits can be long. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`: builds are reused only as the artifacts above, and a core or backend rebuild compiles its dependencies too.
+
+The macOS jobs run on `macos-26`, the image with Xcode 26 and the iPhone 17 simulator; `macos-latest` moves to each new macOS and its Xcode.
 
 ## The Claude session
 
-It runs after the smoke test, in the same job, on the simulator the smoke test leaves running, once per layout listed in `claude-scope`, with Claude Code installed from npm at a pinned version. The job then references the environment `app-sim-claude`, which holds the secret `CLAUDE_CODE_OAUTH_TOKEN` (a Claude subscription token) and admits the branches its rule allows; jobs without Claude reference no environment. Only the Claude step gets the token, and `claude-test.sh` passes it to the `claude` processes alone. The job checks out without persisting its GitHub token and installs a pinned AXe (`install-axe.sh`), since it later holds the Claude token.
+It runs in its own job, `claude`, once the app job has passed: the job installs that job's build (the artifact `ios-sim-app`, kept a day) in a new simulator, runs the smoke test to reach the sessions' starting state, then one session per layout listed in `claude-scope`, with Claude Code installed from npm at the version the desktop workflow pins too. Only this job references the environment `app-sim-claude`, which holds the secret `CLAUDE_CODE_OAUTH_TOKEN` (a Claude subscription token) and admits the branches its rule allows; one runs per branch at a time. Only the Claude step gets the token, and `claude-test.sh` passes it to the `claude` processes alone. The job checks out without persisting its GitHub token and installs a pinned AXe (`install-axe.sh`), since it holds the Claude token. It starts the test backend when `claude-scope` says `backend: yes`; a run that asks for Claude must then ask for the backend too, or the plan job fails. On master it says `no`, since the smoke plan doesn't use the backend.
 
-- `claude-scope`: the model, the layouts, the cases per layout, optional entries per layout, `max-turns` and `max-budget-usd` per session.
+Each session's final message ends with `CLAUDE-TEST: PASS`, or `CLAUDE-TEST: FAIL` and the failed cases; the step fails unless every session passes.
+
+- `claude-scope`: whether the cases use the test backend, the model, the layouts, the cases per layout, optional entries per layout, `max-turns` and `max-budget-usd` per session.
 - `device-test-plan.md`: the plan (`| ID | Do | Expect |` tables). On master it is a three-case smoke plan; a feature branch replaces it with its own and names its cases in `claude-scope`.
 - `claude-prompt.md`: what any session needs to know about the app, the `ui` helper and the test backend; `claude-test.sh` adds the `ui` help, the session's cases, layout, start state and limits, the seeded backend and the plan.
-- `claude-guard.py`: a PreToolUse hook that lets through only one plain `ui` command per Bash call, since read-only commands run without asking in every permission mode and Bash inherits the token. Read, Write and Edit are allowed only in the session's own directory, so a session can't change `ui` or the scripts it runs. After each session `claude-test.sh` deletes the session's files if the token appears in them.
-- `claude-usage.sh`: each session's turns, duration, tokens and cost "estimated at API prices" (Claude Code's own estimate, not a bill) to the job summary and `claude-usage.json`.
+- `claude-guard.py`: a PreToolUse hook that lets through only one plain `ui` command per Bash call, since read-only commands run without asking in every permission mode and Bash inherits the token. Read, Write and Edit are allowed only in the session's own directory, so a session can't change `ui` or the scripts it runs. After each session `claude-test.sh` deletes the session's files, and fails, if the token appears in them or the check for it fails.
+- `claude-usage.sh`: each session's turns, duration, tokens and cost "estimated at API prices" (Claude Code's own estimate, not a bill) to the job summary and `claude-usage.json`, or why they are unknown (a session cut short before its token check is not uploaded).
 
 Haiku 5.5 drives the app well: the smoke plan takes a few dozen turns and cents; a 50-case feature plan took 300–450 turns, 30–60 minutes and $1.1–1.7 per session, estimated at API prices. Every run spends the subscription's usage limits, which interactive sessions share.
 
@@ -47,11 +47,11 @@ Haiku 5.5 drives the app well: the smoke plan takes a few dozen turns and cents;
 - a local SMP server with a `[NAMES]` section and `names-resolver.py`, the names `cinews.testing`, `ciboth.testing`, `cialice.testing` and `cibobby.testing` claimed by their owners, and the contacts cialice and Robert, online and accepting connections; its address goes to `<work dir>/names-server`;
 - checks before the app starts: a search sent to the directory as a message must list `ci_group` and `ci_channel`, and `/_connect plan` must resolve each name from a fresh peer.
 
-Not yet verified on master: the backend ran on `f/directory-search`'s code, and its checks were rewritten for master's (the directory answers searches sent as messages there; service requests need the feature branch).
+On master's code it starts and passes these checks (the directory answers searches sent as messages); service requests to the directory, which only `f/directory-search` answers, are not checked here.
 
 It writes what it seeded to `<work dir>/seed.md` (the Claude sessions get it) and logs to `<work dir>/*.log`; `stop`, `directory-stop`, `directory-start` and `listings` are its other commands. The app reaches it through the simulator, which shares the runner's network; pointing the app at the names server is a few steps in Settings, described in `claude-prompt.md`.
 
 ## Other files
 
-- `use-macos26-sdk.sh`: runner images from 20261013 add Command Line Tools with a macOS 27 SDK that Xcode 26.6's linker can't read; every macOS job points the default SDK back at macOS 26.5.
+- `use-macos26-sdk.sh`: runner images from 20261013 add Command Line Tools with a macOS 27 SDK that Xcode 26.6's linker can't read; every macOS job points the default SDK back at macOS 26.5. The pinned `macos-26` label runs such an image.
 - `earlier-run.sh <artifact name>`: finds the newest run of this branch in this repository with that artifact; artifacts from forks and other branches are never used.
