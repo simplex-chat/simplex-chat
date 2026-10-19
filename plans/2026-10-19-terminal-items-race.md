@@ -21,7 +21,7 @@ When it happens in `sendCmd`, the exception is not caught there, and most caller
 
 - The issue's diff (a lock field plus a single snapshot trimmed with `drop`): also correct, but it adds a field and changes trimming: after developer tools are turned off (cap 500 → 200) it cuts the log to 200 at once, where master keeps the log at that size (trimming one row per new row) until the app restarts.
 - Always posting the write to the main thread: correct, but every command and event would pay a coroutine and main-thread post while the console is closed, during the event bursts that trigger this.
-- A lock-free compare-and-set or `MutableStateFlow.update`: needs `terminalItems` to become an `AtomicReference` or a `MutableStateFlow`, which changes its type and its reader (`TerminalView.kt`).
+- A lock-free compare-and-set: either a retry loop over a Compose mutable snapshot's apply, or changing `terminalItems` to an `AtomicReference` or a `MutableStateFlow`, which changes its type and its reader (`TerminalView.kt`); both are more code than one annotation.
 - Clamping the `subList` bounds: stops the crash but still loses rows.
 
 ## Not included
@@ -31,5 +31,5 @@ When it happens in `sendCmd`, the exception is not caught there, and most caller
 
 ## Testing
 
-- JVM harness (not committed) against the desktop jars, 8 threads calling `addTerminalItem` with the cap at 200: master 3e6fd3836 lost rows in 843 of 2000 runs and threw 742 `IndexOutOfBoundsException: toIndex = 201` in one flood round; this fix lost none in 2000 runs and threw none in 135 flood rounds, ending at exactly 200 rows.
-- Desktop GUI, master and this fix, same results: a command and its response, the `/sql` rejection, rows added while the console is closed, the 200-row cap, the floating console during incoming messages, opening and closing the console during a flood, sending and receiving messages; no crashes.
+- JVM harness (not committed) against the desktop jars, 8 threads calling `addTerminalItem` with the cap at 200: master 3e6fd3836 lost rows in 843 of 2000 runs and threw 742 exceptions (the first: `IndexOutOfBoundsException: toIndex = 201`) in one flood round; this fix lost none in 2000 runs and threw none in 135 flood rounds, ending at exactly 200 rows.
+- Desktop GUI, master and this fix, same results: a command and its response, the `/sql` rejection, rows added while the console is closed, trimming of the oldest rows once the log is past its cap, the floating console during incoming messages, opening and closing the console during a flood, sending and receiving messages; no crashes.
