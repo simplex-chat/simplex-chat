@@ -57,7 +57,7 @@ fun ContextItemView(
       }
     } else null
     MarkdownText(
-      contextItem.text, contextItem.formattedText,
+      contextItem.text, contextItem.formattedText, contextItem.markdownBlocks,
       sender = null,
       toggleSecrets = false,
       maxLines = lines,
