@@ -25,6 +25,7 @@ class OnlineSearchModel: ObservableObject {
     @Published private(set) var searched = false
 
     private var cursor: JSONValue? = nil
+    private var lastPageIds: Set<String> = []
     private var searchedText = ""
     // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
     private var generation = 0
@@ -39,6 +40,7 @@ class OnlineSearchModel: ObservableObject {
         names = []
         directory = []
         cursor = nil
+        lastPageIds = []
         loading = false
         resolvingNames = false
         failed = false
@@ -76,6 +78,7 @@ class OnlineSearchModel: ObservableObject {
         if text == searchedText {
             directory = []
             cursor = nil
+            lastPageIds = []
             failed = false
             searched = false
         } else {
@@ -105,10 +108,15 @@ class OnlineSearchModel: ObservableObject {
         func isAmong(_ ids: Set<ChatId>, _ id: ChatId?) -> Bool {
             id.map { ids.contains($0) } ?? false
         }
+        let lastPage = directory.filter { lastPageIds.contains($0.id) }
         return OnlineSearchRows(
             names: names.filter { !isAmong(shownChatIds, $0.localChatId) },
             directory: directory.filter {
                 !isAmong(shownChatIds, $0.localChatId) && !isAmong(nameChatIds, $0.localChatId) && !nameLinks.contains($0.entry.link)
+            },
+            // a result hidden only because a name resolved to its link is on screen, but not one of your chats
+            pageInChats: !lastPage.isEmpty && lastPage.allSatisfy {
+                isAmong(shownChatIds, $0.localChatId) || isAmong(nameChatIds, $0.localChatId)
             },
             footer: footer
         )
@@ -181,6 +189,7 @@ class OnlineSearchModel: ObservableObject {
         }
         cursor = r.cursor
         directory = append ? directory + page : page
+        lastPageIds = Set(page.map { $0.id })
     }
 
     private func updateSpinner() {
@@ -298,6 +307,15 @@ struct NameSearchRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+    }
+}
+
+struct DirectoryPageInChatsRow: View {
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        Text("All results on this page are already in your chats")
+            .foregroundColor(theme.colors.secondary)
     }
 }
 

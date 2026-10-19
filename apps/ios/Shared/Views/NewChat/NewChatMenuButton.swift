@@ -206,15 +206,20 @@ struct NewChatSheet: View {
                 onlineSearchHeader("Names")
             }
         }
-        if !rows.directory.isEmpty || rows.footer != nil {
+        if !rows.directory.isEmpty || rows.pageInChats || rows.footer != nil {
             Section {
                 ForEach(rows.directory) { result in
-                    DirectorySearchRow(entry: result.entry)
-                        .onTapGesture {
-                            searchFocussed = false
-                            planAndConnect(result.entry.link, theme: theme, dismiss: true, cleanup: nil)
-                        }
+                    if let chat = result.localChatId.flatMap({ chatModel.getChat($0) }) {
+                        ContactListNavLink(chat: chat, showDeletedChatIcon: true)
+                    } else {
+                        DirectorySearchRow(entry: result.entry)
+                            .onTapGesture {
+                                searchFocussed = false
+                                planAndConnect(result.entry.link, theme: theme, dismiss: true, cleanup: nil)
+                            }
+                    }
                 }
+                if rows.pageInChats { DirectoryPageInChatsRow() }
                 switch rows.footer {
                 case .retry: DirectoryRetryRow(onlineSearch: onlineSearch)
                 case .showMore: DirectoryShowMoreRow(onlineSearch: onlineSearch)

@@ -78,7 +78,7 @@ The search field at the top of the New chat sheet filters "Your Contacts" and of
 | "Connect to …" row | Below the field for a SimpleX name; hidden once the online search found anything for that name |
 | "Search in Directory" row | Below the field for non-empty text that is not a SimpleX link; searches SimpleX Directory |
 | Keyboard Search key | Searches the directory and, for a SimpleX name, resolves the name online |
-| Names and Directory sections | After "Your Contacts", with headers in the same style. Tapping a result connects and closes the sheet, as other New chat actions do. A result for a contact already listed in "Your Contacts" is not repeated |
+| Names and Directory sections | After "Your Contacts", with headers in the same style. Tapping a result connects and closes the sheet, as other New chat actions do. A result for a contact already listed in "Your Contacts" is not repeated. A directory entry for a group or channel the user already has is shown as a contact-style chat row (avatar, name, favourite star, incognito mask) that opens the chat and closes the sheet, never "Join …". When every result of the last page loaded is a chat the user has, the Directory section shows "All results on this page are already in your chats", followed by "Show more" when there are more pages |
 | Contacts empty state | "No filtered contacts" / "No contacts" are not shown while the online search runs or shows results |
 
 The first online search asks for consent with the same alert as on the chat list. Results disappear when the text changes or the user switches profile. Archived contacts keep their own search field without the Search key or online results.

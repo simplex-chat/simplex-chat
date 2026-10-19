@@ -34,6 +34,8 @@ struct ContactListNavLink: View {
                 }
             case let .contactRequest(contactRequest):
                 contactRequestNavLink(contactRequest)
+            case let .group(groupInfo, _):
+                groupNavLink(groupInfo)
             default:
                 EmptyView()
             }
@@ -165,16 +167,34 @@ struct ContactListNavLink: View {
         }
     }
 
-    func contactPreview(_ contact: Contact, titleColor: Color) -> some View {
-        HStack{
-            ProfileImage(imageStr: contact.image, size: 30)
+    func groupNavLink(_ groupInfo: GroupInfo) -> some View {
+        Button {
+            dismissAllSheets(animated: true) {
+                ItemsModel.shared.loadOpenChat(groupInfo.id)
+            }
+        } label: {
+            chatPreview(
+                ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: 30),
+                NameWithBadge(Text(chat.chatInfo.chatViewName).foregroundColor(theme.colors.onBackground), chat.chatInfo.nameBadge)
+                    .lineLimit(1)
+            )
+        }
+    }
 
-            previewTitle(contact, titleColor: titleColor)
+    func contactPreview(_ contact: Contact, titleColor: Color) -> some View {
+        chatPreview(ProfileImage(imageStr: contact.image, size: 30), previewTitle(contact, titleColor: titleColor))
+    }
+
+    private func chatPreview(_ image: some View, _ title: some View) -> some View {
+        HStack{
+            image
+
+            title
 
             Spacer()
 
             HStack {
-                if showDeletedChatIcon && contact.chatDeleted {
+                if showDeletedChatIcon && chat.chatInfo.chatDeleted {
                     Image(systemName: "archivebox")
                         .resizable()
                         .scaledToFit()
@@ -187,7 +207,7 @@ struct ContactListNavLink: View {
                         .frame(width: 18, height: 18)
                         .foregroundColor(.secondary.opacity(0.65))
                 }
-                if contact.contactConnIncognito {
+                if chat.chatInfo.incognito {
                     Image(systemName: "theatermasks")
                         .resizable()
                         .scaledToFit()

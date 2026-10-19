@@ -180,7 +180,8 @@ struct DirectoryResult: Identifiable {
 struct OnlineSearchRows {
     var names: [NameSearchResult]
     var directory: [DirectoryResult]
+    var pageInChats: Bool
     var footer: DirectoryFooter?
 
-    var isEmpty: Bool { names.isEmpty && directory.isEmpty && footer == nil }
+    var isEmpty: Bool { names.isEmpty && directory.isEmpty && !pageInChats && footer == nil }
 }

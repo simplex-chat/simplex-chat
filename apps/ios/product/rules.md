@@ -167,8 +167,8 @@
 **Spec:** [spec/api.md](../spec/api.md#8-directory-search-and-connection-plans)
 
 ### RULE-27: Nothing is shown twice
-**Rule:** A name result whose chat is shown in the local list MUST be hidden. A directory result MUST be hidden when its link refers, in the local store, to a chat shown in the local list or found by name, or when its link is the link a name was resolved through. Only store-derived chat ids and links resolved by the core may hide a row. Limit: a regular group joined through another link (or the directory's full link) is not found by the lookup and still appears as a directory result.
-**Enforced by:** `DirectorySearchView.swift` (`OnlineSearchModel.rows(shownChatIds:)`); `DirectorySearch.swift` (`planLocalChatId`, `NameSearchResult.resolvedLink`).
+**Rule:** A name result whose chat is shown in the local list MUST be hidden. A directory result MUST be hidden when its link refers, in the local store, to a chat shown in the local list or found by name, or when its link is the link a name was resolved through. Only store-derived chat ids and links resolved by the core may hide a row. A directory result whose link refers to a chat the screen doesn't list MUST be drawn as that screen's chat row, which opens the chat, never as "Join …". When every result of the last page loaded is hidden as a chat the user has, the Directory part MUST say so ("All results on this page are already in your chats"); a result hidden only because a name was resolved through its link does not count. Limit: a regular group joined through another link, the directory's full link or by invitation is not found by the lookup and still appears as a directory result with "Join group".
+**Enforced by:** `DirectorySearchView.swift` (`OnlineSearchModel.rows(shownChatIds:)`, `pageInChats`); `DirectorySearch.swift` (`planLocalChatId`, `NameSearchResult.resolvedLink`); `ChatListView.swift` (`directoryRows`, `chatListNavLink`); `NewChatMenuButton.swift` (`onlineSearchSections`); `ContactListNavLink.swift` (`groupNavLink`).
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
 ### RULE-28: Consent before the first online search

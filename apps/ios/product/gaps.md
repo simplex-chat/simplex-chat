@@ -66,7 +66,9 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ### GAP: Groups joined through another link still appear as directory results
 **Source:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
-A directory entry is matched to a local chat by a store-only lookup of its link. A regular group's entry carries the directory's own group link (short link only), so a group the user joined through a different link, through the directory's full link, or by invitation is not found and is shown again in the Directory part. Tapping it goes through `planAndConnect`, which handles the known group.
+A directory entry is matched to a local chat by a store-only lookup of its link. An entry the app finds this way opens as a chat: the screen's chat row is drawn in place of the entry. A regular group's entry carries the directory's own group link (short link only), so a group the user joined through a different link, through the directory's full link, or by invitation is not found and still shows as a directory entry with "Join group". Tapping it goes through `planAndConnect`, which handles the known group. Accepted.
+
+Related: the note "All results on this page are already in your chats" is not shown when a page's only results are hidden because a name search resolved to the same link (that row is on screen, but not one of the user's chats); the Directory part then shows only "Show more" when there are more pages, and is not shown otherwise.
 
 **REC:** Have the directory send a stable group identifier the core can match locally, or let the core match a directory short link against groups joined through the corresponding full link.
 

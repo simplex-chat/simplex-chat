@@ -497,17 +497,22 @@ struct ChatListView: View {
     }
 
     @ViewBuilder private func directoryRows(_ rows: OnlineSearchRows) -> some View {
-        if !rows.directory.isEmpty || rows.footer != nil {
+        if !rows.directory.isEmpty || rows.pageInChats || rows.footer != nil {
             searchPart("Directory") {
                 ForEach(rows.directory) { result in
-                    DirectorySearchRow(entry: result.entry)
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                        .listRowBackground(Color.clear)
-                        .onTapGesture {
-                            searchFocussed = false
-                            planAndConnect(result.entry.link, theme: theme, dismiss: false, cleanup: { Task { await onlineSearch.refreshLocalChatIds() } })
-                        }
+                    if let chat = result.localChatId.flatMap({ chatModel.getChat($0) }) {
+                        chatListNavLink(chat)
+                    } else {
+                        DirectorySearchRow(entry: result.entry)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowBackground(Color.clear)
+                            .onTapGesture {
+                                searchFocussed = false
+                                planAndConnect(result.entry.link, theme: theme, dismiss: false, cleanup: { Task { await onlineSearch.refreshLocalChatIds() } })
+                            }
+                    }
                 }
+                if rows.pageInChats { directoryPageInChatsRow() }
                 switch rows.footer {
                 case .retry: directoryRetryRow()
                 case .showMore: directoryShowMoreRow()
@@ -684,6 +689,12 @@ struct ChatListView: View {
             .background { theme.colors.background } // Hides default list selection colour
             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
         }
+    }
+
+    @ViewBuilder private func directoryPageInChatsRow() -> some View {
+        DirectoryPageInChatsRow()
+            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+            .listRowBackground(Color.clear)
     }
 
     @ViewBuilder private func directoryShowMoreRow() -> some View {
