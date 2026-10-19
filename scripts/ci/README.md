@@ -8,7 +8,7 @@ Pushes start nothing: a run is started by hand, on any branch, with inputs that 
 
 | Input | iOS | Desktop |
 |---|---|---|
-| none | scripted test | scripted test |
+| no input | scripted test | scripted test |
 | `claude` | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend |
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's |
