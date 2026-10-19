@@ -38,6 +38,11 @@ templateEngineOverride: njk
                                 9F 35 8F F2 84 D1 F7 16 56 A2 BF AF 0E 00 5D EA E6 AA 14 14 37 20 E0 89 F1 1F F2 DD CF EB 01 BA
                             </blockquote>
                         </p>
+                        <p class="mt-6">
+                            {{ "f-droid-page-apk-text" | i18n({}, lang ) | safe }}
+                            <a class="text-primary-light dark:text-primary-dark underline underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank" rel="noopener">aarch64</a>,
+                            <a class="text-primary-light dark:text-primary-dark underline underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk" target="_blank" rel="noopener">armv7</a>
+                        </p>
                     </div>
 
                     <div class="hidden sm:block max-w-[280px] md:max-w-[220px] lg:max-w-[240px]">

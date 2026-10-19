@@ -42,11 +42,6 @@ active_home: true
     <link rel="preload" href="/img/new/logo-dark.png" as="image">
     <link rel="preload" href="/img/new/logo-light.png" as="image" media="(prefers-color-scheme: light)">
     <link rel="preload" href="/img/design_3/publications/trail-of-bits.png" as="image">
-    <link rel="preload" href="/img/design_3/publications/privacy-guides.png" as="image">
-    <link rel="preload" href="/img/design_3/publications/whonix.png" as="image">
-    <link rel="preload" href="/img/design_3/publications/heise.png" as="image">
-    <link rel="preload" href="/img/design_3/publications/kuketz-blog.png" as="image">
-    <link rel="preload" href="/img/design_3/publications/optout.png" as="image">
 
     <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Bold.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -57,12 +52,11 @@ active_home: true
 
     <link rel="preload" href="/img/new/apple_store.svg" as="image">
     <link rel="preload" href="/img/new/google_play.svg" as="image">
-    <link rel="preload" href="/img/new/f_droid.svg" as="image" media="(max-width: 959px)">
-    <link rel="preload" href="/img/design_3/testflight-dark.png" as="image" media="(max-width: 959px)">
-    <link rel="preload" href="/img/design_3/android-dark.png" as="image" media="(max-width: 959px)">
-    <link rel="preload" href="/img/design_3/socials/linux.png" as="image" media="(min-width: 960px)">
-    <link rel="preload" href="/img/design_3/socials/apple.png" as="image" media="(min-width: 960px)">
-    <link rel="preload" href="/img/design_3/socials/windows.png" as="image" media="(min-width: 960px)">
+    <link rel="preload" href="/img/new/f_droid_icon.svg" as="image" media="(max-width: 1015px)">
+    <link rel="preload" href="/img/design_3/testflight-dark.png" as="image" media="(max-width: 1015px)">
+    <link rel="preload" href="/img/design_3/socials/linux.png" as="image" media="(min-width: 1016px)">
+    <link rel="preload" href="/img/design_3/socials/apple.png" as="image" media="(min-width: 1016px)">
+    <link rel="preload" href="/img/design_3/socials/windows.png" as="image" media="(min-width: 1016px)">
 
     <link href="/css/tailwind.css" rel="stylesheet"/>
     <link rel="stylesheet" href="/css/design3.css">
@@ -86,26 +80,14 @@ active_home: true
         .sd-icon { display: inline-block; width: 0.85em; height: 0.85em; vertical-align: -0.08em; margin-left: 0.35em; }
         .sd-icon path, .sd-icon polygon { fill: #0095e7; }
         .dark .sd-icon path, .dark .sd-icon polygon { fill: #c8feff; }
-        @media screen and (max-width: 959px) {
-            .sd-sale-banner { top: 0; left: 0; right: 0; transform: none; z-index: 50001; pointer-events: none; }
-            .sd-lead, .sd-tail {
-                position: absolute;
-                left: 50%;
-                transform: translateX(-50%);
-                white-space: nowrap;
-                pointer-events: auto;
-                font-size: calc(var(--sec-vwu) * 4.675);
-                font-weight: 500;
-                background-image: linear-gradient(90deg, #001aa7 0%, #0095e7 100%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            .dark .sd-lead, .dark .sd-tail {
-                background-image: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
-            }
-            .sd-lead { top: 0; line-height: 54px; }
-            .sd-tail { top: min(56px, calc(27px + var(--sec-vwu) * 29 / 6.2)); }
+        @media screen and (min-width: 1016px), screen and (max-width: 1015px) and (orientation: landscape) {
+            .sd-sale-banner { top: auto; bottom: calc(22px + var(--cover-bottom-ext, 0px)); transform: translateX(calc(-50% - max(0px, 50% + var(--cover-socials-w, 435px) + 54px - 50vw))); font-size: 16px; text-align: center; background-image: none; -webkit-text-fill-color: #ffffff; color: #ffffff; }
+            [dir="rtl"] .sd-sale-banner { transform: translateX(calc(-50% + max(0px, 50% + var(--cover-socials-w, 435px) + 54px - 50vw))); }
+            .sd-lead, .sd-tail { display: block; }
+            .sd-icon path, .sd-icon polygon { fill: #ffffff; }
+        }
+        @media screen and (max-width: 1015px) and (orientation: portrait), screen and (max-width: 1015px) and (orientation: landscape) and (max-height: 500px) {
+            .sd-sale-banner { display: none; }
         }
     </style>
     <script src="/js/flag-anchor.js"></script>
@@ -137,12 +119,13 @@ active_home: true
 
     <div class="screen">
         <section class="page-1 cover page">
-            <a class="sd-sale-banner gradient-text" href="https://simplex.domains/" target="_blank" rel="noopener"><span class="sd-lead" id="sd-lead">SimpleX domains launch </span><span class="sd-tail" id="sd-tail"><span class="sd-digits" id="sd-cd"></span>&#8288;<svg class="sd-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 100 100"><path d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></span></a>
+            <a class="sd-sale-banner gradient-text" href="https://simplex.domains/" target="_blank" rel="noopener"><span class="sd-lead" id="sd-lead">{{ "index-hero-countdown-lead" | i18n({}, lang) }} </span><span class="sd-tail" id="sd-tail"><span class="sd-digits" id="sd-cd"></span>&#8288;<svg class="sd-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 100 100"><path d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></span></a>
             <script>
                 (function () {
                     var target = Date.UTC(2026, 11, 12, 18, 0, 0);
                     var lead = document.getElementById("sd-lead");
                     var cd = document.getElementById("sd-cd");
+                    var days = new Intl.RelativeTimeFormat({{ lang | replace("_", "-") | dump | safe }} + "-u-nu-latn", { numeric: "always" });
                     var timer;
                     function pad(n) { return String(n).padStart(2, "0"); }
                     function tick() {
@@ -150,26 +133,34 @@ active_home: true
                         if (ms <= 0) {
                             clearInterval(timer);
                             lead.style.display = "none";
-                            cd.textContent = "Get SimpleX domain";
+                            cd.textContent = {{ "index-hero-countdown-done" | i18n({}, lang) | dump | safe }};
                             return;
                         }
                         var s = Math.floor(ms / 1000);
                         var d = Math.floor(s / 86400);
-                        cd.textContent = "in " + d + (d === 1 ? " day " : " days ") + pad(Math.floor((s % 86400) / 3600)) + ":" + pad(Math.floor((s % 3600) / 60)) + ":" + pad(s % 60);
+                        cd.textContent = days.format(d, "day") + " " + pad(Math.floor((s % 86400) / 3600)) + ":" + pad(Math.floor((s % 3600) / 60)) + ":" + pad(s % 60);
                     }
                     timer = setInterval(tick, 1000);
                     tick();
                 })();
             </script>
+            <div class="cover-art" aria-hidden="true">
+                <img class="cover-phone" src="/img/crowdfunding/phone.png" alt="">
+                <div class="cover-fade"></div>
+            </div>
             <div class="area">
                 <div class="content">
-                    <h1>{{ "index-hero-h1" | i18n({}, lang) | safe }}</h1>
+                    <h1>{{ "index-hero-h1" | i18n({}, lang) | replace("<br>", " <br>") | safe }}</h1>
                     <h2 class="gradient-text">{{ "index-hero-h2" | i18n({}, lang) | safe }}</h2>
                     <p>{{ "index-hero-p1" | i18n({}, lang) | safe }}</p>
-                    <p class="invest">{{ "index-hero-invest" | i18n({}, lang) | safe }} <a class="gradient-text" href="https://wefunder.com/simplex.chat?utm_source=home" target="_blank" rel="noopener">{{ "learn-more" | i18n({}, lang) }}.</a></p>
+                    <p class="invest">{{ "index-hero-own-part" | i18n({}, lang) | safe }} <a class="gradient-text" href="https://wefunder.com/simplex.chat?utm_source=home" target="_blank" rel="noopener">{{ "index-hero-invest" | i18n({}, lang) | safe }}</a></p>
+                    <div class="cover-stats">
+                        <div class="cover-stat"><b>3M</b><span>{{ "index-hero-downloads" | i18n({}, lang) }}</span></div>
+                        <div class="cover-stat"><b>600K</b><span>{{ "index-hero-monthly-users" | i18n({}, lang) }}</span></div>
+                    </div>
 
                     <div class="socials">
-                        <a href="/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
+                        <a href="{{ '' if lang == 'en' or not (lang | translated('/downloads/')) else '/' ~ lang }}/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
                             <div class="btn-content">
                                 <div>
                                     <img class="no-border" src="/img/design_3/socials/linux.png">
@@ -181,9 +172,8 @@ active_home: true
                         </a>
                         <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank" rel="noopener"><img src="/img/new/apple_store.svg" alt="App Store"></a>
                         <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" rel="noopener"><img src="/img/new/google_play.svg" alt="Google Play"></a>
-                        <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid" title="{{ 'index-f-droid-title' | i18n({}, lang) }}"><img src="/img/new/f_droid.svg"></a>
+                        <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid" title="{{ 'index-f-droid-title' | i18n({}, lang) }}"><img src="/img/new/f_droid_icon.svg" alt="F-Droid"></a>
                         <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank" rel="noopener"><img class="no-border" src="/img/design_3/testflight-dark.png" title="{{ 'index-testflight-title' | i18n({}, lang) }}" alt="TestFlight"></a>
-                        <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank" rel="noopener"><img src="/img/design_3/android-dark.png" alt="Android APK"></a>
                     </div>
                     <div class="security-btns">
                         <a title="{{ 'index-security-assessment-title' | i18n({}, lang) }}" href="https://www.trailofbits.com/about" target="_blank" rel="noopener">
@@ -198,23 +188,6 @@ active_home: true
                         <p class="security-audits">
                             {{ 'index-security-audits-label' | i18n({}, lang) | safe }}
                         </p>
-                    </div>
-                    <div class="publications-btns">
-                        <a title="{{ 'index-publications-privacy-guides-title' | i18n({}, lang) }}" href="https://www.privacyguides.org/en/real-time-communication/#simplex-chat" target="_blank" rel="noopener">
-                            <img src="/img/design_3/publications/privacy-guides.png" alt="Privacy Guides">
-                        </a>
-                        <a title="{{ 'index-publications-whonix-title' | i18n({}, lang) }}" href="https://www.whonix.org/wiki/Chat#Recommendation" target="_blank" rel="noopener">
-                            <img src="/img/design_3/publications/whonix.png" alt="Whonix" class="whonix">
-                        </a>
-                        <a title="{{ 'index-publications-heise-title' | i18n({}, lang) }}" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank" rel="noopener">
-                            <img src="/img/design_3/publications/heise.png" alt="Heise">
-                        </a>
-                        <a title="{{ 'index-publications-kuketz-title' | i18n({}, lang) }}" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank" rel="noopener">
-                            <img src="/img/design_3/publications/kuketz-blog.png" alt="Kuketz Blog" class="kuketz">
-                        </a>
-                        <a title="{{ 'index-publications-optout-title' | i18n({}, lang) }}" href="https://optoutpod.com/episodes/s3e02-simplexchat/" target="_blank" rel="noopener">
-                            <img src="/img/design_3/publications/optout.png" alt="Opt Out">
-                        </a>
                     </div>
                 </div>
             </div>
@@ -350,6 +323,20 @@ active_home: true
         }, { threshold: [0, 0.02, 1] });
         io.observe(cover);
         io.observe(footer);
+    })();
+    </script>
+    <script>
+    (function coverMetrics(){
+        const cover = document.querySelector('.page-1.cover');
+        const invest = cover.querySelector('.content > p.invest');
+        const socials = cover.querySelector('.socials');
+        const stats = cover.querySelector('.cover-stats');
+        const observer = new ResizeObserver(() => {
+            cover.style.setProperty('--cover-text-b', `${invest.getBoundingClientRect().bottom - cover.getBoundingClientRect().top}px`);
+            cover.style.setProperty('--cover-socials-w', `${socials.offsetWidth}px`);
+            cover.style.setProperty('--cover-stats-w', `${stats.offsetWidth}px`);
+        });
+        cover.querySelectorAll('.content > *').forEach((el) => observer.observe(el));
     })();
     </script>
     <script>
