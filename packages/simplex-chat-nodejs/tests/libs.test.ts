@@ -267,7 +267,9 @@ describe("installLibs", () => {
     expect(fs.existsSync(path.join(path.dirname(tmp), "outside"))).toBe(false)
   })
 
-  it("keeps the file mode of an entry", async () => {
+  const itOnPosix = process.platform === "win32" ? it.skip : it
+
+  itOnPosix("keeps the file mode of an entry", async () => {
     const zip = storedZip({[`libs/${LIB}`]: {content: "lib", mode: 0o100755}, "libs/data": {content: "x", mode: 0o100644}})
     routes["/modes.zip"] = res => res.writeHead(200).end(zip)
     const target = path.join(tmp, "sqlite")
