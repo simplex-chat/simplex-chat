@@ -71,7 +71,7 @@ struct AddGroupView: View {
                     Spacer(minLength: 0)
                     ZStack(alignment: .center) {
                         ZStack(alignment: .topTrailing) {
-                            ProfileImage(imageStr: profile.image, iconName: "person.2.circle.fill", size: 128)
+                            ProfileImage(imageStr: profile.image, icon: Image(systemName: "person.2.circle.fill"), size: 128)
                             if profile.image != nil {
                                 Button {
                                     profile.image = nil
