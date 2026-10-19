@@ -188,7 +188,7 @@ separate change.
 - **The 5000 limit is not addressed.** With more chats than that, the UI still silently
   loads only the most recently active 5000: the rest are not shown, not searched, and
   missing from the in-memory tag counts, until an event for one of them arrives (a message,
-  or a contact or group update). Recorded
+  or a contact or group update) or the user opens one from elsewhere in the app. Recorded
   as GAP-12.
 - **`addPresetChatTags` is not called** for the newly added chat, as it is not today, so
   the preset tag counts stay low by one for such a chat until they are recomputed —

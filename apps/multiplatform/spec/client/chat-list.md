@@ -144,7 +144,7 @@ The `filteredChats` function (line ~1474) applies filters in this order:
 3. **Active filter:**
    - `PresetTag`: Matches chat type and characteristics (e.g., `CONTACTS` filters `ChatInfo.Direct`, `GROUPS` filters `ChatInfo.Group`).
    - `UserTag`: Matches chats whose `chatTags` contain the tag ID.
-   - `Unread`: Matches chats with `unreadCount > 0` or `unreadChat == true`. These come from the
+   - `Unread`: Matches chats whose `unreadTag` holds: `unreadChat`, or `unreadCount > 0` with notifications on, or `unreadMentions > 0` when set to mentions only. These come from the
      in-memory list only, which holds at most 5000 chats ([GAP-12]); a chat created from a received
      event is counted as having that one item unread until the chat is opened or the list is reloaded.
 

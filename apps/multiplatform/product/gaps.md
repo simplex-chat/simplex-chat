@@ -448,7 +448,8 @@ updated.
 
 On a profile with more than 5000 chats the oldest are not shown, not searched (chat-list search is
 in-memory) and missing from the in-memory tag counts, with no indication to the user. They reappear only
-when an event for them arrives (a message, or a contact or group update) or after the list is reloaded
+when an event for them arrives (a message, or a contact or group update), when the user opens one from
+elsewhere in the app (e.g. "Open" on a group's member-contact item), or after the list is reloaded
 with them inside the window.
 
 ### Recommendation
