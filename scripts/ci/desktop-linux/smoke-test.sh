@@ -8,6 +8,9 @@
 # "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
 # "search" also searches in both layouts: the test directory with "Search in Directory", and the full search with
 # Enter, which also resolves a SimpleX name; with the toolbar at the bottom, also the full search in the New chat sheet.
+# Then it joins ci_channel from its Directory row and checks, in both layouts, that a page of chats already listed
+# says so and that ci_channel, when the list doesn't show it, is its chat's row in the Directory part, opening it
+# without an alert; and, with the toolbar at the bottom, that it is a chat row in the New chat sheet too.
 # These three need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
@@ -356,6 +359,146 @@ new_chat_sheet_search() {
   back_to_chat_list || fail "no chat list after the New chat sheet"
 }
 
+# OCR reads a Directory row's name with its "#", which normalise drops, and a chat's row without it
+no_ci_channel_directory_row() {
+  local line
+  while IFS= read -r line; do
+    if [ "${line%%,*}" -lt 390 ] && grep -qE '#ci_ ?chan' <<< "${line#* }"; then
+      return 1
+    fi
+  done < <("$ui" text)
+}
+
+# the alert of a directory entry the user has, which a chat's own row doesn't show
+no_subscriber_alert() {
+  ! "$ui" find "You are a subscriber" > /dev/null 2>&1
+}
+
+# waits up to 60 s for the text in the chat list pane
+wait_in_list() {
+  local deadline=$((SECONDS + 60))
+  until on_screen "$1"; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+# clicks the text in the chat list pane
+click_in_list() {
+  local pos
+  pos=$(left_pane_position "$1") || fail "\"$1\" is not in the chat list pane"
+  "$ui" click "${pos% *}" "${pos#* }"
+}
+
+# Clicks the lowest text in the right pane, where the open chat is: its bars are at the bottom, below its messages.
+click_in_chat() {
+  local target line x y found=""
+  target=$(normalise "$1")
+  while IFS= read -r line; do
+    x=${line%%,*}
+    y=${line#*,}
+    y=${y%% *}
+    [ "$x" -ge 390 ] || continue
+    case "$(normalise "${line#* }")" in
+      *"$target"*) found="$x $y" ;;
+    esac
+  done < <("$ui" text)
+  [ -n "$found" ] || return 1
+  "$ui" click "${found% *}" "${found#* }"
+}
+
+# Selects the search field's text and deletes it: Escape would go to the open chat when it has the keyboard focus.
+clear_search_field() {
+  local y=104
+  [ "$1" = bottom ] && y=674
+  "$ui" click 200 "$y"
+  "$ui" key ctrl+a BackSpace
+  "$ui" wait "Search or paste SimpleX link" 10 || fail "$1: the search field is not empty"
+}
+
+# Joins ci_channel from its Directory row, with the toolbar at the top, so that it is a chat the later searches find.
+join_directory_channel() {
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$search_text"
+  "$ui" wait "Search in Directory" 15
+  "$ui" click-text "Search in Directory"
+  show_all_results top-join
+  "$ui" click-text "#ci_channel"
+  "$ui" click-text "Open channel" 30
+  "$ui" wait "Tap Join channel" 30
+  click_in_chat "Join channel" || fail "no \"Join channel\" in the opened channel"
+  check "top: ci_channel joined from its Directory row" "$ui" wait "you are subscriber" 60
+  "$ui" shot top-joined-channel
+  clear_search_field top
+}
+
+# With ci_channel joined, "ci seed" finds it on the first page, as its chat row, and #ci_group on the second.
+show_known_results() {
+  local what=$1
+  if ! wait_in_list "Show more" && on_screen "Search failed, tap to retry"; then
+    "$ui" click-text "Search failed, tap to retry"
+    wait_in_list "Show more" || true
+  fi
+  "$ui" shot "$what-page-1"
+  "$ui" click-text "Show more" 10 || fail "$what: no \"Show more\" after the first page"
+  "$ui" wait "#ci_group" 60 || true
+  "$ui" shot "$what-page-2"
+}
+
+# A directory result that is a chat the user has. Typed `ci_channel`, it is listed as the chat open in the right pane,
+# so the page added no row and the Directory part says so. With "seeded notes" open and `ci seed` typed, the list
+# doesn't show it, so it is its chat row in the Directory part, and clicking it opens it.
+known_channel_searches() {
+  local layout=$1
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type ci_channel
+  "$ui" wait "Search in Directory" 15
+  "$ui" click-text "Search in Directory"
+  # the note is a long line, which OCR can split after its first words
+  wait_in_list "All results on this page" || true
+  "$ui" shot "$layout-known-listed"
+  check "$layout: a page of chats already listed says so" on_screen "All results on this page"
+  check "$layout: no #ci_channel Directory row next to the listed chat" no_ci_channel_directory_row
+  check "$layout: no \"Join channel\" next to the listed chat" not_on_screen "Join channel"
+  clear_search_field "$layout"
+  click_in_list "$local_chat"
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$search_text"
+  "$ui" wait "Search in Directory" 15
+  "$ui" click-text "Search in Directory"
+  show_known_results "$layout-known"
+  check "$layout: ci_channel is a row of the Directory part" above "Directory" "ci_channel"
+  check "$layout: ci_channel is its chat's row, not #ci_channel" no_ci_channel_directory_row
+  check "$layout: ci_channel has no \"Join channel\"" not_on_screen "Join channel"
+  check "$layout: #ci_group row keeps \"Join group\"" in_row_of "Join group" "#ci_group"
+  click_in_list ci_channel
+  sleep 2
+  "$ui" shot "$layout-known-opened"
+  check "$layout: clicking ci_channel's row shows no alert" no_subscriber_alert
+  check "$layout: clicking ci_channel's row opens the channel" "$ui" wait "you are subscriber" 15
+  clear_search_field "$layout"
+}
+
+# New chat lists only contacts, so there too the joined channel is a chat row in the Directory part.
+new_chat_known_channel() {
+  "$ui" click 363 730
+  "$ui" wait "Create group" 10
+  "$ui" click-text "Search or paste SimpleX link"
+  "$ui" type "$search_text"
+  "$ui" wait "Search in Directory" 15
+  "$ui" click-text "Search in Directory"
+  show_known_results new-chat-known
+  check "New chat: ci_channel is a row of the Directory part" above "Directory" "ci_channel"
+  check "New chat: ci_channel is its chat's row, not #ci_channel" no_ci_channel_directory_row
+  check "New chat: ci_channel has no \"Join channel\"" not_on_screen "Join channel"
+  check "New chat: #ci_group row keeps \"Join group\"" in_row_of "Join group" "#ci_group"
+  # with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
+  "$ui" key Escape
+  "$ui" wait "Create group" 10
+  "$ui" click 27 730
+  back_to_chat_list || fail "no chat list after the New chat sheet"
+}
+
 # Escape closes one screen at a time, and clears the search field
 back_to_chat_list() {
   for _ in 1 2 3 4 5 6; do
@@ -370,17 +513,23 @@ on_chat_list() {
   not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"
 }
 
-# Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
+# Opens Settings from the user menu, behind the profile picture at the left of the toolbar: at the bottom (y 730) unless
+# the toolbar is at the top (y 48).
 open_settings() {
-  "$ui" click 27 730
+  "$ui" click 27 "${1:-730}"
   "$ui" click-text "Settings" 10
 }
 
-# Turns "Reachable app toolbars" off in Settings > Appearance, which moves the toolbar and the search field to the top.
-use_top_toolbar() {
-  local y
+# Switches "Reachable app toolbars" in Settings > Appearance, which moves the toolbar and the search field to the top
+# (off) or the bottom (on).
+switch_toolbar() {
+  local to=$1 y
   "$ui" key Escape
-  open_settings
+  if [ "$to" = top ]; then
+    open_settings 730
+  else
+    open_settings 48
+  fi
   "$ui" click-text "Appearance" 10
   "$ui" wait "Reachable app toolbars" 10
   "$ui" shot appearance
@@ -388,9 +537,13 @@ use_top_toolbar() {
   "$ui" click "$switch_x" "$y"
   "$ui" shot appearance-toolbar-switched
   back_to_chat_list || true
-  "$ui" shot top-chat-list
+  "$ui" shot "$to-chat-list"
   y=$(y_of "Search or paste SimpleX link") || fail "no search field after closing Settings"
-  [ "$y" -lt 200 ] || fail "the search field is still at the bottom (y $y) after switching Reachable app toolbars"
+  if [ "$to" = top ]; then
+    [ "$y" -lt 200 ] || fail "the search field is still at the bottom (y $y) after switching Reachable app toolbars"
+  else
+    [ "$y" -gt 600 ] || fail "the search field is still at the top (y $y) after switching Reachable app toolbars"
+  fi
 }
 
 # The search field and "Add list" next to it: at the bottom of the chat list, "Add list" above the field; at the top, below it.
@@ -582,7 +735,7 @@ if [ "$cases" = search ]; then
   full_search bottom "Search"
   new_chat_sheet_search "Search"
 fi
-use_top_toolbar
+switch_toolbar top
 check_layout top
 # the alert was answered with "Search" both times, so it asks again
 if [ "$cases" = search ]; then
@@ -594,9 +747,18 @@ if [ "$cases" = search ]; then
   cards_while_typing top
   search_directory top "Search and don't show again"
   full_search top ""
+  join_directory_channel
+  known_channel_searches top
+  switch_toolbar bottom
+  known_channel_searches bottom
+  new_chat_known_channel
 fi
 
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
+fi
+if [ "$cases" = search ]; then
+  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the directory and name searches showed their parts, and the joined ci_channel is a chat row in the Directory part (chat list in both layouts, New chat), with the note for a page of chats already listed"
+  exit 0
 fi
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"
