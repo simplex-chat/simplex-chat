@@ -313,7 +313,9 @@ actual object CallSoundsPlayer: CallSoundsPlayerInterface {
   override fun startConnectingCallSound(scope: CoroutineScope) {
     // Taken from https://github.com/TelegramOrg/Telegram-Android
     // https://github.com/TelegramOrg/Telegram-Android/blob/master/LICENSE
-    start("/media/connecting_call.mp3", 3000, scope)
+    // the delay is the length of the track exactly, so it repeats with no delay, which already happens on ios and android
+    // Android (isLooping) and iOS (which sleeps for the track duration)
+    start("/media/connecting_call.mp3", 3536, scope)
   }
 
   override fun startInCallSound(scope: CoroutineScope) {
