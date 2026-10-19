@@ -378,8 +378,10 @@
     "file-proto-h-4": "Router data independen",
     "file-proto-p-4": "Saat file dipecah menjadi fragmen, file tersebut dikirim melalui router jaringan yang dioperasikan oleh pihak independen. Tidak ada operator yang dapat melihat ukuran atau nama file yang sebenarnya. Bahkan jika sebuah router dikompromikan, router itu hanya dapat melihat fragmen terenkripsi berukuran tetap. Fragmen file di-cache oleh router jaringan selama sekitar 48 jam.",
     "file-proto-spec": "Baca spesifikasi protokol XFTP →",
-    "links": "Tautan",
+    "links": "Komunitas",
     "links-title": "Tautan Komunitas",
     "links-all-languages": "Semua Bahasa",
-    "why-film": "Tonton film 2 menit di YouTube"
+    "why-film": "Tonton film 2 menit di YouTube",
+    "index-hero-invest": "Berinvestasilah di SimpleX Chat.",
+    "index-hero-invest-cta": "Pelajari lebih lanjut di Wefunder."
 }
