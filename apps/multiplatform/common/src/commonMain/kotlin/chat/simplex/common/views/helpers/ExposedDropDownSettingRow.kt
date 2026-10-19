@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import dev.icerock.moko.resources.ImageResource
@@ -46,7 +46,7 @@ fun <T> ExposedDropDownSetting(
       horizontalArrangement = Arrangement.End
     ) {
       Text(
-        values.first { it.first == selection.value }.second + (if (label != null) " $label" else ""),
+        (values.firstOrNull { it.first == selection.value }?.second ?: "") + (if (label != null) " $label" else ""),
         Modifier.widthIn(max = maxWidth),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -120,8 +120,10 @@ fun <T> ExposedDropDownSettingWithIcon(
         ),
       contentAlignment = Alignment.Center
     ) {
-      val choice = values.first { it.first == selection.value }
-      Icon(painterResource(choice.second), choice.third, Modifier.padding(boxSize * iconPaddingPercent).fillMaxSize(), tint = iconColor)
+      val choice = values.firstOrNull { it.first == selection.value }
+      if (choice != null) {
+        Icon(painterResource(choice.second), choice.third, Modifier.padding(boxSize * iconPaddingPercent).fillMaxSize(), tint = iconColor)
+      }
     }
     DefaultExposedDropdownMenu(
       modifier = Modifier.widthIn(min = minWidth),

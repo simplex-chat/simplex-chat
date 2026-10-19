@@ -26,6 +26,8 @@ struct GroupProfileView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var groupInfo: GroupInfo
     @State var groupProfile: GroupProfile
+    @State private var shortDescr: String = ""
+    @State private var currentProfileHash: Int?
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
@@ -34,66 +36,65 @@ struct GroupProfileView: View {
     @FocusState private var focusDisplayName
 
     var body: some View {
-        return VStack(alignment: .leading) {
-            Text("Group profile is stored on members' devices, not on the servers.")
-                .padding(.vertical)
+        List {
+            EditProfileImage(profileImage: $groupProfile.image, icon: Image(systemName: groupInfo.chatIconName), showChooseSource: $showChooseSource)
+                .if(!focusDisplayName) { $0.padding(.top) }
 
-            ZStack(alignment: .center) {
-                ZStack(alignment: .topTrailing) {
-                    profileImageView(groupProfile.image)
-                    if groupProfile.image != nil {
-                        Button {
-                            groupProfile.image = nil
-                        } label: {
-                            Image(systemName: "multiply")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 12)
-                        }
-                    }
-                }
-
-                editImageButton { showChooseSource = true }
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-
-            VStack(alignment: .leading) {
-                ZStack(alignment: .topLeading) {
-                    if !validNewProfileName() {
+            Section {
+                HStack {
+                    TextField(groupInfo.useRelays ? "Channel display name" : "Group display name", text: $groupProfile.displayName)
+                        .focused($focusDisplayName)
+                    if !validNewProfileName {
                         Button {
                             alert = .invalidName(validName: mkValidName(groupProfile.displayName))
                         } label: {
                             Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                         }
-                    } else {
-                        Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
                     }
-                    profileNameTextEdit("Group display name", $groupProfile.displayName)
-                        .focused($focusDisplayName)
                 }
-                .padding(.bottom)
                 let fullName = groupInfo.groupProfile.fullName
                 if fullName != "" && fullName != groupProfile.displayName {
-                    profileNameTextEdit("Group full name (optional)", $groupProfile.fullName)
-                        .padding(.bottom)
+                    TextField(groupInfo.useRelays ? "Channel full name (optional)" : "Group full name (optional)", text: $groupProfile.fullName)
                 }
-                HStack(spacing: 20) {
-                    Button("Cancel") { dismiss() }
-                    Button("Save group profile") { saveProfile() }
-                        .disabled(!canUpdateProfile())
+                HStack {
+                    TextField("Short description", text: $shortDescr)
+                    if !shortDescrFitsLimit() {
+                        Button {
+                            showAlert(NSLocalizedString("Description too large", comment: "alert title"))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    }
                 }
+            } footer: {
+                Text(groupInfo.useRelays ? "Channel profile is stored on subscribers' devices and on the chat relays." : "Group profile is stored on members' devices, not on the servers.")
             }
-            .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
 
+            Section {
+                Button("Reset") {
+                    groupProfile = groupInfo.groupProfile
+                    shortDescr = groupInfo.groupProfile.shortDescr ?? ""
+                    currentProfileHash = groupProfile.hashValue
+                }
+                .disabled(
+                    currentProfileHash == groupProfile.hashValue &&
+                    (groupInfo.groupProfile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces)
+                )
+                Button(groupInfo.useRelays ? "Save channel profile" : "Save group profile", action: saveProfile)
+                .disabled(!canUpdateProfile)
+            }
         }
-        .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
-        .confirmationDialog("Group image", isPresented: $showChooseSource, titleVisibility: .visible) {
+        .confirmationDialog(groupInfo.useRelays ? "Channel image" : "Group image", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
                 showTakePhoto = true
             }
             Button("Choose from library") {
                 showImagePicker = true
+            }
+            if UIPasteboard.general.hasImages {
+                Button("Paste image") {
+                    chosenImage = UIPasteboard.general.image
+                }
             }
         }
         .fullScreenCover(isPresented: $showTakePhoto) {
@@ -120,45 +121,73 @@ struct GroupProfileView: View {
             }
         }
         .onAppear {
+            currentProfileHash = groupProfile.hashValue
+            shortDescr = groupInfo.groupProfile.shortDescr ?? ""
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                focusDisplayName = true
+                withAnimation { focusDisplayName = true }
+            }
+        }
+        .onDisappear {
+            if canUpdateProfile {
+                showAlert(
+                    title: groupInfo.useRelays
+                        ? NSLocalizedString("Save channel profile?", comment: "alert title")
+                        : NSLocalizedString("Save group profile?", comment: "alert title"),
+                    message: groupInfo.useRelays
+                        ? NSLocalizedString("Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers.", comment: "alert message")
+                        : NSLocalizedString("Group profile was changed. If you save it, the updated profile will be sent to group members.", comment: "alert message"),
+                    buttonTitle: groupInfo.useRelays
+                        ? NSLocalizedString("Save (and notify subscribers)", comment: "alert button")
+                        : NSLocalizedString("Save (and notify members)", comment: "alert button"),
+                    buttonAction: saveProfile,
+                    cancelButton: true
+                )
             }
         }
         .alert(item: $alert) { a in
             switch a {
             case let .saveError(err):
                 return Alert(
-                    title: Text("Error saving group profile"),
+                    title: Text(groupInfo.useRelays ? "Error saving channel profile" : "Error saving group profile"),
                     message: Text(err)
                 )
             case let .invalidName(name):
                 return createInvalidNameAlert(name, $groupProfile.displayName)
             }
         }
-        .contentShape(Rectangle())
-        .onTapGesture { hideKeyboard() }
+        .navigationBarTitle(groupInfo.useRelays ? "Channel profile" : "Group profile")
+        .modifier(ThemedBackground(grouped: true))
+        .navigationBarTitleDisplayMode(focusDisplayName ? .inline : .large)
     }
 
-    private func canUpdateProfile() -> Bool {
-        groupProfile.displayName.trimmingCharacters(in: .whitespaces) != "" && validNewProfileName()
+    private var canUpdateProfile: Bool {
+        (
+            currentProfileHash != groupProfile.hashValue ||
+            (groupProfile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces)
+        ) &&
+        groupProfile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
+        validNewProfileName &&
+        shortDescrFitsLimit()
     }
 
-    private func validNewProfileName() -> Bool {
+    private var validNewProfileName: Bool {
         groupProfile.displayName == groupInfo.groupProfile.displayName
             || validDisplayName(groupProfile.displayName.trimmingCharacters(in: .whitespaces))
     }
 
-    func profileNameTextEdit(_ label: LocalizedStringKey, _ name: Binding<String>) -> some View {
-        TextField(label, text: name)
-            .padding(.leading, 32)
+    private func shortDescrFitsLimit() -> Bool {
+        chatJsonLength(shortDescr) <= MAX_BIO_LENGTH_BYTES
     }
 
     func saveProfile() {
         Task {
             do {
                 groupProfile.displayName = groupProfile.displayName.trimmingCharacters(in: .whitespaces)
+                groupProfile.fullName = groupProfile.fullName.trimmingCharacters(in: .whitespaces)
+                groupProfile.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
                 let gInfo = try await apiUpdateGroup(groupInfo.groupId, groupProfile)
                 await MainActor.run {
+                    currentProfileHash = groupProfile.hashValue
                     groupInfo = gInfo
                     chatModel.updateGroup(gInfo)
                     dismiss()
@@ -174,6 +203,9 @@ struct GroupProfileView: View {
 
 struct GroupProfileView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupProfileView(groupInfo: Binding.constant(GroupInfo.sampleData), groupProfile: GroupProfile.sampleData)
+        GroupProfileView(
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            groupProfile: GroupProfile.sampleData
+        )
     }
 }

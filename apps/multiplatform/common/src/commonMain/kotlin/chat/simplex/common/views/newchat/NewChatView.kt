@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
+import SectionViewWithButton
 import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -19,9 +21,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -31,36 +35,36 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.common.BuildConfigCommon
+import chat.simplex.res.*
 import kotlinx.coroutines.*
-import java.net.URI
 
 enum class NewChatOption {
   INVITE, CONNECT
 }
 
 @Composable
-fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, close: () -> Unit) {
+fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, onboarding: Boolean = false, close: () -> Unit) {
   val selection = remember { stateGetOrPut("selection") { selection } }
   val showQRCodeScanner = remember { stateGetOrPut("showQRCodeScanner") { showQRCodeScanner } }
   val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(chatModel.showingInvitation.value?.conn) }
-  val connReqInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connReq ?: "" } }
+  val connLinkInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connLink ?: CreatedConnLink("", null) } }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   val pastedLink = rememberSaveable { mutableStateOf("") }
   LaunchedEffect(selection.value) {
     if (
       selection.value == NewChatOption.INVITE
-      && connReqInvitation.isEmpty()
+      && connLinkInvitation.connFullLink.isEmpty()
       && contactConnection.value == null
       && !creatingConnReq.value
     ) {
-      createInvitation(rh?.remoteHostId, creatingConnReq, connReqInvitation, contactConnection)
+      createInvitation(rh?.remoteHostId, creatingConnReq, connLinkInvitation, contactConnection)
     }
   }
   DisposableEffect(Unit) {
@@ -103,60 +107,71 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
     }
   }
 
-  BoxWithConstraints {
+  if (onboarding) {
     ColumnWithScrollBar {
-      AppBarTitle(stringResource(MR.strings.new_chat), hostDevice(rh?.remoteHostId), bottomPadding = DEFAULT_PADDING)
-      val scope = rememberCoroutineScope()
-      val pagerState = rememberPagerState(
-        initialPage = selection.value.ordinal,
-        initialPageOffsetFraction = 0f
-      ) { NewChatOption.values().size }
-      KeyChangeEffect(pagerState.currentPage) {
-        selection.value = NewChatOption.values()[pagerState.currentPage]
+      Spacer(Modifier.height(DEFAULT_PADDING))
+      when (selection.value) {
+        NewChatOption.INVITE -> PrepareAndInviteView(rh?.remoteHostId, contactConnection, connLinkInvitation, creatingConnReq, onboarding = true)
+        NewChatOption.CONNECT -> ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close, onboarding = true)
       }
-      TabRow(
-        selectedTabIndex = pagerState.currentPage,
-        backgroundColor = Color.Transparent,
-        contentColor = MaterialTheme.colors.primary,
-      ) {
-        tabTitles.forEachIndexed { index, it ->
-          LeadingIconTab(
-            selected = pagerState.currentPage == index,
-            onClick = {
-              scope.launch {
-                pagerState.animateScrollToPage(index)
-              }
-            },
-            text = { Text(it, fontSize = 13.sp) },
-            icon = {
-              Icon(
-                if (NewChatOption.INVITE.ordinal == index) painterResource(MR.images.ic_repeat_one) else painterResource(MR.images.ic_qr_code),
-                it
-              )
-            },
-            selectedContentColor = MaterialTheme.colors.primary,
-            unselectedContentColor = MaterialTheme.colors.secondary,
-          )
+      SectionBottomSpacer()
+    }
+  } else {
+    BoxWithConstraints {
+      ColumnWithScrollBar {
+        AppBarTitle(stringResource(MR.strings.new_chat), hostDevice(rh?.remoteHostId), bottomPadding = DEFAULT_PADDING)
+        val scope = rememberCoroutineScope()
+        val pagerState = rememberPagerState(
+          initialPage = selection.value.ordinal,
+          initialPageOffsetFraction = 0f
+        ) { NewChatOption.values().size }
+        KeyChangeEffect(pagerState.currentPage) {
+          selection.value = NewChatOption.values()[pagerState.currentPage]
         }
-      }
-
-      HorizontalPager(state = pagerState, Modifier, pageNestedScrollConnection = LocalAppBarHandler.current!!.connection, verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
-        Column(
-          Modifier
-            .fillMaxWidth()
-            .heightIn(min = this@BoxWithConstraints.maxHeight - 150.dp),
-          verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top
+        TabRow(
+          selectedTabIndex = pagerState.currentPage,
+          backgroundColor = Color.Transparent,
+          contentColor = MaterialTheme.colors.primary,
         ) {
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          when (index) {
-            NewChatOption.INVITE.ordinal -> {
-              PrepareAndInviteView(rh?.remoteHostId, contactConnection, connReqInvitation, creatingConnReq)
-            }
-            NewChatOption.CONNECT.ordinal -> {
-              ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
-            }
+          tabTitles.forEachIndexed { index, it ->
+            LeadingIconTab(
+              selected = pagerState.currentPage == index,
+              onClick = {
+                scope.launch {
+                  pagerState.animateScrollToPage(index)
+                }
+              },
+              text = { Text(it, fontSize = 13.sp) },
+              icon = {
+                Icon(
+                  if (NewChatOption.INVITE.ordinal == index) painterResource(MR.images.ic_repeat_one) else painterResource(MR.images.ic_qr_code),
+                  it
+                )
+              },
+              selectedContentColor = MaterialTheme.colors.primary,
+              unselectedContentColor = MaterialTheme.colors.secondary,
+            )
           }
-          SectionBottomSpacer()
+        }
+
+        HorizontalPager(state = pagerState, Modifier, pageNestedScrollConnection = LocalAppBarHandler.current!!.connection, verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
+          Column(
+            Modifier
+              .fillMaxWidth()
+              .heightIn(min = this@BoxWithConstraints.maxHeight - 150.dp),
+            verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connLinkInvitation.connFullLink.isEmpty()) Arrangement.Center else Arrangement.Top
+          ) {
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            when (index) {
+              NewChatOption.INVITE.ordinal -> {
+                PrepareAndInviteView(rh?.remoteHostId, contactConnection, connLinkInvitation, creatingConnReq)
+              }
+              NewChatOption.CONNECT.ordinal -> {
+                ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
+              }
+            }
+            SectionBottomSpacer()
+          }
         }
       }
     }
@@ -164,17 +179,18 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
 }
 
 @Composable
-private fun PrepareAndInviteView(rhId: Long?, contactConnection: MutableState<PendingContactConnection?>, connReqInvitation: String, creatingConnReq: MutableState<Boolean>) {
-  if (connReqInvitation.isNotEmpty()) {
+private fun PrepareAndInviteView(rhId: Long?, contactConnection: MutableState<PendingContactConnection?>, connLinkInvitation: CreatedConnLink, creatingConnReq: MutableState<Boolean>, onboarding: Boolean = false) {
+  if (connLinkInvitation.connFullLink.isNotEmpty()) {
     InviteView(
       rhId,
-      connReqInvitation = connReqInvitation,
+      connLinkInvitation = connLinkInvitation,
       contactConnection = contactConnection,
+      onboarding = onboarding,
     )
   } else if (creatingConnReq.value) {
     CreatingLinkProgressView()
   } else {
-    RetryButton { createInvitation(rhId, creatingConnReq, connReqInvitation, contactConnection) }
+    RetryButton { createInvitation(rhId, creatingConnReq, connLinkInvitation, contactConnection) }
   }
 }
 
@@ -187,7 +203,7 @@ private fun updateShownConnection(conn: PendingContactConnection) {
   chatModel.showingInvitation.value = chatModel.showingInvitation.value?.copy(
     conn = conn,
     connId = conn.id,
-    connReq = conn.connReqInv ?: "",
+    connLink = conn.connLinkInv ?: CreatedConnLink("", null),
     connChatUsed = true
   )
 }
@@ -214,7 +230,8 @@ private fun ProfilePickerOption(
   disabled: Boolean,
   onSelected: () -> Unit,
   image: @Composable () -> Unit,
-  onInfo: (() -> Unit)? = null
+  onInfo: (() -> Unit)? = null,
+  badge: LocalBadge? = null
 ) {
   Row(
     Modifier
@@ -227,7 +244,7 @@ private fun ProfilePickerOption(
   ) {
     image()
     TextIconSpaced(false)
-    Text(title, modifier = Modifier.align(Alignment.CenterVertically))
+    NameWithBadge(title, badge, Modifier.align(Alignment.CenterVertically))
     if (onInfo != null) {
       Spacer(Modifier.padding(6.dp))
       Column(Modifier
@@ -315,8 +332,8 @@ fun ActiveProfilePicker(
             if (contactConnection != null) {
               updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
               if (updatedConn != null) {
-                withChats {
-                  updateContactConnection(rhId, updatedConn)
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
                   updateShownConnection(updatedConn)
                 }
               }
@@ -338,8 +355,8 @@ fun ActiveProfilePicker(
             }
 
             if (updatedConn != null) {
-              withChats {
-                updateContactConnection(user.remoteHostId, updatedConn)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
               }
             }
 
@@ -349,7 +366,8 @@ fun ActiveProfilePicker(
           }
         }
       },
-        image = { ProfileImage(size = 42.dp, image = user.image) }
+        image = { ProfileImage(size = 42.dp, image = user.image) },
+        badge = user.profile.localBadge
     )
   }
 
@@ -368,8 +386,8 @@ fun ActiveProfilePicker(
             appPreferences.incognito.set(true)
             val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
             if (conn != null) {
-              withChats {
-                updateContactConnection(rhId, conn)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContactConnection(rhId, conn)
                 updateShownConnection(conn)
               }
               close()
@@ -380,14 +398,7 @@ fun ActiveProfilePicker(
         }
       },
       image = {
-        Spacer(Modifier.width(8.dp))
-        Icon(
-          painterResource(MR.images.ic_theater_comedy_filled),
-          contentDescription = stringResource(MR.strings.incognito),
-          Modifier.size(32.dp),
-          tint = Indigo,
-        )
-        Spacer(Modifier.width(2.dp))
+        IncognitoOptionImage()
       },
       onInfo = { ModalManager.start.showModal { IncognitoView() } },
     )
@@ -410,7 +421,10 @@ fun ActiveProfilePicker(
         val activeProfile = filteredProfiles.firstOrNull { it.activeUser }
 
         if (activeProfile != null) {
-          val otherProfiles = filteredProfiles.filter { it.userId != activeProfile.userId }
+          val otherProfiles =
+            filteredProfiles
+              .filter { it.userId != activeProfile.userId }
+              .sortedByDescending { it.activeOrder }
           item {
             when {
               !showIncognito ->
@@ -451,17 +465,53 @@ fun ActiveProfilePicker(
 }
 
 @Composable
-private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection: MutableState<PendingContactConnection?>) {
-  SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
-    LinkTextView(connReqInvitation, true)
+private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contactConnection: MutableState<PendingContactConnection?>, onboarding: Boolean = false) {
+  val showShortLink = remember { mutableStateOf(true) }
+
+  if (BuildConfigCommon.SIMPLEX_ASSETS) {
+    Image(
+      painterResource(if (isInDarkTheme()) {
+        if (onboarding) MR.images.one_time_link_light else MR.images.one_time_link_small_light
+      } else {
+        if (onboarding) MR.images.one_time_link else MR.images.one_time_link_small
+      }),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier.fillMaxWidth()
+    )
+  } else {
+    Spacer(Modifier.height(10.dp))
   }
 
-  Spacer(Modifier.height(10.dp))
+  if (onboarding) {
+    Text(
+      stringResource(MR.strings.onboarding_send_1_time_link),
+      Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+      style = MaterialTheme.typography.body1
+    )
+    LinkTextView(connLinkInvitation.simplexChatUri(short = showShortLink.value), true)
+    Text(
+      stringResource(MR.strings.onboarding_or_show_qr_code),
+      Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+      style = MaterialTheme.typography.body1
+    )
+    SimpleXCreatedLinkQRCode(connLinkInvitation, short = showShortLink.value, onShare = { chatModel.markShowingInvitationUsed() })
+  } else {
+    SectionView(stringResource(MR.strings.share_this_1_time_link), headerBottomPadding = 5.dp) {
+      LinkTextView(connLinkInvitation.simplexChatUri(short = showShortLink.value), true)
+    }
 
-  SectionView(stringResource(MR.strings.or_show_this_qr_code).uppercase(), headerBottomPadding = 5.dp) {
-    SimpleXLinkQRCode(connReqInvitation, onShare = { chatModel.markShowingInvitationUsed() })
+    Spacer(Modifier.height(DEFAULT_PADDING))
+
+    SectionViewWithButton(
+      stringResource(MR.strings.or_show_this_qr_code).uppercase(),
+      titleButton = if (connLinkInvitation.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
+    ) {
+      SimpleXCreatedLinkQRCode(connLinkInvitation, short = showShortLink.value, onShare = { chatModel.markShowingInvitationUsed() })
+    }
   }
 
+  if (!onboarding) {
   Spacer(Modifier.height(DEFAULT_PADDING))
   val incognito by remember(chatModel.showingInvitation.value?.conn?.incognito, controller.appPrefs.incognito.get()) {
     derivedStateOf {
@@ -471,7 +521,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   val currentUser = remember { chatModel.currentUser }.value
 
   if (currentUser != null) {
-    SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase(), headerBottomPadding = 5.dp) {
+    SectionView(stringResource(MR.strings.new_chat_share_profile), headerBottomPadding = 5.dp) {
       SectionItemView(
         padding = PaddingValues(
           top = 0.dp,
@@ -528,6 +578,33 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
       SectionTextFooter(generalGetString(MR.strings.connect__a_new_random_profile_will_be_shared))
     }
   }
+  }
+}
+
+@Composable
+fun ToggleShortLinkButton(short: MutableState<Boolean>) {
+  if (appPrefs.developerTools.state.value) {
+    Text(
+      stringResource(if (short.value) MR.strings.full_link_button_text else MR.strings.short_link_button_text),
+      modifier = Modifier.clickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null
+      ) { short.value = !short.value },
+      style = MaterialTheme.typography.body2, fontSize = 14.sp, color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+@Composable
+fun IncognitoOptionImage() {
+  Spacer(Modifier.width(8.dp))
+  Icon(
+    painterResource(MR.images.ic_theater_comedy_filled),
+    contentDescription = stringResource(MR.strings.incognito),
+    Modifier.size(32.dp),
+    tint = Indigo,
+  )
+  Spacer(Modifier.width(2.dp))
 }
 
 @Composable
@@ -548,15 +625,34 @@ fun AddContactLearnMoreButton() {
 }
 
 @Composable
-private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, pastedLink: MutableState<String>, close: () -> Unit) {
-  SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
+private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, pastedLink: MutableState<String>, close: () -> Unit, onboarding: Boolean = false) {
+  DisposableEffect(Unit) {
+    onDispose {
+      connectProgressManager.cancelConnectProgress()
+    }
+  }
+
+  if (BuildConfigCommon.SIMPLEX_ASSETS) {
+    Image(
+      painterResource(if (isInDarkTheme()) {
+        if (onboarding) MR.images.connect_via_link_light else MR.images.connect_via_link_small_light
+      } else {
+        if (onboarding) MR.images.connect_via_link else MR.images.connect_via_link_small
+      }),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier.fillMaxWidth()
+    )
+  }
+
+  SectionView(stringResource(MR.strings.paste_the_link_you_received), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
 
   if (appPlatform.isAndroid) {
     Spacer(Modifier.height(10.dp))
 
-    SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
+    SectionView(stringResource(MR.strings.or_scan_qr_code), headerBottomPadding = 5.dp) {
       QRCodeScanner(showQRCodeScanner) { text ->
         val linkVerified = verifyOnly(text)
         if (!linkVerified) {
@@ -577,22 +673,42 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
     val clipboard = LocalClipboardManager.current
     SectionItemView({
       val str = clipboard.getText()?.text ?: return@SectionItemView
-      val link = strHasSingleSimplexLink(str.trim())
-      if (link != null) {
-        pastedLink.value = link.text
-        showQRCodeScanner.value = false
-        withBGApi { connect(rhId, link.text, close) { pastedLink.value = "" } }
-      } else {
-        AlertManager.shared.showAlertMsg(
+      when (val target = strConnectTarget(str.trim())) {
+        is ConnectTarget.Link -> {
+          pastedLink.value = target.text
+          showQRCodeScanner.value = false
+          withBGApi { connect(rhId, target.text, close) { pastedLink.value = "" } }
+        }
+        is ConnectTarget.Name -> {
+          pastedLink.value = target.text
+          showQRCodeScanner.value = false
+          withBGApi { connect(rhId, target.text, close) { pastedLink.value = "" } }
+        }
+        null -> AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.invalid_contact_link),
           text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
         )
       }
     }) {
-      Text(stringResource(MR.strings.tap_to_paste_link))
+      Box(Modifier.weight(1f)) {
+        Text(stringResource(MR.strings.tap_to_paste_link), color = MaterialTheme.colors.primary)
+      }
+      if (connectProgressManager.showConnectProgress != null) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
+      }
     }
   } else {
-    LinkTextView(pastedLink.value, false)
+    Row(
+      Modifier.padding(end = DEFAULT_PADDING),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Box(Modifier.weight(1f)) {
+        LinkTextView(pastedLink.value, false)
+      }
+      if (connectProgressManager.showConnectProgress != null) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
+      }
+    }
   }
 }
 
@@ -634,6 +750,13 @@ fun LinkTextView(link: String, share: Boolean) {
       Spacer(Modifier.width(DEFAULT_PADDING))
       IconButton({
         chatModel.markShowingInvitationUsed()
+        clipboard.setText(AnnotatedString(link))
+      }, Modifier.size(20.dp)) {
+        Icon(painterResource(MR.images.ic_content_copy), null, tint = MaterialTheme.colors.primary)
+      }
+      Spacer(Modifier.width(DEFAULT_PADDING))
+      IconButton({
+        chatModel.markShowingInvitationUsed()
         clipboard.shareText(link)
       }, Modifier.size(20.dp)) {
         Icon(painterResource(MR.images.ic_share_filled), null, tint = MaterialTheme.colors.primary)
@@ -670,24 +793,23 @@ private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanu
     rhId,
     link,
     close = close,
-    cleanup = cleanup,
-    incognito = null
+    cleanup = cleanup
   ).await()
 
 private fun createInvitation(
   rhId: Long?,
   creatingConnReq: MutableState<Boolean>,
-  connReqInvitation: String,
+  connLinkInvitation: CreatedConnLink,
   contactConnection: MutableState<PendingContactConnection?>
 ) {
-  if (connReqInvitation.isNotEmpty() || contactConnection.value != null || creatingConnReq.value) return
+  if (connLinkInvitation.connFullLink.isNotEmpty() || contactConnection.value != null || creatingConnReq.value) return
   creatingConnReq.value = true
   withBGApi {
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
     if (r != null) {
-      withChats {
-        updateContactConnection(rhId, r.second)
-        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false, conn = r.second)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateContactConnection(rhId, r.second)
+        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connLink = r.first, connChatUsed = false, conn = r.second)
         contactConnection.value = r.second
       }
     } else {
@@ -704,12 +826,25 @@ fun strIsSimplexLink(str: String): Boolean {
   return parsedMd != null && parsedMd.size == 1 && parsedMd[0].format is Format.SimplexLink
 }
 
-fun strHasSingleSimplexLink(str: String): FormattedText? {
-  val parsedMd = parseToMarkdown(str) ?: return null
-  val parsedLinks = parsedMd.filter { it.format?.isSimplexLink ?: false }
-  if (parsedLinks.size != 1) return null
+sealed class ConnectTarget {
+  class Link(val text: String, val linkType: SimplexLinkType, val linkText: String) : ConnectTarget()
+  class Name(val text: String, val nameInfo: SimplexNameInfo) : ConnectTarget()
+}
 
-  return parsedLinks[0]
+fun strConnectTarget(str: String): ConnectTarget? {
+  val parsedMd = parseToMarkdown(str) ?: return null
+  val links = parsedMd.filter { it.format?.isSimplexLink ?: false }
+  if (links.size == 1) {
+    val fmt = links[0].format as Format.SimplexLink
+    val text = if (fmt.showText != null) fmt.simplexUri else links[0].text
+    return ConnectTarget.Link(text, fmt.linkType, fmt.simplexLinkText)
+  }
+  if (links.isEmpty()) {
+    val nameFt = parsedMd.firstOrNull { it.format is Format.SimplexName }
+    val nameInfo = (nameFt?.format as? Format.SimplexName)?.nameInfo
+    if (nameFt != null && nameInfo != null) return ConnectTarget.Name(nameFt.text, nameInfo)
+  }
+  return null
 }
 
 @Composable

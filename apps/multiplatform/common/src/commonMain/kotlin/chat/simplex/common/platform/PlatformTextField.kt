@@ -12,10 +12,10 @@ import java.net.URI
 expect fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  disabledText: String?,
   sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
-  userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
   onMessageChange: (ComposeMessage) -> Unit,

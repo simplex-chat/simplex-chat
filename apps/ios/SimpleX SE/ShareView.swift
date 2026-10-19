@@ -25,7 +25,7 @@ struct ShareView: View {
                         HStack {
                             profileImage(
                                 chatInfoId: chat.chatInfo.id,
-                                iconName: chatIconName(chat.chatInfo),
+                                icon: chatIcon(chat.chatInfo),
                                 size: 30
                             )
                             Text(chat.chatInfo.displayName).foregroundStyle(
@@ -160,7 +160,7 @@ struct ShareView: View {
         }
     }
 
-    @ViewBuilder private func linkPreview(_ linkPreview: LinkPreview) -> some View {
+    private func linkPreview(_ linkPreview: LinkPreview) -> some View {
         previewArea {
             HStack(alignment: .center, spacing: 8) {
                 if let uiImage = imageFromBase64(linkPreview.image) {
@@ -172,7 +172,7 @@ struct ShareView: View {
                 VStack(alignment: .center, spacing: 4) {
                     Text(linkPreview.title)
                         .lineLimit(1)
-                    Text(linkPreview.uri.absoluteString)
+                    Text(linkPreview.uri)
                         .font(.caption)
                         .lineLimit(1)
                         .foregroundColor(.secondary)
@@ -209,11 +209,11 @@ struct ShareView: View {
         .background(Material.ultraThin)
     }
 
-    @ViewBuilder private func profileImage(chatInfoId: ChatInfo.ID, iconName: String, size: Double) -> some View {
+    @ViewBuilder private func profileImage(chatInfoId: ChatInfo.ID, icon: Image, size: Double) -> some View {
         if let uiImage = model.profileImages[chatInfoId] {
             clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius)
         } else {
-            Image(systemName: iconName)
+            icon
                 .resizable()
                 .foregroundColor(Color(uiColor: .tertiaryLabel))
                 .frame(width: size, height: size)

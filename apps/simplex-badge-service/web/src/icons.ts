@@ -1,0 +1,140 @@
+import type { Method } from "./domain.js";
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function svg(attrs: Record<string, string>, ...kids: SVGElement[]): SVGElement {
+  const node = document.createElementNS(SVG_NS, "svg");
+  node.setAttribute("xmlns", SVG_NS);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  for (const kid of kids) node.append(kid);
+  return node;
+}
+
+function shape(tag: string, attrs: Record<string, string>): SVGElement {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  return node;
+}
+
+/** The chevron of a Back control, drawn as a stroke so it takes the control's colour. */
+export function chevronLeft(): SVGElement {
+  return svg({ class: "chevron", viewBox: MARK_VIEWBOX, "aria-hidden": "true", focusable: "false" },
+    shape("path", {
+      d: "M15 5.5 L8.5 12 L15 18.5", fill: "none",
+      stroke: "currentColor", "stroke-width": "2.5", "stroke-linecap": "round", "stroke-linejoin": "round",
+    }));
+}
+
+export function hamburger(): SVGElement {
+  const box = { class: "bars", viewBox: MARK_VIEWBOX, "aria-hidden": "true", focusable: "false" };
+  const bar = (y: string): SVGElement => shape("line", {
+    x1: "3", y1: y, x2: "21", y2: y,
+    stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round",
+  });
+  return svg(box, bar("7"), bar("12"), bar("17"));
+}
+
+const SUN_PATHS = [
+  "M225.768 1.44594C220.301 3.84594 214.701 10.6459 213.768 15.9793C213.234 18.3793 213.101 31.7126 213.368 45.7126L213.768 71.1793L217.634 76.1126C226.701 88.1126 242.968 87.5793 252.301 75.0459C254.968 71.5793 255.101 69.5793 255.101 42.2459C255.101 14.9126 254.968 12.9126 252.301 9.44594C250.834 7.44594 248.034 4.51261 246.168 3.17928C241.768 -0.154057 231.101 -1.08739 225.768 1.44594Z",
+  "M72.9687 65.3128C63.7687 71.5794 60.1687 81.4461 63.7687 91.1794C65.502 95.4461 98.702 129.446 104.035 132.379C106.035 133.446 110.569 134.246 114.035 134.246C126.035 134.246 134.435 125.846 134.435 113.846C134.435 110.379 133.635 105.846 132.569 103.846C129.635 98.5128 95.6353 65.3128 91.3687 63.5794C85.102 61.3128 77.902 61.9794 72.9687 65.3128Z",
+  "M377.102 63.7128C373.102 65.3128 338.969 98.7794 336.302 103.846C335.236 105.846 334.436 110.379 334.436 113.846C334.436 125.846 342.836 134.246 354.836 134.246C358.302 134.246 362.836 133.446 364.836 132.379C370.169 129.446 403.369 95.4461 405.102 91.1794C408.702 81.4461 405.102 71.5794 395.902 65.3128C391.102 61.9794 383.102 61.3128 377.102 63.7128Z",
+  "M211.635 108.246C185.635 113.179 163.502 125.046 144.302 144.112C117.902 170.512 104.968 203.579 106.835 240.246C109.768 297.712 149.102 344.912 205.902 359.179C218.568 362.379 250.302 362.379 262.968 359.179C310.435 347.312 345.768 312.646 358.702 265.046C362.435 251.446 362.835 219.446 359.368 205.712C347.368 158.112 312.302 122.379 265.235 110.112C251.768 106.512 225.502 105.579 211.635 108.246Z",
+  "M12.4349 214.779C-0.498477 220.379 -4.09848 237.579 5.23486 248.246C11.2349 255.046 15.6349 255.846 45.3682 255.313C74.0349 254.913 75.1015 254.646 81.6349 245.713C85.9015 239.979 85.5015 228.113 80.8349 221.979C74.4349 213.713 71.2349 212.913 42.1682 212.913C23.7682 213.046 15.2349 213.579 12.4349 214.779Z",
+  "M396.035 215.179C393.635 216.379 390.035 219.445 388.035 221.979C383.368 228.112 382.968 239.979 387.235 245.712C394.035 254.779 394.301 254.912 426.435 254.912C458.568 254.912 458.835 254.779 465.635 245.712C469.501 240.512 469.501 227.979 465.635 222.779C458.968 213.845 458.301 213.579 428.035 213.179C404.435 212.912 399.768 213.179 396.035 215.179Z",
+  "M103.101 336.779C96.7013 340.779 65.368 373.179 63.768 377.313C57.368 394.513 74.168 411.313 91.368 404.913C95.6347 403.179 129.635 369.979 132.568 364.646C135.368 359.446 134.968 349.046 131.768 343.846C126.168 334.646 112.035 331.179 103.101 336.779Z",
+  "M344.035 336.912C341.635 338.379 338.569 341.445 337.102 343.845C333.902 349.045 333.502 359.445 336.302 364.645C339.235 369.979 373.235 403.179 377.502 404.912C387.235 408.512 397.102 404.912 403.369 395.712C406.702 390.779 407.369 383.579 405.102 377.312C403.369 373.045 370.169 339.045 364.835 336.112C359.635 333.312 349.235 333.712 344.035 336.912Z",
+  "M225.368 385.712C222.968 387.046 219.368 390.112 217.368 392.646L213.768 397.312V426.379C213.768 458.246 213.901 458.779 222.968 465.446C228.168 469.312 240.701 469.312 245.901 465.446C254.834 458.779 255.101 457.979 255.501 428.246C256.034 397.579 255.234 394.379 246.834 387.979C241.101 383.579 231.634 382.512 225.368 385.712Z",
+];
+const MOON_PATH = "M10.895 7.574c0 7.55 5.179 13.67 11.567 13.67 1.588 0 3.101-0.38 4.479-1.063-1.695 4.46-5.996 7.636-11.051 7.636-6.533 0-11.83-5.297-11.83-11.83 0-4.82 2.888-8.959 7.023-10.803-0.116 0.778-0.188 1.573-0.188 2.39z";
+
+export function sunIcon(): SVGElement {
+  return svg({ class: "sun", width: "469", height: "469", viewBox: "0 0 469 469", "aria-hidden": "true", focusable: "false" },
+    ...SUN_PATHS.map((d) => shape("path", { d })));
+}
+
+export function moonIcon(): SVGElement {
+  return svg({ class: "moon", width: "469", height: "469", viewBox: "5 5 20 23", "aria-hidden": "true", focusable: "false" },
+    shape("path", { d: MOON_PATH }));
+}
+
+const BADGE_STOPS = {
+  supporter: [["0%", "#29f5ff"], ["5%", "#29f5ff"], ["95%", "#527eed"], ["100%", "#3669e9"]],
+  legend: [["0%", "#29f5ff"], ["5%", "#26dee8"], ["50%", "#3064ea"], ["100%", "#001064"]],
+} as const satisfies Readonly<Record<string, ReadonlyArray<readonly [string, string]>>>;
+
+export type BadgeTier = keyof typeof BADGE_STOPS;
+
+export function hasBadgeArt(tier: string): tier is BadgeTier {
+  return Object.prototype.hasOwnProperty.call(BADGE_STOPS, tier);
+}
+
+const BADGE_BODY = "M98.25,8.25h120a90,90,0,0,1,90,90v219a90,90,0,0,1-90,90h-120a90,90,0,0,1-90-90v-219a90,90,0,0,1,90-90Z";
+
+const BADGE_GLYPH = "M107.25,214.5h-8.62A40.51,40.51,0,0,1,58.12,174V117.37a40.51,40.51,0,0,1,40.51-40.5h8.62a40.5,40.5,0,0,1,40.5,40.5V174a40.5,40.5,0,0,1-40.5,40.5Zm18-93.38a21.75,21.75,0,0,0-21.75-21.75h-1.12a21.75,21.75,0,0,0-21.76,21.75v49.13A21.75,21.75,0,0,0,102.38,192h1.12a21.75,21.75,0,0,0,21.75-21.75V121.12Z M218.25,214.5h-8.63a40.5,40.5,0,0,1-40.5-40.5V117.37a40.51,40.51,0,0,1,40.5-40.5h8.63a40.5,40.5,0,0,1,40.5,40.5V174a40.5,40.5,0,0,1-40.5,40.5Zm18-93.38a21.75,21.75,0,0,0-21.75-21.75h-1.13a21.75,21.75,0,0,0-21.75,21.75v49.13A21.75,21.75,0,0,0,213.37,192h1.13a21.75,21.75,0,0,0,21.75-21.75V121.12Z M114.37,133.88h88.88a13.13,13.13,0,1,1,0,26.25H114.37a13.13,13.13,0,0,1,0-26.25Z";
+
+const BADGE_VIEWBOX = "8.25 8.25 300 399";
+
+let gradientSeq = 0;
+
+// SVG nodes must be created with createElementNS, because an <svg> made with createElement in an HTML document is an HTMLUnknownElement that draws nothing.
+export function badgeIcon(tier: BadgeTier): SVGElement {
+  const id = `sb-badge-${tier}-${(gradientSeq += 1)}`;
+  const gradient = shape("linearGradient", { id, x1: "0", y1: "0", x2: "0", y2: "1" });
+  for (const [offset, color] of BADGE_STOPS[tier]) {
+    gradient.append(shape("stop", { offset, "stop-color": color }));
+  }
+  const defs = shape("defs", {});
+  defs.append(gradient);
+  return svg({ class: "badge-art", viewBox: BADGE_VIEWBOX, "aria-hidden": "true", focusable: "false" },
+    defs,
+    shape("path", { fill: `url(#${id})`, d: BADGE_BODY }),
+    shape("path", { fill: "#ffffff", "fill-rule": "nonzero", d: BADGE_GLYPH }),
+  );
+}
+
+const MARK_VIEWBOX = "0 0 24 24";
+
+const BITCOIN = "M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-1.244 15.525.362 9.105 1.962 2.67 8.475-1.243 14.9.358c6.43 1.605 10.342 8.115 8.738 14.548v-.002zm-6.35-4.613c.24-1.59-.974-2.45-2.64-3.03l.54-2.153-1.315-.33-.525 2.107c-.345-.087-.705-.167-1.064-.25l.526-2.127-1.32-.33-.54 2.165c-.285-.067-.565-.132-.84-.2l-1.815-.45-.35 1.407s.975.225.955.236c.535.136.63.486.615.766l-1.477 5.92c-.075.166-.24.406-.614.314.015.02-.96-.24-.96-.24l-.66 1.51 1.71.426.93.242-.54 2.19 1.32.327.54-2.17c.36.1.705.19 1.05.273l-.51 2.154 1.32.33.545-2.19c2.24.427 3.93.257 4.64-1.774.57-1.637-.03-2.58-1.217-3.196.854-.193 1.5-.76 1.68-1.93h.01zm-3.01 4.22c-.404 1.64-3.157.75-4.05.53l.72-2.9c.896.23 3.757.67 3.33 2.37zm.41-4.24c-.37 1.49-2.662.735-3.405.55l.654-2.64c.744.18 3.137.524 2.75 2.084v.006z";
+// The Monero mark as simplex.domains draws it: the official two-colour glyph in its own 256 box,
+// scaled into the 24 box the other marks share.
+const MONERO_TOP = "M127.998 0C57.318 0 0 57.317 0 127.999c0 14.127 2.29 27.716 6.518 40.43H44.8V60.733l83.2 83.2 83.198-83.2v107.695h38.282c4.231-12.714 6.521-26.303 6.521-40.43C256 57.314 198.681 0 127.998 0";
+const MONERO_BASE = "M108.867 163.062l-36.31-36.311v67.765H18.623c22.47 36.863 63.051 61.48 109.373 61.48s86.907-24.617 109.374-61.48h-53.933V126.75l-36.31 36.31-19.13 19.129-19.128-19.128h-.002z";
+const MONERO_SCALE = "scale(0.09375)";
+
+const CARD_STROKE = "currentColor";
+
+// The Wefunder wordmark, as simplex.chat/crowdfunding draws it: the W is a stroke, the letters a fill,
+// both in currentColor so the pill sets the colour.
+const WEFUNDER_LETTERS = "M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z";
+const WEFUNDER_W = "M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1";
+
+export function wefunderMark(): SVGElement {
+  return svg({ class: "wefunder", viewBox: "0 0 165 45", "aria-hidden": "true", focusable: "false" },
+    shape("path", { fill: "currentColor", d: WEFUNDER_LETTERS }),
+    shape("path", { fill: "none", stroke: "currentColor", "stroke-width": "4.86264", d: WEFUNDER_W }),
+  );
+}
+
+export function methodMark(method: Method): SVGElement {
+  const box = { class: "mark", viewBox: MARK_VIEWBOX, "aria-hidden": "true", focusable: "false" };
+  switch (method) {
+    case "btc":
+      return svg(box, shape("path", { fill: "#F7931A", d: BITCOIN }));
+    case "xmr": {
+      const glyph = shape("g", { transform: MONERO_SCALE });
+      glyph.append(shape("path", { fill: "#F60", d: MONERO_TOP }), shape("path", { fill: "#4C4C4C", d: MONERO_BASE }));
+      return svg(box, glyph);
+    }
+    case "card":
+      return svg(box,
+        shape("rect", {
+          x: "2", y: "5", width: "20", height: "14", rx: "2",
+          fill: "none", stroke: CARD_STROKE, "stroke-width": "2",
+        }),
+        shape("line", {
+          x1: "2", y1: "10", x2: "22", y2: "10",
+          stroke: CARD_STROKE, "stroke-width": "2",
+        }),
+      );
+  }
+}

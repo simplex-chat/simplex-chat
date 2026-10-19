@@ -5,22 +5,26 @@
 //  Created by Evgeny Poberezkin on 11/02/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIMetaView
 struct CIMetaView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
     @Environment(\.showTimestamp) var showTimestamp: Bool
     var chatItem: ChatItem
     var metaColor: Color
-    var paleMetaColor = Color(UIColor.tertiaryLabel)
+    var paleMetaColor = Color(uiColor: .tertiaryLabel)
     var showStatus = true
     var showEdited = true
     var invertedMaterial = false
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
+    @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
 
     var body: some View {
         if chatItem.isDeletedContent {
@@ -39,7 +43,10 @@ struct CIMetaView: View {
                     showStatus: showStatus,
                     showEdited: showEdited,
                     showViaProxy: showSentViaProxy,
-                    showTimesamp: showTimestamp
+                    showTimesamp: showTimestamp,
+                    signedFileVerified: chatItem.file?.loaded,
+                    showSignature: showSignature,
+                    showFileEncryption: showFileEncryption
                 ).invertedForegroundStyle(enabled: invertedMaterial)
                 if invertedMaterial {
                     ciMetaText(
@@ -51,7 +58,10 @@ struct CIMetaView: View {
                         showStatus: showStatus,
                         showEdited: showEdited,
                         showViaProxy: showSentViaProxy,
-                        showTimesamp: showTimestamp
+                        showTimesamp: showTimestamp,
+                        signedFileVerified: chatItem.file?.loaded,
+                        showSignature: showSignature,
+                        showFileEncryption: showFileEncryption
                     )
                 }
             }
@@ -100,7 +110,10 @@ func ciMetaText(
     showStatus: Bool = true,
     showEdited: Bool = true,
     showViaProxy: Bool,
-    showTimesamp: Bool
+    showTimesamp: Bool,
+    signedFileVerified: Bool? = nil,
+    showSignature: Bool = true,
+    showFileEncryption: Bool = true
 ) -> Text {
     var r = Text("")
     var space: Text? = nil
@@ -140,9 +153,18 @@ func ciMetaText(
         }
         space = textSpace
     }
-    if let enc = encrypted {
+    if let enc = encrypted, showFileEncryption {
         appendSpace()
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
+        space = textSpace
+    }
+    if showSignature, meta.msgVerified?.verified == true && signedFileVerified != false {
+        appendSpace()
+        r = r + colored(Text(Image(systemName: "checkmark.seal")), resolved)
+        space = textSpace
+    } else if meta.msgVerified == .sigMissing {
+        appendSpace()
+        r = r + colored(Text(Image(systemName: "xmark.seal")), colorMode.resolve(.red))
         space = textSpace
     }
     if showTimesamp {
@@ -152,11 +174,13 @@ func ciMetaText(
     return r.font(.caption)
 }
 
+@inline(__always)
 private func statusIconText(_ icon: String, _ color: Color?) -> Text {
     colored(Text(Image(systemName: icon)), color)
 }
 
 // Applying `foregroundColor(nil)` breaks `.invertedForegroundStyle` modifier
+@inline(__always)
 private func colored(_ t: Text, _ color: Color?) -> Text {
     if let color {
         t.foregroundColor(color)

@@ -25,8 +25,6 @@ data NotificationPreviewMode = NPMHidden | NPMContact | NPMMessage deriving (Sho
 
 data LockScreenCalls = LSCDisable | LSCShow | LSCAccept deriving (Show)
 
-data OpenLinksSetting = OLSYes | OLSNo | OLSAsk deriving (Show)
-
 data AppSettings = AppSettings
   { appPlatform :: Maybe AppPlatform,
     networkConfig :: Maybe NetworkConfig,
@@ -35,7 +33,7 @@ data AppSettings = AppSettings
     privacyAskToApproveRelays :: Maybe Bool,
     privacyAcceptImages :: Maybe Bool,
     privacyLinkPreviews :: Maybe Bool,
-    privacyChatListOpenLinks :: Maybe OpenLinksSetting,
+    privacySanitizeLinks :: Maybe Bool,
     privacyShowChatPreviews :: Maybe Bool,
     privacySaveLastDraft :: Maybe Bool,
     privacyProtectScreen :: Maybe Bool,
@@ -86,7 +84,7 @@ defaultAppSettings =
       privacyAskToApproveRelays = Just True,
       privacyAcceptImages = Just True,
       privacyLinkPreviews = Just True,
-      privacyChatListOpenLinks = Just OLSAsk,
+      privacySanitizeLinks = Just False,
       privacyShowChatPreviews = Just True,
       privacySaveLastDraft = Just True,
       privacyProtectScreen = Just False,
@@ -124,7 +122,7 @@ defaultParseAppSettings =
       privacyAskToApproveRelays = Nothing,
       privacyAcceptImages = Nothing,
       privacyLinkPreviews = Nothing,
-      privacyChatListOpenLinks = Nothing,
+      privacySanitizeLinks = Nothing,
       privacyShowChatPreviews = Nothing,
       privacySaveLastDraft = Nothing,
       privacyProtectScreen = Nothing,
@@ -162,7 +160,7 @@ combineAppSettings platformDefaults storedSettings =
       privacyAskToApproveRelays = p privacyAskToApproveRelays,
       privacyAcceptImages = p privacyAcceptImages,
       privacyLinkPreviews = p privacyLinkPreviews,
-      privacyChatListOpenLinks = p privacyChatListOpenLinks,
+      privacySanitizeLinks = p privacySanitizeLinks,
       privacyShowChatPreviews = p privacyShowChatPreviews,
       privacySaveLastDraft = p privacySaveLastDraft,
       privacyProtectScreen = p privacyProtectScreen,
@@ -203,8 +201,6 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "LSC") ''LockScreenCalls)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "NPA") ''NetworkProxyAuth)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "OLS") ''OpenLinksSetting)
-
 $(JQ.deriveJSON defaultJSON ''NetworkProxy)
 
 $(JQ.deriveToJSON defaultJSON ''AppSettings)
@@ -218,7 +214,7 @@ instance FromJSON AppSettings where
     privacyAskToApproveRelays <- p "privacyAskToApproveRelays"
     privacyAcceptImages <- p "privacyAcceptImages"
     privacyLinkPreviews <- p "privacyLinkPreviews"
-    privacyChatListOpenLinks <- p "privacyChatListOpenLinks"
+    privacySanitizeLinks <- p "privacySanitizeLinks"
     privacyShowChatPreviews <- p "privacyShowChatPreviews"
     privacySaveLastDraft <- p "privacySaveLastDraft"
     privacyProtectScreen <- p "privacyProtectScreen"
@@ -253,7 +249,7 @@ instance FromJSON AppSettings where
           privacyAskToApproveRelays,
           privacyAcceptImages,
           privacyLinkPreviews,
-          privacyChatListOpenLinks,
+          privacySanitizeLinks,
           privacyShowChatPreviews,
           privacySaveLastDraft,
           privacyProtectScreen,

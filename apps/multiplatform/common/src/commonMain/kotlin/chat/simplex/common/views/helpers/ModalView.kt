@@ -10,8 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import LocalCardScreen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.StatusBarBackground
 import chat.simplex.common.views.onboarding.OnboardingStage
@@ -27,6 +27,7 @@ fun ModalView(
   showAppBar: Boolean = true,
   enableClose: Boolean = true,
   background: Color = Color.Unspecified,
+  cardScreen: Boolean = false,
   modifier: Modifier = Modifier,
   showSearch: Boolean = false,
   searchAlwaysVisible: Boolean = false,
@@ -40,7 +41,9 @@ fun ModalView(
   }
   val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
-    Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
+    val bgOverride = if (cardScreen) canvasColorForCurrentTheme() else if (background != Color.Unspecified) background else null
+    CompositionLocalProvider(LocalCardScreen provides cardScreen) {
+    Box(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer, overrideColor = bgOverride)) {
       Box(modifier = modifier) {
         content()
       }
@@ -66,6 +69,7 @@ fun ModalView(
         }
       }
     }
+    }
   }
 }
 
@@ -85,7 +89,11 @@ class ModalData(val keyboardCoversBar: Boolean = true) {
 }
 
 enum class ModalViewId {
-  GROUP_REPORTS
+  SECONDARY_CHAT,
+  CONTEXT_USER_PICKER_INCOGNITO,
+  BADGE_LINK,
+  BADGE_REDEEM_CODE,
+  BADGES
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -110,19 +118,21 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
-    showCustomModal(id = id) { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content() })
+  fun isLastModal(data: ModalData): Boolean = modalViews.getOrNull(modalViews.size - toRemove.size - 1)?.data === data
+
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+    showCustomModal(id = id, forceAnimated = forceAnimated) { close ->
+      ModalView(close, showClose = showClose, cardScreen = cardScreen, endButtons = endButtons, content = { content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     showCustomModal(id = id) { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content(close) })
+      ModalView(close, showClose = showClose, cardScreen = cardScreen, endButtons = endButtons, content = { content(close) })
     }
   }
 
-  fun showCustomModal(animated: Boolean = true, keyboardCoversBar: Boolean = true, id: ModalViewId? = null, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showCustomModal(animated: Boolean = true, keyboardCoversBar: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showCustomModal")
     val data = ModalData(keyboardCoversBar = keyboardCoversBar)
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
@@ -132,13 +142,11 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     }
     // Make animated appearance only on Android (everytime) and on Desktop (when it's on the start part of the screen or modals > 0)
     // to prevent unneeded animation on different situations
-    val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START)
+    val anim = if (appPlatform.isAndroid) animated else (animated && (modalCount.value > 0 || placement == ModalPlacement.START)) || forceAnimated
     modalViews.add(ModalViewHolder(id, anim, data, modal))
     _modalCount.value = modalViews.size - toRemove.size
 
-    if (placement == ModalPlacement.CENTER) {
-      ChatModel.chatId.value = null
-    } else if (placement == ModalPlacement.END) {
+    if (placement == ModalPlacement.END) {
       desktopExpandWindowToWidth(DEFAULT_START_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()) + DEFAULT_MIN_CENTER_MODAL_WIDTH + DEFAULT_END_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()))
     }
   }
@@ -161,13 +169,20 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
-      if (modalViews.lastOrNull()?.animated == false) modalViews.removeAt(modalViews.lastIndex)
-      else runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
+      val lastModal = modalViews.lastOrNull()
+      if (lastModal != null) {
+        if (lastModal.id == ModalViewId.SECONDARY_CHAT) chatModel.secondaryChatsContext.value = null
+        if (!lastModal.animated)
+          modalViews.removeAt(modalViews.lastIndex)
+        else
+          runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
+      }
     }
     _modalCount.value = modalViews.size - toRemove.size
   }
 
   fun closeModals() {
+    chatModel.secondaryChatsContext.value = null
     modalViews.clear()
     toRemove.clear()
     _modalCount.value = 0

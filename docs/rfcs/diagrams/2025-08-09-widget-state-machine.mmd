@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Contact
+    participant UI
+    participant Core
+    participant DB
+    participant WL
+    note over Contact, WL: 1. Receive and initialize widget
+    Contact->>Core: widget code and initial state
+    Core->>DB: persist message with widget
+    Core->>UI: new message<br>(with widget placeholder)
+    Core->>WL: widget code + state
+    WL->>Core: new state + view
+    Core->>DB: persist new state
+    Core->>UI: view
+    note over Contact, WL: 2. Process user event
+    UI->>Core: widget user event<br>(UI "gesture")
+    DB->>Core: get code + state
+    Core->>WL: user event + code + state
+    WL->>Core: updated state + view + optional message
+    Core->>DB: updated state
+    Core->>UI: new widget view<br>(non-optional, for visual feedback)
+    Core->>Contact: optional event message "from" widget
+    note over Contact, WL: 3. Process user event
+    Contact->>Core: Message with event for widget
+    Core->>DB: persist message (to resume/retry)
+    DB->>Core: get code + state
+    Core->>WL: message event + code + state
+    WL->>Core: updated state + view
+    Core->>DB: updated state
+    Core->>UI: new widget view<br>(plus some visual indication)

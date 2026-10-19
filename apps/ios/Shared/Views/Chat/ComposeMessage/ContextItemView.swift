@@ -70,8 +70,10 @@ struct ContextItemView: View {
             .lineLimit(lines)
     }
 
-    private func contextMsgPreview(_ contextItem: ChatItem) -> Text {
-        return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: false, secondaryColor: theme.colors.secondary)
+    private func contextMsgPreview(_ contextItem: ChatItem) -> some View {
+        let r = messageText(contextItem.text, contextItem.formattedText, markdownBlocks: contextItem.markdownBlocks, sender: nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: nil, backgroundColor: UIColor(background), stripLink: contextItem.content.msgContent?.chatLinkStr)
+        let t = attachment() + Text(AttributedString(r.string))
+        return t.if(r.hasSecrets, transform: hiddenSecretsView)
 
         func attachment() -> Text {
             let isFileLoaded = if let fileSource = getLoadedFileSource(contextItem.file) {
@@ -81,6 +83,9 @@ struct ContextItemView: View {
             case .file: return isFileLoaded ? image("doc.fill") : Text("")
             case .image: return image("photo")
             case .voice: return isFileLoaded ? image("play.fill") : Text("")
+            case let .chat(_, chatLink, _):
+                let hasText = contextItem.text != chatLink.connLinkStr
+                return image(chatLink.smallIconName) + Text(chatLink.displayName) + Text(verbatim: hasText ? " - " : "")
             default: return Text("")
             }
         }

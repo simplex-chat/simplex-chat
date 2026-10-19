@@ -5,8 +5,10 @@
 //  Created by Evgeny on 24/12/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
+import StoreKit
 import SimpleXChat
 
 private struct VersionDescription {
@@ -39,6 +41,11 @@ private struct FeatureView {
     let title: LocalizedStringKey
     let view: () -> any View
 }
+
+let isInUS = {
+    let code = SKStorefront().countryCode
+    return code == "USA" || code == ""
+}()
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
@@ -579,6 +586,132 @@ private let versionDescriptions: [VersionDescription] = [
             )),
         ]
     ),
+    VersionDescription(
+        version: "v6.4",
+        post: URL(string: "https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html"),
+        features: [
+            .feature(Description(
+                icon: "person",
+                title: "Connect faster! 🚀",
+                description: "Message instantly once you tap Connect."
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 17, *) {"person.bubble"} else  {"person.crop.square"} }(),
+                title: "Review group members",
+                description: "Chat with members before they join."
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 16, *) {"questionmark.bubble"} else {"questionmark.square"} }(),
+                title: "Chat with admins",
+                description: "Send your private feedback to groups."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "New group role: Moderator",
+                description: "Removes messages and blocks members."
+            )),
+            .feature(Description(
+                icon: "battery.50",
+                title: "Improved message delivery",
+                description: "Less traffic on mobile networks."
+            )),
+        ]
+    ),
+    VersionDescription(
+        version: "v6.4.1",
+        post: URL(string: "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html"),
+        features: [
+            .feature(Description(
+                icon: "hand.wave",
+                title: "Welcome your contacts 👋",
+                description: "Set profile bio and welcome message."
+            )),
+            .feature(Description(
+                icon: "stopwatch",
+                title: "Keep your chats clean",
+                description: "Enable disappearing messages by default."
+            )),
+            .view(FeatureView(
+                icon: nil,
+                title: "Short SimpleX address",
+                view: { CreateUpdateAddressShortLink() }
+            ))
+        ]
+    ),
+    VersionDescription(
+        version: "v6.5",
+        post: URL(string: "https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"),
+        features: [
+            .feature(Description(
+                icon: nil,
+                title: "Public channels - speak freely 🚀",
+                description: nil,
+                subfeatures: [
+                    ("antenna.radiowaves.left.and.right", "Reliability: many relays per channel."),
+                    ("server.rack", "Ownership: you can run your own relays."),
+                    ("key.2.on.ring", "Security: owners hold channel keys."),
+                    ("person.badge.shield.checkmark", "Privacy: for owners and subscribers."),
+                ]
+            )),
+            .feature(Description(
+                icon: "link.badge.plus",
+                title: "Easier to invite your friends 👋",
+                description: "We made connecting simpler for new users."
+            )),
+            .feature(Description(
+                icon: "network.badge.shield.half.filled",
+                title: "Safe web links",
+                description: "- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking."
+            )),
+            .feature(Description(
+                icon: "network",
+                title: "Non-profit governance",
+                description: "To make SimpleX Network last."
+            ))
+        ]
+    ),
+    VersionDescription(
+        version: isInUS ? "v7.0.1" : "v7.0",
+        post: URL(string: "https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html"),
+        features: (isInUS ? [
+            .view(FeatureView(
+                icon: nil,
+                title: "You can now invest in SimpleX Chat",
+                view: { InvestInSimpleXChat() }
+            ))
+        ] : []) + [
+            .feature(Description(
+                icon: "at",
+                title: "SimpleX public names (BETA)",
+                description: "Public names for your channel or business."
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better channels 📢",
+                description: nil,
+                subfeatures: [
+                    ("person.badge.plus", "Add contributors."),
+                    ("globe", "Create web preview."),
+                    ("server.rack", "Manage your relays."),
+                    ("text.alignleft", "Easier to read."),
+                ]
+            ))
+        ]
+    ),
+    // TODO [badges] restore when badges ship, with final copy and the Read more link.
+    /*
+    VersionDescription(
+        version: "v7.1",
+        post: nil,
+        features: [
+            .view(FeatureView(
+                icon: nil,
+                title: "Supporter badge",
+                view: { SupporterBadgeWhatsNew() }
+            ))
+        ]
+    ),
+    */
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -591,6 +724,42 @@ func shouldShowWhatsNew() -> Bool {
     let v = UserDefaults.standard.string(forKey: DEFAULT_WHATS_NEW_VERSION)
     setLastVersionDefault()
     return v != lastVersion
+}
+
+fileprivate struct SupporterBadgeWhatsNew: View {
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Supporter badge ❤️")
+                    .font(.title3)
+                    .bold()
+                Text("Help keep the network running — send files up to 2 GB.")
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(10)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            heroThumbnail()
+        }
+    }
+
+    @ViewBuilder
+    private func heroThumbnail() -> some View {
+        #if SIMPLEX_ASSETS
+        Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 110, height: 110)
+        #else
+        Image("badge-supporter")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 72, height: 72)
+        #endif
+    }
 }
 
 fileprivate struct NewOperatorsView: View {
@@ -607,6 +776,180 @@ fileprivate struct NewOperatorsView: View {
                 Text("Enable Flux in Network & servers settings for better metadata privacy.")
             }
         }
+    }
+}
+
+fileprivate struct CreateUpdateAddressShortLink: View {
+    @EnvironmentObject private var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @State private var showAddressSheet = false
+    @State private var progressIndicator = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 4) {
+                Image(systemName: "link")
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(theme.colors.secondary)
+                    .frame(minWidth: 30, alignment: .center)
+                Text("Short SimpleX address").font(.title3).bold()
+            }
+            Group {
+                if let addr = chatModel.userAddress {
+                    if addr.shouldBeUpgraded {
+                        HStack(spacing: 8) {
+                            Button("Upgrade your address") { upgradeAndShareAddressAlert(progressIndicator: $progressIndicator) }
+                            if progressIndicator {
+                                ProgressView()
+                            }
+                        }
+                    } else {
+                        Button("Share your address") { addr.shareAddress(short: true) }
+                    }
+                } else {
+                    Button("Create your address") { showAddressSheet = true }
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .lineLimit(10)
+        }
+        .sheet(isPresented: $showAddressSheet) {
+            NavigationView {
+                UserAddressView(autoCreate: true)
+                    .navigationTitle("SimpleX address")
+                    .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
+            }
+        }
+    }
+}
+
+fileprivate struct InvestInSimpleXChat: View {
+    @EnvironmentObject var theme: AppTheme
+    @State private var showGetStakeSheet = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("You can now invest in SimpleX Chat! 🚀").font(.title3).bold()
+            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
+                .multilineTextAlignment(.leading)
+                .onTapGesture { showGetStakeSheet = true }
+            #if SIMPLEX_ASSETS
+            Image("crowdfunding_1")
+                .resizable()
+                .scaledToFit()
+                .cornerRadius(12)
+                .padding(.vertical, 4)
+                .onTapGesture { showGetStakeSheet = true }
+            #endif
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(isPresented: $showGetStakeSheet) {
+            GetStakeView(fromSettings: false, showFirstImage: false)
+        }
+    }
+}
+
+fileprivate let getStakeSlides: [(image: String, heading: String, info: String?, text: String)] = [
+    (
+        "crowdfunding_1",
+        "The first and the only messaging network without any user IDs",
+        nil,
+        "By investing, you can benefit from the company growth, and help us build the future of private and secure communications."
+    ),
+    (
+        "crowdfunding_2",
+        "480,000+ users joined on their own",
+        nil,
+        "SimpleX users have been more than doubling every year without any paid marketing, and donated over $650,000."
+    ),
+    (
+        "crowdfunding_3",
+        "Developers already bet on SimpleX success",
+        "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
+        "Every service developers build on SimpleX Network may increase its value, and bring new users to SimpleX Chat."
+    ),
+    (
+        "crowdfunding_4",
+        "Revenue plan: free for users, channels & businesses pay",
+        "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
+        "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
+    ),
+]
+
+private let wefunderURL = URL(string: "https://wefunder.com/simplex.chat?utm_source=app")!
+
+private let simplexCrowdfundingURL = URL(string: "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im")!
+
+struct GetStakeView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var chatModel: ChatModel
+    var fromSettings: Bool
+    var showFirstImage: Bool
+
+    var body: some View {
+        ZoomablePageView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text(verbatim: "Invest in\nSimpleX Chat")
+                    .font(.largeTitle)
+                    .bold()
+                    .fixedSize(horizontal: false, vertical: true)
+                    .if(!fromSettings) { $0.padding(.top) }
+                if showFirstImage {
+                    slideImage(getStakeSlides[0])
+                }
+                (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
+                    .multilineTextAlignment(.leading)
+                    .onTapGesture {
+                        UIApplication.shared.open(wefunderURL)
+                    }
+                .padding(.bottom)
+                ForEach(getStakeSlides[1...3], id: \.image) { slide in
+                    VStack(alignment: .leading) {
+                        slideImage(slide)
+                        Text(slide.text)
+                    }
+                    .padding(.bottom)
+                }
+
+                Button {
+                    UIApplication.shared.open(wefunderURL)
+                } label: {
+                    Text(verbatim: "Learn more on Wefunder")
+                }
+                .buttonStyle(OnboardingButtonStyle())
+
+                Button {
+                    dismiss()
+                    DispatchQueue.main.async {
+                        ChatModel.shared.appOpenUrl = simplexCrowdfundingURL
+                    }
+                } label: {
+                    Text(verbatim: "or ask SimpleX team")
+                        .font(.callout)
+                }
+                .disabled(chatModel.chatRunning != true)
+                .frame(maxWidth: .infinity)
+            }
+            .padding()
+        }
+        .ignoresSafeArea(edges: .bottom)
+        .modifier(ThemedBackground(grouped: true))
+    }
+
+    @ViewBuilder
+    func slideImage(_ slide: (image: String, heading: String, info: String?, text: String?)) -> some View {
+        #if SIMPLEX_ASSETS
+        Image(slide.image)
+            .resizable()
+            .scaledToFit()
+            .cornerRadius(12)
+        #else
+        Text(slide.heading).font(.title3).bold()
+        if let info = slide.info {
+            Text(info)
+        }
+        #endif
     }
 }
 
@@ -661,7 +1004,7 @@ struct WhatsNewView: View {
                                 }
                             }
                             if let post = v.post {
-                                Link(destination: post) {
+                                ExternalLink(destination: post) {
                                     HStack {
                                         Text("Read more")
                                         Image(systemName: "arrow.up.right.circle")

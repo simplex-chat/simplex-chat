@@ -28,6 +28,7 @@ revision: 12.10.2024
    - [Installation for onion address](#installation-for-onion-address)
    - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
 - [Server information page](#server-information-page)
+- [Name resolution](#name-resolution)
 - [Documentation](#documentation)
    - [SMP server address](#smp-server-address)
    - [Systemd commands](#systemd-commands)
@@ -59,7 +60,7 @@ To create SMP server as a systemd service, you'll need:
 - Your server domain, with A and AAAA records specifying server IPv4 and IPv6 addresses (`smp1.example.com`)
 - A basic Linux knowledge.
 
-*Please note*: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of `simplex.chat` domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generaing the links with `simplex:` scheme that cannot be opened in the browsers.
+*Please note*: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of `simplex.chat` domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generating the links with `simplex:` scheme that cannot be opened in the browsers.
 
 1. Install server with [Installation script](https://github.com/simplex-chat/simplexmq#using-installation-script).
 
@@ -82,7 +83,7 @@ To create SMP server as a systemd service, you'll need:
                            --control-port \
                            --socks-proxy \
                            --source-code \
-                           --fqdn=smp1.example.com
+                           --fqdn=smp1.example.com'
    ```
 
 4. Install tor:
@@ -114,7 +115,7 @@ To create SMP server as a systemd service, you'll need:
    ```sh
    # Enable log (otherwise, tor doesn't seem to deploy onion address)
    Log notice file /var/log/tor/notices.log
-   # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, keep standard configuration.
+   # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonymity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, keep standard configuration.
    SOCKSPort 0
    HiddenServiceNonAnonymousMode 1
    HiddenServiceSingleHopMode 1
@@ -194,12 +195,12 @@ To create SMP server as a systemd service, you'll need:
    key_name='web.key'
    cert_name='web.crt'
 
-   # Copy certifiacte from Caddy directory to smp-server directory
+   # Copy certificate from Caddy directory to smp-server directory
    cp "${folder_in}/${domain}.crt" "${folder_out}/${cert_name}"
    # Assign correct permissions
    chown "$user":"$group" "${folder_out}/${cert_name}"
 
-   # Copy certifiacte key from Caddy directory to smp-server directory
+   # Copy certificate key from Caddy directory to smp-server directory
    cp "${folder_in}/${domain}.key" "${folder_out}/${key_name}"
    # Assign correct permissions
    chown "$user":"$group" "${folder_out}/${key_name}"
@@ -531,11 +532,11 @@ To verify server binaries after you downloaded them:
 
 3. Import the key with `gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC`. Key filename should be the same as its fingerprint, but please change it if necessary.
 
-4. Run `gpg --verify --trusted-key  _sha256sums.asc _sha256sums`. It should print:
+4. Run `gpg --verify _sha256sums.asc _sha256sums`. It should print:
 
 > Good signature from "SimpleX Chat <chat@simplex.chat>"
 
-5. Compute the hashes of the binaries you plan to use with `shu256sum <file>` or with `openssl sha256 <file>` and compare them with the hashes in the file `_sha256sums` - they must be the same.
+5. Compute the hashes of the binaries you plan to use with `sha256sum <file>` or with `openssl sha256 <file>` and compare them with the hashes in the file `_sha256sums` - they must be the same.
 
 That is it - you now verified authenticity of our GitHub server binaries.
 
@@ -634,7 +635,7 @@ to initialize your `smp-server` configuration with:
 
 ---
 
-After that, your installation is complete and you should see in your teminal output something like this:
+After that, your installation is complete and you should see in your terminal output something like this:
 
 ```sh
 Certificate request self-signature ok
@@ -742,7 +743,7 @@ websockets: off
 [PROXY]
 # Network configuration for SMP proxy client.
 # `host_mode` can be 'public' (default) or 'onion'.
-# It defines prefferred hostname for destination servers with multiple hostnames.
+# It defines preferred hostname for destination servers with multiple hostnames.
 # host_mode: public
 # required_host_mode: off
 
@@ -757,7 +758,7 @@ websockets: off
 # or 'always' to be used for all destination hosts (can be used if it is an .onion server).
 # socks_mode: onion
 
-# Limit number of threads a client can spawn to process proxy commands in parrallel.
+# Limit number of threads a client can spawn to process proxy commands in parallel.
 # client_concurrency: 32
 
 [INACTIVE_CLIENTS]
@@ -823,7 +824,7 @@ Follow the steps to secure your CA keys:
    /etc/opt/simplex/ca.key
    ```
 
-3. Delete the CA key from the server. **Please make sure you've saved you CA key somewhere safe. Otherwise, you would lose the ability to [rotate the online certificate](#online-certificate-rotation)**:
+3. Delete the CA key from the server. **Please make sure you've saved your CA key somewhere safe. Otherwise, you would lose the ability to [rotate the online certificate](#online-certificate-rotation)**:
 
    ```sh
    rm /etc/opt/simplex/ca.key
@@ -913,9 +914,9 @@ SMP-server can also be deployed to be available via [Tor](https://www.torproject
 
 1. Install tor:
 
-   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [offical tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
+   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [official tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
 
-   - Configure offical Tor PPA repository:
+   - Configure official Tor PPA repository:
 
      ```sh
      CODENAME="$(lsb_release -c | awk '{print $2}')"
@@ -951,12 +952,12 @@ SMP-server can also be deployed to be available via [Tor](https://www.torproject
      vim /etc/tor/torrc
      ```
 
-     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: this is comments about each individual options.
+     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: these are comments about each individual option.
 
      ```sh
      # Enable log (otherwise, tor doesn't seem to deploy onion address)
      Log notice file /var/log/tor/notices.log
-     # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
+     # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonymity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
      SOCKSPort 0
      HiddenServiceNonAnonymousMode 1
      HiddenServiceSingleHopMode 1
@@ -974,7 +975,7 @@ SMP-server can also be deployed to be available via [Tor](https://www.torproject
 
 3. Start tor:
 
-   Enable `systemd` service and start tor. Offical `tor` is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.
+   Enable `systemd` service and start tor. Official `tor` is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.
 
    ```sh
    systemctl enable --now tor && systemctl restart tor
@@ -994,7 +995,7 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
 
 1. Install tor as described in the [previous section](#installation-for-onion-address).
 
-2. Execute the following command to creatae a new Tor daemon instance:
+2. Execute the following command to create a new Tor daemon instance:
 
    ```sh
    tor-instance-create tor2
@@ -1101,7 +1102,7 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
    hosting_country: <HOSTING_PROVIDER_LOCATION> 
    ```
 
-2. Install the webserver. For easy deployment we'll describe the installtion process of [Caddy](https://caddyserver.com) webserver on Ubuntu server:
+2. Install the webserver. For easy deployment we'll describe the installation process of [Caddy](https://caddyserver.com) webserver on Ubuntu server:
 
    1. Install the packages:
 
@@ -1127,7 +1128,7 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
       sudo apt update && sudo apt install caddy
       ```
 
-   [Full Caddy instllation instructions](https://caddyserver.com/docs/install)
+   [Full Caddy installation instructions](https://caddyserver.com/docs/install)
 
 3. Replace Caddy configuration with the following:
 
@@ -1176,12 +1177,12 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
    key_name='web.key'
    cert_name='web.crt'
 
-   # Copy certifiacte from Caddy directory to smp-server directory
+   # Copy certificate from Caddy directory to smp-server directory
    cp "${folder_in}/${domain}.crt" "${folder_out}/${cert_name}"
    # Assign correct permissions
    chown "$user":"$group" "${folder_out}/${cert_name}"
 
-   # Copy certifiacte key from Caddy directory to smp-server directory
+   # Copy certificate key from Caddy directory to smp-server directory
    cp "${folder_in}/${domain}.key" "${folder_out}/${key_name}"
    # Assign correct permissions
    chown "$user":"$group" "${folder_out}/${key_name}"
@@ -1217,6 +1218,80 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
 
 10. Access the webpage you've deployed from your browser (`https://smp.example.org`). You should see the smp-server information that you've provided in your ini file.
 
+## Name resolution
+
+SimpleX public names (like `alice.simplex`) resolve to contact and channel addresses. These records are stored in the SimpleX Namespace registry contracts on Ethereum, so resolving a name means reading from an Ethereum node. Read more about [SimpleX Public Names](./protocol/names-overview.md).
+
+With the `[NAMES]` section enabled, your smp-server resolves names for the clients connected to it: it forwards their lookups to a local REST resolver and returns the addresses. Resolution is off by default and requires running a resolver stack (an Ethereum node plus the resolver service), which needs:
+
+- 300 GB or more of NVMe SSD (TLC, not QLC, which stalls during sync)
+- 32 GB RAM and a fast multi-core CPU
+- about one day for the initial Ethereum sync
+
+### 1. Deploy the resolver stack
+
+The resolver stack (a reth + nimbus Ethereum node plus the resolver service) ships in [`scripts/resolver`](https://github.com/simplex-chat/simplexmq/tree/master/scripts/resolver) and starts with one command. See its [README](https://github.com/simplex-chat/simplexmq/blob/master/scripts/resolver/README.md) for details.
+
+```sh
+git clone https://github.com/simplex-chat/simplexmq
+cd simplexmq/scripts/resolver
+docker compose up -d
+```
+
+The shipped `.env` targets Ethereum mainnet and needs no changes. Open the peer-to-peer ports so the node can sync:
+
+```sh
+ufw allow 30303 &&\
+ufw allow 9000
+```
+
+The resolver returns errors until the node finishes syncing, which takes about a day.
+
+### 2. Check the resolver
+
+Once synced, confirm the resolver is healthy and resolves a name:
+
+```sh
+curl -s http://127.0.0.1:8000/health
+curl -s http://127.0.0.1:8000/resolve/foobar.testing
+```
+
+The first should report `"ok": true`. The second should return the records for the test name `foobar.testing`.
+
+### 3. Point smp-server at the resolver
+
+In `/etc/opt/simplex/smp-server.ini`, set the `[NAMES]` section:
+
+```ini
+[NAMES]
+enable: on
+resolver_endpoint: http://127.0.0.1:8000
+```
+
+No authentication is needed while smp-server and the resolver share a host over loopback. Behind a TLS reverse proxy on another host, use its HTTPS address and add credentials (`resolver_auth` over plain `http` is only allowed for loopback):
+
+```ini
+[NAMES]
+enable: on
+resolver_endpoint: https://names.example.com:443
+resolver_auth: basic <username>:<password>
+```
+
+### 4. Restart smp-server
+
+```sh
+systemctl restart smp-server
+```
+
+The server logs the resolver status on start:
+
+```
+[NAMES] resolver enabled, endpoint=http://127.0.0.1:8000
+[NAMES] endpoint probe ok
+```
+
+If the node is still syncing the server starts anyway, and name lookups fail until the resolver is ready.
+
 ## Documentation
 
 All necessary files for `smp-server` are located in `/etc/opt/simplex/` folder.
@@ -1237,7 +1312,7 @@ smp://<fingerprint>[:<password>]@<public_hostname>[,<onion_hostname>]
 
 - **optional** `<password>`
 
-  Your configured password of `smp-server`. You can check your configured pasword in `/etc/opt/simplex/smp-server.ini`, under `[AUTH]` section in `create_password:` field.
+  Your configured password of `smp-server`. You can check your configured password in `/etc/opt/simplex/smp-server.ini`, under `[AUTH]` section in `create_password:` field.
 
 - `<public_hostname>`, **optional** `<onion_hostname>`
 
@@ -1368,9 +1443,9 @@ Here's the full list of commands, their descriptions and who can access them.
 | `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | -                          |
 | `clients`        | Clients information. Useful for debugging.                                      | yes                        |
 | `sockets`        | General sockets information.                                                    | -                          |
-| `socket-threads` | Thread infomation per socket. Useful for debugging.                             | yes                        |
+| `socket-threads` | Thread information per socket. Useful for debugging.                             | yes                        |
 | `threads`        | Threads information. Useful for debugging.                                      | yes                        |
-| `server-info`    | Aggregated server infomation.                                                   | -                          |
+| `server-info`    | Aggregated server information.                                                   | -                          |
 | `delete`         | Delete known queue. Useful for content moderation.                              | -                          |
 | `save`           | Save queues/messages from memory.                                               | yes                        |
 | `help`           | Help menu.                                                                      | -                          |
@@ -1417,31 +1492,31 @@ fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,m
 | 20            | `pRelays_pRequests`          | - requests                 |
 | 21            | `pRelays_pSuccesses`         | - successes                |
 | 22            | `pRelays_pErrorsConnect`     | - connection errors        |
-| 23            | `pRelays_pErrorsCompat`      | - compatability errors     |
+| 23            | `pRelays_pErrorsCompat`      | - compatibility errors     |
 | 24            | `pRelays_pErrorsOther`       | - other errors             |
 | Requested sessions with own relays:                                       |
 | 25            | `pRelaysOwn_pRequests`       | - requests                 |
 | 26            | `pRelaysOwn_pSuccesses`      | - successes                |
 | 27            | `pRelaysOwn_pErrorsConnect`  | - connection errors        |
-| 28            | `pRelaysOwn_pErrorsCompat`   | - compatability errors     |
+| 28            | `pRelaysOwn_pErrorsCompat`   | - compatibility errors     |
 | 29            | `pRelaysOwn_pErrorsOther`    | - other errors             |
 | Message forwards to all relays:                                           |
 | 30            | `pMsgFwds_pRequests`         | - requests                 |
 | 31            | `pMsgFwds_pSuccesses`        | - successes                |
 | 32            | `pMsgFwds_pErrorsConnect`    | - connection errors        |
-| 33            | `pMsgFwds_pErrorsCompat`     | - compatability errors     |
+| 33            | `pMsgFwds_pErrorsCompat`     | - compatibility errors     |
 | 34            | `pMsgFwds_pErrorsOther`      | - other errors             |
 | Message forward to own relays:                                            |
 | 35            | `pMsgFwdsOwn_pRequests`      | - requests                 |
 | 36            | `pMsgFwdsOwn_pSuccesses`     | - successes                |
 | 37            | `pMsgFwdsOwn_pErrorsConnect` | - connection errors        |
-| 38            | `pMsgFwdsOwn_pErrorsCompat`  | - compatability errors     |
+| 38            | `pMsgFwdsOwn_pErrorsCompat`  | - compatibility errors     |
 | 39            | `pMsgFwdsOwn_pErrorsOther`   | - other errors             |
 | Received message forwards:                                                |
 | 40            | `pMsgFwdsRecv`               |                            |
-| Message queue subscribtion errors:                                        |
+| Message queue subscription errors:                                        |
 | 41            | `qSub`                       | All                        |
-| 42            | `qSubAuth`                   | Authentication erorrs      |
+| 42            | `qSubAuth`                   | Authentication errors      |
 | 43            | `qSubDuplicate`              | Duplicate SUB errors       |
 | 44            | `qSubProhibited`             | Prohibited SUB errors      |
 | Message errors:                                                           |
@@ -1526,9 +1601,9 @@ To update your smp-server to latest version, choose your installation method and
         sudo systemctl start smp-server
         ```
 
-   - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
+   - [Official installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
 
-     1. Execute the followin command:
+     1. Execute the following command:
 
         ```sh
         sudo simplex-servers-update
@@ -1603,19 +1678,19 @@ To reproduce the build you must have:
 1. Download script:
 
    ```sh
-   curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/reproduce-builds.sh'
+   curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/simplexmq-reproduce-builds.sh'
    ```
 
 2. Make it executable:
 
    ```sh
-   chmod +x reproduce-builds.sh
+   chmod +x simplexmq-reproduce-builds.sh
    ```
 
 3. Execute the script with the required tag:
 
    ```sh
-   ./reproduce-builds.sh 'v6.3.1'
+   ./simplexmq-reproduce-builds.sh 'v6.3.1'
    ```
 
    The script executes these steps (please review the script to confirm):
@@ -1640,7 +1715,7 @@ To reproduce the build you must have:
 
 ## Configuring the app to use the server
 
-To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.
+To configure the app to use your messaging server copy its full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.
 
 It is also possible to share the address of your server with your friends by letting them scan QR code from server settings - it will include server password, so they will be able to receive messages via your server as well.
 

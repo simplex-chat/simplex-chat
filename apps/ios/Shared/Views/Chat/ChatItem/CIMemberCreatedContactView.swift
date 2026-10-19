@@ -5,10 +5,12 @@
 //  Created by spaced4ndy on 19.09.2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIMemberCreatedContactView
 struct CIMemberCreatedContactView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -20,11 +22,11 @@ struct CIMemberCreatedContactView: View {
             case let .groupRcv(groupMember):
                 if let contactId = groupMember.memberContactId {
                     memberCreatedContactView(openText: "Open")
-                        .onTapGesture {
+                        .simultaneousGesture(TapGesture().onEnded {
                             ItemsModel.shared.loadOpenChat("@\(contactId)") {
                                 dismissAllSheets(animated: true)
                             }
-                        }
+                        })
                 } else {
                     memberCreatedContactView()
                 }

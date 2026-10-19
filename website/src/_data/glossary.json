@@ -104,6 +104,10 @@
         "definition": "Post-quantum cryptography"
     },
     {
+        "term": "Post-quantum hybrid crypto",
+        "definition": "Post-quantum cryptography"
+    },
+    {
         "term": "Proxied peer-to-peer",
         "definition": "Proxied peer-to-peer"
     },

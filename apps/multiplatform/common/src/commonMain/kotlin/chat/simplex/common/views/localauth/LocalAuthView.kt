@@ -11,7 +11,7 @@ import chat.simplex.common.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.database.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 
 @Composable
@@ -33,7 +33,7 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
         }
       } else {
         val r: LAResult = if (passcode.value == authRequest.password) {
-          if (authRequest.selfDestruct && sdPassword != null && controller.ctrl == -1L) {
+          if (authRequest.selfDestruct && sdPassword != null && controller.getChatCtrl() == -1L) {
             initChatControllerOnStart()
           }
           LAResult.Success
@@ -58,7 +58,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       if (m.chatRunning.value == true) {
         stopChatAsync(m)
       }
-      val ctrl = m.controller.ctrl
+      val ctrl = m.controller.getChatCtrl()
       if (ctrl != null && ctrl != -1L) {
         /**
          * The following sequence can bring a user here:
@@ -82,7 +82,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       }
       var profile: Profile? = null
       if (!displayName.isNullOrEmpty()) {
-        profile = Profile(displayName = displayName, fullName = "")
+        profile = Profile(displayName = displayName, fullName = "", shortDescr = null)
       }
       val createdUser = m.controller.apiCreateActiveUser(null, profile, pastTimestamp = true)
       m.currentUser.value = createdUser

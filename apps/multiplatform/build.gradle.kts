@@ -25,6 +25,9 @@ buildscript {
     extra.set("application_id.suffix", prop["application_id.suffix"] ?: "")
     // Compression level for debug AND release apk. 0 = disable compression. Max is 9
     extra.set("compression.level", (prop["compression.level"] as String?)?.toIntOrNull() ?: 0)
+    if (prop["simplex.assets.dir"] != null) {
+        extra.set("simplex.assets.dir", prop["simplex.assets.dir"])
+    }
     // NOTE: If you need a different version of something, provide it in `local.properties`
     // like so: compose.version=123, or gradle.plugin.version=1.2.3, etc
 
@@ -45,7 +48,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:${rootProject.extra["gradle.plugin.version"]}")
         classpath(kotlin("gradle-plugin", version = rootProject.extra["kotlin.version"] as String))
-        classpath("dev.icerock.moko:resources-generator:0.23.0")
+        classpath("dev.icerock.moko:resources-generator:0.27.1")
 
         // Workaround gradle sync issue: https://github.com/gmazzo/gradle-buildconfig-plugin/issues/137#issuecomment-1935739759
         classpath("com.squareup:kotlinpoet:1.16.0")
@@ -68,7 +71,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://jitpack.io")
     }

@@ -1,0 +1,39 @@
+name: "Upload binary and update hash"
+description: "Reusable steps for multiple jobs"
+inputs:
+   bin_path:
+     required: true
+     description: "Path to binary to upload"
+   bin_name:
+     required: true
+     description: "Name of uploaded binary"
+   bin_hash:
+     required: true
+     description: "Message with SHA to include in release"
+   github_ref:
+     required: true
+     description: "Github reference"
+   github_token:
+     required: true
+     description: "Github token"
+runs:
+  using: "composite"
+  steps:
+    - name: Upload file with specific name
+      if: startsWith(inputs.github_ref, 'refs/tags/v')
+      uses: simplex-chat/upload-release-action@v2
+      with:
+        repo_token: ${{ inputs.github_token }}
+        file: ${{ inputs.bin_path }}
+        asset_name: ${{ inputs.bin_name }}
+        tag: ${{ inputs.github_ref }}
+
+    - name: Add hash to release notes
+      if: startsWith(inputs.github_ref, 'refs/tags/v')
+      uses: simplex-chat/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+      with:
+        append_body: true
+        body: |
+          ${{ inputs.bin_hash }}

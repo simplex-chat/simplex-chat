@@ -6,25 +6,21 @@
 
 module Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications) where
 
-import Control.Monad (void)
 import Data.List (isInfixOf)
-import Data.Map (Map, fromList)
-import qualified Data.Map as M
-import Data.Maybe (fromMaybe, isJust)
-import Data.Text (Text)
+import Data.Maybe (isJust)
 import qualified Data.Text as T
 import Simplex.Messaging.Util (catchAll_)
 import System.Directory (createDirectoryIfMissing, doesFileExist, findExecutable, getAppUserDataDirectory)
 import System.FilePath (combine)
 import System.Info (os)
-import System.Process (readCreateProcess, shell)
+import System.Process (callProcess)
 
-data Notification = Notification {title :: Text, text :: Text}
+data Notification = Notification {title :: T.Text, text :: T.Text}
 
 initializeNotifications :: IO (Notification -> IO ())
 initializeNotifications =
   hideException <$> case os of
-    "darwin" -> pure $ notify macScript
+    "darwin" -> pure macNotify
     "mingw32" -> initWinNotify
     "linux" ->
       doesFileExist "/proc/sys/kernel/osrelease" >>= \case
@@ -45,44 +41,36 @@ hideException f a = f a `catchAll_` pure ()
 initLinuxNotify :: IO (Notification -> IO ())
 initLinuxNotify = do
   found <- isJust <$> findExecutable "notify-send"
-  pure $ if found then notify linuxScript else noNotifications
+  pure $ if found then linuxNotify else noNotifications
 
-notify :: (Notification -> Text) -> Notification -> IO ()
-notify script notification =
-  void $ readCreateProcess (shell . T.unpack $ script notification) ""
+linuxNotify :: Notification -> IO ()
+linuxNotify Notification {title, text} =
+  callProcess "notify-send" [T.unpack title, T.unpack text]
 
-linuxScript :: Notification -> Text
-linuxScript Notification {title, text} = "notify-send '" <> linuxEscape title <> "' '" <> linuxEscape text <> "'"
+macNotify :: Notification -> IO ()
+macNotify Notification {title, text} =
+  callProcess "osascript" ["-e", "display notification \"" <> macEscape text <> "\" with title \"" <> macEscape title <> "\""]
 
-linuxEscape :: Text -> Text
-linuxEscape = replaceAll $ fromList [('\'', "'\\''")]
-
-macScript :: Notification -> Text
-macScript Notification {title, text} = "osascript -e 'display notification \"" <> macEscape text <> "\" with title \"" <> macEscape title <> "\"'"
-
-macEscape :: Text -> Text
-macEscape = replaceAll $ fromList [('"', "\\\""), ('\'', "")]
+macEscape :: T.Text -> String
+macEscape = concatMap esc . T.unpack
+  where
+    esc '\\' = "\\\\"
+    esc '"' = "\\\""
+    esc c = [c]
 
 initWslNotify :: IO (Notification -> IO ())
-initWslNotify = notify . wslScript <$> savePowershellScript
+initWslNotify = wslNotify <$> savePowershellScript
 
-wslScript :: FilePath -> Notification -> Text
-wslScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \\\"" <> wslEscape title <> "\\\" \\\"" <> wslEscape text <> "\\\"\""
-
-wslEscape :: Text -> Text
-wslEscape = replaceAll $ fromList [('`', "\\`\\`"), ('\\', "\\\\"), ('"', "\\`\\\"")]
+wslNotify :: FilePath -> Notification -> IO ()
+wslNotify path Notification {title, text} =
+  callProcess "powershell.exe" ["-File", path, T.unpack title, T.unpack text]
 
 initWinNotify :: IO (Notification -> IO ())
-initWinNotify = notify . winScript <$> savePowershellScript
+initWinNotify = winNotify <$> savePowershellScript
 
-winScript :: FilePath -> Notification -> Text
-winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " '" <> winRemoveQuotes title <> "' '" <> winRemoveQuotes text <> "'\""
-
-winRemoveQuotes :: Text -> Text
-winRemoveQuotes = replaceAll $ fromList [('`', ""), ('\'', ""), ('"', "")]
-
-replaceAll :: Map Char Text -> Text -> Text
-replaceAll rules = T.concatMap $ \c -> T.singleton c `fromMaybe` M.lookup c rules
+winNotify :: FilePath -> Notification -> IO ()
+winNotify path Notification {title, text} =
+  callProcess "powershell.exe" ["-File", path, T.unpack title, T.unpack text]
 
 savePowershellScript :: IO FilePath
 savePowershellScript = do

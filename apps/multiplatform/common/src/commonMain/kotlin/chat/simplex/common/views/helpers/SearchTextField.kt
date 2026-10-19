@@ -10,6 +10,7 @@ import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -22,7 +23,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -35,7 +36,7 @@ fun SearchTextField(
   placeholder: String = stringResource(MR.strings.search_verb),
   enabled: Boolean = true,
   trailingContent: @Composable (() -> Unit)? = null,
-  reducedCloseButtonPadding: Dp = 0.dp,
+  reducedCloseButtonPadding: Dp = 8.dp,
   onValueChange: (String) -> Unit
 ) {
   val focusRequester = remember { FocusRequester() }
@@ -112,18 +113,26 @@ fun SearchTextField(
         placeholder = {
           Text(placeholder, style = textStyle.copy(color = MaterialTheme.colors.secondary), maxLines = 1, overflow = TextOverflow.Ellipsis)
         },
-        trailingIcon = if (searchText.value.text.isNotEmpty()) {{
-          IconButton({
-            if (alwaysVisible) {
-              keyboard?.hide()
-              focusManager.clearFocus()
+        trailingIcon = if (searchText.value.text.isNotEmpty() || trailingContent != null) {{
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.offset(x = reducedCloseButtonPadding)
+          ) {
+            if (searchText.value.text.isNotEmpty()) {
+              IconButton({
+                if (alwaysVisible) {
+                  keyboard?.hide()
+                  focusManager.clearFocus()
+                }
+                searchText.value = TextFieldValue("")
+                onValueChange("")
+              }) {
+                Icon(painterResource(MR.images.ic_close), stringResource(MR.strings.icon_descr_close_button), tint = MaterialTheme.colors.primary)
+              }
             }
-            searchText.value = TextFieldValue("");
-            onValueChange("")
-          }, Modifier.offset(x = reducedCloseButtonPadding)) {
-            Icon(painterResource(MR.images.ic_close), stringResource(MR.strings.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
+            trailingContent?.invoke()
           }
-        }} else trailingContent,
+        }} else null,
         singleLine = true,
         enabled = enabled,
         interactionSource = interactionSource,

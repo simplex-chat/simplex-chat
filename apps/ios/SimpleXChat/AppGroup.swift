@@ -26,7 +26,9 @@ public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer 
 let GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED = "appLocalAuthEnabled"
 public let GROUP_DEFAULT_ALLOW_SHARE_EXTENSION = "allowShareExtension"
 // replaces DEFAULT_PRIVACY_LINK_PREVIEWS
-let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+public let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+public let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT = "privacyLinkPreviewsShowAlert"
+public let GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS = "privacySanitizeLinks"
 // This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
@@ -40,9 +42,13 @@ let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE = "networkSMPProxyMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK = "networkSMPProxyFallback"
-let GROUP_DEFAULT_NETWORK_SMP_WEB_PORT = "networkSMPWebPort"
-let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
-let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
+let GROUP_DEFAULT_NETWORK_SMP_WEB_PORT_SERVERS = "networkSMPWebPortServers"
+//let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
+//let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
+let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND = "networkTCPConnectTimeoutBackground"
+let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE = "networkTCPConnectTimeoutInteractive"
+let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_BACKGROUND = "networkTCPTimeoutInteractive"
+let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_INTERACTIVE = "networkTCPTimeoutBackground"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
 let GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY = "networkRcvConcurrency"
 let GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL = "networkSMPPingInterval"
@@ -64,42 +70,48 @@ public let APP_GROUP_NAME = "group.chat.simplex.app"
 
 public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 
+public let groupAppDefaults: [String: Any] = [
+    GROUP_DEFAULT_NTF_ENABLE_LOCAL: false,
+    GROUP_DEFAULT_NTF_ENABLE_PERIODIC: false,
+    GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
+    GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.session.rawValue,
+    GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.unknown.rawValue,
+    GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allowProtected.rawValue,
+    GROUP_DEFAULT_NETWORK_SMP_WEB_PORT_SERVERS: SMPWebPortServers.preset.rawValue,
+    GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND: NetCfg.defaults.tcpConnectTimeout.backgroundTimeout,
+    GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE: NetCfg.defaults.tcpConnectTimeout.interactiveTimeout,
+    GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_BACKGROUND: NetCfg.defaults.tcpTimeout.backgroundTimeout,
+    GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_INTERACTIVE: NetCfg.defaults.tcpTimeout.interactiveTimeout,
+    GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
+    GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY: NetCfg.defaults.rcvConcurrency,
+    GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL: NetCfg.defaults.smpPingInterval,
+    GROUP_DEFAULT_NETWORK_SMP_PING_COUNT: NetCfg.defaults.smpPingCount,
+    GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE: NetCfg.defaults.enableKeepAlive,
+    GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE: KeepAliveOpts.defaults.keepIdle,
+    GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL: KeepAliveOpts.defaults.keepIntvl,
+    GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT: KeepAliveOpts.defaults.keepCnt,
+    GROUP_DEFAULT_INCOGNITO: false,
+    GROUP_DEFAULT_STORE_DB_PASSPHRASE: true,
+    GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
+    GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED: true,
+    GROUP_DEFAULT_ALLOW_SHARE_EXTENSION: false,
+    GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS: true,
+    GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT: true,
+    GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS: false,
+    GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
+    GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
+    GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES: true,
+    GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS: true,
+    GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
+    GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
+    GROUP_DEFAULT_CALL_KIT_ENABLED: true,
+    GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED: false,
+    GROUP_DEFAULT_ONE_HAND_UI: true,
+    GROUP_DEFAULT_CHAT_BOTTOM_BAR: true
+]
+
 public func registerGroupDefaults() {
-    groupDefaults.register(defaults: [
-        GROUP_DEFAULT_NTF_ENABLE_LOCAL: false,
-        GROUP_DEFAULT_NTF_ENABLE_PERIODIC: false,
-        GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
-        GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.session.rawValue,
-        GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.unknown.rawValue,
-        GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allowProtected.rawValue,
-        GROUP_DEFAULT_NETWORK_SMP_WEB_PORT: false,
-        GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
-        GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
-        GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
-        GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY: NetCfg.defaults.rcvConcurrency,
-        GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL: NetCfg.defaults.smpPingInterval,
-        GROUP_DEFAULT_NETWORK_SMP_PING_COUNT: NetCfg.defaults.smpPingCount,
-        GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE: NetCfg.defaults.enableKeepAlive,
-        GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE: KeepAliveOpts.defaults.keepIdle,
-        GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL: KeepAliveOpts.defaults.keepIntvl,
-        GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT: KeepAliveOpts.defaults.keepCnt,
-        GROUP_DEFAULT_INCOGNITO: false,
-        GROUP_DEFAULT_STORE_DB_PASSPHRASE: true,
-        GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
-        GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED: true,
-        GROUP_DEFAULT_ALLOW_SHARE_EXTENSION: false,
-        GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS: true,
-        GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
-        GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
-        GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES: true,
-        GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS: true,
-        GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
-        GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
-        GROUP_DEFAULT_CALL_KIT_ENABLED: true,
-        GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED: false,
-        GROUP_DEFAULT_ONE_HAND_UI: true,
-        GROUP_DEFAULT_CHAT_BOTTOM_BAR: true
-    ])
+    groupDefaults.register(defaults: groupAppDefaults)
 }
 
 public enum AppState: String, Codable {
@@ -216,12 +228,16 @@ public let allowShareExtensionGroupDefault = BoolDefault(defaults: groupDefaults
 
 public let privacyLinkPreviewsGroupDefault =  BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS)
 
+public let privacyLinkPreviewsShowAlertGroupDefault =  BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT)
+
 // This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 
 public let privacyEncryptLocalFilesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES)
 
 public let privacyAskToApproveRelaysGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS)
+
+public let privacySanitizeLinksGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS)
 
 public let profileImageCornerRadiusGroupDefault = Default<Double>(defaults: groupDefaults, forKey: GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
 
@@ -249,6 +265,12 @@ public let networkSMPProxyFallbackGroupDefault = EnumDefault<SMPProxyFallback>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK,
     withDefault: .allowProtected
+)
+
+public let networkSMPWebPortServersDefault = EnumDefault<SMPWebPortServers>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NETWORK_SMP_WEB_PORT_SERVERS,
+    withDefault: .preset
 )
 
 public let storeDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_STORE_DB_PASSPHRASE)
@@ -305,12 +327,14 @@ public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
 }
 
 public class BoolDefault: Default<Bool> {
+    @inline(__always)
     public func get() -> Bool {
         self.defaults.bool(forKey: self.key)
     }
 }
 
 public class IntDefault: Default<Int> {
+    @inline(__always)
     public func get() -> Int {
         self.defaults.integer(forKey: self.key)
     }
@@ -320,11 +344,13 @@ public class Default<T> {
     var defaults: UserDefaults
     var key: String
 
+    @inline(__always)
     public init(defaults: UserDefaults = UserDefaults.standard, forKey: String) {
         self.defaults = defaults
         self.key = forKey
     }
 
+    @inline(__always)
     public func set(_ value: T) {
         defaults.set(value, forKey: key)
         defaults.synchronize()
@@ -338,9 +364,15 @@ public func getNetCfg() -> NetCfg {
     let sessionMode = networkSessionModeGroupDefault.get()
     let smpProxyMode = networkSMPProxyModeGroupDefault.get()
     let smpProxyFallback = networkSMPProxyFallbackGroupDefault.get()
-    let smpWebPort = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_SMP_WEB_PORT)
-    let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
-    let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
+    let smpWebPortServers = networkSMPWebPortServersDefault.get()
+    let tcpConnectTimeout = NetworkTimeout(
+            backgroundTimeout: groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND),
+            interactiveTimeout: groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE)
+        )
+    let tcpTimeout = NetworkTimeout(
+            backgroundTimeout: groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_BACKGROUND),
+            interactiveTimeout: groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_INTERACTIVE)
+        )
     let tcpTimeoutPerKb = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
     let rcvConcurrency = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY)
     let smpPingInterval = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
@@ -362,7 +394,7 @@ public func getNetCfg() -> NetCfg {
         sessionMode: sessionMode,
         smpProxyMode: smpProxyMode,
         smpProxyFallback: smpProxyFallback,
-        smpWebPort: smpWebPort,
+        smpWebPortServers: smpWebPortServers,
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpTimeoutPerKb: tcpTimeoutPerKb,
@@ -381,9 +413,11 @@ public func setNetCfg(_ cfg: NetCfg, networkProxy: NetworkProxy?) {
     networkSMPProxyFallbackGroupDefault.set(cfg.smpProxyFallback)
     let socksProxy = networkProxy?.toProxyString()
     groupDefaults.set(socksProxy, forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
-    groupDefaults.set(cfg.smpWebPort, forKey: GROUP_DEFAULT_NETWORK_SMP_WEB_PORT)
-    groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
-    groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
+    networkSMPWebPortServersDefault.set(cfg.smpWebPortServers)
+    groupDefaults.set(cfg.tcpConnectTimeout.backgroundTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND)
+    groupDefaults.set(cfg.tcpConnectTimeout.interactiveTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE)
+    groupDefaults.set(cfg.tcpTimeout.backgroundTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_BACKGROUND)
+    groupDefaults.set(cfg.tcpTimeout.interactiveTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_INTERACTIVE)
     groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
     groupDefaults.set(cfg.rcvConcurrency, forKey: GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY)
     groupDefaults.set(cfg.smpPingInterval, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)

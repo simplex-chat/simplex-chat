@@ -17,7 +17,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
@@ -51,7 +51,7 @@ private fun ActiveCallInteractiveAreaOneHand(call: Call, showMenu: MutableState<
         val chat = chatModel.getChat(call.contact.id)
         if (chat != null) {
           withBGApi {
-            openChat(chat.remoteHostId, chat.chatInfo)
+            openChat(secondaryChatsCtx = null, chat.remoteHostId, chat.chatInfo)
           }
         }
       },
@@ -116,7 +116,7 @@ private fun ActiveCallInteractiveAreaNonOneHand(call: Call, showMenu: MutableSta
           val chat = chatModel.getChat(call.contact.id)
           if (chat != null) {
             withBGApi {
-              openChat(chat.remoteHostId, chat.chatInfo)
+              openChat(secondaryChatsCtx = null, chat.remoteHostId, chat.chatInfo)
             }
           }
         },

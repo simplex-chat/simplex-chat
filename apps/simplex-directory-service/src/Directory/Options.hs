@@ -7,7 +7,9 @@
 
 module Directory.Options
   ( DirectoryOpts (..),
+    MigrateLog (..),
     getDirectoryOpts,
+    directoryOpts,
     mkChatOpts,
   )
 where
@@ -16,25 +18,35 @@ import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
+    noAddress :: Bool, -- skip creating address
     blockedWordsFile :: Maybe FilePath,
     blockedFragmentsFile :: Maybe FilePath,
     blockedExtensionRules :: Maybe FilePath,
     nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
     captchaGenerator :: Maybe FilePath,
-    directoryLog :: Maybe FilePath,
+    voiceCaptchaGenerator :: Maybe FilePath,
     serviceName :: T.Text,
+    clientService :: Bool,
     runCLI :: Bool,
     searchResults :: Int,
+    webFolder :: Maybe FilePath,
+    linkCheckInterval :: Int,
+    prohibitedToObserver :: Bool,
+    alwaysCaptcha :: Bool,
+    alwaysObserver :: Bool,
+    knocking :: Bool,
     testing :: Bool
   }
+
+data MigrateLog = MLCheck | MLImport | MLExport | MLListing
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
 directoryOpts appDir defaultDbName = do
@@ -62,6 +74,11 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
+  noAddress <-
+    switch
+      ( long "no-address"
+          <> help "skip checking and creating service address"
+      )
   blockedWordsFile <-
     optional $
       strOption
@@ -105,24 +122,64 @@ directoryOpts appDir defaultDbName = do
             <> metavar "CAPTCHA_GENERATOR"
             <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
         )
-  directoryLog <-
-    Just
-      <$> strOption
-        ( long "directory-file"
-            <> metavar "DIRECTORY_FILE"
-            <> help "Append only log for directory state"
+  voiceCaptchaGenerator <-
+    optional $
+      strOption
+        ( long "voice-captcha-generator"
+            <> metavar "VOICE_CAPTCHA_GENERATOR"
+            <> help "Executable to generate voice captcha, accepts text as parameter, writes audio file, outputs file_path and duration_seconds to stdout"
         )
   serviceName <-
     strOption
       ( long "service-name"
           <> metavar "SERVICE_NAME"
-          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX-Directory)"
-          <> value "SimpleX-Directory"
+          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX Directory)"
+          <> value "SimpleX Directory"
       )
-  runCLI <- 
+  clientService <-
+    switch
+      ( long "client-service"
+          <> help "Use client service certificate"
+      )
+  runCLI <-
     switch
       ( long "run-cli"
           <> help "Run directory service as CLI"
+      )
+  webFolder <-
+    optional $
+      strOption
+        ( long "web-folder"
+            <> metavar "WEB_FOLDER"
+            <> help "Folder to store static web assets"
+        )
+  linkCheckInterval <-
+    option
+      auto
+      ( long "link-check-interval"
+          <> metavar "SECONDS"
+          <> help "Interval in seconds to check public group link data (default: 1800)"
+          <> value 1800
+      )
+  prohibitedToObserver <-
+    switch
+      ( long "prohibited-to-observer"
+          <> help "Set a member to observer (and delete the message) when they post content prohibited by the group's settings"
+      )
+  alwaysCaptcha <-
+    switch
+      ( long "always-captcha"
+          <> help "Require a captcha from joining members in all groups, regardless of per-group filter settings"
+      )
+  alwaysObserver <-
+    switch
+      ( long "always-observer"
+          <> help "Make joining members observers in all groups, regardless of per-group setting in directory"
+      )
+  knocking <-
+    switch
+      ( long "knocking"
+          <> help "Require admin review (knocking) before joining members are admitted in all groups, regardless of group preference"
       )
   pure
     DirectoryOpts
@@ -130,16 +187,24 @@ directoryOpts appDir defaultDbName = do
         adminUsers,
         superUsers,
         ownersGroup,
+        noAddress,
         blockedWordsFile,
         blockedFragmentsFile,
         blockedExtensionRules,
         nameSpellingFile,
         profileNameLimit,
         captchaGenerator,
-        directoryLog,
+        voiceCaptchaGenerator,
         serviceName = T.pack serviceName,
+        clientService,
         runCLI,
         searchResults = 10,
+        webFolder,
+        linkCheckInterval,
+        prohibitedToObserver,
+        alwaysCaptcha,
+        alwaysObserver,
+        knocking,
         testing = False
       }
 
@@ -155,7 +220,7 @@ getDirectoryOpts appDir defaultDbName =
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
 mkChatOpts :: DirectoryOpts -> ChatOpts
-mkChatOpts DirectoryOpts {coreOptions} =
+mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
   ChatOpts
     { coreOptions,
       chatCmd = "",
@@ -165,9 +230,12 @@ mkChatOpts DirectoryOpts {coreOptions} =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = False,
+      showFullLinks = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      maintenance = False
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False, clientService},
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }

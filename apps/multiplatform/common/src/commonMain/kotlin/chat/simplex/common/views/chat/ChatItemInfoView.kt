@@ -29,8 +29,11 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
 import chat.simplex.common.views.chat.item.*
+import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chatlist.*
-import chat.simplex.res.MR
+import chat.simplex.common.views.newchat.noShownBadge
+import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.serialization.encodeToString
 
@@ -49,17 +52,19 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
   @Composable
-  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
+  fun TextBubble(text: String, formattedText: List<FormattedText>?, markdownBlocks: List<MarkdownBlock>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
     if (text != "") {
       MarkdownText(
-        text, if (text.isEmpty()) emptyList() else formattedText,
+        text, if (text.isEmpty()) emptyList() else formattedText, markdownBlocks,
         sender = sender,
         mentions = mentions,
         userMemberId = userMemberId,
         senderBold = true,
         toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
-        onLinkLongClick = { showMenu.value = true }
+        onLinkLongClick = { showMenu.value = true },
+        blockLayout = true,
+        cardColor = if (sent) appColors.sentQuote else appColors.receivedQuote
       )
     } else {
       Text(
@@ -82,7 +87,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, ciVersion.formattedText, sender = null, showMenu = showMenu, mentions = ci.mentions,
+          TextBubble(text, ciVersion.formattedText, ciVersion.markdownBlocks, sender = null, showMenu = showMenu, mentions = ci.mentions,
             userMemberId = when {
               chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
               else -> null
@@ -134,7 +139,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, qi.formattedText, sender = qi.sender(null), showMenu)
+          TextBubble(text, qi.formattedText, qi.markdownBlocks, sender = qi.sender(null), showMenu)
         }
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
@@ -170,9 +175,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   @Composable
   fun ForwardedFromSender(forwardedFromItem: AChatItem) {
     @Composable
-    fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground) {
-      Text(
+    fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground, badge: LocalBadge? = null) {
+      NameWithBadge(
         text,
+        badge,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.body1,
@@ -191,13 +197,13 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         if (forwardedFromItem.chatItem.chatDir.sent) {
           ItemText(text = stringResource(MR.strings.sender_you_pronoun), fontStyle = FontStyle.Italic)
           Spacer(Modifier.height(7.dp))
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary, badge = forwardedFromItem.chatInfo.nameBadge)
         } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
-          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName)
+          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName, badge = forwardedFromItem.chatItem.chatDir.groupMember.nameBadge)
           Spacer(Modifier.height(7.dp))
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary, badge = forwardedFromItem.chatInfo.nameBadge)
         } else {
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground, badge = forwardedFromItem.chatInfo.nameBadge)
         }
       }
     }
@@ -209,7 +215,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionItemView(
         click = {
           withBGApi {
-            openChat(chatRh, forwardedFromItem.chatInfo)
+            openChat(secondaryChatsCtx = null, chatRh, forwardedFromItem.chatInfo)
             ModalManager.end.closeModals()
           }
         },
@@ -271,12 +277,41 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (deleteAt != null) {
         InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
       }
-      if (devTools) {
+      val file = ci.file
+      if (file?.fileExpires != null) {
+        val expiresRes = if (file.expired) MR.strings.info_row_file_expired else MR.strings.info_row_file_expires
+        InfoRow(stringResource(expiresRes), localTimestamp(file.fileExpires))
+        if (noShownBadge()) {
+          SectionItemView(::openBadgesView) {
+            Text(stringResource(MR.strings.badges_larger_files_longer), color = MaterialTheme.colors.primary)
+          }
+        }
+      }
+      if (ci.meta.msgVerified?.verified == true) {
+        val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
+        InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_verified))
+      } else if (ci.meta.msgVerified is MsgVerified.SigMissing) {
+        InfoRow(stringResource(MR.strings.signature_missing_alert_title), "", icon = painterResource(MR.images.ic_verified_missing), iconTint = Color.Red)
+      }
+    }
+    if (devTools) {
+      SectionDividerSpaced()
+      SectionView {
         InfoRow(stringResource(MR.strings.info_row_database_id), ci.meta.itemId.toString())
         InfoRow(stringResource(MR.strings.info_row_updated_at), localTimestamp(ci.meta.updatedAt))
         ExpandableInfoRow(stringResource(MR.strings.info_row_message_status), jsonShort.encodeToString(ci.meta.itemStatus))
         if (ci.file != null) {
           ExpandableInfoRow(stringResource(MR.strings.info_row_file_status), jsonShort.encodeToString(ci.file.fileStatus))
+        }
+      }
+    }
+    if (ci.file != null && ciInfo.fileXftpServers.isNotEmpty()) {
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionView(stringResource(MR.strings.info_row_file_servers)) {
+        ciInfo.fileXftpServers.forEach { server ->
+          SectionItemView {
+            Text(serverHostname(server), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+          }
         }
       }
     }
@@ -344,9 +379,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     ) {
       MemberProfileImage(size = 36.dp, member)
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-      Text(
+      NameWithBadge(
         member.chatViewName,
-        modifier = Modifier.weight(10f, fill = true),
+        member.nameBadge,
+        Modifier.weight(10f, fill = true),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -557,6 +593,11 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
   if (deleteAt != null) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_disappears_at), localTimestamp(deleteAt)))
   }
+  if (ci.meta.msgVerified?.verified == true) {
+    shareText.add(generalGetString(if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified))
+  } else if (ci.meta.msgVerified is MsgVerified.SigMissing) {
+    shareText.add(generalGetString(MR.strings.signature_missing_alert_title))
+  }
   if (devTools) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_database_id), meta.itemId))
     shareText.add(String.format(generalGetString(MR.strings.share_text_updated_at), meta.updatedAt))
@@ -564,6 +605,9 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
     if (ci.file != null) {
       shareText.add(String.format(generalGetString(MR.strings.share_text_file_status), jsonShort.encodeToString(ci.file.fileStatus)))
     }
+  }
+  if (ci.file != null && chatItemInfo.fileXftpServers.isNotEmpty()) {
+    shareText.add(String.format(generalGetString(MR.strings.share_text_file_servers), chatItemInfo.fileXftpServers.joinToString(", ") { serverHostname(it) }))
   }
   val qi = ci.quotedItem
   if (qi != null) {

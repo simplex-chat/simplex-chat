@@ -2,8 +2,8 @@
 useWorker = typeof window.Worker !== "undefined"
 isDesktop = true
 
-// Create WebSocket connection.
-const socket = new WebSocket(`ws://${location.host}`)
+// Create WebSocket connection. location.search carries the per-call ?token=... capability required by the server.
+const socket = new WebSocket(`ws://${location.host}${location.search}`)
 
 socket.addEventListener("open", (_event) => {
   console.log("Opened socket")

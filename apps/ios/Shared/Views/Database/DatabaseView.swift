@@ -5,6 +5,7 @@
 //  Created by Evgeny on 19/06/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -21,7 +22,7 @@ enum DatabaseAlert: Identifiable {
     case deleteLegacyDatabase
     case deleteFilesAndMedia
     case setChatItemTTL(ttl: ChatItemTTL)
-    case error(title: LocalizedStringKey, error: String = "")
+    case error(title: String, error: String = "")
 
     var id: String {
         switch self {
@@ -41,6 +42,7 @@ enum DatabaseAlert: Identifiable {
     }
 }
 
+// Spec: spec/database.md#DatabaseView
 struct DatabaseView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -108,33 +110,88 @@ struct DatabaseView: View {
             }
 
             Section {
-                settingsRow(
-                    stopped ? "exclamationmark.octagon.fill" : "play.fill",
-                    color: stopped ? .red : .green
-                ) {
-                    Toggle(
-                        stopped ? "Chat is stopped" : "Chat is running",
-                        isOn: $runChat
-                    )
-                    .onChange(of: runChat) { _ in
-                        if runChat {
-                            DatabaseView.startChat($runChat, $progressIndicator)
-                        } else if !stoppingChat {
-                            stoppingChat = false
-                            alert = .stopChat
-                        }
-                    }
-                }
-            } header: {
-                Text("Run chat")
-                    .foregroundColor(theme.colors.secondary)
-            } footer: {
-                if case .documents = dbContainer {
-                    Text("Database will be migrated when the app restarts")
-                        .foregroundColor(theme.colors.secondary)
-                }
+                NavigationLink("Database passphrase & export", destination: databaseManagementView)
             }
 
+            Section {
+                Button(m.users.count > 1 ? "Delete files for all chat profiles" : "Delete all files", role: .destructive) {
+                    alert = .deleteFilesAndMedia
+                }
+                .disabled(progressIndicator || appFilesCountAndSize?.0 == 0)
+            } header: {
+                Text("Files & media")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                if let (fileCount, size) = appFilesCountAndSize {
+                    if fileCount == 0 {
+                        Text("No received or sent files")
+                            .foregroundColor(theme.colors.secondary)
+                    } else {
+                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
+                            .foregroundColor(theme.colors.secondary)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            runChat = m.chatRunning ?? true
+            appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+            currentChatItemTTL = chatItemTTL
+        }
+        .onChange(of: chatItemTTL) { ttl in
+            if ttl < currentChatItemTTL {
+                alert = .setChatItemTTL(ttl: ttl)
+            } else if ttl != currentChatItemTTL {
+                setCiTTL(ttl)
+            }
+        }
+        .alert(item: $alert) { item in databaseAlert(item) }
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.zip],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(files) = result, let fileURL = files.first {
+                importedArchivePath = fileURL
+                alert = .importArchive
+            }
+        }
+    }
+
+    private func runChatToggleView() -> some View {
+        Section {
+            let stopped = m.chatRunning == false
+            settingsRow(
+                stopped ? "exclamationmark.octagon.fill" : "play.fill",
+                color: stopped ? .red : .green
+            ) {
+                Toggle(
+                    stopped ? "Chat is stopped" : "Chat is running",
+                    isOn: $runChat
+                )
+                .onChange(of: runChat) { _ in
+                    if runChat {
+                        DatabaseView.startChat($runChat, $progressIndicator)
+                    } else if !stoppingChat {
+                        stoppingChat = false
+                        alert = .stopChat
+                    }
+                }
+            }
+        } header: {
+            Text("Run chat")
+                .foregroundColor(theme.colors.secondary)
+        } footer: {
+            if case .documents = dbContainer {
+                Text("Database will be migrated when the app restarts")
+                    .foregroundColor(theme.colors.secondary)
+            }
+        }
+    }
+
+    private func databaseManagementView() -> some View {
+        List {
+            let stopped = m.chatRunning == false
             Section {
                 let unencrypted = m.chatDbEncrypted == false
                 let color: Color = unencrypted ? .orange : theme.colors.secondary
@@ -192,47 +249,12 @@ struct DatabaseView: View {
                 }
             }
 
-            Section {
-                Button(m.users.count > 1 ? "Delete files for all chat profiles" : "Delete all files", role: .destructive) {
-                    alert = .deleteFilesAndMedia
-                }
-                .disabled(progressIndicator || appFilesCountAndSize?.0 == 0)
-            } header: {
-                Text("Files & media")
-                    .foregroundColor(theme.colors.secondary)
-            } footer: {
-                if let (fileCount, size) = appFilesCountAndSize {
-                    if fileCount == 0 {
-                        Text("No received or sent files")
-                            .foregroundColor(theme.colors.secondary)
-                    } else {
-                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
-                            .foregroundColor(theme.colors.secondary)
-                    }
-                }
-            }
+            runChatToggleView()
         }
-        .onAppear {
-            runChat = m.chatRunning ?? true
-            appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
-            currentChatItemTTL = chatItemTTL
-        }
-        .onChange(of: chatItemTTL) { ttl in
-            if ttl < currentChatItemTTL {
-                alert = .setChatItemTTL(ttl: ttl)
-            } else if ttl != currentChatItemTTL {
-                setCiTTL(ttl)
-            }
-        }
-        .alert(item: $alert) { item in databaseAlert(item) }
-        .fileImporter(
-            isPresented: $showFileImporter,
-            allowedContentTypes: [.zip],
-            allowsMultipleSelection: false
-        ) { result in
-            if case let .success(files) = result, let fileURL = files.first {
-                importedArchivePath = fileURL
-                alert = .importArchive
+        .modifier(ThemedBackground(grouped: true))
+        .overlay {
+            if progressIndicator {
+                ProgressView().scaleEffect(2)
             }
         }
     }
@@ -431,6 +453,10 @@ struct DatabaseView: View {
                 ChatReceiver.shared.start()
                 chatLastStartGroupDefault.set(Date.now)
                 AppChatState.shared.set(.active)
+                if shouldDeleteDatabaseBackupsDefault.get() {
+                    deleteDatabaseBackups()
+                    shouldDeleteDatabaseBackupsDefault.set(false)
+                }
             } catch let error {
                 runChat.wrappedValue = false
                 showAlert(NSLocalizedString("Error starting chat", comment: ""), message: responseError(error))
@@ -456,7 +482,7 @@ struct DatabaseView: View {
             }
         } catch let error {
             await MainActor.run {
-                alert = .error(title: "Error exporting chat database", error: responseError(error))
+                alert = .error(title: NSLocalizedString("Error exporting chat database", comment: "alert title"), error: responseError(error))
                 progressIndicator = false
             }
         }
@@ -492,10 +518,10 @@ struct DatabaseView: View {
                         return migration
                     }
                 } catch let error {
-                    await operationEnded(.error(title: "Error importing chat database", error: responseError(error)), progressIndicator, alert)
+                    await operationEnded(.error(title: NSLocalizedString("Error importing chat database", comment: "alert title"), error: responseError(error)), progressIndicator, alert)
                 }
             } catch let error {
-                await operationEnded(.error(title: "Error deleting chat database", error: responseError(error)), progressIndicator, alert)
+                await operationEnded(.error(title: NSLocalizedString("Error deleting chat database", comment: "alert title"), error: responseError(error)), progressIndicator, alert)
             }
         } else {
             showAlert("Error accessing database file")
@@ -513,7 +539,7 @@ struct DatabaseView: View {
             await DatabaseView.operationEnded(.chatDeleted, $progressIndicator, $alert)
             return true
         } catch let error {
-            await DatabaseView.operationEnded(.error(title: "Error deleting database", error: responseError(error)), $progressIndicator, $alert)
+            await DatabaseView.operationEnded(.error(title: NSLocalizedString("Error deleting database", comment: "alert title"), error: responseError(error)), $progressIndicator, $alert)
             return false
         }
     }
@@ -522,7 +548,7 @@ struct DatabaseView: View {
         if removeLegacyDatabaseAndFiles() {
             legacyDatabase = false
         } else {
-            alert = .error(title: "Error deleting old database")
+            alert = .error(title: NSLocalizedString("Error deleting old database", comment: "alert title"))
         }
     }
 
@@ -546,7 +572,7 @@ struct DatabaseView: View {
                 let (title, message) = chatDeletedAlertText()
                 showAlert(title, message: message, actions: { [okAlertActionWaiting] })
             } else if case let .error(title, error) = dbAlert {
-                showAlert("\(title)", message: error, actions: { [okAlertActionWaiting] })
+                showAlert(title, message: error, actions: { [okAlertActionWaiting] })
             } else {
                 alert.wrappedValue = dbAlert
                 cont.resume()
@@ -567,7 +593,7 @@ struct DatabaseView: View {
                 }
             } catch {
                 await MainActor.run {
-                    alert = .error(title: "Error changing setting", error: responseError(error))
+                    alert = .error(title: NSLocalizedString("Error changing setting", comment: "alert title"), error: responseError(error))
                     chatItemTTL = currentChatItemTTL
                     afterSetCiTTL()
                 }

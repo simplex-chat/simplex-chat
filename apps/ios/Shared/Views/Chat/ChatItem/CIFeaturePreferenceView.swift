@@ -5,10 +5,12 @@
 //  Created by Evgeny on 21/12/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIFeaturePreferenceView
 struct CIFeaturePreferenceView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
@@ -26,9 +28,9 @@ struct CIFeaturePreferenceView: View {
                allowed != .no && ct.allowsFeature(feature) && !ct.userAllowsFeature(feature) {
                 let setParam = feature == .timedMessages && ct.mergedPreferences.timedMessages.userPreference.preference.ttl == nil
                 featurePreferenceView(acceptText: setParam ? "Set 1 day" : "Accept")
-                    .onTapGesture {
+                    .simultaneousGesture(TapGesture().onEnded {
                         allowFeatureToContact(ct, feature, param: setParam ? 86400 : nil)
-                    }
+                    })
             } else {
                 featurePreferenceView()
             }

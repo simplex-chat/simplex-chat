@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
 import java.awt.Image
@@ -44,10 +44,10 @@ import kotlin.text.substring
 actual fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  disabledText: String?,
   sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
-  userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
   onMessageChange: (ComposeMessage) -> Unit,
@@ -86,8 +86,8 @@ actual fun PlatformTextField(
   // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
   // In this case padding from right side should be bigger
   val startEndPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
-  val startPadding = if (isRtlByCharacters && isLtrGlobally) startEndPadding else 0.dp
-  val endPadding = if (isRtlByCharacters && isLtrGlobally) 0.dp else startEndPadding
+  val startPadding = 0.dp
+  val endPadding = startEndPadding
   val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message.text, selection = cs.message.selection)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message.text, selection = cs.message.selection)
@@ -203,16 +203,16 @@ actual fun PlatformTextField(
   )
   showDeleteTextButton.value = cs.message.text.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {
-    ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
-  } else if (userIsObserver) {
-    ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)
+    ComposeOverlay(generalGetString(MR.strings.voice_message_send_text), textStyle, padding)
+  } else if (disabledText != null) {
+    ComposeOverlay(disabledText, textStyle, padding)
   }
 }
 
 @Composable
-private fun ComposeOverlay(textId: StringResource, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
+private fun ComposeOverlay(text: String, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
   Text(
-    generalGetString(textId),
+    text,
     Modifier.padding(padding),
     color = MaterialTheme.colors.secondary,
     style = textStyle.value.copy(fontStyle = FontStyle.Italic)

@@ -124,11 +124,15 @@ deleteStorage = do
   fs <- lift storageFiles
   liftIO $ closeDBStore `withStores` fs
   remove `withDBs` fs
+  removeExported `withDBs` fs
+  removeBackup `withDBs` fs
   mapM_ removeDir $ filesPath fs
   mapM_ removeDir $ assetsPath fs
   mapM_ removeDir =<< chatReadVar tempDirectory
   where
     remove f = whenM (doesFileExist f) $ removeFile f
+    removeExported f = remove $ f <> ".exported"
+    removeBackup f = remove $ f <> ".bak"
     removeDir d = whenM (doesDirectoryExist d) $ removePathForcibly d
 
 data StorageFiles = StorageFiles
@@ -158,7 +162,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
     -- closing after encryption prevents closing in case wrong encryption key was passed
     liftIO $ closeDBStore `withStores` fs
     (moveExported `withStores` fs)
-      `catchChatError` \e -> (restore `withDBs` fs) >> throwError e
+      `catchAllErrors` \e -> (restore `withDBs` fs) >> throwError e
   where
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f

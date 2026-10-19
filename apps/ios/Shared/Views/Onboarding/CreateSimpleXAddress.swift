@@ -5,6 +5,7 @@
 //  Created by spaced4ndy on 28.04.2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import Contacts
@@ -31,7 +32,7 @@ struct CreateSimpleXAddress: View {
                         Spacer()
 
                         if let userAddress = m.userAddress {
-                            SimpleXLinkQRCode(uri: userAddress.connReqContact)
+                            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: Binding.constant(false))
                                 .frame(maxHeight: g.size.width)
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
@@ -77,19 +78,18 @@ struct CreateSimpleXAddress: View {
                 progressIndicator = true
                 Task {
                     do {
-                        let connReqContact = try await apiCreateUserAddress()
-                        DispatchQueue.main.async {
-                            m.userAddress = UserContactLink(connReqContact: connReqContact)
+                        if let connLinkContact = try await apiCreateUserAddress() {
+                            DispatchQueue.main.async {
+                                m.userAddress = UserContactLink(connLinkContact)
+                            }
                         }
                         await MainActor.run { progressIndicator = false }
                     } catch let error {
                         logger.error("CreateSimpleXAddress create address: \(responseError(error))")
-                        await MainActor.run { progressIndicator = false }
-                        let a = getErrorAlert(error, "Error creating address")
-                        AlertManager.shared.showAlertMsg(
-                            title: a.title,
-                            message: a.message
-                        )
+                        await MainActor.run {
+                            progressIndicator = false
+                            showErrorAlert(error, NSLocalizedString("Error creating address", comment: ""))
+                        }
                     }
                 }
             } label: {
@@ -121,7 +121,7 @@ struct CreateSimpleXAddress: View {
 
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
+            showShareSheet(items: [simplexChatLink(userAddress.connLinkContact.simplexChatUri(short: false))])
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }
@@ -154,11 +154,7 @@ struct CreateSimpleXAddress: View {
                     }
                 case let .failure(error):
                     logger.error("CreateSimpleXAddress share via email: \(responseError(error))")
-                    let a = getErrorAlert(error, "Error sending email")
-                    AlertManager.shared.showAlertMsg(
-                        title: a.title,
-                        message: a.message
-                    )
+                    showErrorAlert(error, NSLocalizedString("Error sending email", comment: ""))
                 }
                 mailViewResult = nil
             }
@@ -189,7 +185,7 @@ struct SendAddressMailView: View {
         let messageBody = String(format: NSLocalizedString("""
             <p>Hi!</p>
             <p><a href="%@">Connect to me via SimpleX Chat</a></p>
-            """, comment: "email text"), simplexChatLink(userAddress.connReqContact))
+            """, comment: "email text"), simplexChatLink(userAddress.connLinkContact.simplexChatUri(short: false)))
         MailView(
             isShowing: self.$showMailView,
             result: $mailViewResult,

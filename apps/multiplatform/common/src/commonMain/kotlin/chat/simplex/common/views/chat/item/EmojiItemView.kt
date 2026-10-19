@@ -1,9 +1,11 @@
 package chat.simplex.common.views.chat.item
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
@@ -12,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MREmojiChar
 import chat.simplex.common.ui.theme.EmojiFont
+import chat.simplex.common.views.chat.*
 import java.sql.Timestamp
 
 val largeEmojiFont: TextStyle = TextStyle(fontSize = 48.sp, fontFamily = EmojiFont)
@@ -19,11 +22,20 @@ val mediumEmojiFont: TextStyle = TextStyle(fontSize = 36.sp, fontFamily = EmojiF
 
 @Composable
 fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
+  val emojiText = chatItem.content.text.trim()
+  val isSelected = setupEmojiSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, emojiText.length)
+
   Column(
     Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    EmojiText(chatItem.content.text)
+    if (isSelected) {
+      Box(Modifier.background(SelectionHighlightColor)) {
+        EmojiText(chatItem.content.text)
+      }
+    } else {
+      EmojiText(chatItem.content.text)
+    }
     CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
   }
 }

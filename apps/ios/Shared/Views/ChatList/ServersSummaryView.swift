@@ -245,7 +245,7 @@ struct ServersSummaryView: View {
         }
     }
 
-    @ViewBuilder private func smpServersListView(
+    private func smpServersListView(
         _ servers: [SMPServerSummary],
         _ statsStartedAt: Date,
         _ header: LocalizedStringKey? = nil,
@@ -256,7 +256,7 @@ struct ServersSummaryView: View {
             ? serverAddress($0.smpServer) < serverAddress($1.smpServer)
             : $0.hasSubs && !$1.hasSubs
         }
-        Section {
+        return Section {
             ForEach(sortedServers) { server in
                 smpServerView(server, statsStartedAt)
             }
@@ -318,14 +318,14 @@ struct ServersSummaryView: View {
         return onionHosts == .require ? .indigo : .accentColor
     }
 
-    @ViewBuilder private func xftpServersListView(
+    private func xftpServersListView(
         _ servers: [XFTPServerSummary],
         _ statsStartedAt: Date,
         _ header: LocalizedStringKey? = nil,
         _ footer: LocalizedStringKey? = nil
     ) -> some View {
         let sortedServers = servers.sorted { serverAddress($0.xftpServer) < serverAddress($1.xftpServer) }
-        Section {
+        return Section {
             ForEach(sortedServers) { server in
                 xftpServerView(server, statsStartedAt)
             }
@@ -412,7 +412,7 @@ struct SubscriptionStatusIndicatorView: View {
     var hasSess: Bool
 
     var body: some View {
-        let (color, variableValue, opacity, _) = subscriptionStatusColorAndPercentage(
+        let (color, variableValue, opacity) = subscriptionStatusInfo(
             online: m.networkInfo.online,
             usesProxy: networkUseOnionHostsGroupDefault.get() != .no || groupDefaults.string(forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY) != nil,
             subs: subs,
@@ -431,25 +431,19 @@ struct SubscriptionStatusIndicatorView: View {
 
 struct SubscriptionStatusPercentageView: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var theme: AppTheme
     var subs: SMPServerSubs
     var hasSess: Bool
 
     var body: some View {
-        let (_, _, _, statusPercent) = subscriptionStatusColorAndPercentage(
-            online: m.networkInfo.online,
-            usesProxy: networkUseOnionHostsGroupDefault.get() != .no || groupDefaults.string(forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY) != nil,
-            subs: subs,
-            hasSess: hasSess,
-            primaryColor: theme.colors.primary
-        )
-        Text(verbatim: "\(Int(floor(statusPercent * 100)))%")
+        let statusPercent = subscriptionStatusPercent(online: m.networkInfo.online, subs: subs, hasSess: hasSess)
+        let percentText: String = subs.total > 0 || hasSess ? "\(Int(floor(statusPercent * 100)))%" : "%"
+        Text(percentText)
             .foregroundColor(.secondary)
             .font(.caption)
     }
 }
 
-func subscriptionStatusColorAndPercentage(online: Bool, usesProxy: Bool, subs: SMPServerSubs, hasSess: Bool, primaryColor: Color) -> (Color, Double, Double, Double) {
+func subscriptionStatusInfo(online: Bool, usesProxy: Bool, subs: SMPServerSubs, hasSess: Bool, primaryColor: Color) -> (Color, Double, Double) {
     func roundedToQuarter(_ n: Double) -> Double {
         n >= 1 ? 1
         : n <= 0 ? 0
@@ -457,26 +451,28 @@ func subscriptionStatusColorAndPercentage(online: Bool, usesProxy: Bool, subs: S
     }
 
     let activeColor: Color = usesProxy ? .indigo : primaryColor
-    let noConnColorAndPercent: (Color, Double, Double, Double) = (Color(uiColor: .tertiaryLabel), 1, 1, 0)
+    let noConnColorAndPercent: (Color, Double, Double) = (Color(uiColor: .tertiaryLabel), 1, 1)
     let activeSubsRounded = roundedToQuarter(subs.shareOfActive)
 
     return !online
     ? noConnColorAndPercent
-    : (
-        subs.total == 0 && !hasSess
-        ? (activeColor, 0, 0.33, 0) // On freshly installed app (without chats) and on app start
-        : (
-            subs.ssActive == 0
-            ? (
-                hasSess ? (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) : noConnColorAndPercent
-            )
-            : ( // ssActive > 0
-                hasSess
-                ? (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-                : (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
-              )
-        )
+    : subs.total == 0 && !hasSess
+    ? (activeColor, 0, 0.33) // On freshly installed app (without chats) and on app start
+    : subs.ssActive == 0
+    ? (
+        hasSess ? (activeColor, activeSubsRounded, subs.shareOfActive) : noConnColorAndPercent
     )
+    : ( // ssActive > 0
+        hasSess
+        ? (activeColor, activeSubsRounded, subs.shareOfActive)
+        : (.orange, activeSubsRounded, subs.shareOfActive) // This would mean implementation error
+      )
+}
+
+func subscriptionStatusPercent(online: Bool, subs: SMPServerSubs, hasSess: Bool) -> Double {
+    online && (hasSess || (subs.total > 0 && subs.ssActive > 0))
+    ? subs.shareOfActive
+    : 0
 }
 
 struct SMPServerSummaryView: View {

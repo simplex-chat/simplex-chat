@@ -1,7 +1,7 @@
 ---
 title: Security Policy
 permalink: /security/index.html
-revision: 23.04.2024
+revision: 25.05.2026
 ---
 
 # Security Policy
@@ -12,7 +12,7 @@ The implementation security assessment of SimpleX cryptography and networking wa
 
 The cryptographic review of SimpleX protocols design was done by Trail of Bits in [July 2024](../blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
 
-We are planning implementation security assessment in early 2025.
+We have scheduled implementation security assessment for June 2026.
 
 ## Reporting security issues
 
@@ -54,7 +54,7 @@ We will determine the risk of each issue, taking into account our experience dea
 
 **Issue severity levels**
 
-- **CRITICAL severity**. Such issues should affect common configurations and be exploitable with low or medium difficulty. For example: significant disclosure of the encrypted users messages or files either via relays or via communication channels, vulnerabilities which can be easily exploited remotely to compromise clients or servers private keys. These issues will be kept private and will trigger a new release of all supported versions.
+- **CRITICAL severity**. Such issues should affect common configurations and be exploitable with low or medium difficulty. For example: significant disclosure of the encrypted users' messages or files either via relays or via communication channels, vulnerabilities which can be easily exploited remotely to compromise clients or servers private keys. These issues will be kept private and will trigger a new release of all supported versions.
 - **HIGH severity**. This includes issues that are of a lower risk than critical, possibly due to affecting less common configurations, or have high difficulty to be exploited. These issues will be kept private and will trigger a new release of all supported versions.
 - **MEDIUM severity**. This includes issues like crashes in client applications caused by the received messages or files, flaws in protocols that are less commonly used, and local flaws. These will in general be kept private until the next release, and that release will be scheduled so that it can roll up several such flaws at one time.
 - **LOW severity**. This includes issues such as those that only affect the SimpleX CLI app, or unlikely configurations, or issues that would be classified as medium but are very difficult to exploit. These will in general be fixed immediately in latest development versions, and may be back-ported to older versions that are still getting updates. These issues may be kept private or be included in commit messages.

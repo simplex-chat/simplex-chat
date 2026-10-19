@@ -13,7 +13,6 @@ import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
-import kotlin.random.Random
 
 actual val appPlatform = AppPlatform.ANDROID
 
@@ -25,6 +24,9 @@ var isAppOnForeground: Boolean = false
 val defaultLocale: Locale = Locale.getDefault()
 
 actual fun isAppVisibleAndFocused(): Boolean = isAppOnForeground
+
+// the manifest declares the scheme
+actual fun appLinkSchemeRegistered(): Boolean = true
 
 @SuppressLint("StaticFieldLeak")
 lateinit var androidAppContext: Context

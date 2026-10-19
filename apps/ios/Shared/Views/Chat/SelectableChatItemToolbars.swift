@@ -25,7 +25,7 @@ struct SelectedItemsTopToolbar: View {
 struct SelectedItemsBottomToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
-    let chatItems: [ChatItem]
+    let im: ItemsModel
     @Binding var selectedChatItems: Set<Int64>?
     var chatInfo: ChatInfo
     // Bool - delete for everyone is possible
@@ -75,9 +75,9 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!moderateEnabled || deleteCountProhibited ? theme.colors.secondary : .red)
+                        .foregroundColor(!moderateEnabled || deleteCountProhibited || im.secondaryIMFilter != nil ? theme.colors.secondary : .red)
                 }
-                .disabled(!moderateEnabled || deleteCountProhibited)
+                .disabled(!moderateEnabled || deleteCountProhibited || im.secondaryIMFilter != nil)
                 .opacity(canModerate ? 1 : 0)
 
                 Spacer()
@@ -88,24 +88,24 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!forwardEnabled || forwardCountProhibited ? theme.colors.secondary : theme.colors.primary)
+                        .foregroundColor(!forwardEnabled || forwardCountProhibited || im.secondaryIMFilter != nil ? theme.colors.secondary : theme.colors.primary)
                 }
-                .disabled(!forwardEnabled || forwardCountProhibited)
+                .disabled(!forwardEnabled || forwardCountProhibited || im.secondaryIMFilter != nil)
             }
             .frame(maxHeight: .infinity)
             .padding([.leading, .trailing], 12)
         }
         .onAppear {
-            recheckItems(chatInfo, chatItems, selectedChatItems)
+            recheckItems(chatInfo, im.reversedChatItems, selectedChatItems)
         }
         .onChange(of: chatInfo) { info in
-            recheckItems(info, chatItems, selectedChatItems)
+            recheckItems(info, im.reversedChatItems, selectedChatItems)
         }
-        .onChange(of: chatItems) { items in
+        .onChange(of: im.reversedChatItems) { items in
             recheckItems(chatInfo, items, selectedChatItems)
         }
         .onChange(of: selectedChatItems) { selected in
-            recheckItems(chatInfo, chatItems, selected)
+            recheckItems(chatInfo, im.reversedChatItems, selected)
         }
         .frame(height: 55.5)
         .background(.thinMaterial)
@@ -116,7 +116,7 @@ struct SelectedItemsBottomToolbar: View {
         deleteCountProhibited = count == 0 || count > 200
         forwardCountProhibited = count == 0 || count > 20
         canModerate = possibleToModerate(chatInfo)
-        let groupInfo: GroupInfo? = if case let ChatInfo.group(groupInfo: info) = chatInfo {
+        let groupInfo: GroupInfo? = if case let ChatInfo.group(groupInfo: info, _) = chatInfo {
             info
         } else {
              nil
@@ -145,8 +145,8 @@ struct SelectedItemsBottomToolbar: View {
 
     private func possibleToModerate(_ chatInfo: ChatInfo) -> Bool {
         return switch chatInfo {
-        case let .group(groupInfo):
-            groupInfo.membership.memberRole >= .admin
+        case let .group(groupInfo, _):
+            groupInfo.membership.memberRole >= .moderator
         default: false
         }
     }

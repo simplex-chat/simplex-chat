@@ -11,10 +11,11 @@ import Data.Text (Text)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
 
 data BroadcastBotOpts = BroadcastBotOpts
   { coreOptions :: CoreChatOpts,
+    botDisplayName :: Text,
     publishers :: [KnownContact],
     welcomeMessage :: Text,
     prohibitedMessage :: Text
@@ -29,6 +30,12 @@ defaultProhibitedMessage ps = "Sorry, only these users can broadcast messages: "
 broadcastBotOpts :: FilePath -> FilePath -> Parser BroadcastBotOpts
 broadcastBotOpts appDir defaultDbName = do
   coreOptions <- coreChatOptsP appDir defaultDbName
+  botDisplayName <-
+    strOption
+      ( long "display-name"
+          <> metavar "DISPLAY_NAME"
+          <> help "The display name of the broadcast bot"
+      )
   publishers <-
     option
       parseKnownContacts
@@ -55,6 +62,7 @@ broadcastBotOpts appDir defaultDbName = do
   pure
     BroadcastBotOpts
       { coreOptions,
+        botDisplayName,
         publishers,
         welcomeMessage = fromMaybe (defaultWelcomeMessage publishers) welcomeMessage_,
         prohibitedMessage = fromMaybe (defaultProhibitedMessage publishers) prohibitedMessage_
@@ -72,7 +80,7 @@ getBroadcastBotOpts appDir defaultDbName =
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
 mkChatOpts :: BroadcastBotOpts -> ChatOpts
-mkChatOpts BroadcastBotOpts {coreOptions} =
+mkChatOpts BroadcastBotOpts {coreOptions, botDisplayName} =
   ChatOpts
     { coreOptions,
       chatCmd = "",
@@ -82,9 +90,12 @@ mkChatOpts BroadcastBotOpts {coreOptions} =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = False,
+      showFullLinks = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      maintenance = False
+      createBot = Just CreateBotOpts {botDisplayName, allowFiles = False, clientService = False},
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }

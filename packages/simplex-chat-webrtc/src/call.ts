@@ -142,6 +142,7 @@ interface WCallAnswer extends IWCallCommand, IWCallResponse {
 interface WCallIceCandidates extends IWCallCommand, IWCallResponse {
   type: "ice"
   iceCandidates: string // JSON strings for RTCIceCandidateInit[]
+  session?: string // JSON string for RTCSessionDescriptionInit of ICE restart offer or answer
 }
 
 interface WCEnableMedia extends IWCallCommand {
@@ -281,6 +282,7 @@ interface Call {
   // controls whether transceiver's track was replaced already or set initially (in video call)
   cameraTrackWasSetBefore: boolean
   peerHasOldVersion: boolean
+  receiveRestartSession: (session: string, iceCandidates: RTCIceCandidateInit[]) => Promise<void>
 }
 
 interface NotConnectedCall {
@@ -306,6 +308,8 @@ let inactiveCallMediaSources: CallMediaSources = {
 let activeCall: Call | undefined
 let notConnectedCall: NotConnectedCall | undefined
 let answerTimeout = 30_000
+let reconnectTimeout = 30_000
+let iceRestartInterval = 10_000
 var useWorker = false
 var isDesktop = false
 var localizedState = ""
@@ -357,7 +361,8 @@ const processCommand = (function () {
     return {
       peerConnectionConfig: {
         iceServers: iceServers ?? defaultIceServers,
-        iceCandidatePoolSize: 10,
+        // Chrome gathers no candidates on ICE restart when candidates pool is used
+        iceCandidatePoolSize: 0,
         encodedInsertableStreams,
         iceTransportPolicy: relay ? "relay" : "all",
         // needed for Android WebView >= 69 && <= 72 where default was "plan-b" which is incompatible with transceivers
@@ -486,10 +491,14 @@ const processCommand = (function () {
       layout: notConnectedCall?.layout ?? LayoutType.Default,
       cameraTrackWasSetBefore: localStream.getVideoTracks().length > 0,
       peerHasOldVersion: false,
+      receiveRestartSession,
     }
     localOrPeerMediaSourcesChanged(call)
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
+    let reconnectingTimeout: number | undefined
+    let iceRestartTimeout: number | undefined
+    let wasConnected = false
     if (pc.connectionState) {
       pc.addEventListener("connectionstatechange", connectionStateChange)
     } else {
@@ -500,33 +509,45 @@ const processCommand = (function () {
     async function connectionStateChange() {
       // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
       // See https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
-      if (pc.connectionState !== "failed") connectionHandler()
+      if (pc.connectionState !== "failed" || wasConnected) connectionHandler()
     }
 
-    async function connectionHandler() {
+    async function connectionHandler(reconnectTimedOut = false) {
+      let state: string =
+        pc.connectionState ??
+        (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
+          ? pc.iceConnectionState
+          : pc.iceConnectionState == "completed"
+          ? "connected"
+          : "connecting") /* webView 69-70 doesn't have connectionState yet */
+      if (wasConnected) {
+        if (reconnectTimedOut) {
+          reconnectingTimeout = undefined
+          if (activeCall !== call || state == "connected") return
+          state = "disconnected"
+        } else if (state == "disconnected" || state == "failed") {
+          if (reconnectingTimeout !== undefined) return
+          reconnectingTimeout = setTimeout(() => connectionHandler(true), reconnectTimeout)
+          if (isIceRestarter()) restartIce()
+          state = "reconnecting"
+        } else if (state == "connecting" || state == "new") {
+          return
+        }
+      }
       sendMessageToNative({
         resp: {
           type: "connection",
           state: {
-            connectionState:
-              pc.connectionState ??
-              (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
-                ? pc.iceConnectionState
-                : pc.iceConnectionState == "completed"
-                ? "connected"
-                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
+            connectionState: state,
             iceConnectionState: pc.iceConnectionState,
             iceGatheringState: pc.iceGatheringState,
             signalingState: pc.signalingState,
           },
         },
       })
-      if (
-        pc.connectionState == "disconnected" ||
-        pc.connectionState == "failed" ||
-        (!pc.connectionState && (pc.iceConnectionState == "disconnected" || pc.iceConnectionState == "failed"))
-      ) {
+      if (state == "disconnected" || state == "failed") {
         clearConnectionTimeout()
+        clearReconnecting()
         if (pc.connectionState) {
           pc.removeEventListener("connectionstatechange", connectionStateChange)
         } else {
@@ -536,8 +557,10 @@ const processCommand = (function () {
           setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
         }
         endCall()
-      } else if (pc.connectionState == "connected" || (!pc.connectionState && pc.iceConnectionState == "connected")) {
+      } else if (state == "connected") {
         clearConnectionTimeout()
+        clearReconnecting()
+        wasConnected = true
         const stats = (await pc.getStats()) as Map<string, any>
         for (const stat of stats.values()) {
           const {type, state} = stat
@@ -564,6 +587,51 @@ const processCommand = (function () {
         connectionTimeout = undefined
       }
     }
+
+    function clearReconnecting() {
+      clearTimeout(reconnectingTimeout)
+      reconnectingTimeout = undefined
+      clearTimeout(iceRestartTimeout)
+      iceRestartTimeout = undefined
+    }
+
+    // Only the party that sent the initial offer restarts ICE, so that restart offers never collide
+    function isIceRestarter(): boolean {
+      return pc.localDescription?.type == "offer"
+    }
+
+    async function restartIce() {
+      if (activeCall !== call || reconnectingTimeout === undefined) return
+      iceRestartTimeout = setTimeout(restartIce, iceRestartInterval)
+      // the previous restart offer is not answered yet
+      if (pc.signalingState != "stable") return
+      try {
+        const iceCandidates = getIceCandidates(pc, config)
+        const offer = await pc.createOffer({iceRestart: true})
+        await pc.setLocalDescription(offer)
+        sendMessageToNative({resp: {type: "ice", session: serialize(offer), iceCandidates: await iceCandidates}})
+      } catch (e) {
+        console.log("ICE restart error", e)
+      }
+    }
+
+    async function receiveRestartSession(session: string, iceCandidates: RTCIceCandidateInit[]) {
+      const desc: RTCSessionDescriptionInit = parse(session)
+      const remoteDesc = new RTCSessionDescription(!webView69Or70() ? desc : adaptSdpToOldWebView(desc))
+      if (desc.type == "offer" && !isIceRestarter()) {
+        await pc.setRemoteDescription(remoteDesc)
+        const localIceCandidates = getIceCandidates(pc, config)
+        const answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        addIceCandidates(pc, iceCandidates)
+        sendMessageToNative({resp: {type: "ice", session: serialize(answer), iceCandidates: await localIceCandidates}})
+      } else if (desc.type == "answer" && pc.signalingState == "have-local-offer") {
+        await pc.setRemoteDescription(remoteDesc)
+        addIceCandidates(pc, iceCandidates)
+      } else {
+        throw new Error(`unexpected ICE restart ${desc.type} in ${pc.signalingState} state`)
+      }
+    }
   }
 
   function serialize<T>(x: T): string {
@@ -583,6 +651,8 @@ const processCommand = (function () {
         case "capabilities":
           console.log("starting outgoing call - capabilities")
           if (activeCall) endCall()
+          // Stop a preview stream from an earlier pre-connect outgoing call being replaced (activeCall may be null here)
+          stopNotConnectedCall()
 
           let localStream: MediaStream | null = null
           try {
@@ -623,7 +693,8 @@ const processCommand = (function () {
           if (activeCall) endCall()
 
           // It can be already defined on Android when switching calls (if the previous call was outgoing)
-          notConnectedCall = undefined
+          // Stop its preview tracks before clearing, otherwise camera/mic stay live
+          stopNotConnectedCall()
           inactiveCallMediaSources.mic = true
           inactiveCallMediaSources.camera = command.media == CallMediaType.Video
           inactiveCallMediaSourcesChanged(inactiveCallMediaSources)
@@ -726,7 +797,10 @@ const processCommand = (function () {
           break
         case "ice":
           const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
-          if (pc) {
+          if (activeCall && command.session) {
+            await activeCall.receiveRestartSession(command.session, remoteIceCandidates)
+            resp = {type: "ok"}
+          } else if (pc) {
             addIceCandidates(pc, remoteIceCandidates)
             resp = {type: "ok"}
           } else {
@@ -1441,6 +1515,14 @@ const processCommand = (function () {
     if (activeCall) {
       activeCall.localStream.getTracks().forEach((track) => track.stop())
       activeCall.localScreenStream.getTracks().forEach((track) => track.stop())
+    }
+  }
+
+  // Call on any path that abandons notConnectedCall, otherwise its preview camera/mic tracks stay live.
+  function stopNotConnectedCall() {
+    if (notConnectedCall) {
+      notConnectedCall.localStream.getTracks().forEach((track) => track.stop())
+      notConnectedCall = undefined
     }
   }
 

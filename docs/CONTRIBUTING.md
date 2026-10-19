@@ -1,11 +1,36 @@
 ---
 title: Contributing guide
-revision: 31.01.2023
+revision: 25.07.2025
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [PL](/docs/lang/pl/CONTRIBUTING.md) |
+| Updated 25.07.2025 | Languages: EN, [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [PL](/docs/lang/pl/CONTRIBUTING.md) |
 
 # Contributing guide
+
+## Focus on user problems
+
+We do not make code changes to improve code - any change must address a specific user problem or request.
+
+## Discuss the plans as early as possible
+
+Please discuss the problem you want to solve and your detailed implementation plan with the project team prior to contributing, to avoid wasted time and additional changes. Acceptance of your contribution depends on your willingness and ability to iterate the proposed contribution to achieve the required quality level, coding style, test coverage, and alignment with user requirements as they are understood by the project team.
+
+## Follow project structure, coding style and approaches
+
+./contributing/PROJECT.md has information about the structure of this `simplex-chat` repository.
+
+./contributing/CODE.md has details about general requirements common for `simplexmq` and `simplex-chat` repositories.
+
+These files can be used with LLM prompts, e.g. if you use Claude Code you can create CLAUDE.md file in project root importing content from these files:
+
+```markdown
+@README.md
+@docs/CONTRIBUTING.md
+@docs/contributing/PROJECT.md
+@docs/contributing/CODE.md
+```
+
+For Android/Desktop and iOS apps you can additionally import `apps/multiplatform/README.md` and `apps/ios/README.md`.
 
 ## Compiling with SQLCipher encryption enabled
 
@@ -32,11 +57,7 @@ You will have to add `/opt/homebrew/opt/openssl@3.0/bin` to your PATH in order t
 
 - `stable` - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.3).
 
-- `stable-android` - used to build stable Android core library with Nix (GHC 8.10.7) - only for Android armv7a.
-
-- `master` - branch for beta version releases (compatible with both GHC 9.6.3 and 8.10.7).
-
-- `master-android` - used to build beta Android core library with Nix (GHC 8.10.7) - only for Android armv7a.
+- `master` - branch for beta version releases (compatible with both GHC 9.6.3 and 8.10.7). Nix builds Android armv7a core library with GHC 8.10.7 and all other core libraries with GHC 9.6.3.
 
 **In simplexmq repo**
 
@@ -46,18 +67,13 @@ You will have to add `/opt/homebrew/opt/openssl@3.0/bin` to your PATH in order t
 
 1. Make PRs to `master` branch _only_ for both simplex-chat and simplexmq repos.
 
-2. To build core libraries for Android, iOS and windows:
-- merge `master` branch to `master-android` branch.
-- push to GitHub.
+2. To build core libraries for Android, iOS and Windows, push `master` branch to GitHub.
 
-3. All libraries should be built from `master` branch, Android armv7a - from `master-android` branch.
+3. All libraries should be built from `master` branch.
 
 4. To build Desktop and CLI apps, make tag in `master` branch, APK files should be attached to the release.
 
-5. After the public release to App Store and Play Store, merge:
-- `master` to `stable`
-- `master` to `master-android` (and compile/update code)
-- `master-android` to `stable-android`
+5. After the public release to App Store and Play Store, merge `master` to `stable`.
 
 6. Independently, `master` branch of simplexmq repo should be merged to `stable` branch on stable releases.
 
@@ -113,3 +129,23 @@ import Control.Monad
 ```
 
 [This PR](https://github.com/simplex-chat/simplex-chat/pull/2975/files) has all the differences.
+
+
+## Improving compatibility between versions for remote desktop connection
+
+UI already can handle failed JSON conversions of chats and chat items, and it helps both debugging and downgrading.
+
+While we can increase versions for remote connections to make different versions incompatible, it degrades remote connection UX, as in many cases users can't upgrade mobile or desktop apps at the same time because of different release cycles.
+
+It is especially problematic for Android app users, as they can only downgrade via Export/Import - older version can't be installed on top of newer version.
+
+PR #6105 improved it by:
+- adding CInfoInvalidJSON constructor, so that chats that cannot be parsed will show as "invalid chat" via remote connection (as when UI has field not present in API),
+- changing JSON parsing for CIContent, so that it falls back to CIInvalidJSON in platform-specific JSON parser.
+
+To avoid "invalid" chats in the list we need to maintain forward compatibility on JSON encoding level of AChat type and subtypes:
+- add new fields as optional to these types,
+- add `omittedField` method to FromJSON instances of types of new fields to provide a default value, where appropriate,
+- define primitive non-optional fields as newtype with `omittedField` in JSON instance.
+
+To avoid fallback to invalid JSON in chat items we should do the same for ChatItem type and subtypes. It's especially important when adding fields to types used for all CIContent, as otherwise all items will be broken.

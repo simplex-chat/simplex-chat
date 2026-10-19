@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
@@ -42,10 +42,9 @@ actual fun SavePassphraseSetting(
       }
       Text(
         stringResource(MR.strings.save_passphrase_in_settings),
-        Modifier.padding(end = 24.dp),
+        Modifier.weight(1f).padding(end = 24.dp),
         color = Color.Unspecified
       )
-      Spacer(Modifier.fillMaxWidth().weight(1f))
       DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,
@@ -60,6 +59,7 @@ actual fun DatabaseEncryptionFooter(
   useKeychain: MutableState<Boolean>,
   chatDbEncrypted: Boolean?,
   storedKey: MutableState<Boolean>,
+  keyStorage: String?,
   initialRandomDBPassphrase: MutableState<Boolean>,
   migration: Boolean,
 ) {

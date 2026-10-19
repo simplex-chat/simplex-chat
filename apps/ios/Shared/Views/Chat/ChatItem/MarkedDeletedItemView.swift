@@ -5,15 +5,18 @@
 //  Created by JRoberts on 30.11.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#MarkedDeletedItemView
 struct MarkedDeletedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.revealed) var revealed: Bool
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     var chatItem: ChatItem
 
     var body: some View {
@@ -29,14 +32,14 @@ struct MarkedDeletedItemView: View {
     var mergedMarkedDeletedText: LocalizedStringKey {
         if !revealed,
            let ciCategory = chatItem.mergeCategory,
-           var i = m.getChatItemIndex(chatItem) {
+           var i = m.getChatItemIndex(im, chatItem) {
             var moderated = 0
             var blocked = 0
             var blockedByAdmin = 0
             var deleted = 0
             var moderatedBy: Set<String> = []
-            while i < ItemsModel.shared.reversedChatItems.count,
-                  let ci = .some(ItemsModel.shared.reversedChatItems[i]),
+            while i < im.reversedChatItems.count,
+                  let ci = .some(im.reversedChatItems[i]),
                   ci.mergeCategory == ciCategory,
                   let itemDeleted = ci.meta.itemDeleted {
                 switch itemDeleted {
@@ -85,6 +88,7 @@ struct MarkedDeletedItemView_Previews: PreviewProvider {
         Group {
             MarkedDeletedItemView(
                 chat: Chat.sampleData,
+                im: ItemsModel.shared,
                 chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))
             ).environment(\.revealed, true)
         }

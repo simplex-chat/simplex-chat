@@ -18,16 +18,18 @@ import Control.Monad (when)
 import qualified Data.Aeson.TH as J
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
+import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import Data.Word (Word16, Word32)
 import Simplex.Chat.Remote.AppVersion
-import Simplex.Chat.Types (verificationCode)
+import Simplex.Chat.Types (BoolDef, verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..))
+import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..), TransportPeer (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Util (AnyError (..), tshow)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 
@@ -46,7 +48,8 @@ data RemoteCrypto = RemoteCrypto
     rcvCounter :: TVar Word32,
     chainKeys :: TSbChainKeys,
     skippedKeys :: TM.TMap Word32 (C.SbKeyNonce, C.SbKeyNonce),
-    signatures :: RemoteSignatures
+    signatures :: RemoteSignatures,
+    compression :: Bool
   }
 
 getRemoteSndKeys :: RemoteCrypto -> STM (Word32, C.SbKeyNonce, C.SbKeyNonce)
@@ -71,8 +74,10 @@ getRemoteRcvKeys RemoteCrypto {rcvCounter, chainKeys = TSbChainKeys {rcvKey}, sk
       | otherwise = do -- prevCorrId < corrId
           writeTVar rcvCounter corrId
           skipKeys (prevCorrId + 1)
+          modifyTVar' skippedKeys $ \m -> M.drop (M.size m - maxSkippedKeys) m
           Right <$> getKeys
     maxSkip = 256
+    maxSkippedKeys = 1024
     getKeys = (,) <$> stateTVar rcvKey C.sbcHkdf <*> stateTVar rcvKey C.sbcHkdf
     skipKeys !cId =
       when (cId < corrId) $ do
@@ -102,11 +107,11 @@ data RHPendingSession = RHPendingSession
 data RemoteHostSession
   = RHSessionStarting
   | RHSessionConnecting {invitation :: Text, rhPendingSession :: RHPendingSession}
-  | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS, rhPendingSession :: RHPendingSession}
-  | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
+  | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS 'TServer, rhPendingSession :: RHPendingSession}
+  | RHSessionConfirmed {tls :: TLS 'TServer, rhPendingSession :: RHPendingSession}
   | RHSessionConnected
       { rchClient :: RCHostClient,
-        tls :: TLS,
+        tls :: TLS 'TServer,
         rhClient :: RemoteHostClient,
         pollAction :: Async (),
         storePath :: FilePath
@@ -128,7 +133,7 @@ rhsSessionState = \case
   RHSessionConfirmed {tls} -> RHSConfirmed {sessionCode = tlsSessionCode tls}
   RHSessionConnected {tls} -> RHSConnected {sessionCode = tlsSessionCode tls}
 
-tlsSessionCode :: TLS -> Text
+tlsSessionCode :: TLS p -> Text
 tlsSessionCode = verificationCode . tlsUniq
 
 data RemoteProtocolError
@@ -154,6 +159,9 @@ data RemoteProtocolError
   | RPEHTTP2 {http2Error :: Text}
   | RPEException {someException :: Text}
   deriving (Show, Exception)
+
+instance AnyError RemoteProtocolError where
+  fromSomeException = RPEException . tshow
 
 type RemoteHostId = Int64
 
@@ -216,7 +224,8 @@ data RemoteFile = RemoteFile
 
 data CtrlAppInfo = CtrlAppInfo
   { appVersionRange :: AppVersionRange,
-    deviceName :: Text
+    deviceName :: Text,
+    compression :: BoolDef
   }
   deriving (Show)
 
@@ -224,7 +233,8 @@ data HostAppInfo = HostAppInfo
   { appVersion :: AppVersion,
     deviceName :: Text,
     encoding :: PlatformEncoding,
-    encryptFiles :: Bool -- if the host encrypts files in app storage
+    encryptFiles :: Bool, -- if the host encrypts files in app storage
+    compression :: BoolDef
   }
 
 $(J.deriveJSON defaultJSON ''RemoteFile)

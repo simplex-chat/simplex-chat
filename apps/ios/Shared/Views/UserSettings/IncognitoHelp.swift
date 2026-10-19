@@ -23,7 +23,7 @@ struct IncognitoHelp: View {
                 Text("Incognito mode protects your privacy by using a new random profile for each contact.")
                 Text("It allows having many anonymous connections without any shared data between them in a single chat profile.")
                 Text("When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.")
-                Text("Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).")
+                ExternalLink("Read more in User Guide.", destination: URL(string: "https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode")!)
             }
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))

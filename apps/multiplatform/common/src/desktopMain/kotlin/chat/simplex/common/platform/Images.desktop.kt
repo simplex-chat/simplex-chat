@@ -5,7 +5,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
-import chat.simplex.res.MR
+import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
+import chat.simplex.res.*
 import org.jetbrains.skia.Image
 import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
@@ -21,17 +22,46 @@ import kotlin.math.sqrt
 private fun errorBitmap(): ImageBitmap =
   ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
 
+private val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashMap<String, ImageBitmap>(200, 0.75f, true) {
+  override fun removeEldestEntry(eldest: Map.Entry<String, ImageBitmap>): Boolean = size > 200
+})
+
+private const val MAX_IMAGE_DIMENSION = 4320
+
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
+  base64BitmapCache[base64ImageString]?.let { return it }
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
   return try {
-    ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode(imageString))).toComposeImageBitmap()
-  } catch (e: IOException) {
+    val bytes = Base64.getMimeDecoder().decode(imageString)
+    val stream = ImageIO.createImageInputStream(ByteArrayInputStream(bytes))
+    val reader = ImageIO.getImageReaders(stream).next()
+    reader.setInput(stream)
+    val width = reader.getWidth(0)
+    val height = reader.getHeight(0)
+    if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) {
+      reader.dispose()
+      return errorBitmap()
+    }
+    val image = reader.read(0)
+    reader.dispose()
+    image.toComposeImageBitmap().also {
+      base64BitmapCache[base64ImageString] = it
+    }
+  } catch (e: Throwable) {
     Log.e(TAG, "base64ToBitmap error: $e")
     errorBitmap()
   }
 }
+
+actual fun decodeBase64Image(base64: String, width: Int): ImageBitmap? =
+  try {
+    decodeBoundedBufferedImage(Base64.getMimeDecoder().decode(base64), width).toComposeImageBitmap()
+  } catch (e: Throwable) {
+    Log.e(TAG, "decodeBase64Image error: $e")
+    null
+  }
 
 actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   var img = image
@@ -133,9 +163,9 @@ actual fun ImageBitmap.hasAlpha(): Boolean {
   return false
 }
 
-actual fun ImageBitmap.addLogo(): ImageBitmap {
-  val radius = (width * 0.16f).toInt()
-  val logoSize = (width * 0.24).toInt()
+actual fun ImageBitmap.addLogo(size: Float): ImageBitmap {
+  val radius = (width * size).toInt()
+  val logoSize = (width * size * 1.5).toInt()
   val logo: BufferedImage = MR.images.icon_foreground_common.image
   val original = toAwtImage()
   val withLogo = BufferedImage(width, height, original.type)

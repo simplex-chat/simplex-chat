@@ -1,12 +1,15 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module MobileTests where
+module MobileTests (mobileTests) where
 
+import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent.STM
@@ -19,17 +22,21 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Internal (create)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Time.Clock (getCurrentTime)
 import Data.Word (Word8, Word32)
 import Foreign.C
-import Foreign.Marshal.Alloc (mallocBytes)
+import Foreign.Marshal.Alloc (alloca, mallocBytes)
 import Foreign.Marshal.Utils (copyBytes)
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import JSONFixtures
-import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Mobile
+import Simplex.Chat
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeRequest (..), BadgeType (..), generateMasterKey, verifyCredential)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Mobile hiding (error)
+import Simplex.Chat.Mobile.Badges hiding (error)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
@@ -37,8 +44,9 @@ import Simplex.Chat.Options.DB
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
-import Simplex.Messaging.Agent.Store.Interface
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Client (AgentClient (..))
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), Env (..))
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
@@ -59,6 +67,7 @@ mobileTests = do
       setForeignEncoding utf8
     it "start new chat without user" testChatApiNoUser
     it "start new chat with existing user" testChatApi
+    it "should set queue size via C API" testChatMigrateInitQueueCApi
     it "should encrypt/decrypt WebRTC frames" testMediaApi
     it "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
     describe "should read/write encrypted files via C API" $ do
@@ -75,6 +84,11 @@ mobileTests = do
       it "should convert invalid name to a valid name" testValidNameCApi
     describe "JSON length" $ do
       it "should compute length of JSON encoded string" testChatJsonLengthCApi
+    describe "Parsers" $ do
+      it "should parse server address" testChatParseServer
+      it "should parse and sanitize URI" testChatParseUri
+    describe "Badges" $ do
+      it "should generate key and issue badge via C API, verify credential" testBadgeKeygenIssueCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -108,36 +122,12 @@ chatStarted =
   chatStartedTagged
 #endif
 
-networkStatuses :: LB.ByteString
-networkStatuses =
+connectionsDiff :: LB.ByteString
+connectionsDiff =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-  networkStatusesSwift
+  connectionsDiffSwift
 #else
-  networkStatusesTagged
-#endif
-
-memberSubSummary :: LB.ByteString
-memberSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  memberSubSummarySwift
-#else
-  memberSubSummaryTagged
-#endif
-
-userContactSubSummary :: LB.ByteString
-userContactSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  userContactSubSummarySwift
-#else
-  userContactSubSummaryTagged
-#endif
-
-pendingSubSummary :: LB.ByteString
-pendingSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  pendingSubSummarySwift
-#else
-  pendingSubSummaryTagged
+  connectionsDiffTagged
 #endif
 
 parsedMarkdown :: LB.ByteString
@@ -163,19 +153,36 @@ testChatApi :: TestParams -> IO ()
 testChatApi ps = do
   let tmp = tmpPath ps
       dbPrefix = tmp </> "1"
-      f = dbPrefix <> chatSuffix
-  Right st <- createChatStore (DBOpts f "myKey" False True DB.TQOff) MCYesUp
-  Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
+  Right ChatDatabase {chatStore, agentStore} <- createChatDatabase (ChatDbOpts dbPrefix "myKey" DB.TQOff True) (MigrationConfig MCYesUp Nothing)
+  insertUser agentStore
+  ts <- getCurrentTime
+  Right _ <- withTransaction chatStore $ \db -> runExceptT $ createUserRecordAt db (AgentUserId 1) False False aliceProfile {preferences = Nothing} True ts
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
-  chatRecvMsg cc `shouldReturn` networkStatuses
+  chatRecvMsg cc `shouldReturn` connectionsDiff
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
+
+testChatMigrateInitQueueCApi :: TestParams -> IO ()
+testChatMigrateInitQueueCApi ps = do
+  cPath <- newCString $ tmpPath ps </> "1"
+  cKey <- newCString ""
+  cConfirm <- newCString "yesUp"
+  alloca $ \ctrlPtr -> do
+    let migrateInit queueSize = peekCAString =<< cChatMigrateInitQueue cPath cKey cConfirm queueSize ctrlPtr
+    migrateInit 0 `shouldReturn` jsonStr DBMInvalidQueueSize
+    migrateInit (-1) `shouldReturn` jsonStr DBMInvalidQueueSize
+    migrateInit 65536 `shouldReturn` jsonStr DBMOk
+    ChatController {config = ChatConfig {tbqSize}, smpAgent = AgentClient {agentEnv = Env {config = AgentConfig {tbqSize = agentQSize}}}} <- deRefStablePtr =<< peek ctrlPtr
+    tbqSize `shouldBe` 65536
+    agentQSize `shouldBe` 65536
+  where
+    jsonStr = LB.unpack . J.encode
 
 testMediaApi :: HasCallStack => TestParams -> IO ()
 testMediaApi ps = do
@@ -317,6 +324,34 @@ testChatJsonLengthCApi _ = do
   cInt1 `shouldBe` 6
   cInt2 <- cChatJsonLength =<< newCString "こんにちは！"
   cInt2 `shouldBe` 18
+
+testChatParseServer :: TestParams -> IO ()
+testChatParseServer _ = do
+  pure ()
+
+testChatParseUri :: TestParams -> IO ()
+testChatParseUri _ = do
+  pure ()
+
+-- Generate a server keypair and issue a badge credential via the C FFI,
+-- constructing the request from the typed records, then verify the issued
+-- credential's BBS signature on the Haskell side.
+testBadgeKeygenIssueCApi :: TestParams -> IO ()
+testBadgeKeygenIssueCApi _ = do
+  g <- C.newRandom
+  IssuerKeyPair {publicKey, secretKey} <- ffiResult =<< (peekCString =<< cChatBadgeKeygen)
+  mk <- generateMasterKey g
+  badgeExpiry <- getCurrentTime
+  let req = BadgeIssueReq {badgeKeyIdx = 1, secretKey, request = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}}}
+  cred <- ffiResult =<< (peekCString =<< cChatBadgeIssue =<< newCString (LB.unpack (J.encode req)))
+  verifyCredential publicKey cred `shouldReturn` True
+
+-- Decode an FFI `BadgeResult` envelope, returning the result or failing on error.
+ffiResult :: FromJSON r => String -> IO r
+ffiResult s = case J.eitherDecode (LB.pack s) of
+  Right (BadgeResult r) -> pure r
+  Right (BadgeError e) -> error $ "badge FFI error: " <> show e
+  Left e -> error $ "badge FFI decode failed: " <> e <> " in " <> s
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack

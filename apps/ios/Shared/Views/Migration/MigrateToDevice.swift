@@ -5,6 +5,7 @@
 //  Created by Avently on 23.02.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -373,10 +374,12 @@ struct MigrateToDevice: View {
                     "Upgrade and open chat",
                      "",
                      .yesUp)
-                case .downgrade:
+                case let .downgrade(downMigrations):
                     ("Database downgrade",
                     "Downgrade and open chat",
-                     NSLocalizedString("Warning: you may lose some data!", comment: ""),
+                     ([NSLocalizedString("Warning: you may lose some data!", comment: "")]
+                        + downMigrationWarnings(downMigrations).reversed())
+                        .joined(separator: "\n"),
                     .yesUpDown)
                 case let .migrationError(mtrError):
                     ("Incompatible database version",
@@ -496,10 +499,10 @@ struct MigrateToDevice: View {
             chatReceiver = MigrationChatReceiver(ctrl: ctrl, databaseUrl: tempDatabaseUrl) { msg in
                 await MainActor.run {
                     switch msg {
-                    case let .rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer):
+                    case let .result(.rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer)):
                         migrationState = .downloadProgress(downloadedBytes: receivedSize, totalBytes: totalSize, fileId: rcvFileTransfer.fileId, link: link, archivePath: archivePath, ctrl: ctrl)
                         MigrationToDeviceState.save(.downloadProgress(link: link, archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
-                    case .rcvStandaloneFileComplete:
+                    case .result(.rcvStandaloneFileComplete):
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             // User closed the whole screen before new state was saved
                             if migrationState == nil {
@@ -509,10 +512,10 @@ struct MigrateToDevice: View {
                                 MigrationToDeviceState.save(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                             }
                         }
-                    case .rcvFileError:
+                    case .result(.rcvFileError):
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
-                    case .chatError(_, .error(.noRcvFileUser)):
+                    case .error(.error(.noRcvFileUser)):
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
                     default:
@@ -536,7 +539,7 @@ struct MigrateToDevice: View {
         Task {
             do {
                 if !hasChatCtrl() {
-                    chatInitControllerRemovingDatabases()
+                    try chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {
                     // cannot delete storage if chat is running
                     try await stopChatAsync()
@@ -732,6 +735,8 @@ private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: 
         alert.wrappedValue = .wrongPassphrase()
     case .errorKeychain:
         alert.wrappedValue = .keychainError()
+    case .errorKeyGeneration:
+        alert.wrappedValue = .databaseError(message: NSLocalizedString("Cannot generate random database passphrase", comment: "alert message"))
     case let .errorSQL(_, error):
         alert.wrappedValue = .databaseError(message: error)
     case let .unknown(error):
@@ -751,11 +756,11 @@ private func progressView() -> some View {
 private class MigrationChatReceiver {
     let ctrl: chat_ctrl
     let databaseUrl: URL
-    let processReceivedMsg: (ChatResponse) async -> Void
+    let processReceivedMsg: (APIResult<ChatEvent>) async -> Void
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
 
-    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (APIResult<ChatEvent>) async -> Void) {
         self.ctrl = ctrl
         self.databaseUrl = databaseUrl
         self.processReceivedMsg = processReceivedMsg
@@ -772,7 +777,7 @@ private class MigrationChatReceiver {
         // TODO use function that has timeout
         if let msg = await chatRecvMsg(ctrl) {
             Task {
-                await TerminalItems.shared.add(.resp(.now, msg))
+                await TerminalItems.shared.addResult(msg)
             }
             logger.debug("processReceivedMsg: \(msg.responseType)")
             await processReceivedMsg(msg)

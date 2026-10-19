@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.SimplexGreen
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
@@ -42,10 +42,9 @@ actual fun SavePassphraseSetting(
       }
       Text(
         stringResource(MR.strings.save_passphrase_in_keychain),
-        Modifier.padding(end = 24.dp),
+        Modifier.weight(1f).padding(end = 24.dp),
         color = Color.Unspecified
       )
-      Spacer(Modifier.fillMaxWidth().weight(1f))
       DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,
@@ -60,6 +59,7 @@ actual fun DatabaseEncryptionFooter(
   useKeychain: MutableState<Boolean>,
   chatDbEncrypted: Boolean?,
   storedKey: MutableState<Boolean>,
+  keyStorage: String?,
   initialRandomDBPassphrase: MutableState<Boolean>,
   migration: Boolean,
 ) {
@@ -67,7 +67,7 @@ actual fun DatabaseEncryptionFooter(
     SectionTextFooter(generalGetString(MR.strings.database_is_not_encrypted))
   } else if (useKeychain.value) {
     if (storedKey.value) {
-      SectionTextFooter(generalGetString(MR.strings.keychain_is_storing_securely))
+      SectionTextFooter(String.format(generalGetString(MR.strings.keychain_is_storing_securely), keyStorage?.let { " ($it)" } ?: ""))
       if (initialRandomDBPassphrase.value && !migration) {
         SectionTextFooter(generalGetString(MR.strings.encrypted_with_random_passphrase))
       } else {

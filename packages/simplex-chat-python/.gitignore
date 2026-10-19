@@ -1,0 +1,22 @@
+# Python build / cache artifacts — never commit these
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright_cache/
+
+# Virtual environments
+.venv/
+.venv-*/
+venv/
+
+# Lazy-downloaded native libs (handled at runtime by _native._resolve_libs_dir)
+libs/
+
+# Local override for SIMPLEX_LIBS_DIR work, etc.
+.env

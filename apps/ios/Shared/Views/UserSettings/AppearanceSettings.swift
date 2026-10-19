@@ -5,6 +5,7 @@
 //  Created by Evgeny on 03/08/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/theme.md
 
 import SwiftUI
 import SimpleXChat
@@ -21,6 +22,7 @@ let darkThemesWithoutBlackNames: [String] = [DefaultTheme.DARK.themeName, Defaul
 
 let appSettingsURL = URL(string: UIApplication.openSettingsURLString)!
 
+// Spec: spec/services/theme.md#AppearanceSettings
 struct AppearanceSettings: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
@@ -313,6 +315,7 @@ struct AppearanceSettings: View {
     }
 }
 
+// Spec: spec/services/theme.md#ToolbarMaterial
 enum ToolbarMaterial: String, CaseIterable {
     case bar
     case ultraThin
@@ -367,13 +370,13 @@ struct ChatThemePreview: View {
                 let alice = ChatItem.getSample(1, CIDirection.directRcv, Date.now, NSLocalizedString("Good afternoon!", comment: "message preview"))
                 let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.text, chatDir: alice.chatDir))
                 HStack {
-                    ChatItemView(chat: Chat.sampleData, chatItem: alice, scrollToItemId: { _ in })
+                    ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         .modifier(ChatItemClipped(alice, tailVisible: true))
                     Spacer()
                 }
                 HStack {
                     Spacer()
-                    ChatItemView(chat: Chat.sampleData, chatItem: bob, scrollToItemId: { _ in })
+                    ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: bob, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         .modifier(ChatItemClipped(bob, tailVisible: true))
                         .frame(alignment: .trailing)
                 }
@@ -596,6 +599,7 @@ struct CustomizeThemeView: View {
     }
 }
 
+// Spec: spec/services/theme.md#ImportExportThemeSection
 struct ImportExportThemeSection: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var showFileImporter: Bool
@@ -632,6 +636,7 @@ struct ImportExportThemeSection: View {
     }
 }
 
+// Spec: spec/services/theme.md#ThemeImporter
 struct ThemeImporter: ViewModifier {
     @Binding var isPresented: Bool
     var save: (ThemeOverrides) -> Void
@@ -1141,6 +1146,7 @@ private func removeUserThemeModeOverrides(_ themeUserDestination: Binding<(Int64
     wallpaperFilesToDelete.forEach(removeWallpaperFile)
 }
 
+// Spec: spec/services/theme.md#decodeYAML
 private func decodeYAML<T: Decodable>(_ string: String) -> T? {
     do {
         return try YAMLDecoder().decode(T.self, from: string)
@@ -1150,6 +1156,7 @@ private func decodeYAML<T: Decodable>(_ string: String) -> T? {
     }
 }
 
+// Spec: spec/services/theme.md#encodeThemeOverrides
 private func encodeThemeOverrides(_ value: ThemeOverrides) throws -> String {
     let encoder = YAMLEncoder()
     encoder.options = YAMLEncoder.Options(sequenceStyle: .block, mappingStyle: .block, newLineScalarStyle: .doubleQuoted)

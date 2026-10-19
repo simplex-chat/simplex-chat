@@ -16,7 +16,7 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
@@ -44,7 +44,7 @@ fun SelectedItemsMembersToolbar(
   ) {
     // It's hard to measure exact height of ComposeView with different fontSizes. Better to depend on actual ComposeView, even empty
     Box(Modifier.alpha(0f)) {
-      ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
+      ComposeView(rhId = null, chatModel = chatModel, chatModel.chatsContext, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(false) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
     }
     Row(
       Modifier

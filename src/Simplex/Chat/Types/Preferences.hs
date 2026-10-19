@@ -1,9 +1,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -22,8 +24,10 @@
 module Simplex.Chat.Types.Preferences where
 
 import Control.Applicative ((<|>))
-import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Aeson (FromJSON (..), Object, ToJSON (..), Value (..), decodeStrictText)
+import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as J
+import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust)
@@ -34,15 +38,17 @@ import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Util (encodeJSON, safeDecodeUtf8, (<$?>))
 
 data ChatFeature
   = CFTimedMessages
   | CFFullDelete
   | CFReactions
   | CFVoice
+  | CFFiles
   | CFCalls
+  | CFSessions
   deriving (Show)
 
 data SChatFeature (f :: ChatFeature) where
@@ -50,7 +56,9 @@ data SChatFeature (f :: ChatFeature) where
   SCFFullDelete :: SChatFeature 'CFFullDelete
   SCFReactions :: SChatFeature 'CFReactions
   SCFVoice :: SChatFeature 'CFVoice
+  SCFFiles :: SChatFeature 'CFFiles
   SCFCalls :: SChatFeature 'CFCalls
+  SCFSessions :: SChatFeature 'CFSessions
 
 deriving instance Show (SChatFeature f)
 
@@ -64,7 +72,9 @@ chatFeatureNameText = \case
   CFFullDelete -> "Full deletion"
   CFReactions -> "Message reactions"
   CFVoice -> "Voice messages"
+  CFFiles -> "Files and media"
   CFCalls -> "Audio/video calls"
+  CFSessions -> "Chat sessions"
 
 chatFeatureNameText' :: SChatFeature f -> Text
 chatFeatureNameText' = chatFeatureNameText . chatFeature
@@ -75,16 +85,20 @@ allChatFeatures =
     ACF SCFFullDelete,
     ACF SCFReactions,
     ACF SCFVoice,
+    -- ACF SCFFiles, -- not showing in the UI
     ACF SCFCalls
+    -- ACF SCFSessions -- not showing in the UI
   ]
 
 chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
-chatPrefSel f Preferences {timedMessages, fullDelete, reactions, voice, calls} = case f of
+chatPrefSel f Preferences {timedMessages, fullDelete, reactions, voice, files, calls, sessions} = case f of
   SCFTimedMessages -> timedMessages
   SCFFullDelete -> fullDelete
   SCFReactions -> reactions
   SCFVoice -> voice
+  SCFFiles -> files
   SCFCalls -> calls
+  SCFSessions -> sessions
 
 chatFeature :: SChatFeature f -> ChatFeature
 chatFeature = \case
@@ -92,7 +106,9 @@ chatFeature = \case
   SCFFullDelete -> CFFullDelete
   SCFReactions -> CFReactions
   SCFVoice -> CFVoice
+  SCFFiles -> CFFiles
   SCFCalls -> CFCalls
+  SCFSessions -> CFSessions
 
 class PreferenceI p where
   getPreference :: SChatFeature f -> p -> FeaturePreference f
@@ -104,12 +120,14 @@ instance PreferenceI (Maybe Preferences) where
   getPreference f prefs = fromMaybe (getPreference f defaultChatPrefs) (chatPrefSel f =<< prefs)
 
 instance PreferenceI FullPreferences where
-  getPreference f FullPreferences {timedMessages, fullDelete, reactions, voice, calls} = case f of
+  getPreference f FullPreferences {timedMessages, fullDelete, reactions, voice, files, calls, sessions} = case f of
     SCFTimedMessages -> timedMessages
     SCFFullDelete -> fullDelete
     SCFReactions -> reactions
     SCFVoice -> voice
+    SCFFiles -> files
     SCFCalls -> calls
+    SCFSessions -> sessions
   {-# INLINE getPreference #-}
 
 setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
@@ -117,8 +135,7 @@ setPreference f allow_ prefs_ = setPreference_ f pref $ fromMaybe emptyChatPrefs
   where
     pref = setAllow <$> allow_
     setAllow :: FeatureAllowed -> FeaturePreference f
-    setAllow = setField @"allow" (getPreference f prefs)
-    prefs = mergePreferences Nothing prefs_
+    setAllow = setField @"allow" (getPreference f prefs_)
 
 setPreference' :: SChatFeature f -> Maybe (FeaturePreference f) -> Maybe Preferences -> Preferences
 setPreference' f pref_ prefs_ = setPreference_ f pref_ $ fromMaybe emptyChatPrefs prefs_
@@ -130,7 +147,39 @@ setPreference_ f pref_ prefs =
     SCFFullDelete -> prefs {fullDelete = pref_}
     SCFReactions -> prefs {reactions = pref_}
     SCFVoice -> prefs {voice = pref_}
+    SCFFiles -> prefs {files = pref_}
     SCFCalls -> prefs {calls = pref_}
+    SCFSessions -> prefs {sessions = pref_}
+
+newtype NoJSON a = NoJSON {unNoJSON :: Maybe a}
+  deriving (Eq, Show)
+
+instance ToJSON (NoJSON a) where
+  toJSON _ = Null
+  toEncoding _ = JE.null_
+  omitField _ = True
+
+instance FromJSON (NoJSON a) where
+  parseJSON _ = pure $ NoJSON Nothing
+  omittedField = Just $ NoJSON Nothing
+
+type PrefsJSON = NoJSON Object
+
+keepPrefsJSON :: (ToJSON p, HasField "_json" p PrefsJSON) => Value -> p -> p
+keepPrefsJSON v ps = setField @"_json" ps . NoJSON $ case v of
+  Object o | v /= toJSON ps -> Just o
+  _ -> Nothing
+
+decodePrefs :: (Value -> JT.Parser p) -> Text -> Maybe p
+decodePrefs prefsP t = JT.parseMaybe prefsP =<< decodeStrictText t
+
+prefsFromRow_ :: (Value -> JT.Parser p) -> Maybe Text -> Maybe Text -> Maybe p
+prefsFromRow_ prefsP encodedPrefs receivedPrefs = (decode =<< receivedPrefs) <|> (decode =<< encodedPrefs)
+  where
+    decode = decodePrefs prefsP
+
+prefsToRow :: HasField "_json" p PrefsJSON => Maybe p -> (Maybe p, Maybe Text)
+prefsToRow ps = (ps, encodeJSON . Object <$> (unNoJSON . getField @"_json" =<< ps))
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
@@ -138,9 +187,20 @@ data Preferences = Preferences
     fullDelete :: Maybe FullDeletePreference,
     reactions :: Maybe ReactionsPreference,
     voice :: Maybe VoicePreference,
-    calls :: Maybe CallsPreference
+    files :: Maybe FilesPreference,
+    calls :: Maybe CallsPreference,
+    sessions :: Maybe SessionsPreference,
+    commands :: Maybe [ChatBotCommand],
+    _json :: PrefsJSON
   }
   deriving (Eq, Show)
+
+class HasCommands p where commands_ :: p -> Maybe [ChatBotCommand]
+
+instance HasCommands Preferences where commands_ Preferences {commands} = commands
+
+instance HasField "_json" Preferences PrefsJSON where
+  hasField p@Preferences {_json} = (\j -> p {_json = j}, _json)
 
 data GroupFeature
   = GFTimedMessages
@@ -152,6 +212,10 @@ data GroupFeature
   | GFSimplexLinks
   | GFReports
   | GFHistory
+  | GFSupport
+  | GFSessions
+  | GFComments
+  | GFSignMessages
   deriving (Show)
 
 data SGroupFeature (f :: GroupFeature) where
@@ -164,6 +228,10 @@ data SGroupFeature (f :: GroupFeature) where
   SGFSimplexLinks :: SGroupFeature 'GFSimplexLinks
   SGFReports :: SGroupFeature 'GFReports
   SGFHistory :: SGroupFeature 'GFHistory
+  SGFSupport :: SGroupFeature 'GFSupport
+  SGFSessions :: SGroupFeature 'GFSessions
+  SGFComments :: SGroupFeature 'GFComments
+  SGFSignMessages :: SGroupFeature 'GFSignMessages
 
 deriving instance Show (SGroupFeature f)
 
@@ -190,6 +258,10 @@ groupFeatureNameText = \case
   GFSimplexLinks -> "SimpleX links"
   GFReports -> "Member reports"
   GFHistory -> "Recent history"
+  GFSupport -> "Chat with admins"
+  GFSessions -> "Chat sessions"
+  GFComments -> "Comments"
+  GFSignMessages -> "Sign messages"
 
 groupFeatureNameText' :: SGroupFeature f -> Text
 groupFeatureNameText' = groupFeatureNameText . toGroupFeature
@@ -203,6 +275,8 @@ groupFeatureMemberAllowed' feature role prefs =
   let pref = getGroupPreference feature prefs
    in getField @"enable" pref == FEOn && maybe True (role >=) (getField @"role" pref)
 
+-- Sessions and comments are channel-only features not shown in any client yet,
+-- so they are omitted from generated feature items entirely.
 allGroupFeatures :: [AGroupFeature]
 allGroupFeatures =
   [ AGF SGFTimedMessages,
@@ -213,11 +287,55 @@ allGroupFeatures =
     AGF SGFFiles,
     AGF SGFSimplexLinks,
     AGF SGFReports,
-    AGF SGFHistory
+    AGF SGFHistory,
+    AGF SGFSupport,
+    AGF SGFSignMessages
   ]
 
+-- Channels (public groups) show a subset of group features. Direct messages, voice,
+-- files, SimpleX links and member reports are group-only and excluded in channels.
+channelGroupFeatures :: [AGroupFeature]
+channelGroupFeatures = filter (\(AGF f) -> groupFeatureInChannel (toGroupFeature f)) allGroupFeatures
+
+groupFeatureInChannel :: GroupFeature -> Bool
+groupFeatureInChannel = \case
+  GFTimedMessages -> True
+  GFDirectMessages -> False
+  GFFullDelete -> True
+  GFReactions -> True
+  GFVoice -> False
+  GFFiles -> False
+  GFSimplexLinks -> False
+  GFReports -> False
+  GFHistory -> True
+  GFSupport -> True
+  GFSessions -> False
+  GFComments -> False
+  GFSignMessages -> True
+
+-- Regular groups show a subset of group features. Signing is channel-only for now
+-- (keys are not shared between members in regular groups), so it is excluded.
+regularGroupFeatures :: [AGroupFeature]
+regularGroupFeatures = filter (\(AGF f) -> groupFeatureInRegularGroup (toGroupFeature f)) allGroupFeatures
+
+groupFeatureInRegularGroup :: GroupFeature -> Bool
+groupFeatureInRegularGroup = \case
+  GFTimedMessages -> True
+  GFDirectMessages -> True
+  GFFullDelete -> True
+  GFReactions -> True
+  GFVoice -> True
+  GFFiles -> True
+  GFSimplexLinks -> True
+  GFReports -> True
+  GFHistory -> True
+  GFSupport -> True
+  GFSessions -> False
+  GFComments -> False
+  GFSignMessages -> False
+
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
-groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history} = case f of
+groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments, signMessages} = case f of
   SGFTimedMessages -> timedMessages
   SGFDirectMessages -> directMessages
   SGFFullDelete -> fullDelete
@@ -227,6 +345,10 @@ groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reac
   SGFSimplexLinks -> simplexLinks
   SGFReports -> reports
   SGFHistory -> history
+  SGFSupport -> support
+  SGFSessions -> sessions
+  SGFComments -> comments
+  SGFSignMessages -> signMessages
 
 toGroupFeature :: SGroupFeature f -> GroupFeature
 toGroupFeature = \case
@@ -239,6 +361,10 @@ toGroupFeature = \case
   SGFSimplexLinks -> GFSimplexLinks
   SGFReports -> GFReports
   SGFHistory -> GFHistory
+  SGFSupport -> GFSupport
+  SGFSessions -> GFSessions
+  SGFComments -> GFComments
+  SGFSignMessages -> GFSignMessages
 
 class GroupPreferenceI p where
   getGroupPreference :: SGroupFeature f -> p -> GroupFeaturePreference f
@@ -250,7 +376,7 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
 
 instance GroupPreferenceI FullGroupPreferences where
-  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history} = case f of
+  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments, signMessages} = case f of
     SGFTimedMessages -> timedMessages
     SGFDirectMessages -> directMessages
     SGFFullDelete -> fullDelete
@@ -260,6 +386,10 @@ instance GroupPreferenceI FullGroupPreferences where
     SGFSimplexLinks -> simplexLinks
     SGFReports -> reports
     SGFHistory -> history
+    SGFSupport -> support
+    SGFSessions -> sessions
+    SGFComments -> comments
+    SGFSignMessages -> signMessages
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
@@ -272,8 +402,31 @@ data GroupPreferences = GroupPreferences
     files :: Maybe FilesGroupPreference,
     simplexLinks :: Maybe SimplexLinksGroupPreference,
     reports :: Maybe ReportsGroupPreference,
-    history :: Maybe HistoryGroupPreference
+    history :: Maybe HistoryGroupPreference,
+    support :: Maybe SupportGroupPreference,
+    sessions :: Maybe SessionsGroupPreference,
+    comments :: Maybe CommentsGroupPreference,
+    signMessages :: Maybe SignMessagesGroupPreference,
+    commands :: Maybe [ChatBotCommand],
+    _json :: PrefsJSON
   }
+  deriving (Eq, Show)
+
+instance HasCommands GroupPreferences where commands_ GroupPreferences {commands} = commands
+
+instance HasField "_json" GroupPreferences PrefsJSON where
+  hasField p@GroupPreferences {_json} = (\j -> p {_json = j}, _json)
+
+data ChatBotCommand
+  = CBCCommand
+      { keyword :: Text, -- "order"
+        label :: Text, -- Information about order
+        params :: Maybe Text -- "<order number>", command is sent on selection if params is absent
+      }
+  | CBCMenu
+      { label :: Text, -- Orders
+        commands :: [ChatBotCommand]
+      }
   deriving (Eq, Show)
 
 setGroupPreference :: forall f. GroupFeatureNoRoleI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
@@ -307,6 +460,10 @@ setGroupPreference_ f pref prefs =
     SGFSimplexLinks -> prefs {simplexLinks = pref}
     SGFReports -> prefs {reports = pref}
     SGFHistory -> prefs {history = pref}
+    SGFSupport -> prefs {support = pref}
+    SGFSessions -> prefs {sessions = pref}
+    SGFComments -> prefs {comments = pref}
+    SGFSignMessages -> prefs {signMessages = pref}
 
 setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
 setGroupTimedMessagesPreference pref prefs_ =
@@ -321,9 +478,20 @@ data FullPreferences = FullPreferences
     fullDelete :: FullDeletePreference,
     reactions :: ReactionsPreference,
     voice :: VoicePreference,
-    calls :: CallsPreference
+    files :: FilesPreference,
+    calls :: CallsPreference,
+    sessions :: SessionsPreference,
+    commands :: ListDef ChatBotCommand
   }
   deriving (Eq, Show)
+
+newtype ListDef a = ListDef [a]
+  deriving (Eq, Show)
+  deriving newtype (ToJSON)
+
+instance FromJSON a => FromJSON (ListDef a) where
+  parseJSON v = ListDef <$> parseJSON v
+  omittedField = Just (ListDef [])
 
 -- full collection of group preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in GroupPreferences, defaults from defaultGroupPrefs are used here.
@@ -336,7 +504,12 @@ data FullGroupPreferences = FullGroupPreferences
     files :: FilesGroupPreference,
     simplexLinks :: SimplexLinksGroupPreference,
     reports :: ReportsGroupPreference,
-    history :: HistoryGroupPreference
+    history :: HistoryGroupPreference,
+    support :: SupportGroupPreference,
+    sessions :: SessionsGroupPreference,
+    comments :: CommentsGroupPreference,
+    signMessages :: SignMessagesGroupPreference,
+    commands :: ListDef ChatBotCommand
   }
   deriving (Eq, Show)
 
@@ -346,7 +519,10 @@ data ContactUserPreferences = ContactUserPreferences
     fullDelete :: ContactUserPreference FullDeletePreference,
     reactions :: ContactUserPreference ReactionsPreference,
     voice :: ContactUserPreference VoicePreference,
-    calls :: ContactUserPreference CallsPreference
+    files :: ContactUserPreference FilesPreference,
+    calls :: ContactUserPreference CallsPreference,
+    sessions :: ContactUserPreference SessionsPreference,
+    commands :: Maybe [ChatBotCommand]
   }
   deriving (Eq, Show)
 
@@ -361,13 +537,17 @@ data ContactUserPref p = CUPContact {preference :: p} | CUPUser {preference :: p
   deriving (Eq, Show)
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, calls} =
+toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, files, calls, sessions, commands = ListDef cmds} =
   Preferences
     { timedMessages = Just timedMessages,
       fullDelete = Just fullDelete,
       reactions = Just reactions,
       voice = Just voice,
-      calls = Just calls
+      files = Just files,
+      calls = Just calls,
+      sessions = Just sessions,
+      commands = Just cmds,
+      _json = NoJSON Nothing
     }
 
 defaultChatPrefs :: FullPreferences
@@ -377,11 +557,14 @@ defaultChatPrefs =
       fullDelete = FullDeletePreference {allow = FANo},
       reactions = ReactionsPreference {allow = FAYes},
       voice = VoicePreference {allow = FAYes},
-      calls = CallsPreference {allow = FAYes}
+      files = FilesPreference {allow = FAAlways},
+      calls = CallsPreference {allow = FAYes},
+      sessions = SessionsPreference {allow = FANo},
+      commands = ListDef []
     }
 
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing
+emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing (NoJSON Nothing)
 
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
@@ -394,19 +577,27 @@ defaultGroupPrefs =
       files = FilesGroupPreference {enable = FEOn, role = Nothing},
       simplexLinks = SimplexLinksGroupPreference {enable = FEOn, role = Nothing},
       reports = ReportsGroupPreference {enable = FEOn},
-      history = HistoryGroupPreference {enable = FEOff}
+      history = HistoryGroupPreference {enable = FEOff},
+      support = SupportGroupPreference {enable = FEOn},
+      sessions = SessionsGroupPreference {enable = FEOff, role = Nothing},
+      comments = CommentsGroupPreference {enable = FEOff, duration = Nothing},
+      signMessages = SignMessagesGroupPreference {enable = FEOff},
+      commands = ListDef []
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing (NoJSON Nothing)
 
 businessGroupPrefs :: Preferences -> GroupPreferences
-businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice} =
+businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions, commands} =
   defaultBusinessGroupPrefs
     { timedMessages = Just TimedMessagesGroupPreference {enable = maybe FEOff enableFeature timedMessages, ttl = maybe Nothing prefParam timedMessages},
       fullDelete = Just FullDeleteGroupPreference {enable = maybe FEOff enableFeature fullDelete, role = Nothing},
       reactions = Just ReactionsGroupPreference {enable = maybe FEOn enableFeature reactions},
-      voice = Just VoiceGroupPreference {enable = maybe FEOff enableFeature voice, role = Nothing}
+      voice = Just VoiceGroupPreference {enable = maybe FEOff enableFeature voice, role = Nothing},
+      files = Just FilesGroupPreference {enable = maybe FEOn enableFeature files, role = Nothing},
+      sessions = Just SessionsGroupPreference {enable = maybe FEOff enableFeature sessions, role = Nothing},
+      commands
     }
   where
     enableFeature :: FeatureI f => FeaturePreference f -> GroupFeatureEnabled
@@ -425,7 +616,13 @@ defaultBusinessGroupPrefs =
       files = Just $ FilesGroupPreference FEOn Nothing,
       simplexLinks = Just $ SimplexLinksGroupPreference FEOn Nothing,
       reports = Just $ ReportsGroupPreference FEOff,
-      history = Just $ HistoryGroupPreference FEOn
+      history = Just $ HistoryGroupPreference FEOn,
+      support = Just $ SupportGroupPreference FEOn,
+      sessions = Just $ SessionsGroupPreference FEOn Nothing,
+      comments = Just $ CommentsGroupPreference FEOff Nothing,
+      signMessages = Just $ SignMessagesGroupPreference FEOff,
+      commands = Nothing,
+      _json = NoJSON Nothing
     }
 
 data TimedMessagesPreference = TimedMessagesPreference
@@ -443,7 +640,13 @@ data ReactionsPreference = ReactionsPreference {allow :: FeatureAllowed}
 data VoicePreference = VoicePreference {allow :: FeatureAllowed}
   deriving (Eq, Show)
 
+data FilesPreference = FilesPreference {allow :: FeatureAllowed}
+  deriving (Eq, Show)
+
 data CallsPreference = CallsPreference {allow :: FeatureAllowed}
+  deriving (Eq, Show)
+
+data SessionsPreference = SessionsPreference {allow :: FeatureAllowed}
   deriving (Eq, Show)
 
 class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
@@ -463,8 +666,14 @@ instance HasField "allow" ReactionsPreference FeatureAllowed where
 instance HasField "allow" VoicePreference FeatureAllowed where
   hasField p@VoicePreference {allow} = (\a -> p {allow = a}, allow)
 
+instance HasField "allow" FilesPreference FeatureAllowed where
+  hasField p@FilesPreference {allow} = (\a -> p {allow = a}, allow)
+
 instance HasField "allow" CallsPreference FeatureAllowed where
   hasField p@CallsPreference {allow} = (\a -> p {allow = a}, allow)
+
+instance HasField "allow" SessionsPreference FeatureAllowed where
+  hasField p@SessionsPreference {allow} = (\a -> p {allow = a}, allow)
 
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
@@ -486,9 +695,19 @@ instance FeatureI 'CFVoice where
   sFeature = SCFVoice
   prefParam _ = Nothing
 
+instance FeatureI 'CFFiles where
+  type FeaturePreference 'CFFiles = FilesPreference
+  sFeature = SCFFiles
+  prefParam _ = Nothing
+
 instance FeatureI 'CFCalls where
   type FeaturePreference 'CFCalls = CallsPreference
   sFeature = SCFCalls
+  prefParam _ = Nothing
+
+instance FeatureI 'CFSessions where
+  type FeaturePreference 'CFSessions = SessionsPreference
+  sFeature = SCFSessions
   prefParam _ = Nothing
 
 data GroupPreference = GroupPreference
@@ -529,8 +748,28 @@ data ReportsGroupPreference = ReportsGroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show)
 
+data SignMessagesGroupPreference = SignMessagesGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show)
+
 data HistoryGroupPreference = HistoryGroupPreference
   {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show)
+
+data SupportGroupPreference = SupportGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show)
+
+data SessionsGroupPreference = SessionsGroupPreference
+  {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
+  deriving (Eq, Show)
+
+-- Channel comments. ``duration` is time in seconds since post creation
+-- after which a channel post stops accepting new comments; `Nothing` means accept comments indefinitely.
+data CommentsGroupPreference = CommentsGroupPreference
+  { enable :: GroupFeatureEnabled,
+    duration :: Maybe Int
+  }
   deriving (Eq, Show)
 
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
@@ -570,8 +809,20 @@ instance HasField "enable" SimplexLinksGroupPreference GroupFeatureEnabled where
 instance HasField "enable" ReportsGroupPreference GroupFeatureEnabled where
   hasField p@ReportsGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
+instance HasField "enable" SignMessagesGroupPreference GroupFeatureEnabled where
+  hasField p@SignMessagesGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
 instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
   hasField p@HistoryGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
+instance HasField "enable" SupportGroupPreference GroupFeatureEnabled where
+  hasField p@SupportGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
+instance HasField "enable" SessionsGroupPreference GroupFeatureEnabled where
+  hasField p@SessionsGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
+instance HasField "enable" CommentsGroupPreference GroupFeatureEnabled where
+  hasField p@CommentsGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
@@ -621,10 +872,34 @@ instance GroupFeatureI 'GFReports where
   groupPrefParam _ = Nothing
   groupPrefRole _ = Nothing
 
+instance GroupFeatureI 'GFSignMessages where
+  type GroupFeaturePreference 'GFSignMessages = SignMessagesGroupPreference
+  sGroupFeature = SGFSignMessages
+  groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
+
 instance GroupFeatureI 'GFHistory where
   type GroupFeaturePreference 'GFHistory = HistoryGroupPreference
   sGroupFeature = SGFHistory
   groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
+
+instance GroupFeatureI 'GFSupport where
+  type GroupFeaturePreference 'GFSupport = SupportGroupPreference
+  sGroupFeature = SGFSupport
+  groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
+
+instance GroupFeatureI 'GFSessions where
+  type GroupFeaturePreference 'GFSessions = SessionsGroupPreference
+  sGroupFeature = SGFSessions
+  groupPrefParam _ = Nothing
+  groupPrefRole SessionsGroupPreference {role} = role
+
+instance GroupFeatureI 'GFComments where
+  type GroupFeaturePreference 'GFComments = CommentsGroupPreference
+  sGroupFeature = SGFComments
+  groupPrefParam CommentsGroupPreference {duration} = duration
   groupPrefRole _ = Nothing
 
 instance GroupFeatureNoRoleI 'GFTimedMessages
@@ -635,7 +910,13 @@ instance GroupFeatureNoRoleI 'GFReactions
 
 instance GroupFeatureNoRoleI 'GFReports
 
+instance GroupFeatureNoRoleI 'GFSignMessages
+
 instance GroupFeatureNoRoleI 'GFHistory
+
+instance GroupFeatureNoRoleI 'GFSupport
+
+instance GroupFeatureNoRoleI 'GFComments
 
 instance HasField "role" DirectMessagesGroupPreference (Maybe GroupMemberRole) where
   hasField p@DirectMessagesGroupPreference {role} = (\r -> p {role = r}, role)
@@ -652,6 +933,9 @@ instance HasField "role" FilesGroupPreference (Maybe GroupMemberRole) where
 instance HasField "role" SimplexLinksGroupPreference (Maybe GroupMemberRole) where
   hasField p@SimplexLinksGroupPreference {role} = (\r -> p {role = r}, role)
 
+instance HasField "role" SessionsGroupPreference (Maybe GroupMemberRole) where
+  hasField p@SessionsGroupPreference {role} = (\r -> p {role = r}, role)
+
 instance GroupFeatureRoleI 'GFDirectMessages
 
 instance GroupFeatureRoleI 'GFFullDelete
@@ -662,16 +946,19 @@ instance GroupFeatureRoleI 'GFFiles
 
 instance GroupFeatureRoleI 'GFSimplexLinks
 
+instance GroupFeatureRoleI 'GFSessions
+
 groupPrefStateText :: HasField "enable" p GroupFeatureEnabled => GroupFeature -> p -> Maybe Int -> Maybe GroupMemberRole -> Text
 groupPrefStateText feature pref param role =
   let enabled = getField @"enable" pref
       paramText = if enabled == FEOn then groupParamText_ feature param else ""
-      roleText = maybe "" (\r -> " for " <> safeDecodeUtf8 (strEncode r) <> "s") role
+      roleText = maybe "" (\r -> " for " <> textEncode r <> "s") role
    in groupFeatureNameText feature <> ": " <> safeDecodeUtf8 (strEncode enabled) <> paramText <> roleText
 
 groupParamText_ :: GroupFeature -> Maybe Int -> Text
 groupParamText_ feature param = case feature of
   GFTimedMessages -> maybe "" (\p -> " (" <> timedTTLText p <> ")") param
+  GFComments -> maybe "" (\p -> " (close after " <> timedTTLText p <> ")") param
   _ -> ""
 
 groupPreferenceText :: forall f. GroupFeatureI f => GroupFeaturePreference f -> Text
@@ -764,20 +1051,50 @@ groupFeatureState p =
         | otherwise = (Nothing, Nothing)
    in (enable, param, role)
 
-mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
-mergePreferences contactPrefs userPreferences =
+mergePreferences :: Maybe Preferences -> Maybe Preferences -> Bool -> FullPreferences
+mergePreferences contactPrefs userPreferences canFallbackToUserTTL =
+  FullPreferences
+    { timedMessages = if canFallbackToUserTTL then pref SCFTimedMessages else timedPrefNoTTLFallback,
+      fullDelete = pref SCFFullDelete,
+      reactions = pref SCFReactions,
+      voice = pref SCFVoice,
+      files = pref SCFFiles,
+      calls = pref SCFCalls,
+      sessions = pref SCFSessions,
+      commands = ListDef $ fromMaybe [] $ (contactPrefs >>= commands_) <|> (userPreferences >>= commands_)
+    }
+  where
+    timedPrefNoTTLFallback :: TimedMessagesPreference
+    timedPrefNoTTLFallback =
+      let allow = getField @"allow" $ pref SCFTimedMessages
+          -- this is to avoid fallback to user level timed messages TTL even if there is no contact level override
+          -- (specifically to avoid sending user level TTL to contacts without override on profile updates,
+          -- to make it "consistently not work" for all contacts, as we're using override mechanism to track TTL
+          -- for new and updated contacts, even though it's not really user's override)
+          ttlOverride = contactPrefs >>= chatPrefSel SCFTimedMessages >>= (\TimedMessagesPreference {ttl} -> ttl)
+       in TimedMessagesPreference {allow, ttl = ttlOverride}
+    pref :: SChatFeature f -> FeaturePreference f
+    pref f =
+      let sel = chatPrefSel f
+       in fromMaybe (getPreference f defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
+
+fullPreferences' :: Maybe Preferences -> FullPreferences
+fullPreferences' userPreferences =
   FullPreferences
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
-      calls = pref SCFCalls
+      files = pref SCFFiles,
+      calls = pref SCFCalls,
+      sessions = pref SCFSessions,
+      commands = ListDef $ fromMaybe [] $ userPreferences >>= commands_
     }
   where
     pref :: SChatFeature f -> FeaturePreference f
     pref f =
       let sel = chatPrefSel f
-       in fromMaybe (getPreference f defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
+       in fromMaybe (getPreference f defaultChatPrefs) $ (userPreferences >>= sel)
 
 mergeGroupPreferences :: Maybe GroupPreferences -> FullGroupPreferences
 mergeGroupPreferences groupPreferences =
@@ -790,14 +1107,19 @@ mergeGroupPreferences groupPreferences =
       files = pref SGFFiles,
       simplexLinks = pref SGFSimplexLinks,
       reports = pref SGFReports,
-      history = pref SGFHistory
+      history = pref SGFHistory,
+      support = pref SGFSupport,
+      sessions = pref SGFSessions,
+      comments = pref SGFComments,
+      signMessages = pref SGFSignMessages,
+      commands = ListDef $ fromMaybe [] $ groupPreferences >>= commands_
     }
   where
     pref :: SGroupFeature f -> GroupFeaturePreference f
     pref pt = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= groupPrefSel pt)
 
 toGroupPreferences :: FullGroupPreferences -> GroupPreferences
-toGroupPreferences groupPreferences =
+toGroupPreferences groupPreferences@FullGroupPreferences {commands = ListDef cmds} =
   GroupPreferences
     { timedMessages = pref SGFTimedMessages,
       directMessages = pref SGFDirectMessages,
@@ -807,7 +1129,13 @@ toGroupPreferences groupPreferences =
       files = pref SGFFiles,
       simplexLinks = pref SGFSimplexLinks,
       reports = pref SGFReports,
-      history = pref SGFHistory
+      history = pref SGFHistory,
+      support = pref SGFSupport,
+      sessions = pref SGFSessions,
+      comments = pref SGFComments,
+      signMessages = pref SGFSignMessages,
+      commands = Just cmds,
+      _json = NoJSON Nothing
     }
   where
     pref :: SGroupFeature f -> Maybe (GroupFeaturePreference f)
@@ -870,12 +1198,14 @@ preferenceState pref =
    in (allow, param)
 
 getContactUserPreference :: SChatFeature f -> ContactUserPreferences -> ContactUserPreference (FeaturePreference f)
-getContactUserPreference f ContactUserPreferences {timedMessages, fullDelete, reactions, voice, calls} = case f of
+getContactUserPreference f ContactUserPreferences {timedMessages, fullDelete, reactions, voice, files, calls, sessions} = case f of
   SCFTimedMessages -> timedMessages
   SCFFullDelete -> fullDelete
   SCFReactions -> reactions
   SCFVoice -> voice
+  SCFFiles -> files
   SCFCalls -> calls
+  SCFSessions -> sessions
 
 $(J.deriveJSON (enumJSON $ dropPrefix "CF") ''ChatFeature)
 
@@ -889,15 +1219,38 @@ $(J.deriveJSON defaultJSON ''ReactionsPreference)
 
 $(J.deriveJSON defaultJSON ''VoicePreference)
 
+$(J.deriveToJSON defaultJSON ''FilesPreference)
+
+instance FromJSON FilesPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''FilesPreference) v
+  omittedField = Just FilesPreference {allow = FAAlways}
+
 $(J.deriveJSON defaultJSON ''CallsPreference)
 
-$(J.deriveJSON defaultJSON ''Preferences)
+$(J.deriveToJSON defaultJSON ''SessionsPreference)
+
+instance FromJSON SessionsPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''SessionsPreference) v
+  omittedField = Just SessionsPreference {allow = FANo}
+
+$(J.deriveJSON (taggedObjectJSON $ dropPrefix "CBC") ''ChatBotCommand)
+
+$(J.deriveToJSON defaultJSON ''Preferences)
+
+chatPrefsP :: Value -> JT.Parser Preferences
+chatPrefsP = $(J.mkParseJSON defaultJSON ''Preferences)
+
+instance FromJSON Preferences where
+  parseJSON v = keepPrefsJSON v <$> chatPrefsP v
+
+chatPrefsFromRow :: Maybe Text -> Maybe Text -> Maybe Preferences
+chatPrefsFromRow = prefsFromRow_ chatPrefsP
 
 instance ToField Preferences where
   toField = toField . encodeJSON
 
 instance FromField Preferences where
-  fromField = fromTextField_ decodeJSON
+  fromField = fromTextField_ $ decodePrefs chatPrefsP
 
 $(J.deriveJSON defaultJSON ''GroupPreference)
 
@@ -917,15 +1270,44 @@ $(J.deriveJSON defaultJSON ''SimplexLinksGroupPreference)
 
 $(J.deriveJSON defaultJSON ''ReportsGroupPreference)
 
+$(J.deriveToJSON defaultJSON ''SignMessagesGroupPreference)
+
+instance FromJSON SignMessagesGroupPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''SignMessagesGroupPreference) v
+  omittedField = Just SignMessagesGroupPreference {enable = FEOff}
+
 $(J.deriveJSON defaultJSON ''HistoryGroupPreference)
 
-$(J.deriveJSON defaultJSON ''GroupPreferences)
+$(J.deriveToJSON defaultJSON ''SupportGroupPreference)
+
+instance FromJSON SupportGroupPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''SupportGroupPreference) v
+  omittedField = Just SupportGroupPreference {enable = FEOn}
+
+$(J.deriveJSON defaultJSON ''SessionsGroupPreference)
+
+$(J.deriveToJSON defaultJSON ''CommentsGroupPreference)
+
+instance FromJSON CommentsGroupPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''CommentsGroupPreference) v
+  omittedField = Just CommentsGroupPreference {enable = FEOff, duration = Nothing}
+
+$(J.deriveToJSON defaultJSON ''GroupPreferences)
+
+groupPrefsP :: Value -> JT.Parser GroupPreferences
+groupPrefsP = $(J.mkParseJSON defaultJSON ''GroupPreferences)
+
+instance FromJSON GroupPreferences where
+  parseJSON v = keepPrefsJSON v <$> groupPrefsP v
+
+groupPrefsFromRow :: Maybe Text -> Maybe Text -> Maybe GroupPreferences
+groupPrefsFromRow = prefsFromRow_ groupPrefsP
 
 instance ToField GroupPreferences where
   toField = toField . encodeJSON
 
 instance FromField GroupPreferences where
-  fromField = fromTextField_ decodeJSON
+  fromField = fromTextField_ $ decodePrefs groupPrefsP
 
 $(J.deriveJSON defaultJSON ''FullPreferences)
 

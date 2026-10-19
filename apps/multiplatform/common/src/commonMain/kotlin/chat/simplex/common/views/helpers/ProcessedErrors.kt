@@ -5,7 +5,7 @@ import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.views.database.restartChatOrApp
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
@@ -58,6 +58,7 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
           text = generalGetString(MR.strings.agent_internal_error_desc).format(error.internalErr),
         )
       }
+      else -> {}
     }
   }
 }

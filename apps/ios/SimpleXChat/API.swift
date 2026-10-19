@@ -32,7 +32,12 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     } else if useKeychain {
         if !hasDatabase() {
             logger.debug("chatMigrateInit generating a random DB key")
-            dbKey = randomDatabasePassword()
+            guard let key = randomDatabasePassword() else {
+                let result = (false, DBMigrationResult.errorKeyGeneration)
+                migrationResult = result
+                return result
+            }
+            dbKey = key
             initialRandomDBPassphraseGroupDefault.set(true)
         } else if let key = kcDatabasePassword.get() {
             dbKey = key
@@ -46,7 +51,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     var cConfirm = confirm.rawValue.cString(using: .utf8)!
     // the last parameter of chat_migrate_init is used to return the pointer to chat controller
     let cjson = chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, backgroundMode ? 1 : 0, &chatController)!
-    let dbRes = dbMigrationResult(fromCString(cjson))
+    let dbRes = dbMigrationResult(dataFromCString(cjson))
     let encrypted = dbKey != ""
     let keychainErr = dbRes == .ok && useKeychain && encrypted && !kcDatabasePassword.set(dbKey)
     let result = (encrypted, keychainErr ? .errorKeychain : dbRes)
@@ -56,24 +61,24 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
 
 public func chatInitTemporaryDatabase(url: URL, key: String? = nil, confirmation: MigrationConfirmation = .error) -> (DBMigrationResult, chat_ctrl?) {
     let dbPath = url.path
-    let dbKey = key ?? randomDatabasePassword()
+    guard let dbKey = key ?? randomDatabasePassword() else { return (.errorKeyGeneration, nil) }
     logger.debug("chatInitTemporaryDatabase path: \(dbPath)")
     var temporaryController: chat_ctrl? = nil
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
     var cConfirm = confirmation.rawValue.cString(using: .utf8)!
     let cjson = chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, 0, &temporaryController)!
-    return (dbMigrationResult(fromCString(cjson)), temporaryController)
+    return (dbMigrationResult(dataFromCString(cjson)), temporaryController)
 }
 
-public func chatInitControllerRemovingDatabases() {
+public func chatInitControllerRemovingDatabases() throws {
     let dbPath = getAppDatabasePath().path
     let fm = FileManager.default
     // Remove previous databases, otherwise, can be .errorNotADatabase with nil controller
     try? fm.removeItem(atPath: dbPath + CHAT_DB)
     try? fm.removeItem(atPath: dbPath + AGENT_DB)
 
-    let dbKey = randomDatabasePassword()
+    guard let dbKey = randomDatabasePassword() else { throw RuntimeError("Cannot generate random database passphrase") }
     logger.debug("chatInitControllerRemovingDatabases path: \(dbPath)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
@@ -110,30 +115,49 @@ public func resetChatCtrl() {
     migrationResult = nil
 }
 
-public func sendSimpleXCmd(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
-    var c = cmd.cmdString.cString(using: .utf8)!
-    let cjson  = chat_send_cmd(ctrl ?? getChatCtrl(), &c)!
-    return chatResponse(fromCString(cjson))
+// Spec: spec/api.md#sendSimpleXCmd
+@inline(__always)
+public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil, retryNum: Int32 = 0) -> APIResult<R> {
+    if let d = sendSimpleXCmdStr(cmd.cmdString, ctrl, retryNum: retryNum) {
+        decodeAPIResult(d)
+    } else {
+        APIResult.error(.invalidJSON(json: nil))
+    }
+}
+
+@inline(__always)
+public func sendSimpleXCmdStr(_ cmd: String, _ ctrl: chat_ctrl? = nil, retryNum: Int32) -> Data? {
+    var c = cmd.cString(using: .utf8)!
+    return if let cjson = chat_send_cmd_retry(ctrl ?? getChatCtrl(), &c, retryNum) {
+        dataFromCString(cjson)
+    } else {
+        nil
+    }
 }
 
 // in microseconds
 public let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
-public func recvSimpleXMsg(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> ChatResponse? {
-    if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout) {
-        let s = fromCString(cjson)
-        return s == "" ? nil : chatResponse(s)
+@inline(__always)
+public func recvSimpleXMsg<R: ChatAPIResult>(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> APIResult<R>? {
+    if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout),
+       let d = dataFromCString(cjson) {
+        decodeAPIResult(d)
+    } else {
+        nil
     }
-    return nil
 }
 
 public func parseSimpleXMarkdown(_ s: String) -> [FormattedText]? {
+    parseSimpleXMarkdownText(s)?.formattedText
+}
+
+public func parseSimpleXMarkdownText(_ s: String) -> ParsedMarkdown? {
     var c = s.cString(using: .utf8)!
     if let cjson = chat_parse_markdown(&c) {
-        if let d = fromCString(cjson).data(using: .utf8) {
+        if let d = dataFromCString(cjson) {
             do {
-                let r = try jsonDecoder.decode(ParsedMarkdown.self, from: d)
-                return r.formattedText
+                return try jsonDecoder.decode(ParsedMarkdown.self, from: d)
             } catch {
                 logger.error("parseSimpleXMarkdown jsonDecoder.decode error: \(error.localizedDescription)")
             }
@@ -147,14 +171,23 @@ public func chatJsonLength(_ s: String) -> Int {
     return Int(chat_json_length(&c))
 }
 
-struct ParsedMarkdown: Decodable {
-    var formattedText: [FormattedText]?
+// the code in core's canonical form (prefix and 20 characters, no separators), or nil when core rejects it.
+// The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
+public func parseBadgeCode(_ s: String) -> String? {
+    var c = s.cString(using: .utf8)!
+    let canonical = fromCString(chat_parse_badge_code(&c)!)
+    return canonical.isEmpty ? nil : canonical
+}
+
+public struct ParsedMarkdown: Decodable {
+    public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
 }
 
 public func parseServerAddress(_ s: String) -> ServerAddress? {
     var c = s.cString(using: .utf8)!
     if let cjson = chat_parse_server(&c) {
-         if let d = fromCString(cjson).data(using: .utf8) {
+         if let d = dataFromCString(cjson) {
             do {
                 let r = try jsonDecoder.decode(ParsedServerAddress.self, from: d)
                 return r.serverAddress
@@ -171,95 +204,58 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
+public func parseSanitizeUri(_ s: String, safe: Bool) -> ParsedUri? {
+    var c = s.cString(using: .utf8)!
+    if let cjson = chat_parse_uri(&c, safe ? 1 : 0) {
+         if let d = dataFromCString(cjson) {
+            do {
+                return try jsonDecoder.decode(ParsedUri.self, from: d)
+            } catch {
+                logger.error("parseSanitizeUri jsonDecoder.decode error: \(error.localizedDescription)")
+            }
+        }
+    }
+    return nil
+}
+
+public struct ParsedUri: Decodable {
+    public var uriInfo: UriInfo?
+    public var parseError: String
+}
+
+public struct UriInfo: Decodable {
+    public var scheme: String
+    public var sanitized: String?
+}
+
+@inline(__always)
 public func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
     let s = String.init(cString: c)
     free(c)
     return s
 }
 
-public func chatResponse(_ s: String) -> ChatResponse {
-    let d = s.data(using: .utf8)!
-    // TODO is there a way to do it without copying the data? e.g:
-    //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-    //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-    do {
-        let r = try callWithLargeStack {
-            try jsonDecoder.decode(APIResponse.self, from: d)
-        }
-        return r.resp
-    } catch {
-        logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-    }
-    
-    var type: String?
-    var json: String?
-    if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-        if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
-            type = jResp.allKeys[0] as? String
-            if jResp.count == 2 && type == "_owsf" {
-                type = jResp.allKeys[1] as? String
-            }
-            if type == "apiChats" {
-                if let jApiChats = jResp["apiChats"] as? NSDictionary,
-                   let user: UserRef = try? decodeObject(jApiChats["user"] as Any),
-                   let jChats = jApiChats["chats"] as? NSArray {
-                    let chats = jChats.map { jChat in
-                        if let chatData = try? parseChatData(jChat) {
-                            return chatData.0
-                        }
-                        return ChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted) ?? "")
-                    }
-                    return .apiChats(user: user, chats: chats)
-                }
-            } else if type == "apiChat" {
-                if let jApiChat = jResp["apiChat"] as? NSDictionary,
-                   let user: UserRef = try? decodeObject(jApiChat["user"] as Any),
-                   let jChat = jApiChat["chat"] as? NSDictionary,
-                   let (chat, navInfo) = try? parseChatData(jChat, jApiChat["navInfo"] as? NSDictionary) {
-                    return .apiChat(user: user, chat: chat, navInfo: navInfo)
-                }
-            } else if type == "chatCmdError" {
-                if let jError = jResp["chatCmdError"] as? NSDictionary {
-                    return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                }
-            } else if type == "chatError" {
-                if let jError = jResp["chatError"] as? NSDictionary {
-                    return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                }
-            }
-        }
-        json = serializeJSON(j, options: .prettyPrinted)
-    }
-    return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
-}
-
-private let largeStackSize: Int = 2 * 1024 * 1024
-
-private func callWithLargeStack<T>(_ f: @escaping () throws -> T) throws -> T {
-    let semaphore = DispatchSemaphore(value: 0)
-    var result: Result<T, Error>?
-    let thread = Thread {
-        do {
-            result = .success(try f())
-        } catch {
-            result = .failure(error)
-        }
-        semaphore.signal()
-    }
-
-    thread.stackSize = largeStackSize
-    thread.qualityOfService = Thread.current.qualityOfService
-    thread.start()
-
-    semaphore.wait()
-
-    switch result! {
-    case let .success(r): return r
-    case let .failure(e): throw e
+@inline(__always)
+public func dataFromCString(_ c: UnsafeMutablePointer<CChar>) -> Data? {
+    let len = strlen(c)
+    if len > 0 {
+        return Data(bytesNoCopy: c, count: len, deallocator: .free)
+    } else {
+        free(c)
+        return nil
     }
 }
 
-private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
+@inline(__always)
+public func dataToString(_ d: Data?) -> String {
+    if let d {
+        String(data: d, encoding: .utf8) ?? "invalid string"
+    } else {
+        "no data"
+    }
+}
+
+public func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
     if let user_ = jDict["user_"] {
         try? decodeObject(user_ as Any)
     } else {
@@ -267,7 +263,7 @@ private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
     }
 }
 
-private func errorJson(_ jDict: NSDictionary) -> String? {
+public func errorJson(_ jDict: NSDictionary) -> Data? {
     if let chatError = jDict["chatError"] {
         serializeJSON(chatError)
     } else {
@@ -275,11 +271,15 @@ private func errorJson(_ jDict: NSDictionary) -> String? {
     }
 }
 
-func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatData, NavigationInfo) {
+public func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatData, NavigationInfo) {
     let jChatDict = jChat as! NSDictionary
     let chatInfo: ChatInfo = try decodeObject(jChatDict["chatInfo"]!)
     let chatStats: ChatStats = try decodeObject(jChatDict["chatStats"]!)
-    let navInfo: NavigationInfo = jNavInfo == nil ? NavigationInfo() : try decodeObject((jNavInfo as! NSDictionary)["navInfo"]!)
+    let navInfo: NavigationInfo = if let jNavInfo = jNavInfo as? NSDictionary, let jNav = jNavInfo["navInfo"] {
+        try decodeObject(jNav)
+    } else {
+        NavigationInfo()
+    }
     let jChatItems = jChatDict["chatItems"] as! NSArray
     let chatItems = jChatItems.map { jCI in
         if let ci: ChatItem = try? decodeObject(jCI) {
@@ -288,16 +288,18 @@ func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatData, Na
         return ChatItem.invalidJSON(
             chatDir: decodeProperty(jCI, "chatDir"),
             meta: decodeProperty(jCI, "meta"),
-            json: serializeJSON(jCI, options: .prettyPrinted) ?? ""
+            json: serializeJSON(jCI, options: .prettyPrinted)
         )
     }
     return (ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats), navInfo)
 }
 
-func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
+@inline(__always)
+public func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
     try jsonDecoder.decode(T.self, from: JSONSerialization.data(withJSONObject: obj))
 }
 
+@inline(__always)
 func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
     if let jProp = (obj as? NSDictionary)?[prop] {
         return try? decodeObject(jProp)
@@ -305,28 +307,52 @@ func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
     return nil
 }
 
-func serializeJSON(_ obj: Any, options: JSONSerialization.WritingOptions = []) -> String? {
-    if let d = try? JSONSerialization.data(withJSONObject: obj, options: options) {
-        return String(decoding: d, as: UTF8.self)
+@inline(__always)
+func getOWSF(_ obj: NSDictionary, _ prop: NSString) -> (type: String, object: NSDictionary)? {
+    if let j = obj[prop] as? NSDictionary, j.count == 1 || j.count == 2 {
+        var type = j.allKeys[0] as? String
+        if j.count == 2 && type == "_owsf" {
+            type = j.allKeys[1] as? String
+        }
+        if let type {
+            return (type, j)
+        }
     }
     return nil
 }
 
-public func responseError(_ err: Error) -> String {
-    if let r = err as? ChatResponse {
-        switch r {
-        case let .chatCmdError(_, chatError): return chatErrorString(chatError)
-        case let .chatError(_, chatError): return chatErrorString(chatError)
-        default: return "\(String(describing: r.responseType)), details: \(String(describing: r.details))"
-        }
+@inline(__always)
+public func serializeJSON(_ obj: Any, options: JSONSerialization.WritingOptions = []) -> Data? {
+    if let d = try? JSONSerialization.data(withJSONObject: obj, options: options) {
+        dataPrefix(d)
     } else {
-        return String(describing: err)
+        nil
     }
 }
 
-func chatErrorString(_ err: ChatError) -> String {
-    if case let .invalidJSON(json) = err { return json }
-    return String(describing: err)
+let MAX_JSON_VIEW_LENGTH = 2048
+
+@inline(__always)
+public func dataPrefix(_ d: Data) -> Data {
+    d.count > MAX_JSON_VIEW_LENGTH
+    ? Data(d.prefix(MAX_JSON_VIEW_LENGTH))
+    : d
+}
+
+public func responseError(_ err: Error) -> String {
+    if let e = err as? ChatError {
+        chatErrorString(e)
+    } else {
+        String(describing: err)
+    }
+}
+
+public func chatErrorString(_ err: ChatError) -> String {
+    switch err {
+    case let .invalidJSON(json): dataToString(json)
+    case let .unexpectedResult(type): "unexpected result: \(type)"
+    default: String(describing: err)
+    }
 }
 
 public enum DBMigrationResult: Decodable, Equatable {
@@ -336,6 +362,7 @@ public enum DBMigrationResult: Decodable, Equatable {
     case errorMigration(dbFile: String, migrationError: MigrationError)
     case errorSQL(dbFile: String, migrationSQLError: String)
     case errorKeychain
+    case errorKeyGeneration
     case unknown(json: String)
 }
 
@@ -360,20 +387,29 @@ public struct UpMigration: Decodable, Equatable {
 //    public var withDown: Bool
 }
 
+public func downMigrationWarnings(_ downMigrations: [String]) -> [String] {
+    let warnings: [(String, String)] = [
+        ("20260222_chat_relays", NSLocalizedString("If you joined or created channels, they will stop working permanently.", comment: "down migration warning"))
+    ]
+    return warnings.compactMap { (key, message) in
+        downMigrations.contains(key) ? message : nil
+    }
+}
+
 public enum MTRError: Decodable, Equatable {
     case noDown(dbMigrations: [String])
     case different(appMigration: String, dbMigration: String)
 }
 
-func dbMigrationResult(_ s: String) -> DBMigrationResult {
-    let d = s.data(using: .utf8)!
-// TODO is there a way to do it without copying the data? e.g:
-//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-    do {
-        return try jsonDecoder.decode(DBMigrationResult.self, from: d)
-    } catch let error {
-        logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-        return .unknown(json: s)
+func dbMigrationResult(_ d: Data?) -> DBMigrationResult {
+    if let d {
+        do {
+            return try jsonDecoder.decode(DBMigrationResult.self, from: d)
+        } catch let error {
+            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
+            return .unknown(json: dataToString(d))
+        }
+    } else {
+        return .unknown(json: "no data")
     }
 }

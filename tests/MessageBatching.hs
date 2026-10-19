@@ -9,29 +9,55 @@ module MessageBatching (batchingTests) where
 import Crypto.Number.Serialize (os2ip)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.ByteString.Internal (c2w)
 import Data.Either (partitionEithers)
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.String (IsString (..))
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
+import Simplex.Chat.Delivery
+  ( DeliveryJobScope (DJSGroup, jobSpec),
+    DeliveryJobSpec (DJDeliveryJob, includePending),
+    MessageDeliveryTask (MessageDeliveryTask, brokerTs, fwdSender, jobScope, senderGMId, taskId, verifiedMsg),
+    deliveryTaskId,
+  )
 import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages (SndMessage (..))
-import Simplex.Chat.Protocol (SharedMsgId (..), maxEncodedMsgLength)
+import Simplex.Chat.Protocol
+  ( ChatMessage (ChatMessage),
+    ChatMsgEvent (XMsgNew),
+    FwdSender (FwdChannel),
+    GrpMsgForward (GrpMsgForward),
+    MsgContent (MCText),
+    VerifiedMsg (VMUnsigned),
+    fwdMemberName,
+    maxBatchElementCount,
+    maxEncodedMsgLength,
+    mcSimple,
+  )
+import Simplex.Chat.Types (SharedMsgId (..), chatInitialVRange)
+import Simplex.Messaging.Encoding (Large (..), smpEncodeList)
 import Test.Hspec
 
 batchingTests :: Spec
 batchingTests = describe "message batching tests" $ do
   testBatchingCorrectness
+  testBinaryBatchingCorrectness
   it "image x.msg.new and x.msg.file.descr should fit into single batch" testImageFitsSingleBatch
+  it "splits a batch that exceeds the element count limit" testBatchElementCountLimit
+  it "does not create a relay delivery body when every task is oversized" testRelayBatchAllLarge
+  it "classifies a task that fits raw but not as a framed singleton as large" testRelayBatchSingletonOverflow
+  it "shortens forwarded member names" testFwdMemberName
 
 instance IsString SndMessage where
-  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s'}
+  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing}
     where
       s' = encodeUtf8 $ T.pack s
       msgId = fromInteger $ os2ip s'
 
-deriving instance Eq SndMessage
 
 instance IsString ChatError where
   fromString s = ChatError $ CEInternalError ("large message " <> show msgId)
@@ -40,50 +66,77 @@ instance IsString ChatError where
       msgId = fromInteger (os2ip s') :: Int64
 
 testBatchingCorrectness :: Spec
-testBatchingCorrectness = describe "correctness tests" $ do
-  runBatcherTest 8 ["a"] [] ["a"]
-  runBatcherTest 8 ["a", "b"] [] ["[a,b]"]
-  runBatcherTest 8 ["a", "b", "c"] [] ["[a,b,c]"]
-  runBatcherTest 8 ["a", "bb", "c"] [] ["[a,bb,c]"]
-  runBatcherTest 8 ["a", "b", "c", "d"] [] ["a", "[b,c,d]"]
-  runBatcherTest 8 ["a", "bb", "c", "d"] [] ["a", "[bb,c,d]"]
-  runBatcherTest 8 ["a", "bb", "c", "de"] [] ["[a,bb]", "[c,de]"]
-  runBatcherTest 8 ["a", "b", "c", "d", "e"] [] ["[a,b]", "[c,d,e]"]
-  runBatcherTest 8 ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"] [] ["a", "[b,c,d]", "[e,f,g]", "[h,i,j]"]
-  runBatcherTest 8 ["aaaaa"] [] ["aaaaa"]
-  runBatcherTest 8 ["8aaaaaaa"] [] ["8aaaaaaa"]
-  runBatcherTest 8 ["aaaa", "bbbb"] [] ["aaaa", "bbbb"]
-  runBatcherTest 8 ["aa", "bbb", "cc", "dd"] [] ["[aa,bbb]", "[cc,dd]"]
-  runBatcherTest 8 ["aa", "bbb", "cc", "dd", "eee", "fff", "gg", "hh"] [] ["aa", "[bbb,cc]", "[dd,eee]", "fff", "[gg,hh]"]
-  runBatcherTest 8 ["9aaaaaaaa"] ["9aaaaaaaa"] []
-  runBatcherTest 8 ["aaaaa", "bbb", "cc"] [] ["aaaaa", "[bbb,cc]"]
-  runBatcherTest 8 ["8aaaaaaa", "bbb", "cc"] [] ["8aaaaaaa", "[bbb,cc]"]
-  runBatcherTest 8 ["9aaaaaaaa", "bbb", "cc"] ["9aaaaaaaa"] ["[bbb,cc]"]
-  runBatcherTest 8 ["9aaaaaaaa", "bbb", "cc", "dd"] ["9aaaaaaaa"] ["bbb", "[cc,dd]"]
-  runBatcherTest 8 ["9aaaaaaaa", "bbb", "cc", "dd", "e"] ["9aaaaaaaa"] ["[bbb,cc]", "[dd,e]"]
-  runBatcherTest 8 ["bbb", "cc", "aaaaa"] [] ["[bbb,cc]", "aaaaa"]
-  runBatcherTest 8 ["bbb", "cc", "8aaaaaaa"] [] ["[bbb,cc]", "8aaaaaaa"]
-  runBatcherTest 8 ["bbb", "cc", "9aaaaaaaa"] ["9aaaaaaaa"] ["[bbb,cc]"]
-  runBatcherTest 8 ["bbb", "cc", "dd", "9aaaaaaaa"] ["9aaaaaaaa"] ["bbb", "[cc,dd]"]
-  runBatcherTest 8 ["bbb", "cc", "dd", "e", "9aaaaaaaa"] ["9aaaaaaaa"] ["[bbb,cc]", "[dd,e]"]
-  runBatcherTest 8 ["bbb", "cc", "aaaaa", "dd"] [] ["[bbb,cc]", "aaaaa", "dd"]
-  runBatcherTest 8 ["bbb", "cc", "aaaaa", "dd", "e"] [] ["[bbb,cc]", "aaaaa", "[dd,e]"]
-  runBatcherTest 8 ["bbb", "cc", "8aaaaaaa", "dd"] [] ["[bbb,cc]", "8aaaaaaa", "dd"]
-  runBatcherTest 8 ["bbb", "cc", "8aaaaaaa", "dd", "e"] [] ["[bbb,cc]", "8aaaaaaa", "[dd,e]"]
-  runBatcherTest 8 ["bbb", "cc", "9aaaaaaaa"] ["9aaaaaaaa"] ["[bbb,cc]"]
-  runBatcherTest 8 ["bbb", "cc", "9aaaaaaaa", "dd"] ["9aaaaaaaa"] ["[bbb,cc]", "dd"]
-  runBatcherTest 8 ["bbb", "cc", "9aaaaaaaa", "dd", "e"] ["9aaaaaaaa"] ["[bbb,cc]", "[dd,e]"]
-  runBatcherTest 8 ["9aaaaaaaa", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] []
-  runBatcherTest 8 ["8aaaaaaa", "9aaaaaaaa", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["8aaaaaaa"]
-  runBatcherTest 8 ["9aaaaaaaa", "8aaaaaaa", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["8aaaaaaa"]
-  runBatcherTest 8 ["9aaaaaaaa", "10aaaaaaaa", "8aaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["8aaaaaaa"]
-  runBatcherTest 8 ["bb", "cc", "dd", "9aaaaaaaa", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
-  runBatcherTest 8 ["bb", "cc", "9aaaaaaaa", "dd", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["[bb,cc]", "dd"]
-  runBatcherTest 8 ["bb", "9aaaaaaaa", "cc", "dd", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
-  runBatcherTest 8 ["bb", "9aaaaaaaa", "cc", "10aaaaaaaa", "dd"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "cc", "dd"]
-  runBatcherTest 8 ["9aaaaaaaa", "bb", "cc", "dd", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
-  runBatcherTest 8 ["9aaaaaaaa", "bb", "10aaaaaaaa", "cc", "dd"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
-  runBatcherTest 8 ["9aaaaaaaa", "10aaaaaaaa", "bb", "cc", "dd"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
+testBatchingCorrectness = describe "JSON batching correctness tests" $ do
+  runBatcherTest BMJson 8 ["a"] [] ["a"]
+  runBatcherTest BMJson 8 ["a", "b"] [] ["[a,b]"]
+  runBatcherTest BMJson 8 ["a", "b", "c"] [] ["[a,b,c]"]
+  runBatcherTest BMJson 8 ["a", "bb", "c"] [] ["[a,bb,c]"]
+  runBatcherTest BMJson 8 ["a", "b", "c", "d"] [] ["a", "[b,c,d]"]
+  runBatcherTest BMJson 8 ["a", "bb", "c", "d"] [] ["a", "[bb,c,d]"]
+  runBatcherTest BMJson 8 ["a", "bb", "c", "de"] [] ["[a,bb]", "[c,de]"]
+  runBatcherTest BMJson 8 ["a", "b", "c", "d", "e"] [] ["[a,b]", "[c,d,e]"]
+  runBatcherTest BMJson 8 ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"] [] ["a", "[b,c,d]", "[e,f,g]", "[h,i,j]"]
+  runBatcherTest BMJson 8 ["aaaaa"] [] ["aaaaa"]
+  runBatcherTest BMJson 8 ["8aaaaaaa"] [] ["8aaaaaaa"]
+  runBatcherTest BMJson 8 ["aaaa", "bbbb"] [] ["aaaa", "bbbb"]
+  runBatcherTest BMJson 8 ["aa", "bbb", "cc", "dd"] [] ["[aa,bbb]", "[cc,dd]"]
+  runBatcherTest BMJson 8 ["aa", "bbb", "cc", "dd", "eee", "fff", "gg", "hh"] [] ["aa", "[bbb,cc]", "[dd,eee]", "fff", "[gg,hh]"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa"] ["9aaaaaaaa"] []
+  runBatcherTest BMJson 8 ["aaaaa", "bbb", "cc"] [] ["aaaaa", "[bbb,cc]"]
+  runBatcherTest BMJson 8 ["8aaaaaaa", "bbb", "cc"] [] ["8aaaaaaa", "[bbb,cc]"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "bbb", "cc"] ["9aaaaaaaa"] ["[bbb,cc]"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "bbb", "cc", "dd"] ["9aaaaaaaa"] ["bbb", "[cc,dd]"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "bbb", "cc", "dd", "e"] ["9aaaaaaaa"] ["[bbb,cc]", "[dd,e]"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "aaaaa"] [] ["[bbb,cc]", "aaaaa"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "8aaaaaaa"] [] ["[bbb,cc]", "8aaaaaaa"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "9aaaaaaaa"] ["9aaaaaaaa"] ["[bbb,cc]"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "dd", "9aaaaaaaa"] ["9aaaaaaaa"] ["bbb", "[cc,dd]"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "dd", "e", "9aaaaaaaa"] ["9aaaaaaaa"] ["[bbb,cc]", "[dd,e]"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "aaaaa", "dd"] [] ["[bbb,cc]", "aaaaa", "dd"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "aaaaa", "dd", "e"] [] ["[bbb,cc]", "aaaaa", "[dd,e]"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "8aaaaaaa", "dd"] [] ["[bbb,cc]", "8aaaaaaa", "dd"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "8aaaaaaa", "dd", "e"] [] ["[bbb,cc]", "8aaaaaaa", "[dd,e]"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "9aaaaaaaa"] ["9aaaaaaaa"] ["[bbb,cc]"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "9aaaaaaaa", "dd"] ["9aaaaaaaa"] ["[bbb,cc]", "dd"]
+  runBatcherTest BMJson 8 ["bbb", "cc", "9aaaaaaaa", "dd", "e"] ["9aaaaaaaa"] ["[bbb,cc]", "[dd,e]"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] []
+  runBatcherTest BMJson 8 ["8aaaaaaa", "9aaaaaaaa", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["8aaaaaaa"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "8aaaaaaa", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["8aaaaaaa"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "10aaaaaaaa", "8aaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["8aaaaaaa"]
+  runBatcherTest BMJson 8 ["bb", "cc", "dd", "9aaaaaaaa", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
+  runBatcherTest BMJson 8 ["bb", "cc", "9aaaaaaaa", "dd", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["[bb,cc]", "dd"]
+  runBatcherTest BMJson 8 ["bb", "9aaaaaaaa", "cc", "dd", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
+  runBatcherTest BMJson 8 ["bb", "9aaaaaaaa", "cc", "10aaaaaaaa", "dd"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "cc", "dd"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "bb", "cc", "dd", "10aaaaaaaa"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "bb", "10aaaaaaaa", "cc", "dd"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
+  runBatcherTest BMJson 8 ["9aaaaaaaa", "10aaaaaaaa", "bb", "cc", "dd"] ["9aaaaaaaa", "10aaaaaaaa"] ["bb", "[cc,dd]"]
+
+-- Binary batch format: 'B' <count:1> (<len:2> <body>)*
+-- Single element returned as-is (no B prefix)
+-- Overhead per batch: 2 bytes (B + count) + 2 bytes per element (length prefix)
+testBinaryBatchingCorrectness :: Spec
+testBinaryBatchingCorrectness = describe "Binary batching correctness tests" $ do
+  -- Single element: returned as-is
+  runBatcherTest BMBinary 10 ["a"] [] ["a"]
+  runBatcherTest BMBinary 10 ["aaaa"] [] ["aaaa"]
+  -- Two elements: binary batch format (2 + 2*2 + content = 6 + content)
+  runBatcherTest BMBinary 10 ["a", "b"] [] [binaryBatch ["a", "b"]]  -- 6 + 2 = 8
+  runBatcherTest BMBinary 12 ["aa", "bb"] [] [binaryBatch ["aa", "bb"]]  -- 6 + 4 = 10
+  -- Three elements (2 + 3*2 + content = 8 + content)
+  runBatcherTest BMBinary 12 ["a", "b", "c"] [] [binaryBatch ["a", "b", "c"]]  -- 8 + 3 = 11
+  -- Large element: error (9 bytes > limit 8)
+  runBatcherTest BMBinary 8 ["9aaaaaaaa"] ["9aaaaaaaa"] []
+  -- Mix of sizes: batch of 2 3-byte elements = 6 + 6 = 12
+  runBatcherTest BMBinary 12 ["aaa", "bbb", "ccc"] [] ["aaa", binaryBatch ["bbb", "ccc"]]
+  -- 4 elements of 2 bytes: batch of 4 = 2 + 8 + 8 = 18, batch of 3 = 2 + 6 + 6 = 14
+  runBatcherTest BMBinary 16 ["aa", "bb", "cc", "dd"] [] ["aa", binaryBatch ["bb", "cc", "dd"]]
+  -- Each element separate when can't batch due to size differences
+  runBatcherTest BMBinary 10 ["aa", "9aaaaaaaa", "bb"] [] ["aa", "9aaaaaaaa", "bb"]
+  runBatcherTest BMBinary 14 ["aa", "9aaaaaaaa", "bb", "cc"] [] ["aa", "9aaaaaaaa", binaryBatch ["bb", "cc"]]
+
+-- Helper to construct expected binary batch output
+binaryBatch :: [ByteString] -> ByteString
+binaryBatch msgs = c2w '=' `B.cons` smpEncodeList (map Large msgs)
 
 testImageFitsSingleBatch :: IO ()
 testImageFitsSingleBatch = do
@@ -96,23 +149,66 @@ testImageFitsSingleBatch = do
 
   let xMsgNewStr = B.replicate xMsgNewRoundedSize 1
       descrStr = B.replicate descrRoundedSize 2
-      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s}
+      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s, signedMsg_ = Nothing}
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
 
-  runBatcherTest' maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]
+  runBatcherTest' BMJson maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]
 
-runBatcherTest :: Int -> [SndMessage] -> [ChatError] -> [ByteString] -> Spec
-runBatcherTest maxLen msgs expectedErrors expectedBatches =
+-- elements are far below maxEncodedMsgLength, so only the element count guard can split this
+testBatchElementCountLimit :: IO ()
+testBatchElementCountLimit =
+  runBatcherTest' BMJson maxEncodedMsgLength (replicate (maxBatchElementCount + 1) "a") [] ["a", batched]
+  where
+    batched = "[" <> B.intercalate "," (replicate maxBatchElementCount "a") <> "]"
+
+testRelayBatchAllLarge :: IO ()
+testRelayBatchAllLarge = do
+  let task1 = deliveryTask 1 "one"
+      task2 = deliveryTask 2 "two"
+      (body_, accepted, large) = batchDeliveryTasks1 chatInitialVRange 1 (task1 :| [task2])
+  body_ `shouldBe` Nothing
+  map deliveryTaskId accepted `shouldBe` []
+  map deliveryTaskId large `shouldBe` [1, 2]
+
+deliveryTask :: Int64 -> T.Text -> MessageDeliveryTask
+deliveryTask taskId text =
+  MessageDeliveryTask
+    { taskId,
+      jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}},
+      senderGMId = 1,
+      fwdSender = FwdChannel,
+      brokerTs = systemToUTCTime $ MkSystemTime 0 0,
+      verifiedMsg =
+        VMUnsigned
+          (ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText text)
+    }
+
+testRelayBatchSingletonOverflow :: IO ()
+testRelayBatchSingletonOverflow = do
+  let task = deliveryTask 1 "overflow"
+      elemLen = B.length $ encodeFwdElement (GrpMsgForward (fwdSender task) (brokerTs task)) (verifiedMsg task)
+      (body_, accepted, large) = batchDeliveryTasks1 chatInitialVRange (elemLen + 2) (task :| [])
+  body_ `shouldBe` Nothing
+  map deliveryTaskId accepted `shouldBe` []
+  map deliveryTaskId large `shouldBe` [1]
+
+testFwdMemberName :: IO ()
+testFwdMemberName = do
+  fwdMemberName "sixteen_chars_ab" `shouldBe` "sixteen_chars_ab"
+  fwdMemberName "seventeen_chars_a" `shouldBe` "seventeen_chars_…"
+
+runBatcherTest :: BatchMode -> Int -> [SndMessage] -> [ChatError] -> [ByteString] -> Spec
+runBatcherTest mode maxLen msgs expectedErrors expectedBatches =
   it
     ( (show (map (\SndMessage {msgBody} -> msgBody) msgs) <> ", limit " <> show maxLen <> ": should return ")
         <> (show (length expectedErrors) <> " large, ")
         <> (show (length expectedBatches) <> " batches")
     )
-    (runBatcherTest' maxLen msgs expectedErrors expectedBatches)
+    (runBatcherTest' mode maxLen msgs expectedErrors expectedBatches)
 
-runBatcherTest' :: Int -> [SndMessage] -> [ChatError] -> [ByteString] -> IO ()
-runBatcherTest' maxLen msgs expectedErrors expectedBatches = do
-  let (errors, batches) = partitionEithers $ batchMessages maxLen (map Right msgs)
+runBatcherTest' :: BatchMode -> Int -> [SndMessage] -> [ChatError] -> [ByteString] -> IO ()
+runBatcherTest' mode maxLen msgs expectedErrors expectedBatches = do
+  let (errors, batches) = partitionEithers $ batchMessages mode maxLen (map Right msgs)
       batchedStrs = map (\(MsgBatch batchBody _) -> batchBody) batches
   testErrors errors `shouldBe` testErrors expectedErrors
   batchedStrs `shouldBe` expectedBatches

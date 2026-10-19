@@ -1,6 +1,10 @@
 package chat.simplex.common.views.onboarding
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -8,15 +12,41 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.toRect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.*
@@ -24,11 +54,15 @@ import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
-import chat.simplex.res.MR
+import chat.simplex.common.views.usersettings.showAddShortLinkAlert
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
+import kotlin.math.absoluteValue
 
 @Composable
 fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
@@ -54,7 +88,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
       Icon(
         painterResource(MR.images.ic_open_in_new), stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
-          .clickable { if (link.startsWith("simplex:")) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openUriCatching(link) }
+          .clickable { if (link.startsWith("simplex:")) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openExternalLink(link) }
       )
     }
 
@@ -224,7 +258,7 @@ fun ReadMoreButton(url: String) {
           interactionSource = remember { MutableInteractionSource() },
           indication = null
         ) {
-          uriHandler.openUriCatching(url)
+          uriHandler.openExternalLink(url)
         }
     )
     Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
@@ -817,8 +851,173 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         )
       ),
     )
-  )
+  ),
+  VersionDescription(
+    version = "v6.4",
+    post = "https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_person,
+        titleId = MR.strings.v6_4_connect_faster,
+        descrId = MR.strings.v6_4_connect_faster_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_chat_person,
+        titleId = MR.strings.v6_4_review_members,
+        descrId = MR.strings.v6_4_review_members_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_contact_support,
+        titleId = MR.strings.v6_4_support_chat,
+        descrId = MR.strings.v6_4_support_chat_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_flag,
+        titleId = MR.strings.v6_4_role_moderator,
+        descrId = MR.strings.v6_4_role_moderator_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_battery_3_bar,
+        titleId = MR.strings.v5_8_message_delivery,
+        descrId = MR.strings.v6_4_message_delivery_descr
+      ),
+    )
+  ),
+  VersionDescription(
+    version = "v6.4.1",
+    post = "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_waving_hand,
+        titleId = MR.strings.v6_4_1_welcome_contacts,
+        descrId = MR.strings.v6_4_1_welcome_contacts_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_timer,
+        titleId = MR.strings.v6_4_1_keep_chats_clean,
+        descrId = MR.strings.v6_4_1_keep_chats_clean_descr
+      ),
+      VersionFeature.FeatureView(
+        icon = null,
+        titleId = MR.strings.v6_4_1_short_address,
+        view = { modalManager -> CreateUpdateAddressShortLinkView(modalManager) }
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v6_4_1_new_interface_languages,
+        descrId = MR.strings.v6_4_1_new_interface_languages_descr,
+      ),
+    )
+  ),
+  VersionDescription(
+    version = "v6.5",
+    post = "https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v6_5_public_channels,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_wifi_tethering to MR.strings.v6_5_reliability,
+          MR.images.ic_dns to MR.strings.v6_5_ownership,
+          MR.images.ic_vpn_key_filled to MR.strings.v6_5_security,
+          MR.images.ic_shield to MR.strings.v6_5_privacy,
+        )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_add_link,
+        titleId = MR.strings.v6_5_invite_friends,
+        descrId = MR.strings.v6_5_invite_friends_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_security,
+        titleId = MR.strings.v6_5_safe_web_links,
+        descrId = MR.strings.v6_5_safe_web_links_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_verified_user,
+        titleId = MR.strings.v6_5_non_profit_governance,
+        descrId = MR.strings.v6_5_non_profit_governance_descr
+      ),
+    )
+  ),
+  VersionDescription(
+    // the trailing space differs from the previously released "v7.0", so that What's new is shown again
+    version = if (isInUs()) "v7.0.1" else "v7.0",
+    post = "https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html",
+    features = listOf(
+      VersionFeature.FeatureView(
+        icon = null,
+        titleId = MR.strings.v7_0_invest,
+        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_alternate_email,
+        titleId = MR.strings.v7_0_simplex_names,
+        descrId = MR.strings.v7_0_simplex_names_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v7_0_channels,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_person_add to MR.strings.v7_0_channels_contributors,
+          MR.images.ic_travel_explore to MR.strings.v7_0_channels_previews,
+          MR.images.ic_dns to MR.strings.v7_0_channels_relays,
+          MR.images.ic_article to MR.strings.v7_0_channels_wider_messages,
+        )
+      ),
+    )
+  ),
+  // TODO [badges] restore when badges ship, with final copy and the Read more link.
+  /*
+  VersionDescription(
+    version = "v7.1",
+    post = null,
+    features = listOf(
+      VersionFeature.FeatureView(
+        icon = null,
+        titleId = MR.strings.v7_1_supporter_badge_title,
+        view = { SupporterBadgeWhatsNew() }
+      )
+    )
+  ),
+  */
 )
+
+@Composable
+private fun SupporterBadgeWhatsNew() {
+  Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+      Text(
+        stringResource(MR.strings.v7_1_supporter_badge_title),
+        style = MaterialTheme.typography.h3,
+        fontWeight = FontWeight.Bold
+      )
+      Text(
+        stringResource(MR.strings.v7_1_supporter_badge_body),
+        style = MaterialTheme.typography.body1,
+        maxLines = 10
+      )
+    }
+    val isDark = isInDarkTheme()
+    if (BuildConfigCommon.SIMPLEX_ASSETS) {
+      Image(
+        painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(110.dp)
+      )
+    } else {
+      Image(
+        painterResource(MR.images.badge_supporter),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(72.dp)
+      )
+    }
+  }
+}
 
 private val lastVersion = versionDescriptions.last().version
 
@@ -832,6 +1031,374 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   val v = m.controller.appPrefs.whatsNewVersion.get()
   setLastVersionDefault(m)
   return v != lastVersion
+}
+
+private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=app"
+
+private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
+
+// the center modal takes the remaining width of the window, so the image is limited to its design width
+private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
+
+// the width of the page images shipped with the desktop app, so that they are never upscaled
+private val CROWDFUNDING_PAGE_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
+
+// the corner radius the images are designed with, and the same radius as a share of their design width
+private val CROWDFUNDING_IMAGE_CORNER_RADIUS = 12.dp
+private const val CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO = 0.03f
+
+private class CrowdfundingLayout(
+  val maxImageWidth: Dp,
+  val imageShape: Shape,
+  // the modal manager that shows the page in the center of the window, or null when nothing does
+  private val centerOfWindow: ModalManager?
+) {
+  fun inCenterOfWindow(modalManager: ModalManager) = modalManager === centerOfWindow
+}
+
+// the images are designed for the width of a phone screen, which Android always gives them. On desktop
+// they are limited to their own width, and their radius is scaled with them, as they are still shown
+// wider than designed: a fixed radius would not only look almost square, but would also leave the corners
+// baked into the jpegs visible - they have black behind them, as jpegs have no transparency
+private val crowdfundingLayout = if (appPlatform.isDesktop)
+  CrowdfundingLayout(CROWDFUNDING_PAGE_IMAGE_WIDTH, object : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+      Outline.Rounded(RoundRect(size.toRect(), CornerRadius(size.width * CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO)))
+  }, ModalManager.center)
+else
+  CrowdfundingLayout(Dp.Unspecified, RoundedCornerShape(CROWDFUNDING_IMAGE_CORNER_RADIUS), null)
+
+// Google Play policy restricts promoting investments, so Play builds only show it in the US
+@Composable
+fun crowdfundingAvailable(): Boolean {
+  if (!platform.androidIsPlayStoreBuild) return true
+  if (androidPlayStoreCountry.value == null) {
+    LaunchedEffect(Unit) {
+      if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry()
+    }
+  }
+  return isInUs()
+}
+
+fun isInUs(): Boolean =
+  androidPlayStoreCountry.value == "US"
+      || androidPlayStoreCountry.value == ""
+      || androidPlayStoreCountry.value == null
+
+@Composable
+private fun InvestInSimpleXChatView(modalManager: ModalManager) {
+  if (!crowdfundingAvailable()) return
+  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
+  Column(modifier = Modifier.padding(bottom = 12.dp)) {
+    Text(
+      generalGetString(MR.strings.v7_0_invest),
+      style = MaterialTheme.typography.h4,
+      fontWeight = FontWeight.Medium,
+      modifier = Modifier.padding(bottom = 6.dp)
+    )
+    Text(
+      buildAnnotatedString {
+        append(generalGetString(MR.strings.v7_0_invest_descr))
+        append(" ")
+        withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+          append(generalGetString(MR.strings.learn_more))
+        }
+      },
+      fontSize = 15.sp,
+      modifier = Modifier
+        .pointerHoverIcon(PointerIcon.Hand)
+        .clickable(
+          interactionSource = remember { MutableInteractionSource() },
+          indication = null,
+          onClick = showGetStake
+        )
+    )
+    if (BuildConfigCommon.SIMPLEX_ASSETS) {
+      Image(
+        painterResource(MR.images.crowdfunding_1),
+        contentDescription = null,
+        contentScale = ContentScale.FillWidth,
+        modifier = Modifier
+          .padding(top = 8.dp)
+          .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
+          .fillMaxWidth()
+          .clip(crowdfundingLayout.imageShape)
+          .pointerHoverIcon(PointerIcon.Hand)
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = showGetStake
+          )
+      )
+    }
+  }
+}
+
+private class CrowdfundingSlide(
+  val image: ImageResource,
+  val heading: String,
+  val info: String?,
+  val text: String,
+)
+
+// not localized: the page is only shown to US investors, and the text duplicates the images
+private val getStakeSlides: List<CrowdfundingSlide> = listOf(
+  CrowdfundingSlide(
+    MR.images.crowdfunding_1,
+    "The first and the only messaging network without any user IDs",
+    null,
+    "By investing, you can benefit from the company growth, and help us build the future of private and secure communications."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_2,
+    "480,000+ users joined on their own",
+    null,
+    "SimpleX users have been more than doubling every year without any paid marketing, and donated over \$650,000."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_3,
+    "Developers already bet on SimpleX success",
+    "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
+    "Every service developers build on SimpleX Network may increase its value, and bring new users to SimpleX Chat."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_4,
+    "Revenue plan: free for users, channels & businesses pay",
+    "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
+    "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
+  ),
+)
+
+@Composable
+fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, close: () -> Unit) {
+  val uriHandler = LocalUriHandler.current
+  val stopped = chatModel.chatRunning.value == false
+
+  @Composable
+  fun slideImage(slide: CrowdfundingSlide) {
+    if (BuildConfigCommon.SIMPLEX_ASSETS) {
+      Image(
+        painterResource(slide.image),
+        contentDescription = null,
+        contentScale = ContentScale.FillWidth,
+        modifier = Modifier
+          .widthIn(max = crowdfundingLayout.maxImageWidth)
+          .fillMaxWidth()
+          .clip(crowdfundingLayout.imageShape)
+          .fullScreenOnClick(slide.image)
+      )
+    } else {
+      Text(slide.heading, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Medium)
+      if (slide.info != null) {
+        Text(slide.info, Modifier.padding(top = 4.dp), lineHeight = 24.sp)
+      }
+    }
+  }
+
+  ColumnWithScrollBar(Modifier.pinchZoom().padding(horizontal = DEFAULT_PADDING)) {
+    // in the center of the window the page is wide enough for the title to fit on one line
+    val title = "Invest in\nSimpleX Chat"
+    AppBarTitle(if (inCenterOfWindow) title.replace("\n", " ") else title, withPadding = false)
+    // What's new already shows the image of the first slide, above the link that opens this page
+    if (showFirstImage) {
+      slideImage(getStakeSlides[0])
+    }
+    Text(
+      buildAnnotatedString {
+        append(getStakeSlides[0].text)
+        // only the link is clickable, the rest of the paragraph is not
+        withLink(LinkAnnotation.Url(WEFUNDER_URL) { uriHandler.openUriCatching(WEFUNDER_URL) }) {
+          withStyle(SpanStyle(color = MaterialTheme.colors.primary, fontWeight = FontWeight.Bold)) {
+            append(" Learn more and invest on Wefunder.")
+          }
+        }
+      },
+      Modifier.padding(top = if (showFirstImage) 8.dp else 0.dp),
+      lineHeight = 24.sp
+    )
+
+    getStakeSlides.drop(1).forEach { slide ->
+      Column(Modifier.padding(top = DEFAULT_PADDING * 1.5f)) {
+        slideImage(slide)
+        Text(slide.text, Modifier.padding(top = 8.dp), lineHeight = 24.sp)
+      }
+    }
+
+    Column(
+      Modifier.fillMaxWidth().padding(top = DEFAULT_PADDING * 2),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      OnboardingActionButton(
+        if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+        labelId = MR.strings.v7_0_invest_learn_more,
+        onboarding = null,
+        onclick = { uriHandler.openUriCatching(WEFUNDER_URL) }
+      )
+      if (!chatModel.desktopNoUserNoRemote) {
+        TextButtonBelowOnboardingButton(
+          "or ask SimpleX team",
+          onClick = if (stopped) null else ({
+            close()
+            uriHandler.openVerifiedSimplexUri(CROWDFUNDING_CONTACT_URI)
+          })
+        )
+      }
+    }
+  }
+}
+
+// there is no pinch gesture with a mouse, so on desktop a slide is opened full screen instead
+@Composable
+private fun Modifier.fullScreenOnClick(image: ImageResource): Modifier {
+  if (!appPlatform.isDesktop) return this
+  return pointerHoverIcon(PointerIcon.Hand).clickable(
+    interactionSource = remember { MutableInteractionSource() },
+    indication = null
+  ) {
+    ModalManager.fullscreen.showCustomModal { close ->
+      BackHandler(onBack = close)
+      Box(
+        Modifier
+          .fillMaxSize()
+          .background(Color.Black)
+          .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = close),
+        contentAlignment = Alignment.Center
+      ) {
+        Image(painterResource(image), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+      }
+    }
+  }
+}
+
+private const val MAX_PAGE_ZOOM = 5f
+
+/**
+ * The slide images contain small text that is unreadable at screen width, so the page can be pinch-zoomed.
+ * Android only: pinch is unavailable with a mouse.
+ */
+@Composable
+private fun Modifier.pinchZoom(): Modifier {
+  if (!appPlatform.isAndroid) return this
+  var scale by remember { mutableStateOf(1f) }
+  var offsetX by remember { mutableStateOf(0f) }
+  var offsetY by remember { mutableStateOf(0f) }
+  var size by remember { mutableStateOf(IntSize.Zero) }
+  return this
+    .onGloballyPositioned { size = it.size }
+    .graphicsLayer {
+      scaleX = scale
+      scaleY = scale
+      translationX = offsetX
+      translationY = offsetY
+    }
+    .pointerInput(Unit) {
+      awaitEachGesture {
+        // the initial pass, as the scroll of the same column is applied after this modifier and would take the gesture first
+        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        var taken: Boolean? = null
+        do {
+          val event = awaitPointerEvent(PointerEventPass.Initial)
+          val multiTouch = event.changes.count { it.pressed } > 1
+          if (multiTouch || scale > 1f) {
+            scale = (scale * event.calculateZoom()).coerceIn(1f, MAX_PAGE_ZOOM)
+            val pan = event.calculatePan()
+            // the page is scaled around its center, so it can be panned by half of the overflow in each direction
+            val maxX = size.width * (scale - 1f) / 2
+            val maxY = size.height * (scale - 1f) / 2
+            val pannedY = offsetY + pan.y * scale
+            // the clamp is applied even when the gesture is not taken: at scale 1 both bounds
+            // are 0, which resets the offsets after zooming back out
+            offsetX = (offsetX + pan.x * scale).coerceIn(-maxX, maxX)
+            offsetY = pannedY.coerceIn(-maxY, maxY)
+            // two fingers always mean zoom, taken without a touch slop: waiting for one would let
+            // the scroll reach its own slop first and scroll the page. A one finger drag is left
+            // to the scroll at the edges, decided once so it cannot alternate mid drag
+            if (multiTouch) taken = true
+            else if (taken == null && pan.y != 0f) taken = pannedY.absoluteValue < maxY
+            if (taken == true) event.changes.forEach { if (it.pressed) it.consume() }
+          }
+        } while (event.changes.any { it.pressed })
+      }
+    }
+}
+
+@Composable
+fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
+  val clipboard = LocalClipboardManager.current
+  val progressIndicator = remember { mutableStateOf(false) }
+
+  fun share(userAddress: String) { clipboard.shareText(userAddress) }
+
+  Column(modifier = Modifier.padding(bottom = 12.dp)) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier.padding(bottom = 4.dp)
+    ) {
+      Icon(painterResource(MR.images.ic_link), stringResource(MR.strings.v6_4_1_short_address), tint = MaterialTheme.colors.secondary)
+      Text(
+        generalGetString(MR.strings.v6_4_1_short_address),
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.h4,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(bottom = 6.dp)
+      )
+    }
+    val addr = chatModel.userAddress.value
+    if (addr != null) {
+      if (addr.shouldBeUpgraded) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Text(
+            stringResource(MR.strings.v6_4_1_short_address_update),
+            color = MaterialTheme.colors.primary,
+            fontSize = 15.sp,
+            modifier = Modifier
+              .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share)
+              }
+          )
+          if (progressIndicator.value) {
+            CIFileViewScope.progressIndicator(sizeMultiplier = 0.5f)
+          }
+        }
+      } else {
+        Text(
+          stringResource(MR.strings.v6_4_1_short_address_share),
+          color = MaterialTheme.colors.primary,
+          fontSize = 15.sp,
+          modifier = Modifier
+            .clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = null
+            ) {
+              share(addr.connLinkContact.simplexChatUri(short = true))
+            }
+        )
+      }
+    } else {
+      Text(
+        stringResource(MR.strings.v6_4_1_short_address_create),
+        color = MaterialTheme.colors.primary,
+        fontSize = 15.sp,
+        modifier = Modifier
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
+          ) {
+            modalManager.showModalCloseable { close ->
+              UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+            }
+          }
+      )
+    }
+  }
 }
 
 @Preview/*(

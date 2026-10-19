@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chatlist
 
 import SectionCustomFooter
-import SectionDivider
 import SectionItemView
 import TextIconSpaced
 import androidx.compose.animation.core.animateDpAsState
@@ -32,18 +31,18 @@ import chat.simplex.common.model.ChatController.apiDeleteChatTag
 import chat.simplex.common.model.ChatController.apiSetChatTags
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.clearActiveChatFilterIfNeeded
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.ReactionIcon
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.*
 
+// Spec: spec/client/chat-list.md#TagListView
 @Composable
 fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode: Boolean) {
   val userTags = remember { chatModel.userTags }
@@ -157,7 +156,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
                 Icon(painterResource(MR.images.ic_drag_handle), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
               }
             }
-            SectionDivider()
+            Divider(Modifier.padding(horizontal = 8.dp))
           }
         }
       }
@@ -417,15 +416,15 @@ private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit) {
         when (val cInfo = chat.chatInfo) {
           is ChatInfo.Direct -> {
             val contact = cInfo.contact.copy(chatTags = result.second)
-            withChats {
-              updateContact(rhId, contact)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.updateContact(rhId, contact)
             }
           }
 
           is ChatInfo.Group -> {
             val group = cInfo.groupInfo.copy(chatTags = result.second)
-            withChats {
-              updateGroup(rhId, group)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.updateGroup(rhId, group)
             }
           }
 
@@ -453,14 +452,14 @@ private fun deleteTag(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) 
           when (val cInfo = c.chatInfo) {
             is ChatInfo.Direct -> {
               val contact = cInfo.contact.copy(chatTags = cInfo.contact.chatTags.filter { it != tagId })
-              withChats {
-                updateContact(rhId, contact)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContact(rhId, contact)
               }
             }
             is ChatInfo.Group -> {
               val group = cInfo.groupInfo.copy(chatTags = cInfo.groupInfo.chatTags.filter { it != tagId })
-              withChats {
-                updateGroup(rhId, group)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateGroup(rhId, group)
               }
             }
             else -> {}

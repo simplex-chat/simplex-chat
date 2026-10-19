@@ -2,6 +2,7 @@ package chat.simplex.common.views.migration
 
 import SectionBottomSpacer
 import SectionItemView
+import SectionDividerSpaced
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import chat.simplex.common.model.*
@@ -27,7 +29,7 @@ import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.OnionRelatedLayout
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
@@ -148,6 +150,7 @@ fun ModalData.MigrateToDeviceView(close: () -> Unit) {
         close()
       }
     },
+    cardScreen = true,
   ) {
     MigrateToDeviceLayout(
       migrationState = migrationState,
@@ -201,7 +204,7 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
     val progressIndicator = remember { mutableStateOf(false) }
     Column {
       if (appPlatform.isAndroid) {
-        SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
+        SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ')) {
           QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
             checkUserLink(text)
           }
@@ -209,12 +212,12 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
         SectionSpacer()
       }
 
-      SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
+      SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link)) {
         PasteLinkView()
       }
       SectionSpacer()
 
-      SectionView(stringResource(MR.strings.chat_archive).uppercase()) {
+      SectionView(stringResource(MR.strings.chat_archive)) {
         ArchiveImportView(progressIndicator, close)
       }
     }
@@ -280,7 +283,7 @@ private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, lin
     mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = linkNetworkProxy?.toProxyString() ?: legacyLinkSocksProxy, sessionMode = sessionMode.value))
   }
 
-  SectionView(stringResource(MR.strings.migrate_to_device_confirm_network_settings).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_to_device_confirm_network_settings)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_check),
       text = stringResource(MR.strings.migrate_to_device_apply_onion),
@@ -305,7 +308,7 @@ private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, lin
   val networkProxyPref = SharedPreference(get = { networkProxy.value }, set = {
     networkProxy.value = it
   })
-  SectionView(stringResource(MR.strings.network_settings_title).uppercase()) {
+  SectionView(stringResource(MR.strings.network_settings_title)) {
     OnionRelatedLayout(
       appPreferences.developerTools.get(),
       networkUseSocksProxy,
@@ -325,7 +328,7 @@ private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, lin
 @Composable
 private fun MutableState<MigrationToState?>.DatabaseInitView(link: String, tempDatabaseFile: File, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_database_init).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_database_init)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -345,7 +348,7 @@ private fun MutableState<MigrationToState?>.LinkDownloadingView(
   networkProxy: NetworkProxy?
 ) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_downloading_details).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_downloading_details)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -356,7 +359,7 @@ private fun MutableState<MigrationToState?>.LinkDownloadingView(
 @Composable
 private fun DownloadProgressView(downloadedBytes: Long, totalBytes: Long) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_downloading_archive).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_to_device_downloading_archive)) {
       val ratio = downloadedBytes.toFloat() / max(totalBytes, 1)
       LargeProgressView(ratio, "${(ratio * 100).toInt()}%", stringResource(MR.strings.migrate_to_device_bytes_downloaded).format(formatBytes(downloadedBytes)))
     }
@@ -365,7 +368,7 @@ private fun DownloadProgressView(downloadedBytes: Long, totalBytes: Long) {
 
 @Composable
 private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, chatReceiver: MigrationToChatReceiver?, archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
-  SectionView(stringResource(MR.strings.migrate_to_device_download_failed).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_to_device_download_failed)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_download),
       text = stringResource(MR.strings.migrate_to_device_repeat_download),
@@ -386,7 +389,7 @@ private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, cha
 @Composable
 private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_importing_archive).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_importing_archive)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -396,7 +399,7 @@ private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: Strin
 
 @Composable
 private fun MutableState<MigrationToState?>.ArchiveImportFailedView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
-  SectionView(stringResource(MR.strings.migrate_to_device_import_failed).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_to_device_import_failed)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_download),
       text = stringResource(MR.strings.migrate_to_device_repeat_import),
@@ -417,7 +420,7 @@ private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: S
 
   Box {
     val view = LocalMultiplatformView()
-    SectionView(stringResource(MR.strings.migrate_to_device_enter_passphrase).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_to_device_enter_passphrase)) {
       SavePassphraseSetting(
         useKeychain.value,
         false,
@@ -450,7 +453,7 @@ private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: S
           }
         }
       ) {}
-      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted = true, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, true)
+      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted = true, remember { mutableStateOf(false) }, null, remember { mutableStateOf(false) }, true)
     }
     if (verifyingPassphrase.value) {
       ProgressView()
@@ -474,7 +477,9 @@ private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DB
         Tuple4(
           generalGetString(MR.strings.database_downgrade),
           generalGetString(MR.strings.downgrade_and_open_chat),
-          generalGetString(MR.strings.database_downgrade_warning),
+          (listOf(generalGetString(MR.strings.database_downgrade_warning))
+            + downMigrationWarnings(err.downMigrations).reversed())
+            .joinToString("\n"),
           MigrationConfirmation.YesUpDown
         )
       is MigrationError.Error ->
@@ -487,7 +492,7 @@ private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DB
     }
     else -> Tuple4(generalGetString(MR.strings.error), null, generalGetString(MR.strings.unknown_error), null)
   }
-  SectionView(header.uppercase()) {
+  SectionView(header) {
     if (button != null && confirmation != null) {
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_download),
@@ -498,14 +503,14 @@ private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DB
         }
       ) {}
     }
-    SectionTextFooter(footer)
   }
+  SectionTextFooter(footer)
 }
 
 @Composable
 private fun MigrationView(passphrase: String, confirmation: MigrationConfirmation, useKeychain: Boolean, netCfg: NetCfg, networkProxy: NetworkProxy?, close: () -> Unit) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_migrating).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_migrating)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -580,12 +585,13 @@ private fun MutableState<MigrationToState?>.startDownloading(
 ) {
   withBGApi {
     chatReceiver.value = MigrationToChatReceiver(ctrl, tempDatabaseFile) { msg ->
-        when (msg) {
-          is CR.RcvFileProgressXFTP -> {
-            state = MigrationToState.DownloadProgress(msg.receivedSize, msg.totalSize, msg.rcvFileTransfer.fileId, link, archivePath, netCfg, networkProxy, ctrl)
+        val r = msg.result
+        when {
+          r is CR.RcvFileProgressXFTP -> {
+            state = MigrationToState.DownloadProgress(r.receivedSize, r.totalSize, r.rcvFileTransfer.fileId, link, archivePath, netCfg, networkProxy, ctrl)
             MigrationToDeviceState.save(MigrationToDeviceState.DownloadProgress(link, File(archivePath).name, netCfg, networkProxy))
           }
-          is CR.RcvStandaloneFileComplete -> {
+          r is CR.RcvStandaloneFileComplete -> {
             delay(500)
             // User closed the whole screen before new state was saved
             if (state == null) {
@@ -595,22 +601,22 @@ private fun MutableState<MigrationToState?>.startDownloading(
               MigrationToDeviceState.save(MigrationToDeviceState.ArchiveImport(File(archivePath).name, netCfg, networkProxy))
             }
           }
-          is CR.RcvFileError -> {
+          r is CR.RcvFileError -> {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.migrate_to_device_download_failed),
               generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
             )
             state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
           }
-          is CR.ChatRespError -> {
-            if (msg.chatError is ChatError.ChatErrorChat && msg.chatError.errorType is ChatErrorType.NoRcvFileUser) {
+          msg is API.Error -> {
+            if (msg.err is ChatError.ChatErrorChat && msg.err.errorType is ChatErrorType.NoRcvFileUser) {
               AlertManager.shared.showAlertMsg(
                 generalGetString(MR.strings.migrate_to_device_download_failed),
                 generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
               )
               state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
             } else {
-              Log.d(TAG, "unsupported error: ${msg.responseType}, ${json.encodeToString(msg.chatError)}")
+              Log.d(TAG, "unsupported error: ${msg.responseType}, ${json.encodeToString(msg.err)}")
             }
           }
           else -> Log.d(TAG, "unsupported event: ${msg.responseType}")
@@ -632,7 +638,7 @@ private fun MutableState<MigrationToState?>.startDownloading(
 private fun MutableState<MigrationToState?>.importArchive(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   withLongRunningApi {
     try {
-      if (ChatController.ctrl == null || ChatController.ctrl == -1L) {
+      if (!ChatController.hasChatCtrl()) {
         chatInitControllerRemovingDatabases()
       }
       controller.apiDeleteStorage()
@@ -739,7 +745,7 @@ private class MigrationToChatReceiver(
   val ctrl: ChatCtrl,
   val databaseUrl: File,
   var receiveMessages: Boolean = true,
-  val processReceivedMsg: suspend (CR) -> Unit
+  val processReceivedMsg: suspend (API) -> Unit
 ) {
   fun start() {
     Log.d(TAG, "MigrationChatReceiver startReceiver")
@@ -748,19 +754,18 @@ private class MigrationToChatReceiver(
         try {
           val msg = ChatController.recvMsg(ctrl)
           if (msg != null && receiveMessages) {
-            val r = msg.resp
-            val rhId = msg.remoteHostId
-            Log.d(TAG, "processReceivedMsg: ${r.responseType}")
-            chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
+            val rhId = msg.rhId
+            Log.d(TAG, "processReceivedMsg: ${msg.responseType}")
+            chatModel.addTerminalItem(TerminalItem.resp(rhId, msg))
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
-              processReceivedMsg(r)
+              processReceivedMsg(msg)
             }
             if (finishedWithoutTimeout == null) {
-              Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
+              Log.e(TAG, "Timeout reached while processing received message: " + msg.responseType)
               if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
                 AlertManager.shared.showAlertMsg(
                   title = generalGetString(MR.strings.possible_slow_function_title),
-                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.resp.responseType + "\n" + Exception().stackTraceToString()),
+                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.responseType + "\n" + Exception().stackTraceToString()),
                   shareText = true
                 )
               }

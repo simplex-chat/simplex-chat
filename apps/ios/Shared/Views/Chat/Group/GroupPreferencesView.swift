@@ -27,18 +27,52 @@ struct GroupPreferencesView: View {
     @State private var showSaveDialogue = false
 
     var body: some View {
-        let saveText: LocalizedStringKey = creatingGroup ? "Save" : "Save and notify group members"
+        let saveText: LocalizedStringKey = creatingGroup ? "Save" : groupInfo.useRelays ? "Save and notify subscribers" : "Save and notify group members"
         VStack {
             List {
-                featureSection(.timedMessages, $preferences.timedMessages.enable)
-                featureSection(.fullDelete, $preferences.fullDelete.enable)
-                featureSection(.directMessages, $preferences.directMessages.enable, $preferences.directMessages.role)
-                featureSection(.reactions, $preferences.reactions.enable)
-                featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
-                featureSection(.files, $preferences.files.enable, $preferences.files.role)
-                featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
-                featureSection(.reports, $preferences.reports.enable)
-                featureSection(.history, $preferences.history.enable)
+                if !groupInfo.useRelays {
+                    Section {
+                        MemberAdmissionButton(
+                            groupInfo: $groupInfo,
+                            admission: groupInfo.groupProfile.memberAdmission_,
+                            currentAdmission: groupInfo.groupProfile.memberAdmission_,
+                            creatingGroup: creatingGroup
+                        )
+                    }
+                    featureSection(.timedMessages, $preferences.timedMessages.enable)
+                    featureSection(.fullDelete, $preferences.fullDelete.enable)
+                    featureSection(.directMessages, $preferences.directMessages.enable, $preferences.directMessages.role)
+                    featureSection(.reactions, $preferences.reactions.enable)
+                    featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
+                    featureSection(.files, $preferences.files.enable, $preferences.files.role)
+                    featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
+                    featureSection(.reports, $preferences.reports.enable, disabled: true) // enable reports in 7.0 once directory support added
+                    featureSection(.history, $preferences.history.enable)
+                    featureSection(.support, $preferences.support.enable, disabled: true)
+                } else {
+                    // hidden until message signing is user-facing (recipient-only stage)
+//                    featureSection(.signMessages, $preferences.signMessages.enable)
+                    featureSection(.timedMessages, $preferences.timedMessages.enable)
+                    featureSection(.fullDelete, $preferences.fullDelete.enable)
+                    featureSection(.reactions, $preferences.reactions.enable)
+                    featureSection(.history, $preferences.history.enable)
+                    let supportNotice = NSLocalizedString("Chats with admins in public channels have no E2E encryption - use only with trusted chat relays.", comment: "alert message")
+                    featureSection(.support, $preferences.support.enable, notice: supportNotice)
+                        .onChange(of: preferences.support.enable) { enable in
+                            if enable == .on {
+                                showAlert(
+                                    NSLocalizedString("Enable chats with admins?", comment: "alert title"),
+                                    message: supportNotice,
+                                    actions: {[
+                                        UIAlertAction(title: NSLocalizedString("Enable", comment: "alert button"), style: .destructive) { _ in },
+                                        UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel) { _ in
+                                            preferences.support.enable = .off
+                                        }
+                                    ]}
+                                )
+                            }
+                        }
+                }
 
                 if groupInfo.isOwner {
                     Section {
@@ -77,7 +111,7 @@ struct GroupPreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil) -> some View {
+    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil, disabled: Bool = false, notice: String? = nil) -> some View {
         Section {
             let color: Color = enableFeature.wrappedValue == .on ? .green : theme.colors.secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
@@ -88,9 +122,9 @@ struct GroupPreferencesView: View {
                     set: { on, _ in enableFeature.wrappedValue = on ? .on : .off }
                 )
                 settingsRow(icon, color: color) {
-                    Toggle(feature.text, isOn: enable)
+                    Toggle(feature.text(isChannel: groupInfo.isChannel), isOn: enable)
                 }
-                .disabled(feature == .reports) // remove in 6.4
+                .disabled(disabled)
                 if timedOn {
                     DropdownCustomTimePicker(
                         selection: $preferences.timedMessages.ttl,
@@ -111,7 +145,7 @@ struct GroupPreferencesView: View {
                 }
             } else {
                 settingsRow(icon, color: color) {
-                    infoRow(Text(feature.text), enableFeature.wrappedValue.text)
+                    infoRow(Text(feature.text(isChannel: groupInfo.isChannel)), enableFeature.wrappedValue.text)
                 }
                 if timedOn {
                     infoRow("Delete after", timeText(preferences.timedMessages.ttl))
@@ -129,12 +163,75 @@ struct GroupPreferencesView: View {
                 }
             }
         } footer: {
-            Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
-                .foregroundColor(theme.colors.secondary)
+            VStack(alignment: .leading) {
+                Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner, isChannel: groupInfo.isChannel))
+                if let notice { Text(notice) }
+            }
+            .foregroundColor(theme.colors.secondary)
         }
         .onChange(of: enableFeature.wrappedValue) { enabled in
             if case .off = enabled {
                 enableForRole?.wrappedValue = nil
+            }
+        }
+    }
+}
+
+struct MemberAdmissionButton: View {
+    @Binding var groupInfo: GroupInfo
+    @State var admission: GroupMemberAdmission
+    @State var currentAdmission: GroupMemberAdmission
+    var creatingGroup: Bool = false
+
+    var body: some View {
+        NavigationLink {
+            MemberAdmissionView(
+                groupInfo: $groupInfo,
+                admission: $admission,
+                currentAdmission: currentAdmission,
+                creatingGroup: creatingGroup,
+                saveAdmission: saveAdmission
+            )
+            .navigationBarTitle("Member admission")
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+            .onDisappear {
+                let saveText = NSLocalizedString(
+                    creatingGroup ? "Save" : "Save and notify group members",
+                    comment: "alert button"
+                )
+
+                if groupInfo.groupProfile.memberAdmission_ != admission {
+                    showAlert(
+                        title: NSLocalizedString("Save admission settings?", comment: "alert title"),
+                        buttonTitle: saveText,
+                        buttonAction: { saveAdmission() },
+                        cancelButton: true
+                    )
+                }
+            }
+        } label: {
+            if creatingGroup {
+                Text("Set member admission")
+            } else {
+                Label("Member admission", systemImage: "switch.2")
+            }
+        }
+    }
+
+    private func saveAdmission() {
+        Task {
+            do {
+                var gp = groupInfo.groupProfile
+                gp.memberAdmission = admission
+                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
+                await MainActor.run {
+                    groupInfo = gInfo
+                    ChatModel.shared.updateGroup(gInfo)
+                    currentAdmission = admission
+                }
+            } catch {
+                logger.error("MemberAdmissionView apiUpdateGroup error: \(responseError(error))")
             }
         }
     }

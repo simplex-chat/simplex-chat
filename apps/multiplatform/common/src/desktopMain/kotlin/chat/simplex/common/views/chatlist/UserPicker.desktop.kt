@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,19 +62,21 @@ actual fun UserPickerUsersSection(
                   ProfileImage(size = 55.dp, image = user.profile.image, color = iconColor)
 
                   if (u.unreadCount > 0 && !user.activeUser) {
-                    unreadBadge(u.unreadCount, user.showNtfs, true)
+                    userUnreadBadge(u.unreadCount, user.showNtfs, true)
                   }
                 }
 
-                Text(
-                  user.displayName,
-                  fontSize = 12.sp,
-                  fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis,
-                  modifier = Modifier.width(65.dp),
-                  textAlign = TextAlign.Center
-                )
+                Row(Modifier.width(65.dp), horizontalArrangement = Arrangement.Center) {
+                  Text(
+                    user.displayName,
+                    fontSize = 12.sp,
+                    fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.alignByBaseline().weight(1f, fill = false)
+                  )
+                  NameBadge(user.profile.localBadge, 12.sp)
+                }
               }
             }
           }

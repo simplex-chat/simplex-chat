@@ -16,6 +16,7 @@ struct TagEditorNavParams {
     let tagId: Int64?
 }
 
+// Spec: spec/client/chat-list.md#TagListView
 struct TagListView: View {
     var chat: Chat? = nil
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -63,10 +64,7 @@ struct TagListView: View {
                                 NSLocalizedString("Delete list?", comment: "alert title"),
                                 message: String.localizedStringWithFormat(NSLocalizedString("All chats will be removed from the list %@, and the list deleted.", comment: "alert message"), text),
                                 actions: {[
-                                    UIAlertAction(
-                                        title: NSLocalizedString("Cancel", comment: "alert action"),
-                                        style: .default
-                                    ),
+                                    cancelAlertAction,
                                     UIAlertAction(
                                         title: NSLocalizedString("Delete", comment: "alert action"),
                                         style: .destructive,
@@ -138,7 +136,7 @@ struct TagListView: View {
         }
     }
     
-    @ViewBuilder private func radioButton(selected: Bool) -> some View {
+    private func radioButton(selected: Bool) -> some View {
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
             .imageScale(.large)
             .foregroundStyle(selected ? Color.accentColor : Color(.tertiaryLabel))

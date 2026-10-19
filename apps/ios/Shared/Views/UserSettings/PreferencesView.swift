@@ -19,7 +19,7 @@ struct PreferencesView: View {
     var body: some View {
         VStack {
             List {
-                timedMessagesFeatureSection($preferences.timedMessages.allow)
+                timedMessagesFeatureSection($preferences.timedMessages.allow, $preferences.timedMessages.ttl)
                 featureSection(.fullDelete, $preferences.fullDelete.allow)
                 featureSection(.reactions, $preferences.reactions.allow)
                 featureSection(.voice, $preferences.voice.allow)
@@ -60,20 +60,35 @@ struct PreferencesView: View {
 
     }
 
-    private func timedMessagesFeatureSection(_ allowFeature: Binding<FeatureAllowed>) -> some View {
+    @ViewBuilder private func timedMessagesFeatureSection(_ allowFeature: Binding<FeatureAllowed>, _ ttl: Binding<Int?>) -> some View {
+        let allow = Binding(
+            get: { allowFeature.wrappedValue == .always || allowFeature.wrappedValue == .yes },
+            set: { yes, _ in allowFeature.wrappedValue = yes ? .yes : .no }
+        )
         Section {
-            let allow = Binding(
-                get: { allowFeature.wrappedValue == .always || allowFeature.wrappedValue == .yes },
-                set: { yes, _ in allowFeature.wrappedValue = yes ? .yes : .no }
-            )
             settingsRow(ChatFeature.timedMessages.icon, color: theme.colors.secondary) {
                 Toggle(ChatFeature.timedMessages.text, isOn: allow)
             }
+            if allow.wrappedValue {
+                Picker("Delete after", selection: ttl) {
+                    ForEach(TimedMessagesPreference.profileLevelTTLValues, id: \.self) { value in
+                        Text(timeText(value)).tag(value)
+                    }
+                }
+                .frame(height: 36)
+            }
         }
-        footer: { featureFooter(.timedMessages, allowFeature).foregroundColor(theme.colors.secondary) }
+        footer: {
+            let featureFooterText = featureFooter(.timedMessages, allowFeature).foregroundColor(theme.colors.secondary)
+            if allow.wrappedValue && ttl.wrappedValue != nil {
+                featureFooterText + textNewLine + Text("Time to disappear is set only for new contacts.")
+            } else {
+                featureFooterText
+            }
+        }
     }
 
-    private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
+    private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> Text {
         Text(feature.allowDescription(allowFeature.wrappedValue))
     }
 

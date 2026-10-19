@@ -5,6 +5,7 @@
 //  Created by Evgeny on 07/05/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
@@ -25,53 +26,128 @@ enum UserProfileAlert: Identifiable {
     }
 }
 
+let MAX_BIO_LENGTH_BYTES = 160
+
 struct CreateProfile: View {
+    @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @State private var displayName: String = ""
+    @State private var profileBio: String = ""
     @FocusState private var focusDisplayName
     @State private var alert: UserProfileAlert?
+    @State private var showChooseSource = false
+    @State private var showImagePicker = false
+    @State private var showTakePhoto = false
+    @State private var chosenImage: UIImage? = nil
+    @State private var profileImage: String? = nil
 
     var body: some View {
         List {
-            Section {
-                TextField("Enter your name…", text: $displayName)
-                    .focused($focusDisplayName)
-                Button {
-                    createProfile()
-                } label: {
-                    Label("Create profile", systemImage: "checkmark")
-                }
-                .disabled(!canCreateProfile(displayName))
-            } header: {
-                HStack {
-                    Text("Your profile")
-                        .foregroundColor(theme.colors.secondary)
-
-                    let name = displayName.trimmingCharacters(in: .whitespaces)
-                    let validName = mkValidName(name)
-                    if name != validName {
-                        Spacer()
-                        Image(systemName: "exclamationmark.circle")
-                            .foregroundColor(.red)
-                            .onTapGesture {
-                                alert = .invalidNameError(validName: validName)
+            Group {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    ZStack(alignment: .center) {
+                        ZStack(alignment: .topTrailing) {
+                            ProfileImage(imageStr: profileImage, size: 128)
+                            if profileImage != nil {
+                                Button {
+                                    profileImage = nil
+                                } label: {
+                                    Image(systemName: "multiply")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 12)
+                                }
                             }
+                        }
+
+                        editImageButton { showChooseSource = true }
+                            .buttonStyle(BorderlessButtonStyle())
                     }
+                    .padding(.horizontal, 10) // Offsets transparent space built into 3D asset
+                    Spacer(minLength: 0)
+                    #if SIMPLEX_ASSETS
+                    Image(colorScheme == .light ? "create-profile" : "create-profile-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 140)
+                    // No trailing spacer — asset image has empty space on the right
+                    #endif
                 }
-                .frame(height: 20)
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))
+
+            Section {
+                ZStack(alignment: .leading) {
+                    let name = displayName.trimmingCharacters(in: .whitespaces)
+                    if name != mkValidName(name) {
+                        Button {
+                            alert = .invalidNameError(validName: mkValidName(name))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    } else {
+                        Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
+                    }
+                    TextField("Enter your name…", text: $displayName)
+                        .padding(.leading, 36)
+                        .focused($focusDisplayName)
+                }
+                ZStack(alignment: .leading) {
+                    Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
+                    TextField("Bio", text: $profileBio)
+                        .padding(.leading, 36)
+                }
+                Button(action: createProfile) {
+                    settingsRow("checkmark", color: theme.colors.primary) { Text("Create profile") }
+                }
+                .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Your profile, contacts and delivered messages are stored on your device.")
-                    Text("The profile is only shared with your contacts.")
+                    Text("Your profile is stored on your device and only shared with your contacts.")
                 }
                 .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .compactSectionSpacing()
         }
         .navigationTitle("Create your profile")
         .modifier(ThemedBackground(grouped: true))
         .alert(item: $alert) { a in userProfileAlert(a, $displayName) }
+        .confirmationDialog("Profile image", isPresented: $showChooseSource, titleVisibility: .visible) {
+            Button("Take picture") {
+                showTakePhoto = true
+            }
+            Button("Choose from library") {
+                showImagePicker = true
+            }
+        }
+        .fullScreenCover(isPresented: $showTakePhoto) {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
+                CameraImagePicker(image: $chosenImage)
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            LibraryImagePicker(image: $chosenImage) { _ in
+                await MainActor.run {
+                    showImagePicker = false
+                }
+            }
+        }
+        .onChange(of: chosenImage) { image in
+            Task {
+                let resized: String? = if let image {
+                    await resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+                } else {
+                    nil
+                }
+                await MainActor.run { profileImage = resized }
+            }
+        }
         .onAppear() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 focusDisplayName = true
@@ -79,11 +155,18 @@ struct CreateProfile: View {
         }
     }
 
+    private func bioFitsLimit() -> Bool {
+        chatJsonLength(profileBio) <= MAX_BIO_LENGTH_BYTES
+    }
+
     private func createProfile() {
         hideKeyboard()
+        let shortDescr: String? = if profileBio.isEmpty { nil } else { profileBio }
         let profile = Profile(
             displayName: displayName.trimmingCharacters(in: .whitespaces),
-            fullName: ""
+            fullName: "",
+            shortDescr: shortDescr,
+            image: profileImage
         )
         let m = ChatModel.shared
         do {
@@ -112,77 +195,144 @@ struct CreateProfile: View {
 struct CreateFirstProfile: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var displayName: String = ""
     @FocusState private var focusDisplayName
     @State private var nextStepNavLinkActive = false
-
+    @State private var showMigrateSheet = false
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .center, spacing: 20) {
-                Text("Create your profile")
-                    .font(.largeTitle)
-                    .bold()
-                    .multilineTextAlignment(.center)
-                
-                Text("Your profile, contacts and delivered messages are stored on your device.")
-                    .font(.callout)
-                    .foregroundColor(theme.colors.secondary)
-                    .multilineTextAlignment(.center)
-                
-                Text("The profile is only shared with your contacts.")
-                    .font(.callout)
-                    .foregroundColor(theme.colors.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity) // Ensures it takes up the full width
-            .padding(.horizontal, 10)
-
-            HStack {
-                let name = displayName.trimmingCharacters(in: .whitespaces)
-                let validName = mkValidName(name)
-                ZStack(alignment: .trailing) {
-                    TextField("Enter your name…", text: $displayName)
-                        .focused($focusDisplayName)
-                        .padding(.horizontal)
-                        .padding(.trailing, 20)
-                        .padding(.vertical, 10)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color(uiColor: .tertiarySystemFill))
+        let spacing: CGFloat = 10
+        let topPadding: CGFloat = 8
+        let padding: CGFloat = 25
+        GeometryReader { g in
+            let v = ScrollView {
+                VStack(alignment: .center, spacing: spacing) {
+                    #if SIMPLEX_ASSETS
+                    Image(colorScheme == .light ? "your-profile" : "your-profile-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                    #else
+                    ZStack {
+                        let gp = OnboardingCardView.gradientPoints(aspectRatio: 1.0, scale: colorScheme == .light ? 1.2 : 1.5)
+                        LinearGradient(
+                            stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
+                            startPoint: gp.start,
+                            endPoint: gp.end
                         )
-                    if name != validName {
-                        Button {
-                            showAlert(.invalidNameError(validName: validName))
-                        } label: {
-                            Image(systemName: "exclamationmark.circle")
-                                .foregroundColor(.red)
-                                .padding(.horizontal, 10)
-                        }
+                        Image(systemName: "person.crop.rectangle")
+                            .font(.system(size: 72))
+                            .foregroundColor(theme.colors.primary)
                     }
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .padding(.horizontal, 25)
+                    .frame(maxWidth: .infinity)
+                    #endif
+
+                    Text("Your profile")
+                        .font(.largeTitle)
+                        .bold()
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("On your phone, not on servers.")
+                        .font(.title3)
+                        .fontWeight(.medium)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("No account. No phone. No email. No ID.\nThe most secure encryption.")
+                        .font(.footnote)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    profileNameField()
+                        .padding(.top)
+                        .padding(.bottom, 5)
+
+                    Spacer(minLength: 0)
+
+                    createProfileButton()
+                        .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
+                }
+                .padding(.horizontal, padding)
+                .padding(.top, topPadding)
+                .padding(.bottom, padding)
+                .frame(minHeight: g.size.height)
+            }
+            .onTapGesture { focusDisplayName = false }
+            .sheet(isPresented: $showMigrateSheet, onDismiss: { m.migrationState = nil }) {
+                NavigationView {
+                    MigrateToDevice(migrationState: $m.migrationState)
+                        .navigationTitle("Migrate here")
+                        .modifier(ThemedBackground(grouped: true))
                 }
             }
-            .padding(.top)
-
-            Spacer()
-
-            VStack(spacing: 10) {
-                createProfileButton()
-                if !focusDisplayName {
-                    onboardingButtonPlaceholder()
+            if #available(iOS 17, *) {
+                v.scrollBounceBehavior(.basedOnSize).defaultScrollAnchor(.bottom)
+            } else if #available(iOS 16.4, *) {
+                v.scrollBounceBehavior(.basedOnSize)
+            } else {
+                v
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    if m.migrationState == nil {
+                        m.migrationState = .pasteOrScanLink
+                    }
+                    showMigrateSheet = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "tray.and.arrow.down")
+                        Text("Migrate")
+                            .fontWeight(.medium)
+                    }
                 }
             }
         }
         .onAppear() {
-            focusDisplayName = true
+            if #available(iOS 16, *) {
+                focusDisplayName = true
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    focusDisplayName = true
+                }
+            }
         }
-        .padding(.horizontal, 25)
-        .padding(.top, 10)
-        .padding(.bottom, 25)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxHeight: .infinity)
     }
 
-    func createProfileButton() -> some View {
+    private func profileNameField() -> some View {
+        let name = displayName.trimmingCharacters(in: .whitespaces)
+        let validName = mkValidName(name)
+        return ZStack(alignment: .trailing) {
+            TextField("Enter profile name...", text: $displayName)
+                .focused($focusDisplayName)
+                .padding(.horizontal)
+                .padding(.trailing, name != validName ? 20 : 0)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color(uiColor: .tertiarySystemFill))
+                )
+            if name != validName {
+                Button {
+                    showAlert(.invalidNameError(validName: validName))
+                } label: {
+                    Image(systemName: "exclamationmark.circle")
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 10)
+                }
+            }
+        }
+    }
+
+    private func createProfileButton() -> some View {
         ZStack {
             Button {
                 createProfile()
@@ -207,7 +357,7 @@ struct CreateFirstProfile: View {
     }
 
     private func nextStepDestinationView() -> some View {
-        OnboardingConditionsView()
+        YourNetworkView()
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }
@@ -222,6 +372,8 @@ struct CreateFirstProfile: View {
         do {
             AppChatState.shared.set(.active)
             m.currentUser = try apiCreateActiveUser(profile)
+            // new users don't need the local file encryption indicator (all files are encrypted); existing users keep it on
+            UserDefaults.standard.set(false, forKey: DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION)
             try startChat(onboarding: true)
             onboardingStageDefault.set(.step3_ChooseServerOperators)
             nextStepNavLinkActive = true
@@ -236,15 +388,15 @@ private func showCreateProfileAlert(
     _ error: Error
 ) {
     let m = ChatModel.shared
-    switch error as? ChatResponse {
-    case .chatCmdError(_, .errorStore(.duplicateName)),
-         .chatCmdError(_, .error(.userExists)):
+    switch error as? ChatError {
+    case .errorStore(.duplicateName),
+         .error(.userExists):
         if m.currentUser == nil {
             AlertManager.shared.showAlert(duplicateUserAlert)
         } else {
             showAlert(.duplicateUserError)
         }
-    case .chatCmdError(_, .error(.invalidDisplayName)):
+    case .error(.invalidDisplayName):
         if m.currentUser == nil {
             AlertManager.shared.showAlert(invalidDisplayNameAlert)
         } else {

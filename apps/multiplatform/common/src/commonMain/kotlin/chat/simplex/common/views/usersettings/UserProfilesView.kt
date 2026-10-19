@@ -1,7 +1,6 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionItemViewWithoutMinPadding
@@ -31,7 +30,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
@@ -177,7 +176,7 @@ private fun UserProfilesLayout(
     SectionView {
       for (user in filteredUsers) {
         UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
-        SectionDivider()
+        Divider(Modifier.padding(horizontal = 8.dp))
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
         SectionItemView(addUser, minHeight = 68.dp) {
@@ -278,7 +277,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
     @Composable fun PasswordAndAction(label: StringResource, color: Color = MaterialTheme.colors.primary) {
       SectionView() {
         SectionItemViewWithoutMinPadding {
-          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true)
+          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true, contentType = null)
         }
         SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
           Text(generalGetString(label), color = if (actionEnabled) color else MaterialTheme.colors.secondary)

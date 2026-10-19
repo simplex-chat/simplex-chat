@@ -3,10 +3,9 @@ package chat.simplex.common.views.chat
 import InfoRow
 import InfoRowEllipsis
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -19,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
@@ -37,17 +35,16 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.group.ChatTTLSection
-import chat.simplex.common.views.chat.group.ProgressIndicator
+import chat.simplex.common.views.chat.group.ChatTTLOption
+import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
-import chat.simplex.common.views.database.*
 import chat.simplex.common.views.newchat.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -57,6 +54,7 @@ import java.io.File
 
 @Composable
 fun ChatInfoView(
+  chatsCtx: ChatModel.ChatsContext,
   chatModel: ChatModel,
   contact: Contact,
   connectionStats: ConnectionStats?,
@@ -73,9 +71,6 @@ fun ChatInfoView(
   val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && currentUser != null) {
-    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
-      mutableStateOf(chatModel.contactNetworkStatus(contact))
-    }
     val chatRh = chat.remoteHostId
     val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     val chatItemTTL = remember(contact.id) { mutableStateOf(if (contact.chatItemTTL != null) ChatItemTTL.fromSeconds(contact.chatItemTTL) else null) }
@@ -99,10 +94,9 @@ fun ChatInfoView(
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
-        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
+        setChatTTLAlert(chatsCtx, chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       connStats = connStats,
-      contactNetworkStatus.value,
       customUserProfile,
       localAlias,
       connectionCode,
@@ -126,8 +120,8 @@ fun ChatInfoView(
             val cStats = chatModel.controller.apiSwitchContact(chatRh, contact.contactId)
             connStats.value = cStats
             if (cStats != null) {
-              withChats {
-                updateContactConnectionStats(chatRh, contact, cStats)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContactConnectionStats(chatRh, contact, cStats)
               }
             }
             close.invoke()
@@ -140,8 +134,8 @@ fun ChatInfoView(
             val cStats = chatModel.controller.apiAbortSwitchContact(chatRh, contact.contactId)
             connStats.value = cStats
             if (cStats != null) {
-              withChats {
-                updateContactConnectionStats(chatRh, contact, cStats)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContactConnectionStats(chatRh, contact, cStats)
               }
             }
           }
@@ -171,8 +165,8 @@ fun ChatInfoView(
               verify = { code ->
                 chatModel.controller.apiVerifyContact(chatRh, ct.contactId, code)?.let { r ->
                   val (verified, existingCode) = r
-                  withChats {
-                    updateContact(
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.updateContact(
                       chatRh,
                       ct.copy(
                         activeConn = ct.activeConn?.copy(
@@ -200,8 +194,8 @@ suspend fun syncContactConnection(rhId: Long?, contact: Contact, connectionStats
   val cStats = chatModel.controller.apiSyncContactRatchet(rhId, contact.contactId, force = force)
   connectionStats.value = cStats
   if (cStats != null) {
-    withChats {
-      updateContactConnectionStats(rhId, contact, cStats)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateContactConnectionStats(rhId, contact, cStats)
     }
   }
 }
@@ -254,6 +248,8 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
 private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
+    text = contact.displayName,
+    parseHtml = false,
     buttons = {
       Column {
         // Only delete conversation
@@ -312,7 +308,8 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
 
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${contact.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
+    parseHtml = false,
     buttons = {
       Column {
         // Keep conversation toggle
@@ -367,7 +364,8 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
 private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.confirm_delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
+    parseHtml = false,
     buttons = {
       Column {
         // Delete and notify contact
@@ -423,7 +421,8 @@ private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, c
 private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.confirm_delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
+    parseHtml = false,
     buttons = {
       // Confirm
       SectionItemView({
@@ -475,14 +474,14 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
     val chatRh = chat.remoteHostId
     val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode)
     if (ct != null) {
-      withChats {
+      withContext(Dispatchers.Main) {
         when (chatDeleteMode) {
           is ChatDeleteMode.Full ->
-            removeChat(chatRh, chatInfo.id)
+            chatModel.chatsContext.removeChat(chatRh, chatInfo.id)
           is ChatDeleteMode.Entity ->
-            updateContact(chatRh, ct)
+            chatModel.chatsContext.updateContact(chatRh, ct)
           is ChatDeleteMode.Messages ->
-            clearChat(chatRh, ChatInfo.Direct(ct))
+            chatModel.chatsContext.clearChat(chatRh, ChatInfo.Direct(ct))
         }
       }
       if (chatModel.chatId.value == chatInfo.id) {
@@ -498,7 +497,8 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
 fun clearChatDialog(chat: Chat, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.clear_chat_question),
-    text = generalGetString(MR.strings.clear_chat_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.clear_chat_warning)}",
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.clear_verb),
     onConfirm = { controller.clearChat(chat, close) },
     destructive = true,
@@ -525,7 +525,6 @@ fun ChatInfoLayout(
   chatItemTTL: MutableState<ChatItemTTL?>,
   setChatItemTTL: (ChatItemTTL?) -> Unit,
   connStats: MutableState<ConnectionStats?>,
-  contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,
   connectionCode: String?,
@@ -559,7 +558,7 @@ fun ChatInfoLayout(
 
     LocalAliasEditor(chat.id, localAlias, updateValue = onLocalAliasChanged)
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     Box(
       Modifier.fillMaxWidth(),
@@ -579,10 +578,10 @@ fun ChatInfoLayout(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (customUserProfile != null) {
-      SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+      SectionView(generalGetString(MR.strings.incognito)) {
         SectionItemViewSpaceBetween {
           Text(generalGetString(MR.strings.incognito_random_profile))
           Text(customUserProfile.chatViewName, color = Indigo)
@@ -607,7 +606,7 @@ fun ChatInfoLayout(
       }
 
       WallpaperButton {
-        ModalManager.end.showModal {
+        ModalManager.end.showModal(cardScreen = true) {
           val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
           val c = chat.value
           if (c != null) {
@@ -616,38 +615,44 @@ fun ChatInfoLayout(
         }
       }
     }
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
 
-    ChatTTLSection(chatItemTTL, setChatItemTTL, deletingItems)
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionView {
+      ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
+    }
+    SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+    SectionDividerSpaced()
 
     val conn = contact.activeConn
     if (conn != null) {
       SectionView {
         InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
-        SectionDividerSpaced()
       }
+      SectionDividerSpaced()
     }
 
     if (contact.contactLink != null) {
-      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title)) {
         SimpleXLinkQRCode(contact.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
+      SectionDividerSpaced()
     }
 
     if (contact.ready && contact.active) {
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
-        SectionItemView({
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.network_status),
-            contactNetworkStatus.statusExplanation
-          )
-        }) {
-          NetworkStatusRow(contactNetworkStatus)
+        val chatSubStatus = chatModel.chatSubStatus.value
+        if (chatSubStatus != null) {
+          SectionItemView({
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.network_status),
+              chatSubStatus.statusExplanation
+            )
+          }) {
+            SubStatusRow(chatSubStatus)
+          }
         }
         if (cStats != null) {
           SwitchAddressButton(
@@ -670,7 +675,7 @@ fun ChatInfoLayout(
           }
         }
       }
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
     }
 
     SectionView {
@@ -705,28 +710,43 @@ fun ChatInfoLayout(
 @Composable
 fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
   Column(
-    Modifier.padding(horizontal = 8.dp),
+    Modifier.padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    val displayName = contact.profile.displayName.trim()
+    val badge = cInfo.nameBadge
     val text = buildAnnotatedString {
       if (contact.verified) {
         appendInlineContent(id = "shieldIcon")
       }
-      append(contact.profile.displayName)
-    }
-    val inlineContent: Map<String, InlineTextContent> = mapOf(
-      "shieldIcon" to InlineTextContent(
-        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
-      ) {
-        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      append(displayName)
+      if (badge != null) {
+        append(" ")
+        appendInlineContent(id = "nameBadge")
       }
-    )
+    }
+    val nameFontSize = MaterialTheme.typography.h1.fontSize
+    val uriHandler = LocalUriHandler.current
+    val inlineContent: Map<String, InlineTextContent> = buildMap {
+      put(
+        "shieldIcon",
+        InlineTextContent(
+          Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+        ) {
+          Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+        }
+      )
+      if (badge != null) {
+        put("nameBadge", nameBadgeInline(badge, nameFontSize) { showBadgeInfoAlert(displayName, badge, uriHandler) })
+      }
+    }
     val clipboard = LocalClipboardManager.current
-    val copyNameToClipboard = {
-      clipboard.setText(AnnotatedString(contact.profile.displayName))
+    val copyNameToClipboard = fun (name: String) {
+      clipboard.setText(AnnotatedString(name))
       showToast(generalGetString(MR.strings.copied))
     }
+    val copyDisplayName = { copyNameToClipboard(displayName) }
     Text(
       text,
       inlineContent = inlineContent,
@@ -734,16 +754,67 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       textAlign = TextAlign.Center,
       maxLines = 3,
       overflow = TextOverflow.Ellipsis,
-      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
+      modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
-    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
-      Text(
-        cInfo.fullName, style = MaterialTheme.typography.h2,
-        color = MaterialTheme.colors.onBackground,
-        textAlign = TextAlign.Center,
-        maxLines = 4,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
+    ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    ContactSimplexNameView(contact)
+  }
+}
+
+@Composable
+fun ChatInfoDescription(c: NamedChat, displayName: String, copyNameToClipboard: (String) -> Unit) {
+  val fullName = c.fullName.trim()
+  if (fullName != "" && fullName != displayName && fullName != c.displayName.trim()) {
+    val copyFullName = { copyNameToClipboard(fullName) }
+    Text(
+      fullName, style = MaterialTheme.typography.h2,
+      color = MaterialTheme.colors.onBackground,
+      textAlign = TextAlign.Center,
+      maxLines = 3,
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF).combinedClickable(onClick = copyFullName, onLongClick = copyFullName).onRightClick(copyFullName)
+    )
+  }
+  ProfileDescriptionText(
+    shortDescr = c.shortDescr,
+    description = c.profileDescription,
+    style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
+    modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+  )
+}
+
+@Composable
+fun ProfileDescriptionText(shortDescr: String?, description: String?, style: TextStyle, modifier: Modifier = Modifier) {
+  val short = shortDescr?.trim()?.ifEmpty { null }
+  val descr = description?.trim()?.ifEmpty { null }
+  val uriHandler = LocalUriHandler.current
+  val linkMode = chatModel.simplexLinkMode.value
+  if (descr == null) {
+    if (short != null) {
+      val parsed = parseToMarkdownText(short)
+      MarkdownText(
+        short, parsed?.formattedText, parsed?.markdownBlocks, toggleSecrets = true, style = style, maxLines = 4,
+        overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
+      )
+    }
+  } else {
+    val firstLine = descr.lineSequence().first()
+    val truncated = firstLine.length > 100
+    val multiline = descr.length > firstLine.length
+    if (short == null && !truncated && !multiline) {
+      val parsed = parseToMarkdownText(descr)
+      MarkdownText(
+        descr, parsed?.formattedText, parsed?.markdownBlocks, toggleSecrets = true, style = style, maxLines = 4,
+        overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
+      )
+    } else {
+      val teaser = short ?: (if (truncated) firstLine.take(100).trimEnd() + "…" else "$firstLine…")
+      val readMore = stringResource(MR.strings.whats_new_read_more)
+      val formatted = (parseToMarkdown(teaser) ?: FormattedText.plain(teaser)) +
+          FormattedText(" ") + FormattedText(readMore, Format.Modal(Format.Modal.Description, descr))
+      MarkdownText(
+        "$teaser $readMore", formatted, toggleSecrets = true, style = style, maxLines = 4,
+        overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
       )
     }
   }
@@ -933,7 +1004,7 @@ fun CallButton(
             }
           }
         } }
-        contact.nextSendGrpInv -> { { showCantCallContactSendMessageAlert() } }
+        contact.sendMsgToConnect -> { { showCantCallContactSendMessageAlert() } }
         !contact.active -> { { showCantCallContactDeletedAlert() } }
         !contact.ready -> { { showCantCallContactConnectingAlert() } }
         needToAllowCallsToContact -> { { showNeedToAllowCallsAlert(onConfirm = { allowCallsToContact(chat) }) } }
@@ -1038,7 +1109,7 @@ fun InfoViewActionButton(
 }
 
 @Composable
-private fun NetworkStatusRow(networkStatus: NetworkStatus) {
+fun SubStatusRow(subStatus: SubscriptionStatus) {
   Row(
     Modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1061,25 +1132,24 @@ private fun NetworkStatusRow(networkStatus: NetworkStatus) {
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       Text(
-        networkStatus.statusString,
+        subStatus.statusString,
         color = MaterialTheme.colors.secondary
       )
-      ServerImage(networkStatus)
+      ServerImage(subStatus)
     }
   }
 }
 
 @Composable
-private fun ServerImage(networkStatus: NetworkStatus) {
+private fun ServerImage(subStatus: SubscriptionStatus) {
   Box(Modifier.size(18.dp)) {
-    when (networkStatus) {
-      is NetworkStatus.Connected ->
+    when (subStatus) {
+      is SubscriptionStatus.Active ->
         Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = Color.Green)
-      is NetworkStatus.Disconnected ->
+      is SubscriptionStatus.Pending ->
         Icon(painterResource(MR.images.ic_pending_filled), stringResource(MR.strings.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
-      is NetworkStatus.Error ->
+      is SubscriptionStatus.Removed, SubscriptionStatus.NoSub ->
         Icon(painterResource(MR.images.ic_error_filled), stringResource(MR.strings.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
-      else -> Icon(painterResource(MR.images.ic_circle), stringResource(MR.strings.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -1137,12 +1207,13 @@ fun SynchronizeConnectionButtonForce(syncConnectionForce: () -> Unit) {
 }
 
 @Composable
-fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
+fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit, disabled: Boolean = false) {
   SettingsActionItem(
     if (contactVerified) painterResource(MR.images.ic_verified_user) else painterResource(MR.images.ic_shield),
     stringResource(if (contactVerified) MR.strings.view_security_code else MR.strings.verify_security_code),
     click = onClick,
     iconColor = MaterialTheme.colors.secondary,
+    disabled = disabled,
   )
 }
 
@@ -1270,11 +1341,11 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
   wallpaperFilesToDelete.forEach(::removeWallpaperFile)
 
   if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
-    withChats {
+    withContext(Dispatchers.Main) {
       if (chat.chatInfo is ChatInfo.Direct) {
-        updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
+        chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
       } else if (chat.chatInfo is ChatInfo.Group) {
-        updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+        chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
       }
     }
   }
@@ -1283,8 +1354,8 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
 private fun setContactAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withBGApi {
   val chatRh = chat.remoteHostId
   chatModel.controller.apiSetContactAlias(chatRh, chat.chatInfo.apiId, localAlias)?.let {
-    withChats {
-      updateContact(chatRh, it)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateContact(chatRh, it)
     }
   }
 }
@@ -1334,6 +1405,7 @@ fun queueInfoText(info: Pair<RcvMsgInfo?, ServerQueueInfo>): String {
 }
 
 fun setChatTTLAlert(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatInfo: ChatInfo,
   selectedChatTTL: MutableState<ChatItemTTL?>,
@@ -1353,7 +1425,7 @@ fun setChatTTLAlert(
       } else MR.strings.enable_automatic_deletion_question),
     text = generalGetString(if (newTTLToUse.neverExpires) MR.strings.disable_automatic_deletion_message else MR.strings.change_automatic_chat_deletion_message),
     confirmText = generalGetString(if (newTTLToUse.neverExpires) MR.strings.disable_automatic_deletion else MR.strings.delete_messages),
-    onConfirm = { setChatTTL(rhId, chatInfo, selectedChatTTL, progressIndicator, previousChatTTL) },
+    onConfirm = { setChatTTL(chatsCtx, rhId, chatInfo, selectedChatTTL, progressIndicator, previousChatTTL) },
     onDismiss = { selectedChatTTL.value = previousChatTTL },
     onDismissRequest = { selectedChatTTL.value = previousChatTTL },
     destructive = true,
@@ -1361,6 +1433,7 @@ fun setChatTTLAlert(
 }
 
 private fun setChatTTL(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatInfo: ChatInfo,
   chatTTL: MutableState<ChatItemTTL?>,
@@ -1371,33 +1444,33 @@ private fun setChatTTL(
   withBGApi {
     try {
       chatModel.controller.setChatTTL(rhId, chatInfo.chatType, chatInfo.apiId, chatTTL.value)
-      afterSetChatTTL(rhId, chatInfo, progressIndicator)
+      afterSetChatTTL(chatsCtx, rhId, chatInfo, progressIndicator)
     } catch (e: Exception) {
       chatTTL.value = previousChatTTL
-      afterSetChatTTL(rhId, chatInfo, progressIndicator)
+      afterSetChatTTL(chatsCtx, rhId, chatInfo, progressIndicator)
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_message_deletion), e.stackTraceToString())
     }
   }
 }
 
-private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
+private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
   try {
     val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
-    val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, null, pagination) ?: return
+    val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, scope = null, contentTag = null, pagination) ?: return
     if (chat.chatItems.isEmpty()) {
       // replacing old chat with the same old chat but without items. Less intrusive way of clearing a preview
-      withChats {
-        val oldChat = getChat(chat.id)
+      withContext(Dispatchers.Main) {
+        val oldChat = chatModel.chatsContext.getChat(chat.id)
         if (oldChat != null) {
-          replaceChat(oldChat.remoteHostId, oldChat.id, oldChat.copy(chatItems = emptyList()))
+          chatModel.chatsContext.replaceChat(oldChat.remoteHostId, oldChat.id, oldChat.copy(chatItems = emptyList()))
         }
       }
     }
     if (chat.remoteHostId != chatModel.remoteHostId() || chat.id != chatModel.chatId.value) return
     processLoadedChat(
+      chatsCtx,
       chat,
       navInfo,
-      contentTag = null,
       pagination = pagination,
       openAroundItemId = null
     )
@@ -1428,7 +1501,6 @@ fun PreviewChatInfoLayout() {
       connectionCode = "123",
       developerTools = false,
       connStats = remember { mutableStateOf(null) },
-      contactNetworkStatus = NetworkStatus.Connected(),
       onLocalAliasChanged = {},
       customUserProfile = null,
       openPreferences = {},

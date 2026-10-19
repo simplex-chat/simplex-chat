@@ -24,16 +24,19 @@ import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgeProduct
+import chat.simplex.common.views.badges.BadgePurchaseOutcome
+import chat.simplex.common.views.badges.BadgeStore
+import chat.simplex.common.views.badges.BadgeStoreProductId
+import chat.simplex.common.views.badges.BadgeStoreReceipt
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.map
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -48,6 +51,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onCreate() {
     super.onCreate()
+    AppContextProvider.initialize(this)
     if (ProcessPhoenix.isPhoenixProcess(this)) {
       return
     } else {
@@ -94,7 +98,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
-            withChats {
+            withContext(Dispatchers.Main) {
               kotlin.runCatching {
                 val currentUserId = chatModel.currentUser.value?.userId
                 val chats = ArrayList(chatController.apiGetChats(chatModel.remoteHostId()))
@@ -107,10 +111,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
                     /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
                     if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
                   }
-                  updateChats(chats)
+                  chatModel.chatsContext.updateChats(chats)
                 }
               }.onFailure { Log.e(TAG, it.stackTraceToString()) }
             }
+            BadgeStore.presentUnfinished()
           }
         }
         Lifecycle.Event.ON_RESUME -> {
@@ -342,6 +347,20 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
 
+      override fun androidLoadPlayStoreCountry() = loadPlayStoreCountry()
+
+      override val androidHasPlatformStore: Boolean get() = hasPlatformStore
+
+      override suspend fun androidLoadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> = loadBadgeProducts(oneTimeIds, subscriptionIds)
+
+      override suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(id, invoiceId)
+
+      override suspend fun androidAcknowledgeBadgePurchase(receipt: BadgeStoreReceipt) = acknowledgeBadgePurchase(receipt)
+
+      override suspend fun androidFinishBadgePurchase(receipt: BadgeStoreReceipt) = finishBadgePurchase(receipt)
+
+      override suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = unfinishedBadgePurchases()
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {
@@ -371,6 +390,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
 
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
+
+      override val androidIsPlayStoreBuild: Boolean get() = BuildConfig.PLAY_STORE
     }
   }
 

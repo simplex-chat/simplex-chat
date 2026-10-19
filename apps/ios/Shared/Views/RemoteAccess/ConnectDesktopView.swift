@@ -456,12 +456,12 @@ struct ConnectDesktopView: View {
                 }
             } catch let e {
                 await MainActor.run {
-                    switch e as? ChatResponse {
-                    case .chatCmdError(_, .errorRemoteCtrl(.badInvitation)): alert = .badInvitationError
-                    case .chatCmdError(_, .error(.commandError)): alert = .badInvitationError
-                    case let .chatCmdError(_, .errorRemoteCtrl(.badVersion(v))): alert = .badVersionError(version: v)
-                    case .chatCmdError(_, .errorAgent(.RCP(.version))): alert = .badVersionError(version: nil)
-                    case .chatCmdError(_, .errorAgent(.RCP(.ctrlAuth))): alert = .desktopDisconnectedError
+                    switch e as? ChatError {
+                    case .errorRemoteCtrl(.badInvitation): alert = .badInvitationError
+                    case .error(.commandError): alert = .badInvitationError
+                    case let .errorRemoteCtrl(.badVersion(v)): alert = .badVersionError(version: v)
+                    case .errorAgent(.RCP(.version)): alert = .badVersionError(version: nil)
+                    case .errorAgent(.RCP(.ctrlAuth)): alert = .desktopDisconnectedError
                     default: errorAlert(e)
                     }
                 }
@@ -535,8 +535,7 @@ struct ConnectDesktopView: View {
     }
 
     private func errorAlert(_ error: Error) {
-        let a = getErrorAlert(error, "Error")
-        alert = .error(title: a.title, error: a.message)
+        showErrorAlert(error, NSLocalizedString("Error", comment: ""))
     }
 }
 

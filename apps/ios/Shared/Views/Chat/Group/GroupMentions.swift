@@ -17,6 +17,7 @@ let MAX_VISIBLE_MEMBER_ROWS: CGFloat = 4.8
 struct GroupMentionsView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    var im: ItemsModel
     var groupInfo: GroupInfo
     @Binding var composeState: ComposeState
     @Binding var selectedRange: NSRange
@@ -46,7 +47,7 @@ struct GroupMentionsView: View {
                             LazyVStack(spacing: 0) {
                                 ForEach(Array(filtered.enumerated()), id: \.element.wrapped.groupMemberId) { index, member in
                                     let mentioned = mentionMemberId == member.wrapped.memberId
-                                    let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
+                                    let disabled = composeState.memberMentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
                                     ZStack(alignment: .bottom) {
                                         memberRowView(member.wrapped, mentioned)
                                             .contentShape(Rectangle())
@@ -66,7 +67,7 @@ struct GroupMentionsView: View {
                             }
                         }
                             .frame(maxHeight: MEMBER_ROW_SIZE * min(MAX_VISIBLE_MEMBER_ROWS, CGFloat(filtered.count)))
-                            .background(Color(UIColor.systemBackground))
+                            .background(theme.colors.background)
 
                         if #available(iOS 16.0, *) {
                             scroll.scrollDismissesKeyboard(.never)
@@ -93,23 +94,43 @@ struct GroupMentionsView: View {
             currentMessage = composeState.message
         }
     }
-    
+
+    func contextMemberFilter(_ member: GroupMember) -> Bool {
+        switch im.secondaryIMFilter {
+        case nil:
+            return true
+        case let .groupChatScopeContext(groupScopeInfo):
+            switch (groupScopeInfo) {
+            case let .memberSupport(groupMember_):
+                if let scopeMember = groupMember_ {
+                    return member.memberRole >= .moderator || member.groupMemberId == scopeMember.groupMemberId
+                } else {
+                    return member.memberRole >= .moderator
+                }
+            case .reports:
+                return false
+            }
+        case .msgContentTagContext:
+            return false
+        }
+    }
+
     private func filteredMembers() -> [GMember] {
         let s = mentionName.lowercased()
-        return s.isEmpty
-        ? sortedMembers
-        : sortedMembers.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
+        return sortedMembers.filter {
+            contextMemberFilter($0.wrapped)
+            && (s.isEmpty || $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s))
+        }
     }
 
     private func messageChanged(_ msg: String, _ parsedMsg: [FormattedText], _ range: NSRange) {
-        removeUnusedMentions(parsedMsg)
         if let (ft, r) = selectedMarkdown(parsedMsg, range) {
             switch ft.format {
             case let .mention(name):
                 isVisible = true
                 mentionName = name
                 mentionRange = r
-                mentionMemberId = composeState.mentions[name]?.memberId
+                mentionMemberId = composeState.memberMentions[name] != nil ? composeState.mentions[name]?.memberId : nil
                 if !m.membersLoaded {
                     Task {
                         await m.loadGroupMembers(groupInfo)
@@ -145,15 +166,6 @@ struct GroupMentionsView: View {
             return status != .memLeft && status != .memRemoved && status != .memInvited
         })
         .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
-    }
-
-    private func removeUnusedMentions(_ parsedMsg: [FormattedText]) {
-        let usedMentions: Set<String> = Set(parsedMsg.compactMap { ft in
-            if case let .mention(name) = ft.format { name } else { nil }
-        })
-        if usedMentions.count < composeState.mentions.count  {
-            composeState = composeState.copy(mentions: composeState.mentions.filter({ usedMentions.contains($0.key) }))
-        }
     }
 
     private func getCharacter(_ s: String, _ pos: Int) -> (char: String.SubSequence, range: NSRange)? {
@@ -196,7 +208,9 @@ struct GroupMentionsView: View {
             newName = composeState.mentionMemberName(member.wrapped.memberProfile.displayName)
         }
         mentions[newName] = CIMention(groupMember: member.wrapped)
-        var msgMention = "@" + (newName.contains(" ") ? "'\(newName)'" : newName)
+        var msgMention = newName.contains(" ") || newName.last?.isPunctuation == true
+                        ? "@'\(newName)'"
+                        : "@\(newName)"
         var newPos = r.location + msgMention.count
         let newMsgLength = composeState.message.count + msgMention.count - r.length
         print(newPos)

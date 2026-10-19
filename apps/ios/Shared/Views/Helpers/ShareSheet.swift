@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 func getTopViewController() -> UIViewController? {
     let keyWindowScene = UIApplication.shared.connectedScenes.first { $0.activationState == .foregroundActive } as? UIWindowScene
@@ -53,6 +54,10 @@ func showAlert(
     }
 }
 
+func showAlert(_ a: (title: String, message: String?)) {
+    showAlert(a.title, message: a.message)
+}
+
 func showAlert(
     _ title: String,
     message: String? = nil,
@@ -65,6 +70,394 @@ func showAlert(
     }
 }
 
+func showSheet(
+    _ title: String?,
+    message: String? = nil,
+    actions: () -> [UIAlertAction] = { [okAlertAction] },
+    sourceView: UIView? = nil  // For iPad support
+) {
+    if let topController = getTopViewController() {
+        let sheet = UIAlertController(title: title, message: message, preferredStyle: .actionSheet)
+        for action in actions() { sheet.addAction(action) }
+
+        // Required for iPad: Configure popover presentation
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = sourceView ?? topController.view
+            popover.sourceRect = sourceView?.bounds ?? CGRect(x: topController.view.bounds.midX, y: topController.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
+        topController.present(sheet, animated: true)
+    }
+}
+
+func openExternalLink(_ url: URL) {
+    let s = url.absoluteString
+    if s.starts(with: "https://simplex.chat/contact#") || (s.starts(with: "https://smp") && s.contains(".simplex.im/a#")) {
+        ChatModel.shared.appOpenUrl = url
+    } else {
+        showAlert(
+            title: NSLocalizedString("Open external link?", comment: "alert title"),
+            message: displayedUri(s),
+            buttonTitle: NSLocalizedString("Open", comment: "alert button"),
+            buttonAction: { UIApplication.shared.open(url) },
+            cancelButton: true
+        )
+    }
+}
+
+struct ExternalLink<Label: View>: View {
+    let destination: URL
+    let label: Label
+
+    init(destination: URL, @ViewBuilder label: () -> Label) {
+        self.destination = destination
+        self.label = label()
+    }
+
+    init(_ titleKey: LocalizedStringKey, destination: URL) where Label == Text {
+        self.destination = destination
+        self.label = Text(titleKey)
+    }
+
+    var body: some View {
+        Button { openExternalLink(destination) } label: { label }
+    }
+}
+
 let okAlertAction = UIAlertAction(title: NSLocalizedString("Ok", comment: "alert button"), style: .default)
 
 let cancelAlertAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel)
+
+let alertProfileImageSize: CGFloat = 103
+
+let alertWidth: CGFloat = 270
+
+let alertButtonHeight: CGFloat = 44
+
+class OpenChatAlertViewController: UIViewController {
+    private let profileName: String
+    private let profileFullName: String
+    private let profileImage: UIView
+    private let profileBadge: LocalBadge?
+    private let subtitle: String?
+    private let information: String?
+    private let secondaryInformation: Bool
+    private let cancelTitle: String
+    private let confirmTitle: String?
+    private let secondTitle: String?
+    private let onCancel: () -> Void
+    private let onConfirm: (() -> Void)?
+    private let onSecond: (() -> Void)?
+
+    init(
+        profileName: String,
+        profileFullName: String,
+        profileImage: UIView,
+        profileBadge: LocalBadge? = nil,
+        subtitle: String? = nil,
+        information: String? = nil,
+        secondaryInformation: Bool = false,
+        cancelTitle: String = "Cancel",
+        confirmTitle: String? = "Open",
+        secondTitle: String? = nil,
+        onCancel: @escaping () -> Void = {},
+        onConfirm: (() -> Void)? = nil,
+        onSecond: (() -> Void)? = nil
+    ) {
+        self.profileName = profileName
+        self.profileFullName = profileFullName
+        self.profileImage = profileImage
+        self.profileBadge = profileBadge
+        self.subtitle = subtitle
+        self.information = information
+        self.secondaryInformation = secondaryInformation
+        self.cancelTitle = cancelTitle
+        self.confirmTitle = confirmTitle
+        self.secondTitle = secondTitle
+        self.onCancel = onCancel
+        self.onConfirm = onConfirm
+        self.onSecond = onSecond
+        super.init(nibName: nil, bundle: nil)
+
+        modalPresentationStyle = .overFullScreen
+        modalTransitionStyle = .crossDissolve
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.3)
+
+        // Container view
+        let containerView = UIView()
+        containerView.backgroundColor = .systemBackground
+        containerView.layer.cornerRadius = 12
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(containerView)
+
+        // Profile image sizing
+        profileImage.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            profileImage.widthAnchor.constraint(equalToConstant: alertProfileImageSize),
+            profileImage.heightAnchor.constraint(equalToConstant: alertProfileImageSize)
+        ])
+
+        // Name label
+        let nameLabel = UILabel()
+        nameLabel.font = UIFont.preferredFont(forTextStyle: .headline)
+        nameLabel.textColor = .label
+        nameLabel.numberOfLines = 2
+        nameLabel.textAlignment = .center
+        nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        if let badge = nameBadgeAttachment(profileBadge, font: nameLabel.font) {
+            let s = NSMutableAttributedString(string: profileName)
+            s.append(badge)
+            nameLabel.attributedText = s
+        } else {
+            nameLabel.text = profileName
+        }
+
+        var profileViews = [profileImage, nameLabel]
+
+        // Full name label
+        if !profileFullName.isEmpty && profileFullName != profileName {
+            let fullNameLabel = UILabel()
+            fullNameLabel.text = profileFullName
+            fullNameLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+            fullNameLabel.textColor = .label
+            fullNameLabel.numberOfLines = 2
+            fullNameLabel.textAlignment = .center
+            fullNameLabel.translatesAutoresizingMaskIntoConstraints = false
+            profileViews.append(fullNameLabel)
+        }
+
+        // Subtitle label (e.g. subscriber count)
+        if let subtitle {
+            let subtitleLabel = UILabel()
+            subtitleLabel.text = subtitle
+            subtitleLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+            subtitleLabel.textColor = .secondaryLabel
+            subtitleLabel.numberOfLines = 3
+            subtitleLabel.textAlignment = .center
+            subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+            profileViews.append(subtitleLabel)
+        }
+
+        // Information label (e.g. owner verification)
+        if let information {
+            let infoLabel = UILabel()
+            infoLabel.text = information
+            infoLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+            infoLabel.textColor = secondaryInformation ? .secondaryLabel : .label
+            infoLabel.numberOfLines = 3
+            infoLabel.textAlignment = .center
+            infoLabel.translatesAutoresizingMaskIntoConstraints = false
+            profileViews.append(infoLabel)
+        }
+
+        // Horizontal stack for image + name
+        let stack = UIStackView(arrangedSubviews: profileViews)
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        let topRowContainer = UIView()
+        topRowContainer.translatesAutoresizingMaskIntoConstraints = false
+        topRowContainer.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: topRowContainer.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: topRowContainer.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: topRowContainer.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: topRowContainer.trailingAnchor, constant: -20)
+        ])
+
+        // Buttons
+        let cancelButton = UIButton(type: .system)
+        cancelButton.setTitle(cancelTitle, for: .normal)
+        let bodyDescr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
+        cancelButton.titleLabel?.font = UIFont(descriptor: bodyDescr.withSymbolicTraits(.traitBold) ?? bodyDescr, size: 0)
+        cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
+
+        let buttonStack: UIStackView
+        var buttonDividerConstraints: [NSLayoutConstraint] = []
+
+        if let confirmTitle, let secondTitle {
+            // Three buttons (a sibling action is present) — always vertical
+            let confirmButton = UIButton(type: .system)
+            confirmButton.setTitle(confirmTitle, for: .normal)
+            confirmButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
+            confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
+
+            let secondButton = UIButton(type: .system)
+            secondButton.setTitle(secondTitle, for: .normal)
+            secondButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
+            secondButton.addTarget(self, action: #selector(secondTapped), for: .touchUpInside)
+
+            buttonStack = UIStackView(arrangedSubviews: [confirmButton, secondButton, cancelButton])
+            buttonStack.axis = .vertical
+            buttonStack.distribution = .fillEqually
+            buttonStack.spacing = 0
+            buttonStack.translatesAutoresizingMaskIntoConstraints = false
+            buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: alertButtonHeight * 3).isActive = true
+
+            for button in [secondButton, cancelButton] {
+                let divider = UIView()
+                divider.backgroundColor = UIColor.separator
+                divider.translatesAutoresizingMaskIntoConstraints = false
+                buttonStack.addSubview(divider)
+                buttonDividerConstraints += [
+                    divider.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                    divider.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                    divider.bottomAnchor.constraint(equalTo: button.topAnchor),
+                    divider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+                ]
+            }
+        } else if let confirmTitle {
+            let confirmButton = UIButton(type: .system)
+            confirmButton.setTitle(confirmTitle, for: .normal)
+            confirmButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
+            confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
+
+            let verticalButtons = cancelButton.intrinsicContentSize.width + 20 >= alertWidth / 2 || confirmButton.intrinsicContentSize.width + 20 >= alertWidth / 2
+
+            // Button stack with equal width buttons
+            buttonStack = UIStackView(arrangedSubviews: verticalButtons ? [confirmButton, cancelButton] : [cancelButton, confirmButton])
+            buttonStack.axis = verticalButtons ? .vertical : .horizontal
+            buttonStack.distribution = .fillEqually
+            buttonStack.spacing = 0 // no spacing, use divider instead
+            buttonStack.translatesAutoresizingMaskIntoConstraints = false
+            buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: alertButtonHeight * (verticalButtons ? 2 : 1)).isActive = true
+
+            // Add divider between buttons
+            let buttonDivider = UIView()
+            buttonDivider.backgroundColor = UIColor.separator
+            buttonDivider.translatesAutoresizingMaskIntoConstraints = false
+            buttonStack.addSubview(buttonDivider)
+
+            buttonDividerConstraints = if verticalButtons {
+                [
+                    buttonDivider.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                    buttonDivider.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                    buttonDivider.centerYAnchor.constraint(equalTo: buttonStack.centerYAnchor),
+                    buttonDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+                ]
+            } else {
+                [
+                    buttonDivider.topAnchor.constraint(equalTo: buttonStack.topAnchor),
+                    buttonDivider.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+                    buttonDivider.centerXAnchor.constraint(equalTo: buttonStack.centerXAnchor),
+                    buttonDivider.widthAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+                ]
+            }
+        } else {
+            // Single button
+            buttonStack = UIStackView(arrangedSubviews: [cancelButton])
+            buttonStack.axis = .horizontal
+            buttonStack.distribution = .fillEqually
+            buttonStack.translatesAutoresizingMaskIntoConstraints = false
+            buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: alertButtonHeight).isActive = true
+        }
+
+        // Vertical stack containing hStack and buttonStack
+        let vStack = UIStackView(arrangedSubviews: [topRowContainer, buttonStack])
+        vStack.axis = .vertical
+        vStack.spacing = 16
+        vStack.alignment = .fill // important: buttons stretch full width
+        vStack.translatesAutoresizingMaskIntoConstraints = false
+
+        containerView.addSubview(vStack)
+
+        // Add horizontal divider above buttons
+        let horizontalDivider = UIView()
+        horizontalDivider.backgroundColor = UIColor.separator
+        horizontalDivider.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(horizontalDivider)
+
+        NSLayoutConstraint.activate([
+            // Container view centering and fixed width
+            containerView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            containerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            containerView.widthAnchor.constraint(equalToConstant: alertWidth),
+
+            // Vertical stack padding inside containerView
+            vStack.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
+            vStack.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 0),
+            vStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: 0),
+            vStack.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: 0),
+
+            // Center hStack horizontally inside vStack's padded width
+            stack.centerXAnchor.constraint(equalTo: vStack.centerXAnchor),
+
+            // Horizontal divider above buttons
+            horizontalDivider.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            horizontalDivider.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            horizontalDivider.bottomAnchor.constraint(equalTo: buttonStack.topAnchor),
+            horizontalDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+        ] + buttonDividerConstraints)
+    }
+
+    @objc private func cancelTapped() {
+        dismiss(animated: true) {
+            self.onCancel()
+        }
+    }
+
+    @objc private func confirmTapped() {
+        dismiss(animated: true) {
+            self.onConfirm?()
+        }
+    }
+
+    @objc private func secondTapped() {
+        dismiss(animated: true) {
+            self.onSecond?()
+        }
+    }
+}
+
+
+func showOpenChatAlert<Content: View>(
+    profileName: String,
+    profileFullName: String,
+    profileImage: Content,
+    profileBadge: LocalBadge? = nil,
+    theme: AppTheme,
+    subtitle: String? = nil,
+    information: String? = nil,
+    secondaryInformation: Bool = false,
+    cancelTitle: String = "Cancel",
+    confirmTitle: String? = "Open",
+    secondTitle: String? = nil,
+    onCancel: @escaping () -> Void = {},
+    onConfirm: (() -> Void)? = nil,
+    onSecond: (() -> Void)? = nil
+) {
+    let themedView = profileImage.environmentObject(theme)
+    let hostingController = UIHostingController(rootView: themedView)
+    let hostedView = hostingController.view!
+    hostedView.backgroundColor = .clear
+
+    if let topVC = getTopViewController() {
+        let alertVC = OpenChatAlertViewController(
+            profileName: profileName,
+            profileFullName: profileFullName,
+            profileImage: hostedView,
+            profileBadge: profileBadge,
+            subtitle: subtitle,
+            information: information,
+            secondaryInformation: secondaryInformation,
+            cancelTitle: cancelTitle,
+            confirmTitle: confirmTitle,
+            secondTitle: secondTitle,
+            onCancel: onCancel,
+            onConfirm: onConfirm,
+            onSecond: onSecond
+        )
+        topVC.present(alertVC, animated: true)
+    }
+}

@@ -2,6 +2,9 @@
 "%d new events" = "%d új esemény";
 
 /* notification body */
+"From %d chat(s)" = "%d csevegésből";
+
+/* notification body */
 "From: %@" = "Tőle: %@";
 
 /* notification */
@@ -9,7 +12,4 @@
 
 /* notification */
 "New messages" = "Új üzenetek";
-
-/* notification body */
-"New messages in %d chats" = "Új üzenetek %d csevegésben";
 

@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.charleskorn.kaml.*
 import kotlinx.serialization.encodeToString
 import java.io.*
@@ -14,6 +14,7 @@ import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
+// Spec: spec/services/files.md#dataDir
 expect val dataDir: File
 expect val tmpDir: File
 expect val filesDir: File
@@ -41,7 +42,9 @@ expect fun desktopOpenDir(dir: File)
 
 fun createURIFromPath(absolutePath: String): URI = URI.create(URLEncoder.encode(absolutePath, "UTF-8"))
 
-fun URI.toFile(): File = File(URLDecoder.decode(rawPath, "UTF-8").removePrefix("file:"))
+fun URI.toFile(): File =
+  if (scheme == "file") File(this)
+  else File(URLDecoder.decode(rawPath, "UTF-8").removePrefix("file:"))
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {

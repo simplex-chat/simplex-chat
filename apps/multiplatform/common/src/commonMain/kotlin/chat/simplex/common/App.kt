@@ -34,14 +34,16 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.ModalManager.Companion.fromEndToStartTransition
 import chat.simplex.common.views.helpers.ModalManager.Companion.fromStartToEndTransition
 import chat.simplex.common.views.localauth.VerticalDivider
+import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
+// Spec: spec/client/navigation.md#AppScreen
 @Composable
 fun AppScreen() {
   AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
@@ -78,6 +80,7 @@ fun AppScreen() {
   }
 }
 
+// Spec: spec/client/navigation.md#MainScreen
 @Composable
 fun MainScreen() {
   val chatModel = ChatModel
@@ -139,10 +142,8 @@ fun MainScreen() {
     when {
       onboarding == OnboardingStage.Step1_SimpleXInfo && chatModel.migrationState.value != null -> {
         // In migration process. Nothing should interrupt it, that's why it's the first branch in when()
-        SimpleXInfo(chatModel, onboarding = true)
-        if (appPlatform.isDesktop) {
-          ModalManager.fullscreen.showInView()
-        }
+        if (appPlatform.isDesktop) DesktopOnboarding(onboarding, chatModel)
+        else SimpleXInfo(chatModel, onboarding = true)
       }
       chatModel.dbMigrationInProgress.value -> DefaultProgressView(stringResource(MR.strings.database_migration_in_progress))
       chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
@@ -162,7 +163,6 @@ fun MainScreen() {
               userPickerState.value = AnimatedViewState.VISIBLE
             }
           }
-          SetupClipboardListener()
           if (appPlatform.isAndroid) {
             AndroidWrapInCallLayout {
               AndroidScreen(userPickerState)
@@ -172,36 +172,31 @@ fun MainScreen() {
           }
         }
       }
-      else -> AnimatedContent(targetState = onboarding,
-        transitionSpec = {
-          if (targetState > initialState) {
-            fromEndToStartTransition()
-          } else {
-            fromStartToEndTransition()
-          }.using(SizeTransform(clip = false))
-        }
-      ) { state ->
-        when (state) {
-          OnboardingStage.OnboardingComplete -> { /* handled out of AnimatedContent block */}
-          OnboardingStage.Step1_SimpleXInfo -> {
-            SimpleXInfo(chatModel, onboarding = true)
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
+      else -> {
+        if (appPlatform.isDesktop) {
+          DesktopOnboarding(onboarding, chatModel)
+        } else {
+          AnimatedContent(targetState = onboarding,
+            transitionSpec = {
+              if (targetState > initialState) {
+                fromEndToStartTransition()
+              } else {
+                fromStartToEndTransition()
+              }.using(SizeTransform(clip = false))
+            }
+          ) { state ->
+            when (state) {
+              OnboardingStage.OnboardingComplete -> {}
+              OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+              OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+              OnboardingStage.LinkAMobile -> LinkAMobile()
+              OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+              OnboardingStage.Step3_ChooseServerOperators,
+              OnboardingStage.Step3_CreateSimpleXAddress,
+              OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
+              OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
             }
           }
-          OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
-          OnboardingStage.LinkAMobile -> LinkAMobile()
-          OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-          OnboardingStage.Step3_ChooseServerOperators -> {
-            val modalData = remember { ModalData() }
-            modalData.OnboardingConditionsView()
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
-            }
-          }
-          // Ensure backwards compatibility with old onboarding stage for address creation, otherwise notification setup would be skipped
-          OnboardingStage.Step3_CreateSimpleXAddress -> SetNotificationsMode(chatModel)
-          OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
         }
       }
     }
@@ -212,7 +207,7 @@ fun MainScreen() {
       SwitchingUsersView()
     }
 
-    if (unauthorized.value && !(chatModel.activeCallViewIsVisible.value && chatModel.showCallView.value)) {
+    if (unauthorized.value) {
       LaunchedEffect(Unit) {
         // With these constrains when user presses back button while on ChatList, activity destroys and shows auth request
         // while the screen moves to a launcher. Detect it and prevent showing the auth
@@ -226,7 +221,8 @@ fun MainScreen() {
         SplashView(true)
         ModalManager.fullscreen.showPasscodeInView()
       }
-    } else {
+    }
+    if (!unauthorized.value || chatModel.activeCallViewIsVisible.value) {
       if (chatModel.showCallView.value) {
         if (appPlatform.isAndroid) {
           LaunchedEffect(Unit) {
@@ -240,12 +236,14 @@ fun MainScreen() {
           ActiveCallView()
         }
       }
+    }
+    if (!unauthorized.value) {
       ModalManager.fullscreen.showOneTimePasscodeInView()
       AlertManager.privacySensitive.showInView()
       if (onboarding == OnboardingStage.OnboardingComplete) {
-        LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {
+        LaunchedEffect(chatModel.chatRunning.value, chatModel.currentUser.value, chatModel.appOpenUrl.value) {
           val (rhId, url) = chatModel.appOpenUrl.value ?: (null to null)
-          if (url != null) {
+          if (url != null && chatModel.chatRunning.value == true) {
             chatModel.appOpenUrl.value = null
             connectIfOpenedViaUri(rhId, url, chatModel)
           }
@@ -273,6 +271,27 @@ fun MainScreen() {
   }
 }
 
+@Composable
+private fun DesktopOnboarding(onboarding: OnboardingStage, chatModel: ChatModel) {
+  if (onboarding == OnboardingStage.LinkAMobile) {
+    LinkAMobile()
+    ModalManager.fullscreen.showInView()
+  } else {
+    DesktopOnboardingShell(onboarding) {
+      when (onboarding) {
+        OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+        OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+        OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+        OnboardingStage.Step3_ChooseServerOperators,
+        OnboardingStage.Step3_CreateSimpleXAddress,
+        OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
+        OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
+        else -> {}
+      }
+    }
+  }
+}
+
 val ANDROID_CALL_TOP_PADDING = 40.dp
 
 @Composable
@@ -289,6 +308,7 @@ fun AndroidWrapInCallLayout(content: @Composable () -> Unit) {
   }
 }
 
+// Spec: spec/client/navigation.md#AndroidScreen
 @Composable
 fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   BoxWithConstraints {
@@ -339,7 +359,7 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
       .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
     ) Box2@{
       currentChatId.value?.let {
-        ChatView(currentChatId, contentTag = null, onComposed = onComposed)
+        ChatView(chatsCtx = chatModel.chatsContext, currentChatId, onComposed = onComposed)
       }
     }
   }
@@ -380,7 +400,11 @@ fun CenterPartOfScreen() {
   }
   when (currentChatId.value) {
     null -> {
-      if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
+      if (rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
+        ModalManager.center.showInView()
+      } else if (shouldShowOnboarding()) {
+        ConnectOnboardingView()
+      } else {
         Box(
           Modifier
             .fillMaxSize()
@@ -389,11 +413,12 @@ fun CenterPartOfScreen() {
         ) {
           Text(stringResource(if (chatModel.desktopNoUserNoRemote) MR.strings.no_connected_mobile else MR.strings.no_selected_chat))
         }
-      } else {
-        ModalManager.center.showInView()
       }
     }
-    else -> ChatView(currentChatId, contentTag = null) {}
+    else -> {
+      ChatView(chatsCtx = chatModel.chatsContext, currentChatId) {}
+      ModalManager.center.showInView()
+    }
   }
 }
 
@@ -402,6 +427,7 @@ fun EndPartOfScreen() {
   ModalManager.end.showInView()
 }
 
+// Spec: spec/client/navigation.md#DesktopScreen
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {

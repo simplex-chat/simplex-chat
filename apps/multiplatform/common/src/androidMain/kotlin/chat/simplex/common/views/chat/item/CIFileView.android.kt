@@ -5,7 +5,7 @@ import androidx.compose.runtime.*
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.DefaultDropdownMenu
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import java.net.URI
@@ -46,7 +46,7 @@ actual fun SaveOrOpenFileMenu(
     }
     ItemAction(
       stringResource(MR.strings.save_verb),
-      painterResource(if (encrypted) MR.images.ic_lock_open_right else MR.images.ic_download),
+      painterResource(MR.images.ic_download),
       color = MaterialTheme.colors.primary,
       onClick = {
         saveFile()
