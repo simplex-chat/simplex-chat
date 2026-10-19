@@ -23,7 +23,7 @@ import chat.simplex.common.views.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 import java.net.URI

@@ -32,7 +32,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.delay

@@ -7,7 +7,7 @@ import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
@@ -136,7 +136,12 @@ abstract class NtfManager {
     return if (md != null) {
       var res = ""
       for (ft in md) {
-        res += if (ft.format is Format.Secret) "..." else ft.text
+        res += when (ft.format) {
+          is Format.Secret -> "..."
+          is Format.Markup -> ft.format.token.previewText
+          is Format.Escape -> ""
+          else -> ft.text
+        }
       }
       res
     } else {

@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.charleskorn.kaml.*
 import kotlinx.serialization.encodeToString
 import java.io.*

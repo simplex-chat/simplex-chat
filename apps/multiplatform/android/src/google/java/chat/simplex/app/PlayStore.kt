@@ -5,6 +5,7 @@ import chat.simplex.common.platform.androidAppContext
 import chat.simplex.common.platform.androidPlayStoreCountry
 import chat.simplex.common.platform.mainActivity
 import chat.simplex.common.views.badges.*
+import chat.simplex.common.views.helpers.withLongRunningApi
 import com.android.billingclient.api.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +41,7 @@ fun loadPlayStoreCountry() {
 
 // One long-lived client for badges: ProductDetails obtained from it are passed back to it when the
 // purchase is launched, and the purchase result arrives on its listener rather than as a return value.
-// volatile: the listener is called on the main thread, the purchase runs on a background dispatcher
+// volatile: written by the purchase on a background dispatcher, read by the listener on another thread
 @Volatile private var badgeBillingClient: BillingClient? = null
 @Volatile private var badgeOffers: Map<BadgeStoreProductId, BadgeOffer> = emptyMap()
 @Volatile private var badgePurchase: CompletableDeferred<BadgePurchaseOutcome>? = null
@@ -80,8 +81,7 @@ suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurc
   val activity = mainActivity.get() ?: throw BadgeStoreError.StoreUnavailable
   val client = connectedBadgeBillingClient()
   val offer = badgeOffers[id] ?: throw BadgeStoreError.ProductUnavailable(id.productId)
-  val details = offer.details
-  val productParams = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(details)
+  val productParams = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(offer.details)
   offer.offerToken?.let { productParams.setOfferToken(it) }
   val params = BillingFlowParams.newBuilder()
     .setProductDetailsParamsList(listOf(productParams.build()))
@@ -94,19 +94,42 @@ suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurc
     if (launched.responseCode != BillingClient.BillingResponseCode.OK) {
       throw BadgeStoreError.BillingError(launched.responseCode, launched.debugMessage)
     }
-    val outcome = purchase.await()
-    if (outcome is BadgePurchaseOutcome.Purchased) finishBadgePurchase(client, details, outcome.receipt)
-    return outcome
+    return purchase.await()
   } finally {
     badgePurchase = null
   }
 }
 
+// one-time purchases Play still holds: bought and not consumed, or awaiting a slow payment
+suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> {
+  val client = connectedBadgeBillingClient()
+  val params = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
+  val queried = CompletableDeferred<List<Purchase>>()
+  client.queryPurchasesAsync(params) { result, purchases ->
+    if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+      queried.complete(purchases)
+    } else {
+      queried.completeExceptionally(BadgeStoreError.BillingError(result.responseCode, result.debugMessage))
+    }
+  }
+  return queried.await().mapNotNull(::badgePurchaseOutcome)
+}
+
 private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, purchases ->
-  val pending = badgePurchase ?: return@PurchasesUpdatedListener
+  val pending = badgePurchase
+  if (pending == null) {
+    // settled outside a purchase call, such as a slow payment completing
+    if (result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
+      withLongRunningApi { purchases.mapNotNull(::badgePurchaseOutcome).forEach { BadgeStore.reconcile(it) } }
+    }
+    return@PurchasesUpdatedListener
+  }
   when {
-    result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null ->
-      pending.complete(badgePurchaseOutcome(purchases))
+    result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null -> {
+      val outcomes = purchases.mapNotNull(::badgePurchaseOutcome)
+      pending.complete(outcomes.firstOrNull() ?: BadgePurchaseOutcome.Cancelled)
+      withLongRunningApi { outcomes.drop(1).forEach { BadgeStore.reconcile(it) } }
+    }
     result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED ->
       pending.complete(BadgePurchaseOutcome.Cancelled)
     else ->
@@ -114,17 +137,17 @@ private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, p
   }
 }
 
-private fun badgePurchaseOutcome(purchases: List<Purchase>): BadgePurchaseOutcome {
-  val purchase = purchases.firstOrNull() ?: return BadgePurchaseOutcome.Cancelled
-  if (purchase.purchaseState == Purchase.PurchaseState.PENDING) return BadgePurchaseOutcome.Pending
-  return BadgePurchaseOutcome.Purchased(
+private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = when (purchase.purchaseState) {
+  Purchase.PurchaseState.PENDING -> BadgePurchaseOutcome.Pending(purchase.accountIdentifiers?.obfuscatedAccountId)
+  Purchase.PurchaseState.PURCHASED -> BadgePurchaseOutcome.Purchased(
     BadgeStoreReceipt(
       token = purchase.purchaseToken,
       productId = purchase.products.firstOrNull() ?: "",
-      orderId = purchase.orderId,
-      invoiceId = purchase.accountIdentifiers?.obfuscatedAccountId
+      invoiceId = purchase.accountIdentifiers?.obfuscatedAccountId,
+      acknowledged = purchase.isAcknowledged
     )
   )
+  else -> null
 }
 
 private suspend fun connectedBadgeBillingClient(): BillingClient {
@@ -203,21 +226,34 @@ private fun ProductDetails.badgeOffer(id: BadgeStoreProductId): BadgeOffer? {
   return BadgeOffer(id, product, this, offer.offerToken)
 }
 
-// nothing is delivered in this build, so the purchase is finished right away; once the service issues
-// credentials it must only be finished after the credential is stored. One-time products are consumed
-// so they can be bought again, subscriptions are acknowledged - Play refunds an unacknowledged
-// purchase after 3 days.
-private suspend fun finishBadgePurchase(client: BillingClient, details: ProductDetails, receipt: BadgeStoreReceipt) {
-  val done = CompletableDeferred<BillingResult>()
-  if (details.productType == BillingClient.ProductType.SUBS) {
-    val params = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(receipt.token).build()
-    client.acknowledgePurchase(params) { done.complete(it) }
-  } else {
+// acknowledged without consuming, so Play stops its 3-day refund clock and still lists the purchase until it is finished
+suspend fun acknowledgeBadgePurchase(receipt: BadgeStoreReceipt) {
+  if (!receipt.acknowledged) acknowledge(connectedBadgeBillingClient(), receipt.token)
+}
+
+// consumed if one-time so it can be bought again, else acknowledged, as Play refunds an unacknowledged purchase
+// after 3 days; decided by product id, as after a restart there is no ProductDetails for the purchase
+suspend fun finishBadgePurchase(receipt: BadgeStoreReceipt) {
+  val client = connectedBadgeBillingClient()
+  if (receipt.productId in badgeOneTimeProductIds) {
+    val done = CompletableDeferred<BillingResult>()
     val params = ConsumeParams.newBuilder().setPurchaseToken(receipt.token).build()
     client.consumeAsync(params) { result, _ -> done.complete(result) }
+    checkBillingResult(done.await())
+  } else {
+    acknowledge(client, receipt.token)
   }
-  val result = done.await()
+}
+
+private suspend fun acknowledge(client: BillingClient, token: String) {
+  val done = CompletableDeferred<BillingResult>()
+  val params = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(token).build()
+  client.acknowledgePurchase(params) { done.complete(it) }
+  checkBillingResult(done.await())
+}
+
+private fun checkBillingResult(result: BillingResult) {
   if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-    Log.e(TAG, "finishBadgePurchase: ${result.responseCode} ${result.debugMessage}")
+    throw BadgeStoreError.BillingError(result.responseCode, result.debugMessage)
   }
 }
