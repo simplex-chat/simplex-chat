@@ -273,9 +273,11 @@ export class ChatApi {
     }
     return new Promise((resolve, reject) => {
       let done = false
+      let timer: NodeJS.Timeout | undefined = undefined
       const cleanup = () => {
         done = true
-        this.off(event, subscriber)    
+        clearTimeout(timer)
+        this.off(event, subscriber)
       }
       const subscriber: EventSubscriberFunc<K> = async (evt: ChatEvent & {type: K}) => {
         if (done) return
@@ -288,7 +290,7 @@ export class ChatApi {
       }
       this.on(event, subscriber)
       if (timeout > 0) {
-        setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)        
+        timer = setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)
       }
     })
   }
