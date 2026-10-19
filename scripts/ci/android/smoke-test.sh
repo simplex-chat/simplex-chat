@@ -42,9 +42,37 @@ adb logcat -v threadtime > "$UI_OUT/app.log" 2>&1 &
 logcat_pid=$!
 trap finish EXIT
 
+# On a first start the chat list can show for a moment before onboarding, long enough to open its What's new sheet over
+# the first screen (seen with the released APK in run 39237969497); it is noted and closed.
+first_screen() {
+  local deadline=$((SECONDS + 180))
+  until "$ui" find "Get started" > /dev/null 2>&1; do
+    if "$ui" find "Read more" > /dev/null 2>&1; then
+      echo "NOTE: the What's new sheet covers the first onboarding screen"
+      "$ui" shot whats-new-over-onboarding
+      "$ui" click-text OK
+    fi
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+# Android asks about instant notifications after Your network: the app's alert, then the system's battery dialog.
+allow_notifications() {
+  local deadline=$((SECONDS + 60))
+  until "$ui" find "Accept" > /dev/null 2>&1; do
+    if "$ui" find "Allow" > /dev/null 2>&1; then
+      "$ui" shot notifications-alert
+      "$ui" click-text "Allow"
+    fi
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
 started=$SECONDS
 "$ui" launch
-"$ui" wait "Get started" 180
+first_screen
 echo "first screen after $((SECONDS - started)) s"
 "$ui" shot first-screen
 adb shell pidof "$package"
@@ -64,7 +92,7 @@ fi
 "$ui" shot your-network
 "$ui" click-text "Continue"
 
-"$ui" wait "Accept" 30
+allow_notifications
 "$ui" shot network-commitments
 "$ui" click-text "Accept"
 
