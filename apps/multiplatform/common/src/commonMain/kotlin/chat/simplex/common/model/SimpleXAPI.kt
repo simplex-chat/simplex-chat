@@ -2185,8 +2185,8 @@ object ChatController {
     return r.result is CR.CmdOk
   }
 
-  suspend fun apiSendCallExtraInfo(rh: Long?, contact: Contact, rtcIceCandidates: String): Boolean {
-    val extraInfo = WebRTCExtraInfo(rtcIceCandidates)
+  suspend fun apiSendCallExtraInfo(rh: Long?, contact: Contact, rtcSession: String?, rtcIceCandidates: String): Boolean {
+    val extraInfo = WebRTCExtraInfo(rtcSession, rtcIceCandidates)
     val r = sendCmd(rh, CC.ApiSendCallExtraInfo(contact, extraInfo))
     return r.result is CR.CmdOk
   }
@@ -3442,7 +3442,7 @@ object ChatController {
       }
       is CR.CallExtraInfo -> {
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates))
+          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates, session = r.extraInfo.rtcSession))
         }
       }
       is CR.CallEnded -> {
@@ -8145,7 +8145,7 @@ sealed class StoreError {
       is UserChatRelayNotFound -> "userChatRelayNotFound $chatRelayId"
       is GroupRelayNotFound -> "groupRelayNotFound $groupRelayId"
       is GroupRelayNotFoundByMemberId -> "groupRelayNotFoundByMemberId $groupMemberId"
-      is DuplicateGroupMessage -> "duplicateGroupMessage $groupId $sharedMsgId $authorGroupMemberId $authorGroupMemberId"
+      is DuplicateGroupMessage -> "duplicateGroupMessage $groupId $sharedMsgId $authorGroupMemberId $forwardedByGroupMemberId"
       is RemoteHostNotFound -> "remoteHostNotFound $remoteHostId"
       is RemoteHostUnknown -> "remoteHostUnknown"
       is RemoteHostDuplicateCA -> "remoteHostDuplicateCA"
