@@ -7,7 +7,7 @@ When the core reports an update of a chat item (`ChatItemUpdated`, file status e
 - Kotlin `ChatModel.upsertChatItem`: `addToChatItems(cItem)`, `itemAdded = true`; `chatItemUpdateNotify` then shows a notification (`ntfManager.notifyMessageReceived`), subject to `allowedToShowNotification()` or the chat not being open.
 - iOS `ChatModel.upsertChatItem` / `_upsertChatItem`: inserts the item at the bottom, and for the open chat also replaces the chat preview with it; `chatItemSimpleUpdate` then adds a notification.
 
-So an update of an old message, for example an edit, a moderation, a file status change, or the "file was sent before you connected to the sender" marker from #7638, makes that old message appear at the bottom of the open chat (until it is reopened), become the chat preview on iOS, and show a notification with its old text.
+So an update of an old message, for example an edit, a moderation, a file status change, or the "file was sent before you connected to the sender" marker from #7638, makes that old message appear at the bottom of the open chat (until it is reopened), become the chat preview on iOS, and show a notification with its text.
 
 ## Why the item is added at all
 
@@ -15,7 +15,7 @@ So an update of an old message, for example an edit, a moderation, a file status
 
 ## Change
 
-Chat item IDs only grow, so an item created by an update is newer than every other item in the chat, and an update of an earlier message is not. `upsertChatItem` on both platforms adds an item that is not loaded only if its ID is greater than both the chat preview's item ID and every loaded item's ID; otherwise the update is not applied to the loaded items, and the item is shown with its current state when that part of the chat is loaded. On iOS the open chat's preview is replaced by an item that is not loaded only if it is newer than the preview.
+Chat item IDs only grow, so an item created by an update is newer than every other item in the chat, and an update of an earlier message is not. `upsertChatItem` on both platforms adds an item that is not loaded only if its ID is greater than both the chat preview's item ID and every loaded item's ID; otherwise the update is not applied to the loaded items, and the item is shown with its current state when that part of the chat is loaded. On iOS the open chat's preview is replaced by an item that is not loaded only by the same rule: its ID must be greater than the preview's and every loaded item's (the preview of a chat whose last item was deleted is a placeholder with ID -1).
 
 `addChatItem` (new items) is unchanged: on iOS it calls `_upsertChatItem` with `add: true`.
 

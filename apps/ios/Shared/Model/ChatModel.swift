@@ -779,7 +779,7 @@ final class ChatModel: ObservableObject {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
                     lastItemId = pItem.id
-                    if pItem.id == cItem.id || (chatId == cInfo.id && cItem.id > pItem.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                    if pItem.id == cItem.id || (chatId == cInfo.id && cItem.id > max(pItem.id, im.reversedChatItems.lazy.map(\.id).max() ?? 0)) {
                         chat.chatItems = [cItem]
                     }
                 } else {
