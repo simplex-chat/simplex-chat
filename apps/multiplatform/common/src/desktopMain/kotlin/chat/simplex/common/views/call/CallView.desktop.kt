@@ -8,6 +8,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
@@ -205,21 +206,20 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
     }
   }
   LaunchedEffect(Unit) {
-    snapshotFlow { callCommand.firstOrNull() }
-      .distinctUntilChanged()
-      .filterNotNull()
-      .collect {
-        while (connections.isEmpty()) {
-          delay(100)
-        }
-        while (callCommand.isNotEmpty()) {
-          val cmd = callCommand.removeFirstOrNull()
-          Log.d(TAG, "WebRTCController LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
-          if (cmd != null) {
-            processCommand(cmd)
-          }
+    while (isActive) {
+      // waiting for the first command would miss a command equal to the previous one
+      snapshotFlow { callCommand.isNotEmpty() }.first { it }
+      while (connections.isEmpty()) {
+        delay(100)
+      }
+      while (callCommand.isNotEmpty()) {
+        val cmd = callCommand.removeFirstOrNull()
+        Log.d(TAG, "WebRTCController LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
+        if (cmd != null) {
+          processCommand(cmd)
         }
       }
+    }
   }
 }
 

@@ -52,8 +52,7 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.io.Closeable
@@ -716,18 +715,17 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
   val wv = webView.value
   if (wv != null) {
     LaunchedEffect(Unit) {
-      snapshotFlow { callCommand.firstOrNull() }
-        .distinctUntilChanged()
-        .filterNotNull()
-        .collect {
-          while (callCommand.isNotEmpty()) {
-            val cmd = callCommand.removeFirstOrNull()
-            Log.d(TAG, "WebRTCView LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
-            if (cmd != null) {
-              processCommand(wv, cmd)
-            }
+      while (isActive) {
+        // waiting for the first command would miss a command equal to the previous one
+        snapshotFlow { callCommand.isNotEmpty() }.first { it }
+        while (callCommand.isNotEmpty()) {
+          val cmd = callCommand.removeFirstOrNull()
+          Log.d(TAG, "WebRTCView LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
+          if (cmd != null) {
+            processCommand(wv, cmd)
           }
         }
+      }
     }
   }
   val assetLoader = WebViewAssetLoader.Builder()
