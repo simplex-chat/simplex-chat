@@ -11,7 +11,7 @@ Two concurrent calls can:
 - lose a row: both read the same list and the second write replaces the first;
 - keep the list above the cap.
 
-On Android the crash shows "View crashed"; on both platforms the command's result or the received event is dropped.
+When it happens in `sendCmd`, the exception is not caught there: on Android it shows "View crashed", and the command is not sent (when logging the command) or its result is lost (when logging the response). On the receiver and migration paths it is caught and logged, and the received event is dropped.
 
 ## Fix
 
