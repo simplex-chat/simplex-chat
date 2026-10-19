@@ -39,8 +39,8 @@ private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
 
 private func continuesSenderRun(_ merged: MergedItem) -> Bool {
     let item = merged.newest().item
-    if case .groupRcv = item.chatDir {
-        return !shouldShowAvatar(item, merged.oldest().nextItem)
+    if case .groupRcv = item.chatDir, let older = merged.oldest().nextItem {
+        return !shouldShowAvatar(item, older) && item.meta.showGroupAsSender == older.meta.showGroupAsSender
     }
     return false
 }

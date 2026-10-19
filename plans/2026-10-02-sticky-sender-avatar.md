@@ -45,6 +45,7 @@ Rejected:
 - Android/desktop: no pinning while selecting messages. The avatar stays in the run's first row as on master, there is no stand-in, and pinning resumes when selection ends.
 - iOS: in selection mode the pinned avatar is always shifted by the selection checkbox, so in a run whose first message can't be deleted it is offset horizontally from that row's own avatar. Tapping it doesn't open member info; the tap goes to the message under it.
 - iOS: no pinned avatar in a pending member's "Chat with admins", where a title bar is drawn over the top of the list.
+- iOS: pinning stops where the "show group as sender" flag changes within a sender's run (e.g. the local welcome message of a group joined by link, shown with the group's image, followed by the link host's own messages), so the pinned avatar never switches between the group image and a member photo.
 - iOS: SwiftUI may draw the overlay a frame after UIKit moves the cells, so the avatar can trail by one frame of scroll when it pins, unpins or is pushed up. When the avatar is pushed out at the bar, it disappears with up to 4pt still showing (the next sender takes the pin when their row crosses the pin line), and the row's own avatar can reappear blurred under the translucent bar once the next sender's messages reach it.
 
 ## Testing
