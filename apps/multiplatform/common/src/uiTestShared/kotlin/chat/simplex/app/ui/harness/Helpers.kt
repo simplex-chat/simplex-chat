@@ -68,6 +68,7 @@ fun UiScope.openContextMenu(key: UiKey) {
 
 fun UiScope.joinGroupFromList(app: App, host: CliPeer, group: String) {
   app.chatList.open(group)
+  poll(what = "the `Join group?` alert with `Join`") { seesText("Join group?") && "Join" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared)) }
   click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
   host.eventually("#$group: ${chatModel.currentUser.value!!.displayName} joined the group", CONNECT_TIMEOUT_MS)
   poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "membership of #$group to be connected") {

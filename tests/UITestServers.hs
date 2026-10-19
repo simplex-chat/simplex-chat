@@ -3,11 +3,12 @@
 
 module Main (main) where
 
-import ChatClient (persistentServerStoreCfg, smpServerCfg, testServerKeyHash)
+import ChatClient (persistentServerStoreCfg, smpServerCfg, testServerKeyHash, xftpServerConfig, xftpServerFiles)
 import ChatTests.DBUtils
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..))
 import System.Directory (createDirectoryIfMissing)
@@ -40,7 +41,17 @@ main = do
     if ok
       then "ready smp1 smp://" <> testServerKeyHash <> "@localhost:" <> show (base + 1)
       else "error smp1 did not start"
+  let xps = ps {tmpPath = dir <> "/xftp1"}
+  createDirectoryIfMissing True (xftpServerFiles xps)
+  xftpStarted <- newEmptyTMVarIO
+  xftpServer <- async $ runXFTPServerBlocking xftpStarted (xftpServerConfig xps)
+  xftpOk <- atomically $ takeTMVar xftpStarted
+  putStrLn $
+    if xftpOk
+      then "ready xftp1 xftp://" <> testServerKeyHash <> "@localhost:" <> show (base + 2)
+      else "error xftp1 did not start"
   waitForEOF
+  cancel xftpServer
   cancel server
   where
     waitForEOF = hIsEOF stdin >>= \eof -> if eof then pure () else getLine >> waitForEOF

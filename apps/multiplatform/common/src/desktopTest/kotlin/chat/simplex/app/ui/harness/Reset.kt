@@ -39,6 +39,19 @@ object PrefStores {
     CommonPrefs.reload()
   }
 
+  fun reloadFromDisk() {
+    loadProps(settingsProps, settingsFile)
+    loadProps(themesProps, themesFile)
+    CommonPrefs.reload()
+  }
+
+  private fun loadProps(live: Properties, file: File) {
+    synchronized(live) {
+      live.clear()
+      if (file.exists()) file.reader().use { live.load(it) }
+    }
+  }
+
   private fun restoreProps(live: Properties, captured: Properties, file: File) {
     synchronized(live) {
       live.clear()

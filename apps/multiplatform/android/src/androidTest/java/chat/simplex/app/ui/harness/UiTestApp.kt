@@ -49,7 +49,7 @@ object UiTestApp {
     ModelSnapshot.capture()
   }
 
-  fun drain() {
+  fun drain(): List<String> {
     val deadline = System.currentTimeMillis() + DRAIN_MS
     while (chat.simplex.common.ui.UiIdle.inFlight().isNotEmpty() && System.currentTimeMillis() < deadline) Thread.sleep(20)
     val stuck = chat.simplex.common.ui.UiIdle.inFlight()
@@ -57,6 +57,7 @@ object UiTestApp {
       android.util.Log.w("UITEST", "drain gave up after ${DRAIN_MS / 1000} s; abandoned: ${stuck.joinToString { it.what }}")
       chat.simplex.common.ui.UiIdle.abandon(stuck)
     }
+    return stuck.map { it.what }
   }
 
   fun onMain(action: () -> Unit) = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync(action)
@@ -74,6 +75,11 @@ object UiTestApp {
     Timing.phase("reset.stop running=${chatModel.chatRunning.value}") { stopCore() }
     Timing.phase("reset.delete") { deleteChatDatabaseFilesAndState() }
     Timing.phase("reset.prefs") { PrefStores.restore() }
+    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("cmd statusbar collapse").close()
+    if (chat.simplex.app.SimplexService.isServiceStarted) Timing.phase("reset.ntfs") {
+      onMain { chat.simplex.common.views.usersettings.changeNotificationsMode(chat.simplex.common.model.NotificationsMode.OFF, chatModel) }
+      waitUntil(10_000, "the notification service to stop") { !chat.simplex.app.SimplexService.isServiceStarted }
+    }
     Timing.phase("reset.ui") { CommonUiState.clear(::onMain) }
     if (user != null) TestPrefs.preset()
     DbTemplate.install()

@@ -3,7 +3,6 @@ package chat.simplex.app.ui.main
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
-import chat.simplex.app.ui.harness.closeInfoToChatList
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.connectIncognito
 import chat.simplex.app.ui.harness.createAddress
@@ -11,14 +10,12 @@ import chat.simplex.app.ui.harness.hostGroup
 import chat.simplex.app.ui.harness.joinGroupFromList
 import chat.simplex.app.ui.harness.switchAwayFromChat
 import chat.simplex.common.model.ChatInfo
-import chat.simplex.common.model.MsgContent
 import chat.simplex.common.model.MsgFilter
 import chat.simplex.common.model.getTimestampText
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.newchat.planAndConnect
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertFalse
 import org.junit.Test
 
 private const val PNG_1PX = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
@@ -36,8 +33,9 @@ class ChatListRowsTest : UiTest() {
     alice.chatList.open("bob").send("my reply")
     bob.eventuallyMessage("alice> my reply")
     backToChatList()
-    poll(what = "alice's own reply on the row") {
-      alice.chatList.rowTexts("bob").let { "my reply" in it && "second message" !in it }
+    poll(what = "alice's own reply and its time on the row") {
+      val reply = alice.chatList.chat("bob").chatItems.lastOrNull()?.takeIf { it.content.text == "my reply" }
+      reply != null && alice.chatList.rowTexts("bob").let { "my reply" in it && "second message" !in it && getTimestampText(reply.meta.itemTs) in it }
     }
   }
 
@@ -61,8 +59,12 @@ class ChatListRowsTest : UiTest() {
     val id = bob.contactId("alice")
     bob sends """/_send @$id json [{"msgContent":{"type":"link","text":"https://simplex.chat","preview":{"uri":"https://simplex.chat","title":"SimpleX Chat","description":"Private messenger","image":"$PNG_1PX"}}}]"""
     bob.eventuallyMessage("@alice https://simplex.chat")
-    poll(what = "the link text and the link image on the row") {
-      "https://simplex.chat" in alice.chatList.rowTexts("bob") && alice.chatList.chat("bob").chatItems.lastOrNull()?.content?.msgContent is MsgContent.MCLink
+    poll(what = "the link text on the row and no `Open web link?` alert") {
+      "https://simplex.chat" in alice.chatList.rowTexts("bob") && !seesText("Open web link?")
+    }
+    click(Ui.ChatList.Row(alice.chatList.chatId("bob")).part("link"))
+    poll(what = "the `Open web link?` alert from the link thumbnail") {
+      seesText("Open web link?") && "Open" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     }
   }
 
@@ -104,21 +106,7 @@ class ChatListRowsTest : UiTest() {
     poll(what = "bob's message with the `bob: ` prefix") { "bob: hello all" in alice.chatList.rowTexts("team") }
   }
 
-  @Test fun unreadCounterGrayWhenMuted() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    alice.chatList.rowMenu("bob", "ntfs.None")
-    poll(what = "bob muted") { alice.chatList.chat("bob").chatInfo.chatSettings?.enableNtfs == MsgFilter.None }
-    bob sends "@alice one"
-    poll(what = "unread badge 1") { "1" in alice.chatList.rowTexts("bob") }
-    bob sends "@alice two"
-    poll(what = "unread badge 2 in place of the mute icon") {
-      "2" in alice.chatList.rowTexts("bob") && "Notifications" !in alice.chatList.rowDescriptions("bob") &&
-        alice.chatList.chat("bob").chatInfo.chatSettings?.enableNtfs == MsgFilter.None
-    }
-  }
-
-  @Test fun mentionBadgeSingleUnread() = uiTest {
+  @Test fun mentionIconWithMultipleUnread() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     hostGroup(bob, "team", "alice")
@@ -129,15 +117,6 @@ class ChatListRowsTest : UiTest() {
       alice.chatList.chat("team").chatStats.let { it.unreadCount == 1 && it.unreadMentions == 1 } &&
         "Notifications" in alice.chatList.rowDescriptions("team") && "1" !in alice.chatList.rowTexts("team")
     }
-  }
-
-  @Test fun mentionIconWithMultipleUnread() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    hostGroup(bob, "team", "alice")
-    joinGroupFromList(alice, bob, "team")
-    bob sends "#team hello @alice"
-    poll(what = "the round @ badge") { "Notifications" in alice.chatList.rowDescriptions("team") }
     bob sends "#team and one more"
     poll(what = "the @ icon next to the badge 2") {
       alice.chatList.chat("team").chatStats.let { it.unreadCount == 2 && it.unreadMentions == 1 } &&
@@ -148,22 +127,34 @@ class ChatListRowsTest : UiTest() {
   @Test fun mutedIconWhenNoUnread() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
-    alice.chatList.rowMenu("bob", "ntfs.None")
-    poll(what = "the mute icon on the row") { "Notifications" in alice.chatList.rowDescriptions("bob") }
-    bob sends "@alice hi"
-    poll(what = "the unread badge in place of the mute icon") {
+    poll(what = "no mute icon before muting") { "Notifications" !in alice.chatList.rowDescriptions("bob") }
+    alice.chatList.rowMenu("bob", "ntfs.None", "Mute")
+    poll(what = "the mute icon on the row") {
+      "Notifications" in alice.chatList.rowDescriptions("bob") && alice.chatList.chat("bob").chatInfo.chatSettings?.enableNtfs == MsgFilter.None
+    }
+    bob sends "@alice one"
+    poll(what = "the unread badge 1 in place of the mute icon") {
       "1" in alice.chatList.rowTexts("bob") && "Notifications" !in alice.chatList.rowDescriptions("bob")
+    }
+    bob sends "@alice two"
+    poll(what = "the unread badge 2, still without the mute icon") {
+      "2" in alice.chatList.rowTexts("bob") && "Notifications" !in alice.chatList.rowDescriptions("bob")
     }
     alice.chatList.rowMenu("bob", "markRead")
     poll(what = "the mute icon back once read") {
-      "Notifications" in alice.chatList.rowDescriptions("bob") && "1" !in alice.chatList.rowTexts("bob")
+      "Notifications" in alice.chatList.rowDescriptions("bob") && "2" !in alice.chatList.rowTexts("bob")
+    }
+    alice.chatList.rowMenu("bob", "ntfs.All", "Unmute")
+    poll(what = "the mute icon gone after unmuting") {
+      "Notifications" !in alice.chatList.rowDescriptions("bob") && alice.chatList.chat("bob").chatInfo.chatSettings?.enableNtfs == MsgFilter.All
     }
   }
 
   @Test fun favoriteStarWhenNoUnread() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
-    alice.chatList.rowMenu("bob", "favorite")
+    poll(what = "no star before `Favorite`") { "Favorite" !in alice.chatList.rowDescriptions("bob") }
+    alice.chatList.rowMenu("bob", "favorite", "Favorite")
     poll(what = "the star on the row") { "Favorite" in alice.chatList.rowDescriptions("bob") }
     bob sends "@alice hi"
     poll(what = "the unread badge in place of the star") {
@@ -173,35 +164,8 @@ class ChatListRowsTest : UiTest() {
     poll(what = "the star back once read") {
       "Favorite" in alice.chatList.rowDescriptions("bob") && "1" !in alice.chatList.rowTexts("bob")
     }
-  }
-
-  @Test fun incognitoIconOnRow() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connectIncognito(bob)
-    poll(what = "bob connected incognito") {
-      (alice.chatList.chat("bob").chatInfo as? ChatInfo.Direct)?.contact?.contactConnIncognito == true
-    }
-    assertFalse(alice.chatList.chat("Private notes").chatInfo.incognito)
-  }
-
-  @Test fun verifiedIconOnRow() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    alice.chatList.row("bob")
-    assertFalse((alice.chatList.chat("bob").chatInfo as ChatInfo.Direct).contact.verified)
-    alice.chatList.open("bob").contactInfo().markVerified()
-    poll(what = "bob verified in the model") { (alice.chatList.chat("bob").chatInfo as ChatInfo.Direct).contact.verified }
-    closeInfoToChatList()
-  }
-
-  @Test fun timestampShown() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    bob sends "@alice what time is it"
-    poll(what = "the message time on the row") {
-      val item = alice.chatList.chat("bob").chatItems.lastOrNull()?.takeIf { it.content.text == "what time is it" }
-      item != null && getTimestampText(item.meta.itemTs) in alice.chatList.rowTexts("bob")
-    }
+    alice.chatList.rowMenu("bob", "unfavorite", "Unfavorite")
+    poll(what = "the star gone after `Unfavorite`") { "Favorite" !in alice.chatList.rowDescriptions("bob") }
   }
 
   @Test fun previewContactShouldAcceptForAddress() = uiTest {
@@ -217,6 +181,12 @@ class ChatListRowsTest : UiTest() {
     bob.eventually("alice wants to connect to you!", CONNECT_TIMEOUT_MS)
     backToChatList()
     poll(what = "`contact should accept…` on bob's row") { "contact should accept…" in alice.chatList.rowTexts("bob") }
+    bob sends "/ac alice"
+    bob.eventually("alice: accepting contact request, you can send messages to contact")
+    bob.eventually("alice: contact is connected", CONNECT_TIMEOUT_MS)
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "`contact should accept…` gone from bob's row once bob accepts") {
+      (alice.chatList.chat("bob").chatInfo as? ChatInfo.Direct)?.contact?.sndReady == true && "contact should accept…" !in alice.chatList.rowTexts("bob")
+    }
   }
 
   @Test fun previewGroupInvitationJoinAs() = uiTest {

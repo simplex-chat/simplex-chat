@@ -454,7 +454,7 @@ fun ChatItemView(
                     if (cItem.file != null && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded))) {
                       SaveContentItemAction(cItem, saveFileLauncher, showMenu)
                     } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file)) {
-                      ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), onClick = {
+                      ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), uiKey = Ui.Chat.ItemMenu(cItem.id, "download"), onClick = {
                         withBGApi {
                           Log.d(TAG, "ChatItemView downloadFileAction")
                           val user = chatModel.currentUser.value
@@ -929,6 +929,7 @@ fun ModerateItemAction(
   ItemAction(
     stringResource(MR.strings.moderate_verb),
     painterResource(MR.images.ic_flag),
+    uiKey = Ui.Chat.ItemMenu(cItem.id, "moderate"),
     onClick = {
       showMenu.value = false
       moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)

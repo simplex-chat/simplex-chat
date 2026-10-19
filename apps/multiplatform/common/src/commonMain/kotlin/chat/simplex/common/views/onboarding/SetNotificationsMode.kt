@@ -1,5 +1,8 @@
 package chat.simplex.common.views.onboarding
 
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,20 +40,20 @@ fun SetNotificationsMode(currentMode: MutableState<NotificationsMode>, onDone: (
         }
         Spacer(Modifier.weight(1f))
         Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)) {
-          SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc_short), icon = painterResource(MR.images.ic_bolt)) {
+          SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc_short), icon = painterResource(MR.images.ic_bolt), uiKey = Ui.Onboarding.NotificationsModeCard(NotificationsMode.SERVICE.name)) {
             currentMode.value = NotificationsMode.SERVICE
           }
-          SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.onboarding_notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc_short), icon = painterResource(MR.images.ic_timer)) {
+          SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.onboarding_notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc_short), icon = painterResource(MR.images.ic_timer), uiKey = Ui.Onboarding.NotificationsModeCard(NotificationsMode.PERIODIC.name)) {
             currentMode.value = NotificationsMode.PERIODIC
           }
-          SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.onboarding_notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc_short), icon = painterResource(MR.images.ic_bolt_off)) {
+          SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.onboarding_notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc_short), icon = painterResource(MR.images.ic_bolt_off), uiKey = Ui.Onboarding.NotificationsModeCard(NotificationsMode.OFF.name)) {
             currentMode.value = NotificationsMode.OFF
           }
         }
         Spacer(Modifier.weight(1f))
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
-            modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier,
+            modifier = (if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier).ui(Ui.Onboarding.NotificationsOk),
             labelId = MR.strings.ok,
             onboarding = null,
             onclick = onDone
@@ -66,14 +69,15 @@ expect fun SetNotificationsModeAdditions()
 
 @Composable
 fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, description: AnnotatedString, onSelected: (T) -> Unit) {
-  SelectableCard(currentValue, newValue, title, description, icon = null, onSelected)
+  SelectableCard(currentValue, newValue, title, description, icon = null, onSelected = onSelected)
 }
 
 @Composable
-fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, description: AnnotatedString, icon: Painter?, onSelected: (T) -> Unit) {
+fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, description: AnnotatedString, icon: Painter?, uiKey: UiKey? = null, onSelected: (T) -> Unit) {
   val titleColor = if (currentValue.value == newValue) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
   TextButton(
     onClick = { onSelected(newValue) },
+    modifier = Modifier.ui(uiKey),
     border = BorderStroke(1.dp, color = if (currentValue.value == newValue) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),
     shape = RoundedCornerShape(35.dp),
   ) {

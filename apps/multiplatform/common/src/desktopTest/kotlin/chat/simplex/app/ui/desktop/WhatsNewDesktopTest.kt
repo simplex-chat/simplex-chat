@@ -4,9 +4,7 @@ import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.WhatsNewScreen
 import chat.simplex.app.ui.harness.onboarding
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.Ui
-import chat.simplex.common.views.onboarding.OnboardingStage
 import org.junit.Test
 
 class WhatsNewDesktopTest : UiTest() {
@@ -22,14 +20,12 @@ class WhatsNewDesktopTest : UiTest() {
   }
 
   private fun UiScope.finishOnboarding() {
-    poll(what = "Create profile to be enabled") { isEnabled(Ui.Onboarding.CreateProfile) }
+    val o = onboarding()
     click(Ui.Onboarding.CreateProfile)
-    onboarding().useRandomPassphrase()
+    o.useRandomPassphrase()
     click(Ui.Onboarding.Continue)
     click(Ui.Onboarding.Accept)
-    poll(timeoutMs = 30_000, what = "the chat list after onboarding") {
-      appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete && exists(Ui.ChatList.UserPicker)
-    }
+    o.waitForChatList()
   }
 
   private companion object {

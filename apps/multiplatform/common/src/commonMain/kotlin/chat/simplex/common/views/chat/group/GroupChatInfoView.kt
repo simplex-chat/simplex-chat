@@ -769,7 +769,7 @@ fun ModalData.GroupChatInfoLayout(
               MemberListSearchRowView(searchText)
             }
           }
-          SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+          SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING), uiKey = Ui.GroupInfo.Member(groupInfo.membership.groupMemberId)) {
             MemberRow(groupInfo.membership, user = true, isChannel = groupInfo.isChannel)
           }
         }
@@ -1247,7 +1247,8 @@ private fun CreateGroupLinkButton(onClick: () -> Unit) {
     painterResource(MR.images.ic_add_link),
     stringResource(MR.strings.create_group_link),
     onClick,
-    iconColor = MaterialTheme.colors.secondary
+    iconColor = MaterialTheme.colors.secondary,
+    uiKey = Ui.GroupInfo.CreateLink
   )
 }
 

@@ -1,5 +1,7 @@
 package chat.simplex.common.views.usersettings
 
+import chat.simplex.common.ui.ui
+import chat.simplex.common.ui.Ui
 import SectionBottomSpacer
 import SectionItemViewSpaceBetween
 import SectionItemViewWithoutMinPadding
@@ -70,12 +72,12 @@ private fun HiddenProfileLayout(
     val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || !passwordValid || confirmHidePassword.value == "" || !confirmValid } }
     SectionView(stringResource(MR.strings.hidden_profile_password)) {
       SectionItemViewWithoutMinPadding {
-        PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), isValid = { passwordValid }, showStrength = true, contentType = null)
+        PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), modifier = Modifier.ui(Ui.HideProfile.Password), isValid = { passwordValid }, showStrength = true, contentType = null)
       }
       SectionItemViewWithoutMinPadding {
-        PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword, contentType = null)
+        PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), modifier = Modifier.ui(Ui.HideProfile.Confirm), isValid = { confirmValid }, dependsOn = hidePassword, contentType = null)
       }
-      SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {
+      SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight, uiKey = Ui.HideProfile.Save) {
         Text(generalGetString(MR.strings.save_profile_password), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
     }

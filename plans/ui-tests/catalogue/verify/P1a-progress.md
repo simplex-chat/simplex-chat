@@ -115,3 +115,10 @@ Worktree `~/wt-uitest`, branch `nd/desktop-ui-tests`, based on origin/master eda
 - Rebased on master `000258224` (one `UserPicker.kt` conflict with #7679); desktop 140/141 (ForwardTest flake, plan 15.4.1b), Android 126/127 + 1 skipped.
 - Waydroid tool moved into the repo and made portable (`apps/multiplatform/scripts/waydroid/`, plan 15.4 item 42); the Android runner uses it.
 - Plans, catalogue, review reports and test drafts (`plans/ui-tests/drafts/`, batch 3 unmerged) are in the PR.
+
+## Batch 9 (2026-10-19): test review, guide, stricter harness, new tests
+- Five reviewers graded all 157 tests (`plans/ui-tests/reviews/2026-10-19-test-review-*.md`); the guide `apps/multiplatform/common/src/uiTestShared/README.md` codifies the rules.
+- Harness: crashes, peer error lines and stuck app work fail tests; `@KnownAppIssue`; no input retries (Android types through the input connection); restart re-reads settings; Android stall watcher and resume on any abnormal end (plan 15.4 items 43–53).
+- About 25 tests merged or dropped, the rest strengthened; about 25 new tests: files and images (XFTP now served), received replies, receipts, disappearing messages, mentions, group links, incognito join, moderation, block for all, privacy "show last messages", hidden profiles, Android onboarding.
+- New app findings: 15.5 item 5 (password hint never shown after hiding a profile), item 6 (Android Back on the invite sheet sometimes closes the group chat).
+- Final: desktop 137/138 + 1 known-issue skip; Android 126/131 before the last two fixes (see plan 15.3 RESULTS).

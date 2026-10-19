@@ -59,6 +59,7 @@ fun UiScope.whatsNewFromSettings(app: App): WhatsNewScreen {
 
 fun UiScope.backToChatList() {
   if (appPlatform.isAndroid && chatModel.chatId.value != null) {
+    hideKeyboard()
     escape()
     poll(what = "the chat to close") { chatModel.chatId.value == null }
   }

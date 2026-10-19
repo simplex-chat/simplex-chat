@@ -67,12 +67,19 @@ class ChatListMenusPendingTest : UiTest() {
     hostGroup(bob, "team", "alice")
     joinGroupFromList(alice, bob, "team")
     fun team() = (alice.chatList.chat("team").chatInfo as ChatInfo.Group).groupInfo
+    fun muteIcon() = "Notifications" in alice.chatList.rowDescriptions("team")
+    fun mode(expected: MsgFilter): Boolean {
+      val actual = team().chatSettings.enableNtfs
+      check(actual == expected) { "notification mode is $actual, expected $expected" }
+      return true
+    }
+    poll(what = "all notifications and no mute icon on the row") { mode(MsgFilter.All) && !muteIcon() }
     alice.chatList.rowMenu("team", "ntfs.Mentions", "Mute")
-    poll(what = "mentions-only notifications") { team().chatSettings.enableNtfs == MsgFilter.Mentions }
+    poll(what = "mentions-only notifications and the mute icon on the row") { mode(MsgFilter.Mentions) && muteIcon() }
     alice.chatList.rowMenu("team", "ntfs.None", "Mute all")
-    poll(what = "notifications off") { team().chatSettings.enableNtfs == MsgFilter.None }
+    poll(what = "notifications off and the mute icon on the row") { mode(MsgFilter.None) && muteIcon() }
     alice.chatList.rowMenu("team", "ntfs.All", "Unmute")
-    poll(what = "all notifications") { team().chatSettings.enableNtfs == MsgFilter.All }
+    poll(what = "all notifications and the mute icon gone") { mode(MsgFilter.All) && !muteIcon() }
   }
 
   @Test fun notesMenuMarkUnreadAndClear() = uiTest {
@@ -93,16 +100,6 @@ class ChatListMenusPendingTest : UiTest() {
     }
   }
 
-  @Test fun pendingInvitationRowIconAndName() = uiTest {
-    val alice = app("alice")
-    keepOneTimeLink(alice)
-    poll(what = "the pending row with its name, description and icon") {
-      alice.chatList.rowTexts(PENDING).containsAll(listOf(PENDING, "you shared one-time link")) &&
-        "profile image placeholder" in alice.chatList.rowDescriptions(PENDING) &&
-        (alice.chatList.chat(PENDING).chatInfo as ChatInfo.ContactConnection).contactConnection.initiated
-    }
-  }
-
   @Test fun pendingConnectionMenuSetName() = uiTest {
     val alice = app("alice")
     keepOneTimeLink(alice)
@@ -120,7 +117,9 @@ class ChatListMenusPendingTest : UiTest() {
   @Test fun pendingConnectionClickOpensInfo() = uiTest {
     val alice = app("alice")
     keepOneTimeLink(alice)
-    poll(what = "no pending connection info before the click") { !seesText("You invited a contact") }
+    poll(what = "the pending row `invited to connect` / `you shared one-time link` and no pending connection info") {
+      alice.chatList.rowTexts(PENDING).containsAll(listOf(PENDING, "you shared one-time link")) && !seesText("You invited a contact")
+    }
     val id = alice.chatList.chatId(PENDING)
     alice.chatList.open(PENDING)
     poll(what = "`You invited a contact` with the one-time link and the name field") {

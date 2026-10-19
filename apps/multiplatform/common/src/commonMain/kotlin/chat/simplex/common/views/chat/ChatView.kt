@@ -2040,7 +2040,7 @@ fun BoxScope.ChatItemsList(
                 ) {
                   @Composable
                   fun MemberNameAndRole(range: State<IntRange?>) {
-                    Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(Modifier.ui(Ui.Chat.Item(cItem.id).part("member")).padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
                       val member = cItem.chatDir.groupMember
                       val rangeValue = range.value
                       val (prevMember, memCount) =
@@ -2086,7 +2086,7 @@ fun BoxScope.ChatItemsList(
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
-                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                        Box(Modifier.ui(Ui.Chat.Item(cItem.id).part("avatar")).clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
@@ -3269,7 +3269,7 @@ private fun BoxScope.BottomEndFloatingButton(
       FloatingActionButton(
         onClick = onClick,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
+        modifier = Modifier.ui(Ui.Chat.ScrollToBottom).padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
         backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         if (requestedBottomScroll.value) {
@@ -3287,7 +3287,7 @@ private fun BoxScope.BottomEndFloatingButton(
       FloatingActionButton(
         onClick = onClick,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
+        modifier = Modifier.ui(Ui.Chat.ScrollToBottom).padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
         backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         if (requestedBottomScroll.value) {

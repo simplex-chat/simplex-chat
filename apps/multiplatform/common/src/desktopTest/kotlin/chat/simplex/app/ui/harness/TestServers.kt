@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit
 
 object TestServers {
   private const val SLOTS = 120
-  private const val KEY_HASH = "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI="
 
   private class SlotLock(val index: Int, val channel: FileChannel, val lock: FileLock)
 
@@ -28,7 +27,8 @@ object TestServers {
   private val responses = LinkedBlockingQueue<String>()
   lateinit var smp1: String
     private set
-  val xftp1: String get() = "xftp://$KEY_HASH@localhost:${portBase + 2}"
+  lateinit var xftp1: String
+    private set
 
   fun start() {
     if (proc != null) return
@@ -43,9 +43,14 @@ object TestServers {
         if (line.startsWith("ready ") || line.startsWith("error ")) responses.add(line)
       }
     }, "uitest-servers").apply { isDaemon = true; start() }
-    val r = responses.poll(30, TimeUnit.SECONDS) ?: error("uitest-servers did not start; see $log")
-    check(r.startsWith("ready smp1 ")) { "uitest-servers: $r" }
-    smp1 = r.removePrefix("ready smp1 ")
+    smp1 = ready("smp1", log)
+    xftp1 = ready("xftp1", log)
+  }
+
+  private fun ready(name: String, log: File): String {
+    val r = responses.poll(30, TimeUnit.SECONDS) ?: error("uitest-servers did not start $name; see $log")
+    check(r.startsWith("ready $name ")) { "uitest-servers: $r" }
+    return r.removePrefix("ready $name ")
   }
 
   fun configure() = configureServers(smp1, xftp1)

@@ -83,9 +83,31 @@ step "APKs installed"
 for p in 7777 $((base + 1)) $((base + 2)); do adb -s "$serial" reverse "tcp:$p" "tcp:$p" >/dev/null; done
 prepare_app() {
   adb -s "$serial" shell pm clear "$pkg" >/dev/null
+  adb -s "$serial" shell settings put global heads_up_notifications_enabled 0
   for perm in android.permission.POST_NOTIFICATIONS android.permission.CAMERA android.permission.RECORD_AUDIO; do
     adb -s "$serial" shell pm grant "$pkg" "$perm" 2>/dev/null || true
   done
+}
+# Runs `am instrument` into $1. If its output does not change for UITEST_STALL_S seconds (default 420, longer than the
+# in-process 300 s watchdog), the app process is force-stopped so the pass ends as "Process crashed" and the run resumes:
+# under arm64 translation the native allocator can deadlock (scudo::HybridMutex::lockSlow in several threads), which
+# blocks every thread of the process, the in-process watchdog included (scripts/waydroid/README.md).
+instrument() {
+  file=$1; shift
+  adb -s "$serial" shell am instrument -w -r "$@" "$runner" > "$file" 2>&1 &
+  ipid=$!
+  last=-1; idle=0; stall="${UITEST_STALL_S:-420}"
+  while kill -0 "$ipid" 2>/dev/null; do
+    sleep 15
+    size=$(wc -c < "$file")
+    if [ "$size" = "$last" ]; then idle=$((idle + 15)); else idle=0; last=$size; fi
+    if [ "$idle" -ge "$stall" ]; then
+      step "no instrumentation output for $idle s; force-stopping $pkg (stalled process)"
+      adb -s "$serial" shell am force-stop "$pkg" >/dev/null 2>&1
+      idle=0
+    fi
+  done
+  wait "$ipid"
 }
 # Prints one line per test in an `am instrument -r` output: "<class>#<test> <code>" for finished tests (0 pass, -2 fail, -3/-4 skipped)
 # and "<class>#<test> crashed" for a test that started without finishing.
@@ -108,16 +130,16 @@ while :; do
   skip=$(cut -d' ' -f1 "$out/results.txt" | paste -sd, -)
   set +e
   if [ -n "$skip" ]; then
-    adb -s "$serial" shell am instrument -w -r "$@" -e notClass "$skip" "$runner" > "$out/instrument-$pass.txt" 2>&1
+    instrument "$out/instrument-$pass.txt" "$@" -e notClass "$skip"
   else
-    adb -s "$serial" shell am instrument -w -r "$@" "$runner" > "$out/instrument-$pass.txt" 2>&1
+    instrument "$out/instrument-$pass.txt" "$@"
   fi
   rc=$?
   set -e
   results "$out/instrument-$pass.txt" >> "$out/results.txt"
   adb -s "$serial" pull "$shots" "$out/" >/dev/null 2>&1 || true
   step "instrumentation pass $pass finished (am instrument exit $rc)"
-  tr -d '\r' < "$out/instrument-$pass.txt" | grep -q "shortMsg=Process crashed" || break
+  tr -d '\r' < "$out/instrument-$pass.txt" | grep -q "^INSTRUMENTATION_RESULT: shortMsg=" || break
   [ "$pass" -lt 4 ] || { echo "uitest-android: process crashed in 4 passes, giving up" >&2; gave_up=1; break; }
   pass=$((pass + 1))
   echo "uitest-android: the app process crashed; resuming with the remaining tests (pass $pass)"

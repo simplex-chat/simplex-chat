@@ -12,7 +12,7 @@ import chat.simplex.common.ui.Ui
 import org.junit.Test
 
 class ChatListRequestsCardsTest : UiTest() {
-  @Test fun contactWithRequestOpenToAccept() = uiTest {
+  @Test fun contactWithRequestComposeAccept() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     val address = alice.userPicker().createAddress()
     bob sends "/c $address"; bob expects "connection request sent!"
@@ -23,13 +23,6 @@ class ChatListRequestsCardsTest : UiTest() {
         exists(Ui.Chat.RequestAccept) && "Accept" in textsOf(Ui.Chat.RequestAccept) &&
         !exists(Ui.Chat.Message)
     }
-  }
-
-  @Test fun contactWithRequestComposeAccept() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    val address = alice.userPicker().createAddress()
-    bob sends "/c $address"; bob expects "connection request sent!"
-    alice.chatList.request("bob").open("bob")
     click(Ui.Chat.RequestAccept)
     bob.eventually("alice: contact is connected", CONNECT_TIMEOUT_MS)
     poll(what = "the accept bar replaced by the message field") {

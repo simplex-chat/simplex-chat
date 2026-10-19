@@ -24,7 +24,9 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -320,7 +322,7 @@ fun ChatPreviewView(
         val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
         IconButton(
           { openBrowserAlert(mc.preview.uri, uriHandler) },
-          Modifier.desktopPointerHoverIconHand(),
+          Modifier.desktopPointerHoverIconHand().ui(Ui.ChatList.Row(chat.id, chat.remoteHostId).part("link")),
         ) {
           Image(image, null, Modifier.desktopModifyBlurredState(blurred, noMenu).privacyBlur(fullSize = false, image, blurred, chatViewScrollState.collectAsState()), contentScale = ContentScale.Crop)
         }

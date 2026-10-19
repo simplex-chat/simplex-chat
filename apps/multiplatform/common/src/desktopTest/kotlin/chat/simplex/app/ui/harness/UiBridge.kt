@@ -6,6 +6,7 @@ import java.net.ServerSocket
 
 object UiBridge {
   private val peers = HashMap<String, CliPeer>()
+  private val peerDirs = HashMap<String, File>()
   private val sleepWaiter = Waiter { timeoutMs, what, cond ->
     val deadline = System.currentTimeMillis() + timeoutMs
     while (!cond()) {
@@ -35,6 +36,7 @@ object UiBridge {
           }
           Peers.stopAll()
           peers.clear()
+          peerDirs.clear()
         }
       }
     }
@@ -47,14 +49,19 @@ object UiBridge {
       "start" -> {
         val name = parts[1]
         val f = parts.getOrElse(2) { "" }.split(",").toSet()
-        val peer = CliPeer(name, File(dir, "${System.nanoTime()}-$name"), TestServers.smp1, PeerFlags("reactions" in f, "markRead" in f, "fullLinks" in f), sleepWaiter)
+        val peer = CliPeer(name, peerDirs.getOrPut(name) { File(dir, "${System.nanoTime()}-$name") }, TestServers.smp1, PeerFlags("reactions" in f, "markRead" in f, "fullLinks" in f), sleepWaiter)
         Peers.add(peer); peers[name] = peer
         peer.start(); peer.awaitStart()
         listOf("ok")
       }
       "type" -> { peers.getValue(parts[1]).types(parts.getOrElse(2) { "" }); listOf("ok") }
+      "file" -> {
+        val (fileName, b64) = parts.getOrElse(2) { "" }.split(" ", limit = 2)
+        listOf(peers.getValue(parts[1]).createFile(fileName, String(java.util.Base64.getDecoder().decode(b64), Charsets.UTF_8)))
+      }
       "drain" -> { val ls = peers.getValue(parts[1]).drainLines(); listOf("lines ${ls.size}") + ls }
       "stop" -> { peers.remove(parts[1])?.stop(); listOf("ok") }
+      "forget" -> { peers.remove(parts[1])?.stop(); peerDirs.remove(parts[1]); listOf("ok") }
       else -> listOf("err unknown command ${parts[0]}")
     }
   }

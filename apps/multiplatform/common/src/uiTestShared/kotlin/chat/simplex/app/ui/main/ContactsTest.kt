@@ -5,6 +5,7 @@ import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ContactsTest : UiTest() {
@@ -24,6 +25,8 @@ class ContactsTest : UiTest() {
     alice.chatList.request("bob")
     alice.chatList.rowMenu("bob", "reject")
     alice.chatList.gone("bob")
+    bob sends "/u"
+    bob expects "user profile: bob"
   }
 
   @Test fun deleteContactAndNotify() = uiTest {
@@ -33,23 +36,25 @@ class ContactsTest : UiTest() {
     click(Ui.Info.DeleteContact)
     click(Ui.Alert.Option(Ui.AlertSource.Shared, "deleteContact"))
     click(Ui.Alert.Option(Ui.AlertSource.Shared, "deleteAndNotify"))
-    bob.eventually("alice deleted contact with you")
+    bob.eventually("alice deleted contact with you", CONNECT_TIMEOUT_MS)
     alice.chatList.gone("bob")
   }
 
   @Test fun contactInfoSetLocalAlias() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
+    alice.chatList.row("bob")
+    assertTrue("bob" in alice.chatList.rowTexts("bob"))
     alice.chatList.open("bob").info()
     typeInto(Ui.Info.Alias, "friend")
     poll(what = "the row to read `friend`") { chatModel.chats.value.any { it.chatInfo.chatViewName == "friend" } }
-    poll(what = "the row text `friend`") { "friend" in alice.chatList.rowTexts("friend") }
+    poll(what = "the row text `friend` instead of `bob`") { alice.chatList.rowTexts("friend").let { "friend" in it && "bob" !in it } }
   }
 
   @Test fun editProfileDisplayName() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     alice.profile().rename("alice2")
-    bob.eventually("contact alice changed to alice2")
+    bob.eventually("contact alice changed to alice2", CONNECT_TIMEOUT_MS)
   }
 }

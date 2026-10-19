@@ -1,5 +1,6 @@
 package chat.simplex.app.ui.chat
 
+import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.common.model.CIForwardedFrom
@@ -13,7 +14,7 @@ class ForwardTest : UiTest() {
     connect(bob); connect(cath)
     bob sends "@alice hey"
     alice.chatList.open("bob").forwardTo("hey", "cath")
-    cath.eventuallyMessage("alice> -> forwarded")
+    cath.eventuallyMessage("alice> -> forwarded", CONNECT_TIMEOUT_MS)
     cath expects "      hey"
   }
 

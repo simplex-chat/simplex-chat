@@ -5,11 +5,16 @@ import androidx.compose.ui.test.performTextInput
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.TestServers
 import chat.simplex.app.ui.harness.UiScope
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.goBack
 import chat.simplex.app.ui.harness.onboarding
 import chat.simplex.app.ui.harness.quiesce
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatInfo
+import chat.simplex.common.model.OperatorTag
+import chat.simplex.common.model.ServerOperator
+import chat.simplex.common.platform.chatController
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.UiKey
@@ -19,31 +24,23 @@ import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.migration.MigrationToState
 import chat.simplex.common.views.onboarding.OnboardingSharedState
 import chat.simplex.common.views.onboarding.OnboardingStage
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 class OnboardingTest : UiTest() {
-  @Test fun onboardingWelcomeShowsDesktopActions() = uiTest {
+  @Test fun onboardingWhySimplexIsBuiltOpensHowItWorks() = uiTest {
     app(null)
     poll(what = "the welcome screen") { onboarding().stage == OnboardingStage.Step1_SimpleXInfo && exists(Ui.Onboarding.GetStarted) }
     check(chatModel.currentUser.value == null) { "a user exists on the welcome screen" }
     check("Link a mobile" in textsOf(Ui.Onboarding.LinkAMobile)) { "Link a mobile: ${textsOf(Ui.Onboarding.LinkAMobile)}" }
     check("Create your profile" in textsOf(Ui.Onboarding.GetStarted)) { "Create your profile: ${textsOf(Ui.Onboarding.GetStarted)}" }
     check("Why SimpleX is built." in textsOf(Ui.Onboarding.WhyBuilt)) { "Why SimpleX is built.: ${textsOf(Ui.Onboarding.WhyBuilt)}" }
-  }
-
-  @Test fun onboardingWhySimplexIsBuiltOpensHowItWorks() = uiTest {
-    app(null)
-    waitFor(Ui.Onboarding.WhyBuilt)
     check(!seesText(WHY_BUILT_HEADING)) { "the welcome screen shows the HowItWorks heading" }
     click(Ui.Onboarding.WhyBuilt)
     poll(what = "HowItWorks over the welcome screen") { ModalManager.fullscreen.hasModalsOpen() && seesText(WHY_BUILT_HEADING) }
-  }
-
-  @Test fun onboardingCreateProfileValidName() = uiTest {
-    app(null)
-    onboarding().createProfile("alice")
-    poll(what = "the passphrase step") {
-      onboarding().stage == OnboardingStage.Step2_5_SetupDatabasePassphrase && seesText("Setup database passphrase") && exists(Ui.Onboarding.SetPassphrase)
+    goBack()
+    poll(what = "the welcome screen after Back") {
+      !ModalManager.fullscreen.hasModalsOpen() && !seesText(WHY_BUILT_HEADING) && exists(Ui.Onboarding.WhyBuilt)
     }
   }
 
@@ -95,23 +92,6 @@ class OnboardingTest : UiTest() {
     }
   }
 
-  @Test fun onboardingSetDatabasePassphrase() = uiTest {
-    app(null)
-    onboarding().createProfile("alice")
-    typeSecret(Ui.Onboarding.NewPassphrase, PASSPHRASE)
-    typeSecret(Ui.Onboarding.ConfirmPassphrase, PASSPHRASE)
-    click(Ui.Onboarding.SetPassphrase)
-    poll(what = "the Encrypt database? alert") { seesText("Encrypt database?") && seesText("Database will be encrypted.", substring = true) }
-    check("Encrypt" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))) { "confirm: ${textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))}" }
-    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    poll(timeoutMs = 30_000, what = "Your network and the Database encrypted! alert") {
-      onboarding().stage == OnboardingStage.Step3_ChooseServerOperators && seesText("Database encrypted!")
-    }
-    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    poll(what = "Your network") { !AlertManager.shared.hasAlertsShown() && exists(Ui.Onboarding.Continue) }
-    check(storedSetting("StoreDBPassphrase") == "false") { "StoreDBPassphrase: ${storedSetting("StoreDBPassphrase")}" }
-  }
-
   @Test fun onboardingSetPassphraseMismatchDisablesButton() = uiTest {
     app(null)
     onboarding().createProfile("alice")
@@ -126,31 +106,65 @@ class OnboardingTest : UiTest() {
 
   @Test fun onboardingUseRandomPassphraseAlert() = uiTest {
     app(null)
-    onboarding().createProfile("alice")
+    val o = onboarding()
+    o.createProfile("alice")
     click(Ui.Onboarding.RandomPassphrase)
     poll(what = "the Use random passphrase alert") {
       AlertManager.shared.hasAlertsShown() && seesText("Random passphrase is stored in settings as plaintext.", substring = true)
     }
+    click(Ui.Alert.Dismiss(Ui.AlertSource.Shared))
+    poll(what = "the passphrase step after Cancel") {
+      !AlertManager.shared.hasAlertsShown() && o.stage == OnboardingStage.Step2_5_SetupDatabasePassphrase && exists(Ui.Onboarding.SetPassphrase)
+    }
+    click(Ui.Onboarding.RandomPassphrase)
     check("OK" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))) { "confirm: ${textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))}" }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    poll(timeoutMs = 30_000, what = "Your network") { onboarding().stage == OnboardingStage.Step3_ChooseServerOperators && exists(Ui.Onboarding.Continue) }
-    check(appPrefs.storeDBPassphrase.get() && storedSetting("EncryptedDBPassphrase") != null) { "the random passphrase is not stored in settings" }
+    poll(timeoutMs = 30_000, what = "Your network") { o.stage == OnboardingStage.Step3_ChooseServerOperators && exists(Ui.Onboarding.Continue) }
+    restart()
+    poll(timeoutMs = 30_000, what = "Your network after a restart, with the database open") {
+      chatModel.chatDbStatus.value == DBMigrationResult.OK && o.stage == OnboardingStage.Step3_ChooseServerOperators && exists(Ui.Onboarding.Continue)
+    }
+    check(!seesText("Encrypted database")) { "the passphrase prompt is shown after a restart" }
   }
 
+  @KnownAppIssue("15.5 item 3", "database closed", intermittent = true)
   @Test fun onboardingPassphrasePersistsAcrossRestart() = uiTest {
     app(null)
-    onboarding().createProfile("alice")
+    val o = onboarding()
+    o.createProfile("alice")
+    poll(what = "the passphrase step") {
+      o.stage == OnboardingStage.Step2_5_SetupDatabasePassphrase && seesText("Setup database passphrase") && exists(Ui.Onboarding.SetPassphrase)
+    }
+    check(storedSetting("StoreDBPassphrase") == "true" && storedSetting("EncryptedDBPassphrase") != null) { "no passphrase is stored in settings before encryption" }
     typeSecret(Ui.Onboarding.NewPassphrase, PASSPHRASE)
     typeSecret(Ui.Onboarding.ConfirmPassphrase, PASSPHRASE)
     click(Ui.Onboarding.SetPassphrase)
+    poll(what = "the Encrypt database? alert") { seesText("Encrypt database?") && seesText("Database will be encrypted.", substring = true) }
+    check("Encrypt" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))) { "confirm: ${textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))}" }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    poll(timeoutMs = 30_000, what = "the Database encrypted! alert") { seesText("Database encrypted!") }
+    poll(timeoutMs = 30_000, what = "Your network and the Database encrypted! alert") {
+      o.stage == OnboardingStage.Step3_ChooseServerOperators && seesText("Database encrypted!")
+    }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    check(storedSetting("StoreDBPassphrase") == "false" && storedSetting("EncryptedDBPassphrase") == null) { "a passphrase is stored in settings" }
+    poll(what = "Your network") { !AlertManager.shared.hasAlertsShown() && exists(Ui.Onboarding.Continue) }
+    check(storedSetting("StoreDBPassphrase") == "false" && storedSetting("EncryptedDBPassphrase") == null) {
+      "a passphrase is stored in settings: StoreDBPassphrase=${storedSetting("StoreDBPassphrase")}"
+    }
+    click(Ui.Onboarding.Continue)
+    click(Ui.Onboarding.Accept)
+    o.waitForChatList()
     restart()
     poll(timeoutMs = 30_000, what = "the passphrase prompt") {
       chatModel.chatDbStatus.value is DBMigrationResult.ErrorNotADatabase && seesText("Encrypted database") && seesText("Database passphrase is required to open chat.")
     }
+    typeSecret(Ui.DbError.Passphrase, PASSPHRASE.dropLast(1))
+    click(Ui.DbError.Open)
+    poll(timeoutMs = 30_000, what = "the Wrong passphrase! alert") { seesText("Wrong passphrase!") && chatModel.chatDbStatus.value is DBMigrationResult.ErrorNotADatabase }
+    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+    typeSecret(Ui.DbError.Passphrase, PASSPHRASE.takeLast(1))
+    click(Ui.DbError.Open)
+    onboarding().waitForChatList()
+    check(chatModel.currentUser.value?.displayName == "alice" && storedSetting("EncryptedDBPassphrase") == null) { "after unlock: user ${chatModel.currentUser.value?.displayName}, stored passphrase ${storedSetting("EncryptedDBPassphrase") != null}" }
   }
 
   @Test fun onboardingYourNetworkShowsSetupRouters() = uiTest {
@@ -158,49 +172,38 @@ class OnboardingTest : UiTest() {
     onboarding().toYourNetwork("alice")
     poll(what = "the Your network title and subtitle") { seesText("Your network") && seesText("Network routers cannot know", substring = true) }
     check("Setup routers" in textsOf(Ui.Onboarding.SetupRouters)) { "routers button: ${textsOf(Ui.Onboarding.SetupRouters)}" }
+    check(!exists(Ui.Onboarding.SetupNotifications) && !seesText("Setup notifications")) { "Setup notifications is shown on desktop" }
+    val operators = chatModel.conditions.value.serverOperators
+    check(operators.isNotEmpty()) { "no server operators in a new database" }
+    check(!seesText("Server operators") && operators.none { exists(Ui.Onboarding.Operator(it.operatorId)) }) { "operator cards are shown before Setup routers" }
     onboarding().openOperators()
     poll(what = "Server operators with a card per operator") {
-      seesText("Server operators") && chatModel.conditions.value.serverOperators.all { exists(Ui.Onboarding.Operator(it.operatorId)) }
+      seesText("Server operators") && operators.all { exists(Ui.Onboarding.Operator(it.operatorId)) }
     }
-  }
-
-  @Test fun onboardingContinueGoesToConditions() = uiTest {
-    app(null)
-    onboarding().toYourNetwork("alice")
-    click(Ui.Onboarding.Continue)
-    poll(what = "Network commitments") {
-      onboarding().stage == OnboardingStage.Step4_NetworkCommitments && seesText("Network commitments") && exists(Ui.Onboarding.ConditionsLink) && isEnabled(Ui.Onboarding.Accept)
-    }
-  }
-
-  @Test fun onboardingChooseOperatorsToggle() = uiTest {
-    app(null)
-    val o = onboarding()
-    o.toYourNetwork("alice")
-    o.openOperators()
-    val id = chatModel.conditions.value.serverOperators.first().operatorId
-    val before = id in OnboardingSharedState.selectedOperatorIds
-    click(Ui.Onboarding.Operator(id))
-    poll(what = "operator $id to toggle") { (id in OnboardingSharedState.selectedOperatorIds) == !before }
-    click(Ui.Onboarding.Operator(id))
-    poll(what = "operator $id to toggle back") { (id in OnboardingSharedState.selectedOperatorIds) == before }
   }
 
   @Test fun onboardingChooseOperatorsCannotDeselectAll() = uiTest {
     app(null)
     val o = onboarding()
     o.toYourNetwork("alice")
+    val enabled = coreOperators().filter { it.enabled }
+    check(enabled.size > 1) { "fewer than two operators are enabled in a new database: $enabled" }
+    val simplex = enabled.single { it.operatorTag == OperatorTag.SimpleX }.operatorId
     o.openOperators()
-    val enabled = o.enabledOperatorIds()
-    check(enabled.isNotEmpty()) { "no operator is enabled in a new database" }
-    for (id in enabled) click(Ui.Onboarding.Operator(id))
+    for (op in enabled) click(Ui.Onboarding.Operator(op.operatorId))
     poll(what = "no operator selected and OK disabled") { OnboardingSharedState.selectedOperatorIds.isEmpty() && exists(Ui.Onboarding.OperatorsOk) && !isEnabled(Ui.Onboarding.OperatorsOk) }
     escape()
     settle()
     check(exists(Ui.Onboarding.OperatorsOk) && ModalManager.fullscreen.hasModalsOpen()) { "Server operators closed with no operator selected" }
-    click(Ui.Onboarding.Operator(enabled.first()))
+    click(Ui.Onboarding.Operator(simplex))
     click(Ui.Onboarding.OperatorsOk)
-    poll(what = "Server operators to close") { !exists(Ui.Onboarding.OperatorsOk) && OnboardingSharedState.selectedOperatorIds == setOf(enabled.first()) }
+    poll(what = "Server operators to close") { !exists(Ui.Onboarding.OperatorsOk) && OnboardingSharedState.selectedOperatorIds == setOf(simplex) }
+    click(Ui.Onboarding.Continue)
+    click(Ui.Onboarding.Accept)
+    o.waitForChatList()
+    val after = coreOperators()
+    check(after.filter { it.enabled }.map { it.operatorId } == listOf(simplex)) { "enabled operators in the core: $after" }
+    check(after.single { it.operatorId == simplex }.conditionsAcceptance.conditionsAccepted) { "conditions not accepted for the selected operator: $after" }
   }
 
   @Test fun onboardingHowItHelpsPrivacyInfo() = uiTest {
@@ -217,11 +220,30 @@ class OnboardingTest : UiTest() {
   @Test fun onboardingAcceptConditionsCompletesOnboarding() = uiTest {
     app(null)
     val o = onboarding()
-    o.toConditions("alice")
-    val selected = OnboardingSharedState.selectedOperatorIds
+    o.toYourNetwork("alice")
+    val before = coreOperators()
+    val simplex = before.single { it.operatorTag == OperatorTag.SimpleX }
+    val flux = before.single { it.operatorTag == OperatorTag.Flux }
+    check(simplex.enabled && flux.enabled && !flux.smpRoles.storage && before.none { it.conditionsAcceptance.conditionsAccepted }) { "operators in a new database: $before" }
+    o.openOperators()
+    click(Ui.Onboarding.Operator(simplex.operatorId))
+    poll(what = "only Flux to be selected") { OnboardingSharedState.selectedOperatorIds == setOf(flux.operatorId) }
+    click(Ui.Onboarding.OperatorsOk)
+    poll(what = "Server operators to close") { !exists(Ui.Onboarding.OperatorsOk) }
+    click(Ui.Onboarding.Continue)
+    poll(what = "Network commitments") {
+      o.stage == OnboardingStage.Step4_NetworkCommitments && seesText("Network commitments") && exists(Ui.Onboarding.ConditionsLink)
+    }
     click(Ui.Onboarding.Accept)
     o.waitForChatList()
-    poll(what = "the connect onboarding view and the selected operators enabled") { seesText("Talk to someone") && o.enabledOperatorIds() == selected }
+    poll(what = "the connect onboarding view") { seesText("Talk to someone") }
+    val after = coreOperators()
+    val fluxAfter = after.single { it.operatorId == flux.operatorId }
+    check(after.filter { it.enabled } == listOf(fluxAfter)) { "enabled operators in the core: $after" }
+    check(fluxAfter.conditionsAcceptance.conditionsAccepted && !after.single { it.operatorId == simplex.operatorId }.conditionsAcceptance.conditionsAccepted) {
+      "conditions acceptance in the core: $after"
+    }
+    check(fluxAfter.smpRoles.storage) { "Flux was enabled alone without the SMP storage role: $fluxAfter" }
   }
 
   @Test fun onboardingConditionsLinkOpensConditionsText() = uiTest {
@@ -233,14 +255,6 @@ class OnboardingTest : UiTest() {
     click(Ui.Onboarding.ConditionsAccept)
     o.waitForChatList()
     poll(what = "the connect onboarding view") { seesText("Talk to someone") }
-  }
-
-  @Test fun onboardingNoNotificationsStepOnDesktop() = uiTest {
-    app(null)
-    onboarding().toYourNetwork("alice")
-    waitFor(Ui.Onboarding.SetupRouters)
-    settle()
-    check(!exists(Ui.Onboarding.SetupNotifications) && !seesText("Setup notifications")) { "Setup notifications is shown on desktop" }
   }
 
   @Test fun onboardingThenConnectToCliPeerViaLocalServers() = uiTest {
@@ -256,6 +270,7 @@ class OnboardingTest : UiTest() {
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "contact bob ready in the model") {
       chatModel.chats.value.any { (it.chatInfo as? ChatInfo.Direct)?.contact?.let { c -> c.displayName == "bob" && c.ready } == true }
     }
+    alice.chatList.row("bob")
   }
 
   @Test fun onboardingLinkAMobileShowsQrAndDeviceName() = uiTest {
@@ -291,6 +306,9 @@ class OnboardingTest : UiTest() {
     ui.runOnUiThread { node.performTextInput(text) }
     poll(what = "field ${key.tag} to hold ${before + text.length} characters") { secretLength(key) == before + text.length }
   }
+
+  private fun coreOperators(): List<ServerOperator> =
+    runBlocking { chatController.getServerOperators(null) }?.serverOperators ?: error("getServerOperators failed")
 
   private fun UiScope.secretLength(key: UiKey): Int =
     ui.onNode(matcher(key)).fetchSemanticsNode().config.getOrElseNullable(SemanticsProperties.EditableText) { null }?.length ?: 0

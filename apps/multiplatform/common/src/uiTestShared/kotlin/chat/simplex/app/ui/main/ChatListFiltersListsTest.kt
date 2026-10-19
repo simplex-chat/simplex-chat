@@ -6,10 +6,12 @@ import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.businessChat
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.hostGroup
+import chat.simplex.app.ui.harness.keepOneTimeLink
 import chat.simplex.app.ui.harness.lists
 import chat.simplex.app.ui.harness.ownGroup
 import chat.simplex.app.ui.harness.presetFilter
 import chat.simplex.app.ui.harness.quiesce
+import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.MsgFilter
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
@@ -60,16 +62,29 @@ class ChatListFiltersListsTest : UiTest() {
     alice.chatList.rowMenu("bob", "favorite")
     poll(what = "bob a favorite") { alice.chatList.chat("bob").chatInfo.chatSettings?.favorite == true }
     presetFilter(PresetTagKind.FAVORITES, "Favorites")
-    poll(what = "only bob listed") { alice.chatList.shown("bob") && !alice.chatList.shown("cath") && !alice.chatList.shown("Private notes") }
+    poll(what = "only bob listed with the Favorites chip") {
+      exists(Ui.ChatList.PresetTag(PresetTagKind.FAVORITES.name)) && alice.chatList.shown("bob") && !alice.chatList.shown("cath") && !alice.chatList.shown("Private notes")
+    }
+    alice.chatList.rowMenu("bob", "unfavorite")
+    poll(what = "the Favorites filter cleared with its chip gone and all chats listed") {
+      chatModel.activeChatTagFilter.value == null && !exists(Ui.ChatList.PresetTag(PresetTagKind.FAVORITES.name)) &&
+        exists(Ui.ChatList.PresetTag(PresetTagKind.CONTACTS.name)) &&
+        alice.chatList.shown("bob") && alice.chatList.shown("cath") && alice.chatList.shown("Private notes")
+    }
   }
 
   @Test fun presetFilterContacts() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     hostGroup(bob, "team", "alice")
+    keepOneTimeLink(alice)
+    val pending = Ui.ChatList.Row(chatModel.chats.value.first { it.chatInfo is ChatInfo.ContactConnection }.id)
     alice.chatList.row("bob").row("team").row("Private notes")
+    waitFor(pending)
     presetFilter(PresetTagKind.CONTACTS, "Contacts")
-    poll(what = "only bob listed") { alice.chatList.shown("bob") && !alice.chatList.shown("team") && !alice.chatList.shown("Private notes") }
+    poll(what = "only bob and the pending connection listed") {
+      alice.chatList.shown("bob") && exists(pending) && !alice.chatList.shown("team") && !alice.chatList.shown("Private notes")
+    }
   }
 
   @Test fun presetFilterGroups() = uiTest {
@@ -85,11 +100,15 @@ class ChatListFiltersListsTest : UiTest() {
   }
 
   @Test fun presetFilterBusinesses() = uiTest {
-    val alice = app("alice"); val biz = cli("biz")
+    val alice = app("alice"); val bob = cli("bob"); val biz = cli("biz")
+    connect(bob)
+    hostGroup(bob, "team", "alice")
     businessChat(biz)
-    alice.chatList.row("biz").row("Private notes")
+    alice.chatList.row("bob").row("team").row("biz").row("Private notes")
     presetFilter(PresetTagKind.BUSINESS, "Businesses")
-    poll(what = "only biz listed") { alice.chatList.shown("biz") && !alice.chatList.shown("Private notes") }
+    poll(what = "only biz listed") {
+      alice.chatList.shown("biz") && !alice.chatList.shown("bob") && !alice.chatList.shown("team") && !alice.chatList.shown("Private notes")
+    }
   }
 
   @Test fun presetFilterNotes() = uiTest {
@@ -211,6 +230,7 @@ class ChatListFiltersListsTest : UiTest() {
     poll(what = "the list editor") { editor.shown() }
     editor.typeName("work")
     editor.saveIgnored()
+    check(!seesText("Error creating chat list") && !exists(Ui.Alert.Confirm(Ui.AlertSource.Shared))) { "an error alert after saving a duplicate list name" }
     check(chatModel.userTags.value.map { it.chatTagText } == listOf("work")) { "lists: ${chatModel.userTags.value}" }
     editor.replaceName("work2")
     editor.save()
@@ -309,15 +329,18 @@ class ChatListFiltersListsTest : UiTest() {
   @Test fun deleteListConfirm() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
-    alice.chatList.row("bob")
+    alice.chatList.row("bob").row("Private notes")
     val lists = lists()
     val work = lists.create("work").chatTagId
     lists.assign("bob", "work")
+    lists.filter("work")
+    poll(what = "only bob listed in work") { alice.chatList.shown("bob") && !alice.chatList.shown("Private notes") }
     lists.menu("work", "delete")
     poll(what = "the `Delete list?` alert") { seesText("Delete list?") && seesText("All chats will be removed from the list work, and the list deleted") }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    poll(what = "the work chip gone and bob still listed without a list") {
-      chatModel.userTags.value.none { it.chatTagId == work } && !exists(Ui.ChatList.UserTag(work)) && alice.chatList.shown("bob") && lists.tagsOf("bob").isEmpty()
+    poll(what = "the work chip and its filter gone, bob still listed without a list, and the notes folder back") {
+      chatModel.userTags.value.none { it.chatTagId == work } && lists.activeTagId() == null && !exists(Ui.ChatList.UserTag(work)) &&
+        alice.chatList.shown("bob") && alice.chatList.shown("Private notes") && lists.tagsOf("bob").isEmpty()
     }
   }
 

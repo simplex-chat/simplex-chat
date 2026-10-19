@@ -15,7 +15,9 @@ class GroupsTest : UiTest() {
     val alice = app("alice")
     alice.newChat().createGroup("team")
     val id = alice.chatList.chatId("team")
-    poll(what = "the group chat open with the invite members sheet") { chatModel.chatId.value == id && seesText("Invite members") }
+    poll(what = "the group chat open with the invite members sheet and no contacts to add") {
+      chatModel.chatId.value == id && seesText("Invite members") && seesText("No contacts to add")
+    }
   }
 
   @Test fun groupSend_allMembersReceive() = uiTest {
@@ -39,7 +41,8 @@ class GroupsTest : UiTest() {
     hostGroup(bob, "team", "alice")
     joinGroupFromList(alice, bob, "team")
     alice.chatList.rowMenu("team", "leave")
+    poll(what = "the `Leave group?` alert with `Leave`") { seesText("Leave group?") && "Leave" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared)) }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    bob.eventually("#team: alice left the group (signed)")
+    bob.eventually("#team: alice left the group (signed)", CONNECT_TIMEOUT_MS)
   }
 }

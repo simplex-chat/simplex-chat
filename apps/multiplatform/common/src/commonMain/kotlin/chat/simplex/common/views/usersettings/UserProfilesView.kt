@@ -82,7 +82,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
               SectionItemView({
                 AlertManager.shared.hideAlert()
                 removeUser(m, user, users, true, searchTextOrPassword.value.trim())
-              }) {
+              }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "deleteWithConnections")) {
                 Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
               }
               SectionItemView({
@@ -218,7 +218,7 @@ private fun UserView(
 ) {
   val showMenu = remember { mutableStateOf(false) }
   val user = userInfo.user
-  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }, unreadCount = userInfo.unreadCount) {
+  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }, unreadCount = userInfo.unreadCount, uiKey = Ui.Profiles.User(user.userId)) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -230,7 +230,7 @@ private fun UserView(
         })
       } else {
         if (visibleUsersCount > 1) {
-          ItemAction(stringResource(MR.strings.user_hide), painterResource(MR.images.ic_lock), onClick = {
+          ItemAction(stringResource(MR.strings.user_hide), painterResource(MR.images.ic_lock), uiKey = Ui.Profiles.UserMenu(user.userId, "hide"), onClick = {
             showMenu.value = false
             showHiddenProfile(user)
           })
@@ -247,7 +247,7 @@ private fun UserView(
           })
         }
       }
-      ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, onClick = {
+      ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, uiKey = Ui.Profiles.UserMenu(user.userId, "delete"), onClick = {
         removeUser(user)
         showMenu.value = false
       })

@@ -1,5 +1,6 @@
 package chat.simplex.common.views.helpers
 
+import chat.simplex.common.ui.UiKey
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -34,6 +35,7 @@ fun ModalView(
   onSearchValueChanged: (String) -> Unit = {},
   endButtons: @Composable RowScope.() -> Unit = {},
   appBar: @Composable (BoxScope.() -> Unit)? = null,
+  uiKey: UiKey? = null,
   content: @Composable BoxScope.() -> Unit,
 ) {
   if (showClose && showAppBar) {
@@ -63,7 +65,8 @@ fun ModalView(
               showSearch = showSearch,
               searchAlwaysVisible = searchAlwaysVisible,
               onSearchValueChanged = onSearchValueChanged,
-              buttons = endButtons
+              buttons = endButtons,
+              uiKey = uiKey
             )
           }
         }

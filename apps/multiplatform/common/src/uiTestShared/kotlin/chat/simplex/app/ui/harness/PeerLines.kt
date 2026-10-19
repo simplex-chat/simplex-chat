@@ -8,6 +8,7 @@ data class PeerFlags(val reactions: Boolean = false, val markRead: Boolean = fal
 
 abstract class PeerLines(val name: String, protected val waiter: Waiter) {
   protected val lines = ArrayList<String>()
+  private val skipped = ArrayList<String>()
 
   protected abstract fun fill()
 
@@ -25,26 +26,28 @@ abstract class PeerLines(val name: String, protected val waiter: Waiter) {
     if (got != line) throw AssertionError("$name: expected `$line`, got `$got`; next: ${pending()}")
   }
 
-  infix fun expectsMessage(line: String) {
-    val got = nextLine()
+  infix fun expectsMessage(line: String) = expectsMessage(line, LINE_TIMEOUT_MS)
+
+  fun expectsMessage(line: String, timeoutMs: Long) {
+    val got = nextLine(timeoutMs)
     if (stripTime(got) != line) throw AssertionError("$name: expected message `$line`, got `$got`; next: ${pending()}")
   }
 
   fun eventually(line: String, timeoutMs: Long = LINE_TIMEOUT_MS) {
     await(timeoutMs, "$name: `$line`") { synchronized(lines) { lines.contains(line) } }
-    synchronized(lines) { val i = lines.indexOf(line); repeat(i + 1) { lines.removeAt(0) } }
+    synchronized(lines) { dropThrough(lines.indexOf(line)) }
   }
 
   fun eventuallyMessage(line: String, timeoutMs: Long = LINE_TIMEOUT_MS) {
     await(timeoutMs, "$name: message `$line`") { synchronized(lines) { lines.any { stripTime(it) == line } } }
-    synchronized(lines) { val i = lines.indexOfFirst { stripTime(it) == line }; repeat(i + 1) { lines.removeAt(0) } }
+    synchronized(lines) { dropThrough(lines.indexOfFirst { stripTime(it) == line }) }
   }
 
   fun eventuallyMatching(regex: Regex, timeoutMs: Long = LINE_TIMEOUT_MS): MatchResult {
     await(timeoutMs, "$name: a line matching `$regex`") { synchronized(lines) { lines.any { regex.matches(it) } } }
     return synchronized(lines) {
       val i = lines.indexOfFirst { regex.matches(it) }
-      regex.matchEntire(lines[i])!!.also { repeat(i + 1) { lines.removeAt(0) } }
+      regex.matchEntire(lines[i])!!.also { dropThrough(i) }
     }
   }
 
@@ -72,6 +75,16 @@ abstract class PeerLines(val name: String, protected val waiter: Waiter) {
 
   fun pending(): List<String> = synchronized(lines) { lines.take(10) }
 
+  fun unexpectedErrors(): List<String> {
+    runCatching { fill() }
+    return synchronized(lines) { (skipped + lines).filter { ERROR_LINE.containsMatchIn(it) } }
+  }
+
+  private fun dropThrough(i: Int) {
+    skipped.addAll(lines.subList(0, i))
+    repeat(i + 1) { lines.removeAt(0) }
+  }
+
   protected fun await(timeoutMs: Long, what: String, cond: () -> Boolean) =
     try {
       waiter.waitUntil(timeoutMs, what) { fill(); cond() }
@@ -89,5 +102,6 @@ abstract class PeerLines(val name: String, protected val waiter: Waiter) {
   companion object {
     const val LINE_TIMEOUT_MS = 15_000L
     private val TIME_PREFIX = Regex("^\\d{2}:\\d{2} ")
+    private val ERROR_LINE = Regex("^(\\d{2}:\\d{2} )?(error[ :]|chat error:|chat db error:|exception:|smp server error|agent error)")
   }
 }

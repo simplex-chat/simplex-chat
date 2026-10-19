@@ -16,6 +16,7 @@ import chat.simplex.app.ui.harness.planConfirm
 import chat.simplex.app.ui.harness.presetFilter
 import chat.simplex.app.ui.harness.quiesce
 import chat.simplex.app.ui.harness.searchShowsLink
+import chat.simplex.app.ui.harness.switchAwayFromChat
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.GroupProfile
@@ -29,19 +30,11 @@ import org.junit.Test
 
 class ChatListToolbarSearchTest : UiTest() {
   @Test fun searchFiltersByDisplayName() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    alice.chatList.row("bob").row("Private notes")
-    alice.chatList.search("bo")
-    poll(what = "only bob listed") { alice.chatList.shown("bob") && !alice.chatList.shown("Private notes") }
-  }
-
-  @Test fun chatListTitleAndProfileButton() = uiTest {
-    val alice = app("alice")
-    poll(what = "the title `Chats`") { "Chats" in chatListToolbar().titleTexts() }
-    check(!exists(Ui.UserPicker.Sheet)) { "the user picker is open before the profile button is clicked" }
-    alice.userPicker()
-    poll(what = "the user picker with `Create SimpleX address`") { exists(Ui.UserPicker.Sheet) && textOf(Ui.UserPicker.Address) == "Create SimpleX address" }
+    val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
+    connect(bob); connect(cath)
+    alice.chatList.row("bob").row("cath").row("Private notes")
+    alice.chatList.search("BO")
+    poll(what = "only bob listed for `BO`") { alice.chatList.shown("bob") && !alice.chatList.shown("cath") && !alice.chatList.shown("Private notes") }
   }
 
   @Test fun chatListScrollToTopOnTitleClick() = uiTest {
@@ -53,6 +46,7 @@ class ChatListToolbarSearchTest : UiTest() {
     var ids = emptyList<String>()
     poll(what = "all chats in the model") { ids = chatModel.chats.value.map { it.id }; ids.size > GROUPS }
     val bar = chatListToolbar()
+    poll(what = "the title `Chats`") { "Chats" in bar.titleTexts() }
     waitFor(Ui.ChatList.Row(ids.first()))
     check(!bar.canScrollToTop()) { "the title is clickable while the list is at the top" }
     scrollTo(Ui.ChatList.Row(ids.last()))
@@ -90,21 +84,15 @@ class ChatListToolbarSearchTest : UiTest() {
     poll(what = "the alert to close") { !seesText(STOPPED_ALERT_TEXT) }
   }
 
-  @Test fun subscriptionIndicatorConnected() = uiTest {
-    app("alice")
-    appPrefs.networkShowSubscriptionPercentage.set(true)
-    val bar = chatListToolbar()
-    poll(what = "`%` with no subscriptions") { bar.percentage() == "%" }
-    runBlocking { chatController.apiAddContact(null, incognito = false) }.first ?: error("apiAddContact failed")
-    poll(what = "`100%` with the invitation queue subscribed") { bar.percentage() == "100%" }
-  }
-
   @Test fun subscriptionIndicatorPercentageToggle() = uiTest {
     app("alice")
     val bar = chatListToolbar()
+    waitFor(Ui.ChatList.Subscriptions)
     check(bar.percentage() == null) { "the percentage is shown by default" }
     bar.toggleShowPercentage()
-    poll(what = "the percentage next to the indicator") { bar.percentage() == "%" && storedSetting("ShowSubscriptionPercentage") == "true" }
+    poll(what = "`%` next to the indicator with no subscriptions") { bar.percentage() == "%" && storedSetting("ShowSubscriptionPercentage") == "true" }
+    runBlocking { chatController.apiAddContact(null, incognito = false) }.first ?: error("apiAddContact failed")
+    poll(what = "`100%` with the invitation queue subscribed") { bar.percentage() == "100%" }
     bar.toggleShowPercentage()
     poll(what = "the percentage hidden") { bar.percentage() == null && storedSetting("ShowSubscriptionPercentage") == "false" }
   }
@@ -141,14 +129,15 @@ class ChatListToolbarSearchTest : UiTest() {
       chatModel.chats.value.any { it.chatInfo is ChatInfo.Direct && it.chatInfo.chatViewName == "friend" } &&
         chatModel.chats.value.none { it.chatInfo is ChatInfo.ContactConnection }
     }
-    alice.chatList.row("friend").row("Private notes")
-    alice.chatList.search("frie")
-    poll(what = "only `friend` listed") { alice.chatList.shown("friend") && !alice.chatList.shown("Private notes") }
+    quiesce()
+    switchAwayFromChat(alice)
     val friend = alice.chatList.chatId("friend")
+    check(chatModel.chatId.value != friend) { "`friend` is the open chat, which is listed whatever the search text" }
+    alice.chatList.row("friend")
+    alice.chatList.search("frie")
+    poll(what = "`friend` listed for part of its alias") { editableText(Ui.ChatList.Search) == "frie" && alice.chatList.shown("friend") }
     replaceText(Ui.ChatList.Search, "frix")
-    poll(what = "`friend` listed for text it does not contain only while it is the open chat") {
-      alice.chatList.shown("friend") == (chatModel.chatId.value == friend)
-    }
+    poll(what = "`friend` hidden for text its alias does not contain") { editableText(Ui.ChatList.Search) == "frix" && !alice.chatList.shown("friend") }
   }
 
   @Test fun searchMatchesPendingConnectionAlias() = uiTest {

@@ -21,6 +21,7 @@ class ContactInfoTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     val info = alice.chatList.open("bob").contactInfo()
+    poll(what = "the row `Verify security code`") { info.verifyRowText() == "Verify security code" }
     info.markVerified()
     poll(what = "bob verified in the model") { (alice.chatList.chat("bob").chatInfo as ChatInfo.Direct).contact.verified }
     poll(what = "the row `View security code`") { info.verifyRowText() == "View security code" }
