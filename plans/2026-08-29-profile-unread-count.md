@@ -7,7 +7,7 @@ The core seeds each profile's unread count in `getUsersInfo` (`Store/Profiles.hs
 - only mentions in a mentions-only group;
 - nothing in a muted chat.
 
-After the seed the client keeps the active profile's count up to date with its own deltas, and those used a different rule. The count drifted until the next seed (e.g. a profile switch, opening the profile picker, or a restart):
+After the seed the client keeps the active profile's count up to date with its own deltas, and those used a different rule. The count drifted until the next seed (e.g. a profile switch, a restart, or on iOS opening the profile picker):
 - A new item in a muted or mentions-only chat added 1.
 - On Android and desktop, mark read, clear and single-item decrements subtracted every unread item, whatever the chat's setting. On iOS, mark read and clear followed the mentions-only setting but subtracted every unread item for muted chats, and single-item reads subtracted the raw delta. After a restart that pushed the count below zero for muted chats.
 - On Android and desktop `decreaseCounterInPrimaryContext` never decremented `unreadMentions`, so a mentions-only chat's mentions stayed unread in its stats.
@@ -39,11 +39,13 @@ Non-active profiles were already kept by the seed's rule (`ntfsEnabled`).
 Each is a separate change:
 - Support-chat items. The seed has no `group_scope_tag` condition, so it counts support-scope items that the client does not track. The count steps up by the outstanding support unread at each seed. Options: a main-scope-only seed in the core, or client-side tracking.
 - iOS subtracts support-chat reads from the main chat. Reading in a support chat calls `markChatItemsRead` with the scoped chat info, which lowers the main chat's stats and the count.
-- Chats outside the 5000-chat window. An event or a search lists such a chat with empty stats, while the seed counted its unread items. On iOS they are never subtracted until the next seed, because loading keeps the listed stats. On Android and desktop opening the chat installs the server's stats and reading it then subtracts; until it is opened nothing is subtracted.
+- Chats outside the 5000-chat window. An event or a search lists such a chat with empty stats, while the seed counted its unread items. On iOS loading keeps the listed (empty) stats, so Mark read and Clear subtract nothing; reading the items one by one still subtracts, which takes the chat's stats below zero, and a later Mark read, Clear or deleting the chat adds them back, leaving the count too high until the next seed (Mark read and Clear did this on master too). On Android and desktop opening the chat installs the server's stats and reading it then subtracts; until it is opened nothing is subtracted.
 - `replaceChat` installs a whole `chatStats` without moving the count: Kotlin `ChatListNavLinkView` `markChatRead` and `markChatUnread` (from a snapshot taken before the API call) and `ChatView` `markUnreadChatAsRead`, and iOS `SimpleXAPI`'s `receivedContactRequest` handler (from the server).
 - Settings changes that arrive in events through `updateChatInfo` do not move the count.
 - Items that arrive while a mute or unmute is in flight and already carry the new setting are counted under it, while the settings change counts them under the old one, so the count ends off by those items until the next seed.
 - If a new item arrives between a chat load's query and its stats replacement on Android and desktop, the downward move can drop the count below the database until the next seed.
+- A settings change computes its move from the chat's settings when the call started. If another settings call on the same chat, a chat load or a reseed applies the new setting while the call is in flight, the count moves twice and ends off until the next seed.
+- iOS unread tag counts on a settings change still read the chat after the call, so they miss the change when an event already applied the new setting (pre-existing; the Kotlin side now uses the same before/after pair as the count).
 - "Mark unread" is not counted, by design: the seed does not count it either.
 - The Unread filter change (groups with unread support chats) was split out into a separate PR stacked on this one.
 
