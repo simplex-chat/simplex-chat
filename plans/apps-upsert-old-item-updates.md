@@ -24,3 +24,4 @@ Not changed:
 - A chat that is not in the chat list is still added with the item, as before: without its last item the app cannot tell whether the item is new.
 - Android and desktop still notify for every `ChatItemUpdated` of a user that is not active (iOS does not).
 - Live message placeholders have negative IDs (`-2`) and do not affect the comparison.
+- If the user sends a message after the core created an item from an update but before the app received that update, the created item is no longer newer than every loaded item, so it is shown only when the chat is reloaded, without a notification. Only the core reporting such items as new items (`NewChatItems`) would close this; that is a core change.
