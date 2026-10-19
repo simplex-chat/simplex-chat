@@ -77,8 +77,8 @@ kotlin {
         api("dev.icerock.moko:resources-compose:0.27.1")
 
         // Markdown
-        implementation("com.mikepenz:multiplatform-markdown-renderer:0.27.0")
-        implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.27.0")
+        implementation("com.mikepenz:multiplatform-markdown-renderer:0.34.0")
+        implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.34.0")
       }
     }
     val commonTest by getting {

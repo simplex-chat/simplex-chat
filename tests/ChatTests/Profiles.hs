@@ -32,7 +32,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
-import Simplex.Chat.Types (AgentConnId (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), Profile (..), GroupRejectionReason (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), Profile (..), GroupRejectionReason (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -133,6 +133,8 @@ chatProfileTests = do
     it "connection incognito unchanged errors" testConnectionIncognitoUnchangedErrors
     it "set, reset, set connection incognito" testSetResetSetConnectionIncognito
     it "join group incognito" testJoinGroupIncognito
+    it "join group incognito as bot" $ testJoinGroupIncognitoPeerType (Just CPTBot)
+    it "join group incognito as human" $ testJoinGroupIncognitoPeerType Nothing
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
     it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
     it "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
@@ -4904,6 +4906,36 @@ testShortLinkConnectPreparedGroupIncognito = testChat3 aliceProfile bobProfile c
       cath #> "#team 3"
       alice <# "#team cath> 3"
       bob ?<# "#team cath> 3"
+
+testJoinGroupIncognitoPeerType :: HasCallStack => Maybe ChatPeerType -> TestParams -> IO ()
+testJoinGroupIncognitoPeerType peerType_ = testChat3 aliceProfile bobProfile {peerType = peerType_} cathProfile test
+  where
+    test alice bob cath = do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect directly"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1 incognito=on"
+      bobIncognito <- getTermLine bob
+      bob <## "#team: connection started incognito"
+      alice <## (bobIncognito <> ": accepting request to join group #team...")
+      concurrentlyN_
+        [ alice <## ("#team: " <> bobIncognito <> " joined the group"),
+          do
+            bob <## "#team: joining the group..."
+            bob <## ("#team: you joined the group incognito as " <> bobIncognito)
+            bob <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## ("#team: alice added " <> bobIncognito <> " to the group (connecting...)")
+            cath <## ("#team: new member " <> bobIncognito <> " is connected")
+        ]
+      forM_ [alice, cath] $ \cc -> do
+        GroupMember {memberProfile} <- getTestMember cc "team" (T.pack bobIncognito)
+        peerType (fromLocalProfile memberProfile) `shouldBe` peerType_
 
 testShortLinkChangePreparedGroupUser :: HasCallStack => TestParams -> IO ()
 testShortLinkChangePreparedGroupUser = testChat3 aliceProfile bobProfile cathProfile test

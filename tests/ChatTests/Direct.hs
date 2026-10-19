@@ -47,13 +47,13 @@ import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.Mem.Weak (deRefWeak)
+import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Options.DB
-import System.FilePath ((</>))
 #endif
 
 chatDirectTests :: SpecWith TestParams

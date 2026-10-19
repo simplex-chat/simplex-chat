@@ -203,6 +203,7 @@ undocumentedEvents =
     "CEvtContactRequestRejected",
     "CEvtContactSwitch",
     "CEvtCustomChatEvent",
+    "CEvtDuplicateGroupMessage",
     "CEvtGroupMemberRatchetSync",
     "CEvtGroupMemberSwitch",
     "CEvtServiceSubStatus",
@@ -222,6 +223,8 @@ undocumentedEvents =
     "CEvtSndFileRedirectStartXFTP",
     "CEvtSndFileStart", -- legacy SMP files
     "CEvtSndStandaloneFileComplete",
+    "CEvtStorePurchaseCredited",
+    "CEvtStorePurchaseRefused",
     "CEvtConnectionsDiff",
     "CEvtSubscriptionEnd",
     "CEvtTerminalEvent",

@@ -51,7 +51,7 @@ simplex-badge-service --help
   `simplex-directory-service --run-cli`). This mode is the chat/RPC side and the `//` commands
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
-  revoked.
+  revoked. `[apple]`, `[google]` and `[dev] accept_unverified_store_receipts` apply to it.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -84,7 +84,8 @@ Other options:
 - `--service-config INI_FILE`: path to `badge_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
   `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
-  uses only its `[issuer]` section. An issuer key is still required either way.
+  uses only its `[issuer]`, `[apple]` and `[google]` sections and `[dev] accept_unverified_store_receipts`. An issuer key is
+  still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
 - `--client-service`: use the client service certificate.
 - also accepts the standard SimpleX Chat core options — database path, SMP/XFTP servers,
@@ -207,6 +208,68 @@ ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The two 
 the exception: each answers 200, 400 or 413 with an empty body, because its provider is the only
 caller and nothing it could read would change what the route does. A wrong verb on any route, those
 two included, answers `method_not_allowed`.
+
+### Store purchases (App Store and Google Play)
+
+Each store is verified only when its section is present; without one, every receipt from that store
+is answered `provider_not_configured` and the app keeps the purchase to present again. A section
+missing a key, a root certificate that cannot be read or is not a root, an unreadable service
+account key, or either section beside
+`[dev] accept_unverified_store_receipts = on`, stops the service at startup.
+
+```ini
+[apple]
+bundle_id = chat.simplex.app
+root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
+
+[google]
+package_name = chat.simplex.app
+service_account_file = /etc/simplex-badge-service/play-service-account.json
+```
+
+- `[apple]` verifies the signed transaction offline, against the roots `root_certificates` lists,
+  comma-separated, each in DER. Today that is Apple Root CA - G3 as Apple publishes it at
+  <https://www.apple.com/certificateauthority/AppleRootCA-G3.cer>. Each must be self-signed.
+  Verification reads no validity period, so an expired root keeps verifying. A transaction for
+  another bundle id, or an intermediate no listed root signed, is answered `internal` and logged as
+  an error rather than refused, since `bundle_id` may be wrong or a root missing; check both when those errors appear, unless the purchase was made in Xcode's
+  StoreKit testing, which the App Store does not sign, so no root verifies it. When Apple signs
+  under a new root, list it beside the old one rather than in its place: a purchase signed under the
+  old root still verifies, and one answered `internal` meanwhile is credited when the app presents
+  it again.
+- `[google]` asks the Google Play Developer API about each purchase, and acknowledges it before
+  crediting it, as the service account whose JSON key `service_account_file` holds. The account
+  needs both Play Console permissions Google's
+  [getting started](https://developers.google.com/android-publisher/getting_started) lists for its
+  billing APIs: "View financial data, orders, and cancellation survey responses" to read a
+  purchase, and "Manage orders and subscriptions" to acknowledge it. Without the second, a Play
+  purchase the app has not already acknowledged itself is answered `internal` and logged as an
+  error naming the acknowledgement, and the app presents it again once the permission is granted,
+  which must be within three days, before Play refunds it. The key signs in
+  for an access token, so keep the file readable by this service alone.
+  Play purchases are verified on a lane of their own, so a slow or unreachable Play delays only
+  other Play purchases, not code redemptions, renewals or App Store purchases.
+
+Which answers are terminal for a purchase and which leave it to be presented again is listed per
+store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
+
+### Accepting store receipts unverified, for local testing
+
+```ini
+[dev]
+accept_unverified_store_receipts = on
+```
+
+Without a store verifier every store purchase is answered `provider_not_configured`. With this on,
+the service accepts any well-formed receipt without asking or verifying anything: an Apple JWS for
+the `transactionId` and `productId` its payload names, unsigned or not, and a Play product id and
+token as given. It applies to both run modes, since `--run-cli` answers service requests too, and
+the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
+parse. The service refuses to start with it on beside an `[apple]` or `[google]` section.
+
+With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
+That is harmless only while this deployment signs with an issuer key released apps do not carry, so
+they refuse what it signs — never turn it on where the key is one those apps trust.
 
 ## Issuing codes
 
