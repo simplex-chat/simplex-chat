@@ -54,7 +54,7 @@ finish() {
     "$ui" shot final || true
   fi
   echo "::group::the core and crashes in logcat"
-  grep -E 'ndk_translation|SIMPLEX *: start|AndroidRuntime: (FATAL EXCEPTION|Process: )|Fatal signal' "$UI_OUT/app.log" | head -n 100 || true
+  grep -E 'ndk_translation|SIMPLEX *: (start|App crashed)|AndroidRuntime: (FATAL EXCEPTION|Process: )|Fatal signal' "$UI_OUT/app.log" | head -n 100 || true
   echo "::endgroup::"
   report_checks
   exit "$status"
@@ -77,11 +77,12 @@ check() {
   fi
 }
 
-# A crash as Android logs one: AndroidRuntime's FATAL EXCEPTION for the app's process, or a native fatal signal in it,
-# whose line names the process by the last 15 characters of its name. Not any line with "error" or from
-# AndroidRuntime, which logs every uiautomator dump.
+# A crash: the app logs its own under SIMPLEX ("App crashed"), Android's FATAL EXCEPTION covers one before the app's
+# handler is set, and a native fatal signal names the process by the last 15 characters of its name. Not any line
+# with "error" or from AndroidRuntime, which logs every uiautomator dump.
 app_running() {
-  ! grep -A 1 'FATAL EXCEPTION' "$UI_OUT/app.log" | grep -q "Process: $package," &&
+  ! grep -q 'SIMPLEX *: App crashed' "$UI_OUT/app.log" &&
+    ! grep -A 1 'FATAL EXCEPTION' "$UI_OUT/app.log" | grep -q "Process: $package," &&
     ! grep -q "Fatal signal .*(${package: -15})" "$UI_OUT/app.log" &&
     adb shell pidof "$package" > /dev/null
 }
