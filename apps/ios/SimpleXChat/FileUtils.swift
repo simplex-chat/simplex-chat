@@ -88,7 +88,7 @@ public func excludeNonAppDataFromBackup() {
     setExcludedFromBackup([getDocumentsDirectory()] + existing([getTempFilesDirectory().path, dbPath + CHAT_DB_BAK, dbPath + AGENT_DB_BAK]), true)
 }
 
-private func setExcludedFromBackup(_ urls: [URL], _ exclude: Bool) {
+public func setExcludedFromBackup(_ urls: [URL], _ exclude: Bool) {
     var values = URLResourceValues()
     values.isExcludedFromBackup = exclude
     for var url in urls {
