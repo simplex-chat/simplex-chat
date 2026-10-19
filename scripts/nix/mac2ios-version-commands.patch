@@ -1,405 +1,278 @@
 diff --git a/Makefile b/Makefile
-index 9f93bb1..758514f 100644
+index 9f93bb1..2a56ced 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -1,3 +1,16 @@
+@@ -1,2 +1 @@
 -mac2ios: mac2ios.c
 -	$(CC) -o mac2ios mac2ios.c
-+CC ?= cc
-+CFLAGS ?= -O2
-+PYTHON ?= python3
++.DEFAULT_GOAL := help
+@@ -3,0 +3,22 @@ mac2ios: mac2ios.c
++CC ?= cc ## C compiler.
++CFLAGS ?= -O2 ## Extra compiler flags; required C11 warning flags are always added.
++PYTHON ?= python3 ## Python interpreter for the metadata-only tests.
 +WARN_CFLAGS = -std=c11 -Werror=vla -pedantic -Wall -Wextra
- 
-+.PHONY: all check clean
-+all: mac2ios ## Build the host archive metadata converter.
 +
-+mac2ios: mac2ios.c ar.h macho.h
++.PHONY: help all check clean
++help: ## Show available targets and configuration variables.
++	@printf 'Usage: make TARGET [NAME=value ...]\n\nTargets:\n'
++	@awk -F ':.*##[[:space:]]*' '/^[a-zA-Z0-9_.-]+:.*##/ { printf "  %-12s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
++	@printf '\nVariables (override with NAME=value):\n'
++	@awk -F '##[[:space:]]*' '/^[A-Z_]+[[:space:]]+\?=.*##/ { split($$1, v, /[[:space:]]*\?=[[:space:]]*/); sub(/[[:space:]]+$$/, "", v[2]); printf "  %-12s %s (default: %s)\n", v[1], $$2, v[2] }' $(MAKEFILE_LIST)
++
++all: mac2ios ## Build the host metadata converter.
++
++mac2ios: mac2ios.c ar.h macho.h ## Build the converter binary.
 +	$(CC) $(CFLAGS) $(WARN_CFLAGS) -o $@ mac2ios.c
 +
-+check: mac2ios ## Check version normalization and archive/payload preservation.
++check: mac2ios ## Check object conversion, version normalization and archive/payload preservation.
 +	$(PYTHON) tests/test_mac2ios.py ./mac2ios
 +
 +clean: ## Remove the local tool binary.
 +	rm -f mac2ios
 diff --git a/README.md b/README.md
 new file mode 100644
-index 0000000..04ee6dd
+index 0000000..ff02e67
 --- /dev/null
 +++ b/README.md
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,40 @@
 +# mac2ios
 +
-+`mac2ios FILE.a` rewrites platform version metadata in thin little-endian Mach-O
-+archive members. The default modern platform is iOS (`2`); `-s` selects the iOS
-+simulator (`7`). Legacy-only macOS minimum-version commands retain the existing
-+conversion to `LC_VERSION_MIN_IPHONEOS`.
-+
-+When a member contains both a modern build-version command and legacy minimum
-+commands, the converter retains the modern command and removes the legacy ones.
-+It compacts only the load-command table, updates its header counts, and zeros the
-+freed padding. Archive member lengths and section, relocation, and symbol offsets
-+remain unchanged. Invalid command bounds fail before that member is written;
-+earlier converted members are not rolled back if a later member fails.
-+
-+Build and run the metadata-only regression tests:
++`mac2ios FILE` rewrites platform version metadata in a standalone thin
++little-endian Mach-O object or an archive of such objects. Input content selects
++the format; the filename extension does not matter.
 +
 +```sh
-+make
-+make check
++make                         # List targets and configuration variables.
++make all                     # Build the converter explicitly.
++./mac2ios library.a           # Convert an archive in place.
++./mac2ios object.o            # Convert one object in place.
++./mac2ios -s object.o         # Select the modern iOS simulator platform.
++make check                   # Run metadata-only regression tests.
++make all CC=clang CFLAGS='-O0 -g'
 +```
 +
-+Tests cover x86_64 and ARM64 objects, both platform selections, mixed command
-+orders, archive layout, payload preservation, malformed input, and idempotence.
-+On macOS they also use Apple `nm` and `otool` to read the converted data. No
-+Mach-O fixture is linked or executed. Set `MAC2IOS_REAL_OBJECT=/path/to/member.o`
-+to include an additional real-member regression.
++The default modern platform is iOS (`2`); `-s` selects the iOS simulator (`7`).
++Legacy-only macOS minimum-version commands retain the existing conversion to
++`LC_VERSION_MIN_IPHONEOS`.
++
++When an object contains both a modern build-version command and legacy minimum
++commands, the converter retains the modern command and removes the legacy ones.
++It compacts only the load-command table, updates its header counts, and zeros the
++freed padding. Object/archive lengths and section, relocation, and symbol offsets
++remain unchanged. Malformed headers or command bounds fail before that object
++is written; earlier converted archive members are not rolled back if a later
++member fails. Other archive metadata is left unchanged. Fat/big-endian standalone
++inputs are unsupported. The original 64 KiB header/command buffer remains the
++limit; tables that do not fit are rejected before writes.
++
++`make` and `make help` generate the target/variable list from the Makefile's `##`
++descriptions. `CC`, `CFLAGS`, and `PYTHON` can be overridden on the command line.
++The Nix package explicitly builds `all`, so its behavior does not depend on the
++interactive default target.
++
++Tests cover x86_64 and ARM64 objects, both platform selections, direct files and
++archives, mixed command orders, layout and payload preservation, malformed input,
++and idempotence. On macOS they also use Apple `nm` and `otool` to read converted
++data. No Mach-O fixture is linked or executed. Set
++`MAC2IOS_REAL_OBJECT=/path/to/member.o` to include a real-member regression.
 diff --git a/mac2ios.c b/mac2ios.c
-index 7ba5338..fc06b67 100644
+index 7ba5338..7741489 100644
 --- a/mac2ios.c
 +++ b/mac2ios.c
-@@ -1,151 +1,218 @@
--#include <stdio.h>
-+#include <stdbool.h>
- #include <stdint.h>
--#include <string.h>
-+#include <stdio.h>
- #include <stdlib.h>
--#include <unistd.h>
-+#include <string.h>
- #include "ar.h"
- #include "macho.h"
- 
--
--void print_hdr(mach_header_64 *hdr) {
--    printf("magic:         %x\n", hdr->magic);
--    printf("cpu type:      %d\n", hdr->cputype);
--    printf("cpu subtype:   %d\n", hdr->cpusubtype);
--    printf("file type:     %d\n", hdr->filetype);
--    printf("Load Commands: %d\n", hdr->ncmds);
--    printf("LC size:       %d\n", hdr->sizeofcmds);
--    printf("flags:         %d\n", hdr->flags);
-+/* Decode bytes instead of casting potentially unaligned archive members. */
+@@ -5,0 +6 @@
++#include <getopt.h>
+@@ -24,2 +25,9 @@ uint8_t buffer[64*1024];
+-void patch_object(FILE *fp, size_t len, int platform) {
+-    int pos = ftell(fp);
++/* Byte access keeps archive members safe even when they are unaligned. */
 +static uint32_t read_u32(const uint8_t *p) {
 +    return (uint32_t)p[0] | (uint32_t)p[1] << 8 |
 +           (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
- }
- 
--// 64kb. Load Commands are limited to 16kb.
--// the header is ~64bytes. So 64kb should be plenty.
--uint8_t buffer[64*1024];
--
--void patch_object(FILE *fp, size_t len, int platform) {
--    int pos = ftell(fp);
--
--    fread(buffer,sizeof(buffer),1,fp);
++}
++
 +static void write_u32(uint8_t *p, uint32_t value) {
-+    for (unsigned int i = 0; i < 4; ++i) {
-+        p[i] = (uint8_t)(value >> (i * 8));
-+    }
++    for (unsigned i = 0; i < 4; ++i) p[i] = (uint8_t)(value >> (8 * i));
 +}
- 
+@@ -27 +35,10 @@ void patch_object(FILE *fp, size_t len, int platform) {
+-    fread(buffer,sizeof(buffer),1,fp);
++static int legacy_version(uint32_t cmd) {
++    return cmd == LC_VERSION_MIN_MACOSX || cmd == LC_VERSION_MIN_IPHONEOS ||
++           cmd == LC_VERSION_MIN_TVOS || cmd == LC_VERSION_MIN_WATCHOS;
++}
++
++int patch_object(FILE *fp, size_t len, int platform) {
++    long pos = ftell(fp);
++    size_t amount = len < sizeof(buffer) ? len : sizeof(buffer);
++    if(pos < 0 || fread(buffer, 1, amount, fp) != amount) return 1;
++    if(len < 4) return fseek(fp, pos, SEEK_SET);
+@@ -29 +46,3 @@ void patch_object(FILE *fp, size_t len, int platform) {
 -    mach_header_64 *hdr = (mach_header_64*)buffer;
-+static bool is_legacy_version(uint32_t command) {
-+    return command == LC_VERSION_MIN_MACOSX ||
-+           command == LC_VERSION_MIN_IPHONEOS ||
-+           command == LC_VERSION_MIN_TVOS ||
-+           command == LC_VERSION_MIN_WATCHOS;
-+}
- 
--    if (!(  hdr->magic == 0xfeedface      // 32-bit
++    mach_header_64 header = {0};
++    mach_header_64 *hdr = &header;
++    hdr->magic = read_u32(buffer);
+@@ -32,2 +51 @@ void patch_object(FILE *fp, size_t len, int platform) {
 -         || hdr->magic == 0xfeedfacf      // 64-bit
 -         || hdr->magic == 0xcafebabe )) { // Universal
--      // Object is not Mach-O
++         || hdr->magic == 0xfeedfacf )) { // 64-bit
+@@ -35,2 +53 @@ void patch_object(FILE *fp, size_t len, int platform) {
 -      fseek(fp, pos, SEEK_SET);
 -      return;
-+static int patch_object(FILE *fp, size_t len, uint32_t platform) {
-+    uint8_t header[32];
-+    uint8_t *commands = NULL;
-+    long pos = ftell(fp);
-+    size_t header_size, command_bytes, offset = 0, output_offset = 0;
-+    uint32_t count, build_count = 0, removed = 0;
-+    int result = 1;
-+
-+    if (pos < 0) return 1;
-+    if (len < 4) return 0;
-+    if (fread(header, 1, 4, fp) != 4) return 1;
-+    switch (read_u32(header)) {
-+    case 0xfeedfacf: header_size = 32; break;
-+    case 0xfeedface: header_size = 28; break;
-+    default: return 0; /* Non-Mach-O archive metadata is unchanged. */
-     }
--
++      return fseek(fp, pos, SEEK_SET);
+@@ -39,4 +56,42 @@ void patch_object(FILE *fp, size_t len, int platform) {
 -    size_t offset = sizeof(mach_header_64);
 -    load_command *cmd;
 -    while(offset < sizeof(mach_header_64) + hdr->sizeofcmds) {
 -        cmd = (load_command*)(buffer+offset);
--        switch(cmd->cmd) {
--            /* old style LC_VERSION_MIN_<platofrm> rewrites */
--            case LC_VERSION_MIN_MACOSX: {
--                cmd->cmd = LC_VERSION_MIN_IPHONEOS;
--                printf("Chaning LC_VERSION_MIN_ from: %d -> %d\n", LC_VERSION_MIN_MACOSX, LC_VERSION_MIN_IPHONEOS);
++    size_t header_size = hdr->magic == 0xfeedfacf ? 32 : 28;
++    if(amount < header_size) goto malformed;
++    hdr->ncmds = read_u32(buffer+16);
++    hdr->sizeofcmds = read_u32(buffer+20);
++    if(hdr->sizeofcmds > amount-header_size || hdr->ncmds > hdr->sizeofcmds/8)
++        goto malformed;
++    size_t end = header_size + hdr->sizeofcmds;
++    size_t offset = header_size;
++    load_command command;
++    load_command *cmd = &command;
++    uint32_t builds = 0, removed = 0;
++    /* Validate every command before writing any part of this member. */
++    for(uint32_t i = 0; i < hdr->ncmds; ++i) {
++        if(end-offset < 8) goto malformed;
++        cmd->cmd = read_u32(buffer+offset);
++        cmd->cmdsize = read_u32(buffer+offset+4);
++        if(cmd->cmdsize < 8 || cmd->cmdsize % (header_size == 32 ? 8 : 4) ||
++           cmd->cmdsize > end-offset) goto malformed;
++        if(legacy_version(cmd->cmd) && cmd->cmdsize != sizeof(struct version_min_command))
++            goto malformed;
++        if(cmd->cmd == LC_BUILD_VERSION) {
++            if(cmd->cmdsize < sizeof(struct build_version_command) ||
++               read_u32(buffer+offset+20) !=
++               (cmd->cmdsize-sizeof(struct build_version_command))/sizeof(struct build_tool_version))
++                goto malformed;
++            ++builds;
++        }
++        offset += cmd->cmdsize;
++    }
++    if(offset != end || builds > 1) goto malformed;
++
++    offset = header_size;
++    size_t output = header_size;
++    while(offset < end) {
++        cmd->cmd = read_u32(buffer+offset);
++        cmd->cmdsize = read_u32(buffer+offset+4);
++        if(builds && legacy_version(cmd->cmd)) {
++            ++removed;
++            offset += cmd->cmdsize;
++            continue;
++        }
++        memmove(buffer+output, buffer+offset, cmd->cmdsize);
+@@ -48,2 +103 @@ void patch_object(FILE *fp, size_t len, int platform) {
 -                fseek(fp, pos+offset, SEEK_SET);
 -                fwrite(buffer+offset, sizeof(struct build_version_command), 1, fp);
--                break;
--            }
--            /* new style LC_BUILD_VERSION rewrites */
--            case LC_BUILD_VERSION: {
++                write_u32(buffer+output, cmd->cmd);
+@@ -54,5 +108,2 @@ void patch_object(FILE *fp, size_t len, int platform) {
 -                struct build_version_command* bvc = (struct build_version_command*)(buffer+offset);
 -                printf("Chaning platform from: %d -> %d\n", bvc->platform, platform);
 -                bvc->platform = platform;
 -                fseek(fp, pos+offset, SEEK_SET);
 -                fwrite(buffer+offset, sizeof(struct build_version_command), 1, fp);
--                break;
-+    if (len < header_size ||
-+        fread(header + 4, 1, header_size - 4, fp) != header_size - 4) {
-+        goto malformed;
-+    }
-+    count = read_u32(header + 16);
-+    command_bytes = read_u32(header + 20);
-+    if (command_bytes > len - header_size ||
-+        count > command_bytes / sizeof(load_command)) {
-+        goto malformed;
-+    }
-+    if (command_bytes == 0) return 0;
-+    commands = malloc(command_bytes);
-+    if (commands == NULL) {
-+        fprintf(stderr, "Cannot allocate Mach-O load commands\n");
-+        goto done;
-+    }
-+    if (fread(commands, 1, command_bytes, fp) != command_bytes) goto malformed;
-+
-+    /* Validate the entire table before modifying any byte of this member. */
-+    for (uint32_t i = 0; i < count; ++i) {
-+        uint32_t command, size;
-+        if (offset > command_bytes || command_bytes - offset < 8) goto malformed;
-+        command = read_u32(commands + offset);
-+        size = read_u32(commands + offset + 4);
-+        if (size < 8 || size % (header_size == 32 ? 8 : 4) != 0 ||
-+            size > command_bytes - offset) goto malformed;
-+        if (is_legacy_version(command) && size != sizeof(struct version_min_command)) {
-+            goto malformed;
-+        }
-+        if (command == LC_BUILD_VERSION) {
-+            if (size < sizeof(struct build_version_command) ||
-+                read_u32(commands + offset + 20) !=
-+                    (size - sizeof(struct build_version_command)) /
-+                        sizeof(struct build_tool_version)) goto malformed;
-+            ++build_count;
-+        }
-+        offset += size;
-+    }
-+    if (offset != command_bytes || build_count > 1) goto malformed;
-+
-+    offset = 0;
-+    for (uint32_t i = 0; i < count; ++i) {
-+        uint32_t command = read_u32(commands + offset);
-+        uint32_t size = read_u32(commands + offset + 4);
-+        if (build_count != 0 && is_legacy_version(command)) {
-+            ++removed;
-+        } else {
-+            memmove(commands + output_offset, commands + offset, size);
-+            if (command == LC_BUILD_VERSION) {
-+                write_u32(commands + output_offset + 8, platform);
-+            } else if (command == LC_VERSION_MIN_MACOSX) {
-+                write_u32(commands + output_offset, LC_VERSION_MIN_IPHONEOS);
-             }
--            default: break;
-+            output_offset += size;
-         }
--        offset += cmd->cmdsize;
-+        offset += size;
-+    }
-+    /* Leave section, relocation and symbol data at their original file offsets.
-+     * Mixed macOS/Mac Catalyst inputs need only one version family on iOS. */
-+    memset(commands + output_offset, 0, command_bytes - output_offset);
-+    write_u32(header + 16, count - removed);
-+    write_u32(header + 20, (uint32_t)output_offset);
-+    if (fseek(fp, pos, SEEK_SET) != 0 ||
-+        fwrite(header, 1, header_size, fp) != header_size ||
-+        fwrite(commands, 1, command_bytes, fp) != command_bytes) {
-+        fprintf(stderr, "Cannot write Mach-O load commands\n");
-+        goto done;
-     }
++                printf("Chaning platform from: %d -> %d\n", read_u32(buffer+output+8), platform);
++                write_u32(buffer+output+8, (uint32_t)platform);
+@@ -63,0 +115 @@ void patch_object(FILE *fp, size_t len, int platform) {
++        output += cmd->cmdsize;
+@@ -65 +117,9 @@ void patch_object(FILE *fp, size_t len, int platform) {
 -    fseek(fp, pos, SEEK_SET);
-+    result = 0;
-+    goto done;
-+
++    /* Compact commands only: payload, symbol offsets and member size stay put. */
++    write_u32(buffer+16, hdr->ncmds-removed);
++    write_u32(buffer+20, (uint32_t)(output-header_size));
++    memset(buffer+output, 0, end-output);
++    if(fseek(fp, pos, SEEK_SET) || fwrite(buffer, 1, end, fp) != end) return 1;
++    return fseek(fp, pos, SEEK_SET);
 +malformed:
 +    fprintf(stderr, "Malformed Mach-O load commands\n");
-+done:
-+    free(commands);
-+    return result;
- }
- 
--uint32_t parse_ar_size(char *s, size_t maxlen) {
--    uint32_t ret = 0;
--    for(size_t i = 0; i < maxlen; i++) {
--        if(s[i] < 48 || s[i] > 57) break;
--        ret = ret * 10 + s[i] - 48;
-+static int parse_ar_size(const char *s, size_t maxlen, size_t *value) {
-+    size_t result = 0, i = 0;
-+    bool have_digit = false;
-+    while (i < maxlen && s[i] >= '0' && s[i] <= '9') {
-+        size_t digit = (size_t)(s[i] - '0');
-+        if (result > (SIZE_MAX - digit) / 10) return 1;
-+        result = result * 10 + digit;
-+        have_digit = true;
-+        ++i;
-     }
--    return ret;
-+    for (; i < maxlen; ++i) {
-+        if (s[i] != ' ') return 1;
-+    }
-+    if (!have_digit) return 1;
-+    *value = result;
-+    return 0;
- }
- 
--int parse_archive(FILE *fp, int platform) {
++    return 1;
+@@ -71,0 +132 @@ uint32_t parse_ar_size(char *s, size_t maxlen) {
++        if(ret > (UINT32_MAX - (uint32_t)(s[i]-48))/10) return UINT32_MAX;
+@@ -78 +139,3 @@ int parse_archive(FILE *fp, int platform) {
 -    int pos = ftell(fp);
--
-+static int parse_archive(FILE *fp, uint32_t platform) {
-     char magic[8];
++    long pos = ftell(fp), archive_end;
++    if(pos < 0 || fseek(fp, 0, SEEK_END) || (archive_end = ftell(fp)) < 0 ||
++       fseek(fp, pos, SEEK_SET)) return 1;
+@@ -81,2 +144,2 @@ int parse_archive(FILE *fp, int platform) {
 -    fread(&magic,sizeof(magic), 1, fp);
 -    if(0 != strncmp(magic, "!<arch>\n",8)) {
--        printf("Doesn't look like an archive. Should start with '!<arch>\\n'\n");
-+    long archive_end;
-+    if (fseek(fp, 0, SEEK_END) != 0 || (archive_end = ftell(fp)) < 0 ||
-+        fseek(fp, 0, SEEK_SET) != 0 || fread(magic, 1, 8, fp) != 8 ||
-+        memcmp(magic, "!<arch>\n", 8) != 0) {
-+        fprintf(stderr, "Doesn't look like an archive (expected !<arch>)\n");
-         return 1;
-     }
--
--    ar_header entry;
--    char ident[128];
++    if(fread(&magic,sizeof(magic), 1, fp) != 1 ||
++       0 != strncmp(magic, "!<arch>\n",8)) {
+@@ -89 +152,3 @@ int parse_archive(FILE *fp, int platform) {
 -    while(fread(&entry, sizeof(ar_header), 1, fp)) {
--        size_t payload = parse_ar_size(entry.size, 10);
--        // check if the identifiaction is > 16 chars.
--        if(0 == strncmp(entry.ident, "#1/", 3)) {
++    size_t nread;
++    while((nread = fread(&entry, 1, sizeof(ar_header), fp)) != 0) {
++        if(nread != sizeof(ar_header)) return 1;
+@@ -90,0 +156,6 @@ int parse_archive(FILE *fp, int platform) {
++        long data_pos = ftell(fp);
++        size_t padding = payload % 2;
++        if(memcmp(entry.end, "`\n", 2) ||
++           payload == UINT32_MAX || data_pos < 0 || data_pos > archive_end ||
++           payload > (size_t)(archive_end-data_pos) ||
++           padding > (size_t)(archive_end-data_pos)-payload) return 1;
+@@ -93,2 +164,5 @@ int parse_archive(FILE *fp, int platform) {
 -            int ident_len = parse_ar_size(entry.ident+3, 16-3);
 -            fread(&ident, ident_len, 1, fp);
--            payload -= ident_len;
-+    while (ftell(fp) < archive_end) {
-+        ar_header entry;
-+        char ident[128] = {0};
-+        size_t payload, ident_len = 0;
-+        long data_pos, member_end;
-+        if (fread(&entry, 1, sizeof(entry), fp) != sizeof(entry) ||
-+            memcmp(entry.end, "`\n", 2) != 0 ||
-+            parse_ar_size(entry.size, sizeof(entry.size), &payload) != 0 ||
-+            (data_pos = ftell(fp)) < 0 || data_pos > archive_end ||
-+            payload > (size_t)(archive_end - data_pos)) goto malformed;
-+        member_end = data_pos + (long)payload;
-+        if ((payload & 1) != 0 && member_end == archive_end) goto malformed;
-+        if (memcmp(entry.ident, "#1/", 3) == 0) {
-+            size_t shown;
-+            if (parse_ar_size(entry.ident + 3, sizeof(entry.ident) - 3, &ident_len) != 0 ||
-+                ident_len > payload) goto malformed;
-+            shown = ident_len < sizeof(ident) - 1 ? ident_len : sizeof(ident) - 1;
-+            if (fread(ident, 1, shown, fp) != shown ||
-+                fseek(fp, data_pos + (long)ident_len, SEEK_SET) != 0) goto malformed;
-         } else {
++            size_t ident_len = parse_ar_size(entry.ident+3, 16-3);
++            size_t shown = ident_len < sizeof(ident)-1 ? ident_len : sizeof(ident)-1;
++            if(ident_len > payload || fread(ident, 1, shown, fp) != shown ||
++               fseek(fp, data_pos+(long)ident_len, SEEK_SET)) return 1;
++            ident[shown] = '\0';
+@@ -97 +171,2 @@ int parse_archive(FILE *fp, int platform) {
 -            strncpy(ident, entry.ident, 16);
-+            memcpy(ident, entry.ident, sizeof(entry.ident));
-         }
--        printf("%6zu %s\n", payload, ident);
--        // skip the __.SYMDEF and __.SYMDEF SORTED files.
++            memcpy(ident, entry.ident, 16);
++            ident[16] = '\0';
+@@ -101,3 +176,3 @@ int parse_archive(FILE *fp, int platform) {
 -        if(0 != strncmp(ident, "__.SYMDEF", 9))
 -            patch_object(fp, payload, platform);
 -        fseek(fp, payload, SEEK_CUR);
-+        printf("%6zu %s\n", payload - ident_len, ident);
-+        if (strncmp(ident, "__.SYMDEF", 9) != 0 &&
-+            patch_object(fp, payload - ident_len, platform) != 0) return 1;
-+        /* ar pads odd-sized members; never consume bytes from the next member. */
-+        if ((payload & 1) != 0) ++member_end;
-+        if (fseek(fp, member_end, SEEK_SET) != 0) return 1;
-     }
++        if(0 != strncmp(ident, "__.SYMDEF", 9) && patch_object(fp, payload, platform))
++            return 1;
++        if(fseek(fp, (long)(payload+padding), SEEK_CUR)) return 1;
+@@ -105,2 +180,17 @@ int parse_archive(FILE *fp, int platform) {
 -    fseek(fp, pos, SEEK_SET);
 -    return 0;
-+    return ferror(fp) ? 1 : 0;
-+malformed:
-+    fprintf(stderr, "Malformed archive member\n");
-+    return 1;
- }
- 
--int main(int argc, char ** argv) {
--
--    opterr = 0;
--    int c;
--    int platform = PLATFORM_IOS;
--
--    while ((c = getopt(argc, argv, "hs")) != -1) {
--        switch (c)
--        {
--        case 'h':
--            printf("mac2ios -- tool to rewrite the platform in object files\n");
--            printf("Usage: mac2ios FILE\n");
--            printf(" -h show this help message\n");
--            printf(" -s set platform to IOSSIMULATOR\n");
--            printf(" by default we set IOS\n");
--            return EXIT_SUCCESS;
--
--        case 's':
--            platform = PLATFORM_IOSSIMULATOR;
--            break;
--        default:
--            break;
-+int main(int argc, char **argv) {
-+    int argument = 1;
-+    uint32_t platform = PLATFORM_IOS;
-+    FILE *fp;
-+    int result;
++    if(ferror(fp)) return 1;
++    return fseek(fp, pos, SEEK_SET);
++}
 +
-+    while (argument < argc && argv[argument][0] == '-' && argv[argument][1] != '\0') {
-+        const char *option = argv[argument] + 1;
-+        ++argument;
-+        if (strcmp(option, "-") == 0) break;
-+        for (; *option != '\0'; ++option) {
-+            switch (*option) {
-+            case 'h':
-+                printf("mac2ios -- rewrite platform metadata in object archives\n"
-+                       "Usage: mac2ios [-s] FILE\n"
-+                       " -s set LC_BUILD_VERSION to IOSSIMULATOR (default IOS)\n");
-+                return EXIT_SUCCESS;
-+            case 's': platform = PLATFORM_IOSSIMULATOR; break;
-+            default: return EXIT_FAILURE;
-+            }
-         }
-     }
--
--    FILE *ptr;
--
++int patch_file(FILE *fp, int platform) {
++    uint8_t magic[8];
++    long len;
++    if(fseek(fp, 0, SEEK_END) || (len = ftell(fp)) < 0 ||
++       (uintmax_t)len > SIZE_MAX || fseek(fp, 0, SEEK_SET)) return 1;
++    size_t nread = fread(magic, 1, sizeof(magic), fp);
++    if(ferror(fp) || fseek(fp, 0, SEEK_SET)) return 1;
++    if(nread == 8 && memcmp(magic, "!<arch>\n", 8) == 0)
++        return parse_archive(fp, platform);
++    if(nread >= 4 && (read_u32(magic) == 0xfeedface || read_u32(magic) == 0xfeedfacf))
++        return patch_object(fp, (size_t)len, platform);
++    fprintf(stderr, "Expected an ar archive or a thin little-endian Mach-O file\n");
++    return 1;
+@@ -120 +210 @@ int main(int argc, char ** argv) {
+-            printf("Usage: mac2ios FILE\n");
++            printf("Usage: mac2ios [-s] FILE.a|FILE.o (detected by content)\n");
+@@ -130 +220 @@ int main(int argc, char ** argv) {
+-            break;
++            return EXIT_FAILURE;
+@@ -136 +226 @@ int main(int argc, char ** argv) {
 -    if(optind == argc) {
--        printf("expecting FILE argument.");
-+    if (argument + 1 != argc) {
-+        fprintf(stderr, "Expected one archive FILE argument\n");
-         return EXIT_FAILURE;
-     }
--
--    ptr = fopen(argv[optind],"rb+");
--    if(NULL == ptr) {
--        printf("Failed to open %s\n", argv[1]);
-+    fp = fopen(argv[argument], "rb+");
-+    if (fp == NULL) {
-+        fprintf(stderr, "Failed to open %s\n", argv[argument]);
-         return EXIT_FAILURE;
-     }
--
++    if(optind + 1 != argc) {
+@@ -147,2 +237,2 @@ int main(int argc, char ** argv) {
 -    int ret = parse_archive(ptr, platform);
 -    fclose(ptr);
--
--    return ret;
-+    result = parse_archive(fp, platform);
-+    if (fclose(fp) != 0) result = 1;
-+    return result;
- }
++    int ret = patch_file(ptr, platform);
++    if(fclose(ptr)) ret = 1;
 diff --git a/tests/test_mac2ios.py b/tests/test_mac2ios.py
 new file mode 100644
-index 0000000..9b6eb58
+index 0000000..504e23a
 --- /dev/null
 +++ b/tests/test_mac2ios.py
-@@ -0,0 +1,215 @@
+@@ -0,0 +1,272 @@
 +#!/usr/bin/env python3
 +"""Metadata-only regression tests: no Mach-O fixture is linked or executed."""
 +import os
@@ -486,8 +359,8 @@ index 0000000..9b6eb58
 +        self.addCleanup(self.temp.cleanup)
 +        self.root = Path(self.temp.name)
 +
-+    def convert(self, original, simulator=False, success=True):
-+        path = self.root / "fixture.a"
++    def convert(self, original, simulator=False, success=True, filename="fixture.a"):
++        path = self.root / filename
 +        path.write_bytes(original)
 +        result = subprocess.run([str(TOOL), *(["-s"] if simulator else []), str(path)],
 +                                capture_output=True, timeout=10)
@@ -546,6 +419,59 @@ index 0000000..9b6eb58
 +                        self.apple_accepts(output)
 +                        self.apple_accepts(changed)
 +                        self.assertEqual(self.convert(changed, simulator), changed)
++
++    def test_direct_objects_both_cpus_and_version_orders(self):
++        for cpu in CPUS:
++            for versions in ([legacy()], [modern()], [legacy(), modern()],
++                             [modern(), legacy()], [legacy(), modern(False)],
++                             [modern(False), legacy()]):
++                for simulator in (False, True):
++                    with self.subTest(cpu=cpu, versions=len(versions), simulator=simulator):
++                        original = object_bytes(cpu, versions)
++                        changed = self.convert(original, simulator, filename="direct.o")
++                        self.check_object(original, changed, 7 if simulator else 2)
++                        self.apple_accepts(changed)
++                        self.assertEqual(self.convert(changed, simulator, filename="direct.o"), changed)
++
++    def test_dispatch_uses_content_not_filename(self):
++        obj = object_bytes(CPUS[0], [legacy(), modern()])
++        original, _ = archive([("fixture.o", obj)])
++        for filename in ("direct.a", "direct.bin"):
++            self.check_object(obj, self.convert(obj, filename=filename), 2)
++        for filename in ("archive.o", "archive.bin"):
++            self.apple_accepts(self.convert(original, filename=filename))
++        for cpu in CPUS:
++            obj = object_bytes(cpu, [])
++            self.assertEqual(self.convert(obj, filename="no-version.o"), obj)
++
++    def test_invalid_option_does_not_mutate_input(self):
++        obj = object_bytes(CPUS[0], [legacy(), modern()])
++        wrapped, _ = archive([("fixture.o", obj)])
++        for original in (obj, wrapped):
++            for option in ("-S", "-x", "-z", "-sx"):
++                with self.subTest(archive=original.startswith(b"!<arch>"), option=option):
++                    path = self.root / "invalid-option.bin"
++                    path.write_bytes(original)
++                    result = subprocess.run([str(TOOL), option, str(path)],
++                                            capture_output=True, timeout=10)
++                    self.assertNotEqual(result.returncode, 0)
++                    self.assertEqual(path.read_bytes(), original)
++
++    def test_invalid_direct_input_is_unchanged(self):
++        invalid = [b"", b"x", b"not a Mach-O object", b"!<arch>",
++                   bytes.fromhex("feedfacf") + bytes(32),  # Big-endian magic.
++                   bytes.fromhex("cafebabe") + bytes(32)] # Fat input is unsupported.
++        for cpu in CPUS:
++            obj = object_bytes(cpu, [legacy(), modern()])
++            invalid.extend((obj[:3], obj[:4], obj[:24], obj[:32 + u32(obj, 20) - 1]))
++            for offset, value in ((20, len(obj)), (16, 1000), (36, 0),
++                                  (32 + 152 + 16 + 20, 100)):
++                broken = bytearray(obj)
++                struct.pack_into("<I", broken, offset, value)
++                invalid.append(bytes(broken))
++        for original in invalid:
++            with self.subTest(length=len(original), magic=original[:4].hex()):
++                self.assertEqual(self.convert(original, success=False, filename="invalid.o"), original)
 +
 +    def test_missing_version_is_unchanged(self):
 +        for cpu in CPUS:
@@ -611,6 +537,10 @@ index 0000000..9b6eb58
 +        self.apple_accepts(output)
 +        self.apple_accepts(changed)
 +        self.assertEqual(self.convert(changed), changed)
++        direct = self.convert(obj, filename="absvdi2.o")
++        self.check_object(obj, direct, 2)
++        self.apple_accepts(direct)
++        self.assertEqual(self.convert(direct, filename="absvdi2.o"), direct)
 +
 +
 +if __name__ == "__main__":

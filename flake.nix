@@ -210,6 +210,7 @@
       let iosArchiveConverter = mac2ios.packages.${system}.mac2ios.overrideAttrs (old: {
         # Zippered compiler-rt objects may carry macOS and Mac Catalyst version
         # commands. Retargeting both to iOS must leave one version family.
+        buildFlags = (old.buildFlags or []) ++ [ "all" ];
         patches = (old.patches or []) ++ [ ./scripts/nix/mac2ios-version-commands.patch ];
         nativeCheckInputs = (old.nativeCheckInputs or []) ++ [ pkgs.python3 ];
         doCheck = true;
