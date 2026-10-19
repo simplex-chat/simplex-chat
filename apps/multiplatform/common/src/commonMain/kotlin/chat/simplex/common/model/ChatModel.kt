@@ -134,11 +134,11 @@ enum class ChatListBanner { BadgeExpired, BadgeIssueFailed, BadgePitch, GetStake
 
 data class FileToOpen(val fileId: Long, val inChatList: Boolean)
 
+private const val MAX_DROPPED_UPDATES = 100
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
-private const val MAX_DROPPED_UPDATES = 100
-
 // Spec: spec/state.md#ChatModel
 @Stable
 object ChatModel {
@@ -426,7 +426,7 @@ object ChatModel {
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
     // set listener here that will be notified on every add/delete of a chat item
     val chatState = ActiveChatState()
-    private var droppedUpdatesChatId: String? = null
+    private var droppedUpdatesChat: Pair<Long?, String>? = null
     private val droppedUpdates = mutableMapOf<Long, ChatItem>()
 
     fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
@@ -635,7 +635,7 @@ object ChatModel {
       // add to current scope
       withContext(Dispatchers.Main) {
         if (chatItemBelongsToScope(cInfo, cItem)) {
-          val kept = droppedUpdates.remove(cItem.id)
+          val kept = if (droppedUpdatesChat == (rhId to cInfo.id)) droppedUpdates.remove(cItem.id) else null
           val ci = when {
             kept == null -> cItem
             kept.meta.updatedAt >= cItem.meta.updatedAt -> kept
@@ -712,13 +712,14 @@ object ChatModel {
             items[itemIndex] = ci
           } else if (
             (chatState.splits.value.isEmpty() || chatState.splits.value.last() != items.lastOrNull()?.id)
-            && cItem.id > maxOf(lastItemId ?: 0, items.maxOfOrNull { it.id } ?: 0)
+            && cItem.id >= (lastItemId ?: 0)
+            && cItem.id > (items.maxOfOrNull { it.id } ?: 0)
           ) {
             addToChatItems(cItem)
             itemAdded = true
           } else {
-            if (droppedUpdatesChatId != cInfo.id) {
-              droppedUpdatesChatId = cInfo.id
+            if (droppedUpdatesChat != (rhId to cInfo.id)) {
+              droppedUpdatesChat = rhId to cInfo.id
               droppedUpdates.clear()
             }
             val kept = droppedUpdates[cItem.id]
@@ -736,12 +737,17 @@ object ChatModel {
       return  itemAdded
     }
 
-    fun withDroppedUpdates(items: List<ChatItem>): List<ChatItem> =
-      if (droppedUpdates.isEmpty()) {
+    fun withDroppedUpdates(rhId: Long?, chatId: String, items: List<ChatItem>): List<ChatItem> =
+      if (droppedUpdates.isEmpty() || droppedUpdatesChat != (rhId to chatId)) {
         items
       } else {
         items.map { item -> droppedUpdates.remove(item.id)?.takeIf { it.meta.updatedAt > item.meta.updatedAt } ?: item }
       }
+
+    fun clearDroppedUpdates() {
+      droppedUpdatesChat = null
+      droppedUpdates.clear()
+    }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
       withContext(Dispatchers.Main) {
@@ -1153,6 +1159,11 @@ object ChatModel {
       presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
       clearActiveChatFilterIfNeeded()
     }
+  }
+
+  fun clearDroppedUpdates() {
+    chatsContext.clearDroppedUpdates()
+    secondaryChatsContext.value?.clearDroppedUpdates()
   }
 
   fun clearActiveChatFilterIfNeeded() {

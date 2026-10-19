@@ -587,6 +587,7 @@ fun deleteChatDatabaseFilesAndState() {
       chatModel.chatsContext.chatItems.clearAndNotify()
       chatModel.chatsContext.chats.clear()
       chatModel.chatsContext.popChatCollector.clear()
+      chatModel.clearDroppedUpdates()
     }
     withContext(Dispatchers.Main) {
       chatModel.secondaryChatsContext.value?.chatItems?.clearAndNotify()
@@ -716,6 +717,7 @@ suspend fun importArchive(
   if (archivePath != null) {
     try {
       m.controller.apiDeleteStorage()
+      withContext(Dispatchers.Main) { m.clearDroppedUpdates() }
       wallpapersDir.mkdirs()
       try {
         val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())

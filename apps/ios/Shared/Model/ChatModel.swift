@@ -102,11 +102,16 @@ class ItemsModel: ObservableObject {
         chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
     }
 
-    func withDroppedUpdates(_ items: [ChatItem]) -> [ChatItem] {
-        if droppedUpdates.isEmpty { return items }
+    func withDroppedUpdates(_ chatId: ChatId, _ items: [ChatItem]) -> [ChatItem] {
+        if droppedUpdates.isEmpty || droppedUpdatesChatId != chatId { return items }
         return items.map { item in
             if let kept = droppedUpdates.removeValue(forKey: item.id), kept.meta.updatedAt > item.meta.updatedAt { kept } else { item }
         }
+    }
+
+    func clearDroppedUpdates() {
+        droppedUpdatesChatId = nil
+        droppedUpdates.removeAll()
     }
 
     init(secondaryIMFilter: SecondaryItemsModelFilter? = nil) {
@@ -756,7 +761,7 @@ final class ChatModel: ObservableObject {
         // add to current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
             var ci = cItem
-            if let kept = ciIM.droppedUpdates.removeValue(forKey: cItem.id) {
+            if ciIM.droppedUpdatesChatId == cInfo.id, let kept = ciIM.droppedUpdates.removeValue(forKey: cItem.id) {
                 if kept.meta.updatedAt >= cItem.meta.updatedAt {
                     ci = kept
                 } else if shouldKeepOldSndCIStatus(oldStatus: kept.meta.itemStatus, newStatus: cItem.meta.itemStatus) {
@@ -814,7 +819,7 @@ final class ChatModel: ObservableObject {
         }
         // update current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            let add = (ciIM.chatState.splits.isEmpty || ciIM.chatState.splits.last != ciIM.reversedChatItems.first?.id) && cItem.id > max(lastItemId, ciIM.reversedChatItems.lazy.map(\.id).max() ?? 0)
+            let add = (ciIM.chatState.splits.isEmpty || ciIM.chatState.splits.last != ciIM.reversedChatItems.first?.id) && cItem.id >= lastItemId && cItem.id > (ciIM.reversedChatItems.lazy.map(\.id).max() ?? 0)
             itemAdded = _upsertChatItem(ciIM, cInfo, cItem, add: add)
         }
         return itemAdded
@@ -1057,6 +1062,11 @@ final class ChatModel: ObservableObject {
             chat.chatStats.unreadChat = unreadChat
             ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
         }
+    }
+
+    func clearDroppedUpdates() {
+        im.clearDroppedUpdates()
+        secondaryIM?.clearDroppedUpdates()
     }
 
     func clearChat(_ cInfo: ChatInfo) {
