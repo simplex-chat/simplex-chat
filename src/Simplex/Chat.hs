@@ -29,6 +29,7 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
 import Simplex.Chat.Badges (badgeServerCredential, defaultFileSizeLimits)
+import Simplex.Chat.Call (supportedCallVRange)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -68,10 +69,12 @@ defaultChatConfig =
             tbqSize = 1024
           },
       chatVRange = supportedChatVRange,
+      callVRange = supportedCallVRange,
       badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
       badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
       badgeCurrentTime = getCurrentTime,
       badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
+      badgeConsecutiveRetries = 3,
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options
@@ -123,6 +126,7 @@ defaultChatConfig =
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
+      callInvitationTTL = 180, -- 3 minutes, the apps stop ringing for older invitations
       highlyAvailable = False,
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
@@ -195,6 +199,7 @@ newChatController
         deliveryJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
         badgeWorkers <- TM.emptyIO
+        storeReceiptWorkers <- TM.emptyIO
         badgeSeq <- newTVarIO 0
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
@@ -243,6 +248,7 @@ newChatController
               deliveryJobWorkers,
               relayRequestWorkers,
               badgeWorkers,
+              storeReceiptWorkers,
               badgeSeq,
               relayGroupLinkChecksAsync,
               webPreviewState,

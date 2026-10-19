@@ -158,6 +158,16 @@ public func deleteAppFiles() {
     }
 }
 
+public func deleteTempFiles() {
+    let fm = FileManager.default
+    do {
+        try fm.removeItem(at: getTempFilesDirectory())
+        try fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    } catch {
+        logger.error("FileUtils deleteTempFiles error: \(error.localizedDescription)")
+    }
+}
+
 public func fileSize(_ url: URL) -> Int? { // in bytes
     do {
         let val = try url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey])
@@ -210,6 +220,13 @@ private func restoreBackupFile(fromPath: String, toPath: String) throws {
         try fm.removeItem(atPath: toPath)
     }
     try fm.copyItem(atPath: fromPath, toPath: toPath)
+}
+
+public func deleteDatabaseBackups() {
+    let fm = FileManager.default
+    let dbPath = getAppDatabasePath().path
+    try? fm.removeItem(atPath: dbPath + CHAT_DB_BAK)
+    try? fm.removeItem(atPath: dbPath + AGENT_DB_BAK)
 }
 
 public func hasLegacyDatabase() -> Bool {

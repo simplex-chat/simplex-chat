@@ -24,7 +24,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 

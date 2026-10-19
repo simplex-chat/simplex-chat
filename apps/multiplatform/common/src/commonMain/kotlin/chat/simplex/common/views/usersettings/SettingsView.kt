@@ -35,7 +35,7 @@ import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: () -> Unit) {
@@ -110,7 +110,7 @@ fun SettingsLayout(
     SectionView {
       // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
       // a gray top bar / back button that badges views don't want (they have their own inline titles).
-      SectionItemView(click = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } }) {
+      SectionItemView(click = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } }) {
         val badgeType = chatModel.currentUser.value?.profile?.localBadge?.badge?.badgeType ?: BadgeType.Supporter
         Image(painterResource(badgeImage(badgeType)), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
         TextIconSpaced()

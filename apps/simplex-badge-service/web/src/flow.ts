@@ -9,7 +9,7 @@ import {
   applyView, closedInvoice, offlineInvoice, recordFromView, serverState, viewFor, withoutCode,
   type PaymentView,
 } from "./order.js";
-import type { Method, OrderRecord, OrderStatus } from "./domain.js";
+import type { App, Method, OrderRecord, OrderStatus } from "./domain.js";
 import type { Store } from "./store.js";
 
 export const GIVE_UP_MS = 15 * 60 * 1000;
@@ -285,7 +285,7 @@ export class Flow {
 
   constructor(private readonly d: FlowDeps) {}
 
-  async checkout(sel: Selection): Promise<CheckoutOutcome> {
+  async checkout(sel: Selection, app?: App): Promise<CheckoutOutcome> {
     for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt++) {
       const wipes = this.d.store.wipeCount;
       const code = this.d.newCode();
@@ -316,7 +316,7 @@ export class Flow {
           months: created.months,
           createdAt: new Date(this.d.now()).toISOString(),
         },
-        { code: display(code), submitted: undefined, canceled: undefined, method: sel.method },
+        { code: display(code), submitted: undefined, canceled: undefined, method: sel.method, app },
         serverState({ ...created, status: "open" }, undefined),
       );
       // The buyer can empty this browser while the invoice is bought, so the order is saved only
