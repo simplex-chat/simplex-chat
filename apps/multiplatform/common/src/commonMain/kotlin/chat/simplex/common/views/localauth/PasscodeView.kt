@@ -15,7 +15,7 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.group.ProgressIndicator
 import chat.simplex.common.views.helpers.SimpleButton
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun PasscodeView(

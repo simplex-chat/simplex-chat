@@ -1,0 +1,13 @@
+---
+layout: layouts/main.html
+---
+<div data-simplex-channel-preview
+    data-channel-link="{{ channel.link }}"
+    data-channel-id="{{ channel.id }}"
+    data-relay-domains="{{ channel.relays | join(',') }}"
+    data-app-download-buttons="off"
+    data-color-scheme="site"
+    data-top-offset="54"
+></div>
+<template data-markdown>{{ content | safe }}<p>Recent posts in JSON, with the channel profile and subscriber count, from any of the channel relays: {% for relay in channel.relays %}<a href="https://{{ relay }}/channel/{{ channel.id }}.json">{{ relay }}</a>{% if not loop.last %}, {% endif %}{% endfor %}.</p></template>
+<script src="/js/channel-preview.js"></script>

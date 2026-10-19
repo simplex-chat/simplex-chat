@@ -548,9 +548,7 @@ testWebPreviewMultipleChannels ps = do
       relay <# "#ch1> msg in ch1"
       alice #> "#ch2 msg in ch2"
       relay <# "#ch2> msg in ch2"
-      threadDelay 2000000
-      files <- filter (\f -> takeExtension f == ".json") <$> listDirectory webDir
-      length files `shouldBe` 2
+      (length . filter (\f -> takeExtension f == ".json") <$> listDirectory webDir) `shouldEventuallyReturn` 2
 
 testWebPreviewChannelDeleted :: HasCallStack => TestParams -> IO ()
 testWebPreviewChannelDeleted ps =

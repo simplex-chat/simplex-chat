@@ -6,7 +6,7 @@
 
 # Interface: ErrorSQL
 
-Defined in: [src/core.ts:158](../src/core.ts#L158)
+Defined in: [src/core.ts:180](../src/core.ts#L180)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:158](../src/core.ts#L158)
 
 > **dbFile**: `string`
 
-Defined in: [src/core.ts:160](../src/core.ts#L160)
+Defined in: [src/core.ts:182](../src/core.ts#L182)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:160](../src/core.ts#L160)
 
 > **migrationSQLError**: `string`
 
-Defined in: [src/core.ts:161](../src/core.ts#L161)
+Defined in: [src/core.ts:183](../src/core.ts#L183)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [src/core.ts:161](../src/core.ts#L161)
 
 > **type**: `"errorSQL"`
 
-Defined in: [src/core.ts:159](../src/core.ts#L159)
+Defined in: [src/core.ts:181](../src/core.ts#L181)
 
 #### Overrides
 

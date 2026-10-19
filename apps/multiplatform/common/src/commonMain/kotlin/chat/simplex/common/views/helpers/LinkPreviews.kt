@@ -23,7 +23,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
 import chat.simplex.common.views.chat.item.imageViewFullWidth
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -206,7 +206,7 @@ fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongC
       stringResource(MR.strings.image_descr_link_preview),
       modifier = Modifier
         .fillMaxWidth()
-        .desktopModifyBlurredState(true, blurred, showMenu)
+        .desktopModifyBlurredState(blurred, showMenu)
         .privacyBlur(true, image, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick),
       contentScale = ContentScale.FillWidth,
     )
