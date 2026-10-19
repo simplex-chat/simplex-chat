@@ -1,5 +1,5 @@
 import {
-  composeOrder, readChain, readMethod, readStatus, readStep, readTheme,
+  composeOrder, readApp, readChain, readMethod, readStatus, readStep, readTheme,
   type OrderRecord, type SessionRecord, type Theme,
 } from "./domain.js";
 import { asObject, filledText, flag, positiveInteger, text, nonNegativeInteger } from "./parse.js";
@@ -36,7 +36,7 @@ function readOrder(value: unknown): OrderRecord | undefined {
       badgeType: text(o.badgeType) ?? "",
       months: positiveInteger(o.months) ?? 0,
     },
-    { code: text(o.code), submitted: flag(o.submitted), canceled: flag(o.canceled), method: readMethod(o.method) },
+    { code: text(o.code), submitted: flag(o.submitted), canceled: flag(o.canceled), method: readMethod(o.method), app: readApp(o.app) },
     {
       status,
       amount: positiveInteger(o.amount),
@@ -61,9 +61,11 @@ function readSession(value: unknown): SessionRecord | undefined {
   const priceId = text(s.priceId);
   const offerId = text(s.offerId);
   const method = readMethod(s.method);
+  const app = readApp(s.app);
   if (priceId !== undefined) session.priceId = priceId;
   if (offerId !== undefined) session.offerId = offerId;
   if (method !== undefined) session.method = method;
+  if (app !== undefined) session.app = app;
   return session;
 }
 
@@ -119,7 +121,7 @@ export class Store {
     return list.flatMap((o) => readOrder(o) ?? []);
   }
 
-  // The record replaces the stored entry, but the browser-only fields (code, submitted, canceled) are preserved because the service never sends them back.
+  // The record replaces the stored entry, but the browser-only fields (code, submitted, canceled, app) are preserved because the service never sends them back.
   saveOrder(record: OrderRecord): boolean {
     const list = this.orders();
     const at = list.findIndex((o) => o.orderId === record.orderId);
@@ -130,6 +132,7 @@ export class Store {
         ...(record.code === undefined && kept.code !== undefined ? { code: kept.code } : {}),
         ...(kept.submitted === true ? { submitted: true } : {}),
         ...(kept.canceled === true ? { canceled: true } : {}),
+        ...(record.app === undefined && kept.app !== undefined ? { app: kept.app } : {}),
       };
     } else {
       if (list.length >= CAP) {

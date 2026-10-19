@@ -82,6 +82,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       CRContactDeleted u c -> whenCurrUser cc u $ unsetActiveContact ct c
       CRGroupDeletedUser u g _ _ -> whenCurrUser cc u $ unsetActiveGroup ct g
       CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g
+      CRSentGroupInvitationViaGroup u g _ _ _ -> whenCurrUser cc u $ setActiveGroup ct g
       CRCmdOk _ -> case cmd of
         Right APIDeleteUser {} -> setActive ct ""
         _ -> pure ()

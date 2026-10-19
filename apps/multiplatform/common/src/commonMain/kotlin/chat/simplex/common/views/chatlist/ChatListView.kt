@@ -776,11 +776,40 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
+  } else if (isAppLink(uri)) {
+    // branched on the scheme before the connection dispatch, which an app link must never reach
+    // an app link must not tear down a redemption in flight
+    if (!isBadgeLinkIssuing()) openAppLink(rhId, uri)
   } else {
     withBGApi {
       chatModel.appOpenUrlConnecting.value = true
       planAndConnect(rhId, uri, close = { ModalManager.closeAllModalsEverywhere() }, cleanup = { chatModel.appOpenUrlConnecting.value = false })
     }
+  }
+}
+
+// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+internal const val appLinkScheme = "simplexchat"
+internal const val connectionLinkScheme = "simplex"
+private const val badgeLinkPath = "/badge/code/"
+
+// the prefix of the raw text, not a parsed URI: a link that does not parse is still an app link
+fun isAppLink(uri: String): Boolean =
+  uri.startsWith("$appLinkScheme:", ignoreCase = true)
+
+fun isConnectionLink(uri: String): Boolean =
+  uri.startsWith("$connectionLinkScheme:", ignoreCase = true)
+
+// a link type added in a later version reaches this build too, so an unknown path asks for an update
+private fun openAppLink(rhId: Long?, uri: String) {
+  // a link that does not parse is dropped, as iOS never receives one; one that parses without
+  // a path, such as simplexchat:badge/code/X, is an unknown link on both platforms
+  val parsed = uriCreateOrNull(uri) ?: return
+  val path = parsed.path ?: ""
+  if (path.startsWith(badgeLinkPath)) {
+    openBadgeLink(rhId, path.removePrefix(badgeLinkPath))
+  } else {
+    AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.app_link_not_supported))
   }
 }
 
@@ -1052,7 +1081,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_support_ended),
             subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
-            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } },
+            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
             onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_support_ended)) }
           )
         }
@@ -1065,7 +1094,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             title = stringResource(MR.strings.badges_renewal_failed),
             subtitle = stringResource(MR.strings.badges_tap_for_details),
             warning = true,
-            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } },
+            onTap = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } },
             onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_renewal_failed)) }
           )
         }
@@ -1078,7 +1107,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             showDismiss = supporterBannerTapped.value,
             onTap = {
               appPrefs.supporterBannerTapped.set(true)
-              ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) }
+              ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) }
             },
             onDismiss = ::showSupportSimpleXDismissAlert
           )

@@ -19,6 +19,7 @@ templateEngineOverride: njk
     <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg" />
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    {% include "markdown-alternate.html" %}
     <meta name="theme-color" content="#050920">
 
     <link rel="preload" href="/img/design_3/cover.webp" as="image" type="image/webp">
@@ -64,7 +65,7 @@ templateEngineOverride: njk
             --cf-area-off: calc((var(--sec-h) - 100svh) / 2);
         }
 
-        @media screen and (max-width: 959px) and (orientation: portrait) {
+        @media screen and (max-width: 1015px) and (orientation: portrait) {
             :root {
                 --cf-grad-light: linear-gradient(30deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
                 --cf-grad-dark: linear-gradient(30deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
@@ -378,7 +379,7 @@ templateEngineOverride: njk
 
         .cf-pill svg { height: 30px; width: auto; display: block; transform: translateY(-3.5px); }
 
-        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
+        @media screen and (min-width: 1016px), screen and (max-width: 1015px) and (orientation: landscape) {
             .cf-pill { width: 252px; justify-content: center; }
         }
 
@@ -388,7 +389,7 @@ templateEngineOverride: njk
         .cf-cta-link:hover,
         .cf .text-container a.gradient-text:hover { filter: brightness(1.12); }
 
-        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
+        @media screen and (min-width: 1016px), screen and (max-width: 1015px) and (orientation: landscape) {
             .cf-network .text-container h2 { max-width: calc(var(--sec-vwu) * 23.5) !important; }
             .cf-network .text-container p { max-width: calc(var(--sec-vwu) * 31) !important; }
             .cf-network .text-container a { max-width: calc(var(--sec-vwu) * 31) !important; }
@@ -428,7 +429,7 @@ templateEngineOverride: njk
         #navbar.on-light > a.logo.logo-light { display: flex; }
         #navbar.on-light > a.logo.logo-dark { display: none; }
 
-        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
+        @media screen and (min-width: 1016px), screen and (max-width: 1015px) and (orientation: landscape) {
             header#navbar { height: 74px; }
             header#navbar > a.logo {
                 top: 0;
@@ -442,7 +443,7 @@ templateEngineOverride: njk
         }
 
         /* keep the navbar visible on mobile (no slide-in menu here) */
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 1015px) {
             header#navbar {
                 visibility: visible !important;
                 opacity: 1 !important;
@@ -450,7 +451,7 @@ templateEngineOverride: njk
                 background: transparent !important;
             }
         }
-        @media screen and (max-width: 959px) and (orientation: portrait) {
+        @media screen and (max-width: 1015px) and (orientation: portrait) {
             header#navbar { height: 54px !important; }
             header#navbar > a.logo { top: 0 !important; height: 100% !important; align-items: center; transform: translateY(var(--cf-nav-shift)); }
             [dir="ltr"] header#navbar > a.logo { padding-left: var(--cf-text-pad); }
@@ -458,7 +459,7 @@ templateEngineOverride: njk
         }
 
         /* ---- mobile: portrait art on top, text at the bottom (home page system) ---- */
-        @media screen and (max-width: 959px) and (orientation: portrait) {
+        @media screen and (max-width: 1015px) and (orientation: portrait) {
             .cf .text-container h2 { font-size: calc(var(--sec-vwu) * 9.4); }
             .cf .text-container {
                 margin-left: 0 !important;
@@ -750,15 +751,15 @@ templateEngineOverride: njk
         .cf-tag .n { font-weight: 700; font-size: calc(var(--sec-vwu) * 1.5); line-height: 1.35; }
         .cf-tag .v { font-weight: 500; font-size: calc(var(--sec-vwu) * 1.2); line-height: 1.45; }
         .cf-tag .v b { font-weight: 700; }
-        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
+        @media screen and (min-width: 1016px), screen and (max-width: 1015px) and (orientation: landscape) {
             .cf-tags-art,
             .cf-art { display: none; }
         }
-        @media screen and (max-width: 959px) and (orientation: portrait) {
+        @media screen and (max-width: 1015px) and (orientation: portrait) {
             .cf-tag .n { font-size: 3.54cqh; line-height: 1.3; }
         }
 
-        @media screen and (max-width: 959px) and (orientation: portrait) and (max-aspect-ratio: 62/100) {
+        @media screen and (max-width: 1015px) and (orientation: portrait) and (max-aspect-ratio: 62/100) {
             .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.6); }
             :root { --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 72.8vw); }
         }
@@ -799,7 +800,7 @@ templateEngineOverride: njk
         .cf-fine-links a { color: #9fb2d8; text-decoration: none; }
         .cf-fine-links a:hover { color: #ffffff; }
 
-        @media screen and (max-width: 959px) and (orientation: portrait) {
+        @media screen and (max-width: 1015px) and (orientation: portrait) {
             /* padding-bottom comes from .safari-ios section.page, which a
                fit-content footer does not need */
             section.page.cf.cf-footer { height: fit-content; min-height: fit-content; padding-bottom: 0; }
@@ -934,7 +935,7 @@ templateEngineOverride: njk
             .cf-modal-panel { padding: 28px 20px; }
             .cf-form-submit { padding: 0 12px; font-size: 15px; }
         }
-        @media screen and (max-width: 959px) and (orientation: landscape) {
+        @media screen and (max-width: 1015px) and (orientation: landscape) {
             :root {
                 --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100svh));
                 --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100svh));
@@ -1019,13 +1020,14 @@ templateEngineOverride: njk
                 <div class="cf-hero-text">
                     <h1>The only<br>messaging network<br>without any <br class="cf-br-narrow">user identifiers</h1>
                     <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or user accounts.</p>
-                    <p class="lead lead-short">No phone numbers, emails, or accounts.</p>
+                    <p class="lead lead-short" data-markdown-skip>No phone numbers, emails, or accounts.</p>
                     <div class="cf-hero-cta">
                         <a class="cf-pill cf-primary" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
                             Invest on {{ wfLogo() }}
                         </a>
                         <a class="cf-cta-link" id="cf-hero-subscribe" href="#request">Subscribe for updates</a>
                     </div>
+                    <template data-markdown><p>The full crowdfunding memo, in Markdown for AI assistants: <a href="/wefunder.md">simplex.chat/wefunder.md</a></p></template>
                     <div class="cf-stats">
                         <div class="cf-stat">
                             <img src="/img/crowdfunding/cloud-download.png" alt="">
@@ -1147,7 +1149,7 @@ templateEngineOverride: njk
         <section class="page cf cf-dark cf-close" id="invest" data-section="invest">
             <div class="area">
                 <div class="cf-hero-text">
-                    <h1><span class="cf-close-l1">Get a stake</span><br><span class="cf-close-l2">in SimpleX Chat</span></h1>
+                    <h1><span class="cf-close-l1">Own a part</span><br><span class="cf-close-l2">of SimpleX Chat</span></h1>
                     <p class="cf-close-call">We are building a network that people own.<br>We invite you to invest and become part of it.</p>
                     <div class="cf-hero-cta">
                         <a class="cf-pill cf-primary" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
@@ -1320,7 +1322,7 @@ templateEngineOverride: njk
             var hero = block.closest('section');
             var leadShort = document.querySelector('.cf-hero .lead-short');
             var logos = document.querySelectorAll('#navbar .logo img');
-            var narrow = window.matchMedia('(max-width: 959px) and (orientation: portrait)');
+            var narrow = window.matchMedia('(max-width: 1015px) and (orientation: portrait)');
             function logoBottom() {
                 var bottom = 0;
                 for (var i = 0; i < logos.length; i++) { var r = logos[i].getBoundingClientRect(); if (r.height > 0) bottom = Math.max(bottom, r.bottom); }
@@ -1356,7 +1358,8 @@ templateEngineOverride: njk
     </script>
     <script type="module">
         import { init, track } from '/js/page.js'
-        init({ domain: 'simplex.chat', endpoint: 'https://api.simplex.chat/api/event', logging: false })
+        {% include "events.js" %}
+        init(pageEvents)
         var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf[data-section]'))
         var seen = {}
         var current = 'hero'
@@ -1379,13 +1382,6 @@ templateEngineOverride: njk
         })
         var bar = document.querySelector('#cf-cta-invest')
         if (bar) bar.addEventListener('click', function () { track('Invest', { props: { place: 'bar', section: current } }) })
-        var exits = [['#navbar .logo', 'home', 'logo'], ['.cf-fine-links a[href="/"]', 'home', 'footer'], ['.cf-fine-links a[href="/privacy"]', 'privacy', 'footer'],
-            ['.cf-simplex-link', 'chat', 'request'], ['.cf-deck-link', 'deck', 'request'], ['.cf-modal-footnote a', 'source', 'ai-threat']]
-        exits.forEach(function (x) {
-            document.querySelectorAll(x[0]).forEach(function (el) {
-                el.addEventListener('click', function () { track('Exit', { props: { to: x[1], place: x[2] } }) })
-            })
-        })
         document.addEventListener('mc:result', function (e) { track('Subscribed', { props: { status: e.detail.status } }) })
         window.addEventListener('hashchange', function () {
             var id = location.hash.slice(1)

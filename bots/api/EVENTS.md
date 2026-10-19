@@ -25,6 +25,7 @@ This file is generated automatically.
 [Group events](#group-events)
 - Main events
   - [ReceivedGroupInvitation](#receivedgroupinvitation)
+  - [ReceivedGroupInvitationViaGroup](#receivedgroupinvitationviagroup)
   - [UserJoinedGroup](#userjoinedgroup)
   - [GroupUpdated](#groupupdated)
   - [JoinedGroupMember](#joinedgroupmember)
@@ -280,6 +281,22 @@ Received group invitation.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - contact: [Contact](./TYPES.md#contact)
+- fromMemberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+
+---
+
+
+### ReceivedGroupInvitationViaGroup
+
+Received group invitation from member of another group.
+
+**Record type**:
+- type: "receivedGroupInvitationViaGroup"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- viaGroupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- viaMember: [GroupMember](./TYPES.md#groupmember)
 - fromMemberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
