@@ -126,7 +126,7 @@ main .section-bg {
     color: #000000;
 }
 
-@media screen and (max-width: 959px) {
+@media screen and (max-width: 1015px) {
     .livestream {
         background-image: url("/img/design_3/section-4-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.78);

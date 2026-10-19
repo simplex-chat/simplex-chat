@@ -44,6 +44,7 @@ module Simplex.Chat.Store.Profiles
     updateUserAutoAcceptMemberContacts,
     updateUserAutoAcceptGroupInvitations,
     updateUserProfile,
+    updatedUserProfile,
     setUserBadge,
     setUserProfileContactLink,
     getUserContactProfiles,
@@ -77,6 +78,7 @@ module Simplex.Chat.Store.Profiles
     createCall,
     deleteCalls,
     getCalls,
+    expireCalls,
     createCommand,
     setCommandConnId,
     deleteCommand,
@@ -103,6 +105,7 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Simplex.Chat.Badges (LocalBadge, localBadgeToRow)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
@@ -126,7 +129,7 @@ import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
@@ -167,7 +170,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order, displayName) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -342,21 +345,15 @@ updateUserProfile db user p'
       currentTs <- getCurrentTime
       updateUserProfileFields_' db userId profileId p' currentTs
       userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
-      pure user {profile = (toLocalProfile profileId p' localAlias currentTs (Just False) Nothing) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+      pure user {profile = updatedUserProfile user p' currentTs, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
-      checkConstraint SEDuplicateName . liftIO $ do
+      checkConstraint SEDuplicateName . ExceptT . withLocalDisplayName db userId newName $ \newLDN -> do
         currentTs <- getCurrentTime
-        -- Insert first: checkConstraint returns the violation as a value, so the
-        -- transaction commits, keeping whatever ran before the failing insert.
-        DB.execute
-          db
-          "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-          (newName, newName, userId, currentTs, currentTs)
-        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newLDN, currentTs, userId)
         userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
         updateUserProfileFields_' db userId profileId p' currentTs
-        updateContactLDN_ db user userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile = (toLocalProfile profileId p' localAlias currentTs (Just False) Nothing) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+        updateContactLDN_ db user userContactId localDisplayName newLDN currentTs
+        pure $ Right user {localDisplayName = newLDN, profile = updatedUserProfile user p' currentTs, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateUserMemberProfileUpdatedAt_ currentTs
       | userMemberProfileChanged = do
@@ -364,9 +361,13 @@ updateUserProfile db user p'
           pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
     userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || desc' /= description || img' /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, localBadge, localAlias}, userMemberProfileUpdatedAt} = user
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = fn', shortDescr = d', description = desc', image = img', preferences} = p'
     fullPreferences = fullPreferences' preferences
+
+updatedUserProfile :: User -> Profile -> UTCTime -> LocalProfile
+updatedUserProfile User {profile = LocalProfile {profileId, localBadge, localAlias}} p' ts =
+  (toLocalProfile profileId p' localAlias ts (Just False) Nothing) {localBadge}
 
 -- own profile field update; leaves the badge columns alone (the credential is owned by setUserBadge/addUserBadge)
 updateUserProfileFields_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
@@ -409,19 +410,20 @@ setUserSimplexDomain db user@User {userId, profile = p@LocalProfile {profileId}}
   pure (user :: User) {profile = p {contactDomain = mkDomainClaim <$> domain_}}
 
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
-setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do
+setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId, contactDomain}} ucl_ = do
   ts <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET contact_link = ?, updated_at = ?
+      SET contact_link = ?, contact_domain = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (contactLink, ts, userId, profileId)
-  pure (user :: User) {profile = p {contactLink}}
+    (contactLink, claimDomain <$> contactDomain', ts, userId, profileId)
+  pure (user :: User) {profile = p {contactLink, contactDomain = contactDomain'}}
   where
     contactLink = profileContactLink <$> ucl_
+    contactDomain' = if isJust contactLink then contactDomain else Nothing
 
 -- only used in tests
 getUserContactProfiles :: DB.Connection -> User -> IO [Profile]
@@ -1083,6 +1085,26 @@ getCalls db =
   where
     toCall :: (ContactId, CallId, Text, ChatItemId, CallState, UTCTime) -> Call
     toCall (contactId, callId, callUUID, chatItemId, callState, callTs) = Call {contactId, callId, callUUID, chatItemId, callState, callTs}
+
+-- only received call invitations are stored, so their chat items are pending and become missed
+expireCalls :: DB.Connection -> UTCTime -> IO ()
+expireCalls db cutoffTs = do
+  itemIds :: [ChatItemId] <- map fromOnly <$> DB.query db "DELETE FROM calls WHERE call_ts < ? RETURNING chat_item_id" (Only cutoffTs)
+  currentTs <- getCurrentTime
+  let content = CIRcvCall CISCallMissed 0
+      contentText = ciContentToText content
+  unless (null itemIds) $
+#if defined(dbPostgres)
+    DB.execute
+      db
+      "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id IN ?"
+      (content, contentText, currentTs, In itemIds)
+#else
+    DB.executeMany
+      db
+      "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?"
+      (map (content,contentText,currentTs,) itemIds)
+#endif
 
 createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
 createCommand db User {userId} connId commandFunction = do

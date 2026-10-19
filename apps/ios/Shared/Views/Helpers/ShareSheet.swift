@@ -98,7 +98,7 @@ func openExternalLink(_ url: URL) {
     } else {
         showAlert(
             title: NSLocalizedString("Open external link?", comment: "alert title"),
-            message: s,
+            message: displayedUri(s),
             buttonTitle: NSLocalizedString("Open", comment: "alert button"),
             buttonAction: { UIApplication.shared.open(url) },
             cancelButton: true

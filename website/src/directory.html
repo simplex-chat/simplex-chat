@@ -123,6 +123,57 @@ active_directory: true
     color: magenta;
   }
 
+  #directory .entry {
+    --md-card: rgba(139, 135, 134, 0.12);
+    --md-line: rgba(139, 135, 134, 0.35);
+    --md-bar: rgba(0, 0, 0, 0.16);
+    --md-stripe: rgba(139, 135, 134, 0.08);
+    --md-link: #0053D0;
+  }
+
+  .dark #directory .entry {
+    --md-card: rgba(255, 255, 255, 0.08);
+    --md-line: rgba(139, 135, 134, 0.45);
+    --md-bar: rgba(255, 255, 255, 0.22);
+    --md-stripe: rgba(139, 135, 134, 0.12);
+    --md-link: #70F0F9;
+  }
+
+  #directory .entry .text-container { min-width: 0; }
+  #directory .entry .md-gap { height: 0.7em; }
+  #directory .entry .md-h1 { font-size: 1.5em; line-height: 1.3; font-weight: 700; }
+  #directory .entry .md-h2 { font-size: 1.3em; line-height: 1.3; font-weight: 700; }
+  #directory .entry .md-h3 { font-size: 1.15em; line-height: 1.3; font-weight: 700; }
+  #directory .entry .md-h4 { font-weight: 700; }
+  #directory .entry .md-entry { display: flex; gap: 6px; }
+  #directory .entry .md-mark { flex: none; min-width: 1.1em; }
+  #directory .entry .md-text { flex: 1; min-width: 0; }
+  #directory .entry .md-quote { display: flex; gap: 10px; }
+  #directory .entry .md-bar { flex: none; width: 4px; border-radius: 2px; background: var(--md-bar); }
+  #directory .entry .md-quote > .md-text { opacity: 0.7; }
+  #directory .entry .md-code { position: relative; background: var(--md-card); border-radius: 4px; overflow: hidden; }
+  #directory .entry .md-code pre { margin: 0; padding: 8px 12px; overflow-x: auto; white-space: pre; font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.875em; line-height: 1.45; }
+  #directory .entry .md-copy { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 4px; background: var(--md-card); color: var(--md-link); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+  #directory .entry .md-code:hover .md-copy,
+  #directory .entry .md-code.tapped .md-copy,
+  #directory .entry .md-copy:focus-visible { opacity: 1; pointer-events: auto; }
+  #directory .entry .md-copy svg { width: 18px; height: 18px; }
+  #directory .entry .md-icon-done,
+  #directory .entry .md-copy.copied .md-icon-copy { display: none; }
+  #directory .entry .md-copy.copied .md-icon-done { display: block; }
+  #directory .entry .md-table { overflow-x: auto; }
+  #directory .entry .md-frame { display: inline-block; vertical-align: top; border: 1px solid var(--md-line); border-radius: 4px; overflow: hidden; }
+  #directory .entry .md-frame table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  #directory .entry .md-frame th,
+  #directory .entry .md-frame td { padding: 4px 12px; white-space: nowrap; border-right: 1px solid var(--md-line); border-bottom: 1px solid var(--md-line); }
+  #directory .entry .md-frame th:last-child,
+  #directory .entry .md-frame td:last-child { border-right: 0; }
+  #directory .entry .md-frame tr:last-child th,
+  #directory .entry .md-frame tr:last-child td { border-bottom: 0; }
+  #directory .entry .md-frame th { font-weight: 700; background: var(--md-card); }
+  #directory .entry .md-frame tr:nth-child(odd) td { background: var(--md-stripe); }
+  #directory .entry .md-rule { border: 0; border-top: 1px solid var(--md-line); margin: 6px 0; }
+
   .pagination {
     display: flex;
     justify-content: center;
@@ -264,11 +315,12 @@ active_directory: true
 
 <section class="py-10 px-5 mt-[66px] dark:text-white">
   <div class="container">
-    <h1 class="text-[38px] text-center font-bold text-active-blue mb-8">SimpleX Directory</h1>
+    <h1 class="text-[38px] md:text-[45px] text-center font-bold text-active-blue mb-8">SimpleX Directory</h1>
     <p>Welcome to the selected users' communities that you can join via <a href="/downloads">SimpleX Chat
         app</a>.</p>
-    <p>SimpleX Directory is also available as a <a href="https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok" target="_blank">SimpleX chat bot</a>.</p>
+    <p>SimpleX Directory is also available as a <a href="https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok" target="_blank" rel="noopener">SimpleX chat bot</a>.</p>
     <p>Read about <a href="/docs/directory.html">how to add</a> your community.</p>
+    <template data-markdown><p>All listed groups and channels in JSON, with names, descriptions, member counts, join links and activity times: <a href="https://directory.simplex.chat/data/listing.json">directory.simplex.chat/data/listing.json</a>.</p></template>
     <div class="search-container">
       <input id="search" autocomplete="off">
       <div id="top-pagination" class="pagination">
