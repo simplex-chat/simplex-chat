@@ -6,6 +6,7 @@ import equal = require("fast-deep-equal")
 
 export type BotDbOpts = api.DbConfig & {
   confirmMigrations?: core.MigrationConfirmation
+  queueSize?: number
 }
 
 export interface BotOptions {
@@ -34,21 +35,21 @@ const defaultOpts: Required<BotOptions> = {
 
 export interface BotConfig {
   profile: T.Profile,
+  simplexDomain?: string | null,
   dbOpts: BotDbOpts,
   options: BotOptions,
-  onMessage?: (chatItem: T.AChatItem, content: T.MsgContent) => void | Promise<void>,
+  onMessage?: (chatItem: T.AChatItem, content: T.MsgContent, chat: api.ChatApi) => void | Promise<void>,
   // command handlers can be different from commands to be shown in client UI
-  onCommands?: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand) => void | Promise<void>)},
+  onCommands?: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand, chat: api.ChatApi) => void | Promise<void>)},
   // If you use `onMessage` and to subscribe "newChatItems" event, exclude content messages from processing
   // If you use `onCommands` and to subscribe "newChatItems" event, exclude commands from processing
   events?: api.EventSubscribers
 }
 
-export async function run({profile, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
-  const bot = await api.ChatApi.init(dbOpts, dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp)
+export async function run({profile, simplexDomain, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
+  const bot = await api.ChatApi.init(dbOpts, dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp, dbOpts.queueSize)
   const opts = fullOptions(options)
-  if (onMessage) subscribeMessages(bot, onMessage)
-  if (Object.keys(onCommands).length > 0) subscribeCommands(bot, onCommands)
+  if (onMessage || Object.keys(onCommands).length > 0) subscribeChatItems(bot, onMessage, onCommands)
   if (Object.keys(events).length > 0) bot.on(events)
   subscribeLogEvents(bot, opts)
   const botProfile = mkBotProfile(profile, opts)
@@ -60,7 +61,8 @@ export async function run({profile, dbOpts, options = defaultOpts, onMessage, on
     console.log(`Bot address: ${addressLink}`)
     if (opts.useBotProfile) botProfile.contactLink = addressLink
   }
-  await updateBotUserProfile(bot, user, botProfile, opts)  
+  const namedUser = await updateBotSimplexDomain(bot, user, simplexDomain, opts)
+  await updateBotUserProfile(bot, namedUser, botProfile, opts)
   return [bot, user, address]
 }
 
@@ -105,38 +107,25 @@ function mkBotProfile(profile: T.Profile, opts: Required<BotOptions>): T.Profile
   return profile 
 }
 
-function subscribeMessages(bot: api.ChatApi, onMessage: (chatItem: T.AChatItem, content: T.MsgContent) => void | Promise<void>) {
+export function subscribeChatItems(
+  bot: api.ChatApi,
+  onMessage: ((chatItem: T.AChatItem, content: T.MsgContent, chat: api.ChatApi) => void | Promise<void>) | undefined,
+  commands: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand, chat: api.ChatApi) => void | Promise<void>)}
+) {
   bot.on("newChatItems", async ({chatItems}) => {
     for (const ci of chatItems) {
-      if (ci.chatItem.content.type === "rcvMsgContent") {
-        try {
-          const p = onMessage(ci, ci.chatItem.content.msgContent)
-          if (p instanceof Promise) await p
-        } catch (e) {
-          console.log("message processing error", e)
-        }
+      const content = ci.chatItem.content
+      if (content.type !== "rcvMsgContent") continue
+      const cmd = util.ciBotCommand(ci.chatItem)
+      const cmdFunc = cmd && (commands[cmd.keyword] || commands[""])
+      try {
+        if (cmd && cmdFunc) await cmdFunc(ci, cmd, bot)
+        else if (onMessage) await onMessage(ci, content.msgContent, bot)
+      } catch (e) {
+        console.log(cmd && cmdFunc ? `${cmd.keyword} command processing error` : "message processing error", e)
       }
     }
   })
-}
-
-function subscribeCommands(bot: api.ChatApi, commands: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand) => void | Promise<void>)}) {
-  bot.on("newChatItems", async (evt) => {
-    for (const ci of evt.chatItems) {
-      const cmd = util.ciBotCommand(ci.chatItem)
-      if (cmd) {
-        const cmdFunc = commands[cmd.keyword] || commands[""]
-        if (cmdFunc) {
-          try {
-            const p = cmdFunc(ci, cmd)
-            if (p instanceof Promise) await p
-          } catch(e) {
-            console.log(`${cmd} command processing error`, e)
-          }
-        }
-      }
-    }
-  })    
 }
 
 function subscribeLogEvents(bot: api.ChatApi, opts: Required<BotOptions>) {
@@ -193,15 +182,33 @@ async function createOrUpdateAddress(bot: api.ChatApi, user: T.User, opts: Requi
     }
   }
   
-  return address    
+  return address
+}
+
+async function updateBotSimplexDomain(bot: api.ChatApi, user: T.User, simplexDomain: string | null | undefined, opts: Required<BotOptions>): Promise<T.User> {
+  if (simplexDomain === undefined) return user
+  const domain = simplexDomain === null ? undefined : simplexDomain.toLowerCase()
+  if (user.profile.contactDomain?.domain === domain) return user
+  if (!opts.updateAddress) {
+    console.log("Bot SimpleX name changed")
+    return user
+  }
+  console.log("Bot SimpleX name changed, updating...")
+  try {
+    return await bot.apiSetUserDomain(user.userId, domain)
+  } catch (e) {
+    console.log("Error updating bot SimpleX name", e)
+    return user
+  }
 }
 
 async function updateBotUserProfile(bot: api.ChatApi, user: T.User, profile: T.Profile, opts: Required<BotOptions>): Promise<void> {
   const {userId} = user
-  if (!equal(util.fromLocalProfile(user.profile), profile)) {
+  const {contactDomain, ...currentProfile} = util.fromLocalProfile(user.profile)
+  if (!equal(currentProfile, profile)) {
     if (opts.updateProfile) {
       console.log("Bot profile changed, updating...")
-      const summary = await bot.apiUpdateProfile(userId, profile)
+      const summary = await bot.apiUpdateProfile(userId, {...profile, contactDomain})
       console.log(
         summary
         ? `Bot profile updated: ${summary.updateSuccesses} updated contact(s), ${summary.updateFailures} failed contact update(s).`

@@ -3505,26 +3505,26 @@ server test failure */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Již máte profil chatu se stejným zobrazovacím názvem. Zvolte prosím jiné jméno.";
 
+/* new chat alert */
+"You are a member" = "Jste člen";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Již jste připojeni k %@.";
+
+/* new chat alert */
+"You are an admin" = "Jste správce";
+
+/* new chat alert */
+"You are an observer" = "Jste pozorovatel";
+
+/* new chat alert */
+"You are an owner" = "Jste vlastník";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Jste pozváni do skupiny";
 
 /* No comment provided by engineer. */
 "you are observer" = "jste pozorovatel";
-
-/* new chat alert */
-"You are an observer" = "Jste pozorovatel";
-
-/* new chat alert */
-"You are a member" = "Jste člen";
-
-/* new chat alert */
-"You are an admin" = "Jste správce";
-
-/* new chat alert */
-"You are an owner" = "Jste vlastník";
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Můžete přijímat hovory z obrazovky zámku, bez ověření zařízení a aplikace.";

@@ -39,3 +39,9 @@ def test_chat_ref_cmd_string_direct():
     """Sanity check the codegen fix for ChatRef-bearing commands."""
     assert T.ChatRef_cmd_string({"chatType": "direct", "chatId": 7}) == "@7"
     assert T.ChatRef_cmd_string({"chatType": "group", "chatId": 42}) == "#42"
+
+
+def test_api_connect_cmd_string_renders_incognito():
+    link = {"connFullLink": "L"}
+    assert CC.APIConnect_cmd_string({"userId": 1, "incognito": True, "preparedLink_": link}) == "/_connect 1 incognito=on L"
+    assert CC.APIConnect_cmd_string({"userId": 1, "incognito": False, "preparedLink_": link}) == "/_connect 1 L"

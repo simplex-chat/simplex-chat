@@ -5,6 +5,10 @@
     -webkit-backface-visibility: hidden;
 }
 
+main .section-bg {
+    position: relative;
+}
+
 .livestream {
     --art-edge: 62.5;
     --split: 56;
@@ -59,8 +63,8 @@
     color: #ffffff;
 }
 
-.livestream .text-container .event-utc,
-.livestream .text-container .event-local {
+.livestream .text-container .event-date,
+.livestream .text-container .event-join {
     font-family: "Manrope", sans-serif;
     font-weight: 300;
     font-size: calc(var(--sec-vwu) * 1.4);
@@ -69,16 +73,28 @@
     color: #000000;
 }
 
-.dark .livestream .text-container .event-utc {
+.dark .livestream .text-container .event-date,
+.dark .livestream .text-container .event-join {
     color: #ffffff;
 }
 
-.livestream .text-container .event-local {
+.livestream .text-container .event-join {
     font-size: calc(var(--sec-vwu) * 1.3);
-    color: #009df7;
 }
 
-.dark .livestream .text-container .event-local {
+.livestream .text-container .event-join span {
+    font-weight: inherit;
+}
+
+.livestream .text-container .event-join a {
+    color: #009df7;
+    font-family: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    max-width: none;
+}
+
+.dark .livestream .text-container .event-join a {
     color: #64fdff;
 }
 
@@ -90,12 +106,7 @@
     margin-top: calc(var(--block-gap) * 0.5);
 }
 
-.livestream .text-container .invest-link {
-    max-width: none;
-    font-size: calc(var(--sec-vwu) * 1.35);
-}
-
-.livestream .text-container .register-btn {
+.livestream .text-container .invest-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -110,12 +121,12 @@
     text-decoration: none;
 }
 
-.dark .livestream .text-container .register-btn {
+.dark .livestream .text-container .invest-btn {
     background: #70f0f9;
     color: #000000;
 }
 
-@media screen and (max-width: 959px) {
+@media screen and (max-width: 1015px) {
     .livestream {
         background-image: url("/img/design_3/section-4-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.78);
@@ -151,144 +162,18 @@
         max-width: calc(var(--sec-vwu) * 80);
     }
 
-    .livestream .text-container .event-utc,
-    .livestream .text-container .event-local {
+    .livestream .text-container .event-date,
+    .livestream .text-container .event-join {
         font-size: calc(var(--sec-vwu) * 3.9);
         max-width: calc(var(--sec-vwu) * 80);
     }
 
-    .livestream .text-container .event-local {
+    .livestream .text-container .event-join {
         font-size: calc(var(--sec-vwu) * 3.3);
     }
 
-    .livestream .text-container .register-btn {
+    .livestream .text-container .invest-btn {
         padding: calc(var(--sec-vhu) * 1.4) calc(var(--sec-vwu) * 5);
         font-size: calc(var(--sec-vwu) * 3.7);
     }
-
-    .livestream .text-container .invest-link {
-        font-size: calc(var(--sec-vwu) * 3.4);
-    }
-}
-
-.register-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 60000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    background: rgba(3, 12, 40, 0.6);
-}
-
-.register-overlay.open {
-    display: flex;
-}
-
-.register-card {
-    position: relative;
-    width: 100%;
-    max-width: 580px;
-    padding: 48px 44px 44px;
-    border-radius: 12px;
-    background: #ffffff;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
-}
-
-.dark .register-card {
-    background: #071c46;
-}
-
-.register-card h2 {
-    font-family: "GT-Walsheim", sans-serif;
-    font-weight: 500;
-    font-size: 28px;
-    line-height: 1.2;
-    color: #023789;
-}
-
-.dark .register-card h2 {
-    color: #ffffff;
-}
-
-.register-card p {
-    margin-top: 14px;
-    font-family: "Manrope", sans-serif;
-    font-weight: 300;
-    font-size: 16px;
-    line-height: 1.5;
-    color: #3f484b;
-}
-
-.dark .register-card p {
-    color: #ffffff;
-}
-
-.register-card form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 28px;
-}
-
-.register-card input[type="email"] {
-    flex: 1;
-    min-width: 260px;
-    height: 52px;
-    padding: 0 22px;
-    border: 1px solid #0053d0;
-    border-radius: 9999px;
-    background: transparent;
-    font-family: "Manrope", sans-serif;
-    font-size: 16px;
-    color: #0d0e12;
-}
-
-.dark .register-card input[type="email"] {
-    border-color: #70f0f9;
-    color: #ffffff;
-}
-
-.register-card .bot-field {
-    position: absolute;
-    left: -5000px;
-}
-
-.register-card input[type="submit"] {
-    height: 52px;
-    padding: 0 34px;
-    border: none;
-    border-radius: 9999px;
-    background: #0053d0;
-    font-family: "Manrope", sans-serif;
-    font-weight: 500;
-    font-size: 16px;
-    color: #ffffff;
-    cursor: pointer;
-}
-
-.dark .register-card input[type="submit"] {
-    background: #70f0f9;
-    color: #000000;
-}
-
-.register-card .close-register {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    line-height: 0;
-}
-
-.register-card .close-register svg {
-    width: 13px;
-    height: auto;
-    fill: #023789;
-}
-
-.dark .register-card .close-register svg {
-    fill: #ffffff;
 }

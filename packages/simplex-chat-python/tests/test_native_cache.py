@@ -1,10 +1,12 @@
+import hashlib
 import zipfile
 from pathlib import Path
 
 import pytest
 
-from simplex_chat._native import _cache_root, _download, _resolve_libs_dir
-from simplex_chat._version import LIBS_VERSION
+from simplex_chat import _native
+from simplex_chat._native import _cache_root, _download, _resolve_libs_dir, lib_for
+from simplex_chat._version import LIBS_RELEASE
 
 
 def test_cache_root_linux(tmp_path, monkeypatch):
@@ -42,7 +44,7 @@ def test_resolve_downloads_when_missing(tmp_path, monkeypatch):
 
     monkeypatch.setattr("simplex_chat._native._download", fake_download)
     libs_dir = _resolve_libs_dir("sqlite")
-    assert libs_dir == tmp_path / "simplex-chat" / f"v{LIBS_VERSION}" / "sqlite"
+    assert libs_dir == tmp_path / "simplex-chat" / LIBS_RELEASE / "sqlite"
     assert called["backend"] == "sqlite"
     assert (libs_dir / "libsimplex.so").exists()
 
@@ -50,7 +52,7 @@ def test_resolve_downloads_when_missing(tmp_path, monkeypatch):
 def test_resolve_uses_cache_on_second_call(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     monkeypatch.setattr("sys.platform", "linux")
-    cached = tmp_path / "simplex-chat" / f"v{LIBS_VERSION}" / "sqlite"
+    cached = tmp_path / "simplex-chat" / LIBS_RELEASE / "sqlite"
     cached.mkdir(parents=True)
     (cached / "libsimplex.so").touch()
     # Should NOT call _download — use the cached file.
@@ -67,9 +69,8 @@ def test_postgres_on_macos_rejected(monkeypatch):
         _resolve_libs_dir("postgres")
 
 
-def test_atomic_install(tmp_path, monkeypatch):
-    """Build a fake libs zip, mock _stream_to_file, verify extraction + atomic rename."""
-    # Build zip: libs/libsimplex.so + libs/libHS-stub.so
+def fake_libs_zip(tmp_path, monkeypatch, sha256=None) -> None:
+    """Serve a zip with libs/libsimplex.so + libs/libHS-stub.so, pinned with `sha256` (its own by default)."""
     src = tmp_path / "src" / "libs"
     src.mkdir(parents=True)
     (src / "libsimplex.so").write_text("fake-so")
@@ -84,10 +85,54 @@ def test_atomic_install(tmp_path, monkeypatch):
 
         shutil.copy(zip_path, dest)
 
+    pinned = sha256 or hashlib.sha256(zip_path.read_bytes()).hexdigest()
     monkeypatch.setattr("simplex_chat._native._stream_to_file", fake_stream)
     monkeypatch.setattr("simplex_chat._native._platform_tag", lambda: "linux-x86_64")
+    monkeypatch.setattr(
+        "simplex_chat._native.LIBS_SHA256", {"simplex-chat-libs-linux-x86_64.zip": pinned}
+    )
 
+
+def test_atomic_install(tmp_path, monkeypatch):
+    fake_libs_zip(tmp_path, monkeypatch)
     target = tmp_path / "out"
     _download(target, "sqlite")
     assert (target / "libsimplex.so").read_text() == "fake-so"
     assert (target / "libHS-stub.so").read_text() == "fake-hs"
+
+
+def test_download_rejects_another_sha256(tmp_path, monkeypatch):
+    fake_libs_zip(tmp_path, monkeypatch, sha256="0" * 64)
+    target = tmp_path / "out"
+    with pytest.raises(RuntimeError, match=f"expected {'0' * 64}"):
+        _download(target, "sqlite")
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["fake-libs.zip", "src"]
+
+
+def test_download_requires_pinned_sha256(tmp_path, monkeypatch):
+    fake_libs_zip(tmp_path, monkeypatch)
+    with pytest.raises(
+        RuntimeError, match="no SHA-256 is pinned for simplex-chat-libs-linux-x86_64-postgres.zip"
+    ):
+        _download(tmp_path / "out", "postgres")
+
+
+def test_libc_on_windows_is_ucrt(monkeypatch):
+    loaded: list[str | None] = []
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr("ctypes.CDLL", lambda name: loaded.append(name))
+    _native._load_libc()
+    assert loaded == ["ucrtbase"]
+
+
+def test_lib_for_rejects_backend_switch(monkeypatch):
+    monkeypatch.setattr(_native, "_lib", object())
+    monkeypatch.setattr(_native, "_backend", "sqlite")
+    monkeypatch.setattr(
+        _native, "_resolve_libs_dir", lambda _: pytest.fail("must not resolve libs")
+    )
+    with pytest.raises(RuntimeError) as exc:
+        lib_for("postgres")
+    assert str(exc.value) == (
+        "libsimplex already loaded with backend=sqlite; cannot switch to postgres in the same process"
+    )

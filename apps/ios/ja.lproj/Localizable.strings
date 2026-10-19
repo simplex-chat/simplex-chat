@@ -3475,26 +3475,26 @@ server test failure */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "同じ表示名前のチャットプロフィールが既にあります。別のを選んでください。";
 
+/* new chat alert */
+"You are a member" = "あなたはメンバーです";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "すでに %@ に接続されています。";
+
+/* new chat alert */
+"You are an admin" = "あなたは管理者です";
+
+/* new chat alert */
+"You are an observer" = "あなたはオブザーバーです";
+
+/* new chat alert */
+"You are an owner" = "あなたはオーナーです";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "グループ招待が届きました";
 
 /* No comment provided by engineer. */
 "you are observer" = "あなたはオブザーバーです";
-
-/* new chat alert */
-"You are an observer" = "あなたはオブザーバーです";
-
-/* new chat alert */
-"You are a member" = "あなたはメンバーです";
-
-/* new chat alert */
-"You are an admin" = "あなたは管理者です";
-
-/* new chat alert */
-"You are an owner" = "あなたはオーナーです";
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "デバイスやアプリの認証を行わずに、ロック画面から通話を受けることができます。";

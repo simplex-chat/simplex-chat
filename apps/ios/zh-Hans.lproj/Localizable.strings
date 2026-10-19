@@ -4405,13 +4405,7 @@ alert button */
 "Open migration to another device" = "打开迁移到另一台设备";
 
 /* new chat action */
-"Open new channel" = "打开新频道";
-
-/* new chat action */
 "Open new chat" = "打开新聊天";
-
-/* new chat action */
-"Open new group" = "打开新群";
 
 /* No comment provided by engineer. */
 "Open Settings" = "打开设置";
@@ -5268,10 +5262,10 @@ chat item action */
 "Saved" = "已保存";
 
 /* No comment provided by engineer. */
-"Saved from" = "保存自";
+"saved from" = "保存自";
 
 /* No comment provided by engineer. */
-"saved from" = "保存自";
+"Saved from" = "保存自";
 
 /* message info title */
 "Saved message" = "已保存的消息";
@@ -6874,6 +6868,15 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "您已经有一个显示名相同的聊天资料。请选择另一个名字。";
 
+/* new chat alert */
+"You are a member" = "你是成员";
+
+/* new chat alert */
+"You are a moderator" = "你是协管";
+
+/* new chat alert */
+"You are a subscriber" = "你是订阅者";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "您已经连接到 %@。";
 
@@ -6898,6 +6901,15 @@ alert title */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "您已经加入了这个群组！\n重复加入请求？";
 
+/* new chat alert */
+"You are an admin" = "你是管理员";
+
+/* new chat alert */
+"You are an observer" = "你是观察者";
+
+/* new chat alert */
+"You are an owner" = "你是群主";
+
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "你已连接到用于接收该连接消息的服务器。";
 
@@ -6915,24 +6927,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "you are subscriber" = "你是订阅者";
-
-/* new chat alert */
-"You are an observer" = "你是观察者";
-
-/* new chat alert */
-"You are a member" = "你是成员";
-
-/* new chat alert */
-"You are a moderator" = "你是协管";
-
-/* new chat alert */
-"You are an admin" = "你是管理员";
-
-/* new chat alert */
-"You are an owner" = "你是群主";
-
-/* new chat alert */
-"You are a subscriber" = "你是订阅者";
 
 /* snd group event chat item */
 "you blocked %@" = "你阻止了%@";

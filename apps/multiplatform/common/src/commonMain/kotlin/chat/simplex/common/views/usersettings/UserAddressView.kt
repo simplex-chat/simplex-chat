@@ -33,7 +33,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.BuildConfigCommon
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -63,6 +63,7 @@ fun UserAddressView(
           chatModel.updateUser(u)
         }
       } catch (e: Exception) {
+        shareViaProfile.value = !on
         Log.e(TAG, "UserAddressView apiSetProfileAddress: ${e.stackTraceToString()}")
       } finally {
         progressIndicator.value = false

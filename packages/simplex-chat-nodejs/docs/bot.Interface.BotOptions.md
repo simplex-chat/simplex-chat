@@ -6,7 +6,7 @@
 
 # Interface: BotOptions
 
-Defined in: [src/bot.ts:11](../src/bot.ts#L11)
+Defined in: [src/bot.ts:12](../src/bot.ts#L12)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/bot.ts:11](../src/bot.ts#L11)
 
 > `optional` **addressSettings?**: [`BotAddressSettings`](api.Interface.BotAddressSettings.md)
 
-Defined in: [src/bot.ts:15](../src/bot.ts#L15)
+Defined in: [src/bot.ts:16](../src/bot.ts#L16)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [src/bot.ts:15](../src/bot.ts#L15)
 
 > `optional` **allowFiles?**: `boolean`
 
-Defined in: [src/bot.ts:16](../src/bot.ts#L16)
+Defined in: [src/bot.ts:17](../src/bot.ts#L17)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [src/bot.ts:16](../src/bot.ts#L16)
 
 > `optional` **commands?**: `ChatBotCommand`[]
 
-Defined in: [src/bot.ts:17](../src/bot.ts#L17)
+Defined in: [src/bot.ts:18](../src/bot.ts#L18)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [src/bot.ts:17](../src/bot.ts#L17)
 
 > `optional` **createAddress?**: `boolean`
 
-Defined in: [src/bot.ts:12](../src/bot.ts#L12)
+Defined in: [src/bot.ts:13](../src/bot.ts#L13)
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [src/bot.ts:12](../src/bot.ts#L12)
 
 > `optional` **logContacts?**: `boolean`
 
-Defined in: [src/bot.ts:19](../src/bot.ts#L19)
+Defined in: [src/bot.ts:20](../src/bot.ts#L20)
 
 ***
 
@@ -54,7 +54,7 @@ Defined in: [src/bot.ts:19](../src/bot.ts#L19)
 
 > `optional` **logNetwork?**: `boolean`
 
-Defined in: [src/bot.ts:20](../src/bot.ts#L20)
+Defined in: [src/bot.ts:21](../src/bot.ts#L21)
 
 ***
 
@@ -62,7 +62,7 @@ Defined in: [src/bot.ts:20](../src/bot.ts#L20)
 
 > `optional` **updateAddress?**: `boolean`
 
-Defined in: [src/bot.ts:13](../src/bot.ts#L13)
+Defined in: [src/bot.ts:14](../src/bot.ts#L14)
 
 ***
 
@@ -70,7 +70,7 @@ Defined in: [src/bot.ts:13](../src/bot.ts#L13)
 
 > `optional` **updateProfile?**: `boolean`
 
-Defined in: [src/bot.ts:14](../src/bot.ts#L14)
+Defined in: [src/bot.ts:15](../src/bot.ts#L15)
 
 ***
 
@@ -78,4 +78,4 @@ Defined in: [src/bot.ts:14](../src/bot.ts#L14)
 
 > `optional` **useBotProfile?**: `boolean`
 
-Defined in: [src/bot.ts:18](../src/bot.ts#L18)
+Defined in: [src/bot.ts:19](../src/bot.ts#L19)

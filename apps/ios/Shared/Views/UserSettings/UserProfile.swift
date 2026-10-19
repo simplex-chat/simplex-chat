@@ -29,14 +29,14 @@ struct UserProfile: View {
 
     var body: some View {
         List {
-            EditProfileImage(profileImage: $profile.image, iconName: "person.crop.circle.fill", showChooseSource: $showChooseSource)
+            EditProfileImage(profileImage: $profile.image, icon: Image(systemName: "person.crop.circle.fill"), showChooseSource: $showChooseSource)
                 .padding(.top)
 
             Section {
                 HStack {
                     TextField("Enter your name…", text: $profile.displayName)
                         .focused($focusDisplayName)
-                    if !validDisplayName(profile.displayName) {
+                    if !validNewProfileName {
                         Button {
                             alert = .invalidNameError(validName: mkValidName(profile.displayName))
                         } label: {
@@ -147,8 +147,13 @@ struct UserProfile: View {
             (chatModel.currentUser?.profile.description ?? "") != description.trimmingCharacters(in: .whitespacesAndNewlines)
         ) &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
-        validDisplayName(profile.displayName) &&
+        validNewProfileName &&
         bioFitsLimit()
+    }
+
+    private var validNewProfileName: Bool {
+        profile.displayName == chatModel.currentUser?.profile.displayName
+            || validDisplayName(profile.displayName)
     }
 
     private func saveProfile() {
@@ -216,7 +221,7 @@ struct EditProfileImage: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
     @Binding var profileImage: String?
-    var iconName: String
+    var icon: Image
     @Binding var showChooseSource: Bool
 
     var body: some View {
@@ -232,7 +237,7 @@ struct EditProfileImage: View {
                 }
             } else {
                 ZStack(alignment: .center) {
-                    ProfileImage(imageStr: profileImage, iconName: iconName, size: 160)
+                    ProfileImage(imageStr: profileImage, icon: icon, size: 160)
                     editImageButton { showChooseSource = true }
                 }
             }

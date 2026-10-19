@@ -1815,6 +1815,12 @@ server test step */
 "creator" = "creador";
 
 /* No comment provided by engineer. */
+"Crowdfunding on Wefunder" = "Crowdfunding en Wefunder";
+
+/* No comment provided by engineer. */
+"Crowdfunding on Wefunder." = "Crowdfunding en Wefunder.";
+
+/* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "El texto con las condiciones actuales no se ha podido cargar, puedes revisar las condiciones en el siguiente enlace:";
 
 /* No comment provided by engineer. */
@@ -3154,6 +3160,9 @@ servers warning */
 "Group invitation is no longer valid, it was removed by sender." = "La invitación al grupo ya no es válida, ha sido eliminada por el remitente.";
 
 /* No comment provided by engineer. */
+"Group invitations" = "Invitaciones en grupo";
+
+/* No comment provided by engineer. */
 "group is deleted" = "el grupo ha sido eliminado";
 
 /* chat link info line */
@@ -4465,13 +4474,7 @@ alert button */
 "Open migration to another device" = "Abrir menú migración a otro dispositivo";
 
 /* new chat action */
-"Open new channel" = "Abrir canal nuevo";
-
-/* new chat action */
 "Open new chat" = "Abrir chat nuevo";
-
-/* new chat action */
-"Open new group" = "Abrir grupo nuevo";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Abrir Configuración";
@@ -5343,10 +5346,10 @@ chat item action */
 "Saved" = "Guardado";
 
 /* No comment provided by engineer. */
-"Saved from" = "Guardado desde";
+"saved from" = "Guardado desde";
 
 /* No comment provided by engineer. */
-"saved from" = "Guardado desde";
+"Saved from" = "Guardado desde";
 
 /* message info title */
 "Saved message" = "Mensaje guardado";
@@ -7013,6 +7016,18 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Ya tienes un perfil con este nombre mostrado. Por favor, elige otro nombre.";
 
+/* new chat alert */
+"You are a contributor" = "Eres colaborador";
+
+/* new chat alert */
+"You are a member" = "Eres miembro";
+
+/* new chat alert */
+"You are a moderator" = "Eres moderador";
+
+/* new chat alert */
+"You are a subscriber" = "Eres suscriptor";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Ya estás conectado con %@.";
 
@@ -7037,6 +7052,15 @@ alert title */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "¡En proceso de unirte al grupo!\n¿Repetir solicitud de admisión?";
 
+/* new chat alert */
+"You are an admin" = "Eres administrador";
+
+/* new chat alert */
+"You are an observer" = "Eres observador";
+
+/* new chat alert */
+"You are an owner" = "Eres propietario";
+
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Estás conectado al servidor usado para recibir mensajes de esta conexión.";
 
@@ -7051,27 +7075,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "you are observer" = "Tu rol es observador";
-
-/* new chat alert */
-"You are an observer" = "Eres observador";
-
-/* new chat alert */
-"You are a member" = "Eres miembro";
-
-/* new chat alert */
-"You are a moderator" = "Eres moderador";
-
-/* new chat alert */
-"You are an admin" = "Eres administrador";
-
-/* new chat alert */
-"You are an owner" = "Eres propietario";
-
-/* new chat alert */
-"You are a subscriber" = "Eres suscriptor";
-
-/* new chat alert */
-"You are a contributor" = "Eres colaborador";
 
 /* No comment provided by engineer. */
 "you are subscriber" = "eres suscriptor";
@@ -7108,6 +7111,12 @@ alert title */
 
 /* notification body */
 "You can now chat with %@" = "Ya puedes chatear con %@";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat" = "Ahora puedes invertir en SimpleX Chat";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat! 🚀" = "Ahora puedes invertir en SimpleX Chat! 🚀";
 
 /* No comment provided by engineer. */
 "You can send messages to %@ from Archived contacts." = "Puedes enviar mensajes a %@ desde Contactos archivados.";
