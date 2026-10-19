@@ -1,7 +1,10 @@
+import argparse
 import base64
 import contextlib
 import email.message
+import hashlib
 import io
+import json
 import subprocess
 import tomllib
 import urllib.error
@@ -14,26 +17,41 @@ from unittest import mock
 import packages_release
 from packages_release import (
     ADDON_ASSETS,
+    CABAL_FILE,
     NODEJS_DIR,
+    PYTHON_DIR,
     PYTHON_VERSION_FILE,
+    RELEASE_FILE,
     TYPES_DIR,
+    TYPES_README,
     ADDON_PLATFORMS,
     BuildPlan,
     LIBS_ASSETS,
     Package,
     Pins,
     State,
-    addon_tag,
+    addon_hash,
+    addon_notes,
+    addon_release,
     build_matrix,
     build_plan,
     bump_npm_version,
     bump_python_version,
     changed_since,
     add_releases,
+    claim_core,
+    core_release,
+    download,
+    highest_recorded,
+    latest_libs,
+    missing_assets,
     package_state,
+    pin_problems,
+    prepare,
     publish_plan,
     record_releases,
     recorded_commit,
+    release_status,
     render_releases,
     dist_tag,
     npm_published,
@@ -45,6 +63,8 @@ from packages_release import (
     release_digests,
     render_python_version,
     render_release,
+    tag_release,
+    types_problem,
 )
 
 
@@ -60,6 +80,10 @@ def github_release(assets: list[str], n: int) -> dict:
     return {"assets": [{"name": name, "digest": f"sha256:{sha(n)}"} for name in assets]}
 
 
+def listed_release(tag: str, assets: list[str], n: int, draft: bool = False, body: str | None = None) -> dict:
+    return {"id": n, "tag_name": tag, "draft": draft, "body": body, **github_release(assets, n)}
+
+
 def state(**overrides) -> State:
     current = State(
         libs_tag="core-1.0.0.1",
@@ -68,7 +92,8 @@ def state(**overrides) -> State:
         addon_digests=digests(ADDON_ASSETS, 2),
         nodejs_pins=Pins("core-1.0.0.1", {**digests(LIBS_ASSETS, 1), **digests(ADDON_ASSETS, 2)}, "nodejs-addon-aaa"),
         python_pins=Pins("core-1.0.0.1", digests(LIBS_ASSETS, 1)),
-        types=Package("0.12.1", changed=False, published=True),
+        types_dependency="^0.12.1",
+        nodejs_types_dependency="^0.12.1",
         nodejs=Package("7.1.0-beta.6.1", changed=False, published=True),
         python=Package("7.1.0b6", changed=False, published=True),
     )
@@ -101,15 +126,15 @@ class VersionTest(unittest.TestCase):
         self.assertEqual(registry_name("simplex-chat", None), "simplex-chat")
 
 
-class AddonTagTest(unittest.TestCase):
+class AddonHashTest(unittest.TestCase):
     def test_depends_on_sources_and_node_addon_api(self):
         files = {"a.cc": b"1", "b.h": b"2"}
-        tag = addon_tag(files, "^8.5.0")
-        self.assertRegex(tag, r"^nodejs-addon-[0-9a-f]{12}$")
-        self.assertEqual(addon_tag(dict(reversed(files.items())), "^8.5.0"), tag)
-        self.assertNotEqual(addon_tag({**files, "b.h": b"3"}, "^8.5.0"), tag)
-        self.assertNotEqual(addon_tag({"a.cc": b"1", "c.h": b"2"}, "^8.5.0"), tag)
-        self.assertNotEqual(addon_tag(files, "^8.6.0"), tag)
+        sources_hash = addon_hash(files, "^8.5.0")
+        self.assertRegex(sources_hash, r"^[0-9a-f]{12}$")
+        self.assertEqual(addon_hash(dict(reversed(files.items())), "^8.5.0"), sources_hash)
+        self.assertNotEqual(addon_hash({**files, "b.h": b"3"}, "^8.5.0"), sources_hash)
+        self.assertNotEqual(addon_hash({"a.cc": b"1", "c.h": b"2"}, "^8.5.0"), sources_hash)
+        self.assertNotEqual(addon_hash(files, "^8.6.0"), sources_hash)
 
 
 class PinFilesTest(unittest.TestCase):
@@ -135,7 +160,7 @@ class ReleaseDigestsTest(unittest.TestCase):
 class PlanTest(unittest.TestCase):
     def test_nothing_changes_when_current(self):
         result = plan(state())
-        self.assertEqual((result.nodejs_changed, result.python_changed, result.types_bumped), (False, False, False))
+        self.assertEqual((result.nodejs_changed, result.python_changed, result.types_dependency), (False, False, None))
         self.assertEqual(result.notes, [])
 
     def test_new_libs_release_updates_both_libraries(self):
@@ -170,17 +195,17 @@ class PlanTest(unittest.TestCase):
             plan(state(python=Package("7.1.0b6", True, True))).title, "packages: release python 7.1.0b6.post1"
         )
 
-    def test_types_bump_updates_the_nodejs_dependency(self):
-        result = plan(state(types=Package("0.12.1", True, True)))
+    def test_new_types_version_updates_the_nodejs_dependency(self):
+        result = plan(state(types_dependency="^0.12.2"))
         self.assertEqual(result.types_dependency, "^0.12.2")
-        self.assertEqual(result.title, "packages: release types 0.12.2, nodejs 7.1.0-beta.6.2")
+        self.assertEqual(result.title, "packages: release nodejs 7.1.0-beta.6.2")
 
     def test_all_changes_combine_into_one_release(self):
         result = plan(
             state(
                 **NEW_LIBS,
                 **NEW_ADDON,
-                types=Package("0.12.1", True, True),
+                types_dependency="^0.12.2",
                 nodejs=Package("7.1.0-beta.6.1", True, True),
                 python=Package("7.1.0b6", True, True),
             )
@@ -188,7 +213,16 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(
             (result.nodejs_pins.libs_release, result.nodejs_pins.addon_release), ("core-1.0.0.2", "nodejs-addon-bbb")
         )
-        self.assertEqual(result.title, "packages: release types 0.12.2, nodejs 7.1.0-beta.6.2, python 7.1.0b6.post1")
+        self.assertEqual(result.title, "packages: release nodejs 7.1.0-beta.6.2, python 7.1.0b6.post1")
+
+    def test_unlisted_package_keeps_its_pins_and_version(self):
+        result = plan(state(**NEW_LIBS, types_dependency="^0.12.2", packages=frozenset({"python"})))
+        self.assertEqual(result.nodejs_pins, state().nodejs_pins)
+        self.assertEqual(
+            (result.nodejs_version, result.nodejs_changed, result.types_dependency), ("7.1.0-beta.6.1", False, None)
+        )
+        self.assertEqual(result.python_pins.libs_release, "core-1.0.0.2")
+        self.assertEqual(result.title, "packages: release python 7.1.0b6.post1")
 
     def test_unpublished_versions_are_not_bumped_again(self):
         result = plan(
@@ -199,29 +233,18 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(result.title, "packages: release nodejs 7.1.0-beta.6.2, python 7.1.0b6.post1")
 
     def test_requested_versions_win(self):
-        result = plan(state(nodejs_version="7.2.0", types_version="0.13.0", python_version="7.2.0"))
-        self.assertEqual(result.types_dependency, "^0.13.0")
-        self.assertEqual(result.title, "packages: release types 0.13.0, nodejs 7.2.0, python 7.2.0")
+        result = plan(state(nodejs_version="7.2.0", python_version="7.2.0"))
+        self.assertEqual(result.title, "packages: release nodejs 7.2.0, python 7.2.0")
 
 
 class BuildPlanTest(unittest.TestCase):
-    def plan(self, event="push", release_missing=False, libs_release="", core=False, addon=False):
-        return build_plan(event, release_missing, libs_release, core, addon)
-
-    def test_push_builds_a_missing_addon_release_and_tests_it(self):
-        self.assertEqual(self.plan(release_missing=True), BuildPlan(ADDON_PLATFORMS, test=True))
-        self.assertEqual(self.plan(), BuildPlan([], test=True))
-
     def test_pull_request_tests_with_the_pinned_libs(self):
-        self.assertEqual(self.plan("pull_request"), BuildPlan(ADDON_PLATFORMS, test=True))
-        self.assertEqual(self.plan("pull_request", addon=True), BuildPlan(ADDON_PLATFORMS, test=True))
+        self.assertEqual(build_plan(core_changed=False, addon_changed=False), BuildPlan(ADDON_PLATFORMS, test=True))
+        self.assertEqual(build_plan(core_changed=False, addon_changed=True), BuildPlan(ADDON_PLATFORMS, test=True))
 
     def test_core_change_leaves_tests_to_build_yml(self):
-        self.assertEqual(self.plan("pull_request", core=True), BuildPlan([], test=False))
-        self.assertEqual(self.plan("pull_request", core=True, addon=True), BuildPlan(ADDON_PLATFORMS, test=False))
-
-    def test_new_library_release_is_tested_on_every_platform(self):
-        self.assertEqual(self.plan(libs_release="core-1.0.0.2"), BuildPlan(ADDON_PLATFORMS, test=True))
+        self.assertEqual(build_plan(core_changed=True, addon_changed=False), BuildPlan([], test=False))
+        self.assertEqual(build_plan(core_changed=True, addon_changed=True), BuildPlan(ADDON_PLATFORMS, test=False))
 
     def test_matrix_names_the_runner_of_each_platform(self):
         self.assertEqual(
@@ -297,6 +320,12 @@ class ReleasesFileTest(unittest.TestCase):
         self.assertIsNone(recorded_commit(self.RELEASES, "npm/simplex-chat", "7.1.0-beta.6.4"))
         self.assertIsNone(recorded_commit({}, "pypi/simplex-chat", "7.1.0b6"))
 
+    def test_highest_recorded_version_is_compared_numerically(self):
+        releases = {"core": {"7.1.0.9": "a", "7.1.0.11": "b"}, "npm": {"@simplex-chat/types": {"0.9.0": "c"}}}
+        self.assertEqual(highest_recorded(releases, "core"), "7.1.0.11")
+        self.assertEqual(highest_recorded(releases, "npm/@simplex-chat/types"), "0.9.0")
+        self.assertIsNone(highest_recorded(releases, "npm/simplex-chat"))
+
     def test_adds_entries_and_keeps_recorded_commits(self):
         updated = add_releases(self.RELEASES, [("npm/simplex-chat", "7.1.0-beta.6.4"), ("core", "7.1.0.11")], "x")
         self.assertEqual(updated["npm"]["simplex-chat"], {"7.1.0-beta.6.3": "n1", "7.1.0-beta.6.4": "x"})
@@ -355,13 +384,10 @@ class RecordReleasesTest(unittest.TestCase):
             self.assertEqual(record_releases([("core", "1")], "other"), "libs0")
 
 
-class PackageStateTest(unittest.TestCase):
+class GitRepoTest(unittest.TestCase):
     def setUp(self):
         self.repo = Path(tempfile.mkdtemp())
         self.git("init", "-q")
-        self.write("pkg/version.txt", 'version = "1"\n')
-        self.write("pkg/src.txt", "a")
-        self.commit("set version")
 
     def git(self, *args):
         subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=self.repo, check=True)
@@ -374,6 +400,19 @@ class PackageStateTest(unittest.TestCase):
         self.git("add", "-A")
         self.git("commit", "-q", "-m", message)
 
+    def head(self):
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=self.repo, capture_output=True, text=True
+        ).stdout.strip()
+
+
+class PackageStateTest(GitRepoTest):
+    def setUp(self):
+        super().setUp()
+        self.write("pkg/version.txt", 'version = "1"\n')
+        self.write("pkg/src.txt", "a")
+        self.commit("set version")
+
     def state(self, releases=None, registry_published=False):
         with mock.patch.object(packages_release, "ROOT", self.repo):
             return package_state(
@@ -382,11 +421,6 @@ class PackageStateTest(unittest.TestCase):
 
     def changed(self):
         return self.state().changed
-
-    def head(self):
-        return subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=self.repo, capture_output=True, text=True
-        ).stdout.strip()
 
     def test_recorded_version_is_published_and_compared_with_its_commit(self):
         self.write("pkg/src.txt", "b")
@@ -465,6 +499,304 @@ class PackageStateTest(unittest.TestCase):
         self.write("other/file.txt", "o")
         self.commit("tests and other files")
         self.assertFalse(self.changed())
+
+
+class ReleasesTest(unittest.TestCase):
+    def test_latest_libs_is_the_highest_complete_published_version(self):
+        releases = [
+            listed_release("core-7.1.0.9", LIBS_ASSETS, 1),
+            listed_release("core-7.1.0.11", LIBS_ASSETS, 2),
+            listed_release("core-7.1.0.12", LIBS_ASSETS[1:], 3),
+            listed_release("core-7.1.0.13", LIBS_ASSETS, 4, draft=True),
+            listed_release("core-test-7.1.0.14", LIBS_ASSETS, 5),
+            listed_release("nodejs-addon-1111111", ADDON_ASSETS, 6),
+        ]
+        versions = {"7.1.0.9", "7.1.0.11", "7.1.0.12", "7.1.0.13", "test-7.1.0.14"}
+        self.assertEqual(latest_libs(releases, versions), "core-7.1.0.11")
+        self.assertEqual(latest_libs(releases, {"7.1.0.9"}), "core-7.1.0.9")
+        self.assertIsNone(latest_libs(releases, {"7.0.0.12"}))
+
+    def test_published_release_is_preferred_to_a_draft(self):
+        draft = listed_release("core-7.1.0.12", LIBS_ASSETS, 1, draft=True)
+        published = listed_release("core-7.1.0.12", LIBS_ASSETS, 2)
+        self.assertEqual(tag_release([draft, published], "core-7.1.0.12"), published)
+        self.assertEqual(tag_release([draft], "core-7.1.0.12"), draft)
+        statuses = [
+            release_status(tag_release(releases, "core-7.1.0.12")) for releases in ([draft, published], [draft], [])
+        ]
+        self.assertEqual(statuses, ["published", "draft", "absent"])
+
+    def test_addon_release_is_found_by_its_notes(self):
+        other = listed_release("nodejs-addon-1111111", ADDON_ASSETS, 1, body=addon_notes("bbb"))
+        draft = listed_release("nodejs-addon-2222222", ADDON_ASSETS, 2, draft=True, body=addon_notes("aaa"))
+        published = listed_release("nodejs-addon-3333333", ADDON_ASSETS, 3, body=addon_notes("aaa"))
+        self.assertEqual(addon_release([other, draft, published], "aaa"), published)
+        self.assertEqual(addon_release([other, draft], "aaa"), draft)
+        self.assertIsNone(addon_release([other], "aaa"))
+
+    def test_missing_assets_of_a_draft(self):
+        self.assertEqual(missing_assets(listed_release("core-7.1.0.12", LIBS_ASSETS[1:], 1)), LIBS_ASSETS[:1])
+        self.assertEqual(missing_assets(listed_release("nodejs-addon-1111111", ADDON_ASSETS, 1)), [])
+
+    def test_pin_problems_list_mismatches_and_unpublished_releases(self):
+        pins = Pins("core-7.1.0.11", {**digests(LIBS_ASSETS, 1), **digests(ADDON_ASSETS, 2)}, "nodejs-addon-1111111")
+        published = {
+            "core-7.1.0.11": github_release(LIBS_ASSETS, 1),
+            "nodejs-addon-1111111": github_release(ADDON_ASSETS, 2),
+        }
+        self.assertEqual(pin_problems(pins, published), [])
+        self.assertEqual(
+            len(pin_problems(pins, {**published, "core-7.1.0.11": github_release(LIBS_ASSETS, 3)})), len(LIBS_ASSETS)
+        )
+        self.assertEqual(
+            pin_problems(pins, {**published, "nodejs-addon-1111111": None}), ["nodejs-addon-1111111 is not published"]
+        )
+
+
+class PublishReleaseTest(unittest.TestCase):
+    def publish(self, releases):
+        api = mock.Mock()
+        with (
+            mock.patch.object(packages_release, "libs_releases", return_value=releases),
+            mock.patch.object(packages_release, "libs_api", api),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            packages_release.publish_release("core-7.1.0.12")
+        return api
+
+    def test_complete_draft_is_published(self):
+        api = self.publish([listed_release("core-7.1.0.12", LIBS_ASSETS, 7, draft=True)])
+        api.assert_called_once_with("releases/7", "PATCH", {"draft": False})
+
+    def test_draft_with_missing_assets_stays_a_draft(self):
+        with self.assertRaises(SystemExit):
+            self.publish([listed_release("core-7.1.0.12", LIBS_ASSETS[1:], 7, draft=True)])
+
+    def test_published_release_is_left_unchanged(self):
+        self.publish([listed_release("core-7.1.0.12", LIBS_ASSETS, 7)]).assert_not_called()
+
+
+class ClaimCoreTest(unittest.TestCase):
+    def claim(self, recorded, after_record=None, problem=None, version="7.1.0.12", branch="master"):
+        reads = iter([(recorded, "blob"), (after_record or recorded, "blob")])
+        self.record = mock.Mock(return_value="libs1")
+        output = io.StringIO()
+        with (
+            mock.patch.object(packages_release, "read_releases", lambda: next(reads)),
+            mock.patch.object(packages_release, "record_releases", self.record),
+            mock.patch.object(packages_release, "types_problem", return_value=problem),
+            contextlib.redirect_stdout(output),
+        ):
+            claim_core(version, "sx1", branch)
+        return output.getvalue().splitlines()
+
+    def test_lower_version_fails(self):
+        with self.assertRaises(SystemExit):
+            self.claim({"core": {"master": {"7.1.0.13": "sx0"}}})
+
+    def test_version_recorded_for_this_commit_resumes(self):
+        self.assertEqual(self.claim({"core": {"master": {"7.1.0.12": "sx1"}}}), ["claim=resume"])
+
+    def test_version_recorded_for_another_commit_is_skipped(self):
+        self.assertEqual(self.claim({"core": {"master": {"7.1.0.11": "sx0", "7.1.0.12": "sx0"}}}), ["claim=skip"])
+
+    def test_version_recorded_on_another_branch_is_skipped(self):
+        recorded = {"core": {"master": {"7.1.0.11": "sx0"}, "stable": {"7.1.0.12": "sx2"}}}
+        self.assertEqual(self.claim(recorded), ["claim=skip"])
+
+    def test_failed_types_check_fails_before_recording(self):
+        with self.assertRaises(SystemExit):
+            self.claim({"core": {"master": {"7.1.0.11": "sx0"}}}, problem="types changed")
+        self.record.assert_not_called()
+
+    def test_unrecorded_version_is_claimed(self):
+        claimed = {"core": {"master": {"7.1.0.11": "sx0", "7.1.0.12": "sx1"}}}
+        self.assertEqual(self.claim({"core": {"master": {"7.1.0.11": "sx0"}}}, claimed), ["claim=new", "commit=libs1"])
+        self.record.assert_called_once_with([("core/master", "7.1.0.12")], "sx1")
+
+    def test_stable_versions_are_compared_with_stable_only(self):
+        recorded = {"core": {"master": {"7.1.0.11": "sx0"}, "stable": {"7.0.0.12": "sx3"}}}
+        claimed = {"core": {**recorded["core"], "stable": {"7.0.0.12": "sx3", "7.0.0.13": "sx1"}}}
+        self.assertEqual(
+            self.claim(recorded, claimed, version="7.0.0.13", branch="stable"), ["claim=new", "commit=libs1"]
+        )
+        self.record.assert_called_once_with([("core/stable", "7.0.0.13")], "sx1")
+        with self.assertRaises(SystemExit):
+            self.claim(recorded, version="7.0.0.11", branch="stable")
+
+    def test_concurrent_claim_of_another_commit_is_skipped(self):
+        claimed = {"core": {"master": {"7.1.0.11": "sx0", "7.1.0.12": "sx2"}}}
+        self.assertEqual(self.claim({"core": {"master": {"7.1.0.11": "sx0"}}}, claimed), ["claim=skip"])
+
+
+class TypesProblemTest(unittest.TestCase):
+    def problem(self, types, changed=True, published=False, releases=None):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        (root / TYPES_DIR).mkdir(parents=True)
+        (root / TYPES_DIR / "package.json").write_text(json.dumps({"name": "@simplex-chat/types", **types}))
+        with (
+            mock.patch.object(packages_release, "ROOT", root),
+            mock.patch.object(packages_release, "types_changed", return_value=changed),
+            mock.patch.object(packages_release, "npm_published", return_value=published),
+        ):
+            return types_problem("7.1.0.12", releases or {}, "master")
+
+    def test_unchanged_types_pass(self):
+        self.assertIsNone(self.problem({"version": "0.12.1", "simplexChatCore": "7.1.0.11"}, changed=False))
+
+    def test_changed_types_with_a_new_version_for_the_core_pass(self):
+        self.assertIsNone(self.problem({"version": "0.12.2", "simplexChatCore": "7.1.0.12"}))
+
+    def test_changed_types_with_a_published_version_fail(self):
+        self.assertIsNotNone(self.problem({"version": "0.12.1", "simplexChatCore": "7.1.0.12"}, published=True))
+        recorded = {"npm": {"@simplex-chat/types": {"0.12.1": "c"}}}
+        self.assertIsNotNone(self.problem({"version": "0.12.1", "simplexChatCore": "7.1.0.12"}, releases=recorded))
+
+    def test_changed_types_for_another_core_fail(self):
+        self.assertIsNotNone(self.problem({"version": "0.12.2", "simplexChatCore": "7.1.0.11"}))
+
+
+class CoreReleaseTest(GitRepoTest):
+    def setUp(self):
+        super().setUp()
+        self.write(CABAL_FILE, "name:           simplex-chat\nversion:        7.1.0.11\n")
+        types = {"name": "@simplex-chat/types", "version": "0.12.1", "simplexChatCore": "7.1.0.11"}
+        self.write(f"{TYPES_DIR}/package.json", json.dumps(types, indent=2) + "\n")
+        self.write(TYPES_README, "# Types\n\nSimpleX Chat core: 7.1.0.11\n")
+        self.write(f"{TYPES_DIR}/src/types.ts", "a")
+        self.commit("types 0.12.1")
+        self.releases = {"core": {"master": {"7.1.0.11": self.head()}}}
+
+    def release(self, version, types_version=None):
+        with (
+            mock.patch.object(packages_release, "ROOT", self.repo),
+            mock.patch.object(packages_release, "read_releases", return_value=(self.releases, "blob")),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            core_release(version, "master", types_version)
+
+    def read(self, file):
+        return (self.repo / file).read_text()
+
+    def types(self):
+        return json.loads(self.read(f"{TYPES_DIR}/package.json"))
+
+    def test_changed_types_get_a_new_version_for_the_core(self):
+        self.write(f"{TYPES_DIR}/src/types.ts", "b")
+        self.commit("types change")
+        self.release("7.1.0.12")
+        self.assertIn("version:        7.1.0.12\n", self.read(CABAL_FILE))
+        self.assertEqual((self.types()["version"], self.types()["simplexChatCore"]), ("0.12.2", "7.1.0.12"))
+        self.assertIn("SimpleX Chat core: 7.1.0.12\n", self.read(TYPES_README))
+
+    def test_unchanged_types_keep_their_version(self):
+        self.release("7.1.0.12")
+        self.assertIn("version:        7.1.0.12\n", self.read(CABAL_FILE))
+        self.assertEqual((self.types()["version"], self.types()["simplexChatCore"]), ("0.12.1", "7.1.0.11"))
+
+    def test_requested_types_version_wins(self):
+        self.release("7.1.0.12", "7.1.0-beta.6.1")
+        self.assertEqual((self.types()["version"], self.types()["simplexChatCore"]), ("7.1.0-beta.6.1", "7.1.0.12"))
+
+    def test_types_version_is_bumped_from_the_previous_core_release(self):
+        self.write(f"{TYPES_DIR}/package.json", json.dumps({**self.types(), "version": "0.12.5"}))
+        self.write(f"{TYPES_DIR}/src/types.ts", "b")
+        self.commit("types change and a manual version")
+        self.release("7.1.0.12")
+        self.assertEqual(self.types()["version"], "0.12.2")
+
+    def test_version_must_be_higher_than_the_recorded_one(self):
+        with self.assertRaises(SystemExit):
+            self.release("7.1.0.11")
+        self.assertIn("version:        7.1.0.11\n", self.read(CABAL_FILE))
+
+
+class PrepareTest(GitRepoTest):
+    def setUp(self):
+        super().setUp()
+        nodejs = {
+            "name": "simplex-chat",
+            "version": "7.1.0-beta.6.1",
+            "dependencies": {"@simplex-chat/types": "^0.12.1"},
+            "devDependencies": {"node-addon-api": "^8.5.0"},
+        }
+        self.write(CABAL_FILE, "version:        1.0.0.2\n")
+        self.write(f"{NODEJS_DIR}/binding.gyp", "{}")
+        self.write(f"{NODEJS_DIR}/cpp/simplex.cc", "add-on")
+        self.write(f"{NODEJS_DIR}/package.json", json.dumps(nodejs))
+        self.write(RELEASE_FILE, render_release(state().nodejs_pins))
+        self.write(f"{TYPES_DIR}/package.json", json.dumps({"name": "@simplex-chat/types", "version": "0.12.1"}))
+        self.write(PYTHON_VERSION_FILE, render_python_version("7.1.0b6", state().python_pins))
+        self.write(f"{PYTHON_DIR}/src/simplex_chat/types/_types.py", "a")
+        self.write(f"{PYTHON_DIR}/pyproject.toml", 'name = "simplex-chat"\n')
+        self.commit("packages")
+        with mock.patch.object(packages_release, "ROOT", self.repo):
+            sources_hash = packages_release.current_addon_hash()
+        self.libs = [
+            listed_release("core-1.0.0.2", LIBS_ASSETS, 3),
+            listed_release("nodejs-addon-1111111", ADDON_ASSETS, 4, body=addon_notes(sources_hash)),
+        ]
+        self.releases = {
+            "core": {"master": {"1.0.0.2": self.head()}},
+            "npm": {"simplex-chat": {"7.1.0-beta.6.1": self.head()}},
+            "pypi": {"simplex-chat": {"7.1.0b6": self.head()}},
+        }
+
+    def prepare(self, *packages):
+        published = {release["tag_name"]: release for release in self.libs}
+        download = mock.Mock()
+        with (
+            mock.patch.object(packages_release, "ROOT", self.repo),
+            mock.patch.object(packages_release, "read_releases", return_value=(self.releases, "blob")),
+            mock.patch.object(packages_release, "libs_releases", return_value=self.libs),
+            mock.patch.object(packages_release, "github_release", published.get),
+            mock.patch.object(packages_release, "npm_published", return_value=True),
+            mock.patch.object(packages_release, "pypi_published", return_value=True),
+            mock.patch.object(packages_release, "download", download),
+            contextlib.redirect_stdout(io.StringIO()),
+            contextlib.redirect_stderr(io.StringIO()),
+        ):
+            prepare(
+                argparse.Namespace(packages=list(packages), branch="master", nodejs_version=None, python_version=None)
+            )
+        return download
+
+    def test_listed_package_is_released_alone(self):
+        download = self.prepare("nodejs")
+        pins = parse_release((self.repo / RELEASE_FILE).read_text())
+        self.assertEqual((pins.libs_release, pins.addon_release), ("core-1.0.0.2", "nodejs-addon-1111111"))
+        self.assertEqual(json.loads((self.repo / NODEJS_DIR / "package.json").read_text())["version"], "7.1.0-beta.6.2")
+        python = parse_python_version((self.repo / PYTHON_VERSION_FILE).read_text())
+        self.assertEqual(python, ("7.1.0b6", state().python_pins))
+        self.assertEqual(download.call_count, len(LIBS_ASSETS) + len(ADDON_ASSETS))
+
+    def test_python_types_newer_than_the_pinned_core_stop_the_release(self):
+        self.write(f"{PYTHON_DIR}/src/simplex_chat/types/_types.py", "b")
+        self.commit("python types change")
+        with self.assertRaises(SystemExit):
+            self.prepare("python")
+        self.assertEqual(parse_python_version((self.repo / PYTHON_VERSION_FILE).read_text())[0], "7.1.0b6")
+
+
+class DownloadTest(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.directory = directory.name
+
+    def download(self, sha256):
+        with mock.patch.object(packages_release.urllib.request, "urlopen", return_value=io.BytesIO(b"data")):
+            return download("core-1.0.0.1", "a.zip", self.directory, sha256)
+
+    def test_matching_digest_keeps_the_file(self):
+        self.assertEqual(self.download(hashlib.sha256(b"data").hexdigest()).read_bytes(), b"data")
+
+    def test_mismatching_digest_removes_the_file(self):
+        with self.assertRaises(SystemExit):
+            self.download(sha(1))
+        self.assertFalse((Path(self.directory) / "a.zip").exists())
 
 
 if __name__ == "__main__":
