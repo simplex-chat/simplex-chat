@@ -46,7 +46,6 @@ import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
-import System.FilePath ((</>))
 import System.Mem.Weak (deRefWeak)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)

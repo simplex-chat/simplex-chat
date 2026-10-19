@@ -49,12 +49,12 @@ val badgeProductIds: Set<String> = badgeStoreProductIds.map { it.productId }.toS
 val badgeOneTimeProductIds: Set<String> = badgeStoreProductIds.filter { it.basePlanId == null }.map { it.productId }.toSet()
 
 // the page's app flag rides in the fragment, which never reaches the service
+// TEST ONLY: pointed at the dev deployment; restore the two lines below before merging
 fun badgePageUrl(linkReturns: Boolean): String =
-  if (linkReturns) "https://badges.simplex.chat/#/tier?app=true"
-  else "https://badges.simplex.chat/#/tier?app=desktop"
-// the dev deployment, for testing store purchases: swap with the two lines above
-// if (linkReturns) "https://smp7.simplex.im/#/tier?app=true"
-// else "https://smp7.simplex.im/#/tier?app=desktop"
+  if (linkReturns) "https://smp7.simplex.im/#/tier?app=true"
+  else "https://smp7.simplex.im/#/tier?app=desktop"
+// if (linkReturns) "https://badges.simplex.chat/#/tier?app=true"
+// else "https://badges.simplex.chat/#/tier?app=desktop"
 
 // where the store allows a link out to the badge page: the US for now, a set expected to widen.
 // An unknown country does not count, as this decides whether the store sees a link out of the app.

@@ -690,7 +690,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         _ -> pure . ciQuote Nothing $ CIQGroupRcv Nothing
   where
     ciQuote :: Maybe ChatItemId -> CIQDirection c -> CIQuote c
-    ciQuote itemId dir = CIQuote dir itemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
+    ciQuote itemId dir = mkCIQuote dir itemId msgId sentAt content
     getDirectChatItemQuote_ :: Int64 -> Bool -> IO (CIQuote 'CTDirect)
     getDirectChatItemQuote_ contactId userSent = do
       fmap ciQuoteDirect . maybeFirstRow fromOnly $
@@ -1119,7 +1119,9 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTLocal d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTLocal
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText = parseMaybeMarkdownList itemText, quotedItem = Nothing, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = Nothing, reactions = [], file}
+      where
+        ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTLocal d
     ciMeta content status =
@@ -1282,6 +1284,7 @@ safeToDirectItem currentTs itemId = \case
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
                 formattedText = Nothing,
+                markdownBlocks = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
                 file = Nothing
@@ -1628,6 +1631,7 @@ safeToGroupItem currentTs itemId = \case
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
                 formattedText = Nothing,
+                markdownBlocks = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
                 file = Nothing
@@ -1868,6 +1872,7 @@ safeToLocalItem currentTs itemId = \case
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
                 formattedText = Nothing,
+                markdownBlocks = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
                 file = Nothing
@@ -2302,7 +2307,7 @@ toDirectQuote qr@(_, _, _, _, quotedSent) = toQuote qr $ direction . unBI <$> qu
 
 toQuote :: QuoteRow -> Maybe (CIQDirection c) -> Maybe (CIQuote c)
 toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir =
-  CIQuote <$> dir <*> pure quotedItemId <*> pure quotedSharedMsgId <*> quotedSentAt <*> quotedMsgContent <*> (parseMaybeMarkdownList . msgContentText <$> quotedMsgContent)
+  mkCIQuote <$> dir <*> pure quotedItemId <*> pure quotedSharedMsgId <*> quotedSentAt <*> quotedMsgContent
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toDirectChatItem :: UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
@@ -2331,7 +2336,9 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toDirectQuote quoteRow, reactions = [], file}
+      where
+        ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTDirect d
     ciMeta content status =
@@ -2423,7 +2430,9 @@ toGroupChatItem
           _ -> Nothing
       cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
       cItem d chatDir ciStatus content file =
-        CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
+        CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
+        where
+          ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
       badItem = Left $ SEBadChatItem itemId (Just itemTs)
       ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
       ciMeta content status =
@@ -2569,6 +2578,7 @@ updateDirectChatItem' db User {userId} contactId ci newContent edited live timed
 updatedChatItem :: ChatItem c d -> CIContent d -> Bool -> Bool -> Maybe CITimed -> UTCTime -> ChatItem c d
 updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTimed, itemLive}} newContent edited live timed_ currentTs =
   let newText = ciContentToText newContent
+      ParsedMarkdown formattedText markdownBlocks = parsedMarkdown newText
       edited' = itemEdited || edited
       live' = (live &&) <$> itemLive
       timed' = case timed_ of
@@ -2580,7 +2590,7 @@ updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTim
             let deleteAt' = addUTCTime (realToFrac ttl) currentTs
              in Just CITimed {ttl, deleteAt = Just deleteAt'}
           _ -> itemTimed
-   in ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
+   in ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText, markdownBlocks}
 
 -- this function assumes that direct item with correct chat direction already exists,
 -- it should be checked before calling it
@@ -2861,7 +2871,7 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
-  pure ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
+  pure ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing, markdownBlocks = Nothing}
 
 deleteMemberCIs :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO ()
 deleteMemberCIs db User {userId} GroupInfo {groupId, membership} member = do
@@ -2933,7 +2943,7 @@ updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = 
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (DBCIBlockedByAdmin, deletedTs, currentTs, userId, groupId, itemId)
-  pure $ ci {meta = (meta ci) {itemDeleted = Just (CIBlockedByAdmin $ Just deletedTs), editable = False, deletable = False}, formattedText = Nothing}
+  pure $ ci {meta = (meta ci) {itemDeleted = Just (CIBlockedByAdmin $ Just deletedTs), editable = False, deletable = False}, formattedText = Nothing, markdownBlocks = Nothing}
 
 pattern DBCINotDeleted :: Int
 pattern DBCINotDeleted = 0
@@ -3370,8 +3380,8 @@ getChatItemVersions db itemId = do
   where
     toChatItemVersion :: (Int64, MsgContent, UTCTime, UTCTime) -> ChatItemVersion
     toChatItemVersion (chatItemVersionId, msgContent, itemVersionTs, createdAt) =
-      let formattedText = parseMaybeMarkdownList $ msgContentText msgContent
-       in ChatItemVersion {chatItemVersionId, msgContent, formattedText, itemVersionTs, createdAt}
+      let ParsedMarkdown formattedText markdownBlocks = parsedMarkdown $ msgContentText msgContent
+       in ChatItemVersion {chatItemVersionId, msgContent, formattedText, markdownBlocks, itemVersionTs, createdAt}
 
 directCIWithReactions :: DB.Connection -> Contact -> CChatItem 'CTDirect -> IO (CChatItem 'CTDirect)
 directCIWithReactions db ct cci@(CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
