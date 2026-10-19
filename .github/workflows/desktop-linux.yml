@@ -313,8 +313,24 @@ jobs:
           scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/smoke-test" ${cases:-}
 
       - name: Stop test backend
+        id: stop-backend
         if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
         run: scripts/ci/desktop-linux/backend.sh stop "$RUNNER_TEMP/backend"
+
+      # the app points at this backend's directory, so the Claude job starts this backend again rather than a new one
+      - name: Pack backend state
+        if: ${{ !cancelled() && steps.backend.outcome == 'success' && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
+        run: tar -czf "$RUNNER_TEMP/backend-state.tar.gz" --exclude=./bin -C "$RUNNER_TEMP/backend" .
+
+      - name: Upload backend state
+        if: ${{ !cancelled() && steps.backend.outcome == 'success' && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-backend-state
+          path: ${{ runner.temp }}/backend-state.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
@@ -396,11 +412,21 @@ jobs:
           run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
           github-token: ${{ github.token }}
 
-      - name: Start test backend
+      - name: Download backend state
+        if: needs.plan.outputs.claude-backend == 'yes'
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-backend-state
+          path: ${{ runner.temp }}
+
+      - name: Start the app job's test backend again
         id: backend
         if: needs.plan.outputs.claude-backend == 'yes'
-        timeout-minutes: 30
-        run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+        timeout-minutes: 10
+        run: |
+          mkdir -p "$RUNNER_TEMP/backend"
+          tar -xzf "$RUNNER_TEMP/backend-state.tar.gz" -C "$RUNNER_TEMP/backend"
+          scripts/ci/desktop-linux/backend.sh resume ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
       # ui goes on every shell's PATH, where Claude's Bash tool finds it whatever environment it builds
       - name: Install Claude Code and the ui command

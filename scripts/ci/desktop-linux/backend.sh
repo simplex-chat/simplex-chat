@@ -10,6 +10,8 @@
 # Usage:
 #   scripts/ci/desktop-linux/backend.sh start <backend .tar.gz> <work dir>   writes the directory's short address to <work dir>/directory-link
 #                                                                            and the names server's address to <work dir>/names-server
+#   scripts/ci/desktop-linux/backend.sh resume <backend .tar.gz> <work dir>  starts again, on another runner, what start left stopped in
+#                                                                            <work dir>, with the same addresses
 #   scripts/ci/desktop-linux/backend.sh stop <work dir>                      stops the servers, prints their logs
 # The relay, the directory, the SMP server and the resolver keep running between start and stop.
 
@@ -90,9 +92,13 @@ avatar() {
   echo "$uri"
 }
 
-start_relay() {
-  nohup "$bin/simplex-chat" -d "$work/relay" --relay --headless --user-display-name ci_relay < /dev/null > "$work/relay.log" 2>&1 &
+run_relay() {
+  nohup "$bin/simplex-chat" -d "$work/relay" --relay --headless --user-display-name ci_relay < /dev/null >> "$work/relay.log" 2>&1 &
   echo $! > "$work/relay.pid"
+}
+
+start_relay() {
+  run_relay
   local deadline=$((SECONDS + 120))
   until grep -qE '^https://[^ ]+/r#' "$work/relay.log"; do
     if ! kill -0 "$(cat "$work/relay.pid")" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
@@ -124,16 +130,20 @@ create_directory() {
 }
 
 start_directory() {
-  local pid deadline=$((SECONDS + 60))
   # -y: the service adds its own tables to the database the CLI created, and would otherwise ask on stdin
   nohup "$bin/simplex-directory-service" -d "$work/directory" -y --super-users "$1" < /dev/null >> "$work/directory.log" 2>&1 &
-  pid=$!
-  echo "$pid" > "$work/directory.pid"
-  # its output is block-buffered, so it shows that its chat has started by connecting to its servers
+  echo $! > "$work/directory.pid"
+  wait_connected directory
+}
+
+# A chat process shows that its chat has started by connecting to its servers: its output is block-buffered.
+wait_connected() {
+  local pid deadline=$((SECONDS + 60))
+  pid=$(cat "$work/$1.pid")
   until grep -q "pid=$pid," <<< "$(ss -Htnp state established)"; do
     if ! kill -0 "$pid" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
-      echo "error: the directory service did not start"
-      cat "$work/directory.log"
+      echo "error: $1 did not start"
+      cat "$work/$1.log"
       return 1
     fi
     sleep 1
@@ -214,10 +224,8 @@ seed_channel() {
 
 # An SMP server on 127.0.0.1 whose [NAMES] section asks the local resolver, which answers from names.json.
 start_names_server() {
-  local cfg=$work/smp/etc logs=$work/smp/var ini deadline
+  local cfg=$work/smp/etc logs=$work/smp/var ini
   echo '{}' > "$work/names.json"
-  nohup python3 "$here/names-resolver.py" "$resolver_port" "$work/names.json" < /dev/null > "$work/resolver.log" 2>&1 &
-  echo $! > "$work/resolver.pid"
   SMP_SERVER_CFG_PATH=$cfg SMP_SERVER_LOG_PATH=$logs "$bin/smp-server" init -y --ip 127.0.0.1 --no-password --disable-web
   ini=$cfg/smp-server.ini
   # only 5223: 443 needs root
@@ -230,7 +238,17 @@ start_names_server() {
     grep -E '^port|^\[NAMES\]|enable|resolver' "$ini"
     return 1
   fi
-  SMP_SERVER_CFG_PATH=$cfg SMP_SERVER_LOG_PATH=$logs nohup "$bin/smp-server" start < /dev/null > "$work/smp-server.log" 2>&1 &
+  run_names_server
+  names_server="smp://$(cat "$cfg/fingerprint")@127.0.0.1"
+  echo "$names_server" > "$work/names-server"
+  echo "names server: $names_server"
+}
+
+run_names_server() {
+  local deadline
+  nohup python3 "$here/names-resolver.py" "$resolver_port" "$work/names.json" < /dev/null >> "$work/resolver.log" 2>&1 &
+  echo $! > "$work/resolver.pid"
+  SMP_SERVER_CFG_PATH=$work/smp/etc SMP_SERVER_LOG_PATH=$work/smp/var nohup "$bin/smp-server" start < /dev/null >> "$work/smp-server.log" 2>&1 &
   echo $! > "$work/smp-server.pid"
   deadline=$((SECONDS + 60))
   until (exec 3<> /dev/tcp/127.0.0.1/5223) 2> /dev/null; do
@@ -241,9 +259,6 @@ start_names_server() {
     fi
     sleep 1
   done
-  names_server="smp://$(cat "$cfg/fingerprint")@127.0.0.1"
-  echo "$names_server" > "$work/names-server"
-  echo "names server: $names_server"
 }
 
 # A CLI client started with -s uses only that server and, once its user exists, gives it every role, names included.
@@ -371,6 +386,18 @@ start() {
   seed_name
 }
 
+# The servers' keys and the clients' databases stay in the work dir, so its addresses are the same again.
+resume() {
+  bin=$work/bin
+  mkdir -p "$bin"
+  tar -C "$bin" -xzf "$1"
+  run_relay
+  wait_connected relay
+  start_directory "$(db_query directory "SELECT contact_id FROM contacts WHERE local_display_name = '$admin'"):$admin"
+  run_names_server
+  echo "resumed: directory $(cat "$work/directory-link"), names server $(cat "$work/names-server")"
+}
+
 stop() {
   local p
   for p in directory relay smp-server; do
@@ -395,12 +422,16 @@ case "${1:-}" in
     mkdir -p "$work"
     start "$2"
     ;;
+  resume)
+    work=$3
+    resume "$2"
+    ;;
   stop)
     work=$2
     stop
     ;;
   *)
-    echo "usage: $0 start <backend .tar.gz> <work dir> | stop <work dir>"
+    echo "usage: $0 start <backend .tar.gz> <work dir> | resume <backend .tar.gz> <work dir> | stop <work dir>"
     exit 1
     ;;
 esac

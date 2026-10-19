@@ -8,6 +8,8 @@
 #   scripts/ci/ios-sim/backend.sh start <backend zip> <work dir>   writes the directory's short address to <work dir>/directory-link,
 #                                                                  the names server's address to <work dir>/names-server
 #                                                                  and what was seeded to <work dir>/seed.md
+#   scripts/ci/ios-sim/backend.sh resume <backend zip> <work dir>  starts again, on another runner, what start left stopped in <work dir>,
+#                                                                  with the same addresses
 #   scripts/ci/ios-sim/backend.sh stop <work dir>                  stops everything it started, prints the logs
 #   scripts/ci/ios-sim/backend.sh directory-stop <work dir>        stops the directory only
 #   scripts/ci/ios-sim/backend.sh directory-start <work dir>       starts it again
@@ -83,9 +85,13 @@ listings_query="SELECT gp.display_name AS name, gp.short_descr AS description, g
   WHERE r.group_reg_status = 'active'
   ORDER BY g.summary_current_members_count DESC, r.group_id"
 
-start_relay() {
-  nohup "$bin/simplex-chat" -d "$work/relay" --relay --headless --user-display-name ci_relay < /dev/null > "$work/relay.log" 2>&1 &
+run_relay() {
+  nohup "$bin/simplex-chat" -d "$work/relay" --relay --headless --user-display-name ci_relay < /dev/null >> "$work/relay.log" 2>&1 &
   echo $! > "$work/relay.pid"
+}
+
+start_relay() {
+  run_relay
   local deadline=$((SECONDS + 120))
   until grep -qE '^https://[^ ]+/r#' "$work/relay.log"; do
     if ! kill -0 "$(cat "$work/relay.pid")" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
@@ -110,17 +116,21 @@ create_directory() {
 }
 
 start_directory() {
-  local pid deadline=$((SECONDS + 60))
   # -y: the service adds its own tables to the database the CLI created, and would otherwise ask on stdin
   nohup "$bin/simplex-directory-service" -d "$work/directory" -y --super-users "$1" < /dev/null >> "$work/directory.log" 2>&1 &
-  pid=$!
-  echo "$pid" > "$work/directory.pid"
+  echo $! > "$work/directory.pid"
   echo "$1" > "$work/super-user"
-  # its output is block-buffered, so it shows that its chat has started by connecting to its servers
+  wait_connected directory
+}
+
+# A chat process shows that its chat has started by connecting to its servers: its output is block-buffered.
+wait_connected() {
+  local pid deadline=$((SECONDS + 60))
+  pid=$(cat "$work/$1.pid")
   until lsof -a -p "$pid" -iTCP -sTCP:ESTABLISHED > /dev/null 2>&1; do
     if ! kill -0 "$pid" 2> /dev/null || [ "$SECONDS" -ge "$deadline" ]; then
-      echo "error: the directory service did not start"
-      cat "$work/directory.log"
+      echo "error: $1 did not start"
+      cat "$work/$1.log"
       return 1
     fi
     sleep 1
@@ -253,8 +263,6 @@ seed_avatars() {
 # A local SMP server whose [NAMES] section points at names-resolver.py, which answers from names.json.
 start_names() {
   echo "{}" > "$work/names.json"
-  nohup python3 "$(dirname "$0")/names-resolver.py" "$names_resolver_port" "$work/names.json" < /dev/null > "$work/names-resolver.log" 2>&1 &
-  echo $! > "$work/names-resolver.pid"
   export SMP_SERVER_CFG_PATH=$work/smp-server/etc SMP_SERVER_LOG_PATH=$work/smp-server/log
   "$bin/smp-server" init -y --disable-store-log --no-password --fqdn localhost --disable-web > "$work/out" 2>&1 || {
     cat "$work/out"
@@ -268,7 +276,16 @@ start_names() {
     -e 's/^port = 5223,443$/port = 5223/' \
     "$SMP_SERVER_CFG_PATH/smp-server.ini"
   grep -E '^(enable: on|resolver_endpoint|port = )' "$SMP_SERVER_CFG_PATH/smp-server.ini"
-  nohup "$bin/smp-server" start < /dev/null > "$work/smp-server.log" 2>&1 &
+  run_names
+  echo "$names_server" > "$work/names-server"
+  echo "names server: $names_server"
+}
+
+run_names() {
+  nohup python3 "$(dirname "$0")/names-resolver.py" "$names_resolver_port" "$work/names.json" < /dev/null >> "$work/names-resolver.log" 2>&1 &
+  echo $! > "$work/names-resolver.pid"
+  export SMP_SERVER_CFG_PATH=$work/smp-server/etc SMP_SERVER_LOG_PATH=$work/smp-server/log
+  nohup "$bin/smp-server" start < /dev/null >> "$work/smp-server.log" 2>&1 &
   echo $! > "$work/smp-server.pid"
   local deadline=$((SECONDS + 60))
   until nc -z 127.0.0.1 5223 2> /dev/null; do
@@ -279,8 +296,6 @@ start_names() {
     fi
     sleep 1
   done
-  echo "$names_server" > "$work/names-server"
-  echo "names server: $names_server"
 }
 
 register_name() {
@@ -302,8 +317,13 @@ start_contact() {
   register_name "$name" "$address" ""
   named "$db" "$display_name" 5 "/_set domain 1 $name"
   expect_out "^new contact address set$"
+  run_contact "$db" "$display_name"
+}
+
+run_contact() {
+  local db=$1 display_name=$2
   # --headless is for relays only; a command with a long -t keeps the client online, accepting contacts, for 6 hours
-  nohup "$bin/simplex-chat" -d "$work/$db" -e "/auto_accept on" -t 21600 --user-display-name "$display_name" < /dev/null > "$work/$db.log" 2>&1 &
+  nohup "$bin/simplex-chat" -d "$work/$db" -e "/auto_accept on" -t 21600 --user-display-name "$display_name" < /dev/null >> "$work/$db.log" 2>&1 &
   echo $! > "$work/$db.pid"
 }
 
@@ -494,6 +514,20 @@ start() {
   probe_pages "$avatar_search_text" 6
 }
 
+# The servers' keys and the clients' databases stay in the work dir, so its addresses are the same again.
+resume() {
+  bin=$work/bin
+  mkdir -p "$bin"
+  unzip -o -q "$1" -d "$bin"
+  run_names
+  run_relay
+  wait_connected relay
+  start_directory "$(cat "$work/super-user")"
+  run_contact ci_alice cialice
+  run_contact ci_robert Robert
+  echo "resumed: directory $(cat "$work/directory-link"), names server $(cat "$work/names-server")"
+}
+
 stop() {
   local p processes="directory relay ci_alice ci_robert smp-server"
   for p in $processes; do
@@ -518,6 +552,10 @@ case "${1:-}" in
     mkdir -p "$work"
     start "$2"
     ;;
+  resume)
+    work=$3
+    resume "$2"
+    ;;
   stop)
     work=$2
     stop
@@ -536,7 +574,7 @@ case "${1:-}" in
     sqlite3 -markdown "$work/directory_chat.db" "$listings_query"
     ;;
   *)
-    echo "usage: $0 start <backend zip> <work dir> | stop <work dir> | directory-stop <work dir> | directory-start <work dir> | listings <work dir>"
+    echo "usage: $0 start <backend zip> <work dir> | resume <backend zip> <work dir> | stop <work dir> | directory-stop <work dir> | directory-start <work dir> | listings <work dir>"
     exit 1
     ;;
 esac
