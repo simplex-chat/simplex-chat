@@ -210,6 +210,8 @@ test_server() {
   read -r x y < <(field_below "Your server address") || fail "no address field for the new server"
   "$ui" click "$x" "$y"
   "$ui" type "$NAMES_SERVER"
+  # the keyboard can show the last characters a moment later, and a tap before that lost one
+  "$ui" wait "$NAMES_SERVER" 15
   # a server entered by hand is off, and Test servers tests only the servers that are on
   read -r x y < <(switch_of "Use for new connections") || fail "no \"Use for new connections\" switch"
   "$ui" click "$x" "$y"
