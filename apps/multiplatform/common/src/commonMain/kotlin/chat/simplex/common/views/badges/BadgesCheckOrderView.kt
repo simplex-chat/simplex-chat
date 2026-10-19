@@ -79,10 +79,12 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
         style = MaterialTheme.typography.body2,
         color = MaterialTheme.colors.primary
       )
-      if (badgeStoreLane) {
-        RestorePurchasesButton(Modifier.padding(top = 10.dp))
-        Footnote(stringResource(MR.strings.badges_restore_purchases_footnote))
-      }
+      // hidden: the unfinished-purchase sweep already re-presents a charged purchase,
+      // leaving only another profile's purchase to claim
+      // if (badgeStoreLane) {
+      //   RestorePurchasesButton(Modifier.padding(top = 10.dp))
+      //   Footnote(stringResource(MR.strings.badges_restore_purchases_footnote))
+      // }
     }
   }
 }
