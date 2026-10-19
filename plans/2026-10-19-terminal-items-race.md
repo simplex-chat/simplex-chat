@@ -4,7 +4,7 @@ Issue #7755.
 
 ## Problem
 
-`ChatModel.addTerminalItem(item, maxItems)` reads `terminalItems.value` for the size check, again for `subList`, and again for the append, without a lock. While no chat console is open, it runs on the caller's thread: `sendCmd` on the IO dispatcher, the receiver loop, and the migration receivers, several at once. (With a console open, writes are posted to the main thread.)
+`ChatModel.addTerminalItem(item, maxItems)` reads `terminalItems.value` for the size check, twice on the `subList` line (the list and its size), and again for the append, without a lock. While no chat console is open, it runs on the caller's thread: `sendCmd` on the IO dispatcher, the receiver loop, and the migration receivers, several at once. (With a console open, writes are posted to the main thread.)
 
 Two concurrent calls can:
 - crash with `IndexOutOfBoundsException: toIndex = 201` in `subList`: another thread appended between the two reads of `terminalItems.value` in the `subList` line (that thread had skipped the trim on an out-of-date size check, so the list went past the cap);
@@ -19,7 +19,7 @@ On Android the crash shows "View crashed"; on both platforms the command's resul
 
 ## Alternatives considered
 
-- The issue's diff (a lock field plus a single snapshot trimmed with `drop`): also correct, but it adds a field and changes trimming: after developer tools are turned off (cap 500 → 200) it cuts the log to 200 at once, where master trims one row per new item.
+- The issue's diff (a lock field plus a single snapshot trimmed with `drop`): also correct, but it adds a field and changes trimming: after developer tools are turned off (cap 500 → 200) it cuts the log to 200 at once, where master keeps the log at that size (trimming one row per new row) until the app restarts.
 - Always posting the write to the main thread: correct, but every command and event would pay a coroutine and main-thread post while the console is closed, during the event bursts that trigger this.
 - A lock-free compare-and-set or `MutableStateFlow.update`: no precedent in this code, changes the reader or the type.
 - Clamping the `subList` bounds: stops the crash but still loses rows.
