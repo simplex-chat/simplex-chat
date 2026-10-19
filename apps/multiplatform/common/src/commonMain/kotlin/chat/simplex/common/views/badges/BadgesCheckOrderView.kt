@@ -150,7 +150,7 @@ val badgeStoreLane: Boolean get() = badgeStoreAvailable && chatModel.remoteHostI
 fun RestorePurchasesButton(modifier: Modifier = Modifier) {
   val restoring = remember { mutableStateOf(false) }
   TextButton({ restoreBadgePurchases(restoring) }, modifier, enabled = !restoring.value) {
-    Text(stringResource(MR.strings.badges_restore_purchases))
+    Text(stringResource(MR.strings.badges_restore_purchases), style = MaterialTheme.typography.body2)
   }
 }
 

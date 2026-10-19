@@ -175,6 +175,7 @@ struct RestorePurchasesButton: View {
                 await MainActor.run { restoring = false }
             }
         }
+        .font(.footnote)
         .disabled(restoring)
     }
 
