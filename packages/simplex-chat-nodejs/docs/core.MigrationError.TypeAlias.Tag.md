@@ -8,4 +8,4 @@
 
 > **Tag** = `"upgrade"` \| `"downgrade"` \| `"migrationError"`
 
-Defined in: [src/core.ts:171](../src/core.ts#L171)
+Defined in: [src/core.ts:193](../src/core.ts#L193)

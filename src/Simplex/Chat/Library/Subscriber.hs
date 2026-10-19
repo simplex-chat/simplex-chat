@@ -52,12 +52,12 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Files (getChatTempDirectory, safeFileNameStr)
 import Simplex.Chat.Library.Internal
+import Simplex.Chat.Markdown (ParsedMarkdown (..))
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
-import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
@@ -1535,7 +1535,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       Just AutoAccept {acceptIncognito} -> do
                         incognitoProfile <-
                           if not shortLinkDataSet && acceptIncognito
-                            then Just . NewIncognito <$> liftIO generateRandomProfile
+                            then Just . NewIncognito <$> liftIO (generateIncognitoProfile user)
                             else pure Nothing
                         ct' <- acceptContactRequestAsync user uclId ct ucr incognitoProfile
                         toView $ CEvtAcceptingContactRequest user ct'
@@ -2246,7 +2246,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           | otherwise = (\GroupMember {memberId} -> encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))) <$> m_
         GroupInfo {groupProfile = GroupProfile {publicGroup}} = gInfo
         sentAsGroup = asGroup_ == Just True
-        ts@(_, ft_) = msgContentTexts content
+        ts@(_, ParsedMarkdown ft_ _) = msgContentTexts content
         -- m' is Maybe GroupMember
         saveRcvCI gInfo' m' scopeInfo =
           let itemMember_ = if sentAsGroup then Nothing else m'
@@ -2335,7 +2335,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
         content = CIRcvMsgContent mc
-        ts@(_, ft_) = msgContentTexts mc
+        ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
         live = fromMaybe False live_
         updateRcvChatItem = do
           (cci, scopeInfo) <- withStore $ \db -> do
@@ -4233,8 +4233,9 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxForwardBatchLength nextTasks
                         senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
+                        notification = any (\MessageDeliveryTask {verifiedMsg} -> msgHasNotification verifiedMsg) acceptedTasks
                     withStore' $ \db -> do
-                      forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds body
+                      forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds notification body
                       forM_ acceptedTasks $ \t -> updateDeliveryTaskStatus db (deliveryTaskId t) DTSProcessed
                       forM_ largeTasks $ \t -> setDeliveryTaskErrStatus db (deliveryTaskId t) "large"
                     when (isJust body_) . lift . void $ getDeliveryJobWorker True deliveryKey
@@ -4247,7 +4248,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                       fwd = GrpMsgForward {fwdSender, fwdBrokerTs}
                       body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
                   withStore' $ \db -> do
-                    createMsgDeliveryJob db gInfo jobScope [senderGMId] body
+                    createMsgDeliveryJob db gInfo jobScope [senderGMId] (msgHasNotification verifiedMsg) body
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
                   lift . void $ getDeliveryJobWorker True deliveryKey
 
@@ -4328,7 +4329,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
-            MessageDeliveryJob {jobId, jobScope, senderGMIds, body, cursorGMId_ = startingCursor} = job
+            MessageDeliveryJob {jobId, jobScope, senderGMIds, body, notification, cursorGMId_ = startingCursor} = job
             singleSenderGMId_ = case senderGMIds of
               [s] -> Just s
               _ -> Nothing
@@ -4407,16 +4408,16 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               addRecipient acc r = case readyMemberConn r of
                                 Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientBodyPieces r)
                                 Nothing -> acc
-                              addPiece conn (k, (issued, reqs)) (bid, msgBody) =
+                              addPiece conn (k, (issued, reqs)) (bid, ntf, msgBody) =
                                 let vor
                                       | IS.member bid issued = VRRef bid
                                       | otherwise = VRValue (Just bid) msgBody
                                     issued' = IS.insert bid issued
                                     connId = if k == 0 then aConnId conn else B.empty
-                                 in (k + 1, (issued', (connId, PQEncOff, MsgFlags False, vor) : reqs))
+                                 in (k + 1, (issued', (connId, PQEncOff, MsgFlags {notification = ntf}, vor) : reqs))
                               recipientBodyPieces r =
-                                [(i, b) | (i, (b, ss)) <- overflowWithIds, any missing ss]
-                                  <> [if any missing inBodySenders then (1, extBody) else (0, body)]
+                                [(i, False, b) | (i, (b, ss)) <- overflowWithIds, any missing ss]
+                                  <> [if any missing inBodySenders then (1, notification, extBody) else (0, notification, body)]
                                 where
                                   missing s = case M.lookup (groupMemberId' s) senderVec of
                                     Just vec -> getRelation (indexInGroup r) vec == MRNew
@@ -4480,7 +4481,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         addReq conn (memIdx_, reqs) =
                           (subtract 1 <$> memIdx_, req : reqs)
                           where
-                            req = (aConnId conn, PQEncOff, MsgFlags False, vrValue_)
+                            req = (aConnId conn, PQEncOff, MsgFlags {notification}, vrValue_)
                             vrValue_ = case memIdx_ of
                               Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
                               Just 1 -> VRValue (Just 1) msgBody

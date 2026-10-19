@@ -1,0 +1,74 @@
+---
+layout: layouts/main.html
+title: "Download SimpleX Chat for iPhone, Android, Mac, Windows and Linux"
+description: "Get SimpleX Chat – the only messaging network without any user identifiers. Free and open-source apps for iPhone, Android, Mac, Windows and Linux."
+templateEngineOverride: njk
+noGlossary: true
+---
+{% set lang = page.url | getlang %}
+{% set release = "https://github.com/simplex-chat/simplex-chat/releases/latest/download/" %}
+<link rel="stylesheet" href="/css/downloads.css">
+
+<div class="dl-page" id="dl-page" data-os="mac">
+{% include "downloads_hero.html" %}
+
+<section class="dl-wrap dl-section" id="dl-all">
+    <h2>{{ "downloads-all-h2" | i18n({}, lang) }}</h2>
+    <div class="dl-cards">
+        <article>
+            <h3>{{ "downloads-desktop" | i18n({}, lang) }}</h3>
+            <ul>
+                <li>Windows: <a href="{{ release }}simplex-desktop-windows-x86_64.msi">x86_64</a></li>
+                <li>macOS: <a href="{{ release }}simplex-desktop-macos-aarch64.dmg">Apple Silicon</a> · <a href="{{ release }}simplex-desktop-macos-x86_64.dmg">Intel</a></li>
+                <li>Linux AppImage: <a href="{{ release }}simplex-desktop-x86_64.AppImage">x86_64</a> · <a href="{{ release }}simplex-desktop-aarch64.AppImage">aarch64</a></li>
+                <li>Linux: <a href="https://flathub.org/apps/chat.simplex.simplex" target="_blank" rel="noopener">Flatpak</a></li>
+                <li>Ubuntu 22.04, Debian: <a href="{{ release }}simplex-desktop-ubuntu-22_04-x86_64.deb">x86_64</a> · <a href="{{ release }}simplex-desktop-ubuntu-22_04-aarch64.deb">aarch64</a></li>
+                <li>Ubuntu 24.04: <a href="{{ release }}simplex-desktop-ubuntu-24_04-x86_64.deb">x86_64</a> · <a href="{{ release }}simplex-desktop-ubuntu-24_04-aarch64.deb">aarch64</a></li>
+            </ul>
+            <p>{{ "downloads-link-desktop" | i18n({}, lang) }}</p>
+        </article>
+        <article>
+            <h3>{{ "downloads-terminal" | i18n({}, lang) }}</h3>
+            <ul>
+                <li>Windows: <a href="{{ release }}simplex-chat-windows-x86-64">x86_64</a></li>
+                <li>macOS: <a href="{{ release }}simplex-chat-macos-aarch64">Apple Silicon</a> · <a href="{{ release }}simplex-chat-macos-x86-64">Intel</a></li>
+                <li>Ubuntu 22.04: <a href="{{ release }}simplex-chat-ubuntu-22_04-x86_64">x86_64</a> · <a href="{{ release }}simplex-chat-ubuntu-22_04-aarch64">aarch64</a></li>
+                <li>Ubuntu 24.04: <a href="{{ release }}simplex-chat-ubuntu-24_04-x86_64">x86_64</a> · <a href="{{ release }}simplex-chat-ubuntu-24_04-aarch64">aarch64</a></li>
+            </ul>
+            <p>{{ "downloads-terminal-desc" | i18n({}, lang) }} <a href="/docs/cli.html">{{ "downloads-terminal-guide" | i18n({}, lang) }}</a></p>
+        </article>
+        <article class="dl-card-phone">
+            <h3>{{ "downloads-phone" | i18n({}, lang) }}</h3>
+            <ul>
+                <li>iOS: <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank" rel="noopener">App Store</a> · <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank" rel="noopener">TestFlight</a></li>
+                <li>Android: <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" rel="noopener">Google Play</a> · <a href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid">F-Droid</a></li>
+                <li>Android APK: <a href="{{ release }}simplex-aarch64.apk">aarch64</a> · <a href="{{ release }}simplex-armv7a.apk">armv7</a></li>
+            </ul>
+        </article>
+    </div>
+</section>
+
+<section class="dl-wrap dl-section dl-advanced">
+    <h2>{{ "downloads-advanced-h2" | i18n({}, lang) }}</h2>
+    <p>
+        <a href="https://github.com/simplex-chat/simplex-chat/releases" target="_blank" rel="noopener">{{ "downloads-github" | i18n({}, lang) }}</a>
+        <a href="https://git.simplex.chat/simplex-chat/simplex-chat/releases" target="_blank" rel="noopener">{{ "downloads-mirror" | i18n({}, lang) }}</a>
+        <a href="/reproduce/">{{ "docs-dropdown-15" | i18n({}, lang) }}</a>
+        <a href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid">{{ "downloads-fdroid-repo" | i18n({}, lang) }}</a>
+    </p>
+</section>
+</div>
+
+<script>
+    (function () {
+        var ua = navigator.userAgent;
+        var platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+        var page = document.getElementById("dl-page");
+        var device = "desktop";
+        if (/Android|CrOS/i.test(ua)) device = "android";
+        else if (/iPhone|iPad|iPod/i.test(ua) || (/Mac/i.test(platform) && navigator.maxTouchPoints > 1)) device = "iphone";
+        else page.dataset.os = /Win/i.test(platform) ? "windows" : /Linux|X11/i.test(platform) ? "linux" : "mac";
+        page.dataset.device = device;
+        page.querySelector('.dl-device[data-device="' + device + '"]').classList.add("dl-detected");
+    })();
+</script>

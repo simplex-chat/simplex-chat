@@ -1,5 +1,5 @@
 //
-//  BadgesYourLevelView.swift
+//  BadgesChooseBadgeView.swift
 //  SimpleX (iOS)
 //
 //  Created by spaced4ndy on 28.07.2026.
@@ -23,17 +23,24 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var filesDescription: LocalizedStringKey {
+    var fileSize: LocalizedStringKey {
         switch self {
-        case .supporter: "Send 2GB files"
-        case .legend: "Send 5GB files"
+        case .supporter: "Files up to 2 GB"
+        case .legend: "Files up to 5 GB"
         }
     }
 
-    var tagline: LocalizedStringKey {
+    var fileStorage: LocalizedStringKey {
         switch self {
-        case .supporter: "Optional profile badge\nand 2GB files"
-        case .legend: "Optional profile badge\nand 5GB files"
+        case .supporter: "Stored for 7 days"
+        case .legend: "Stored for 21 days"
+        }
+    }
+
+    var summary: LocalizedStringKey {
+        switch self {
+        case .supporter: "Supporter: 2 GB files available for 7 days."
+        case .legend: "Legend: 5 GB files available for 21 days."
         }
     }
 
@@ -45,32 +52,33 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
     }
 }
 
-struct BadgesYourLevelView: View {
+struct BadgesChooseBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     @State private var selectedLevel: BadgeLevel = .supporter
     @State private var continueActive = false
-    @State private var howItWorksActive = false
 
     var body: some View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .center, spacing: 16) {
-                    Text("Your level")
+                    Text("Choose your badge")
                         .font(.largeTitle)
                         .bold()
                         .foregroundColor(theme.colors.primary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    BadgeUserPreview(level: selectedLevel) {
-                        Image(systemName: "chevron.down")
-                            .font(.body)
-                            .foregroundColor(theme.colors.primary)
-                    }
-                    .padding(.top, 4)
+                    Text("Larger files that stay available longer.")
+                        .font(.body)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                    Spacer(minLength: 20)
+                    BadgeUserPreview(level: selectedLevel)
+                        .padding(.top, 4)
+
+                    Spacer(minLength: 12)
 
                     // fixedSize + maxHeight on the cards so both match the taller one when a
                     // store price wraps in one of them
@@ -80,13 +88,20 @@ struct BadgesYourLevelView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
-                    Spacer(minLength: 20)
+                    Spacer(minLength: 12)
 
                     VStack(spacing: 10) {
                         continueButton()
                             .padding(.vertical, 10)
-                        howItWorksButton()
-                            .frame(height: 22)
+                        // redeeming a code is here only when Support SimpleX offers the browser instead
+                        Group {
+                            if badgeBrowserAllowed {
+                                RedeemCodeButton()
+                            } else {
+                                Color.clear
+                            }
+                        }
+                        .frame(height: 22)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -110,17 +125,20 @@ struct BadgesYourLevelView: View {
                 Image(badgeImageName(level.badgeType))
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 60, height: 60)
-                    .padding(.top, 20)
+                    .frame(width: 44, height: 44)
+                    .padding(.top, 16)
                 Text(level.title)
                     .font(.title3)
                     .fontWeight(.bold)
-                Text(level.filesDescription)
-                    .font(.subheadline)
-                    .foregroundColor(theme.colors.secondary)
                 BadgePeriod.monthly.priceText(store.price(level, .monthly))
                     .font(.body)
-                    .padding(.bottom, 20)
+                VStack(spacing: 2) {
+                    Text(level.fileSize)
+                    Text(level.fileStorage)
+                }
+                .font(.subheadline)
+                .foregroundColor(theme.colors.secondary)
+                .padding(.bottom, 16)
             }
             .multilineTextAlignment(.center)
             .padding(.horizontal, 12)
@@ -145,30 +163,7 @@ struct BadgesYourLevelView: View {
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $continueActive) {
-                BadgesPayView(level: selectedLevel)
-                    .modifier(ThemedBackground())
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-        }
-    }
-
-    private func howItWorksButton() -> some View {
-        ZStack {
-            Button {
-                howItWorksActive = true
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "info.circle")
-                    Text("How badges protect your privacy").fontWeight(.medium)
-                }
-                .font(.body)
-            }
-
-            NavigationLink(isActive: $howItWorksActive) {
-                BadgesHowItWorksView()
+                BadgesHowLongView(level: selectedLevel)
                     .modifier(ThemedBackground())
             } label: {
                 EmptyView()
@@ -179,10 +174,10 @@ struct BadgesYourLevelView: View {
     }
 }
 
-struct BadgesYourLevelView_Previews: PreviewProvider {
+struct BadgesChooseBadgeView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesYourLevelView()
+            BadgesChooseBadgeView()
         }
     }
 }
