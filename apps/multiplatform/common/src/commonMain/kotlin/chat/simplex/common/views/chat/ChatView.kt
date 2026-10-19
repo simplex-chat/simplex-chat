@@ -2112,7 +2112,7 @@ fun BoxScope.ChatItemsList(
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
-                        Box((if (chatInfo.isChannel) Modifier else Modifier.stickyInSenderRun(cItem.id)).clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                        Box((if (chatInfo.isChannel || selectedChatItems.value != null) Modifier else Modifier.stickyInSenderRun(cItem.id)).clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
@@ -2512,8 +2512,8 @@ fun BoxScope.ChatItemsList(
       val index = listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return null
       return mergedItems.value.items.getOrNull(index)?.let { index to it }
     }
+    if (selectedChatItems.value != null) return@pinned
     val memberAtTop = remember { derivedStateOf(sameMemberPolicy) { topItem()?.let { (it.second.newest().item.chatDir as? CIDirection.GroupRcv)?.groupMember } } }
-    val selectionOffset by animateDpAsState(if (selectedChatItems.value != null) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
     val member = memberAtTop.value ?: return@pinned
     Box(
       Modifier
@@ -2525,7 +2525,7 @@ fun BoxScope.ChatItemsList(
             if (continuesSenderRun(top) && (top.newest().item.chatDir as CIDirection.GroupRcv).groupMember.memberId == member.memberId) {
               val y = pinnedAvatarTop(index, avatar.height).roundToInt()
               if (y + avatar.height > topPaddingToContentPx.value) {
-                avatar.placeRelativeWithLayer(8.dp.roundToPx(), y) { translationX = selectionOffset.toPx() }
+                avatar.placeRelative(8.dp.roundToPx(), y)
               }
             }
           }
