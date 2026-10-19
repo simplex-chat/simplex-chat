@@ -2387,7 +2387,7 @@
     <string name="sanitize_links_toggle">Odebrat sledování odkazů</string>
     <string name="v6_4_role_moderator_descr">Odstranit zprávy a blokovat členy.</string>
     <string name="e2ee_info_e2ee"><![CDATA[Zprávy jsou chráněny <b>koncovým šifrováním</b>.]]></string>
-    <string name="simplex_link_relay">SimpleX relé odkaz</string>
+    <string name="simplex_link_relay">adresa SimpleX relé</string>
     <string name="private_routing_no_session">Sezení bez soukromého směrování</string>
     <string name="v6_4_1_new_interface_languages">4 nové jazyky rozhraní</string>
     <string name="accept_contact_request">Přijmout žádost o kontakt</string>
@@ -2694,4 +2694,8 @@
     <string name="member_info_relay_status_rejected_by_operator">odmítnuto operátorem relé</string>
     <string name="advanced_options">Pokročilé možnosti</string>
     <string name="advanced_settings">Pokročilé nastavení</string>
+    <string name="countdown_hrs_min_sec">%1$02d hod %2$02d min %3$02d sek</string>
+    <string name="badges_price_monthly">%1$s/měsíc</string>
+    <string name="badges_price_annual">%1$s/rok</string>
+    <string name="badges_period_one_month">1 měsíc</string>
 </resources>
