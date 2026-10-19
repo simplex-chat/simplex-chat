@@ -54,7 +54,7 @@ JSON schemas use JSON Type Definition [RFC8927]. Whitespace in JSON examples is 
 
 A website owner publishes channels for updates and contact addresses for requests [WEB]. An agent:
 
-1. reads the addresses from the website: link relations, `/.well-known/simplex` or `llms.txt`;
+1. reads the addresses from the website: link relations, `/.well-known/simplex.json` or `llms.txt`;
 2. retrieves the profile with the link, without connecting;
 3. reads the profile's declarations;
 4. subscribes to a channel, connects to a contact address, or sends a Service RPC request to it.
@@ -66,7 +66,7 @@ sequenceDiagram
     participant R as SMP router
     participant B as Bot
 
-    A->>W: GET /.well-known/simplex
+    A->>W: GET /.well-known/simplex.json
     W-->>A: channels and contacts
     A->>R: retrieve link data
     R-->>A: profile with declarations
@@ -118,7 +118,7 @@ Declarations are keys of the profile's preferences: `preferences` of a user or c
 
 ### protocols
 
-Schema of the `protocols` key:
+JSON Type Definition schema [RFC8927] of the `protocols` key:
 
 ```json
 {
@@ -164,7 +164,7 @@ Example, the `preferences` of a contact profile:
 
 ### audience and updateFrequency
 
-Schema of the keys `audience` and `updateFrequency`:
+JSON Type Definition schema [RFC8927] of the keys `audience` and `updateFrequency`:
 
 ```json
 {
@@ -244,6 +244,8 @@ Requirements:
 
 ### Request
 
+JSON Type Definition schema [RFC8927] of the request:
+
 ```json
 {
   "properties": {
@@ -264,6 +266,8 @@ Requirements:
 - `request`: the protocol's message, as the binding defines it. The fields of the envelope are never added to it.
 
 ### Response
+
+JSON Type Definition schema [RFC8927] of the response:
 
 ```json
 {
