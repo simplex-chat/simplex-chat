@@ -40,8 +40,9 @@
         <target>%1$@ hat SimpleX Chat unterstützt. Das Abzeichen ist am %2$@ abgelaufen.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve">
+      <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve" approved="no">
         <source>%1$02d hrs %2$02d min %3$02d sec</source>
+        <target state="translated">%1$02d h %2$02d min %3$02d s</target>
         <note>countdown</note>
       </trans-unit>
       <trans-unit id="%@" xml:space="preserve">
@@ -159,8 +160,9 @@
         <target>%@:</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="%d day" xml:space="preserve">
+      <trans-unit id="%d day" xml:space="preserve" approved="no">
         <source>%d day</source>
+        <target state="translated">%d Tag</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
@@ -2723,8 +2725,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Link wird erstellt…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve">
+      <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve" approved="no">
         <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
+        <target state="translated">Crowdfunding-Investoren können vor Verkaufsbeginn Namen reservieren: [simplex.domains](https://simplex.domains/)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
@@ -8950,8 +8953,9 @@ copied message info</note>
         <target>SimpleX-Name ist nicht verifiziert</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX name sale starts in" xml:space="preserve">
+      <trans-unit id="SimpleX name sale starts in" xml:space="preserve" approved="no">
         <source>SimpleX name sale starts in</source>
+        <target state="translated">Der Verkauf von SimpleX-Namen startet in</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
@@ -10107,8 +10111,9 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Einstellungen aktualisieren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve">
+      <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve" approved="no">
         <source>Update the app to register a SimpleX domain</source>
+        <target state="translated">Aktualisieren Sie die App, um eine SimpleX-Domain registrieren zu können</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
@@ -11758,8 +11763,9 @@ pref value</note>
         <target>weitergeleitet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="forwarded from" xml:space="preserve">
+      <trans-unit id="forwarded from" xml:space="preserve" approved="no">
         <source>forwarded from</source>
+        <target state="translated">weitergeleitet aus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group" xml:space="preserve">
@@ -12269,8 +12275,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Ungeschützt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="until you can register a SimpleX domain" xml:space="preserve">
+      <trans-unit id="until you can register a SimpleX domain" xml:space="preserve" approved="no">
         <source>until you can register a SimpleX domain</source>
+        <target state="translated">bis Sie eine SimpleX-Domain registrieren können</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated channel profile" xml:space="preserve">
