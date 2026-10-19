@@ -170,17 +170,17 @@ ChatTagsModel (singleton -- filter state)
 
 | Method | Description | Line |
 |--------|-------------|------|
-| `getUser(_ userId:)` | Find user by ID | [L505](../Shared/Model/ChatModel.swift#L505) |
-| `updateUser(_ user:)` | Update user in list and current | [L516](../Shared/Model/ChatModel.swift#L516) |
-| `removeUser(_ user:)` | Remove user from list | [L526](../Shared/Model/ChatModel.swift#L526) |
-| `getChat(_ id:)` | Find chat by ID | [L537](../Shared/Model/ChatModel.swift#L537) |
-| `addChat(_ chat:)` | Add chat to list | [L592](../Shared/Model/ChatModel.swift#L592) |
-| `updateChatInfo(_ cInfo:)` | Update chat metadata | [L606](../Shared/Model/ChatModel.swift#L606) |
-| `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L658](../Shared/Model/ChatModel.swift#L658) |
-| `addChatItem(_ chatInfo:, _ cItem:)` | Update chat preview and unread state for a received item; when the chat is not in the list it is created and the item's unread count is queued through `unreadCollector`, landing on its next flush | [L684-L734](../Shared/Model/ChatModel.swift#L684-L734) |
-| `removeChat(_ id:)` | Remove chat from list | [L1310](../Shared/Model/ChatModel.swift#L1310) |
-| `popChat(_ id:)` | Move chat to top of list | [L1277](../Shared/Model/ChatModel.swift#L1277) |
-| `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1177](../Shared/Model/ChatModel.swift#L1177) |
+| `getUser(_ userId:)` | Find user by ID | [L523](../Shared/Model/ChatModel.swift#L523) |
+| `updateUser(_ user:)` | Update user in list and current | [L534](../Shared/Model/ChatModel.swift#L534) |
+| `removeUser(_ user:)` | Remove user from list | [L544](../Shared/Model/ChatModel.swift#L544) |
+| `getChat(_ id:)` | Find chat by ID | [L555](../Shared/Model/ChatModel.swift#L555) |
+| `addChat(_ chat:)` | Add chat to list | [L610](../Shared/Model/ChatModel.swift#L610) |
+| `updateChatInfo(_ cInfo:)` | Update chat metadata | [L624](../Shared/Model/ChatModel.swift#L624) |
+| `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L676](../Shared/Model/ChatModel.swift#L676) |
+| `addChatItem(_ chatInfo:, _ cItem:)` | Update chat preview and unread state for a received item; when the chat is not in the list it is created and the item's unread count is queued through `unreadCollector`, landing on its next flush | [L702-L752](../Shared/Model/ChatModel.swift#L702-L752) |
+| `removeChat(_ id:)` | Remove chat from list | [L1330](../Shared/Model/ChatModel.swift#L1330) |
+| `popChat(_ id:)` | Move chat to top of list | [L1297](../Shared/Model/ChatModel.swift#L1297) |
+| `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1197](../Shared/Model/ChatModel.swift#L1197) |
 
 [GAP] `removeChat` removes the chat's preset tags but decrements neither the profile
 unread counter nor the per-tag unread counts, so removing a chat that had unread messages
