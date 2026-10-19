@@ -74,22 +74,22 @@ A link context MAY have several `simplex` links of one kind. Their order is the 
 In the document head:
 
 ```html
-<link rel="simplex" href="https://smp12.simplex.im/c#…" hreflang="en" title="Ridgeline updates">
-<link rel="simplex" href="https://smp12.simplex.im/a#…" hreflang="en" title="Ask Ridgeline">
+<link rel="simplex" href="https://smp12.simplex.im/c#…" hreflang="en" title="Acme news">
+<link rel="simplex" href="https://smp12.simplex.im/a#…" hreflang="en" title="Ask Acme">
 ```
 
 In the document body, the relation type is used on visible links, for example on the entries of a directory:
 
 ```html
 <a rel="simplex" href="https://smp12.simplex.im/a#…">Chat with us</a>
-<a rel="simplex" href="https://smp12.simplex.im/g#…">Ridgeline hikers</a>
+<a rel="simplex" href="https://smp12.simplex.im/g#…">Acme customers</a>
 ```
 
 ### HTTP
 
 ```
-Link: <https://smp12.simplex.im/c#…>; rel="simplex"; hreflang="en"; title="Ridgeline updates"
-Link: <https://smp12.simplex.im/a#…>; rel="simplex"; hreflang="en"; title="Ask Ridgeline"
+Link: <https://smp12.simplex.im/c#…>; rel="simplex"; hreflang="en"; title="Acme news"
+Link: <https://smp12.simplex.im/a#…>; rel="simplex"; hreflang="en"; title="Ask Acme"
 ```
 
 ## Well-known URI
@@ -153,8 +153,8 @@ A site omits the lists it does not use.
   "channels": [
     {
       "link": "https://smp12.simplex.im/c#…",
-      "name": "#ridgeline.simplex",
-      "title": "Ridgeline updates",
+      "name": "#acme.simplex",
+      "title": "Acme news",
       "lang": "en",
       "audience": ["people", "agents"],
       "changeFrequency": "weekly"
@@ -163,15 +163,15 @@ A site omits the lists it does not use.
   "groups": [
     {
       "link": "https://smp12.simplex.im/g#…",
-      "title": "Ridgeline hikers",
+      "title": "Acme customers",
       "lang": "en"
     }
   ],
   "contacts": [
     {
       "link": "https://smp12.simplex.im/a#…",
-      "name": "@ridgeline.simplex",
-      "title": "Ask Ridgeline",
+      "name": "@acme.simplex",
+      "title": "Ask Acme",
       "lang": "en",
       "audience": ["agents"],
       "business": true,
