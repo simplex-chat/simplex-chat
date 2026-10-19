@@ -107,7 +107,7 @@ Common Module (commonMain)
 | Concepts | [product/concepts.md](../product/concepts.md) | 30 product concepts (PC1-PC30) mapped to docs + source |
 | Glossary | [product/glossary.md](../product/glossary.md) | Domain term definitions (9 sections) |
 | Rules | [product/rules.md](../product/rules.md) | 18 business rules in 6 categories |
-| Gaps | [product/gaps.md](../product/gaps.md) | 7 known gaps with recommendations |
+| Gaps | [product/gaps.md](../product/gaps.md) | 8 known gaps with recommendations |
 | Flows | [product/flows/](../product/flows/) | onboarding, messaging, connection, calling, file-transfer, group-lifecycle |
 | Views | [product/views/](../product/views/) | chat-list, chat, settings, onboarding, call, new-chat, contact-info, group-info, user-profiles |
 
@@ -117,21 +117,21 @@ Common Module (commonMain)
 
 | Component | File | Key Symbol | Line |
 |---|---|---|---|
-| Android Application | [`SimplexApp.kt`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L44) | `class SimplexApp` | 44 |
+| Android Application | [`SimplexApp.kt`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L46) | `class SimplexApp` | 46 |
 | Android Activity | [`MainActivity.kt`](../android/src/main/java/chat/simplex/app/MainActivity.kt#L24) | `class MainActivity` | 24 |
-| Desktop Entry | [`Main.kt`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L22) | `fun main()` | 22 |
+| Desktop Entry | [`Main.kt`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26) | `fun main(args: Array<String>)` | 26 |
 | Desktop App Window | [`DesktopApp.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L34) | `fun showApp()` | 34 |
 | Desktop Init | [`AppCommon.desktop.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppCommon.desktop.kt#L21) | `fun initApp()` | 21 |
 | Common App Screen | [`App.kt`](../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L48) | `fun AppScreen()` | 48 |
 | JNI Bridge | [`Core.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L18) | `external fun initHS()` | 18 |
-| Chat Controller | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L537) | `object ChatController` | 537 |
-| Chat Model | [`ChatModel.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L155) | `object ChatModel` | 155 |
-| App Preferences | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L103) | `class AppPreferences` | 103 |
-| Platform Interface | [`Platform.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L19) | `interface PlatformInterface` | 19 |
+| Chat Controller | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L541) | `object ChatController` | 541 |
+| Chat Model | [`ChatModel.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L157) | `object ChatModel` | 157 |
+| App Preferences | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L105) | `class AppPreferences` | 105 |
+| Platform Interface | [`Platform.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L20) | `interface PlatformInterface` | 20 |
 | Notification Manager | [`NtfManager.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L20) | `abstract class NtfManager` | 20 |
 | Theme Manager | [`ThemeManager.kt`](../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/ThemeManager.kt#L18) | `object ThemeManager` | 18 |
-| Android Haskell Init | [`AppCommon.android.kt`](../common/src/androidMain/kotlin/chat/simplex/common/platform/AppCommon.android.kt#L33) | `fun initHaskell(packageName: String)` | 33 |
-| Common Migrations | [`AppCommon.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/AppCommon.kt#L46) | `fun runMigrations()` | 46 |
+| Android Haskell Init | [`AppCommon.android.kt`](../common/src/androidMain/kotlin/chat/simplex/common/platform/AppCommon.android.kt#L36) | `fun initHaskell(packageName: String)` | 36 |
+| Common Migrations | [`AppCommon.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/AppCommon.kt#L48) | `fun runMigrations()` | 48 |
 | Android Service | [`SimplexService.kt`](../android/src/main/java/chat/simplex/app/SimplexService.kt#L41) | `class SimplexService` | 41 |
 | Gradle Root | [`settings.gradle.kts`](../settings.gradle.kts#L21) | `include(":android", ":desktop", ":common")` | 21 |
 | Common Build | [`build.gradle.kts`](../common/build.gradle.kts#L39) | `kotlin { androidTarget(); jvm("desktop") }` | 39 |

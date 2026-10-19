@@ -2,7 +2,8 @@
 
 # Runs the device test plan with Claude Code on this runner after the smoke test, one session per layout,
 # as claude-scope says. A session drives the app only through the ui helper, and reads and writes only its
-# own directory <output dir>/<layout>: prompt.md, report.md, shots/, transcript.jsonl (stream-json).
+# own directory, which ends up in <output dir>/<layout>: prompt.md, report.md, shots/, transcript.jsonl (stream-json).
+# It passes when every session's final message ends with "CLAUDE-TEST: PASS".
 # Usage: scripts/ci/ios-sim/claude-test.sh <output dir>
 # Needs CLAUDE_CODE_OAUTH_TOKEN, SIM_UDID (the booted simulator with the app) and, when the test backend runs, BACKEND_DIR.
 
@@ -14,6 +15,9 @@ unset CLAUDE_CODE_OAUTH_TOKEN
 
 mkdir -p "$1"
 out=$(cd "$1" && pwd)
+# sessions run here and move to the output dir, which is uploaded, only after their files are checked for the token
+staging=$out.sessions
+mkdir -p "$staging"
 dir=$(cd "$(dirname "$0")" && pwd)
 : "${SIM_UDID:?SIM_UDID must be the simulator UDID}"
 BACKEND_DIR=${BACKEND_DIR:-}
@@ -91,14 +95,15 @@ write_prompt() {
 status=0
 previous=""
 for layout in $layouts; do
-  session=$out/$layout
+  session=$staging/$layout
   mkdir -p "$session/shots"
+  echo "$layout" >> "$out/sessions"
   ui layout "$layout"
   write_prompt "$layout" "$previous" > "$session/prompt.md"
   echo "::group::Claude session: $layout, $model, $max_turns turns, \$$max_budget"
   session_status=0
   # outside the session's directory, so the session cannot change it
-  export CLAUDE_GUARD_LOG=$out/$layout-guard.log
+  export CLAUDE_GUARD_LOG=$staging/$layout-guard.log
   : > "$CLAUDE_GUARD_LOG"
   (
     cd "$session"
@@ -122,11 +127,16 @@ for layout in $layouts; do
   ) || session_status=$?
   echo "claude exited with $session_status"
   # the token must never be printed or uploaded, whatever the session did; grep reads it from a pipe, not from its arguments
-  if grep -rqF -f <(printf '%s\n' "$token") "$session" "$CLAUDE_GUARD_LOG"; then
+  leak=0
+  grep -rqF -f <(printf '%s\n' "$token") "$session" "$CLAUDE_GUARD_LOG" || leak=$?
+  if [ "$leak" -ne 1 ]; then
     rm -rf "$session" "$CLAUDE_GUARD_LOG"
-    echo "::error::the $layout session's files contained the token, so they were deleted before the upload"
+    echo "::error::the $layout session's files contain the token, or checking for it failed (grep exited $leak), so they were deleted before the upload"
     session_status=1
   else
+    mv "$session" "$CLAUDE_GUARD_LOG" "$out/"
+    session=$out/$layout
+    CLAUDE_GUARD_LOG=$out/$layout-guard.log
     tail -n 20 "$session/stderr.log"
     if [ -f "$session/report.md" ]; then
       cat "$session/report.md"
@@ -135,6 +145,14 @@ for layout in $layouts; do
     fi
     echo "guard hook: $(grep -c '^allow' "$CLAUDE_GUARD_LOG" || true) allowed, $(grep -c '^refuse' "$CLAUDE_GUARD_LOG" || true) refused"
     grep '^refuse' "$CLAUDE_GUARD_LOG" || true
+    result=$(jq -r -R 'fromjson? | select(.type == "result") | .result // empty' "$session/transcript.jsonl" | tail -n 20 || true)
+    echo "final message, last lines:"
+    echo "$result"
+    last=$(grep -v '^[[:space:]]*$' <<< "$result" | tail -n 1 || true)
+    if ! grep -qxE '[*`]*CLAUDE-TEST: PASS[*`.]*[[:space:]]*' <<< "$last"; then
+      echo "::error::the $layout session's final message does not end with CLAUDE-TEST: PASS"
+      session_status=1
+    fi
   fi
   echo "::endgroup::"
   if [ "$session_status" -ne 0 ]; then

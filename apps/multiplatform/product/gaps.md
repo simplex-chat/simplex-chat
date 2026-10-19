@@ -13,10 +13,11 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
-8. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-08-desktop-emoji-picker-without-skin-tones-and-localized-search)
-9. [Online Search: Groups Joined Through Another Link Are Not Recognised](#gap-09-online-search-groups-joined-through-another-link-are-not-recognised)
-10. [Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address](#gap-10-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address)
-11. [Online Search: New Chat Does Not Narrow Contacts by Name While Typing](#gap-11-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing)
+8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
+9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
+10. [Online Search: Groups Joined Through Another Link Are Not Recognised](#gap-10-online-search-groups-joined-through-another-link-are-not-recognised)
+11. [Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address](#gap-11-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address)
+12. [Online Search: New Chat Does Not Narrow Contacts by Name While Typing](#gap-12-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing)
 
 ---
 
@@ -296,7 +297,39 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 ---
 
-## GAP-08: Desktop: Emoji Picker Without Skin Tones and Localized Search
+## GAP-08: Desktop: App Link Registration
+
+**Severity:** Low
+**Category:** Platform
+**Platform:** Desktop only
+
+### Description
+
+Desktop registers the `simplexchat:` scheme so the badge page can return to the app, and the `simplex:` scheme so connection links open in it. The registration has known limits:
+
+- Uninstalling or deleting the app leaves the per-user registration behind: the HKCU keys on Windows (the scheme keys, the ProgIds, `Capabilities` and the `RegisteredApplications` entry) and the hidden AppImage desktop entry on Linux. A later link then points at a missing program. On Windows, if the app was installed into a folder other users can write to (for example a custom folder at the root of `C:\`), another user could put a program at that path and have it run on the next link; the default Program Files install is not affected. This risk is accepted.
+- A Flatpak counts as registered without a check, as it cannot query the host's default handler. It works only once the Flathub release pins a commit with the desktop file's MimeType line and its wrapper passes `"$@"` to the app.
+- On macOS a second copy of the app does not forward a link to the running one; macOS delivers the link to the running bundle itself.
+- With two installations (a deb and an AppImage, or two installed copies of the Windows app), the scheme stays with whichever registered first while it is installed; the other gets `app=desktop`. On Windows, when several apps registered through `Capabilities` handle a scheme and none was picked, Windows chooses or asks; the app cannot set `UserChoice` itself.
+- The link arrives as a command-line argument, which other local users can read through `/proc` on Linux. This risk is accepted.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt` -- registration and its result for the badge page
+- `common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt` -- forwarding to a running instance
+
+### Impact
+
+A stale registration or an unregistered Flatpak sends the user back to a link that opens nothing; the badge page's *Show code* and the Redeem code screen remain.
+
+### Recommendation
+
+1. Remove the registration in an uninstaller where one exists (MSI), and on AppImage when the entry's file is gone.
+2. Removing the command-line exposure needs the page to encrypt the code to a key the app passes in the URL fragment.
+
+---
+
+## GAP-09: Desktop: Emoji Picker Without Skin Tones and Localized Search
 
 **Severity:** Low
 **Category:** Feature / Platform
@@ -322,7 +355,7 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ---
 
-## GAP-09: Online Search: Groups Joined Through Another Link Are Not Recognised
+## GAP-10: Online Search: Groups Joined Through Another Link Are Not Recognised
 
 **Severity:** Low
 **Category:** UI / UX
@@ -350,7 +383,7 @@ Have the directory send a stable group identifier the core can match locally, or
 
 ---
 
-## GAP-10: Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address
+## GAP-11: Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address
 
 **Severity:** Low
 **Category:** Privacy / UX
@@ -376,7 +409,7 @@ Decide whether the alert copy should also say that the address a name points to 
 
 ---
 
-## GAP-11: Online Search: New Chat Does Not Narrow Contacts by Name While Typing
+## GAP-12: Online Search: New Chat Does Not Narrow Contacts by Name While Typing
 
 **Severity:** Low
 **Category:** UI / UX

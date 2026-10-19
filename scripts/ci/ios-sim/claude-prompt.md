@@ -68,4 +68,4 @@ Write `report.md` in the current directory as you go, so a session that is cut s
 5. `## Findings`: app bugs, each with steps, what you saw, what you expected, screenshots.
 6. `## Harness notes`: anything about `ui` or the runner that got in the way.
 
-End the session by making sure `report.md` is complete and no row says `todo`; your final message is a three-line summary: passed, failed and skipped counts, and the most important finding.
+End the session by making sure `report.md` is complete and no row says `todo`; your final message is a three-line summary: passed, failed and skipped counts, and the most important finding, then one more line: `CLAUDE-TEST: PASS` if no case failed, otherwise `CLAUDE-TEST: FAIL` and the IDs of the cases that failed.

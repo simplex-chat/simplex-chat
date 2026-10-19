@@ -12,7 +12,9 @@
 
 set -euo pipefail
 
-: "${CLAUDE_CODE_OAUTH_TOKEN:?CLAUDE_CODE_OAUTH_TOKEN must be set}"
+token=${CLAUDE_CODE_OAUTH_TOKEN:?CLAUDE_CODE_OAUTH_TOKEN must be set}
+# only the claude process gets the token, nothing else this script starts
+unset CLAUDE_CODE_OAUTH_TOKEN
 here=$(cd "$(dirname "$0")" && pwd)
 out=$(cd "$1" && pwd)
 transcript=$2
@@ -37,26 +39,28 @@ EOF
 claude --version
 cd "$out"
 status=0
-claude -p "$(cat prompt.md)" \
+CLAUDE_CODE_OAUTH_TOKEN=$token claude -p \
   --model "$CLAUDE_MODEL" \
+  --effort high \
+  --restricted \
+  --tools Bash,Read,Write,Edit \
+  --allowedTools "Bash(ui)" "Bash(ui *)" "Read(/$out/**)" "Edit(/$out/**)" \
+  --permission-mode dontAsk \
+  --permission-prompts none \
+  --strict-mcp-config \
   --max-turns 120 \
   --max-budget-usd 3 \
-  --output-format stream-json \
-  --verbose \
-  --tools Bash,Read,Write \
-  --permission-mode dontAsk \
-  --allowedTools "Bash(ui *)" "Read(/$out/**)" "Edit(/$out/**)" \
-  --disallowedTools "mcp__*" \
-  --strict-mcp-config \
-  --disable-slash-commands \
+  --autocompact 200k \
   --no-session-persistence \
   --settings "$settings" \
-  < /dev/null > "$transcript" 2> "$stderr" || status=$?
+  --output-format stream-json \
+  --verbose \
+  < prompt.md > "$transcript" 2> "$stderr" || status=$?
 
 # A second safeguard to the file tools' limits: what the session wrote is printed and uploaded only when it is known
 # not to hold the token. grep reads the token from a pipe, so it is in no process's arguments.
 leak=0
-printf '%s\n' "$CLAUDE_CODE_OAUTH_TOKEN" | grep -rqF -f - -- "$out" "$transcript" "$stderr" "$CLAUDE_GUARD_LOG" || leak=$?
+printf '%s\n' "$token" | grep -rqF -f - -- "$out" "$transcript" "$stderr" "$CLAUDE_GUARD_LOG" || leak=$?
 if [ "$leak" -ne 1 ]; then
   rm -rf -- "$out" "$transcript" "$stderr" "$CLAUDE_GUARD_LOG"
   echo "error: the token is in the Claude session's output, or checking for it failed (grep exited $leak); the output, transcript, stderr and guard log are deleted"
@@ -80,4 +84,4 @@ if [ "$status" -ne 0 ]; then
   exit 1
 fi
 last=$(grep -v '^[[:space:]]*$' <<< "$result" | tail -n 1 || true)
-grep -qxE '[*`]*CLAUDE-TEST: PASS[*`]*' <<< "$last"
+grep -qxE '[*`]*CLAUDE-TEST: PASS[*`.]*[[:space:]]*' <<< "$last"

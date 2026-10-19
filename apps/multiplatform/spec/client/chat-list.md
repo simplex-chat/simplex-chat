@@ -465,7 +465,7 @@ Only store-derived chat ids and the link the core resolved can hide a row, never
 
 A directory result that is a chat the user has but that the screen doesn't list (the local filter doesn't match it) stays in `rows.directory` and is drawn as a chat row (see Rendering). When its chat id is not among the loaded chats (`chatModel.getChat` returns null), the Directory row is drawn as before, and tapping it goes through `planAndConnect`, which opens the known chat.
 
-[GAP] A regular group the user joined through a different link, through the directory's full link, or by invitation, is not found by the store lookup and still appears as a Directory row with "Join group"; tapping it goes through `planAndConnect`. See [GAP-09](../../product/gaps.md#gap-09-online-search-groups-joined-through-another-link-are-not-recognised).
+[GAP] A regular group the user joined through a different link, through the directory's full link, or by invitation, is not found by the store lookup and still appears as a Directory row with "Join group"; tapping it goes through `planAndConnect`. See [GAP-10](../../product/gaps.md#gap-10-online-search-groups-joined-through-another-link-are-not-recognised).
 
 ### Rendering
 
@@ -489,4 +489,4 @@ Each part renders only when it has rows: the Names part when `rows.names` is not
 
 A name or directory row tap first hides the keyboard (`hideKeyboard(view)`), then runs `planAndConnect` with `withBGApi`. Text from the directory and from name owners is rendered with `Text(String)` (never parsed as markdown) with line limits.
 
-[GAP] Resolving a SimpleX name with `PRMUnknown` also loads the resolved address's link data from the server that hosts it; the alert names only the directory and the name-resolving server. See [GAP-10](../../product/gaps.md#gap-10-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address).
+[GAP] Resolving a SimpleX name with `PRMUnknown` also loads the resolved address's link data from the server that hosts it; the alert names only the directory and the name-resolving server. See [GAP-11](../../product/gaps.md#gap-11-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address).
