@@ -2379,11 +2379,7 @@ testPlanAddressContactViaAddress =
           bob @@@ [("@alice", "")]
 
           -- GUI api
-#if defined(dbPostgres)
           bob ##> "/_connect contact 1 4"
-#else
-          bob ##> "/_connect contact 1 2"
-#endif
           connecting alice bob
   where
     connecting alice bob = do
@@ -2441,11 +2437,7 @@ testPlanAddressContactViaShortAddress =
           bob @@@ [("@alice", "")]
 
           -- GUI api
-#if defined(dbPostgres)
           bob ##> "/_connect contact 1 4"
-#else
-          bob ##> "/_connect contact 1 2"
-#endif
           connecting alice bob
   where
     connecting alice bob = do
@@ -3077,14 +3069,8 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to other user
-#if defined(dbPostgres)
     alice ##> "/_set conn user :2 3"
     alice <## "connection 2 changed from user alisa to user alisa2, new link:"
-#else
-    -- connection ID does not change in SQLite because table has no auto-increment
-    alice ##> "/_set conn user :1 3"
-    alice <## "connection 1 changed from user alisa to user alisa2, new link:"
-#endif
     alice <## ""
     _shortInv <- getTermLine alice
     alice <## ""
@@ -3126,14 +3112,8 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to initial user
-#if defined(dbPostgres)
     alice ##> "/_set conn user :2 1"
     alice <## "connection 2 changed from user alisa to user alice, new link:"
-#else
-    -- connection ID does not change in SQLite because table has no auto-increment
-    alice ##> "/_set conn user :1 1"
-    alice <## "connection 1 changed from user alisa to user alice, new link:"
-#endif
     alice <## ""
     _shortInv <- getTermLine alice
     alice <## ""
@@ -3171,16 +3151,9 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection to incognito and make sure it's attached to the newly created user profile
-#if defined(dbPostgres)
     alice ##> "/_set incognito :2 on"
     _ <- getTermLine alice
     alice <## "connection 2 changed to incognito"
-#else
-    -- connection ID does not change in SQLite because table has no auto-increment
-    alice ##> "/_set incognito :1 on"
-    _ <- getTermLine alice
-    alice <## "connection 1 changed to incognito"
-#endif
     bob ##> ("/connect " <> inv)
     bob <## "confirmation sent!"
     alisaIncognito <- getTermLine alice

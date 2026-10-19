@@ -4,7 +4,7 @@ Two workflows build the apps from a branch's own code and test them, only when a
 
 ## Run tags
 
-Put a tag in the message of the commit you push. Tags combine: each workflow runs everything its tags ask for.
+Put a tag in the message of the commit you push to a branch named `f/…`. Tags combine: each workflow runs everything its tags ask for.
 
 | Tag | iOS | Desktop |
 |---|---|---|
@@ -17,7 +17,7 @@ Put a tag in the message of the commit you push. Tags combine: each workflow run
 | `[ci-backend]`, with one of the above | also the test backend | also the test backend |
 | `[ci-release]`, with one of the above | — | also the latest release's onboarding, to tell a branch's failure from the runner's |
 
-Only the pushed head commit counts, and a tag counts anywhere in its message, body included: never write one in a message unless that push should run it. A push that asks for nothing starts no job and doesn't cancel a running test; a newer requested run on the same branch cancels the older one. Pushes to master and stable never start a run, because a squash merge's message lists the merged commits' subjects with their tags; run it by hand there.
+Only the pushed head commit counts, and a tag counts anywhere in its message, body included: never write one in a message unless that push should run it. A push that asks for nothing starts no job and doesn't cancel a running test; a newer requested run on the same branch cancels the older one. Tags start runs only on `f/…` branches, so pull requests from other branches don't list skipped runs; on any other branch, master and stable included, run a workflow by hand.
 
 ## Running a workflow by hand
 
