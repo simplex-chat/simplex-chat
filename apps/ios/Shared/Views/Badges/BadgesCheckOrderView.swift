@@ -148,6 +148,8 @@ struct BadgesCheckOrderView: View {
                 logger.error("BadgesCheckOrderView.purchase: \(String(describing: error))")
                 await MainActor.run {
                     purchasing = false
+                    // thrown when the purchase sheet or its sign-in prompt is dismissed, which needs no alert
+                    if case .userCancelled? = error as? StoreKitError { return }
                     alert = SomeAlert(
                         alert: Alert(
                             title: Text("Purchase error"),
