@@ -8,7 +8,7 @@ The core seeds each profile's unread count in `getUsersInfo` (`Store/Profiles.hs
 - nothing in a muted chat.
 
 After the seed the client keeps the active profile's count up to date with its own deltas, and those used a different rule. The count drifted until the next seed (e.g. a profile switch, a restart, or opening the profile picker — always on iOS, on Android and desktop only when another field of the users differed):
-- A new item in a muted or mentions-only chat added 1.
+- A new item in a muted chat, or a non-mention in a mentions-only chat, added 1.
 - On Android and desktop, mark read, clear and single-item decrements subtracted every unread item, whatever the chat's setting. On iOS, mark read and clear followed the mentions-only setting but subtracted every unread item for muted chats, and single-item reads subtracted the raw delta. After a restart that pushed the count below zero for muted chats.
 - On Android and desktop `decreaseCounterInPrimaryContext` never decremented `unreadMentions`, so a mentions-only chat's mentions stayed unread in its stats.
 - Deleting a chat left its unread in the count.
@@ -37,7 +37,7 @@ Non-active profiles were already kept by the seed's rule (`ntfsEnabled`).
 ## Not included
 
 Each is a separate change:
-- Support-chat items. The seed has no `group_scope_tag` condition, so it counts support-scope items that the client does not track. The count steps up by the outstanding support unread at each seed. Options: a main-scope-only seed in the core, or client-side tracking.
+- Support-chat items. The seed has no `group_scope_tag` condition, so it counts support-scope items that the client does not track. Each seed resets the count to include the support-chat unread outstanding at that moment, so it jumps up or down at each seed by however much that changed. Options: a main-scope-only seed in the core, or client-side tracking.
 - iOS subtracts support-chat reads from the main chat. Reading in a support chat calls `markChatItemsRead` with the scoped chat info, which lowers the main chat's stats and the count.
 - Chats outside the 5000-chat window. An event or a search lists such a chat with empty stats, while the seed counted its unread items. On iOS loading keeps the listed (empty) stats, so Mark read and Clear subtract nothing; reading the items one by one still subtracts, which takes the chat's stats below zero, and a later Mark read, Clear or deleting the chat adds them back, leaving the count too high until the next seed (Mark read and Clear did this on master too). On Android and desktop opening the chat installs the server's stats and reading it then subtracts; until it is opened nothing is subtracted.
 - `replaceChat` installs a whole `chatStats` without moving the count: Kotlin `ChatListNavLinkView` `markChatRead` and `markChatUnread` (from a snapshot taken before the API call) and `ChatView` `markUnreadChatAsRead`, and iOS `SimpleXAPI`'s `receivedContactRequest` handler (from the server).
@@ -47,14 +47,14 @@ Each is a separate change:
 - A settings change computes its move from the chat's settings when the call started. If another settings call on the same chat, a chat load or a reseed applies the new setting while the call is in flight, the count moves twice and ends off until the next seed.
 - iOS unread tag counts on a settings change still read the chat after the call, so they miss the change when an event already applied the new setting (pre-existing; the Kotlin side now uses the same before/after pair as the count).
 - "Mark unread" is not counted, by design: the seed does not count it either.
-- The Unread filter change (groups with unread support chats) was split out into a separate PR stacked on this one.
+- The Unread filter change (groups with unread support chats) will be a separate PR stacked on this one.
 
 ## Testing
 
 Desktop. The active count is not visible here (no tray, and the picker shows other profiles), so read it through #7340's filter button on #7340 vs #7340 merged with this PR: lit means count > 0.
 - A message in a muted chat: lit on #7340, grey with this PR.
 - Mute a chat with unread: lit on #7340, grey with this PR.
-- Delete a chat with unread: lit on #7340, grey with this PR.
+- Delete a chat with unread: grey with this PR.
 - A mentions-only group: a plain message leaves the button grey with this PR, and a mention to the profile lights it.
 - After a restart, mark a muted chat read, then receive a message in another (unmuted) chat: grey on #7340 (negative count), lit with this PR.
 - After a restart, unmute a chat with unread: grey on #7340, lit with this PR.
