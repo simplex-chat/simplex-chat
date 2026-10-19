@@ -152,6 +152,14 @@ field_below() {
     awk -v y="$y" '$2 > y { print $1 + int($3 / 2), $2 + int($4 / 2); exit }'
 }
 
+# The centre "x y" of the switch in the row of the text.
+switch_of() {
+  local y
+  y=$(y_of "$1") || return 1
+  "$ui" tree | sed -n -E 's/.* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+) .*checkable.*/\1 \2 \3 \4/p' |
+    awk -v y="$y" '$2 <= y && y <= $2 + $4 { print $1 + int($3 / 2), $2 + int($4 / 2); exit }'
+}
+
 # The user picker's button in the toolbar, before the list has chats: chats show the same profile image placeholder.
 open_settings() {
   "$ui" click-text "profile image placeholder" 10
@@ -164,8 +172,8 @@ green_before() {
   read -r x y l t r b < <("$ui" find "$1") || return 1
   "$ui" shot "$2" > /dev/null
   png=$(find "$UI_OUT" -maxdepth 1 -name "*-$2.png" | sort | tail -n 1)
-  convert "$png" -crop "${l}x$((b - t))+0+$t" +repage -fuzz 20% -fill black +opaque 'rgb(77,218,103)' \
-    -fill white -opaque 'rgb(77,218,103)' -format '%[fx:round(mean*w*h)]' info:
+  convert "$png" -alpha off -crop "${l}x$((b - t))+0+$t" +repage -fuzz 20% -fill black +opaque 'rgb(77,218,103)' \
+    -fill white -opaque 'rgb(77,218,103)' -colorspace Gray -format '%[fx:round(mean*w*h)]' info:
 }
 
 # Waits up to 60 s for Test servers to finish: the test status turns green, or the app shows that the test failed.
@@ -197,6 +205,9 @@ test_server() {
   read -r x y < <(field_below "Your server address") || fail "no address field for the new server"
   "$ui" click "$x" "$y"
   "$ui" type "$NAMES_SERVER"
+  # a server entered by hand is off, and Test servers tests only the servers that are on
+  read -r x y < <(switch_of "Use for new connections") || fail "no \"Use for new connections\" switch"
+  "$ui" click "$x" "$y"
   "$ui" shot new-server
   back_to "Test servers" || fail "no Your servers after adding the server"
   "$ui" wait 127.0.0.1 10
