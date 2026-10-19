@@ -33,6 +33,7 @@ env:
   release: ${{ startsWith(github.ref, 'refs/tags/v') }}
   branch: ${{ github.base_ref || github.ref_name }}
   cache_o0: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') }}
+  release_branch: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') && github.ref_name || '' }}
   ZSTD_CLEVEL: 9
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
@@ -74,7 +75,8 @@ jobs:
 # =============================
 
 # Create release, but only if it's triggered by tag push.
-# Create simplex-chat-libs release core-<version>, but only if the head commit of a push to master or stable changes the version in simplex-chat.cabal.
+# On pushes to master or stable: claim the simplex-chat-libs release core-<version of simplex-chat.cabal> for the branch
+# and create its draft, create the draft of a missing add-on release, and find the package versions to publish.
 # On pull requests and other pushes, this job will always complete.
 
 # Secrets:
@@ -87,8 +89,15 @@ jobs:
   maybe-release:
     runs-on: ubuntu-latest
     outputs:
-      libs_tag: ${{ steps.libs_commit.outputs.tag }}
+      libs_tag: ${{ steps.libs.outputs.tag }}
       core_changed: ${{ steps.core.outputs.core }}
+      addon_tag: ${{ steps.addon.outputs.tag }}
+      addon_draft: ${{ steps.addon.outputs.draft }}
+      libs_latest: ${{ steps.latest_libs.outputs.tag }}
+      publish_types: ${{ steps.libs.outputs.tag && steps.publish.outputs.types_version || '' }}
+      publish_nodejs: ${{ steps.publish.outputs.nodejs_version }}
+      publish_python: ${{ steps.publish.outputs.python_version }}
+      publish: ${{ steps.publish.outputs.nodejs_version || steps.publish.outputs.python_version }}
     steps:
       - name: Clone project
         if: github.event_name == 'push' || github.event_name == 'pull_request'
@@ -129,38 +138,68 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check version change
-        id: check_version
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable'
+      - name: Library release
+        id: libs
+        if: env.release_branch
         shell: bash
-        run: |
-          version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
-          prev_version=$(git show HEAD^1:simplex-chat.cabal | sed -n 's/^version: *//p')
-          if [ "$version" != "$prev_version" ]; then
-            echo "version=$version" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Record libs release
-        id: libs_commit
-        if: steps.check_version.outputs.version
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
           LIBS_REPOSITORY: ${{ github.repository }}-libs
-          VERSION: ${{ steps.check_version.outputs.version }}
         run: |
-          commit=$(python3 scripts/ci/packages_release.py record --core "$VERSION" --commit "$GITHUB_SHA")
-          echo "tag=core-$VERSION" >> "$GITHUB_OUTPUT"
-          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
+          tag=core-$version
+          claim_output=$(python3 scripts/ci/packages_release.py claim-core "$version" "$GITHUB_SHA" "$release_branch")
+          eval "$claim_output"
+          if [ "$claim" = skip ]; then
+            echo "::notice title=Library release::core $version is recorded for another commit"
+            exit 0
+          fi
+          status_output=$(python3 scripts/ci/packages_release.py release-status "$tag")
+          eval "$status_output"
+          if [ "$status" = absent ]; then
+            gh release create "$tag" --repo "$LIBS_REPOSITORY" --draft --title "$tag" --notes "" ${commit:+--target "$commit"}
+          fi
+          if [ "$status" != published ]; then
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          fi
 
-      # creates the tag on the commit that recorded the release
-      - name: Create libs release
-        if: steps.check_version.outputs.version
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ steps.libs_commit.outputs.tag }}
-          target_commitish: ${{ steps.libs_commit.outputs.commit }}
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+      - name: Add-on release
+        id: addon
+        if: env.release_branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+        run: |
+          addon_output=$(python3 scripts/ci/packages_release.py addon-release)
+          eval "$addon_output"
+          if [ "$status" = absent ]; then
+            tag=nodejs-addon-${GITHUB_SHA::7}
+            gh release create "$tag" --repo "$LIBS_REPOSITORY" --draft --title "$tag" --notes "$notes"
+          fi
+          if [ "$status" != published ]; then
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+            echo "draft=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Latest library
+        id: latest_libs
+        if: steps.addon.outputs.draft
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+        run: python3 scripts/ci/packages_release.py latest-libs --branch "$release_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Versions to publish
+        id: publish
+        if: env.release_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          NPM_SCOPE: ${{ vars.NPM_SCOPE }}
+          PYPI_PROJECT: ${{ vars.PYPI_PROJECT }}
+          PYPI_URL: ${{ vars.PYPI_URL }}
+        run: python3 scripts/ci/packages_release.py publish-plan >> "$GITHUB_OUTPUT"
 
 # =========================
 #        Linux Build
@@ -444,12 +483,11 @@ jobs:
 
       - name: Upload library
         if: needs.maybe-release.outputs.libs_tag && matrix.libs
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
-          files: release-libs/*.zip
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          TAG: ${{ needs.maybe-release.outputs.libs_tag }}
+        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
 
       - name: Build CLI deb
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
@@ -591,7 +629,7 @@ jobs:
 
       - name: Setup Node.js
         id: setup-node
-        if: ${{ !cancelled() && needs.maybe-release.outputs.core_changed && steps.build-lib.outcome == 'success' }}
+        if: ${{ !cancelled() && ((needs.maybe-release.outputs.core_changed && steps.build-lib.outcome == 'success') || (matrix.libs && (needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish))) }}
         uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -603,35 +641,42 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Build simplex-chat (npm) and add-on
-        id: build-nodejs
-        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' }}
-        shell: bash
-        working-directory: packages/simplex-chat-nodejs
-        run: |
-          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
-          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
-          npx --yes node-gyp rebuild
-          npx tsc && cp src/simplex.* dist
-
-      - name: Test simplex-chat (npm)
-        id: test-nodejs
-        if: ${{ !cancelled() && steps.build-nodejs.outcome == 'success' }}
+      - name: Package tests (pull request)
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.core_changed }}
         timeout-minutes: 30
         shell: bash
-        working-directory: packages/simplex-chat-nodejs
         env:
           SIMPLEX_LIBS_DIR: ${{ github.workspace }}/release-libs/simplex-chat-libs-linux-${{ matrix.arch }}/libs
-        run: npx jest --forceExit --testNamePattern '^(?!.*use preset servers)'
+        run: |
+          scripts/ci/package-tests.sh build linux-${{ matrix.arch }}
+          scripts/ci/package-tests.sh test
 
-      - name: Test simplex-chat (PyPI)
-        if: ${{ !cancelled() && steps.test-nodejs.outcome == 'success' }}
+      - name: Add-on
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
         timeout-minutes: 30
         shell: bash
-        working-directory: packages/simplex-chat-python
+        env:
+          LIBS_RELEASE: ${{ needs.maybe-release.outputs.libs_latest }}
+          ADDON_TAG: ${{ needs.maybe-release.outputs.addon_tag }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+        run: scripts/ci/package-tests.sh addon linux-${{ matrix.arch }}
+
+      - name: Package tests
+        id: package-tests
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.publish }}
+        timeout-minutes: 30
+        shell: bash
         run: |
-          python -m pip install -e ".[test]"
-          python -m pytest -q
+          scripts/ci/package-tests.sh publish linux-${{ matrix.arch }} ${{ needs.maybe-release.outputs.publish_nodejs && 'nodejs' || '' }} ${{ needs.maybe-release.outputs.publish_python && 'python' || '' }}
+          echo "linux-${{ matrix.arch }}" > "$RUNNER_TEMP/package-tests"
+
+      - name: Package tests result
+        if: ${{ !cancelled() && steps.package-tests.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-tests-linux-${{ matrix.arch }}
+          path: ${{ runner.temp }}/package-tests
 
       - name: Remove -O2 build directory
         id: remove-o2
@@ -821,12 +866,11 @@ jobs:
           (cd postgres-libs && zip -r simplex-chat-libs-linux-x86_64-postgres.zip libs)
 
       - name: Upload postgres library
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
-          files: postgres-libs/*.zip
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          TAG: ${{ needs.maybe-release.outputs.libs_tag }}
+        run: gh release upload "$TAG" postgres-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
 
 # =========================
 #        MacOS Build
@@ -1075,21 +1119,66 @@ jobs:
         id: mac_lib_build
         if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
         shell: bash
+        env:
+          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
+          APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
+          APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
         run: |
           SKIP_VLC=1 scripts/desktop/build-lib-mac.sh
           name=simplex-chat-libs-macos-${{ matrix.arch }}
           mkdir -p release-libs/$name/libs
           find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          scripts/ci/sign-libs-mac.sh release-libs/$name/libs
           (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Upload library
         if: ${{ !cancelled() && steps.mac_lib_build.outcome == 'success' }}
-        uses: softprops/action-gh-release@v2
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          TAG: ${{ needs.maybe-release.outputs.libs_tag }}
+        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
+
+      - name: Setup Node.js
+        id: setup-node
+        if: ${{ !cancelled() && (needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        uses: actions/setup-node@v7
         with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
-          files: release-libs/*.zip
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+          node-version: 22
+
+      - name: Setup Python
+        id: setup-python
+        if: ${{ !cancelled() && steps.setup-node.outcome == 'success' }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Add-on
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
+        timeout-minutes: 30
+        shell: bash
+        env:
+          LIBS_RELEASE: ${{ needs.maybe-release.outputs.libs_latest }}
+          ADDON_TAG: ${{ needs.maybe-release.outputs.addon_tag }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+        run: scripts/ci/package-tests.sh addon macos-${{ matrix.arch }}
+
+      - name: Package tests
+        id: package-tests
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.publish }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh publish macos-${{ matrix.arch }} ${{ needs.maybe-release.outputs.publish_nodejs && 'nodejs' || '' }} ${{ needs.maybe-release.outputs.publish_python && 'python' || '' }}
+          echo "macos-${{ matrix.arch }}" > "$RUNNER_TEMP/package-tests"
+
+      - name: Package tests result
+        if: ${{ !cancelled() && steps.package-tests.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-tests-macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/package-tests
 
       - name: Remove -O2 build directory
         id: remove-o2
@@ -1305,12 +1394,52 @@ jobs:
 
       - name: Upload library
         if: needs.maybe-release.outputs.libs_tag
-        uses: softprops/action-gh-release@v2
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          TAG: ${{ needs.maybe-release.outputs.libs_tag }}
+        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
+
+      - name: Setup Node.js
+        id: setup-node
+        if: ${{ !cancelled() && (needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        uses: actions/setup-node@v7
         with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
-          files: release-libs/*.zip
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+          node-version: 22
+
+      - name: Setup Python
+        id: setup-python
+        if: ${{ !cancelled() && steps.setup-node.outcome == 'success' }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Add-on
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
+        timeout-minutes: 30
+        shell: bash
+        env:
+          LIBS_RELEASE: ${{ needs.maybe-release.outputs.libs_latest }}
+          ADDON_TAG: ${{ needs.maybe-release.outputs.addon_tag }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+        run: scripts/ci/package-tests.sh addon windows-x86_64
+
+      - name: Package tests
+        id: package-tests
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.publish }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh publish windows-x86_64 ${{ needs.maybe-release.outputs.publish_nodejs && 'nodejs' || '' }} ${{ needs.maybe-release.outputs.publish_python && 'python' || '' }}
+          echo "windows-x86_64" > "$RUNNER_TEMP/package-tests"
+
+      - name: Package tests result
+        if: ${{ !cancelled() && steps.package-tests.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-tests-windows-x86_64
+          path: ${{ runner.temp }}/package-tests
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v')
@@ -1387,19 +1516,169 @@ jobs:
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
 # =========================
-#   Packages release
+#   Releases and packages
 # =========================
 
-# A new library release is tested with the Node.js and Python packages and updates them in a release PR.
-
-  packages:
+  releases:
     needs: [maybe-release, build-linux, build-linux-push, build-linux-postgres, build-macos, build-windows]
-    if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag }}
-    # the called workflow can't be granted more than its caller, and its publish job needs these
+    if: ${{ !cancelled() && (needs.maybe-release.outputs.libs_tag || needs.maybe-release.outputs.addon_draft) }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+      LIBS_REPOSITORY: ${{ github.repository }}-libs
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Publish library release
+        if: needs.maybe-release.outputs.libs_tag
+        run: python3 scripts/ci/packages_release.py publish-release "${{ needs.maybe-release.outputs.libs_tag }}"
+
+      - name: Publish add-on release
+        if: ${{ !cancelled() && needs.maybe-release.outputs.addon_draft }}
+        run: python3 scripts/ci/packages_release.py publish-release "${{ needs.maybe-release.outputs.addon_tag }}"
+
+# Publishing uses trusted publishing (OIDC) for this workflow on npm and PyPI,
+# or the NPM_TOKEN and PYPI_API_TOKEN secrets when they are set.
+# Test repositories: variables NPM_SCOPE, PYPI_PROJECT and PYPI_URL / PYPI_UPLOAD_URL (TestPyPI)
+# publish under other names.
+
+  publish:
+    needs: [maybe-release, build-linux, build-linux-push, build-macos, build-windows, releases]
+    if: ${{ !cancelled() && (needs.maybe-release.outputs.publish || needs.maybe-release.outputs.publish_types) }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/packages.yml
-    with:
-      libs_release: ${{ needs.maybe-release.outputs.libs_tag }}
-    secrets: inherit
+    # set by a publish step after it succeeds, so a failed publish still reports the earlier ones
+    outputs:
+      types: ${{ steps.types.outputs.version }}
+      nodejs: ${{ steps.nodejs.outputs.version }}
+      python: ${{ steps.python.outputs.version }}
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      NPM_SCOPE: ${{ vars.NPM_SCOPE }}
+      PYPI_PROJECT: ${{ vars.PYPI_PROJECT }}
+      PYPI_URL: ${{ vars.PYPI_URL }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Download package tests results
+        if: needs.maybe-release.outputs.publish
+        uses: actions/download-artifact@v8
+        with:
+          pattern: package-tests-*
+          path: ${{ runner.temp }}/package-tests
+
+      - name: Check package tests and pins
+        if: needs.maybe-release.outputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+        run: |
+          passed=$(find "$RUNNER_TEMP/package-tests" -mindepth 1 -maxdepth 1 -type d -name 'package-tests-*' | wc -l)
+          if [ "$passed" -ne 5 ]; then
+            echo "::error::package tests passed on $passed of 5 platforms"
+            exit 1
+          fi
+          python3 scripts/ci/packages_release.py check-pins
+
+      - name: Versions to publish
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+        run: python3 scripts/ci/packages_release.py publish-plan >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        if: steps.plan.outputs.types_version || steps.plan.outputs.nodejs_version
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup Python
+        if: steps.plan.outputs.python_version
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Before the test names: the build installs @simplex-chat/types from this repository.
+      - name: Build and test simplex-chat (npm)
+        if: steps.plan.outputs.nodejs_version
+        working-directory: packages/simplex-chat-nodejs
+        run: |
+          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
+          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
+          npx tsc && cp src/simplex.* dist
+          npx jest tests/libs.test.ts tests/api.unit.test.ts
+
+      - name: Use test package names
+        if: vars.NPM_SCOPE || vars.PYPI_PROJECT
+        run: python3 scripts/ci/packages_release.py test-names
+
+      - name: Publish @simplex-chat/types
+        id: types
+        if: steps.plan.outputs.types_version && needs.maybe-release.outputs.publish_types && needs.releases.result == 'success'
+        working-directory: packages/simplex-chat-client/types/typescript
+        env:
+          VERSION: ${{ steps.plan.outputs.types_version }}
+          DIST_TAG: ${{ steps.plan.outputs.types_dist_tag }}
+        run: |
+          npm install --no-audit --no-fund
+          npm publish --provenance --access public --tag "$DIST_TAG"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish simplex-chat (npm)
+        id: nodejs
+        if: steps.plan.outputs.nodejs_version
+        working-directory: packages/simplex-chat-nodejs
+        env:
+          VERSION: ${{ steps.plan.outputs.nodejs_version }}
+          DIST_TAG: ${{ steps.plan.outputs.nodejs_dist_tag }}
+        run: |
+          npm publish --provenance --access public --tag "$DIST_TAG"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build and test simplex-chat (PyPI)
+        if: steps.plan.outputs.python_version
+        working-directory: packages/simplex-chat-python
+        run: |
+          python -m pip install build -e ".[test]"
+          python -m pytest -q
+          python -m build
+
+      - name: Publish simplex-chat (PyPI)
+        if: steps.plan.outputs.python_version
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/simplex-chat-python/dist
+          repository-url: ${{ vars.PYPI_UPLOAD_URL || 'https://upload.pypi.org/legacy/' }}
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Report the published PyPI version
+        id: python
+        if: steps.plan.outputs.python_version
+        env:
+          VERSION: ${{ steps.plan.outputs.python_version }}
+        run: echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  record:
+    needs: publish
+    if: ${{ !cancelled() && (needs.publish.outputs.types || needs.publish.outputs.nodejs || needs.publish.outputs.python) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Record published versions
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          TYPES: ${{ needs.publish.outputs.types }}
+          NODEJS: ${{ needs.publish.outputs.nodejs }}
+          PYTHON: ${{ needs.publish.outputs.python }}
+        run: |
+          python3 scripts/ci/packages_release.py record --commit "$GITHUB_SHA" \
+            --types "$TYPES" --nodejs "$NODEJS" --python "$PYTHON"

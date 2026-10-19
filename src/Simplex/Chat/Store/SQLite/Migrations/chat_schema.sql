@@ -36,7 +36,7 @@ CREATE TABLE contact_profiles(
   preferences_json TEXT
 ) STRICT;
 CREATE TABLE users(
-  user_id INTEGER PRIMARY KEY,
+  user_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE RESTRICT
   DEFERRABLE INITIALLY DEFERRED,
   local_display_name TEXT NOT NULL UNIQUE,
@@ -63,6 +63,7 @@ CREATE TABLE users(
   ON UPDATE CASCADE
   DEFERRABLE INITIALLY DEFERRED
 ) STRICT;
+CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE display_names(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
@@ -74,7 +75,7 @@ CREATE TABLE display_names(
   UNIQUE(user_id, ldn_base, ldn_suffix) ON CONFLICT FAIL
 ) WITHOUT ROWID, STRICT;
 CREATE TABLE contacts(
-  contact_id INTEGER PRIMARY KEY,
+  contact_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
@@ -151,7 +152,7 @@ CREATE TABLE group_profiles(
   preferences_json TEXT
 ) STRICT;
 CREATE TABLE groups(
-  group_id INTEGER PRIMARY KEY, -- local group ID
+  group_id INTEGER PRIMARY KEY AUTOINCREMENT, -- local group ID
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL, -- local group name without spaces
   group_profile_id INTEGER REFERENCES group_profiles ON DELETE SET NULL, -- shared group profile
@@ -222,7 +223,7 @@ CREATE TABLE groups(
 ) STRICT;
 CREATE TABLE group_members(
   -- group members, excluding the local user
-  group_member_id INTEGER PRIMARY KEY,
+  group_member_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   member_id BLOB NOT NULL, -- shared member ID, unique per group
   member_role TEXT NOT NULL, -- owner, admin, member
@@ -280,7 +281,7 @@ CREATE TABLE group_member_intros(
   UNIQUE(re_group_member_id, to_group_member_id)
 ) STRICT;
 CREATE TABLE files(
-  file_id INTEGER PRIMARY KEY,
+  file_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   file_name TEXT NOT NULL,
@@ -352,7 +353,7 @@ CREATE TABLE rcv_file_chunks(
 ) WITHOUT ROWID, STRICT;
 CREATE TABLE connections(
   -- all SMP agent connections
-  connection_id INTEGER PRIMARY KEY,
+  connection_id INTEGER PRIMARY KEY AUTOINCREMENT,
   agent_conn_id BLOB NOT NULL UNIQUE,
   conn_level INTEGER NOT NULL DEFAULT 0,
   via_contact INTEGER REFERENCES contacts(contact_id) ON DELETE SET NULL,
@@ -419,7 +420,7 @@ CREATE TABLE user_contact_links(
   UNIQUE(user_id, local_display_name)
 ) STRICT;
 CREATE TABLE contact_requests(
-  contact_request_id INTEGER PRIMARY KEY,
+  contact_request_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_contact_link_id INTEGER REFERENCES user_contact_links
   ON UPDATE CASCADE ON DELETE SET NULL,
   agent_invitation_id BLOB NOT NULL,
@@ -530,7 +531,6 @@ CREATE TABLE chat_items(
   fwd_from_member_id BLOB,
   fwd_from_shared_msg_id BLOB
 ) STRICT;
-CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
@@ -848,7 +848,7 @@ CREATE TABLE group_relays(
   base_web_url TEXT
 ) STRICT;
 CREATE TABLE rcv_roster_transfers(
-  roster_transfer_id INTEGER PRIMARY KEY,
+  roster_transfer_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   from_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   roster_version INTEGER NOT NULL,
