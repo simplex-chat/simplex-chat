@@ -4,12 +4,7 @@
 
 ## Running it
 
-The workflow runs only when asked, on any branch:
-
-- **Dispatch** it from the Actions tab (workflow "ios-sim", "Run workflow"), with the inputs `claude` (also run the Claude session) and `backend` (also start the test backend), both off by default.
-- **Push** a commit whose message carries a tag: `[app-ci]` runs the scripted tests of both apps (iOS and desktop), `[app-ci:ios]` only this one; `[claude-test]` (both apps) or `[claude-test:ios]` runs the scripted test and then the Claude session; add `[ci-backend]` to build and start the test backend. Only the pushed head commit counts, and a tag matches anywhere in its message, body included, so don't quote a tag in a message that shouldn't run it.
-
-A push without a tag starts nothing and doesn't cancel a running test; a newer requested run on the same branch cancels the older one. Pushes to master and stable never start it, because a squash merge's message lists the merged commits' subjects with their tags; dispatch it there instead. Which branches may run the Claude session is decided only by the `app-sim-claude` environment's branch rule in the repository settings: on a branch it doesn't allow, a run that asks for Claude fails at the Claude job's environment check, while the scripted test, in its own job, runs as usual.
+The workflow runs only when asked, on any branch, by a run tag in the pushed commit's message or by hand from the Actions tab: [App tests on GitHub's runners](../README.md) lists the tags and inputs.
 
 Results: the job logs, the Claude job's summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log), `ios-sim-backend-logs` and `ios-sim-claude-test` (the Claude job's smoke test in `smoke-test/`, and per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
 

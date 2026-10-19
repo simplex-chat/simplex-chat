@@ -4,21 +4,7 @@
 
 ## Running it
 
-On any branch, in either of two ways:
-
-- **Dispatch:** Actions → desktop-linux → Run workflow, with the `claude`, `backend` and `release` checkboxes (all off by default).
-- **Push** with a tag in the head commit's message, which is how agents in push sessions ask for a run:
-
-| Tag | Runs |
-|---|---|
-| `[app-ci]` | the scripted test, here and in the iOS app's workflow where the branch has it |
-| `[app-ci:desktop]` | the scripted test, here only |
-| `[claude-test]` | the scripted test and the Claude job, here and in the iOS app's workflow where the branch has it |
-| `[claude-test:desktop]` | the scripted test and the Claude job, here only |
-| `[ci-backend]` | with one of the above: also the test backend |
-| `[ci-release]` | with one of the above: also the release job |
-
-A push without these tags (or with only iOS tags) starts a run whose jobs are all skipped, and it doesn't cancel a run in progress. A newer run that was asked for cancels an older one on the same branch. Pushes to master and stable never start it, because a squash merge's message lists the merged commits' subjects with their tags; dispatch it there instead.
+The workflow runs only when asked, on any branch, by a run tag in the pushed commit's message or by hand from the Actions tab: [App tests on GitHub's runners](../README.md) lists the tags and inputs.
 
 Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md` and the build scripts, for the backend `src/**`, the CLI's and the directory's sources, `cabal.project`, `simplex-chat.cabal` and its build script. So a branch that changes core and app code together tests both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
 
