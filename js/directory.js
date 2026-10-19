@@ -660,7 +660,7 @@ function displayEntries(entries) {
         imgLinkElement.href = groupLinkUri;
       }
       imgLinkElement.target = "_blank";
-      imgLinkElement.rel = "noopener";
+      imgLinkElement.rel = entryType?.groupType === 'channel' ? "noopener simplex-channel" : "noopener simplex-group";
       imgLinkElement.title = `Join ${displayName}`;
 
       const imgElement = document.createElement('img');

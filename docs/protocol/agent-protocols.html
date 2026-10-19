@@ -56,6 +56,10 @@
         
 <link rel="alternate" type="text/markdown" href="/docs/protocol/agent-protocols.md"/>
 <link rel="describedby" href="/llms.txt"/>
+<link rel="simplex-channel" href="https://smp18.simplex.im/c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA" title="SimpleX Network News"/>
+<link rel="simplex-channel" href="https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg" title="SimpleX Crowdfunding News"/>
+<link rel="simplex-group" href="https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM" title="SimpleX users group"/>
+<link rel="simplex-contact" href="https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw" title="Ask SimpleX Team"/>
 
         <meta name="theme-color" content="#ffffff">
         <link href="/css/tailwind.css" rel="stylesheet"/>
@@ -898,7 +902,7 @@ window.addEventListener('click',(e)=>{
 <li><a href="#profile-declarations">Profile declarations</a>
 <ul>
 <li><a href="#protocols">protocols</a></li>
-<li><a href="#channel-audience-and-update-frequency">Channel audience and update frequency</a></li>
+<li><a href="#public-group-audience-and-update-frequency">Public group audience and update frequency</a></li>
 <li><a href="#contact-address-peers">Contact address peers</a></li>
 <li><a href="#protocol-names">Protocol names</a></li>
 </ul>
@@ -978,26 +982,28 @@ window.addEventListener('click',(e)=>{
 <p>An <code>llms.txt</code> file [LLMSTXT] lists communication addresses in a section with the heading <code>## Communications</code>. The section is a file list: each item is a Markdown link, then a colon and notes.</p>
 <p>The notes begin with the network and the type of the address, then the audience and, for updates, the update frequency or, for contacts, the protocols. Free text follows:</p>
 <pre><code>&lt;network&gt; updates for &lt;audience&gt;[, &lt;frequency&gt;]. &lt;info&gt;
-&lt;network&gt; contact for &lt;audience&gt;[, &lt;protocol&gt;]*. &lt;info&gt;
+&lt;network&gt; group for &lt;audience&gt;. &lt;info&gt;
+&lt;network&gt; [business ]contact for &lt;audience&gt;[, &lt;protocol&gt;]*. &lt;info&gt;
 </code></pre>
 <ul>
 <li><code>&lt;network&gt;</code>: the name of the network, <code>SimpleX</code> for SimpleX links.</li>
-<li><code>updates</code>: an address that publishes updates. <code>contact</code>: an address that accepts conversations and requests.</li>
+<li><code>updates</code>: an address that publishes updates. <code>group</code>: an address of a group, where members converse. <code>contact</code>: an address that accepts conversations and requests. <code>business contact</code>: a business address [BUSINESS].</li>
 <li><code>&lt;audience&gt;</code>: <code>people</code>, <code>agents</code>, or <code>people and agents</code>.</li>
 <li><code>&lt;frequency&gt;</code>: a <code>changefreq</code> value of the Sitemaps protocol [SITEMAPS].</li>
 <li><code>&lt;protocol&gt;</code>: the name of a protocol the address serves (<a href="#protocol-names">protocol names</a>), in any letter case.</li>
 <li><code>&lt;info&gt;</code>: what the address is about.</li>
 </ul>
 <p>The network is named in the notes because the host in a SimpleX link is the router that hosts the address, and that router can have any domain name.</p>
-<p>For SimpleX entries, the type <code>updates</code> requires a channel link, and the type <code>contact</code> a contact address link [WEB]. The link text is the title of the address.</p>
+<p>For SimpleX entries, the type <code>updates</code> requires a channel link, the type <code>group</code> a group link, and the types <code>contact</code> and <code>business contact</code> a contact address link [WEB]. The link text is the title of the address.</p>
 <pre><code>## Communications
 
 - [Ridgeline updates](https://smp12.simplex.im/c#…): SimpleX updates for people and agents, weekly. Trail conditions and closures.
-- [Ask Ridgeline](https://smp12.simplex.im/a#…): SimpleX contact for agents, MCP. Bookings and availability.
+- [Ridgeline hikers](https://smp12.simplex.im/g#…): SimpleX group for people. Routes and meetups.
+- [Ask Ridgeline](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP. Bookings and availability.
 - [Ridgeline support](mailto:help@ridgeline.example): Email contact for people.
 </code></pre>
 <h2 id="profile-declarations" tabindex="-1">Profile declarations</h2>
-<p>A profile or a group declares the protocols it serves in its preferences. A channel declares its audience and its update frequency in its public group record. A contact address declares the peers it serves in its link data.</p>
+<p>A profile or a group declares the protocols it serves in its preferences. A channel or a public group declares its audience in its public group record, and a channel also its update frequency. A contact address declares the peers it serves in its link data.</p>
 <h3 id="protocols" tabindex="-1">protocols</h3>
 <p><code>protocols</code> is a key of the preferences: <code>preferences</code> of a user or contact profile, and <code>groupPreferences</code> of a group profile [CHAT]. Clients store the preferences of other profiles as received, so a client that does not know the key decodes it after an upgrade.</p>
 <p>JSON Type Definition schema [RFC8927] of the <code>protocols</code> key:</p>
@@ -1038,8 +1044,8 @@ window.addEventListener('click',(e)=>{
   }
 }
 </code></pre>
-<h3 id="channel-audience-and-update-frequency" tabindex="-1">Channel audience and update frequency</h3>
-<p>Two fields of the channel's public group record, <code>publicGroup</code> of its group profile [CHAT]. JSON Type Definition schema [RFC8927]:</p>
+<h3 id="public-group-audience-and-update-frequency" tabindex="-1">Public group audience and update frequency</h3>
+<p>Two fields of the public group record, <code>publicGroup</code> of the group profile of a channel or a public group [CHAT]. JSON Type Definition schema [RFC8927]:</p>
 <pre><code class="language-json">{
   &quot;optionalProperties&quot;: {
     &quot;audience&quot;: {&quot;elements&quot;: {&quot;type&quot;: &quot;string&quot;}},
@@ -1048,11 +1054,11 @@ window.addEventListener('click',(e)=>{
 }
 </code></pre>
 <ul>
-<li><code>audience</code>: the peer types the channel is made for. The values are the values of a profile's <code>peerType</code>: <code>human</code>, <code>bot</code>, <code>business</code>, <code>agent</code>. An absent <code>audience</code> is <code>[&quot;human&quot;]</code>. Agents also read content made for people, so a channel declares <code>agent</code> when it is made for agents, or has dedicated support for them.</li>
-<li><code>changeFrequency</code>: how often the channel is updated. The values are the <code>changefreq</code> values of the Sitemaps protocol [SITEMAPS]: <code>always</code>, <code>hourly</code>, <code>daily</code>, <code>weekly</code>, <code>monthly</code>, <code>yearly</code>, <code>never</code>.</li>
+<li><code>audience</code>: the peer types the channel or the group is made for. The values are the values of a profile's <code>peerType</code>: <code>human</code>, <code>bot</code>, <code>business</code>, <code>agent</code>. An absent <code>audience</code> is <code>[&quot;human&quot;]</code>. Agents also read content made for people, so a channel or a group declares <code>agent</code> when it is made for agents, or has dedicated support for them.</li>
+<li><code>changeFrequency</code>: in a channel only, how often the channel is updated. The values are the <code>changefreq</code> values of the Sitemaps protocol [SITEMAPS]: <code>always</code>, <code>hourly</code>, <code>daily</code>, <code>weekly</code>, <code>monthly</code>, <code>yearly</code>, <code>never</code>.</li>
 </ul>
 <h3 id="contact-address-peers" tabindex="-1">Contact address peers</h3>
-<p>One field of the data published with a contact address link, beside <code>business</code>. JSON Type Definition schema [RFC8927]:</p>
+<p>One field of the data published with a contact address link, beside <code>business</code>, which marks a business address [BUSINESS]. JSON Type Definition schema [RFC8927]:</p>
 <pre><code class="language-json">{
   &quot;optionalProperties&quot;: {
     &quot;serves&quot;: {&quot;elements&quot;: {&quot;type&quot;: &quot;string&quot;}}
@@ -1062,7 +1068,7 @@ window.addEventListener('click',(e)=>{
 <ul>
 <li><code>serves</code>: the peer types the address is made for, with the values and the default of <code>audience</code>.</li>
 </ul>
-<p>Clients MUST ignore unknown values of <code>audience</code> and <code>serves</code>. The values of the channel and the address take precedence over the values on a website [WEB].</p>
+<p>Clients MUST ignore unknown values of <code>audience</code> and <code>serves</code>. The values in the public group record and in the address link data take precedence over the values on a website [WEB].</p>
 <h3 id="protocol-names" tabindex="-1">Protocol names</h3>
 <p>A protocol name consists of lowercase ASCII letters, digits and hyphens.</p>
 <p>A binding defines the protocol's request and response messages, including how, and whether, a peer discovers the protocol's capabilities. Both transports carry these messages unchanged.</p>
@@ -1293,6 +1299,7 @@ window.addEventListener('click',(e)=>{
 </ul>
 <h2 id="references" tabindex="-1">References</h2>
 <ul>
+<li>[BUSINESS] Using SimpleX Chat in business: <a href="/docs/business.html">BUSINESS.md</a></li>
 <li>[CHAT] SimpleX Chat protocol: <a href="/docs/protocol/simplex-chat.html">simplex-chat.md</a></li>
 <li>[LLMSTXT] The /llms.txt file: <a href="https://llmstxt.org">https://llmstxt.org</a></li>
 <li>[MCP] Model Context Protocol specification, revision 2026-07-28: <a href="https://modelcontextprotocol.io/specification/2026-07-28">https://modelcontextprotocol.io/specification/2026-07-28</a></li>

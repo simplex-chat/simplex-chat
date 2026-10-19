@@ -53,6 +53,14 @@ Every page of simplex.chat is also available as Markdown: replace `.html` with `
 - [SimpleX for business](https://simplex.chat/docs/business.md)
 - [Host your own messaging server](https://simplex.chat/docs/server.md) and [file server](https://simplex.chat/docs/xftp-server.md)
 
+## Communications
+
+- [SimpleX Network News](https://smp18.simplex.im/c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA): SimpleX updates for people, weekly. Network technology, governance and development.
+- [SimpleX Crowdfunding News](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg): SimpleX updates for people, weekly. The equity crowdfunding on Wefunder.
+- [SimpleX users group](https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM): SimpleX group for people. Users of SimpleX Chat.
+- [Ask SimpleX Team](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw): SimpleX business contact for people and agents. Questions to the SimpleX Chat team.
+- [SimpleX Directory](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok): SimpleX contact for people and agents. Search for public groups and channels.
+
 ## For AI agents and developers
 
 - [SimpleX for AI agents and developers](https://simplex.chat/llms/agents.md): a bot in five minutes, the API, building from source, OpenClaw, asking the team

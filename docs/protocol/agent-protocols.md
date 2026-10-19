@@ -12,7 +12,7 @@ Evgeny Poberezkin
 - [Addresses in llms.txt](#addresses-in-llmstxt)
 - [Profile declarations](#profile-declarations)
   - [protocols](#protocols)
-  - [Channel audience and update frequency](#channel-audience-and-update-frequency)
+  - [Public group audience and update frequency](#public-group-audience-and-update-frequency)
   - [Contact address peers](#contact-address-peers)
   - [Protocol names](#protocol-names)
 - [Chat transport](#chat-transport)
@@ -93,11 +93,12 @@ The notes begin with the network and the type of the address, then the audience 
 
 ```
 <network> updates for <audience>[, <frequency>]. <info>
-<network> contact for <audience>[, <protocol>]*. <info>
+<network> group for <audience>. <info>
+<network> [business ]contact for <audience>[, <protocol>]*. <info>
 ```
 
 - `<network>`: the name of the network, `SimpleX` for SimpleX links.
-- `updates`: an address that publishes updates. `contact`: an address that accepts conversations and requests.
+- `updates`: an address that publishes updates. `group`: an address of a group, where members converse. `contact`: an address that accepts conversations and requests. `business contact`: a business address [BUSINESS].
 - `<audience>`: `people`, `agents`, or `people and agents`.
 - `<frequency>`: a `changefreq` value of the Sitemaps protocol [SITEMAPS].
 - `<protocol>`: the name of a protocol the address serves ([protocol names](#protocol-names)), in any letter case.
@@ -105,19 +106,20 @@ The notes begin with the network and the type of the address, then the audience 
 
 The network is named in the notes because the host in a SimpleX link is the router that hosts the address, and that router can have any domain name.
 
-For SimpleX entries, the type `updates` requires a channel link, and the type `contact` a contact address link [WEB]. The link text is the title of the address.
+For SimpleX entries, the type `updates` requires a channel link, the type `group` a group link, and the types `contact` and `business contact` a contact address link [WEB]. The link text is the title of the address.
 
 ```
 ## Communications
 
 - [Ridgeline updates](https://smp12.simplex.im/c#…): SimpleX updates for people and agents, weekly. Trail conditions and closures.
-- [Ask Ridgeline](https://smp12.simplex.im/a#…): SimpleX contact for agents, MCP. Bookings and availability.
+- [Ridgeline hikers](https://smp12.simplex.im/g#…): SimpleX group for people. Routes and meetups.
+- [Ask Ridgeline](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP. Bookings and availability.
 - [Ridgeline support](mailto:help@ridgeline.example): Email contact for people.
 ```
 
 ## Profile declarations
 
-A profile or a group declares the protocols it serves in its preferences. A channel declares its audience and its update frequency in its public group record. A contact address declares the peers it serves in its link data.
+A profile or a group declares the protocols it serves in its preferences. A channel or a public group declares its audience in its public group record, and a channel also its update frequency. A contact address declares the peers it serves in its link data.
 
 ### protocols
 
@@ -168,9 +170,9 @@ Example, the `preferences` of a contact profile:
 }
 ```
 
-### Channel audience and update frequency
+### Public group audience and update frequency
 
-Two fields of the channel's public group record, `publicGroup` of its group profile [CHAT]. JSON Type Definition schema [RFC8927]:
+Two fields of the public group record, `publicGroup` of the group profile of a channel or a public group [CHAT]. JSON Type Definition schema [RFC8927]:
 
 ```json
 {
@@ -181,12 +183,12 @@ Two fields of the channel's public group record, `publicGroup` of its group prof
 }
 ```
 
-- `audience`: the peer types the channel is made for. The values are the values of a profile's `peerType`: `human`, `bot`, `business`, `agent`. An absent `audience` is `["human"]`. Agents also read content made for people, so a channel declares `agent` when it is made for agents, or has dedicated support for them.
-- `changeFrequency`: how often the channel is updated. The values are the `changefreq` values of the Sitemaps protocol [SITEMAPS]: `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly`, `never`.
+- `audience`: the peer types the channel or the group is made for. The values are the values of a profile's `peerType`: `human`, `bot`, `business`, `agent`. An absent `audience` is `["human"]`. Agents also read content made for people, so a channel or a group declares `agent` when it is made for agents, or has dedicated support for them.
+- `changeFrequency`: in a channel only, how often the channel is updated. The values are the `changefreq` values of the Sitemaps protocol [SITEMAPS]: `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly`, `never`.
 
 ### Contact address peers
 
-One field of the data published with a contact address link, beside `business`. JSON Type Definition schema [RFC8927]:
+One field of the data published with a contact address link, beside `business`, which marks a business address [BUSINESS]. JSON Type Definition schema [RFC8927]:
 
 ```json
 {
@@ -198,7 +200,7 @@ One field of the data published with a contact address link, beside `business`. 
 
 - `serves`: the peer types the address is made for, with the values and the default of `audience`.
 
-Clients MUST ignore unknown values of `audience` and `serves`. The values of the channel and the address take precedence over the values on a website [WEB].
+Clients MUST ignore unknown values of `audience` and `serves`. The values in the public group record and in the address link data take precedence over the values on a website [WEB].
 
 ### Protocol names
 
@@ -458,6 +460,7 @@ Planned:
 
 ## References
 
+- [BUSINESS] Using SimpleX Chat in business: [BUSINESS.md](https://simplex.chat/docs/business.md)
 - [CHAT] SimpleX Chat protocol: [simplex-chat.md](https://simplex.chat/docs/protocol/simplex-chat.md)
 - [LLMSTXT] The /llms.txt file: https://llmstxt.org
 - [MCP] Model Context Protocol specification, revision 2026-07-28: https://modelcontextprotocol.io/specification/2026-07-28
