@@ -16,7 +16,7 @@ After the seed the client keeps the active profile's count up to date with its o
 - iOS: deleting a contact in "keep conversation" mode re-added the chat without its stats.
 - Nothing re-read the count when the chat list was re-read: on resume, or after setting a chat item TTL (bulk deletion sends no per-item events).
 
-Who sees the active profile's count: the desktop tray dot, the iOS app badge, and the Unread filter button of #7340. The profile picker shows only the other profiles.
+Who sees the active profile's count: the desktop tray dot and the Unread filter button of #7340; the iOS app badge takes the same deltas but is reset from the chat list on each list reload and when the app goes to the background. The profile picker shows only the other profiles.
 
 Non-active profiles were already kept by the seed's rule (`ntfsEnabled`).
 
