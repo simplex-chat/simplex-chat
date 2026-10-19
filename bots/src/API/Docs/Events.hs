@@ -85,6 +85,7 @@ chatEventsDocsData =
       "Bots may use these events to manage users' groups and business address groups.\n\n\
       \*Please note*: programming groups is more complex than programming direct connections",
       [ ("CEvtReceivedGroupInvitation", ""),
+        ("CEvtReceivedGroupInvitationViaGroup", "Received group invitation from member of another group."),
         ("CEvtUserJoinedGroup", "Bot user joined group. Received when connection via group link completes."),
         ("CEvtGroupUpdated", "Group profile or preferences updated."),
         ("CEvtJoinedGroupMember", "Another member joined group."),
@@ -202,6 +203,7 @@ undocumentedEvents =
     "CEvtContactRequestRejected",
     "CEvtContactSwitch",
     "CEvtCustomChatEvent",
+    "CEvtDuplicateGroupMessage",
     "CEvtGroupMemberRatchetSync",
     "CEvtGroupMemberSwitch",
     "CEvtServiceSubStatus",
@@ -221,6 +223,8 @@ undocumentedEvents =
     "CEvtSndFileRedirectStartXFTP",
     "CEvtSndFileStart", -- legacy SMP files
     "CEvtSndStandaloneFileComplete",
+    "CEvtStorePurchaseCredited",
+    "CEvtStorePurchaseRefused",
     "CEvtConnectionsDiff",
     "CEvtSubscriptionEnd",
     "CEvtTerminalEvent",

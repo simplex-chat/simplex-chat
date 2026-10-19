@@ -33,7 +33,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.common.views.chat.item.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 
 // Spec: spec/client/chat-list.md#ChatPreviewView
@@ -277,6 +277,7 @@ fun ChatPreviewView(
       MarkdownText(
         text,
         formattedText,
+        if (formattedText == null) null else ci.markdownBlocks,
         sender = when {
           cInfo is ChatInfo.Group && !ci.chatDir.sent && !ci.meta.showGroupAsSender -> ci.memberDisplayName
           else -> null

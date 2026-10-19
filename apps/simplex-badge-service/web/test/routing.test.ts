@@ -1,6 +1,6 @@
 import { timedTest } from "./boot.js";
 import assert from "node:assert/strict";
-import { resolveLoad, screenForOpenOrder } from "../src/routing.js";
+import { appCodeLink, readHash, resolveLoad, screenForOpenOrder } from "../src/routing.js";
 import { type OrderRecord } from "../src/domain.js";
 import { Store } from "../src/store.js";
 
@@ -67,4 +67,21 @@ routingTest("routing: the flag survives clearSession, a second order and a reloa
   assert.equal(screenForOpenOrder(kept, "card"), "awaitingConfirmation");
   assert.equal(reloaded.order("inv_second")!.submitted, undefined,
     "and it did not spread to the order that followed it");
+});
+
+routingTest("routing: the app flag is read off the hash's tail, and the route is the hash without it", () => {
+  assert.deepEqual(readHash("#/tier?app=true"), { route: "#/tier", app: "mobile" });
+  assert.deepEqual(readHash("#/tier?app=desktop"), { route: "#/tier", app: "desktop" });
+  assert.deepEqual(readHash("#/tier"), { route: "#/tier", app: undefined }, "no tail, no flag");
+  assert.deepEqual(readHash(""), { route: "", app: undefined });
+});
+
+routingTest("routing: an app value outside the contract is no flag at all", () => {
+  for (const tail of ["app=", "app=false", "app=TRUE", "app=ios", "other=true"]) {
+    assert.deepEqual(readHash(`#/tier?${tail}`), { route: "#/tier", app: undefined }, tail);
+  }
+});
+
+routingTest("routing: the link back to the app is the simplexchat: scheme with the code as its last segment", () => {
+  assert.equal(appCodeLink("SB-YDC8A-YGQTM-PUYZ9-2TUXP"), "simplexchat:/badge/code/SB-YDC8A-YGQTM-PUYZ9-2TUXP");
 });

@@ -95,6 +95,7 @@ Bottom input area for composing messages:
 |---|---|
 | Text field | `PlatformTextField` with markdown support, `@mention` autocomplete, file paste support |
 | Attachment button | Opens `ModalBottomSheetLayout` with options: camera, gallery (image/video), file |
+| Emoji button | Desktop only (Android keyboards have their own emoji panel). Opens a popup with search and categories; a picked emoji is inserted at the cursor and the picker stays open. With text selected the emoji goes after it, as the text field drops its selection when the picker takes focus. Picked emoji are not remembered, for privacy. Esc, a click outside or the button closes it |
 | Send button | Sends message; changes to checkmark for reports; animated size/alpha |
 | Voice record button | Shown when text is empty and voice allowed; hold to record, release to preview |
 | Live message button | Start/update live typing message (if `liveMessageAlertShown`) |
@@ -132,4 +133,5 @@ When `timedMessageAllowed` is true, compose bar includes a timer icon for settin
 | `ChatView.kt` | `views/chat/ChatView.kt` |
 | `ComposeView.kt` | `views/chat/ComposeView.kt` |
 | `SendMsgView.kt` | `views/chat/SendMsgView.kt` |
+| `ComposeEmojiPicker.kt` | `views/chat/ComposeEmojiPicker.kt` (+ `.android.kt`, `.desktop.kt`) |
 | Chat item views | `views/chat/item/*.kt` |
