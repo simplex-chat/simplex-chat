@@ -52,6 +52,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Files (getChatTempDirectory, safeFileNameStr)
 import Simplex.Chat.Library.Internal
+import Simplex.Chat.Markdown (ParsedMarkdown (..))
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
@@ -2249,7 +2250,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           | otherwise = (\GroupMember {memberId} -> encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))) <$> m_
         GroupInfo {groupProfile = GroupProfile {publicGroup}} = gInfo
         sentAsGroup = asGroup_ == Just True
-        ts@(_, ft_) = msgContentTexts content
+        ts@(_, ParsedMarkdown ft_ _) = msgContentTexts content
         -- m' is Maybe GroupMember
         saveRcvCI gInfo' m' scopeInfo =
           let itemMember_ = if sentAsGroup then Nothing else m'
@@ -2338,7 +2339,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
         content = CIRcvMsgContent mc
-        ts@(_, ft_) = msgContentTexts mc
+        ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
         live = fromMaybe False live_
         updateRcvChatItem = do
           (cci, scopeInfo) <- withStore $ \db -> do

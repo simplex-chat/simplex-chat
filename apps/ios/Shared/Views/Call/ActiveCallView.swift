@@ -161,10 +161,10 @@ struct ActiveCallView: View {
                         CallSoundsPlayer.shared.stop()
                     }
                 }
-            case let .ice(iceCandidates):
+            case let .ice(iceCandidates, session):
                 Task {
                     do {
-                        try await apiSendCallExtraInfo(call.contact, iceCandidates)
+                        try await apiSendCallExtraInfo(call.contact, session, iceCandidates)
                     } catch {
                         logger.error("apiSendCallExtraInfo \(responseError(error))")
                     }
@@ -172,15 +172,24 @@ struct ActiveCallView: View {
             case let .connection(state):
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
-                    call.direction == .outgoing
-                    ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
-                    : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
+                    // connectedAt is kept on reconnection, so that call duration is not reset
+                    if call.connectedAt == nil {
+                        call.direction == .outgoing
+                        ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
+                        : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
+                        call.connectedAt = .now
+                    }
                     call.callState = .connected
-                    call.connectedAt = .now
+                    CallSoundsPlayer.shared.stop()
                     if !wasConnected {
                         CallSoundsPlayer.shared.vibrate(long: false)
                         wasConnected = true
                     }
+                } else if state.connectionState == "reconnecting" {
+                    if call.callState != .reconnecting {
+                        CallSoundsPlayer.shared.startConnectingCallSound()
+                    }
+                    call.callState = .reconnecting
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
@@ -190,17 +199,22 @@ struct ActiveCallView: View {
                     m.activeCall = nil
                     m.activeCallViewIsCollapsed = false
                 }
-                Task {
-                    do {
-                        try await apiCallStatus(call.contact, state.connectionState)
-                    } catch {
-                        logger.error("apiCallStatus \(responseError(error))")
+                // "reconnecting" is not a core call status
+                if state.connectionState != "reconnecting" {
+                    Task {
+                        do {
+                            try await apiCallStatus(call.contact, state.connectionState)
+                        } catch {
+                            logger.error("apiCallStatus \(responseError(error))")
+                        }
                     }
                 }
             case let .connected(connectionInfo):
                 call.callState = .connected
                 call.connectionInfo = connectionInfo
-                call.connectedAt = .now
+                if call.connectedAt == nil {
+                    call.connectedAt = .now
+                }
                 if !wasConnected {
                     CallSoundsPlayer.shared.vibrate(long: false)
                     wasConnected = true
