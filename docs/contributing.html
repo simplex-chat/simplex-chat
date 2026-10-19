@@ -1057,13 +1057,7 @@ window.addEventListener('click',(e)=>{
 <p><code>stable</code> - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.3).</p>
 </li>
 <li>
-<p><code>stable-android</code> - used to build stable Android core library with Nix (GHC 8.10.7) - only for Android armv7a.</p>
-</li>
-<li>
-<p><code>master</code> - branch for beta version releases (compatible with both GHC 9.6.3 and 8.10.7).</p>
-</li>
-<li>
-<p><code>master-android</code> - used to build beta Android core library with Nix (GHC 8.10.7) - only for Android armv7a.</p>
+<p><code>master</code> - branch for beta version releases (compatible with both GHC 9.6.3 and 8.10.7). Nix builds Android armv7a core library with GHC 8.10.7 and all other core libraries with GHC 9.6.3.</p>
 </li>
 </ul>
 <p><strong>In simplexmq repo</strong></p>
@@ -1076,31 +1070,20 @@ window.addEventListener('click',(e)=>{
 <p>Make PRs to <code>master</code> branch <em>only</em> for both simplex-chat and simplexmq repos.</p>
 </li>
 <li>
-<p>To build core libraries for Android, iOS and Windows:</p>
+<p>To build core libraries for Android, iOS and Windows, push <code>master</code> branch to GitHub.</p>
 </li>
-</ol>
-<ul>
-<li>merge <code>master</code> branch to <code>master-android</code> branch.</li>
-<li>push to GitHub.</li>
-</ul>
-<ol start="3">
 <li>
-<p>All libraries should be built from <code>master</code> branch, Android armv7a - from <code>master-android</code> branch.</p>
+<p>All libraries should be built from <code>master</code> branch.</p>
 </li>
 <li>
 <p>To build Desktop and CLI apps, make tag in <code>master</code> branch, APK files should be attached to the release.</p>
 </li>
 <li>
-<p>After the public release to App Store and Play Store, merge:</p>
+<p>After the public release to App Store and Play Store, merge <code>master</code> to <code>stable</code>.</p>
 </li>
-</ol>
-<ul>
-<li><code>master</code> to <code>stable</code></li>
-<li><code>master</code> to <code>master-android</code> (and compile/update code)</li>
-<li><code>master-android</code> to <code>stable-android</code></li>
-</ul>
-<ol start="6">
-<li>Independently, <code>master</code> branch of simplexmq repo should be merged to <code>stable</code> branch on stable releases.</li>
+<li>
+<p>Independently, <code>master</code> branch of simplexmq repo should be merged to <code>stable</code> branch on stable releases.</p>
+</li>
 </ol>
 <h2 id="branches-and-prs" tabindex="-1">Branches and PRs</h2>
 <p>Use change scope (or comma separated scopes) as the first word in the PR names, followed by the colon. Commit name itself should be lowercase, in present tense.</p>
