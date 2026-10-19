@@ -11,17 +11,44 @@ packages: .
 --    coverage: False
 --    library-coverage: False
 
-index-state: 2023-12-12T00:00:00Z
+index-state: 2026-10-06T00:00:00Z
 
 package cryptostore
     flags: +use_crypton
 
 constraints: zip +disable-bzip2 +disable-zstd
 
+-- Pinned packages retain older boot-library and compiler-helper bounds.
+-- Limit the exceptions to those packages and libraries; other bounds
+-- still constrain the GHC 9.14 plan.
+allow-newer:
+    android-support:base,
+    network-transport:hashable,
+    simplexmq:bytestring,
+    simplexmq:containers,
+    simplexmq:constraints,
+    simplexmq:deepseq,
+    simplexmq:filepath,
+    simplexmq:hashable,
+    simplexmq:scientific,
+    simplexmq:template-haskell,
+    simplexmq:time,
+    simplexmq:websockets,
+    aeson:containers,
+    aeson:ghc-prim,
+    aeson:hashable,
+    aeson:primitive,
+    aeson:template-haskell,
+    aeson:th-abstraction,
+    aeson:time,
+    aeson:witherable,
+    zip:containers,
+    zip:time
+
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: cba13823567d7cd564d8a1f354046174fba375d8
+    tag: 12d25eb91f288e5edbc09c063a21c3bd4d23c640
 
 source-repository-package
     type: git

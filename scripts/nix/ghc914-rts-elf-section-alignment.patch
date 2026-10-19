@@ -1,0 +1,16 @@
+--- a/linker/Elf.c
++++ b/linker/Elf.c
+@@ -1008,8 +1008,11 @@
+           }
+           // use the m32 allocator if either the image is not mapped
+           // (i.e. we cannot map the sections separately), or if the section
+-          // size is small.
+-          else if (!oc->imageMapped || size < getPageSize() / 3) {
++          // size is small. A section's file offset need not satisfy its
++          // in-memory alignment. mmap preserves the offset within the page,
++          // so copy such sections into aligned storage as well.
++          else if (!oc->imageMapped || size < getPageSize() / 3
++                   || (align > 1 && offset % align != 0)) {
+               bool executable = kind == SECTIONKIND_CODE_OR_RODATA;
+               m32_allocator *allocator = executable ? oc->rx_m32 : oc->rw_m32;
+               // Correctly align the section. This is particularly important for

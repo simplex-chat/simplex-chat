@@ -217,7 +217,7 @@ jobs:
       source_hashes: dist-newstyle/sources.sha256
     concurrency: &linux-concurrency
       group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
@@ -421,6 +421,27 @@ jobs:
             cp "$bin" /out/
           done
           strip /out/simplex-chat
+
+      - name: Report GHC 8.10 build termination
+        if: ${{ failure() && matrix.ghc == '8.10.7' && steps.build-cli.outcome == 'failure' }}
+        timeout-minutes: 1
+        shell: bash
+        run: |
+          # SIGKILL alone does not identify an OOM kill. Keep the failed build
+          # result and report the container counters and host kernel evidence.
+          free -h || true
+          swapon --show || true
+          docker inspect --format '{{json .State}}' builder || true
+          docker exec builder sh -c '
+            for counter in memory.events memory.current memory.peak memory.max memory.swap.current memory.swap.max; do
+              path=/sys/fs/cgroup/$counter
+              if [ -r "$path" ]; then
+                printf "\n%s\n" "$path"
+                cat "$path"
+              fi
+            done
+          ' || true
+          sudo journalctl -k -b --no-pager | grep -Ei 'out of memory|oom.kill|killed process' || true
 
       # Also for pull requests that change the chat core, for the package tests.
       - name: Build library
@@ -882,12 +903,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-macos-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          # The CLT 27 SDK on macos-latest breaks GHC 9.6 hsc2hs linking.
+          - os: macos-15
             arch: aarch64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-aarch64
@@ -1221,7 +1243,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-windows-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:

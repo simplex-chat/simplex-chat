@@ -1,0 +1,35 @@
+--- a/cbits/symbols.aarch64-android.c
++++ b/cbits/symbols.aarch64-android.c
+@@ -10,0 +11,4 @@
++#include <iconv.h>
++#ifdef _LIBICONV_VERSION
++#include <localcharset.h>
++#endif
+@@ -117,2 +121,2 @@
+-// bionic has had nl_langinfo since API 26 and iconv since API 28; the NDK we
+-// build against targets API 35.
++// Bionic provides nl_langinfo from API 26 and iconv from API 28. The
++// selected iconv.h describes either Bionic or the declared GNU dependency.
+@@ -120,3 +123,0 @@
+-extern void iconv_open(void);
+-extern void iconv(void);
+-extern void iconv_close(void);
+@@ -173,0 +175,2 @@
++    // These public Bionic APIs are declared only from API level 28.
++#if __ANDROID_API__ >= 28
+@@ -175,0 +179 @@
++#endif
+@@ -497,0 +502,3 @@
++#ifdef _LIBICONV_VERSION
++    // Keep plain lookup names while the header maps their real addresses
++    // to GNU definitions, and expose the GNU names used by ghc-internal.
+@@ -500,0 +508,9 @@
++    SYM(libiconv_open),
++    SYM(libiconv),
++    SYM(libiconv_close),
++    SYM(locale_charset),
++#elif __ANDROID_API__ >= 28
++    SYM(iconv_open),
++    SYM(iconv),
++    SYM(iconv_close),
++#endif

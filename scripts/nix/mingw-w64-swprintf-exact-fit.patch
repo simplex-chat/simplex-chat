@@ -1,0 +1,16 @@
+Backport the ISO swprintf exact-fit fix from MinGW-w64.
+Upstream: https://github.com/mingw-w64/mingw-w64/commit/e7e21db45eaae989b04f3c24964dead5b53310de
+
+--- a/mingw-w64-crt/stdio/mingw_vsnprintf.c
++++ b/mingw-w64-crt/stdio/mingw_vsnprintf.c
+@@ -59,7 +59,6 @@
+ #if defined(__BUILD_WIDEAPI) && defined(__BUILD_WIDEAPI_ISO)
+-  /* For wide api ISO C95+ vswprintf() when requested length
+-   * is equal or larger than buffer length, returns negative
+-   * value as required by ISO C95+.
++  /* ISO C95+ fails when n or more data wide chars are needed.  length was
++   * already decremented once for the terminator, so use > not >= here.
+    */
+-  if( retval >= (int) length )
++  if( retval > (int) length )
+     retval = -1;

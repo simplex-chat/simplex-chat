@@ -96,7 +96,6 @@ import qualified Data.Aeson.TH as J
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as L
 import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -301,7 +300,7 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
     |]
     (hashSalt viewPwdHash :. (BI showNtfs, userId))
   where
-    hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
+    hashSalt = maybe (Nothing, Nothing) $ \UserPwdHash {hash, salt} -> (Just hash, Just salt)
 
 updateClientService :: DB.Connection -> UserId -> Bool -> IO ()
 updateClientService db userId enable =

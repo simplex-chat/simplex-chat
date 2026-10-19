@@ -1,0 +1,296 @@
+name: Nix Haskell builds
+
+on:
+  workflow_dispatch:
+    inputs:
+      group:
+        description: Existing build groups to run
+        type: choice
+        required: true
+        default: all
+        options: [all, linux-static, android, windows, x86_64-darwin, x86_64-darwin-libs]
+  push:
+    branches: [master, stable, build/stable-ghc-9.14]
+    paths:
+      - 'flake.*'
+      - '*.cabal'
+      - 'cabal.project*'
+      - 'src/**'
+      - 'apps/simplex-*/**'
+      - 'bots/**'
+      - 'scripts/nix/**'
+      - 'Makefile'
+      - '.github/workflows/nix.yml'
+  pull_request:
+    paths:
+      - 'flake.*'
+      - '*.cabal'
+      - 'cabal.project*'
+      - 'src/**'
+      - 'apps/simplex-*/**'
+      - 'bots/**'
+      - 'scripts/nix/**'
+      - 'Makefile'
+      - '.github/workflows/nix.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nix-${{ github.workflow }}-${{ github.ref }}${{ github.event_name == 'workflow_dispatch' && format('-{0}', inputs.group || 'all') || '' }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Select Nix build groups
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select existing build groups
+        id: select
+        env:
+          # PRs and pushes always retain all eight build groups.
+          NIX_CI_GROUP: ${{ github.event_name == 'workflow_dispatch' && inputs.group || 'all' }}
+        shell: bash
+        run: |
+          python3 -B scripts/nix/test-ci-matrix.py
+          matrix=$(python3 scripts/nix/ci-matrix.py --group "$NIX_CI_GROUP")
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: plan
+    name: ${{ matrix.system }} / ${{ matrix.target }} / pinned Haskell compiler
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      NIX_SYSTEM: ${{ matrix.system }}
+      NIX_TARGET: ${{ matrix.target }}
+      NIX_BUILD_TIMEOUT: 7200
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            extra-substituters = https://cache.iog.io https://cache.zw3rk.com
+            extra-trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=
+            # The pinned haskell.nix uses this scheduling marker for cross
+            # slices that need a real x86_64 host. This runner is native x86_64.
+            # The installer skips its defaults when this setting is present.
+            # Keep the CLI/flakes features and enable the marker's Nix feature.
+            experimental-features = nix-command flakes ${{ matrix.system == 'x86_64-linux' && 'recursive-nix' || '' }}
+            extra-system-features = ${{ matrix.system == 'x86_64-linux' && 'recursive-nix' || '' }}
+
+      - name: Show outputs from this checkout
+        run: make nix-list
+
+      - name: Check Android iserv overlay scope
+        if: ${{ matrix.target == 'android' }}
+        timeout-minutes: 1
+        run: |
+          nix eval --json --file scripts/nix/check-android-iserv-scope.nix
+          nix eval --json --file scripts/nix/check-android-pthread-scope.nix
+
+      - name: Check musl interpreter link policy scope
+        if: ${{ matrix.target == 'linux-static' }}
+        timeout-minutes: 1
+        run: |
+          nix eval --impure --json --file scripts/nix/check-musl-iserv-scope.nix \
+            --apply 'f: f { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }'
+          nix eval --impure --json --file scripts/nix/check-musl-rts-scope.nix \
+            --apply 'f: f { lib = (builtins.getFlake (toString ./.)).inputs.nixpkgs.lib; }'
+
+      - name: Check scoped ELF COMDAT function coalescing
+        if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'linux-static' }}
+        timeout-minutes: 120
+        run: nix build .#checks.x86_64-linux.ghc-elf-comdat-functions --no-link -L --max-jobs 1 --timeout "$NIX_BUILD_TIMEOUT"
+
+      - name: Check Intel Darwin build policies
+        if: ${{ matrix.system == 'x86_64-darwin' }}
+        timeout-minutes: 1
+        run: |
+          python3 -B scripts/nix/test-select-intel-setup.py
+          nix eval --json --file scripts/nix/check-darwin-bitvec-runtime.nix
+
+      - name: Check native Linux GHC ELF section alignment
+        if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'native' }}
+        timeout-minutes: 120
+        run: nix build .#checks.x86_64-linux.ghc-elf-alignment --no-link -L --max-jobs 1 --timeout "$NIX_BUILD_TIMEOUT"
+
+      # Prepare only the exact TH component's direct inputs with the normal
+      # budget. Its own canonical build then gets five minutes, not two hours.
+      - name: Prepare canonical Windows TH inputs
+        id: windows_th_inputs
+        if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'windows' }}
+        timeout-minutes: 240
+        shell: bash
+        run: python3 scripts/nix/windows-th-gate.py prepare 2>&1 | tee windows-th-inputs.log
+
+      - name: Check canonical Windows TH component
+        id: windows_th_gate
+        if: ${{ matrix.system == 'x86_64-linux' && matrix.target == 'windows' }}
+        timeout-minutes: 6
+        shell: bash
+        run: python3 scripts/nix/windows-th-gate.py build 2>&1 | tee windows-th-gate.log
+
+      # Use the compiler fork in flake.lock, including both Android ABIs.
+      # Stock GHC installed by ghcup is not interchangeable with this compiler.
+      - name: Build existing Haskell outputs
+        id: haskell_build
+        shell: bash
+        run: make nix-build 2>&1 | tee nix-build.log
+
+      - name: Check native Intel Darwin GHC info-table placement
+        if: ${{ matrix.system == 'x86_64-darwin' }}
+        timeout-minutes: 10
+        run: nix build .#checks.x86_64-darwin.ghc-macho-info-tables --no-link -L --max-jobs 1 --timeout 300
+
+      - name: Trace failed canonical Windows TH component
+        id: windows_th_trace
+        if: ${{ failure() && matrix.system == 'x86_64-linux' && matrix.target == 'windows' && steps.windows_th_inputs.outcome == 'success' && steps.windows_th_gate.outcome == 'failure' && steps.windows_th_gate.outputs.attempted == 'true' }}
+        timeout-minutes: 15
+        shell: bash
+        run: |
+          timeout --kill-after=30s 840s nice -n 10 \
+            python3 scripts/nix/windows-th-gate.py trace 2>&1 | tee windows-th-trace.log
+
+      - name: Upload Windows TH gate and diagnostic
+        if: ${{ always() && matrix.system == 'x86_64-linux' && matrix.target == 'windows' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nix-windows-th-${{ github.sha }}
+          path: |
+            windows-th-gate.json
+            windows-th-inputs.log
+            windows-th-gate.log
+            windows-th-trace.log
+          if-no-files-found: warn
+
+      # Diagnose the same native library after failure. Keep the canonical
+      # failure and its flags intact; this is a separate diagnostic derivation.
+      - name: Trace native Linux GHC and capture faults after failure
+        id: ghc_phase_trace
+        if: ${{ failure() && matrix.system == 'x86_64-linux' && matrix.target == 'native' && steps.haskell_build.outcome == 'failure' }}
+        shell: bash
+        run: |
+          if [ -d "result-nix/$NIX_SYSTEM/lib:simplex-chat" ]; then
+            echo 'Native library already built; skipping its diagnostic trace.'
+            exit 0
+          fi
+          echo 'attempted=true' >> "$GITHUB_OUTPUT"
+          flake_ref="git+file://$GITHUB_WORKSPACE?rev=$(git rev-parse HEAD)"
+          original="(builtins.getFlake \"$flake_ref\").hydraJobs.x86_64-linux.\"lib:simplex-chat\""
+          export flake_ref original
+          timeout --kill-after=30s 7200s nice -n 10 bash -euo pipefail \
+            2>&1 <<'TRACE' | tee native-linux-ghc-phase-trace.log
+          debugger="(import ((builtins.getFlake \"$flake_ref\").inputs.nixpkgs) { system = \"x86_64-linux\"; }).gdb"
+          # Fetch the pinned debugger only from caches. Never compile it locally
+          # or remotely while diagnosing the already-failed application build.
+          nix build --expr "$debugger" --no-link --max-jobs 0 --builders '' \
+            --option external-builders '[]'
+          exec nix build \
+            --file scripts/nix/trace-native-ghc.nix --arg original "$original" \
+            --arg debugger "$debugger" \
+            --no-link -L --keep-failed --max-jobs 1 --timeout 7200
+          TRACE
+
+      - name: Upload native Linux GHC phase log
+        if: ${{ always() && steps.ghc_phase_trace.outputs.attempted == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nix-ghc-phase-trace-${{ matrix.system }}-${{ matrix.target }}-${{ github.sha }}
+          path: native-linux-ghc-phase-trace.log
+          if-no-files-found: warn
+
+      - name: Capture Intel Darwin ghc-boot Setup failure
+        id: intel_setup_trace
+        if: ${{ failure() && matrix.system == 'x86_64-darwin' && steps.haskell_build.outcome == 'failure' }}
+        timeout-minutes: 120
+        shell: bash
+        run: |
+          # Compiler patches change this derivation. Select one actual failed
+          # component; trace-intel-setup.nix still checks its exact drvPath.
+          if ! expected_drv=$(python3 scripts/nix/select-intel-setup.py nix-build.log); then
+            exit 0
+          fi
+          echo 'attempted=true' >> "$GITHUB_OUTPUT"
+          export expected_drv
+          bash -euo pipefail 2>&1 <<'TRACE' | tee intel-setup-lldb-trace.log
+          lldb_path=$(xcrun --find lldb)
+          printf 'Intel Setup host debugger: %s\n' "$lldb_path"
+          "$lldb_path" --version
+          clang_path=$(xcrun --find clang)
+          sdk_path=$(xcrun --sdk macosx --show-sdk-path)
+          printf 'Intel Setup abort tracer compiler: %s\n' "$clang_path"
+          "$clang_path" --version
+          abort_tracer="$GITHUB_WORKSPACE/intel-setup-abort.dylib"
+          "$clang_path" -isysroot "$sdk_path" -arch x86_64 \
+            -std=c11 -Werror=vla -pedantic -Wall -Wextra -Werror \
+            -dynamiclib -O0 -g -fno-omit-frame-pointer \
+            scripts/nix/trace_intel_setup_abort.c -o "$abort_tracer"
+          flake_ref="git+file://$GITHUB_WORKSPACE?rev=$(git rev-parse HEAD)"
+          original=$(cat <<NIX
+          let
+            flake = builtins.getFlake "$flake_ref";
+            inherit (flake.inputs) haskellNix;
+            nativePackages = import (flake.outPath + "/scripts/nix/native-packages.nix") { inherit haskellNix; };
+            nativeCompilers = ((nativePackages "x86_64-darwin").appendOverlays [
+              (import (haskellNix + "/test/overlay.nix"))
+            ]).haskell-nix.compiler;
+          in nativeCompilers.ghc914-sh.stage2Project.hsPkgs.ghc-boot.components.library
+          NIX
+          )
+          # The failed canonical build already produced this component's inputs.
+          # Hosted Intel denies LLDB attach even with a nonzero inferior PID.
+          # Use LLDB's Python runner without attempting a debug launch; invoke
+          # the unchanged Setup once with the abort tracer instead.
+          # Only this diagnostic permits host tool access outside the Nix sandbox.
+          exec nix build --file scripts/nix/trace-intel-setup.nix \
+            --arg original "$original" --argstr expectedDrv "$expected_drv" \
+            --argstr abortTracerPath "$abort_tracer" \
+            --argstr captureMode direct-abort \
+            --argstr lldbPath "$lldb_path" --option sandbox false \
+            --no-link -L --keep-failed --max-jobs 1 --timeout 7200
+          TRACE
+
+      - name: Upload Intel Darwin Setup diagnostic
+        if: ${{ always() && steps.intel_setup_trace.outputs.attempted == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nix-intel-setup-trace-${{ matrix.system }}-${{ matrix.target }}-${{ github.sha }}
+          path: intel-setup-lldb-trace.log
+          if-no-files-found: warn
+
+      - name: Check native CLI encryption and profile passwords
+        if: ${{ matrix.target == 'native' || matrix.target == 'all' }}
+        run: python3 scripts/nix/smoke-cli.py "result-nix/$NIX_SYSTEM/exe:simplex-chat/bin/simplex-chat"
+
+      - name: Collect library ZIPs and CLIs
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          for output in result-nix/"$NIX_SYSTEM"/*; do
+            [ -d "$output" ] || continue
+            package_name=$(basename "$output")
+            destination="artifacts/${package_name//:/-}"
+            mkdir -p "$destination"
+            find -L "$output" -maxdepth 1 -type f -name '*.zip' -exec cp {} "$destination/" \;
+            if [ -f "$output/bin/simplex-chat" ]; then
+              cp "$output/bin/simplex-chat" "$destination/"
+            fi
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nix-${{ matrix.system }}-${{ matrix.target }}-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error

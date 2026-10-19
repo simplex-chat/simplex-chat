@@ -1,0 +1,9 @@
+diff --git a/Basement/Terminal/Size.hsc b/Basement/Terminal/Size.hsc
+--- a/Basement/Terminal/Size.hsc
++++ b/Basement/Terminal/Size.hsc
+@@ -123,4 +123,4 @@
+ invalidHandleValue :: IntPtr
+-invalidHandleValue = #{const INVALID_HANDLE_VALUE}
++invalidHandleValue = Prelude.fromIntegral (#{const (INT_PTR)INVALID_HANDLE_VALUE} :: Int)
+
+ stdOutputHandle :: CULong

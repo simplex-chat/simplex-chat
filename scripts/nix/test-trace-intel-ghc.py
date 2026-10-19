@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+"""Target, failure and timeout controls for the compiler diagnostic launcher."""
+
+import contextlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import signal
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+import unittest
+from unittest.mock import patch
+
+
+SPEC = importlib.util.spec_from_file_location("intel_trace", Path(__file__).with_name("trace-intel-ghc.py"))
+TRACE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(TRACE)
+DRV = "/nix/store/" + "a" * 32 + "-simplex-chat-lib-simplex-chat-7.1.0.11.drv"
+FAILURE = ("Failed to build simplex-chat-7.1.0.11-unit. The build process terminated with exit code -10\n"
+           + "error: Cannot build '" + DRV + "'.\n")
+
+
+class LauncherTests(unittest.TestCase):
+    def apple_installation(self, root, *, command_line=False):
+        developer = Path(root) / ("CommandLineTools" if command_line else "Xcode.app/Contents/Developer")
+        compiler = developer / ("usr/bin/clang" if command_line
+                                else "Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
+        sdk = developer / ("SDKs/MacOSX.sdk" if command_line
+                           else "Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+        compiler.parent.mkdir(parents=True, exist_ok=True)
+        compiler.write_text("fixture Apple tool; never executed\n")
+        compiler.chmod(0o755)
+        sdk.mkdir(parents=True, exist_ok=True)
+        return developer, compiler, sdk
+
+    def test_unique_observed_failure(self):
+        self.assertEqual(TRACE.select_failure(FAILURE + FAILURE), DRV)
+        self.assertIsNone(TRACE.select_failure(FAILURE.replace("exit code -10", "exit code 1")))
+        self.assertIsNone(TRACE.select_failure(FAILURE.replace("simplex-chat-lib-simplex-chat", "dependency-lib-dependency")))
+        with self.assertRaises(ValueError):
+            TRACE.select_failure(FAILURE + FAILURE.replace("a" * 32, "b" * 32))
+
+    def invoke(self, folder, *, actions="true", machine="x86_64", target=None, failure=FAILURE,
+               reject_build=False, reject_cache=False, reject_xcrun=False):
+        developer, compiler, sdk = self.apple_installation(folder)
+        log = Path(folder) / "nix-build.log"
+        log.write_text(failure)
+        calls = []
+        def step(arguments, deadline, seconds, capture=False, *, phase="command"):
+            values = list(map(str, arguments))
+            calls.append((values, seconds, capture))
+            if values[0] == "git":
+                return "c" * 40
+            if values[0] == "xcrun" and reject_xcrun:
+                raise TimeoutError("Diagnostic command reached its wall-clock limit")
+            if values[:3] == ["xcrun", "--find", "clang"]:
+                return str(compiler)
+            if values[0] == "xcrun":
+                return str(sdk)
+            if (reject_build and "--file" in values) or (reject_cache and "--expr" in values):
+                raise RuntimeError("Diagnostic command returned 1")
+            return None
+        argv = ["trace-intel-ghc.py", "--repo", folder, "--attribute", target or TRACE.ATTRIBUTE, "--log", str(log)]
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": actions, "DEVELOPER_DIR": str(developer), "TOOLCHAINS": ""}), \
+                patch.object(TRACE.platform, "system", return_value="Darwin"), \
+                patch.object(TRACE.platform, "machine", return_value=machine), \
+                patch.object(TRACE.shutil, "which", side_effect=lambda tool: None if tool in ("timeout", "gtimeout") else "/existing/tool"), \
+                patch.object(TRACE, "run_step", side_effect=step), patch("sys.argv", argv), \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            result = TRACE.main()
+        return result, calls
+
+    def test_excluded_contexts_never_launch(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for options in ({"actions": "false"}, {"machine": "arm64"}, {"target": "hydraJobs.x86_64-darwin.lib:simplex-chat"},
+                            {"failure": FAILURE.replace("exit code -10", "exit code 1")}):
+                result, calls = self.invoke(folder, **options)
+                self.assertEqual((result, calls), (0, []))
+
+    def test_one_scoped_replay_with_bounds_and_no_sandbox_override(self):
+        with tempfile.TemporaryDirectory() as folder:
+            result, calls = self.invoke(folder)
+            self.assertEqual(result, 0)
+            builds = [call for call in calls if call[0][:2] == ["nix", "build"]]
+            self.assertEqual(len(builds), 2)
+            preparation = builds[0][0]
+            self.assertIn("--expr", preparation)
+            self.assertEqual(preparation[preparation.index("--max-jobs") + 1], "0")
+            self.assertEqual(preparation[preparation.index("--builders") + 1], "")
+            self.assertEqual(preparation[preparation.index("external-builders") + 1], "[]")
+            self.assertEqual(builds[0][1], 30)
+            arguments, seconds, _ = builds[1]
+            self.assertEqual(seconds, 300)
+            self.assertEqual(arguments[arguments.index("expectedDrv") + 1], DRV)
+            self.assertIn("--timeout", arguments)
+            self.assertEqual(arguments[-1], "300")
+            self.assertNotIn("--option", arguments)
+            self.assertIn("--keep-failed", arguments)
+            original = arguments[arguments.index("original") + 1]
+            self.assertIn('f.hydraJobs.x86_64-darwin."x86_64-darwin-ios:lib:simplex-chat"', original)
+            self.assertNotIn(".project.hsPkgs", original)
+            compiler = str(Path(folder) / "Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
+            self.assertEqual(sum(call[0][:1] == [compiler] for call in calls), 1)
+
+    def test_observed_xcrun_timeout_does_not_block_selected_tools(self):
+        with tempfile.TemporaryDirectory() as folder:
+            result, calls = self.invoke(folder, reject_xcrun=True)
+        self.assertEqual(result, 0)
+        self.assertEqual(sum("--file" in call[0] for call in calls), 1)
+        self.assertFalse(any(call[0][0] == "xcrun" for call in calls))
+
+    def test_selected_xcode_and_command_line_tools_need_no_discovery_process(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for command_line in (False, True):
+                developer, compiler, sdk = self.apple_installation(folder, command_line=command_line)
+                with patch.dict(os.environ, {"DEVELOPER_DIR": str(developer), "TOOLCHAINS": "", "SDKROOT": "/unused/iPhoneOS.sdk"}), \
+                        patch.object(TRACE, "run_step") as step, contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(TRACE.apple_tool_paths(time.monotonic() + 20), (compiler, sdk))
+                step.assert_not_called()
+
+    def test_xcode_application_selection_is_supported(self):
+        with tempfile.TemporaryDirectory() as folder:
+            developer, compiler, sdk = self.apple_installation(folder)
+            with patch.dict(os.environ, {"DEVELOPER_DIR": str(developer.parent.parent), "TOOLCHAINS": ""}), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(TRACE.apple_tool_paths(time.monotonic() + 20), (compiler, sdk))
+
+    def test_system_developer_selection_is_bounded(self):
+        with tempfile.TemporaryDirectory() as folder:
+            developer, compiler, sdk = self.apple_installation(folder)
+            deadline = time.monotonic() + 20
+            with patch.dict(os.environ, {}, clear=True), \
+                    patch.object(TRACE.shutil, "which", return_value="/usr/bin/xcode-select"), \
+                    patch.object(TRACE, "run_step", return_value=str(developer)) as step, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(TRACE.apple_tool_paths(deadline), (compiler, sdk))
+            step.assert_called_once_with(["xcode-select", "--print-path"], deadline, 10, True,
+                                         phase="apple-developer-path")
+
+    def test_invalid_developer_selection_never_uses_another_installation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for selection in ("", "relative", "bad\npath", str(Path(folder) / "missing")):
+                with self.subTest(selection=selection), \
+                        patch.dict(os.environ, {"DEVELOPER_DIR": selection, "TOOLCHAINS": ""}), \
+                        patch.object(TRACE, "run_step") as step:
+                    with self.assertRaisesRegex(ValueError, "developer directory"):
+                        TRACE.apple_tool_paths(time.monotonic() + 20)
+                    step.assert_not_called()
+
+    def test_missing_selected_clang_or_sdk_is_named(self):
+        with tempfile.TemporaryDirectory() as folder:
+            developer, compiler, sdk = self.apple_installation(folder)
+            with patch.dict(os.environ, {"DEVELOPER_DIR": str(developer), "TOOLCHAINS": ""}):
+                compiler.chmod(0o644)
+                with self.assertRaisesRegex(ValueError, "Clang.*not executable"):
+                    TRACE.apple_tool_paths(time.monotonic() + 20)
+                compiler.chmod(0o755)
+                sdk.rmdir()
+                with self.assertRaisesRegex(ValueError, "macOS SDK is unavailable"):
+                    TRACE.apple_tool_paths(time.monotonic() + 20)
+
+    def test_custom_toolchain_uses_original_bounded_discovery(self):
+        with tempfile.TemporaryDirectory() as folder:
+            developer, compiler, sdk = self.apple_installation(folder)
+            custom = Path(folder) / "Selected.xctoolchain/usr/bin/clang"
+            custom.parent.mkdir(parents=True)
+            custom.write_text("fixture custom tool; never executed\n")
+            custom.chmod(0o755)
+            deadline = time.monotonic() + 30
+            with patch.dict(os.environ, {"DEVELOPER_DIR": str(developer), "TOOLCHAINS": "selected.custom.toolchain"}), \
+                    patch.object(TRACE.shutil, "which", return_value="/usr/bin/xcrun"), \
+                    patch.object(TRACE, "run_step", side_effect=[str(custom), str(sdk)]) as step, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(TRACE.apple_tool_paths(deadline), (custom, sdk))
+            self.assertEqual(step.call_args_list[0].args, (["xcrun", "--find", "clang"], deadline, 10, True))
+            self.assertEqual(step.call_args_list[1].args, (["xcrun", "--sdk", "macosx", "--show-sdk-path"], deadline, 10, True))
+
+    def test_failed_diagnostic_returns_without_replay_loop(self):
+        with tempfile.TemporaryDirectory() as folder:
+            result, calls = self.invoke(folder, reject_build=True)
+            self.assertEqual(result, 0)
+            self.assertEqual(sum("--file" in call[0] for call in calls), 1)
+
+    def test_cache_miss_never_launches_replay(self):
+        with tempfile.TemporaryDirectory() as folder:
+            result, calls = self.invoke(folder, reject_cache=True)
+            self.assertEqual(result, 0)
+            self.assertEqual(sum("--expr" in call[0] for call in calls), 1)
+            self.assertFalse(any("--file" in call[0] for call in calls))
+
+    @unittest.skipUnless(shutil.which("nix") and shutil.which("git"), "requires Nix and Git")
+    def test_pure_preparation_uses_pinned_flake_source(self):
+        with tempfile.TemporaryDirectory(prefix="intel-python-source-") as folder:
+            root = Path(folder)
+            factory = root / "scripts/nix/native-packages.nix"
+            factory.parent.mkdir(parents=True)
+            (root / "flake.nix").write_text('{ outputs = { self }: {}; }\n')
+            # The factory ignores its input: this fixture checks source access,
+            # without evaluating haskell.nix or building Python or a compiler.
+            factory.write_text('{ haskellNix }: system: { python3 = "pinned:${system}"; }\n')
+            def call(argv):
+                return subprocess.run(argv, cwd=root, text=True, capture_output=True, timeout=30)
+            call(["git", "init", "-q", "-b", "master"]).check_returncode()
+            call(["git", "add", "flake.nix", "scripts/nix/native-packages.nix"]).check_returncode()
+            call(["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                  "commit", "-qm", "pinned fixture"]).check_returncode()
+            revision = call(["git", "rev-parse", "HEAD"])
+            revision.check_returncode()
+            flake = "builtins.getFlake " + TRACE.nix_string("git+" + root.as_uri() + "?rev=" + revision.stdout.strip())
+            factory.write_text('throw "read live workspace"\n')
+            original = ("let f = " + flake + "; in (import " + TRACE.nix_string(factory)
+                        + ' { haskellNix = f.inputs.haskellNix; } "x86_64-darwin").python3')
+            argv = ["nix", "eval", "--offline", "--option", "pure-eval", "true", "--json", "--expr"]
+            rejected = call([*argv, original])
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("forbidden in pure evaluation mode", rejected.stderr)
+            fixed = call([*argv, TRACE.python_expression(flake)])
+            self.assertEqual(fixed.returncode, 0, fixed.stderr)
+            self.assertEqual(json.loads(fixed.stdout), "pinned:x86_64-darwin")
+
+    def test_actual_metadata_output_is_bounded(self):
+        with self.assertRaises(ValueError):
+            TRACE.run_step([sys.executable, "-c", "print('x' * 65536)"], time.monotonic() + 10, 5, True)
+        self.assertEqual(TRACE.run_step([sys.executable, "-c", "print('revision')"],
+                                        time.monotonic() + 10, 5, True), "revision")
+
+    def test_phase_and_elapsed_time_survive_metadata_timeout(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), \
+                patch.object(TRACE, "command_status", side_effect=TimeoutError("Diagnostic command reached its wall-clock limit")):
+            with self.assertRaisesRegex(TimeoutError, "wall-clock limit"):
+                TRACE.run_step(["git", "rev-parse", "HEAD"], time.monotonic() + 20, 10, True,
+                               phase="checkout-revision")
+        events = [json.loads(line) for line in output.getvalue().splitlines()]
+        self.assertEqual([event["intelGHCPhase"] for event in events],
+                         ["checkout-revision", "checkout-revision"])
+        self.assertEqual([event["event"] for event in events], ["start", "end"])
+        self.assertLessEqual(events[0]["limitSeconds"], 10)
+        self.assertEqual(events[1]["outcome"], "failure")
+        self.assertGreaterEqual(events[1]["elapsedSeconds"], 0)
+
+    def test_successful_metadata_phase_is_reported(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            result = TRACE.run_step([sys.executable, "-c", "print('revision')"],
+                                    time.monotonic() + 10, 5, True, phase="checkout-revision")
+        self.assertEqual(result, "revision")
+        events = [json.loads(line) for line in output.getvalue().splitlines()]
+        self.assertEqual(events[-1]["outcome"], "success")
+        self.assertEqual(events[-1]["intelGHCPhase"], "checkout-revision")
+
+    def test_actual_timeout_kills_owned_command_and_its_child(self):
+        with tempfile.TemporaryDirectory() as folder:
+            pidfile = Path(folder) / "owned-pids"
+            grandchild = "import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); time.sleep(60)"
+            program = ("import os,signal,subprocess,sys,time; "
+                       "signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+                       "p=subprocess.Popen([sys.executable,'-c',sys.argv[2]]); "
+                       "open(sys.argv[1],'w').write(str(os.getpid())+' '+str(p.pid)); time.sleep(60)")
+            before = time.monotonic()
+            with self.assertRaisesRegex(TimeoutError, "wall-clock limit"):
+                TRACE.command_status([sys.executable, "-c", program, str(pidfile), grandchild], 1)
+            self.assertLess(time.monotonic() - before, 7)
+            parent, child = map(int, pidfile.read_text().split())
+            # The direct child is reaped. An orphaned grandchild can briefly
+            # remain a zombie on Linux; it must not be running in either case.
+            for pid in (parent, child):
+                stopped = False
+                until = time.monotonic() + 3
+                while time.monotonic() < until:
+                    try:
+                        os.kill(pid, 0)
+                    except ProcessLookupError:
+                        stopped = True
+                        break
+                    stat = Path("/proc") / str(pid) / "stat"
+                    if stat.exists() and stat.read_text().split(")", 1)[1].split()[0] == "Z":
+                        stopped = True
+                        break
+                    time.sleep(0.02)
+                self.assertTrue(stopped, "Owned fixture PID still running: " + str(pid))
+
+    def test_nonzero_actual_command_remains_a_failure(self):
+        with self.assertRaisesRegex(RuntimeError, "returned 7"):
+            TRACE.run_step([sys.executable, "-c", "raise SystemExit(7)"], time.monotonic() + 10, 5)
+
+    def test_deadline_and_nix_literal(self):
+        with patch.object(TRACE.time, "monotonic", return_value=2), patch.object(TRACE.subprocess, "Popen") as run:
+            with self.assertRaises(TimeoutError):
+                TRACE.run_step(["nix", "build"], 1, 300)
+            run.assert_not_called()
+        self.assertEqual(TRACE.nix_string('path${value}\\"'), '"path\\${value}\\\\\\\""')
+
+
+if __name__ == "__main__":
+    unittest.main()

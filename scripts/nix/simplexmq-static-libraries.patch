@@ -1,0 +1,18 @@
+diff --git a/simplexmq.cabal b/simplexmq.cabal
+--- a/simplexmq.cabal
++++ b/simplexmq.cabal
+@@ -1,4 +1,4 @@
+-cabal-version: 3.0
++cabal-version: 3.8
+
+ name:           simplexmq
+ version:        7.1.0.11
+@@ -351,6 +351,8 @@
+       cbits/blst/build/assembly.S
+   extra-libraries:
+       crypto
++  extra-libraries-static:
++      crypto
+   if os(windows)
+     c-sources:
+         cbits/getentropy_win.c

@@ -9,7 +9,7 @@ function readlink() {
 OS=linux
 ARCH="$(uname -m)"
 DATABASE_BACKEND="${1:-sqlite}"
-GHC_VERSION=9.6.3
+GHC_VERSION=$(ghc --numeric-version)
 
 if [ "$ARCH" == "aarch64" ]; then
     COMPOSE_ARCH=arm64
@@ -22,9 +22,7 @@ cd $root_dir
 DIST_DIR="${DIST_DIR:-dist-newstyle}"
 BUILD_DIR=$DIST_DIR/build/$ARCH-$OS/ghc-${GHC_VERSION}/simplex-chat-*
 
-exports=( $(sed 's/foreign export ccall "chat_migrate_init_key"//' src/Simplex/Chat/Mobile.hs | sed 's/foreign export ccall "chat_reopen_store"//' |grep "foreign export ccall" | cut -d '"' -f2) )
-for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in libsimplex.dll.def. Add \"$elem\" to that file; exit 1; fi ; done
-for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 2 ]; then echo Wrong exports in flake.nix. Add \"$elem\" in two places of the file; exit 1; fi ; done
+scripts/desktop/check-exports.sh
 
 #rm -rf $BUILD_DIR
 if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
