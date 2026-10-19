@@ -43,7 +43,7 @@ import chat.simplex.common.views.chat.group.ChatTTLOption
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.newchat.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -791,8 +791,9 @@ fun ProfileDescriptionText(shortDescr: String?, description: String?, style: Tex
   val linkMode = chatModel.simplexLinkMode.value
   if (descr == null) {
     if (short != null) {
+      val parsed = parseToMarkdownText(short)
       MarkdownText(
-        short, parseToMarkdown(short), toggleSecrets = true, style = style, maxLines = 4,
+        short, parsed?.formattedText, parsed?.markdownBlocks, toggleSecrets = true, style = style, maxLines = 4,
         overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
       )
     }
@@ -801,8 +802,9 @@ fun ProfileDescriptionText(shortDescr: String?, description: String?, style: Tex
     val truncated = firstLine.length > 100
     val multiline = descr.length > firstLine.length
     if (short == null && !truncated && !multiline) {
+      val parsed = parseToMarkdownText(descr)
       MarkdownText(
-        descr, parseToMarkdown(descr), toggleSecrets = true, style = style, maxLines = 4,
+        descr, parsed?.formattedText, parsed?.markdownBlocks, toggleSecrets = true, style = style, maxLines = 4,
         overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
       )
     } else {

@@ -8,7 +8,7 @@ import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.security.KeyStore
 import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec
