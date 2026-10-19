@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="610" viewBox="0 0 980 610" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="The retirement window on a day scale after paidThrough: the first answer that renews nothing sets unrenewed_since and last_unrenewed_at; later such answers move last_unrenewed_at; the badge retires at the first answer 67 days after unrenewed_since. A gap of 67 days or more without such an answer starts a fresh run, a renewal clears the run, and requests that get no reply leave the run unchanged.">
+  <defs>
+    <marker id="w-tick" viewBox="0 0 2 10" refX="1" refY="5" markerWidth="2" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><rect width="2" height="10" fill="#5b6577"/></marker>
+  </defs>
+  <rect width="980" height="610" fill="#f7f8fb"/>
+
+  <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">The retirement window</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">Two columns, no timer: the rule runs in the badge worker's pass. Days are counted from paidThrough.</text>
+
+  <!-- legend -->
+  <g font-size="11" fill="#334155">
+    <circle cx="192" cy="78" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
+    <text x="204" y="82">a run starts: unrenewed_since</text>
+    <circle cx="404" cy="78" r="3.5" fill="#334155"/>
+    <text x="414" y="82">answer that renewed nothing</text>
+    <path d="M596,74 l8,8 m0,-8 l-8,8" stroke="#8a93a6" stroke-width="1.6"/>
+    <text x="610" y="82">no reply</text>
+    <path d="M676,72 l6,6 l-6,6 l-6,-6 z" fill="#13804a"/>
+    <text x="688" y="82">renewal</text>
+    <path d="M756,72 l6,6 l-6,6 l-6,-6 z" fill="#b3261e"/>
+    <text x="768" y="82">retired</text>
+  </g>
+
+  <!-- axis: x = 186 + (day + 6) * 4.6 -->
+  <text x="24" y="112" font-size="11" fill="#5b6577">days after paidThrough</text>
+  <line x1="186" y1="108" x2="950" y2="108" stroke="#8a93a6" stroke-width="1.2"/>
+  <g stroke="#8a93a6" stroke-width="1.2">
+    <line x1="213.6" y1="104" x2="213.6" y2="112"/>
+    <line x1="351.6" y1="104" x2="351.6" y2="112"/>
+    <line x1="489.6" y1="104" x2="489.6" y2="112"/>
+    <line x1="627.6" y1="104" x2="627.6" y2="112"/>
+    <line x1="765.6" y1="104" x2="765.6" y2="112"/>
+    <line x1="903.6" y1="104" x2="903.6" y2="112"/>
+  </g>
+  <g font-size="11" fill="#5b6577" text-anchor="middle">
+    <text x="213.6" y="100">0</text>
+    <text x="351.6" y="100">30</text>
+    <text x="489.6" y="100">60</text>
+    <text x="627.6" y="100">90</text>
+    <text x="765.6" y="100">120</text>
+    <text x="903.6" y="100">150</text>
+  </g>
+  <line x1="213.6" y1="112" x2="213.6" y2="500" stroke="#c9cfdb" stroke-width="1" stroke-dasharray="3 3"/>
+
+  <!-- row A -->
+  <rect x="24" y="124" width="932" height="88" rx="8" fill="#ffffff" stroke="#e1e5ec"/>
+  <text x="36" y="160" font-size="12" font-weight="600" fill="#1a2030">A persistent fault</text>
+  <text x="36" y="176" font-size="11" fill="#5b6577">every answer renews nothing</text>
+  <line x1="213.6" y1="168" x2="526.4" y2="168" stroke="#c9cfdb" stroke-width="1.2"/>
+  <circle cx="218.2" cy="168" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
+  <g fill="#334155">
+    <circle cx="250.4" cy="168" r="3.5"/><circle cx="282.6" cy="168" r="3.5"/><circle cx="314.8" cy="168" r="3.5"/>
+    <circle cx="347" cy="168" r="3.5"/><circle cx="379.2" cy="168" r="3.5"/><circle cx="411.4" cy="168" r="3.5"/>
+    <circle cx="443.6" cy="168" r="3.5"/><circle cx="475.8" cy="168" r="3.5"/><circle cx="508" cy="168" r="3.5"/>
+  </g>
+  <path d="M526.4,161 l7,7 l-7,7 l-7,-7 z" fill="#b3261e"/>
+  <text x="218.2" y="152" font-size="11.5" fill="#3a3fa6">T0 sets both columns</text>
+  <text x="540" y="172" font-size="11.5" fill="#b3261e">retired at the first answer ≥ T0 + 67 days,</text>
+  <text x="540" y="188" font-size="11.5" fill="#b3261e">alert subscription_ended</text>
+  <line x1="218.2" y1="186" x2="526.4" y2="186" stroke="#5b6577" stroke-width="1.2" marker-start="url(#w-tick)" marker-end="url(#w-tick)"/>
+  <text x="372" y="202" font-size="11" fill="#1a2030" text-anchor="middle">67 days = 60 (longest store recovery) + 7 (contacts' grace)</text>
+  <text x="372" y="152" font-size="11" fill="#5b6577">each answer moves last_unrenewed_at</text>
+
+  <!-- row B -->
+  <rect x="24" y="224" width="932" height="88" rx="8" fill="#ffffff" stroke="#e1e5ec"/>
+  <text x="36" y="260" font-size="12" font-weight="600" fill="#1a2030">Away longer than</text>
+  <text x="36" y="276" font-size="12" font-weight="600" fill="#1a2030">the window</text>
+  <circle cx="218.2" cy="268" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
+  <circle cx="250.4" cy="268" r="3.5" fill="#334155"/>
+  <circle cx="282.6" cy="268" r="3.5" fill="#334155"/>
+  <line x1="290" y1="268" x2="620" y2="268" stroke="#8a93a6" stroke-width="1.4" stroke-dasharray="6 5"/>
+  <text x="455" y="258" font-size="11.5" fill="#5b6577" text-anchor="middle">app not opened for 75 days</text>
+  <circle cx="627.6" cy="268" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
+  <text x="640" y="264" font-size="11.5" fill="#3a3fa6">fresh run: both columns = day 90</text>
+  <line x1="282.6" y1="286" x2="627.6" y2="286" stroke="#5b6577" stroke-width="1.2" marker-start="url(#w-tick)" marker-end="url(#w-tick)"/>
+  <text x="455" y="302" font-size="11" fill="#1a2030" text-anchor="middle">75 days ≥ 67 since last_unrenewed_at (day 15)</text>
+  <text x="640" y="302" font-size="11" fill="#5b6577">earliest retirement now day 157</text>
+
+  <!-- row C -->
+  <rect x="24" y="324" width="932" height="88" rx="8" fill="#ffffff" stroke="#e1e5ec"/>
+  <text x="36" y="360" font-size="12" font-weight="600" fill="#1a2030">A renewal ends</text>
+  <text x="36" y="376" font-size="12" font-weight="600" fill="#1a2030">the run</text>
+  <circle cx="218.2" cy="368" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
+  <g fill="#334155">
+    <circle cx="250.4" cy="368" r="3.5"/><circle cx="282.6" cy="368" r="3.5"/><circle cx="314.8" cy="368" r="3.5"/>
+  </g>
+  <path d="M328.6,361 l7,7 l-7,7 l-7,-7 z" fill="#13804a"/>
+  <text x="340" y="356" font-size="11.5" fill="#13804a">renewal: the ledger covers now, both columns cleared</text>
+  <circle cx="471.2" cy="368" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
+  <circle cx="503.4" cy="368" r="3.5" fill="#334155"/>
+  <circle cx="535.6" cy="368" r="3.5" fill="#334155"/>
+  <text x="471.2" y="396" font-size="11.5" fill="#1a2030">past the new paidThrough, the next unrenewed answer starts a new run</text>
+
+  <!-- row D -->
+  <rect x="24" y="424" width="932" height="88" rx="8" fill="#ffffff" stroke="#e1e5ec"/>
+  <text x="36" y="460" font-size="12" font-weight="600" fill="#1a2030">The service</text>
+  <text x="36" y="476" font-size="12" font-weight="600" fill="#1a2030">never replies</text>
+  <circle cx="218.2" cy="468" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
+  <g stroke="#8a93a6" stroke-width="1.6">
+    <path d="M246.4,464 l8,8 m0,-8 l-8,8"/><path d="M283.2,464 l8,8 m0,-8 l-8,8"/><path d="M320,464 l8,8 m0,-8 l-8,8"/>
+    <path d="M356.8,464 l8,8 m0,-8 l-8,8"/><path d="M393.6,464 l8,8 m0,-8 l-8,8"/><path d="M430.4,464 l8,8 m0,-8 l-8,8"/>
+    <path d="M467.2,464 l8,8 m0,-8 l-8,8"/><path d="M504,464 l8,8 m0,-8 l-8,8"/><path d="M540.8,464 l8,8 m0,-8 l-8,8"/>
+    <path d="M577.6,464 l8,8 m0,-8 l-8,8"/><path d="M614.4,464 l8,8 m0,-8 l-8,8"/><path d="M651.2,464 l8,8 m0,-8 l-8,8"/>
+    <path d="M688,464 l8,8 m0,-8 l-8,8"/><path d="M724.8,464 l8,8 m0,-8 l-8,8"/><path d="M761.6,464 l8,8 m0,-8 l-8,8"/>
+  </g>
+  <circle cx="811.6" cy="468" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
+  <text x="250" y="452" font-size="11.5" fill="#5b6577">no reply: the run unchanged, nothing retired</text>
+  <text x="218.2" y="496" font-size="11.5" fill="#1a2030">a service that never replies keeps the badge</text>
+  <text x="826" y="472" font-size="11.5" fill="#3a3fa6">next answer:</text>
+  <text x="826" y="488" font-size="11.5" fill="#3a3fa6">fresh run</text>
+
+  <!-- the rule -->
+  <rect x="24" y="524" width="932" height="74" rx="8" fill="#eef1f5"/>
+  <g font-size="11.5" fill="#1a2030">
+    <text x="40" y="545">Library/Commands.hs:5700-5712. On any pass after which the ledger covers now, the run is cleared. After an answered request</text>
+    <text x="40" y="562">that left nothing covered, last_unrenewed_at moves to now if it is under 67 days old, and otherwise a fresh run starts.</text>
+    <text x="40" y="579">Retire if the answer is ended, or 67 days have passed since unrenewed_since. Dots are illustrative: an open app asks daily.</text>
+  </g>
+</svg>
