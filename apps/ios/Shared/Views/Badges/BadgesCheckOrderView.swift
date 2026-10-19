@@ -17,6 +17,7 @@ struct BadgesCheckOrderView: View {
     let level: BadgeLevel
     let period: BadgePeriod
     @State private var purchasing = false
+    @State private var privacyPolicyActive = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
     @State private var alert: SomeAlert?
 
@@ -65,7 +66,19 @@ struct BadgesCheckOrderView: View {
                         BadgeBillingFooter(period: period)
                         HStack(spacing: 20) {
                             Link("Terms of use", destination: appleStandardEULAURL)
-                            Link("Privacy policy", destination: conditionsURL)
+                            ZStack {
+                                Button("Privacy policy") { privacyPolicyActive = true }
+                                NavigationLink(isActive: $privacyPolicyActive) {
+                                    ConditionsTextView()
+                                        .padding(.horizontal, 25)
+                                        .navigationTitle("Privacy policy")
+                                        .modifier(ThemedBackground())
+                                } label: {
+                                    EmptyView()
+                                }
+                                .frame(width: 1, height: 1)
+                                .hidden()
+                            }
                         }
                         .font(.footnote)
                     }

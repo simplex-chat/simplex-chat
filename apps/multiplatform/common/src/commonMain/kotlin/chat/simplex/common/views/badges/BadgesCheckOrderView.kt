@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -19,7 +18,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
-import chat.simplex.common.views.usersettings.networkAndServers.defaultConditionsLink
+import chat.simplex.common.views.usersettings.networkAndServers.ConditionsTextView
 import chat.simplex.res.*
 
 @Composable
@@ -72,13 +71,22 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, period, purchasing)
       BadgeBillingFooter(period)
-      val uriHandler = LocalUriHandler.current
       Text(
         stringResource(MR.strings.badges_privacy_policy),
-        Modifier.clickable { uriHandler.openUriCatching(defaultConditionsLink) },
+        Modifier.clickable { modalManager.showModal { BadgeConditionsView() } },
         style = MaterialTheme.typography.body2,
         color = MaterialTheme.colors.primary
       )
+    }
+  }
+}
+
+@Composable
+private fun BadgeConditionsView() {
+  ColumnWithScrollBar(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+    AppBarTitle(stringResource(MR.strings.badges_privacy_policy), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
+    Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+      ConditionsTextView(chatModel.remoteHostId())
     }
   }
 }
