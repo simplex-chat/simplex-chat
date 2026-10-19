@@ -7,18 +7,15 @@
 
 module Directory.Store.Migrate where
 
-import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Except
 import qualified Data.ByteString.Char8 as B
 import Data.List (find)
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import Directory.Listing
 import Directory.Options
 import Directory.Store
 import Simplex.Chat (createChatDatabase)
-import Simplex.Chat.Controller (ChatConfig (..), ChatDatabase (..), mkStoreCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatDatabase (..))
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Store.Groups (getHostMember)
@@ -30,11 +27,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, migrateDBSchema)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import Simplex.Messaging.Encoding.String
-import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (whenM)
-import System.Directory (doesFileExist, renamePath)
 import System.Exit (exitFailure)
-import System.IO (IOMode (..), withFile)
 
 #if defined(dbPostgres)
 import Directory.Store.Postgres.Migrations
@@ -55,65 +48,8 @@ runDirectoryMigrations opts ChatConfig {confirmMigrations} chatStore =
     DirectoryOpts {coreOptions = CoreChatOpts {dbOptions, yesToUpMigrations}} = opts
     confirm = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
 
-checkDirectoryLog :: DirectoryOpts -> ChatConfig -> IO ()
-checkDirectoryLog opts cfg =
-  withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
-    runDirectoryMigrations opts cfg st
-    gs <- readDirectoryLogData logFile
-    withActiveUser st $ \user -> withTransaction st $ \db -> do
-      mapM_ (verifyGroupRegistration (mkStoreCxt cfg) db user) gs
-    putStrLn $ show (length gs) <> " group registrations OK"
-
-importDirectoryLogToDB :: DirectoryOpts -> ChatConfig -> IO ()
-importDirectoryLogToDB opts cfg = do
-  withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
-    runDirectoryMigrations opts cfg st
-    gs <- readDirectoryLogData logFile
-    ctRegs <- TM.emptyIO
-    withActiveUser st $ \user -> withTransaction st $ \db -> do
-      forM_ gs $ \gr ->
-        whenM (verifyGroupRegistration (mkStoreCxt cfg) db user gr) $ do
-          putStrLn $ "importing group " <> show (dbGroupId gr)
-          insertGroupReg db =<< fixUserGroupRegId ctRegs gr
-      renamePath logFile (logFile ++ ".bak")
-    putStrLn $ show (length gs) <> " group registrations imported"
-  where
-    fixUserGroupRegId ctRegs gr@GroupReg {dbGroupId, dbContactId} = do
-      ugIds <- fromMaybe [] <$> TM.lookupIO dbContactId ctRegs
-      gr' <-
-        if userGroupRegId gr `elem` ugIds
-          then do
-            let ugId = maximum ugIds + 1
-            putStrLn $ "Warning: updating userGroupRegId for group " <> show dbGroupId <> ", contact " <> show dbContactId
-            pure gr {userGroupRegId = ugId}
-          else pure gr
-      atomically $ TM.insert dbContactId (userGroupRegId gr' : ugIds) ctRegs
-      pure gr'
-
 exit :: String -> IO a
 exit err = putStrLn ("Error: " <> err) >> exitFailure
-
-exportDBToDirectoryLog :: DirectoryOpts -> ChatConfig -> IO ()
-exportDBToDirectoryLog opts cfg =
-  withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
-    whenM (doesFileExist logFile) $ exit $ "directory log file " ++ logFile ++ " already exists"
-    runDirectoryMigrations opts cfg st
-    withActiveUser st $ \user -> do
-      gs <- withFile logFile WriteMode $ \h -> withTransaction st $ \db -> do
-        gs <- getAllGroupRegs_ db (mkStoreCxt cfg) user
-        forM_ gs $ \(_, gr) ->
-          whenM (verifyGroupRegistration (mkStoreCxt cfg) db user gr) $
-            B.hPutStrLn h $ strEncode $ GRCreate gr
-        pure gs
-      putStrLn $ show (length gs) <> " group registrations exported"
-
-saveGroupListingFiles :: DirectoryOpts -> ChatConfig -> IO ()
-saveGroupListingFiles opts cfg = case webFolder opts of
-  Nothing -> exit "use --web-folder to generate listings"
-  Just dir ->
-    withChatStore opts $ \st -> withActiveUser st $ \user ->
-      withTransaction st $ \db ->
-        getAllListedGroups_ db (mkStoreCxt cfg) user >>= generateListing dir
 
 verifyGroupRegistration :: StoreCxt -> DB.Connection -> User -> GroupReg -> IO Bool
 verifyGroupRegistration cxt db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId, groupRegStatus} =
@@ -128,10 +64,6 @@ verifyGroupRegistration cxt db user GroupReg {dbGroupId = gId, dbContactId = ctI
           Just mId
             | mId /= mId' -> False <$ putStrLn ("Error: different host member ID of " <> groupRef <> " (skipping): " <> show mId')
             | otherwise -> True <$ unless (Just ctId == ctId') (putStrLn $ "Warning: bad group " <> groupRef <> " contact ID: " <> show ctId')
-
-withDirectoryLog :: DirectoryOpts -> (FilePath -> IO ()) -> IO ()
-withDirectoryLog DirectoryOpts {directoryLog} action =
-  maybe (exit "directory log file not specified") action directoryLog
 
 withChatStore :: DirectoryOpts -> (DBStore -> IO ()) -> IO ()
 withChatStore DirectoryOpts {coreOptions = CoreChatOpts {dbOptions, yesToUpMigrations, migrationBackupPath}} action =

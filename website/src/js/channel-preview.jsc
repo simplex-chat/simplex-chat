@@ -23,6 +23,9 @@ const STYLE = `
   --sp-color-white: #000;
   --sp-qr-fg: #062D56;
   --sp-qr-bg: #ffffff;
+  --sp-md-line: rgba(139, 135, 134, 0.35);
+  --sp-md-bar: rgba(0, 0, 0, 0.16);
+  --sp-md-stripe: rgba(139, 135, 134, 0.08);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 15px;
   line-height: 1.4;
@@ -58,6 +61,9 @@ const STYLE = `
   --sp-color-white: #fff;
   --sp-qr-fg: #FFFBFA;
   --sp-qr-bg: transparent;
+  --sp-md-line: rgba(139, 135, 134, 0.45);
+  --sp-md-bar: rgba(255, 255, 255, 0.22);
+  --sp-md-stripe: rgba(139, 135, 134, 0.12);
 }
 
 .simplex-preview-header {
@@ -497,6 +503,44 @@ const STYLE = `
 .simplex-preview-text .black { color: var(--sp-color-black); }
 .simplex-preview-text .white { color: var(--sp-color-white); }
 
+.simplex-preview-msg-col {
+  min-width: 0;
+}
+
+.simplex-preview-text .md-gap { height: 0.7em; }
+.simplex-preview-text .md-h1 { font-size: 1.5em; line-height: 1.3; font-weight: 700; }
+.simplex-preview-text .md-h2 { font-size: 1.3em; line-height: 1.3; font-weight: 700; }
+.simplex-preview-text .md-h3 { font-size: 1.15em; line-height: 1.3; font-weight: 700; }
+.simplex-preview-text .md-h4 { font-weight: 700; }
+.simplex-preview-text .md-entry { display: flex; gap: 6px; }
+.simplex-preview-text .md-mark { flex: none; min-width: 1.1em; }
+.simplex-preview-text .md-text { flex: 1; min-width: 0; }
+.simplex-preview-text .md-quote { display: flex; gap: 10px; }
+.simplex-preview-text .md-bar { flex: none; width: 4px; border-radius: 2px; background: var(--sp-md-bar); }
+.simplex-preview-text .md-quote > .md-text { opacity: 0.7; }
+.simplex-preview-text .md-code { position: relative; background: var(--sp-quote); border-radius: 10px; overflow: hidden; }
+.simplex-preview-text .md-code pre { margin: 0; padding: 8px 12px; overflow-x: auto; white-space: pre; font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.875em; line-height: 1.45; }
+.simplex-preview-text .md-copy { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 7px; background: var(--sp-quote); color: var(--sp-link); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+.simplex-preview-text .md-code:hover .md-copy,
+.simplex-preview-text .md-code.tapped .md-copy,
+.simplex-preview-text .md-copy:focus-visible { opacity: 1; pointer-events: auto; }
+.simplex-preview-text .md-copy svg { width: 18px; height: 18px; }
+.simplex-preview-text .md-icon-done,
+.simplex-preview-text .md-copy.copied .md-icon-copy { display: none; }
+.simplex-preview-text .md-copy.copied .md-icon-done { display: block; }
+.simplex-preview-text .md-table { overflow-x: auto; }
+.simplex-preview-text .md-frame { display: inline-block; vertical-align: top; border: 1px solid var(--sp-md-line); border-radius: 10px; overflow: hidden; }
+.simplex-preview-text .md-frame table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.simplex-preview-text .md-frame th,
+.simplex-preview-text .md-frame td { padding: 4px 12px; white-space: nowrap; border-right: 1px solid var(--sp-md-line); border-bottom: 1px solid var(--sp-md-line); }
+.simplex-preview-text .md-frame th:last-child,
+.simplex-preview-text .md-frame td:last-child { border-right: 0; }
+.simplex-preview-text .md-frame tr:last-child th,
+.simplex-preview-text .md-frame tr:last-child td { border-bottom: 0; }
+.simplex-preview-text .md-frame th { font-weight: 700; background: var(--sp-quote); }
+.simplex-preview-text .md-frame tr:nth-child(odd) td { background: var(--sp-md-stripe); }
+.simplex-preview-text .md-rule { border: 0; border-top: 1px solid var(--sp-md-line); margin: 6px 0; }
+
 .simplex-preview-main {
   flex: 1;
   min-width: 0;
@@ -745,8 +789,17 @@ const DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="h
 
 const IMAGE_PLACEHOLDER_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`;
 
+// image/jpg is not a registered MIME type, but SimpleX apps and core use it for JPEG images.
+const DATA_IMAGE_PREFIXES = [
+  'data:image/jpg;base64,',
+  'data:image/jpeg;base64,',
+  'data:image/png;base64,',
+  'data:image/gif;base64,',
+  'data:image/webp;base64,',
+];
+
 function isDataImage(src) {
-  return typeof src === 'string' && src.startsWith('data:image/');
+  return typeof src === 'string' && DATA_IMAGE_PREFIXES.some(prefix => src.startsWith(prefix));
 }
 
 function tailSvg() {
@@ -876,6 +929,7 @@ function render(container, data, channelLink, showAppBadges) {
       ts: messages.length > 0 ? messages[0].ts : new Date().toISOString(),
       content: { type: 'text', text: typeof welcome === 'string' ? welcome : '' },
       formattedText: Array.isArray(welcome) ? welcome : null,
+      markdownBlocks: data.welcomeMessageBlocks,
       reactions: []
     };
     allMessages = [welcomeMsg].concat(messages);
@@ -978,7 +1032,7 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
   if (shortDescr) {
     const descrDiv = document.createElement('div');
     descrDiv.className = 'simplex-preview-info-descr';
-    descrDiv.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr) : escapeHtml(shortDescr);
+    descrDiv.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr, data.shortDescriptionBlocks) : escapeHtml(shortDescr);
     container.appendChild(descrDiv);
   }
 
@@ -1028,11 +1082,11 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
   }
 }
 
-var BADGE_APPLE = '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>';
-var BADGE_GOOGLE = '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>';
-var BADGE_FDROID = '<a href="https://simplex.chat/fdroid" target="_blank"><img src="https://simplex.chat/img/new/f_droid.svg" alt="F-Droid"></a>';
-var BADGE_APK = '<a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img src="https://simplex.chat/img/design_3/android-dark.png" alt="APK Download"></a>';
-var BADGE_TESTFLIGHT = '<a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img src="https://simplex.chat/img/design_3/testflight-dark.png" alt="TestFlight"></a>';
+var BADGE_APPLE = '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank" rel="noopener"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>';
+var BADGE_GOOGLE = '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" rel="noopener"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>';
+var BADGE_FDROID = '<a href="https://simplex.chat/fdroid" target="_blank" rel="noopener"><img src="https://simplex.chat/img/new/f_droid.svg" alt="F-Droid"></a>';
+var BADGE_APK = '<a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank" rel="noopener"><img src="https://simplex.chat/img/design_3/android-dark.png" alt="APK Download"></a>';
+var BADGE_TESTFLIGHT = '<a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank" rel="noopener"><img src="https://simplex.chat/img/design_3/testflight-dark.png" alt="TestFlight"></a>';
 
 function renderAppBadges(container) {
   const title = document.createElement('p');
@@ -1057,25 +1111,6 @@ function qrColor(value, fallback) {
   value = (value || '').trim();
   if (!value) return fallback;
   return value === 'transparent' ? '#0000' : value;
-}
-
-// navigator.clipboard is undefined outside secure contexts; fall back to execCommand
-function copyToClipboard(text) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    return navigator.clipboard.writeText(text);
-  }
-  return new Promise(function(resolve, reject) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.top = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch (e) {}
-    document.body.removeChild(ta);
-    ok ? resolve() : reject(new Error('copy failed'));
-  });
 }
 
 function renderDesktopConversion(container, channelLink, showAppBadges) {
@@ -1181,6 +1216,7 @@ function setupSecretToggles(container) {
   container.addEventListener('click', (e) => {
     const secret = e.target.closest('.secret');
     if (secret) secret.classList.toggle('visible');
+    handleCodeClick(e);
   });
 }
 
@@ -1237,6 +1273,7 @@ function renderMessages(container, messages, membersMap, channel) {
     }
 
     const col = document.createElement('div');
+    col.className = 'simplex-preview-msg-col';
     const bubble = renderBubble(msg, member, showTail, membersMap, channel);
     col.appendChild(bubble);
 
@@ -1510,7 +1547,7 @@ function appendTextBlock(bubble, msg) {
   textDiv.className = 'simplex-preview-text';
   const meta = renderMetaHTML(msg);
   if (msg.formattedText && msg.formattedText.length > 0) {
-    textDiv.innerHTML = renderMarkdown(msg.formattedText) + meta;
+    textDiv.innerHTML = renderMarkdown(msg.formattedText, msg.markdownBlocks) + meta;
   } else {
     textDiv.innerHTML = escapeHtml(msg.content.text || '') + meta;
   }

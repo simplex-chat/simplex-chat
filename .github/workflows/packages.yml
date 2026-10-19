@@ -1,0 +1,74 @@
+name: packages
+
+on:
+  pull_request:
+    paths:
+      - "packages/simplex-chat-nodejs/**"
+      - "packages/simplex-chat-client/types/typescript/**"
+      - "packages/simplex-chat-python/**"
+      - ".github/workflows/packages.yml"
+
+concurrency:
+  # build.yml and this workflow both run for a pull request that changes the core and the packages
+  group: ${{ github.workflow }}-packages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NPM_SCOPE: ${{ vars.NPM_SCOPE }}
+  PYPI_PROJECT: ${{ vars.PYPI_PROJECT }}
+  PYPI_URL: ${{ vars.PYPI_URL }}
+
+jobs:
+  addon:
+    runs-on: ubuntu-latest
+    outputs:
+      platforms: ${{ steps.plan.outputs.platforms }}
+      test: ${{ steps.plan.outputs.test }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Build plan
+        id: plan
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch -q --depth=1 origin "$BASE"
+          python3 scripts/ci/packages_release.py build-plan --base "$BASE" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: "build ${{ matrix.platform }}"
+    needs: addon
+    if: needs.addon.outputs.platforms != '[]'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.addon.outputs.platforms) }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Build simplex-chat (npm) and add-on
+        run: scripts/ci/package-tests.sh build ${{ matrix.platform }}
+
+      - name: Test simplex-chat (npm and PyPI)
+        if: needs.addon.outputs.test
+        run: scripts/ci/package-tests.sh test

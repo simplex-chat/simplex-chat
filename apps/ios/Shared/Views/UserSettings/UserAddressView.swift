@@ -139,7 +139,7 @@ struct UserAddressView: View {
                     title: Text("Share address with SimpleX contacts?"),
                     message: Text("Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts."),
                     primaryButton: .default(Text("Share")) {
-                        setProfileAddress($progressIndicator, true)
+                        setProfileAddress($progressIndicator, true) { shareViaProfile = false }
                         shareViaProfile = true
                     }, secondaryButton: .cancel()
                 )
@@ -318,7 +318,7 @@ struct UserAddressView: View {
                             alert = .shareOnCreate
                             progressIndicator = false
                         } else {
-                            setProfileAddress($progressIndicator, true)
+                            setProfileAddress($progressIndicator, true) { shareViaProfile = false }
                             shareViaProfile = true
                         }
                     } else {
@@ -601,7 +601,7 @@ struct AddressSettingsState: Equatable {
     }
 }
 
-private func setProfileAddress(_ progressIndicator: Binding<Bool>, _ on: Bool) {
+private func setProfileAddress(_ progressIndicator: Binding<Bool>, _ on: Bool, revert: @escaping () -> Void) {
     progressIndicator.wrappedValue = true
     Task {
         do {
@@ -613,7 +613,11 @@ private func setProfileAddress(_ progressIndicator: Binding<Bool>, _ on: Bool) {
             await MainActor.run { progressIndicator.wrappedValue = false }
         } catch let error {
             logger.error("apiSetProfileAddress: \(responseError(error))")
-            await MainActor.run { progressIndicator.wrappedValue = false }
+            await MainActor.run {
+                progressIndicator.wrappedValue = false
+                revert()
+                showErrorAlert(error, NSLocalizedString("Error saving profile", comment: "alert title"))
+            }
         }
     }
 }
@@ -709,7 +713,10 @@ struct UserAddressSettingsView: View {
                                         title: NSLocalizedString("Share", comment: "alert action"),
                                         style: .default,
                                         handler: { _ in
-                                            setProfileAddress($progressIndicator, on)
+                                            setProfileAddress($progressIndicator, on) {
+                                                ignoreShareViaProfileChange = true
+                                                shareViaProfile = !on
+                                            }
                                         }
                                     )
                                 ]}
@@ -731,7 +738,10 @@ struct UserAddressSettingsView: View {
                                         title: NSLocalizedString("Stop sharing", comment: "alert action"),
                                         style: .default,
                                         handler: { _ in
-                                            setProfileAddress($progressIndicator, on)
+                                            setProfileAddress($progressIndicator, on) {
+                                                ignoreShareViaProfileChange = true
+                                                shareViaProfile = !on
+                                            }
                                         }
                                     )
                                 ]}
@@ -802,6 +812,8 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
     }
 }
 
+private let simplexNameSaleStart = Calendar(identifier: .gregorian).date(from: DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 2026, month: 12, day: 12, hour: 18))!
+
 struct SetSimplexDomainView: View {
     let title: LocalizedStringKey
     let footer: LocalizedStringKey
@@ -815,6 +827,8 @@ struct SetSimplexDomainView: View {
     @State private var original = ""
     @State private var didSave = false
     @State private var editing = false
+    @State private var timeToSaleStart = simplexNameSaleStart.timeIntervalSinceNow
+    @State private var saleTimer: Timer? = nil
     @FocusState private var nameFocused: Bool
 
     init(title: LocalizedStringKey, footer: LocalizedStringKey, prompt: String, simplexName: String, broadcastWarning: String? = nil, save: @escaping (String?) async -> Bool) {
@@ -873,7 +887,7 @@ struct SetSimplexDomainView: View {
             Section {
                 if editing {
                     Button {
-                        openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
+                        openBrowserAlert(uri: "https://simplex.domains/#testing")
                     } label: {
                         HStack {
                             Text("How to register a test name")
@@ -901,15 +915,39 @@ struct SetSimplexDomainView: View {
                     }
                 }
             }
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(verbatim: saleCountdown(timeToSaleStart))
+                    Text(timeToSaleStart > 0 ? "until you can register a SimpleX domain" : "Update the app to register a SimpleX domain")
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                }
+            } header: {
+                Text("SimpleX name sale starts in")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                Text("Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)")
+                    .foregroundColor(theme.colors.secondary)
+                    .padding(.bottom)
+            }
         }
+        .modifier(ThemedBackground(grouped: true))
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
         .onAppear {
             if editing {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { nameFocused = true }
             }
+            if timeToSaleStart > 0 {
+                saleTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { t in
+                    timeToSaleStart = simplexNameSaleStart.timeIntervalSinceNow
+                    if timeToSaleStart <= 0 { t.invalidate() }
+                }
+            }
         }
         .onDisappear {
+            saleTimer?.invalidate()
+            saleTimer = nil
             if !didSave, !saving, changed, isValid {
                 let domain = normalized(simplexName)
                 let saveName = save
@@ -946,6 +984,21 @@ struct SetSimplexDomainView: View {
         return t.isEmpty
                 ? nil
                 : addSimplexTLD((t.hasPrefix("@") || t.hasPrefix("#") ? String(t.dropFirst()) : t).lowercased())
+    }
+
+    private func saleCountdown(_ remaining: TimeInterval) -> String {
+        let total = max(0, Int(remaining))
+        let days = total / 86400
+        let dayStr = String.localizedStringWithFormat(
+            days == 1
+                ? NSLocalizedString("%d day", comment: "time interval")
+                : NSLocalizedString("%d days", comment: "time interval"),
+            days
+        )
+        return dayStr + " " + String.localizedStringWithFormat(
+            NSLocalizedString("%02d hrs %02d min %02d sec", comment: "countdown"),
+            total / 3600 % 24, total / 60 % 60, total % 60
+        )
     }
 
     private func addSimplexTLD(_ d: String) -> String {

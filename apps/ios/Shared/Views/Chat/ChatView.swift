@@ -780,7 +780,7 @@ struct ChatView: View {
             }
             updateAvailableContent()
         }
-        if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
+        if chatModel.draftChatId == draftChatId(cInfo.id, cInfo.groupChatScope()) && !composeState.forwarding,
            let draft = chatModel.draft {
             composeState = draft
         }
@@ -1719,6 +1719,7 @@ struct ChatView: View {
         @State private var showArchivingReports = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
+        @State private var chatItemInfoItem: ChatItem?
         @State private var msgWidth: CGFloat = 0
         @State private var touchInProgress: Bool = false
 
@@ -1734,6 +1735,7 @@ struct ChatView: View {
         @State private var markReadTask: Task<Void, Never>? = nil
         @State private var actionSheet: SomeActionSheet? = nil
         @State private var swipeOffset: CGFloat = 0
+        @State private var swipeExclusionFrames: [CGRect] = []
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
@@ -1967,7 +1969,7 @@ struct ChatView: View {
                                     .padding(.trailing, 12)
                             }
                             HStack(alignment: .top, spacing: 10) {
-                                ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                                     .simultaneousGesture(TapGesture().onEnded {
                                         showChatInfoSheet = true
                                     })
@@ -2051,7 +2053,7 @@ struct ChatView: View {
                             }
                             HStack(alignment: .top, spacing: 10) {
                                 if ci.meta.showGroupAsSender {
-                                    ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                    ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                                         .simultaneousGesture(TapGesture().onEnded {
                                             showChatInfoSheet = true
                                         })
@@ -2155,12 +2157,14 @@ struct ChatView: View {
                             .padding(.bottom, 4)
                     }
                 }
+                .coordinateSpace(name: swipeExclusionSpace)
+                .onPreferenceChange(SwipeExclusionFrames.self) { swipeExclusionFrames = $0 }
                 .offset(x: swipeOffset)
                 .contentShape(Rectangle())
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 10)
+                    DragGesture(minimumDistance: 10, coordinateSpace: .named(swipeExclusionSpace))
                         .onChanged { value in
-                            guard canReply else { return }
+                            guard canReply, !swipeExclusionFrames.contains(where: { $0.contains(value.startLocation) }) else { return }
                             let x = value.translation.width
                             if x < 0 {
                                 swipeOffset = max(x * 0.63, -56)
@@ -2230,8 +2234,9 @@ struct ChatView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
+                    chatItemInfoItem = nil
                 }) {
-                    ChatItemInfoView(ci: ci, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, chatItemInfo: $chatItemInfo)
+                    ChatItemInfoView(ci: chatItemInfoItem ?? ci, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, chatItemInfo: $chatItemInfo)
                 }
         }
 
@@ -2320,7 +2325,7 @@ struct ChatView: View {
                     } else {
                         saveButton(file: fileSource)
                     }
-                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file, ciSenderProfile(ci, chat.chatInfo)) {
+                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
                     downloadButton(file: file)
                 }
                 if ci.meta.editable && !mc.isVoice && !live {
@@ -2574,8 +2579,9 @@ struct ChatView: View {
                 Task {
                     do {
                         let cInfo = chat.chatInfo
-                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
+                        let (aci, ciInfo) = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
                         await MainActor.run {
+                            chatItemInfoItem = aci.chatItem
                             chatItemInfo = ciInfo
                         }
                         if case let .group(gInfo, _) = chat.chatInfo {

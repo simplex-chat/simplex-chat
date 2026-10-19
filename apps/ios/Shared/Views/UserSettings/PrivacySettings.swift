@@ -37,6 +37,8 @@ struct PrivacySettings: View {
     @State private var groupReceiptsDialogue = false
     @State private var autoAcceptMemberContacts = false
     @State private var autoAcceptMemberContactsReset = false
+    @State private var autoAcceptGroupInvitations = false
+    @State private var autoAcceptGroupInvitationsReset = false
     @State private var alert: PrivacySettingsViewAlert?
 
     enum PrivacySettingsViewAlert: Identifiable {
@@ -117,14 +119,17 @@ struct PrivacySettings: View {
                 }
 
                 Section {
-                    settingsRow("checkmark", color: theme.colors.secondary) {
-                        Toggle("Auto-accept", isOn: $autoAcceptMemberContacts)
+                    settingsRow("person", color: theme.colors.secondary) {
+                        Toggle("Contact requests in groups", isOn: $autoAcceptMemberContacts)
+                    }
+                    settingsRow("person.2", color: theme.colors.secondary) {
+                        Toggle("Group invitations", isOn: $autoAcceptGroupInvitations)
                     }
                 } header: {
-                    Text("Contact requests from groups")
+                    Text("Auto-accept")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    Text("This setting is for your current profile **\(m.currentUser?.displayName ?? "")**.")
+                    Text("These settings are for your current profile **\(m.currentUser?.displayName ?? "")**.")
                         .foregroundColor(theme.colors.secondary)
                 }
 
@@ -139,7 +144,14 @@ struct PrivacySettings: View {
             if autoAcceptMemberContactsReset {
                 autoAcceptMemberContactsReset = false
             } else {
-                setAutoAcceptGrpDirectInvs(autoAcceptMemberContacts)
+                setAutoAcceptMemberContacts(autoAcceptMemberContacts)
+            }
+        }
+        .onChange(of: autoAcceptGroupInvitations) { _ in
+            if autoAcceptGroupInvitationsReset {
+                autoAcceptGroupInvitationsReset = false
+            } else {
+                setAutoAcceptGroupInvitations(autoAcceptGroupInvitations)
             }
         }
         .onAppear {
@@ -147,6 +159,10 @@ struct PrivacySettings: View {
                 if autoAcceptMemberContacts != u.autoAcceptMemberContacts {
                     autoAcceptMemberContactsReset = true
                     autoAcceptMemberContacts = u.autoAcceptMemberContacts
+                }
+                if autoAcceptGroupInvitations != u.autoAcceptGroupInvitations {
+                    autoAcceptGroupInvitationsReset = true
+                    autoAcceptGroupInvitations = u.autoAcceptGroupInvitations
                 }
             }
         }
@@ -426,7 +442,7 @@ struct PrivacySettings: View {
         }
     }
 
-    private func setAutoAcceptGrpDirectInvs(_ enable: Bool) {
+    private func setAutoAcceptMemberContacts(_ enable: Bool) {
         Task {
             do {
                 if let currentUser = m.currentUser {
@@ -434,6 +450,23 @@ struct PrivacySettings: View {
                     await MainActor.run {
                         var updatedUser = currentUser
                         updatedUser.autoAcceptMemberContacts = enable
+                        m.updateUser(updatedUser)
+                    }
+                }
+            } catch let error {
+                alert = .error(title: "Error setting auto-accept", error: "Error: \(responseError(error))")
+            }
+        }
+    }
+
+    private func setAutoAcceptGroupInvitations(_ enable: Bool) {
+        Task {
+            do {
+                if let currentUser = m.currentUser {
+                    try await apiSetUserAutoAcceptGroupInvitations(currentUser.userId, enable: enable)
+                    await MainActor.run {
+                        var updatedUser = currentUser
+                        updatedUser.autoAcceptGroupInvitations = enable
                         m.updateUser(updatedUser)
                     }
                 }

@@ -148,8 +148,6 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
             )
           }
           .fillMaxSize()
-        // LALAL
-        // https://github.com/JetBrains/compose-multiplatform/pull/2015/files#diff-841b3825c504584012e1d1c834d731bae794cce6acad425d81847c8bbbf239e0R24
         if (media is ProviderMedia.Image) {
           val (data: ByteArray, imageBitmap: ImageBitmap) = media
           FullScreenImageView(modifier, data, imageBitmap)

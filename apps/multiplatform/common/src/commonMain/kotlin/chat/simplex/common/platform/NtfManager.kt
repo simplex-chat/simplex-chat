@@ -1,12 +1,13 @@
 package chat.simplex.common.platform
 
+import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
@@ -49,11 +50,21 @@ abstract class NtfManager {
   }
 
   fun acceptContactRequestAction(userId: Long?, incognito: Boolean, chatId: ChatId) {
-    val isCurrentUser = ChatModel.currentUser.value?.userId == userId
     val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-    // TODO include remote host in notification
-    acceptContactRequest(null, incognito, apiId, isCurrentUser, ChatModel)
-    cancelNotificationsForChat(chatId)
+    withLongRunningApi {
+      awaitChatStartedIfNeeded(chatModel)
+      // switching to the user the request was sent to, so that accepted contact is shown
+      if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
+        chatModel.clearOverlays.value = true
+      }
+      val isCurrentUser = chatModel.currentUser.value?.userId == userId
+      // TODO include remote host in notification
+      acceptContactRequest(null, incognito, apiId, isCurrentUser, chatModel)
+      cancelNotificationsForChat(chatId)
+    }
   }
 
   fun openChatAction(userId: Long?, chatId: ChatId) {
@@ -86,6 +97,7 @@ abstract class NtfManager {
   }
 
   fun acceptCallAction(chatId: ChatId) {
+    AppLock.recheckAuthState()
     chatModel.clearOverlays.value = true
     val invitation = chatModel.callInvitations[chatId]
     if (invitation == null) {
@@ -124,7 +136,12 @@ abstract class NtfManager {
     return if (md != null) {
       var res = ""
       for (ft in md) {
-        res += if (ft.format is Format.Secret) "..." else ft.text
+        res += when (ft.format) {
+          is Format.Secret -> "..."
+          is Format.Markup -> ft.format.token.previewText
+          is Format.Escape -> ""
+          else -> ft.text
+        }
       }
       res
     } else {

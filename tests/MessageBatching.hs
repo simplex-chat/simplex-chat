@@ -33,6 +33,8 @@ import Simplex.Chat.Protocol
     GrpMsgForward (GrpMsgForward),
     MsgContent (MCText),
     VerifiedMsg (VMUnsigned),
+    fwdMemberName,
+    maxBatchElementCount,
     maxEncodedMsgLength,
     mcSimple,
   )
@@ -45,8 +47,10 @@ batchingTests = describe "message batching tests" $ do
   testBatchingCorrectness
   testBinaryBatchingCorrectness
   it "image x.msg.new and x.msg.file.descr should fit into single batch" testImageFitsSingleBatch
+  it "splits a batch that exceeds the element count limit" testBatchElementCountLimit
   it "does not create a relay delivery body when every task is oversized" testRelayBatchAllLarge
   it "classifies a task that fits raw but not as a framed singleton as large" testRelayBatchSingletonOverflow
+  it "shortens forwarded member names" testFwdMemberName
 
 instance IsString SndMessage where
   fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing}
@@ -150,6 +154,13 @@ testImageFitsSingleBatch = do
 
   runBatcherTest' BMJson maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]
 
+-- elements are far below maxEncodedMsgLength, so only the element count guard can split this
+testBatchElementCountLimit :: IO ()
+testBatchElementCountLimit =
+  runBatcherTest' BMJson maxEncodedMsgLength (replicate (maxBatchElementCount + 1) "a") [] ["a", batched]
+  where
+    batched = "[" <> B.intercalate "," (replicate maxBatchElementCount "a") <> "]"
+
 testRelayBatchAllLarge :: IO ()
 testRelayBatchAllLarge = do
   let task1 = deliveryTask 1 "one"
@@ -180,6 +191,11 @@ testRelayBatchSingletonOverflow = do
   body_ `shouldBe` Nothing
   map deliveryTaskId accepted `shouldBe` []
   map deliveryTaskId large `shouldBe` [1]
+
+testFwdMemberName :: IO ()
+testFwdMemberName = do
+  fwdMemberName "sixteen_chars_ab" `shouldBe` "sixteen_chars_ab"
+  fwdMemberName "seventeen_chars_a" `shouldBe` "seventeen_chars_…"
 
 runBatcherTest :: BatchMode -> Int -> [SndMessage] -> [ChatError] -> [ByteString] -> Spec
 runBatcherTest mode maxLen msgs expectedErrors expectedBatches =

@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -24,6 +25,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.List (isPrefixOf)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -34,11 +36,29 @@ import Data.Time.Format.ISO8601 (iso8601Show)
 import Directory.Store
 import Simplex.Chat.Markdown
 import Simplex.Chat.Types
+import Simplex.Chat.View (simplexChatContact)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import System.Directory
 import System.FilePath
+
+-- the line the directory recommends adding to the group welcome message
+groupLinkLine :: Text -> Text -> Text
+groupLinkLine name link = groupLinkLinePrefix name <> link
+
+groupLinkLinePrefix :: Text -> Text
+groupLinkLinePrefix name = "Link to join the group " <> name <> ": "
+
+matchesGroupLink :: CreatedLinkContact -> FormattedText -> Bool
+matchesGroupLink (CCLink cReq sLnk_) = \case
+  FormattedText (Just SimplexLink {simplexUri = ACL SCMContact cLink}) _ -> case cLink of
+    CLFull cReq' -> sameConnReqContact cReq' cReq
+    CLShort sLnk' -> maybe False (sameShortLinkContact sLnk') sLnk_
+  _ -> False
+
+descriptionContainsLink :: CreatedLinkContact -> Text -> Bool
+descriptionContainsLink gLink = maybe False (any (matchesGroupLink gLink)) . parseMaybeMarkdownList
 
 directoryDataPath :: String
 directoryDataPath = "data"
@@ -73,7 +93,9 @@ data DirectoryEntry = DirectoryEntry
     simplexName :: Maybe Text,
     groupLink :: PublicLink,
     shortDescr :: Maybe MarkdownList,
+    shortDescrBlocks :: Maybe (NonEmpty MarkdownBlock),
     welcomeMessage :: Maybe MarkdownList,
+    welcomeMessageBlocks :: Maybe (NonEmpty MarkdownBlock),
     imageFile :: Maybe String,
     activeAt :: Maybe UTCTime,
     createdAt :: Maybe UTCTime
@@ -107,7 +129,15 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
           let gtStr = case gt' of GTChannel -> "channel"; _ -> "group"
               linkLine = "Link to join the " <> gtStr <> " " <> displayName <> ": " <> decodeUtf8 (strEncode sLnk)
            in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
-        Nothing -> description
+        Nothing -> case connLinkContact <$> gLink_ of
+          Just gLink@(CCLink cReq sLnk_)
+            | not (maybe False (descriptionContainsLink gLink) description) ->
+                let linkText = maybe (strEncode $ simplexChatContact cReq) strEncode sLnk_
+                    linkLine = groupLinkLine displayName $ decodeUtf8 linkText
+                 in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
+          _ -> description
+      shortDescr' = toFormattedText <$> shortDescr
+      welcomeMessage' = toFormattedText <$> description'
       entry groupLink =
         let de =
               DirectoryEntry
@@ -115,8 +145,10 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
                   displayName,
                   simplexName = shortNameInfoStr . SimplexNameInfo NTPublicGroup <$> verifiedGroupDomain g,
                   groupLink,
-                  shortDescr = toFormattedText <$> shortDescr,
-                  welcomeMessage = toFormattedText <$> description',
+                  shortDescr = fst <$> shortDescr',
+                  shortDescrBlocks = snd =<< shortDescr',
+                  welcomeMessage = fst <$> welcomeMessage',
+                  welcomeMessageBlocks = snd =<< welcomeMessage',
                   imageFile = fst <$> imgData,
                   activeAt = recentRoundedTime 900 now $ fromMaybe createdAt chatTs,
                   createdAt = recentRoundedTime 86400 now createdAt
@@ -169,5 +201,5 @@ generateListing dir gs = do
   where
     saveListing newDir f = LB.writeFile (newDir </> f) . J.encode . DirectoryListing . map fst
 
-toFormattedText :: Text -> MarkdownList
-toFormattedText t = fromMaybe [FormattedText Nothing t] $ parseMaybeMarkdownList t
+toFormattedText :: Text -> (MarkdownList, Maybe (NonEmpty MarkdownBlock))
+toFormattedText t = let ParsedMarkdown ft blocks = parsedMarkdown t in (fromMaybe [FormattedText Nothing t] ft, blocks)

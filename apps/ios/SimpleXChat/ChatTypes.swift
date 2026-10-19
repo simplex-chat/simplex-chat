@@ -42,6 +42,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
     public var autoAcceptMemberContacts: Bool
+    public var autoAcceptGroupInvitations: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
     public var userChatRelay: Bool
@@ -71,6 +72,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false,
         autoAcceptMemberContacts: false,
+        autoAcceptGroupInvitations: false,
         userChatRelay: false
     )
 }
@@ -131,6 +133,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
+        self.peerType = peerType
         self.contactDomain = contactDomain
     }
 
@@ -221,9 +224,47 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     )
 }
 
-public enum ChatPeerType: String, Codable {
+public enum ChatPeerType: Hashable {
     case human
     case bot
+    case business
+    case agent
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .human: "human"
+        case .bot: "bot"
+        case .business: "business"
+        case .agent: "agent"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension ChatPeerType: Codable {
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "human": self = .human
+        case "bot": self = .bot
+        case "business": self = .business
+        case "agent": self = .agent
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
+    }
+}
+
+public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
+    switch peerType {
+    case .bot: Image(systemName: "cube.fill")
+    case .agent: Image("agent")
+    default: Image(systemName: "person.crop.circle.fill")
+    }
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
@@ -273,13 +314,284 @@ public enum BadgeStatus: String, Codable {
 
 public struct BadgeInfo: Codable, Hashable {
     public var badgeType: BadgeType
-    public var badgeExpiry: Date?
+    public var badgeExpiry: Date
     public var badgeExtra: String
+
+    public init(badgeType: BadgeType, badgeExpiry: Date, badgeExtra: String = "") {
+        self.badgeType = badgeType
+        self.badgeExpiry = badgeExpiry
+        self.badgeExtra = badgeExtra
+    }
 }
 
 public struct LocalBadge: Codable, Hashable {
     public var badge: BadgeInfo
     public var status: BadgeStatus
+
+    public init(badge: BadgeInfo, status: BadgeStatus) {
+        self.badge = badge
+        self.status = status
+    }
+}
+
+// paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
+// which outlives entitlement so the credential's window can cover a renewal.
+// Decodable only: BadgeIssueFailure below is, and nothing encodes badge state.
+public struct BadgeState: Decodable, Hashable {
+    public var badgePurchaseId: Int64
+    public var purchaseKey: String
+    public var badgeType: BadgeType
+    public var shown: Bool
+    public var monthsLeft: Int
+    public var paidThrough: Date
+    public var renewsAt: Date?
+    public var willRenew: Bool
+    public var alert: BadgeAlert?
+    public var issueError: BadgeIssueError?
+    public var nextWakeAt: Date?
+
+    public var paidThroughText: String { badgeDateText(paidThrough) }
+}
+
+public struct BadgeIssueError: Decodable, Hashable {
+    public var failedSince: Date
+    public var lastAttemptAt: Date
+    public var reason: BadgeIssueFailure
+}
+
+public enum BadgeIssueFailure: Decodable, Hashable {
+    // retryable is the service's own view of transience: it gave retryAfter
+    case serviceError(code: BadgeServiceErrorCode, retryable: Bool)
+    case serviceTimeout
+    case network(agentError: String)
+    case invalidCredential
+    case unexpected(message: String)
+
+    public var text: String {
+        switch self {
+        case let .serviceError(code, _):
+            badgeServiceErrorText(code)
+                ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the renewal: %@", comment: "badge renewal error"), code.text)
+        case .serviceTimeout: NSLocalizedString("The badge service did not respond.", comment: "badge renewal error")
+        case .network: NSLocalizedString("The badge service could not be reached.", comment: "badge renewal error")
+        case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
+        case let .unexpected(message):
+            String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "badge renewal error"), message)
+        }
+    }
+
+    public var purchaseText: String {
+        switch self {
+        case let .serviceError(code, _):
+            badgeServiceErrorText(code)
+                ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the purchase: %@", comment: "badge purchase error"), code.text)
+        case .invalidCredential: NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        case .serviceTimeout, .network, .unexpected: text
+        }
+    }
+
+    public var purchaseAlertTitle: String {
+        switch self {
+        case .serviceError(.testPurchase, _):
+            NSLocalizedString("Sandbox purchase", comment: "alert title")
+        default: NSLocalizedString("Purchase error", comment: "alert title")
+        }
+    }
+
+    // the stored form, for support
+    public var tag: String {
+        switch self {
+        case let .serviceError(code, retryable): "serviceError \(retryable ? "retry" : "final") \(code.text)"
+        case .serviceTimeout: "serviceTimeout"
+        case let .network(agentError): "network \(agentError)"
+        case .invalidCredential: "invalidCredential"
+        case let .unexpected(message): "unexpected \(message)"
+        }
+    }
+}
+
+public struct StatementEntry: Codable, Hashable {
+    public var entryId: String
+    public var changeMonths: Int
+    public var balanceMonths: Int
+    public var balanceStartTs: Date
+    public var balanceAnchorTs: Date
+    public var balanceBadgeType: BadgeType
+    public var wasPausedSince: Date?
+    public var createdAt: Date
+    public var entryType: StatementEntryType
+}
+
+public enum StatementEntryType: Codable, Hashable {
+    case credit(StatementCreditType)
+    case debit(StatementDebitType)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case credit
+        case debit
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "credit": self = .credit(try container.decode(StatementCreditType.self, forKey: .credit))
+        case "debit": self = .debit(try container.decode(StatementDebitType.self, forKey: .debit))
+        default: throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "unknown entry type \(type)")
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .credit(c):
+            try container.encode("credit", forKey: .type)
+            try container.encode(c, forKey: .credit)
+        case let .debit(d):
+            try container.encode("debit", forKey: .type)
+            try container.encode(d, forKey: .debit)
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case let .credit(c): c.text
+        case let .debit(d): d.text
+        }
+    }
+}
+
+// the service is deployed ahead of clients, so a type this version does not know keeps its tag
+public enum StatementCreditType: Codable, Hashable {
+    case payment(invoiceId: String?)
+    case code
+    case charge(chargeId: String)
+    case support
+    case transferIn(fromPurchaseKey: String)
+    case opening
+    case unknown(type: String)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case invoiceId
+        case chargeId
+        case fromPurchaseKey
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "payment": self = .payment(invoiceId: try container.decodeIfPresent(String.self, forKey: .invoiceId))
+        case "code": self = .code
+        case "charge": self = .charge(chargeId: try container.decode(String.self, forKey: .chargeId))
+        case "support": self = .support
+        case "transferIn": self = .transferIn(fromPurchaseKey: try container.decode(String.self, forKey: .fromPurchaseKey))
+        case "opening": self = .opening
+        default: self = .unknown(type: type)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .type)
+        switch self {
+        case let .payment(invoiceId): try container.encodeIfPresent(invoiceId, forKey: .invoiceId)
+        case let .charge(chargeId): try container.encode(chargeId, forKey: .chargeId)
+        case let .transferIn(fromPurchaseKey): try container.encode(fromPurchaseKey, forKey: .fromPurchaseKey)
+        case .code, .support, .opening, .unknown: ()
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case .payment: "payment"
+        case .code: "code"
+        case .charge: "charge"
+        case .support: "support"
+        case .transferIn: "transferIn"
+        case .opening: "opening"
+        case let .unknown(type): type
+        }
+    }
+}
+
+public enum StatementDebitType: Codable, Hashable {
+    case refund
+    case upgrade(toPurchaseKey: String)
+    case transferOut(toPurchaseKey: String)
+    case support
+    case badge
+    case lapse
+    case unknown(type: String)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case toPurchaseKey
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "refund": self = .refund
+        case "upgrade": self = .upgrade(toPurchaseKey: try container.decode(String.self, forKey: .toPurchaseKey))
+        case "transferOut": self = .transferOut(toPurchaseKey: try container.decode(String.self, forKey: .toPurchaseKey))
+        case "support": self = .support
+        case "badge": self = .badge
+        case "lapse": self = .lapse
+        default: self = .unknown(type: type)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .type)
+        switch self {
+        case let .upgrade(toPurchaseKey), let .transferOut(toPurchaseKey): try container.encode(toPurchaseKey, forKey: .toPurchaseKey)
+        case .refund, .support, .badge, .lapse, .unknown: ()
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case .refund: "refund"
+        case .upgrade: "upgrade"
+        case .transferOut: "transferOut"
+        case .support: "support"
+        case .badge: "badge"
+        case .lapse: "lapse"
+        case let .unknown(type): type
+        }
+    }
+}
+
+public struct BadgeAlert: Codable, Hashable {
+    public var kind: BadgeAlertKind
+    public var episode: String
+    public var date: Date
+    public var price: BadgeAlertPrice?
+
+    public var dateText: String { badgeDateText(date) }
+}
+
+private func badgeDateText(_ date: Date) -> String {
+    DateFormatter.localizedString(from: date, dateStyle: .long, timeStyle: .none)
+}
+
+public struct BadgeAlertPrice: Codable, Hashable {
+    public var amount: Int64
+    public var currency: String
+}
+
+public enum BadgeAlertKind: String, Codable, Hashable {
+    case renewalApproaching
+    case paymentIssue
+    case subscriptionEnded
+    case prepaidEnding
+    case supportEnded
+    case issueFailed
 }
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
@@ -301,7 +613,8 @@ public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias
         contactLink: profile.contactLink,
         preferences: profile.preferences,
         peerType: profile.peerType,
-        localAlias: localAlias
+        localAlias: localAlias,
+        contactDomain: profile.contactDomain
     )
 }
 
@@ -2137,6 +2450,14 @@ public func sameChatScope(_ scope1: GroupChatScope, _ scope2: GroupChatScope) ->
     }
 }
 
+public func draftChatId(_ chatId: ChatId?, _ scope: GroupChatScope?) -> ChatId? {
+    guard let chatId, let scope else { return chatId }
+    return switch scope {
+    case let .memberSupport(groupMemberId_): "\(chatId) support:\(groupMemberId_?.description ?? "")"
+    case .reports: "\(chatId) reports"
+    }
+}
+
 public enum GroupChatScopeInfo: Decodable, Hashable {
     case memberSupport(groupMember_: GroupMember?)
     case reports // surrogate scope used for matching new items to opened Reports "chat scope" in UI, this type is not present in backend
@@ -2210,7 +2531,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public var isContactCard: Bool {
-        (activeConn == nil || activeConn?.connStatus == .prepared) && profile.contactLink != nil && active && preparedContact == nil && contactRequestId == nil
+        (activeConn == nil || activeConn?.connStatus == .prepared) && profile.contactLink != nil && active && preparedContact == nil && contactRequestId == nil && groupDirectInv == nil
     }
 
     @inline(__always)
@@ -2222,8 +2543,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         activeConn?.customUserProfileId != nil
     }
 
-    public var chatIconName: String {
-        isBot ? "cube.fill" : "person.crop.circle.fill"
+    public var chatIcon: Image {
+        peerTypeIcon(profile.peerType)
     }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {
@@ -2963,7 +3284,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var relayLink: String?
     public var memberVerifiedCode: SecurityCode?
 
-    public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var id: String { groupMemberEntityId(groupId, groupMemberId) }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var sendMsgEnabled: Bool { get {
@@ -3150,6 +3471,10 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         activeConn: Connection.sampleData,
         memberChatVRange: VersionRange(2, 12)
     )
+}
+
+public func groupMemberEntityId(_ groupId: Int64, _ groupMemberId: Int64) -> String {
+    "#\(groupId) @\(groupMemberId)"
 }
 
 public struct GroupSupportChat: Codable, Hashable {
@@ -3468,11 +3793,12 @@ public struct CIReaction: Decodable, Hashable {
 }
 
 public struct ChatItem: Identifiable, Decodable, Hashable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, markdownBlocks: [MarkdownBlock]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
+        self.markdownBlocks = markdownBlocks
         self.mentions = mentions
         self.quotedItem = quotedItem
         self.reactions = reactions
@@ -3483,6 +3809,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var meta: CIMeta
     public var content: CIContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var mentions: [String: CIMention]?
     public var quotedItem: CIQuote?
     public var reactions: [CIReactionCount]
@@ -3492,7 +3819,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, mentions, quotedItem, reactions, file
+        case chatDir, meta, content, formattedText, markdownBlocks, mentions, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }
@@ -3604,6 +3931,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             case .memberCreatedContact: return false
             case .memberProfileUpdated: return false
             case .newMemberPendingReview: return true
+            case .msgBadSignature: return false
             }
         case .sndGroupEvent: return false
         case .rcvConnEvent: return false
@@ -3924,6 +4252,10 @@ public enum CIDirection: Decodable, Hashable {
         }
     }
 
+    public var groupMemberId: Int64? {
+        if case let .groupRcv(groupMember) = self { groupMember.groupMemberId } else { nil }
+    }
+
     public func sameDirection(_ dir: CIDirection) -> Bool {
         switch (self, dir) {
         case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
@@ -3949,6 +4281,7 @@ public struct CIMeta: Decodable, Hashable {
     public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
+    public var forwardedByMember: Int64?
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
 
@@ -4291,13 +4624,15 @@ public enum MsgDirection: String, Decodable, Hashable {
 public enum CIForwardedFrom: Decodable, Hashable {
     case unknown
     case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
-    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?)
+    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?, memberId: String?, sharedMsgId_: String?, groupType: GroupType?)
+    case groupLink(chatName: String, msgDir: MsgDirection, groupLink: String, publicGroupId: String, memberId: String?, sharedMsgId: String, groupType: GroupType?)
 
-    var chatName: String {
+    public var chatName: String {
         switch self {
         case .unknown: ""
         case let .contact(chatName, _, _, _): chatName
-        case let .group(chatName, _, _, _): chatName
+        case let .group(chatName, _, _, _, _, _, _): chatName
+        case let .groupLink(chatName, _, _, _, _, _, _): chatName
         }
     }
 
@@ -4308,17 +4643,23 @@ public enum CIForwardedFrom: Decodable, Hashable {
             if let contactId {
                 (ChatType.direct, contactId, msgId)
             } else { nil }
-        case let .group(_, _, groupId, msgId):
+        case let .group(_, _, groupId, msgId, _, _, _):
             if let groupId {
                 (ChatType.group, groupId, msgId)
             } else { nil }
+        case .groupLink: nil
+        }
+    }
+
+    public var sourceGroupLink: String? {
+        switch self {
+        case let .groupLink(_, _, groupLink, _, _, _, _): groupLink
+        default: nil
         }
     }
 
     public func text(_ chatType: ChatType) -> LocalizedStringKey {
-        chatType == .local
-        ? (chatName == "" ? "saved" : "saved from \(chatName)")
-        : "forwarded"
+        chatType == .local ? "saved" : "forwarded"
     }
 }
 
@@ -4520,6 +4861,7 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
     public var sentAt: Date
     public var content: MsgContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var text: String {
         switch (content.text, content) {
         case let ("", .voice(_, duration)): return durationText(duration)
@@ -4633,6 +4975,17 @@ extension MsgReaction: Encodable {
     }
 }
 
+// set by the core when the file is above the size the sender's badge allows; badgeStatus is nil when no proof was sent
+public struct FileProhibited: Decodable, Hashable {
+    public var maxSize: Int64
+    public var badgeStatus: BadgeStatus?
+
+    public init(maxSize: Int64, badgeStatus: BadgeStatus?) {
+        self.maxSize = maxSize
+        self.badgeStatus = badgeStatus
+    }
+}
+
 public struct CIFile: Decodable, Hashable {
     public var fileId: Int64
     public var fileName: String
@@ -4640,6 +4993,8 @@ public struct CIFile: Decodable, Hashable {
     public var fileSource: CryptoFile?
     public var fileStatus: CIFileStatus
     public var fileProtocol: FileProtocol
+    public var fileExpires: Date? = nil
+    public var fileProhibited: FileProhibited? = nil
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
         let f: CryptoFile?
@@ -4671,6 +5026,10 @@ public struct CIFile: Decodable, Hashable {
             case .invalid: return false
             }
         }
+    }
+
+    public var expired: Bool {
+        if let fileExpires { fileExpires < Date.now } else { false }
     }
 
     public var cancelAction: CancelAction? {
@@ -4709,7 +5068,7 @@ public struct CIFile: Decodable, Hashable {
             case .sndCancelled: true
             case .sndError: true
             case .sndWarning: true
-            case .rcvInvitation: false
+            case .rcvInvitation: expired
             case .rcvAccepted: true
             case .rcvTransfer: true
             case .rcvAborted: true
@@ -5316,14 +5675,119 @@ public struct FormattedText: Decodable, Hashable {
     public var linkUri: String? {
         switch format {
         case .uri: text
-        case let .hyperLink(_, linkUri): linkUri
+        case let .hyperLink(_, linkUri): isEmailLink ? nil : linkUri
         default: nil
+        }
+    }
+
+    public var isEmailLink: Bool {
+        if case let .hyperLink(_, linkUri) = format { linkUri.hasPrefix("mailto:") } else { false }
+    }
+}
+
+public enum BlockToken: Decodable, Hashable {
+    case lineBreak
+    case softBreak
+    case hardBreak
+    case paragraphBreak(lineBreaks: Int)
+    case indent
+    case headingMark(level: Int)
+    case headingClose
+    case headingUnderline(level: Int)
+    case listMark(number: String?)
+    case quoteMark
+    case fenceMark(language: String?)
+    case rowMark
+    case cellMark
+    case delimiterRow(columns: [TableAlign])
+    case ruleMark
+
+    public var drawnText: String {
+        switch self {
+        case .softBreak: " "
+        case .lineBreak, .hardBreak: "\n"
+        case let .paragraphBreak(lineBreaks): String(repeating: "\n", count: lineBreaks)
+        default: ""
+        }
+    }
+
+    public var previewText: String {
+        switch self {
+        case .softBreak, .hardBreak, .cellMark: " "
+        case .lineBreak, .paragraphBreak: "\n"
+        case let .listMark(number): (number ?? "•") + " "
+        default: ""
         }
     }
 }
 
+public enum MarkdownBlock: Decodable, Hashable {
+    case paragraph(content: SegmentRange)
+    case heading(level: Int, content: SegmentRange)
+    case codeBlock(language: String?, content: SegmentRange)
+    case quote(content: SegmentRange)
+    case list(items: [ListEntry])
+    case table(columns: [TableAlign], header: [SegmentRange], rows: [[SegmentRange]])
+    case rule(mark: SegmentRange)
+}
+
+public struct ListEntry: Decodable, Hashable {
+    public var number: String?
+    public var content: SegmentRange
+    public var items: [ListEntry]
+}
+
+public struct SegmentRange: Decodable, Hashable {
+    public var from: Int
+    public var to: Int
+}
+
+public enum TableAlign: String, Decodable, Hashable {
+    case none
+    case left
+    case center
+    case right
+}
+
+public struct BlockTextRange {
+    public var range: SegmentRange
+    public var inRow: Bool
+}
+
+extension MarkdownBlock {
+    public var textRanges: [BlockTextRange] {
+        switch self {
+        case let .paragraph(content), let .heading(_, content), let .codeBlock(_, content), let .quote(content):
+            [BlockTextRange(range: content, inRow: false)]
+        case let .list(items):
+            listEntries(items, 0).map { BlockTextRange(range: $0.entry.content, inRow: false) }
+        case let .table(_, header, rows):
+            ([header] + rows).flatMap { row in row.enumerated().map { c, cell in BlockTextRange(range: cell, inRow: c > 0) } }
+        case .rule:
+            []
+        }
+    }
+}
+
+public func listEntries(_ items: [ListEntry], _ level: Int) -> [(entry: ListEntry, level: Int)] {
+    items.flatMap { [(entry: $0, level: level)] + listEntries($0.items, level + 1) }
+}
+
+public func blockTextRanges(_ blocks: [MarkdownBlock]) -> [BlockTextRange] {
+    blocks.flatMap { $0.textRanges }
+}
+
+public func headingSegments(_ size: Int, _ blocks: [MarkdownBlock]) -> [Bool] {
+    var bold = [Bool](repeating: false, count: size)
+    for case let .heading(_, content) in blocks {
+        let from = min(max(content.from, 0), size)
+        for i in from..<max(from, min(content.to, size)) { bold[i] = true }
+    }
+    return bold
+}
+
 public enum Format: Decodable, Equatable, Hashable {
-    case bold
+    case bold(singleStar: Bool)
     case italic
     case strikeThrough
     case snippet
@@ -5339,6 +5803,8 @@ public enum Format: Decodable, Equatable, Hashable {
     case modal(modalName: String, text: String)
     case email
     case phone
+    case escape
+    case markup(token: BlockToken)
     case unknown
 
     // client-only format that opens a modal when tapped, see openMarkdownModal
@@ -5750,6 +6216,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
     case memberCreatedContact
     case memberProfileUpdated(fromProfile: Profile, toProfile: Profile)
     case newMemberPendingReview
+    case msgBadSignature
 
     var text: String { text(isChannel: false) }
 
@@ -5785,6 +6252,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .memberCreatedContact: return NSLocalizedString("requested connection", comment: "rcv group event chat item")
         case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
         case .newMemberPendingReview: return NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
+        case .msgBadSignature: return NSLocalizedString("message rejected: bad signature", comment: "rcv group event chat item")
         }
     }
 
@@ -6040,6 +6508,7 @@ public struct ChatItemVersion: Decodable, Hashable {
     public var chatItemVersionId: Int64
     public var msgContent: MsgContent
     public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
     public var itemVersionTs: Date
     public var createdAt: Date
 }

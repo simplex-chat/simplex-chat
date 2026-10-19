@@ -42,7 +42,7 @@ import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.BuildConfigCommon
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 
 enum class NewChatOption {
@@ -836,7 +836,8 @@ fun strConnectTarget(str: String): ConnectTarget? {
   val links = parsedMd.filter { it.format?.isSimplexLink ?: false }
   if (links.size == 1) {
     val fmt = links[0].format as Format.SimplexLink
-    return ConnectTarget.Link(links[0].text, fmt.linkType, fmt.simplexLinkText)
+    val text = if (fmt.showText != null) fmt.simplexUri else links[0].text
+    return ConnectTarget.Link(text, fmt.linkType, fmt.simplexLinkText)
   }
   if (links.isEmpty()) {
     val nameFt = parsedMd.firstOrNull { it.format is Format.SimplexName }

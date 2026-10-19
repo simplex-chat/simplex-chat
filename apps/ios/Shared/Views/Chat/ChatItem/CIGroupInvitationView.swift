@@ -40,6 +40,13 @@ struct CIGroupInvitationView: View {
 
                     Divider().frame(width: frameWidth)
 
+                    if chat.chatInfo.groupInfo != nil {
+                        Text(chatItem.chatDir.sent ? String.localizedStringWithFormat(NSLocalizedString("For %@ only", comment: ""), groupInvitation.localDisplayName) : NSLocalizedString("For you only", comment: ""))
+                            .font(.caption)
+                            .foregroundColor(theme.colors.secondary)
+                            .overlay(DetermineWidth())
+                    }
+
                     if action {
                         VStack(alignment: .leading, spacing: 2) {
                             groupInvitationText()
@@ -104,7 +111,7 @@ struct CIGroupInvitationView: View {
         return HStack(alignment: .top) {
             ProfileImage(
                 imageStr: groupInvitation.groupProfile.image,
-                iconName: "person.2.circle.fill",
+                icon: Image(systemName: "person.2.circle.fill"),
                 size: 44,
                 color: color
             )

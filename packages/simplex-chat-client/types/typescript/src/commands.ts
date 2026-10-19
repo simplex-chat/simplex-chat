@@ -12,13 +12,14 @@ import {CR} from "./responses"
 // Network usage: interactive.
 export interface APICreateMyAddress {
   userId: number // int64
+  pqRatchet?: boolean
 }
 
 export namespace APICreateMyAddress {
   export type Response = CR.UserContactLinkCreated | CR.ChatCmdError
 
   export function cmdString(self: APICreateMyAddress): string {
-    return '/_address ' + self.userId
+    return '/_address ' + self.userId + (typeof self.pqRatchet == 'boolean' ? ' pq_ratchet=' + (self.pqRatchet ? 'on' : 'off') : '')
   }
 }
 
@@ -58,10 +59,25 @@ export interface APISetProfileAddress {
 }
 
 export namespace APISetProfileAddress {
-  export type Response = CR.UserProfileUpdated | CR.ChatCmdError
+  export type Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
 
   export function cmdString(self: APISetProfileAddress): string {
     return '/_profile_address ' + self.userId + ' ' + (self.enable ? 'on' : 'off')
+  }
+}
+
+// Set or remove SimpleX name of bot address. The name must be registered with the address short link.
+// Network usage: interactive.
+export interface APISetUserDomain {
+  userId: number // int64
+  simplexDomain?: string
+}
+
+export namespace APISetUserDomain {
+  export type Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
+
+  export function cmdString(self: APISetUserDomain): string {
+    return '/_set domain ' + self.userId + (self.simplexDomain ? ' ' + self.simplexDomain : '')
   }
 }
 
@@ -69,6 +85,7 @@ export namespace APISetProfileAddress {
 // Network usage: interactive.
 export interface APISetAddressSettings {
   userId: number // int64
+  pqRatchet?: boolean
   settings: T.AddressSettings
 }
 
@@ -76,7 +93,7 @@ export namespace APISetAddressSettings {
   export type Response = CR.UserContactLinkUpdated | CR.ChatCmdError
 
   export function cmdString(self: APISetAddressSettings): string {
-    return '/_address_settings ' + self.userId + ' ' + JSON.stringify(self.settings)
+    return '/_address_settings ' + self.userId + (typeof self.pqRatchet == 'boolean' ? ' pq_ratchet=' + (self.pqRatchet ? 'on' : 'off') : '') + ' ' + JSON.stringify(self.settings)
   }
 }
 
@@ -166,6 +183,35 @@ export namespace APIChatItemReaction {
   }
 }
 
+// Share user address card
+// Network usage: no.
+export interface APIShareMyAddress {
+  toSendRef: T.ChatRef
+}
+
+export namespace APIShareMyAddress {
+  export type Response = CR.ChatMsgContent
+
+  export function cmdString(self: APIShareMyAddress): string {
+    return '/_share address ' + T.ChatRef.cmdString(self.toSendRef)
+  }
+}
+
+// Share channel address
+// Network usage: no.
+export interface APIShareChatMsgContent {
+  shareChatRef: T.ChatRef
+  toSendRef: T.ChatRef
+}
+
+export namespace APIShareChatMsgContent {
+  export type Response = CR.ChatMsgContent
+
+  export function cmdString(self: APIShareChatMsgContent): string {
+    return '/_share chat content ' + T.ChatRef.cmdString(self.shareChatRef) + ' ' + T.ChatRef.cmdString(self.toSendRef)
+  }
+}
+
 // File commands
 // Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.
 
@@ -217,6 +263,23 @@ export namespace APIAddMember {
 
   export function cmdString(self: APIAddMember): string {
     return '/_add #' + self.groupId + ' ' + self.contactId + ' ' + self.memberRole
+  }
+}
+
+// Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+// Network usage: interactive.
+export interface APIAddMemberViaGroup {
+  groupId: number // int64
+  viaGroupId: number // int64
+  groupMemberId: number // int64
+  memberRole: T.GroupMemberRole
+}
+
+export namespace APIAddMemberViaGroup {
+  export type Response = CR.SentGroupInvitationViaGroup | CR.ChatCmdError
+
+  export function cmdString(self: APIAddMemberViaGroup): string {
+    return '/_add #' + self.groupId + ' #' + self.viaGroupId + ' ' + self.groupMemberId + ' ' + self.memberRole
   }
 }
 
@@ -417,6 +480,20 @@ export namespace APIUpdateGroupProfile {
   }
 }
 
+// Verify group domain
+// Network usage: interactive.
+export interface APIVerifyGroupDomain {
+  groupId: number // int64
+}
+
+export namespace APIVerifyGroupDomain {
+  export type Response = CR.GroupDomainVerified
+
+  export function cmdString(self: APIVerifyGroupDomain): string {
+    return '/_verify domain #' + self.groupId
+  }
+}
+
 // Group link commands
 // These commands can be used by bots that manage multiple public groups
 
@@ -525,7 +602,7 @@ export namespace APIConnect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: APIConnect): string {
-    return '/_connect ' + self.userId + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
+    return '/_connect ' + self.userId + (self.incognito ? ' incognito=on' : '') + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
   }
 }
 
@@ -537,7 +614,15 @@ export interface Connect {
 }
 
 export namespace Connect {
-  export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
+  export type Response = 
+    | CR.SentConfirmation
+    | CR.ContactAlreadyExists
+    | CR.SentInvitation
+    | CR.ConnectionPlan
+    | CR.SentInvitationToContact
+    | CR.StartedConnectionToContact
+    | CR.StartedConnectionToGroup
+    | CR.ChatCmdError
 
   export function cmdString(self: Connect): string {
     return '/connect' + (self.connTarget_ ? ' ' + self.connTarget_ : '')
@@ -562,6 +647,7 @@ export namespace APIAcceptContact {
 // Network usage: no.
 export interface APIRejectContact {
   contactReqId: number // int64
+  notify: boolean
 }
 
 export namespace APIRejectContact {
@@ -610,7 +696,7 @@ export namespace APIListGroups {
 export interface APIGetChats {
   userId: number // int64
   pendingConnections: boolean
-  pagination: T.PaginationByTime
+  pagination?: T.PaginationByTime
   query: T.ChatListQuery
 }
 
@@ -618,7 +704,7 @@ export namespace APIGetChats {
   export type Response = CR.ApiChats | CR.ChatCmdError
 
   export function cmdString(self: APIGetChats): string {
-    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + ' ' + T.PaginationByTime.cmdString(self.pagination) + ' ' + JSON.stringify(self.query)
+    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + (self.pagination ? ' ' + T.PaginationByTime.cmdString(self.pagination) : '') + ' ' + JSON.stringify(self.query)
   }
 }
 
@@ -679,6 +765,21 @@ export namespace APISetUserAutoAcceptMemberContacts {
 
   export function cmdString(self: APISetUserAutoAcceptMemberContacts): string {
     return '/_set accept member contacts ' + self.userId + ' ' + (self.onOff ? 'on' : 'off')
+  }
+}
+
+// Set auto-accept group invitations.
+// Network usage: no.
+export interface APISetUserAutoAcceptGroupInvitations {
+  userId: number // int64
+  onOff: boolean
+}
+
+export namespace APISetUserAutoAcceptGroupInvitations {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetUserAutoAcceptGroupInvitations): string {
+    return '/_set accept group invitations ' + self.userId + ' ' + (self.onOff ? 'on' : 'off')
   }
 }
 
@@ -786,6 +887,25 @@ export namespace APISetContactPrefs {
   }
 }
 
+// Service commands
+// Bots with a double ratchet address can answer service requests.
+
+// Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.
+// Network usage: background.
+export interface APISendServiceResponse {
+  userId: number // int64
+  requestId: string
+  responseData: object
+}
+
+export namespace APISendServiceResponse {
+  export type Response = CR.ServiceReplyAccepted | CR.ChatCmdError
+
+  export function cmdString(self: APISendServiceResponse): string {
+    return '/_service_response ' + self.userId + ' ' + self.requestId + ' ' + JSON.stringify(self.responseData)
+  }
+}
+
 // Chat management
 // These commands should not be used with CLI-based bots
 
@@ -794,13 +914,14 @@ export namespace APISetContactPrefs {
 export interface StartChat {
   mainApp: boolean
   enableSndFiles: boolean
+  serviceRequests: boolean
 }
 
 export namespace StartChat {
   export type Response = CR.ChatStarted | CR.ChatRunning
 
-  export function cmdString(_self: StartChat): string {
-    return '/_start'
+  export function cmdString(self: StartChat): string {
+    return '/_start main=' + (self.mainApp ? 'on' : 'off') + (!self.enableSndFiles ? ' snd_files=off' : '') + (self.serviceRequests ? ' service_requests=on' : '')
   }
 }
 
@@ -814,5 +935,36 @@ export namespace APIStopChat {
 
   export function cmdString(_self: APIStopChat): string {
     return '/_stop'
+  }
+}
+
+// Remote control commands
+// Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.
+
+// Connect to a remote controller using an OOB invitation link.
+// Network usage: interactive.
+export interface ConnectRemoteCtrl {
+  remoteInvitation: string
+}
+
+export namespace ConnectRemoteCtrl {
+  export type Response = CR.RemoteCtrlConnecting | CR.ChatCmdError
+
+  export function cmdString(self: ConnectRemoteCtrl): string {
+    return '/crc ' + self.remoteInvitation
+  }
+}
+
+// Verify the remote controller session code to complete the connection.
+// Network usage: no.
+export interface VerifyRemoteCtrlSession {
+  sessionCode: string
+}
+
+export namespace VerifyRemoteCtrlSession {
+  export type Response = CR.RemoteCtrlConnected | CR.ChatCmdError
+
+  export function cmdString(self: VerifyRemoteCtrlSession): string {
+    return '/verify remote ctrl ' + self.sessionCode
   }
 }

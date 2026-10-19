@@ -22,32 +22,27 @@ Please note that your search queries can be kept by the bot as the conversation 
 
 To add a group you must be its owner. Once you connect to the directory service and send `/help`, the service will guide you through the process.
 
-1. Invite SimpleX Service Directory to the group as `admin` member. You can also set the role to `admin` after inviting the directory service.
+1. Invite SimpleX Service Directory to the group as `admin` member. You can also set the role to `admin` after inviting the directory service. The member who invited the directory service will be the owner of the group record in the directory service.
 
 The directory service needs to be `admin` to provide a good user experience of joining the group, as it will create a new link to join the group, which is expected to be online 99% of the time.
 
-2. Add the link sent to you by the directory service to the group welcome message. This has to be done by the same group member who invited the directory service to the group. This member will be the owner of the group record in the directory service.
-
-3. Once the link is added, the group will need to be approved by the directory service admins. This link is functional even before the group is approved, and you can continue using this link even if the group is not approved.
+2. The group will need to be approved by the directory service admins. The directory service creates the link to join the group when the group is approved, and sends it to you.
 
 The group is usually approved within 24 hours. Please see below which groups can be added.
 
-Once the group is approved, it will appear in search results.
+Once the group is approved, it will appear in search results together with the link to join it. We recommend adding this link to the group welcome message - adding or removing it does not require a new approval.
 
 You can list all the groups you submitted by sending `/list` to the directory service.
 
 ### How to remove the group from the directory
 
-Changing the group profile in any way (e.g., changing the group name, welcome message, or removing the link to join the group from the welcome message) will remove the group from the search results until the group is approved again by the directory service admins.
+Changing the group profile (e.g., the group name, image, or the text of the welcome message) will remove the group from the search results until the group is approved again by the directory service admins. Adding or removing the directory link in the welcome message does not require a new approval.
 
 If it is undesirable that the service cannot be found in search during this time, please coordinate the time of this change with the directory service admins for quick approval.
 
 Changing the role of the directory service will temporarily remove the group from the search results, and unless you changed the role to the `owner`, it will also permanently disrupt the members that were in the process of connecting to other members via the directory service.
 
-To remove the group from the directory:
-
-1. Remove the group link created by the directory service from the welcome message. This will not disrupt the members from joining the group, even via this link, but will remove the group from the search results.
-2. After some time (we recommend 3-4 days) remove the directory service from the group - it will stop receiving the messages and the group will be permanently removed from the search results.
+To remove the group from the directory, send `/delete <ID>:<name>` to the directory service, with the ID and name shown by `/list`. You can also remove the directory service from the group - the group will be permanently removed from the search results.
 
 Removing the group does not prevent you from registering the group again in the future.
 

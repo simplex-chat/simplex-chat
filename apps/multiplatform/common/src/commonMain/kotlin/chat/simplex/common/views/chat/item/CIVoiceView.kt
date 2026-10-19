@@ -21,7 +21,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.flow.*
 import kotlin.math.*
@@ -87,7 +87,7 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, showTimestamp, sizeMultiplier, play, pause, longClick, receiveFile) {
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, showTimestamp, sizeMultiplier, play, pause, longClick, { chatModel.openWhenReceived(file, smallView); receiveFile(it) }) {
         AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
       }
       if (smallView) {
@@ -95,6 +95,7 @@ fun CIVoiceView(
           AudioPlayer.stop()
         }
       }
+      OpenWhenReceivedEffect(file, smallView, play)
     } else if (smallView) {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, sizeMultiplier, {}, {}, longClick, receiveFile)
     } else {
@@ -412,7 +413,7 @@ private fun VoiceMsgIndicator(
         }
       )
     file?.fileStatus is CIFileStatus.RcvInvitation ->
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, sizeMultiplier, { receiveFile(file.fileId) }, {}, longClick = longClick)
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, sizeMultiplier, { receiveFile(file.fileId) }, {}, longClick = longClick, icon = if (file.expired) MR.images.ic_close else MR.images.ic_play_arrow_filled)
     file?.fileStatus is CIFileStatus.RcvTransfer || file?.fileStatus is CIFileStatus.RcvAccepted ->
       VoiceMsgLoadingProgressIndicator(sizeMultiplier)
     file?.fileStatus is CIFileStatus.RcvAborted ->
@@ -424,7 +425,7 @@ private fun VoiceMsgIndicator(
         sizeMultiplier,
         longClick,
         onClick = {
-          showFileErrorAlert(file.fileStatus.rcvFileError)
+          showFileErrorAlert(file.fileStatus.rcvFileError, file)
         }
       )
     file != null && file.fileStatus is CIFileStatus.RcvWarning ->

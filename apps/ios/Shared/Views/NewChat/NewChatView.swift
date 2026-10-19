@@ -739,6 +739,7 @@ struct ScannerInView: View {
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
+    var placeholderBackground = Color(uiColor: .secondarySystemGroupedBackground)
 
     var body: some View {
         Group {
@@ -777,7 +778,7 @@ struct ScannerInView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                        .fill(placeholderBackground)
                 )
                 .padding(.horizontal)
                 .listRowBackground(Color.clear)
@@ -859,8 +860,8 @@ enum ConnectTarget {
 func strConnectTarget(_ str: String) -> ConnectTarget? {
     let parsedMd = parseSimpleXMarkdown(str)
     let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
-    return if links.count == 1, case let .simplexLink(_, linkType, _, smpHosts) = links[0].format {
-        .link(text: links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
+    return if links.count == 1, case let .simplexLink(showText, linkType, simplexUri, smpHosts) = links[0].format {
+        .link(text: showText != nil ? simplexUri : links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
     } else if links.isEmpty,
               let nameFt = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } }),
               case let .simplexName(nameInfo) = nameFt.format {
@@ -1128,11 +1129,9 @@ private func showPrepareContactAlert(
         profileImage:
             ProfileImage(
                 imageStr: contactShortLinkData.profile.image,
-                iconName: contactShortLinkData.business
-                            ? "briefcase.circle.fill"
-                            : contactShortLinkData.profile.peerType == .bot
-                            ? "cube.fill"
-                            : "person.crop.circle.fill",
+                icon: contactShortLinkData.business
+                            ? Image(systemName: "briefcase.circle.fill")
+                            : peerTypeIcon(contactShortLinkData.profile.peerType),
                 size: alertProfileImageSize
             ),
         profileBadge: contactShortLinkData.localBadge,
@@ -1185,9 +1184,9 @@ private func showPrepareGroupAlert(
         profileImage:
             ProfileImage(
                 imageStr: groupShortLinkData.groupProfile.image,
-                iconName: isChannel
+                icon: Image(systemName: isChannel
                             ? "antenna.radiowaves.left.and.right.circle.fill"
-                            : "person.2.circle.fill",
+                            : "person.2.circle.fill"),
                 size: alertProfileImageSize
             ),
         theme: theme,
@@ -1195,8 +1194,8 @@ private func showPrepareGroupAlert(
         information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: isChannel
-            ? NSLocalizedString("Open new channel", comment: "new chat action")
-            : NSLocalizedString("Open new group", comment: "new chat action"),
+            ? NSLocalizedString("Open channel", comment: "new chat action")
+            : NSLocalizedString("Open group", comment: "new chat action"),
         secondTitle: connectOtherButton,
         onCancel: { cleanup?() },
         onConfirm: {
@@ -1239,7 +1238,7 @@ private func showOpenKnownContactAlert(
         profileImage:
             ProfileImage(
                 imageStr: contact.profile.image,
-                iconName: contact.chatIconName,
+                icon: contact.chatIcon,
                 size: alertProfileImageSize
             ),
         profileBadge: contact.active ? contact.profile.localBadge : nil,
@@ -1259,6 +1258,20 @@ private func showOpenKnownContactAlert(
     )
 }
 
+private func memberRoleInformation(_ role: GroupMemberRole, isChannel: Bool) -> String {
+    switch role {
+    case .observer: isChannel
+        ? NSLocalizedString("You are a subscriber", comment: "new chat alert")
+        : NSLocalizedString("You are an observer", comment: "new chat alert")
+    case .moderator: NSLocalizedString("You are a moderator", comment: "new chat alert")
+    case .admin: NSLocalizedString("You are an admin", comment: "new chat alert")
+    case .owner: NSLocalizedString("You are an owner", comment: "new chat alert")
+    default: isChannel
+        ? NSLocalizedString("You are a contributor", comment: "new chat alert")
+        : NSLocalizedString("You are a member", comment: "new chat alert")
+    }
+}
+
 private func showOpenKnownGroupAlert(
     _ groupInfo: GroupInfo,
     theme: AppTheme,
@@ -1273,23 +1286,21 @@ private func showOpenKnownGroupAlert(
         profileImage:
             ProfileImage(
                 imageStr: groupInfo.groupProfile.image,
-                iconName: groupInfo.chatIconName,
+                icon: Image(systemName: groupInfo.chatIconName),
                 size: alertProfileImageSize
             ),
         theme: theme,
         subtitle: groupInfo.useRelays ? subscriberCount : nil,
+        information: groupInfo.nextConnectPrepared || groupInfo.businessChat != nil
+            ? nil
+            : memberRoleInformation(groupInfo.membership.memberRole, isChannel: groupInfo.useRelays),
+        secondaryInformation: true,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
             groupInfo.useRelays
-            ? ( groupInfo.nextConnectPrepared
-                ? NSLocalizedString("Open new channel", comment: "new chat action")
-                : NSLocalizedString("Open channel", comment: "new chat action")
-              )
+            ? NSLocalizedString("Open channel", comment: "new chat action")
             : groupInfo.businessChat == nil
-            ? ( groupInfo.nextConnectPrepared
-                ? NSLocalizedString("Open new group", comment: "new chat action")
-                : NSLocalizedString("Open group", comment: "new chat action")
-              )
+            ? NSLocalizedString("Open group", comment: "new chat action")
             : ( groupInfo.nextConnectPrepared
                 ? NSLocalizedString("Open new chat", comment: "new chat action")
                 : NSLocalizedString("Open chat", comment: "new chat action")
@@ -1592,7 +1603,7 @@ func planAndConnect(
                                     profileImage:
                                         ProfileImage(
                                             imageStr: groupSLinkData.groupProfile.image,
-                                            iconName: "antenna.radiowaves.left.and.right.circle.fill",
+                                            icon: Image(systemName: "antenna.radiowaves.left.and.right.circle.fill"),
                                             size: alertProfileImageSize
                                         ),
                                     theme: theme,
@@ -1619,7 +1630,7 @@ func planAndConnect(
                                     profileImage:
                                         ProfileImage(
                                             imageStr: groupSLinkData.groupProfile.image,
-                                            iconName: "person.2.circle.fill",
+                                            icon: Image(systemName: "person.2.circle.fill"),
                                             size: alertProfileImageSize
                                         ),
                                     theme: theme,

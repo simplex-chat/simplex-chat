@@ -240,6 +240,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/ui/theme/Theme.kt | spec/services/theme.md | product/views/settings.md |
 | common/.../common/ui/theme/Color.kt | spec/services/theme.md | product/views/settings.md |
 | common/.../common/views/chatlist/ChatListView.kt | spec/client/chat-list.md | product/views/chat-list.md |
+| common/.../common/views/chatlist/GetStakeBanner.kt | spec/client/chat-list.md | product/views/chat-list.md |
 | common/.../common/views/chatlist/ChatListNavLinkView.kt | spec/client/chat-list.md | product/views/chat-list.md |
 | common/.../common/views/chatlist/ChatPreviewView.kt | spec/client/chat-list.md | product/views/chat-list.md |
 | common/.../common/views/chatlist/UserPicker.kt | spec/client/chat-list.md | product/views/chat-list.md |
@@ -284,11 +285,16 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 
 | Source Location | Spec Document | Product Document |
 |----------------|---------------|-----------------|
-| desktop/.../desktop/Main.kt | spec/architecture.md | product/flows/onboarding.md |
+| desktop/.../desktop/Main.kt | spec/architecture.md, spec/client/navigation.md | product/flows/onboarding.md |
 | common/.../common/DesktopApp.kt (desktopMain) | spec/architecture.md | product/views/chat-list.md |
 | common/.../common/StoreWindowState.kt (desktopMain) | spec/architecture.md | product/views/settings.md |
+| common/.../common/AppLinks.kt (desktopMain) | spec/client/navigation.md | product/views/settings.md |
+| common/.../common/SingleInstance.kt (desktopMain) | spec/architecture.md, spec/client/navigation.md | product/flows/onboarding.md |
+| common/.../common/WindowActivation.kt (desktopMain) | spec/architecture.md | product/views/chat-list.md |
+| common/.../common/platform/AppLinkScheme.desktop.kt (desktopMain) | spec/client/navigation.md | product/views/settings.md |
 | common/.../common/model/NtfManager.desktop.kt (desktopMain) | spec/services/notifications.md | product/flows/messaging.md |
 | common/.../common/views/helpers/AppUpdater.kt (desktopMain) | spec/architecture.md | product/views/settings.md |
+| common/.../common/platform/AnimatedImage.desktop.kt (desktopMain) | spec/client/chat-view.md | product/views/chat.md |
 
 ### Haskell Core Sources (at `../../src/Simplex/Chat/` relative to `apps/multiplatform/`)
 

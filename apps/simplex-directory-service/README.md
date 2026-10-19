@@ -143,11 +143,12 @@ The bot sends a welcome message automatically when you connect.
 
 ### 2. Registering a Group
 
-Registration is a three-step process — see [DIRECTORY.md](../../docs/DIRECTORY.md) for full details:
+Registration is a two-step process — see [DIRECTORY.md](../../docs/DIRECTORY.md) for full details:
 
 1. Invite the directory bot to your group as `admin`.
-2. Add the link the bot sends you to the group's welcome message.
-3. Wait for admin approval (usually within a day, except holidays).
+2. Wait for admin approval (usually within a day, except holidays).
+
+On approval the bot creates the join link, sends it to you, and recommends adding it to the group welcome message. Adding or removing this link in the welcome message keeps the group listed; other profile changes require re-approval.
 
 If a group with the same display name is already registered (but not yet listed or suspended), the bot asks you to confirm with `/confirm`. If the name is already listed or suspended in the directory, registration is blocked.
 
@@ -277,33 +278,29 @@ Forward path, from invitation to being listed:
                  └────────────┬─────────────┘
                               ▼
                           Proposed
-                              │  bot joins the group and creates the link
-                              ▼
-                        PendingUpdate
-                              │  owner adds the link to the group welcome
+                              │  bot joins the group
                               ▼
                        PendingApproval
-                              │  admin runs /approve
+                              │  admin runs /approve; the bot creates the join link
                               ▼
                             Active            (listed; visible in search)
 ```
 
 **Transitions out of Active:**
 
-- → **PendingUpdate** — the directory bot link is removed from the welcome message.
-- → **PendingApproval** — most other profile changes (see ** below); the `approval-id` shown to admins is bumped each time, so stale `/approve` commands are rejected.
+- → **PendingApproval** — profile changes other than the bot link (see ** below); the `approval-id` shown to admins is bumped each time, so stale `/approve` commands are rejected.
 - → **Suspended** — an admin runs `/suspend`; `/resume` re-lists the group.
 - → **SuspendedBadRoles** — the directory bot loses its `admin` role, or the registering owner loses their `owner` role, in the group; automatically restored to **Active** once the roles are corrected.
 - → **Removed** — the owner runs `/delete`, the owner is removed from or leaves the group, the bot is removed from the group, or the group is deleted. The group can be re-registered afterwards.
 
 \* Only when the duplicate is registered but not yet listed or suspended. If the name is already listed or suspended, registration is blocked entirely.
 
-\*\* Profile changes only trigger re-approval when fields other than the directory bot link are modified. If the only change is swapping the old bot link for the new one, or changing only whitespace in the description, the group stays Active.
+\*\* Profile changes only trigger re-approval when fields other than the directory bot link are modified. Adding, removing, or replacing the bot link line in the welcome message, or changing only whitespace in the description, keeps the group Active.
 
 **State notes:**
 
 - **PendingConfirmation** — the bot was invited but a group with the same display name is already registered (in a pending state); the owner must run `/confirm` to proceed.
 - **Proposed** — the name is unique (or the duplicate was confirmed via `/confirm`); the bot is joining the group.
-- **PendingUpdate** — the bot has joined the group and created the join link; the owner must add it to the group's welcome message.
-- **PendingApproval** — submitted for admin review. The join link works even before approval.
+- **PendingUpdate** — legacy state of registrations created before link-at-approval; any profile change moves such a group to PendingApproval.
+- **PendingApproval** — submitted for admin review. The join link is created at first approval, so a new registration has no working link until approved.
 - **Active** — listed in the directory and visible in search results.

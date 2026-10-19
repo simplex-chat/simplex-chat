@@ -52,13 +52,11 @@ We've seen open-source privacy-focussed projects die without funding, or worse &
 
 So we're building both: a governance structure and a real business. The governance protects the network neutrality. The commercial model funds the network and makes our and other businesses on the network profitable, ensuring their independence. Neither works without the other.
 
-We recently published [a preliminary design of commercial model](https://simplex.chat/credits/) &mdash; private Community Credits that fund servers, development, and governance without surveillance or speculation. The full investment case will be published when crowdfunding launches.
+We recently published [a preliminary design of commercial model](https://simplex.chat/credits/) &mdash; private Community Credits that fund servers, development, and governance without surveillance or speculation.
 
-You can *register your interest* to participate in crowdfunding here: https://simplexchat.typeform.com/crowdfunding
+Aug 20, 2026: We now launched [equity crowdfunding on Wefunder](https://wefunder.com/simplex.chat?utm_source=blog). Please read [the next blog post](./20260819-simplex-chat-crowdfunding.md) about it.
 
-Join the channel for updates [here](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg) &mdash; you must install v6.5 to join it &mdash; or you can join a [read-only group](https://smp12.simplex.im/g#gJzy7ETpuvltqARIB73TQUpJ11Lz4Xpl9xeH9qNoGCg) from the previous app versions.
-
-_Disclaimer: SimpleX Chat, Inc. is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind._
+Join the channel for updates [simplex.chat/crowdfunding-news](https://simplex.chat/crowdfunding-news/).
 
 [^release]: v6.5 release also improved how new users make the first connection, increased security of sending web links, and has many other improvements &mdash; see *What's new* in the app or full release notes.
 

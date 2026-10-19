@@ -28,7 +28,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.contacts.onRequestAccepted
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
@@ -266,10 +266,13 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       newMember
     }
   }
-  chatModel.groupMembersIndexes.value = emptyMap()
-  chatModel.groupMembers.value = newMembers
-  chatModel.membersLoaded.value = true
-  chatModel.populateGroupMembersIndexes()
+  withContext(Dispatchers.Main) {
+    if (chatModel.chatId.value != groupInfo.id) return@withContext
+    chatModel.groupMembersIndexes.value = emptyMap()
+    chatModel.groupMembers.value = newMembers
+    chatModel.membersLoaded.value = true
+    chatModel.populateGroupMembersIndexes()
+  }
 }
 
 @Composable
@@ -576,7 +579,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
     onClick = {
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
-      ModalManager.center.showModalCloseable(settings = true, showClose = appPlatform.isAndroid, cardScreen = true) { close ->
+      ModalManager.center.showModalCloseable(settings = true, cardScreen = true) { close ->
         ContactConnectionInfoView(chatModel, rhId, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, true, close)
       }
       showMenu.value = false
