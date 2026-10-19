@@ -8,6 +8,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
@@ -55,13 +56,24 @@ actual fun ActiveCallView() {
           CallSoundsPlayer.stop()
         }
         is WCallResponse.Ice -> withBGApi {
-          chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
+          chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.session, r.iceCandidates)
         }
         is WCallResponse.Connection ->
-          try {
+          // the call is restored and NOT sent to the core
+          // Makes sure the core DOES NOT record the duration wrong if a reconnect happens
+          if (r.state.connectionState == "reconnecting") {
+            if (call.callState != CallState.Reconnecting) {
+              CallSoundsPlayer.startConnectingCallSound(scope)
+            }
+            chatModel.activeCall.value = call.copy(callState = CallState.Reconnecting)
+          } else try {
             val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
             if (callStatus == WebRTCCallStatus.Connected) {
-              chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
+              if (call.callState == CallState.Reconnecting) {
+                CallSoundsPlayer.stop()
+              }
+              // connectedAt is only set ONCE, this way call duration is NOT reset when the call is restored from reconnecting
+              chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = call.connectedAt ?: Clock.System.now())
             }
             withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
           } catch (e: Throwable) {
@@ -194,21 +206,20 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
     }
   }
   LaunchedEffect(Unit) {
-    snapshotFlow { callCommand.firstOrNull() }
-      .distinctUntilChanged()
-      .filterNotNull()
-      .collect {
-        while (connections.isEmpty()) {
-          delay(100)
-        }
-        while (callCommand.isNotEmpty()) {
-          val cmd = callCommand.removeFirstOrNull()
-          Log.d(TAG, "WebRTCController LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
-          if (cmd != null) {
-            processCommand(cmd)
-          }
+    while (isActive) {
+      // waiting for the first command would miss a command equal to the previous one
+      snapshotFlow { callCommand.isNotEmpty() }.first { it }
+      while (connections.isEmpty()) {
+        delay(100)
+      }
+      while (callCommand.isNotEmpty()) {
+        val cmd = callCommand.removeFirstOrNull()
+        Log.d(TAG, "WebRTCController LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
+        if (cmd != null) {
+          processCommand(cmd)
         }
       }
+    }
   }
 }
 
