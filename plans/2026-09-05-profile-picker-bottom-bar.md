@@ -1,7 +1,7 @@
 # The profile picker's last row is hidden under the bottom app bar
 
 `ActiveProfilePicker` in `newchat/NewChatView.kt` — the "Select chat profile" screen,
-reached from New chat → 1-time link → "Share profile" (Android and desktop) and from the share sheet (Android).
+reached from any 1-time link screen → "Share profile" (New chat → 1-time link, or Your SimpleX address → Create 1-time link; Android and desktop) and from the share sheet (Android).
 
 ## The defect
 
