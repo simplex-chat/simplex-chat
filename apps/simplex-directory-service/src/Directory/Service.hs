@@ -1157,10 +1157,10 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                   -- "Use */filter " <> tshow gId <> " <level>* to change spam filter level: no (disable), basic, moderate, strong.",
                   -- "Or use */filter " <> tshow gId <> " [name[=noimage]] [captcha[=noimage]] [observer[=noimage]]* for advanced filter configuration."
                 ]
-                  <> ["/'filter " <> tshow gId <> " name' - enable name filter" | isNothing (rejectNames a)]
-                  <> ["/'filter " <> tshow gId <> " captcha' - enable captcha challenge" | isNothing (passCaptcha a)]
-                  <> ["/'filter " <> tshow gId <> " name captcha' - enable both" | isNothing (rejectNames a) || isNothing (passCaptcha a)]
-                  <> ["/'filter " <> tshow gId <> " off' - disable filter" | isJust (rejectNames a) || isJust (passCaptcha a)]
+                  <> ["/'filter " <> tshow gId <> " name' - enable name filter  " | isNothing (rejectNames a)]
+                  <> ["/'filter " <> tshow gId <> " captcha' - enable captcha challenge  " | isNothing (passCaptcha a)]
+                  <> ["/'filter " <> tshow gId <> " name captcha' - enable both  " | isNothing (rejectNames a) || isNothing (passCaptcha a)]
+                  <> ["/'filter " <> tshow gId <> " off' - disable filter  " | isJust (rejectNames a) || isJust (passCaptcha a)]
           showCondition = \case
             Nothing -> "_disabled_"
             Just PCAll -> "_enabled_"
