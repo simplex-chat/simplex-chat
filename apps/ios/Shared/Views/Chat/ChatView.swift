@@ -51,7 +51,7 @@ struct PinnedAvatar: Equatable {
     let member: GroupMember
     let showGroupAsSender: Bool
     let y: CGFloat
-    let rowId: Int64
+    let rowId: Int64?
 }
 
 class PinnedAvatarModel: NSObject, ObservableObject, UIGestureRecognizerDelegate {
@@ -78,8 +78,9 @@ class PinnedAvatarModel: NSObject, ObservableObject, UIGestureRecognizerDelegate
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
         guard let pinned, let scrollView = gestureRecognizer.view as? EndlessScrollView<MergedItem>, !scrollView.isDecelerating else { return false }
         let p = touch.location(in: scrollView)
+        let x = scrollView.effectiveUserInterfaceLayoutDirection == .rightToLeft ? scrollView.bounds.width - p.x : p.x
         let y = p.y - scrollView.contentOffset.y - scrollView.insetTop
-        return p.x >= 12 && p.x <= 12 + memberImageSize && y >= pinned.y && y <= pinned.y + memberImageSize
+        return x >= 12 && x <= 12 + memberImageSize && y >= pinned.y && y <= pinned.y + memberImageSize
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
@@ -1773,23 +1774,24 @@ struct ChatView: View {
         let listTop = scrollView.contentOffset.y + scrollView.insetTop
         let pinLine = listTop + 4
         guard let atTop = visible.first(where: { $0.view.frame.minY <= pinLine }), atTop.index < items.count else { return nil }
+        let lowest = visible[0].index
+        let highest = min(visible[visible.count - 1].index, items.count - 1)
         var last = atTop.index
-        while last > 0 && continuesSenderRun(items[last - 1]) {
+        while last >= lowest && last > 0 && continuesSenderRun(items[last - 1]) {
             last -= 1
         }
         let runBottom = visible.first(where: { $0.index == last })?.view.frame.maxY ?? .infinity
         let pinnedTop = min(pinLine, runBottom - memberImageSize)
-        var first = atTop.index
-        while first < items.count && continuesSenderRun(items[first]) {
-            first += 1
+        var top = atTop.index
+        while top < highest && continuesSenderRun(items[top]) {
+            top += 1
         }
-        guard first < items.count else { return nil }
-        let rowId = items[first].oldest().item.id
-        if let firstRow = visible.first(where: { $0.index == first }),
+        let rowId: Int64? = continuesSenderRun(items[top]) ? nil : items[top].oldest().item.id
+        if let rowId, let firstRow = visible.first(where: { $0.index == top }),
            firstRow.view.frame.minY + (pinnedAvatarModel.memberImageTops[rowId] ?? 0) >= pinnedTop {
             return nil
         }
-        let shownItem = items[first].newest().item
+        let shownItem = items[top].newest().item
         guard case let .groupRcv(member) = shownItem.chatDir else { return nil }
         return PinnedAvatar(member: member, showGroupAsSender: shownItem.meta.showGroupAsSender, y: pinnedTop - listTop, rowId: rowId)
     }
@@ -1823,7 +1825,8 @@ struct ChatView: View {
                         MemberProfileImage(pinned.member, size: memberImageSize, backgroundColor: theme.colors.background)
                     }
                 }
-                .offset(x: 12 + (selecting ? 12 + 24 : 0), y: pinned.y)
+                .padding(.leading, 12 + (selecting ? 12 + 24 : 0))
+                .offset(y: pinned.y)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .clipped()
                 .allowsHitTesting(false)
