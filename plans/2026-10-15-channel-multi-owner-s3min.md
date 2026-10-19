@@ -4,6 +4,8 @@ A channel can have several equal owners. Any owner can do what the single owner 
 
 The implementation plan is `2026-10-15-channel-multi-owner-s3min-implementation.md`. The earlier designs are kept as `…-original.md` (the full design at `596d5f98a`) and `…-s1.md` (the minimal scope at `661adb5f6`).
 
+A short technical summary with diagrams, for programmers who won't read the plans: [summary.md](2026-10-15-channel-multi-owner-s3min-sketches/summary.md).
+
 ## What owners can do
 
 | Action | How it works for users |
@@ -11,8 +13,8 @@ The implementation plan is `2026-10-15-channel-multi-owner-s3min-implementation.
 | Post, moderate, edit the channel, manage relays, share the link | as the creator does today, from any owner's device |
 | Make a member an owner | after verifying its security code; the member gets an invitation in its "chat with admins" and becomes an owner when it accepts |
 | Change member, moderator and admin roles | as today; with several owners each change takes 1–3 s, first recorded on the link server |
-| Remove an owner | any owner; the removed device can no longer change the link at once, and it, relays and members apply the removal on receipt |
-| Leave | while another owner remains; with several owners the last one cannot leave |
+| Remove an owner | any owner; the removed device can no longer change the link at once, and it, relays and members apply the removal on receipt ([diagram 5](2026-10-15-channel-multi-owner-s3min-sketches/5-removal-and-leave.svg)) |
+| Leave | while another owner remains; with several owners the last one cannot leave ([diagram 5](2026-10-15-channel-multi-owner-s3min-sketches/5-removal-and-leave.svg)) |
 | Destroy the channel | any owner; with several owners it needs the link server reachable |
 | See the members | a new owner downloads the member list from a relay, without profile pictures |
 | Subscriber count | keeps updating after the creator leaves, lagging joins by up to a minute |
@@ -21,11 +23,11 @@ Single-owner channels, and channels whose owner invitations nobody accepted, kee
 
 ## How it works
 
-The channel's link data lives on one SMP server, the link server, which already orders every write to it. The design makes it order everything the owners share:
+The channel's link data lives on one SMP server, the link server, which already orders every write to it. The design makes it order everything the owners share ([diagram 1](2026-10-15-channel-multi-owner-s3min-sketches/1-components.svg), [diagram 7](2026-10-15-channel-multi-owner-s3min-sketches/7-data-model.svg)):
 
-- **One new server command, `LSWP`.** An owner reads the link data, makes its one change, and writes it back with the hash of what it read; the server accepts it only if the data is unchanged, replacing the owner keys in the same step. Otherwise the owner reads again and re-applies its change.
-- **Role changes are numbered on the link server**, claimed with the same command from the complete current roster, so each version has one author who had all earlier ones, as members and relays expect today.
-- **Consent.** The promoter invites the member in its support chat; the member accepts; one write adds it. The verified security code stops a relay that substituted the member's key.
+- **One new server command, `LSWP`.** An owner reads the link data, makes its one change, and writes it back with the hash of what it read; the server accepts it only if the data is unchanged, replacing the owner keys in the same step. Otherwise the owner reads again and re-applies its change ([diagram 2](2026-10-15-channel-multi-owner-s3min-sketches/2-owner-write.svg)).
+- **Role changes are numbered on the link server**, claimed with the same command from the complete current roster, so each version has one author who had all earlier ones, as members and relays expect today ([diagram 3](2026-10-15-channel-multi-owner-s3min-sketches/3-roster-claims.svg)).
+- **Consent.** The promoter invites the member in its support chat; the member accepts; one write adds it. The verified security code stops a relay that substituted the member's key ([diagram 4](2026-10-15-channel-multi-owner-s3min-sketches/4-promotion.svg)).
 - **Background work** (finishing a promotion, publishing relays and the count, repairing the link after a race, re-sending a roster) runs as agent commands the agent stores and retries; each step works out what is left from the latest link data.
 - **Member list and count.** A new owner pulls the member list from a relay page by page. The first current owner in the link's list publishes the count, at most once a minute.
 
@@ -48,7 +50,7 @@ The channel's link data lives on one SMP server, the link server, which already 
 - **Edits over a changed profile are refused**, and the current profile is shown.
 - **A new owner's device connects to the link server directly**, revealing its IP address to that server's operator; the invitation says so, and private-routing settings need an explicit confirmation. Link reads stay private.
 - **The link server learns when owners act and how many there are.**
-- **A promotion wins over a removal at the same moment**: devices that applied the removal first take the member as an owner at their next link read. If the member's own device applied it first, it has left, and the member stays listed as an owner without a device until another owner removes it.
+- **A promotion wins over a removal at the same moment**: devices that applied the removal first take the member as an owner at their next link read. If the member's own device applied it first, it has left, and the member stays listed as an owner without a device until another owner removes it ([diagram 6](2026-10-15-channel-multi-owner-s3min-sketches/6-promotion-removal-race.svg)).
 - **Old apps and servers.** Promotion needs every relay and the link server upgraded; subscribers on older apps reject a new owner's actions until they upgrade.
 - **A new owner's profile reaches every subscriber**; the member is told before it accepts.
 

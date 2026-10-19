@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="756" viewBox="0 0 960 756" role="img" aria-label="Data model before and after. The link queue goes from one recipient key to a key set swapped with the link data; the link data gains linkVersion, revokedOwners, roster, creatorQueueKey and linkRcvId; the server log gains LKEYS; groups gains five columns and group_members three; the agent gains an LSWP command and a hash in LDATA; chat gains three command functions, five in-memory maps and a flag.">
+  <rect width="960" height="756" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="959" height="755" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="24" y="34" font-size="17" font-weight="700">7 · Data model, before and after</text>
+    <text x="24" y="56" fill="#5b636e">Red marks what the plan adds [§4.1, §4.2, §4.3, §4.16]. Single-owner channels write the same link data as today.</text>
+
+    <text x="36" y="94" font-weight="700" fill="#5b636e">Where</text>
+    <text x="226" y="94" font-weight="700" fill="#5b636e">Today</text>
+    <text x="536" y="94" font-weight="700" fill="#5b636e">With several owners</text>
+    <line x1="24" y1="104" x2="936" y2="104" stroke="#d9d5cc"/>
+
+    <rect x="24" y="110" width="6" height="268" fill="#b8661a"/>
+    <rect x="30" y="110" width="906" height="76" fill="#fdf2e4"/>
+    <text x="40" y="132" font-weight="700">Link queue:</text>
+    <text x="40" y="150" font-weight="700">recipient keys</text>
+    <text x="226" y="132">one: the creator's queue key</text>
+    <text x="536" y="132" fill="#b42318">the creator's queue key, while it is an owner,</text>
+    <text x="536" y="150" fill="#b42318">+ the member key of every non-revoked chain owner;</text>
+    <text x="536" y="168" fill="#b42318">LSWP replaces the set together with the data</text>
+
+    <rect x="30" y="190" width="906" height="128" fill="#fdf7ee"/>
+    <text x="40" y="212" font-weight="700">Link data</text>
+    <text x="40" y="230" fill="#5b636e">on the link server</text>
+    <text x="226" y="212">owners [creator], signed by the root key;</text>
+    <text x="226" y="230">relays, profile, subscriber count</text>
+    <text x="226" y="256">written with LSET: last writer wins</text>
+    <text x="536" y="212">owners chain [creator, M, …], each entry signed by</text>
+    <text x="536" y="230">the root key or an earlier entry; relays, profile, count</text>
+    <text x="536" y="250" fill="#b42318">+ linkVersion, revokedOwners, roster {version, author},</text>
+    <text x="536" y="268" fill="#b42318">+ creatorQueueKey, linkRcvId (all optional JSON)</text>
+    <text x="536" y="288" fill="#b42318">written only by LSWP once multi-owner; LSET gets AUTH</text>
+    <text x="536" y="306" fill="#b42318">on a queue with several keys</text>
+
+    <rect x="30" y="322" width="906" height="56" fill="#fdf2e4"/>
+    <text x="40" y="344" font-weight="700">Server store log</text>
+    <text x="226" y="344">LINK, KEYS, … records</text>
+    <text x="536" y="344" fill="#b42318">+ LKEYS: link data with its keys, then KEYS;</text>
+    <text x="536" y="362" fill="#b42318">a restart never restores data without its keys</text>
+
+    <rect x="24" y="386" width="6" height="140" fill="#2f6db5"/>
+    <rect x="30" y="386" width="906" height="76" fill="#e9f1fb"/>
+    <text x="40" y="408" font-weight="700">groups</text>
+    <text x="40" y="426" fill="#5b636e">chat database</text>
+    <text x="226" y="408">roster_version, stored_roster_version,</text>
+    <text x="226" y="426">applied_complete_roster_version,</text>
+    <text x="226" y="444">roster_blob, …</text>
+    <text x="536" y="408" fill="#b42318">+ link_data_version, link_roster_version,</text>
+    <text x="536" y="426" fill="#b42318">+ link_roster_seen_at, members_catchup,</text>
+    <text x="536" y="444" fill="#b42318">+ roster_pending_msg_id</text>
+
+    <rect x="30" y="466" width="906" height="60" fill="#f2f6fc"/>
+    <text x="40" y="488" font-weight="700">group_members</text>
+    <text x="40" y="506" fill="#5b636e">chat database</text>
+    <text x="226" y="488">member_role, member_status,</text>
+    <text x="226" y="506">member_pub_key, roster_served_version, …</text>
+    <text x="536" y="488" fill="#b42318">+ owner_inv_msg_id, owner_inv_accepted,</text>
+    <text x="536" y="506" fill="#b42318">+ relay_web_domain</text>
+
+    <rect x="24" y="534" width="6" height="60" fill="#6e7781"/>
+    <rect x="30" y="534" width="906" height="60" fill="#f1f2f4"/>
+    <text x="40" y="556" font-weight="700">Agent</text>
+    <text x="226" y="556">async commands NEW, LSET, LGET, JOIN, …</text>
+    <text x="226" y="574">LDATA: the link data, no hash</text>
+    <text x="536" y="556" fill="#b42318">+ LSWP command, stored as a blob: no migration</text>
+    <text x="536" y="574" fill="#b42318">LDATA carries the hash a swap needs</text>
+
+    <rect x="24" y="602" width="6" height="112" fill="#2f6db5"/>
+    <rect x="30" y="602" width="906" height="56" fill="#e9f1fb"/>
+    <text x="40" y="624" font-weight="700">Chat commands</text>
+    <text x="40" y="642" fill="#5b636e">continuations</text>
+    <text x="226" y="624">CFSetShortLink, CFGetRelayData…, …</text>
+    <text x="536" y="624" fill="#b42318">+ CFChannelLinkSync, CFChannelLinkResign,</text>
+    <text x="536" y="642" fill="#b42318">+ CFChannelLinkSwap</text>
+
+    <rect x="30" y="662" width="906" height="52" fill="#f2f6fc"/>
+    <text x="40" y="684" font-weight="700">Chat memory</text>
+    <text x="40" y="702" fill="#5b636e">ChatController</text>
+    <text x="226" y="684">none of these</text>
+    <text x="536" y="684" fill="#b42318">+ linkWriters, linkSyncSwaps, countPublishPending,</text>
+    <text x="536" y="702" fill="#b42318">+ memberCatchups, rosterRequests, mainApp</text>
+
+    <text x="24" y="740" fill="#5b636e">One chat migration, M20261015_channel_multi_owner (SQLite and Postgres, with its down migration); no agent or server schema change.</text>
+  </g>
+</svg>

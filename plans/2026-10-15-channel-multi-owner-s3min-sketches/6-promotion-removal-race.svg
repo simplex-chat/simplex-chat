@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="740" viewBox="0 0 960 740" role="img" aria-label="The accepted race between a promotion and a removal of the same member. O1's swap puts M in the chain and O1 sends the commit, while a remover who has not seen the promotion sends a removal of M. A party that applies the removal first refuses the commit but takes M as an owner at its next link read. A party that applies the commit first refuses an admin's later removal, and applies an owner's, taking M back at its next read. If M's own device applies the removal, it leaves for good, and M stays listed as an owner without a device until an owner removes it.">
+  <defs>
+    <marker id="d6-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+    <marker id="d6-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b42318"/>
+    </marker>
+    <marker id="d6-arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+  <rect width="960" height="740" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="959" height="739" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="24" y="34" font-size="17" font-weight="700">6 · The accepted race: a promotion and a removal of the same member</text>
+    <text x="24" y="56" fill="#5b636e">The link decides who is listed as an owner. Which message a party applies first decides its state until its next read,</text>
+    <text x="24" y="74" fill="#5b636e">except that a member device that left stays gone, and relays that applied the removal first have no connection to M [§4.8].</text>
+
+    <rect x="24" y="102" width="230" height="58" rx="8" fill="#e9f1fb" stroke="#2f6db5" stroke-width="1.5"/>
+    <text x="139" y="124" text-anchor="middle" font-weight="700">Owner O1 promotes M</text>
+    <text x="139" y="144" text-anchor="middle">its swap lands first</text>
+    <rect x="24" y="232" width="230" height="58" rx="8" fill="#e9f1fb" stroke="#2f6db5" stroke-width="1.5"/>
+    <text x="139" y="254" text-anchor="middle" font-weight="700">A remover, admin or owner</text>
+    <text x="139" y="274" text-anchor="middle">hasn't seen the promotion</text>
+    <rect x="330" y="102" width="230" height="58" rx="8" fill="#fdf2e4" stroke="#b8661a" stroke-width="1.5"/>
+    <text x="445" y="124" text-anchor="middle" font-weight="700">Link server</text>
+    <text x="445" y="144" text-anchor="middle" fill="#1a7f37">M in the chain, not revoked</text>
+    <rect x="660" y="164" width="276" height="76" rx="8" fill="#f2edfa" stroke="#6a4bb0" stroke-width="1.5"/>
+    <text x="798" y="188" text-anchor="middle" font-weight="700">Every party</text>
+    <text x="798" y="208" text-anchor="middle">relays, members, owners, M's device:</text>
+    <text x="798" y="226" text-anchor="middle">applies whichever arrives first</text>
+
+    <line x1="254" y1="131" x2="328" y2="131" stroke="#24292f" stroke-width="1.5" marker-end="url(#d6-arrow)"/>
+    <text x="291" y="124" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">LSWP</text>
+    <path d="M 254 152 C 420 178, 520 190, 658 192" fill="none" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#d6-arrow-green)"/>
+    <text x="470" y="200" text-anchor="middle" fill="#1a7f37">commit: x.grp.owner.add M</text>
+    <path d="M 254 261 C 420 248, 520 224, 658 216" fill="none" stroke="#b42318" stroke-width="1.5" marker-end="url(#d6-arrow-red)"/>
+    <text x="470" y="262" text-anchor="middle" fill="#b42318">removal: x.grp.mem.del M</text>
+
+    <rect x="214" y="318" width="356" height="32" rx="6" fill="#fbe9e7" stroke="#b42318"/>
+    <text x="392" y="339" text-anchor="middle" font-weight="700" fill="#b42318">Applied the removal first</text>
+    <rect x="580" y="318" width="356" height="32" rx="6" fill="#e6f4ea" stroke="#1a7f37"/>
+    <text x="758" y="339" text-anchor="middle" font-weight="700" fill="#1a7f37">Applied the commit first</text>
+
+    <rect x="24" y="360" width="180" height="120" rx="6" fill="#f3f1ec" stroke="#d9d5cc"/>
+    <text x="36" y="386" font-weight="700">Relays, members,</text>
+    <text x="36" y="404" font-weight="700">owners, the</text>
+    <text x="36" y="422" font-weight="700">remover's device</text>
+    <text x="36" y="440" fill="#5b636e">(always on the left)</text>
+    <rect x="214" y="360" width="356" height="120" rx="6" fill="#ffffff" stroke="#d9d5cc"/>
+    <text x="228" y="384">refuses the commit: it holds M as departed</text>
+    <text x="228" y="402">(a relay also deleted its connection to M)</text>
+    <text x="228" y="432" font-weight="700">at its next link read: M is an owner</text>
+    <text x="228" y="450">(the link lists M, not revoked)</text>
+    <rect x="580" y="360" width="356" height="120" rx="6" fill="#ffffff" stroke="#d9d5cc"/>
+    <text x="594" y="384" font-weight="700">M is an owner</text>
+    <text x="594" y="408">an admin's later removal is refused</text>
+    <text x="594" y="426">(checkRole, as today); an owner's is</text>
+    <text x="594" y="444">applied, and the next read takes M back</text>
+
+    <rect x="24" y="490" width="180" height="120" rx="6" fill="#f3f1ec" stroke="#d9d5cc"/>
+    <text x="36" y="516" font-weight="700">M's own device</text>
+    <rect x="214" y="490" width="356" height="120" rx="6" fill="#fbe9e7" stroke="#b42318"/>
+    <text x="228" y="514">has left the channel, and relays that applied</text>
+    <text x="228" y="532">the removal first have no connection to M</text>
+    <text x="228" y="562" font-weight="700" fill="#b42318">M stays listed as an owner without a</text>
+    <text x="228" y="580" font-weight="700" fill="#b42318">device until another owner removes it</text>
+    <rect x="580" y="490" width="356" height="120" rx="6" fill="#ffffff" stroke="#d9d5cc"/>
+    <text x="594" y="514" font-weight="700">admin remover: M stays an owner (T18)</text>
+    <text x="594" y="540">owner remover: M's device applies the</text>
+    <text x="594" y="558">removal here too (an owner may remove</text>
+    <text x="594" y="576">an owner), so it leaves, as on the left</text>
+
+    <rect x="24" y="630" width="912" height="92" rx="8" fill="#f3f1ec" stroke="#d9d5cc"/>
+    <text x="40" y="652">Accepted on 2026-10-19 as a rare edge case, with nothing done for it [Ov: Decisions, §4.17]. A member that leaves while being promoted</text>
+    <text x="40" y="670">ends the same way. A promoter that applied the removal before its swap refuses to add M: CLCAddOwner refuses a removed or</text>
+    <text x="40" y="688">departed member [§4.4]. The commit-first owner-remover cells follow today's checkRole, which the plan keeps; no plan</text>
+    <text x="40" y="706">text or test states them (T8 covers the removal-first order).</text>
+  </g>
+</svg>
