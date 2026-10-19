@@ -191,7 +191,7 @@ register NAME:
 ```
 
 - NAME names the data folder and the Claude Code entry `simplex-NAME`; a later `serve NAME` uses the data folder of NAME.
-- `--display-name` is the agent's name in SimpleX, which peers see and which the app shows above its cards. The first start creates the profile with it, NAME when absent; a later start with another value updates the profile. A display name has 1 to 50 characters, none of `.,;/\#@'"`~`, and starts with a letter, a digit or a symbol (`mkValidName`, `Commands.hs:6948-6976`); another value exits with code 2: `--display-name: not a valid SimpleX name; try <the valid form>`.
+- `--display-name` is the agent's name in SimpleX, which peers see and which the app shows above its cards. The first start creates the profile with it, NAME when absent, and peer type agent; a later start with another value updates the profile. A display name has 1 to 50 characters, none of `.,;/\#@'"`~`, and starts with a letter, a digit or a symbol (`mkValidName`, `Commands.hs:6948-6976`); another value exits with code 2: `--display-name: not a valid SimpleX name; try <the valid form>`.
 - `--owners` with no value: the next argument is absent or starts with `--`; parsing is custom, because `util.parseArgs` takes an option either as a flag or with a value. Entries whose NAME has characters other than letters, digits, `_` and `-` are printed in single quotes, `'` escaped as `'\''` (double quotes on Windows): `--owners '3:Alice Smith'`. The register hint adds `--data <folder>`, quoted the same way, when serve was started with `--data`.
 - `--port` and `--expire` apply to one run; `server.json` records them at each start for `register`. An agent on another port takes the same `--port` at every start; after a change of `--port` or `--expire`, `register NAME` runs again.
 - `--expire` at most 23: a sent message is editable for 24 hours (`deletable'`, `Messages.hs:537-548`; refused edit, `Commands.hs:845-868`), so the outcome edit of a pending card falls within that window. Standing and host-mode outcomes are posted, not edited.
@@ -668,15 +668,15 @@ errorStore groupNotFound                                 Group not found! This g
 
 ```
 event                                   what the peer sees
-the agent connects as itself            the agent's profile: name DISPLAY, peer type agent (bot until the libraries include agent)
-the agent connects incognito            a random profile, created for this chat only; no peer type (generateRandomProfile, ProfileGenerator.hs:9-13)
+the agent connects as itself            the agent's profile: name DISPLAY, peer type agent
+the agent connects incognito            a random profile, created for this chat only, with peer type agent (generateIncognitoProfile, Internal.hs:1340)
 the agent connects to an address        a contact request, with the message
 the agent's message                     a message from that profile
 reply_to                                a quote of that item
 mention                                 @name in the text; a mention for that member
 ```
 
-- A service can tell agents from people by the peer type of the agent's profile, answer agents by bot and pass people to a person at once. An incognito agent shows no peer type (Open).
+- A service can tell agents from people by the peer type of the agent's profile, answer agents by bot and pass people to a person at once. An incognito agent shows the same peer type.
 - The agent has no address: peers reach it only in chats it connected.
 
 ## Processing
@@ -690,11 +690,11 @@ serve(NAME, options):
   check options
   create DIR, mode 0700 (set again when DIR exists, except on Windows); DIR/lock created exclusively, or exit 1 when its PID runs; token = DIR/token, created when missing or with --new-token; DIR/headers.json written with the token
   chat = ChatApi.init({type: "sqlite", filePrefix: DIR/simplex})
-  profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: bot}, pastTimestamp: false}
+  profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: agent}, pastTimestamp: false}
   write DIR/server.json {name: NAME, port, expireHours}
   /network socks=off smp-proxy=always smp-proxy-fallback=protected           # the apps' defaults, SimpleXAPI.kt:5427-5447
   buffer events; chat.startChat()
-  --display-name differs from profile.displayName: /_profile <user> {the profile with displayName}       # APIUpdateProfile, parser Commands.hs:6399; before startChat the core returns chatNotStarted
+  --display-name differs from profile.displayName, or peerType is not agent: /_profile <user> {the profile with displayName and peerType agent}       # APIUpdateProfile, parser Commands.hs:6399; before startChat the core returns chatNotStarted
   group = /_groups <user> -> the group with customData.simplexMcp.control, or createControlChat()
   nextAction = group.customData.simplexMcp.nextAction
   --reset-owners: membership current and role below owner: /_leave #group (parser Commands.hs:6424), as only an owner or a former member deletes a group (Commands.hs:1395-1398);
@@ -1272,11 +1272,10 @@ C6      Claude Code closes the request stream when a call times out or its task 
 - Bots advertise commands; `connect` returns them.
 - Catalogues and vendor services are a separate problem; the demo uses the directory, which lists groups now and contacts and bots on `ep/dir-contacts` (`simplex-chat-5`).
 - Expiry: `--expire` 1 to 23 hours, default 23. Action counter in the custom data of the agent control chat. `DIR/lock` against a second server.
-- Peer type `agent`: merged in the core (#7738); the agent's profile uses it once `@simplex-chat/types` and `simplex-chat` releases include it; until then, `bot`.
+- Peer type `agent`: in core 7.1.0.14 (#7738) and `@simplex-chat/types` 7.1.0-beta.6.2; the agent's profile uses it, a start updates a profile created as `bot`, and incognito profiles take it too (#7751).
 
 ## Open
 
-- Incognito profiles get the user's peer type in the core since #7751 (`1d0247b7d`, master); the MCP server shows it once a `simplex-chat` release includes that core. Until then an incognito agent shows no peer type, and services see it as a person.
 - A convention for services that agents use (MCP within MCP), "Ask SimpleX Team" as a service for agents, the `#agents.simplex` name and the directory's own SimpleX name: after v0.1 is tested.
 - C3 to C6.
 

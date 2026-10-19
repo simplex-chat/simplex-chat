@@ -438,7 +438,7 @@ Server name: `simplex-NAME` ([register.ts:33](../src/register.ts#L33)).
 | 2 | `--reset-owners takes --owners without a list: member IDs change in a new agent control chat.` | [cli.ts:98](../src/cli.ts#L98) |
 | 2 | `--owners: member ENTRY is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members.` | [control.ts:251](../src/control.ts#L251) |
 | 1 | `Another server uses DATA (PID N).` | [files.ts:21](../src/files.ts#L21), [:23](../src/files.ts#L23) |
-| 1 | `Port PORT is in use. Start with --port N.` | [serve.ts:204](../src/serve.ts#L204) |
+| 1 | `Port PORT is in use. Start with --port N.` | [serve.ts:205](../src/serve.ts#L205) |
 | 1 | `Agent "NAME" was never started. Start it with: npx -y @simplex-chat/mcp serve NAME` | [register.ts:32](../src/register.ts#L32) |
 | 1 | `Add this entry under LOCATION in ~/.claude.json: {"simplex-NAME": ENTRY}` | [register.ts:52-55](../src/register.ts#L52-L55) |
 | 1 | `claude mcp add-json failed: STDERR` | [register.ts:39](../src/register.ts#L39) |

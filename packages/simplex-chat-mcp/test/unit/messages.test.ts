@@ -17,7 +17,7 @@ afterEach(() => {
 })
 
 describe("message fields", () => {
-  const self = {name: "agent", type: "bot"}
+  const self = {name: "agent", type: "agent"}
 
   it("describes a group message", () => {
     const switchback = member(44, "Switchback")
@@ -44,7 +44,7 @@ describe("message fields", () => {
       chat: "@4",
       item: 20,
       from: "agent",
-      from_type: "bot",
+      from_type: "agent",
       time: "2026-10-17T10:00:00Z",
       text: "shoes",
       new: false,

@@ -110,9 +110,9 @@ Start sequence, event dispatch and stop sequence of one agent.
 | `startAgent` | [87](../src/serve.ts#L87) | user, network config, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, event handler, `stop` |
 | `registerHint` | [164](../src/serve.ts#L164) | the `register` command line printed after the owner setup |
 | `deliveries` | [168](../src/serve.ts#L168) | wait for pending deliveries of the control chat at stop |
-| `controlGroup` | [193](../src/serve.ts#L193) | found, created or reset agent control chat |
-| `listen` | [200](../src/serve.ts#L200) | `startHttp`; `EADDRINUSE` to `ExitError` code 1 |
-| `bufferEvents` | [209](../src/serve.ts#L209) | events received before the handler is installed are queued and replayed in order |
+| `controlGroup` | [194](../src/serve.ts#L194) | found, created or reset agent control chat |
+| `listen` | [201](../src/serve.ts#L201) | `startHttp`; `EADDRINUSE` to `ExitError` code 1 |
+| `bufferEvents` | [210](../src/serve.ts#L210) | events received before the handler is installed are queued and replayed in order |
 
 ### [2.3 `http.ts`](../src/http.ts)
 
@@ -288,18 +288,18 @@ The core library is downloaded once into `CACHE/core-7.1.0.12/sqlite`, and the N
 1. Data folder, lock, token and headers file are prepared ([serve.ts:66-70](../src/serve.ts#L66-L70)).
 2. libsimplex for SQLite is loaded by `ChatApi.init`, and the databases are migrated with confirmation `yesUp` ([serve.ts:71](../src/serve.ts#L71), [api.ts:114-123](../../simplex-chat-nodejs/src/api.ts#L114-L123)).
 3. Three log lines: version and NAME, data folder, mode ([serve.ts:72-74](../src/serve.ts#L72-L74)).
-4. The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `bot` ([serve.ts:89](../src/serve.ts#L89)).
+4. The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `agent` ([serve.ts:89](../src/serve.ts#L89)).
 5. `server.json` is written ([:90](../src/serve.ts#L90)).
 6. The network config is set: `/network socks=off smp-proxy=always smp-proxy-fallback=protected` ([:91](../src/serve.ts#L91)).
 7. Events are buffered, and the chat is started ([:92-93](../src/serve.ts#L92-L93)).
-8. A `--display-name` different from the profile is applied with `apiUpdateProfile` ([:94](../src/serve.ts#L94), [:187-191](../src/serve.ts#L187-L191)).
-9. The agent control chat is found by its marker, created with counter 1, or reset with `--reset-owners` ([:96](../src/serve.ts#L96), [:193-198](../src/serve.ts#L193-L198)).
+8. A `--display-name` different from the profile, or a peer type other than `agent`, is applied with one `apiUpdateProfile` ([:94](../src/serve.ts#L94), [:187-192](../src/serve.ts#L187-L192)).
+9. The agent control chat is found by its marker, created with counter 1, or reset with `--reset-owners` ([:96](../src/serve.ts#L96), [:194-199](../src/serve.ts#L194-L199)).
 10. `Actions`, `ChatItemsWatch`, `AgentTools` and `Control` are created; the counter is taken from the marker ([:97-106](../src/serve.ts#L97-L106)).
 11. `Control.load`: for a lost control chat, `Actions.lost` is set; otherwise the group name and command menu are updated when they differ, and members are read ([control.ts:88-95](../src/control.ts#L88-L95)).
-12. The HTTP server listens; with the port in use, the process exits with code 1 ([serve.ts:113](../src/serve.ts#L113), [:200-207](../src/serve.ts#L200-L207)).
+12. The HTTP server listens; with the port in use, the process exits with code 1 ([serve.ts:113](../src/serve.ts#L113), [:201-208](../src/serve.ts#L201-L208)).
 13. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([serve.ts:114-119](../src/serve.ts#L114-L119)).
 14. `Listening on http://127.0.0.1:PORT/mcp` ([:120](../src/serve.ts#L120)).
-15. Buffered events are replayed, then live events are dispatched ([:123](../src/serve.ts#L123), [:209-223](../src/serve.ts#L209-L223)).
+15. Buffered events are replayed, then live events are dispatched ([:123](../src/serve.ts#L123), [:210-224](../src/serve.ts#L210-L224)).
 
 After an error inside `startAgent` (steps 4-15) the chat is closed; after any error once the lock is taken, the lock is released ([serve.ts:68-84](../src/serve.ts#L68-L84)).
 
@@ -475,7 +475,7 @@ Outcomes are posted after `done` and `failed` ([actions.ts:239](../src/actions.t
 | a new action takes `next`, then `next` grows by 1 | [actions.ts:120](../src/actions.ts#L120), [:138](../src/actions.ts#L138) |
 | the new `next` is written before the card is posted | [actions.ts:213-214](../src/actions.ts#L213-L214) |
 | one write at a time, also after a failed write | [control.ts:118-122](../src/control.ts#L118-L122) |
-| `--reset-owners` copies the value into the new control chat | [serve.ts:196-197](../src/serve.ts#L196-L197), [control.ts:387-392](../src/control.ts#L387-L392) |
+| `--reset-owners` copies the value into the new control chat | [serve.ts:197-198](../src/serve.ts#L197-L198), [control.ts:387-392](../src/control.ts#L387-L392) |
 | a refused call leaves the counter unchanged | [actions.ts:137](../src/actions.ts#L137) |
 
 ---

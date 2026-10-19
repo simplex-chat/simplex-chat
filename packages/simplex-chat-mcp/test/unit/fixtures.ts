@@ -3,7 +3,7 @@ import {api, core} from "simplex-chat"
 import {Actions, ActionHooks} from "../../src/actions"
 import {ToolCall} from "../../src/messages"
 
-export const user = {userId: 1, profile: {displayName: "agent", peerType: "bot", profileId: 1}} as unknown as T.User
+export const user = {userId: 1, profile: {displayName: "agent", peerType: "agent", profileId: 1}} as unknown as T.User
 
 export function contact(contactId: number, displayName: string, extra: object = {}): T.Contact {
   return {

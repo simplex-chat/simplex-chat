@@ -86,12 +86,12 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
 
 async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string): Promise<RunningServer> {
   const {name, data, port, approve, expireHours} = options
-  const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Bot}))
+  const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
   writeServerFile(data, {name, port, expireHours})
   await chatCommand(chat, "/network socks=off smp-proxy=always smp-proxy-fallback=protected", "networkConfig")
   const events = bufferEvents(chat)
   await chat.startChat()
-  const user = await renamedUser(chat, created, options.displayName)
+  const user = await updatedUser(chat, created, options.displayName)
   const displayName = user.profile.displayName
   const group = await controlGroup(chat, user.userId, displayName, options.resetOwners)
   const actions: Actions = new Actions(approve, expireHours, controlDataOf(group.customData)?.nextAction ?? 1, {
@@ -184,9 +184,10 @@ async function sqlRows(chat: api.ChatApi, query: string): Promise<string[]> {
   }
 }
 
-async function renamedUser(chat: api.ChatApi, user: T.User, displayName: string | undefined): Promise<T.User> {
-  if (displayName === undefined || displayName === user.profile.displayName) return user
-  await chat.apiUpdateProfile(user.userId, {...util.fromLocalProfile(user.profile), displayName})
+async function updatedUser(chat: api.ChatApi, user: T.User, displayName: string | undefined): Promise<T.User> {
+  const {profile} = user
+  if ((displayName === undefined || displayName === profile.displayName) && profile.peerType === T.ChatPeerType.Agent) return user
+  await chat.apiUpdateProfile(user.userId, {...util.fromLocalProfile(profile), displayName: displayName ?? profile.displayName, peerType: T.ChatPeerType.Agent})
   return (await chat.apiGetActiveUser())!
 }
 

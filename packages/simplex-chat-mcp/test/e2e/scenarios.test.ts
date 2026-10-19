@@ -337,6 +337,7 @@ test("--display-name names the profile and the agent control chat", async () => 
   await agent.start({displayName: "Trail Scout"})
   const controlId = await joinAsOwner(alice)
   expect(agent.server.user.profile.displayName).toBe("Trail Scout")
+  expect(agent.server.user.profile.peerType).toBe(T.ChatPeerType.Agent)
   expect(logLines).toContain('Agent control chat "Trail Scout" created.')
   expect((await controlGroupOf(agent.server.chat, agent.server.user.userId)).groupProfile.displayName).toBe("Trail Scout")
   expect((await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === controlId)!.groupProfile.displayName).toBe("Trail Scout")
