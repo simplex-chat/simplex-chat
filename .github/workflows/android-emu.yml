@@ -101,6 +101,12 @@ jobs:
           apk=$(scripts/ci/android/release-apk.sh "$RUNNER_TEMP/release")
           echo "apk=$apk" | tee -a "$GITHUB_OUTPUT"
 
+      - name: Install emulator libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse0 libnss3 libxcomposite1 libxcursor1 libxdamage1 libxi6 libxtst6 libxkbfile1 libgl1 libegl1
+          dpkg-query -W libpulse0 libnss3 libgl1 libegl1
+
       - name: Install emulator and system image
         run: scripts/ci/android/install-sdk.sh ${{ matrix.api }} "$RUNNER_TEMP/android-sdk"
 
@@ -192,12 +198,21 @@ jobs:
           name: android-app
           path: ${{ runner.temp }}/app
 
+      - name: Install emulator libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse0 libnss3 libxcomposite1 libxcursor1 libxdamage1 libxi6 libxtst6 libxkbfile1 libgl1 libegl1
+          dpkg-query -W libpulse0 libnss3 libgl1 libegl1
+
       - name: Install emulator and system image
         run: scripts/ci/android/install-sdk.sh 34 "$RUNNER_TEMP/android-sdk"
 
       - name: Boot emulator
         timeout-minutes: 15
         run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/smoke-test"
+
+      - name: Reach the runner from the emulator
+        run: scripts/ci/android/reach-host.sh 5223
 
       - name: Run smoke test
         timeout-minutes: 10

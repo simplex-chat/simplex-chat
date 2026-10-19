@@ -71,6 +71,10 @@ tag.id=google_apis
 PlayStore.enabled=false
 EOF
 
+if ldd "$sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64" | grep 'not found'; then
+  echo "error: the emulator needs these libraries"
+  exit 1
+fi
 "$sdk/emulator/emulator" -version | head -n 1
 "$sdk/platform-tools/adb" version | head -n 2
 grep -E '^(ro.build.version.sdk|ro.product.cpu.abilist|ro.system.product.cpu.abilist)=' "$sdk/system-images/android-$api/google_apis/x86_64/build.prop" || true
