@@ -135,8 +135,12 @@ if (unread) {
 addChat(newChat)
 ```
 
-`wasUnread = false` is exact rather than assumed: the chat did not exist in this list a
-moment ago, so it contributed nothing to the tag counters.
+`wasUnread = false` matches the list: the chat is not in it, so it contributes nothing to
+the tag counters as they would be recomputed. The counters themselves are recomputed only
+by `getUserChatData`, so if a reload that does not recompute them (Android foreground,
+iOS becoming active, a TTL change) dropped an unread chat out of the window, its old
+contribution is still there, and when it comes back with a message its tags count it
+twice until the next profile switch or restart.
 
 The two counter updates are not optional extras. `markChatItemsRead` subtracts
 unconditionally — `decreaseUnreadCounter(..., chat.chatStats.unreadCount - unreadCount)`
@@ -164,9 +168,10 @@ the in-list branch calls them.
 
 The event says a message arrived; it does not say how many items in that chat are
 unread. The count set here is therefore a floor, corrected by the next reload of the
-list — and, on Android and desktop, for a chat the user opens, before that:
+list — and, on Android and desktop, for a chat the user opens normally, before that:
 `processLoadedChat` overwrites the stats with the backend's, since `ChatPagination.Initial`
-is a pagination for which the core computes them. iOS keeps the listed stats when a chat
+is a pagination for which the core computes them (opening it by jumping to a forwarded
+item's original uses `Around`, which keeps the listed stats). iOS keeps the listed stats when a chat
 is opened, so reading its older unread items one by one takes the chat's count below zero,
 and a later message in it then shows no badge and does not light the filter until the next
 reload (before this change it was one lower still).
