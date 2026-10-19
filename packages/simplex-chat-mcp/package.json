@@ -12,6 +12,9 @@
   "engines": {
     "node": ">=22"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
