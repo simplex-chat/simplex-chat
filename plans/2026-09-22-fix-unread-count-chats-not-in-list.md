@@ -139,8 +139,8 @@ addChat(newChat)
 the tag counters as they would be recomputed. The counters themselves are recomputed only
 by `getUserChatData`, so if a reload that does not recompute them (Android foreground,
 iOS becoming active, a TTL change) dropped an unread chat out of the window, its old
-contribution is still there, and when it comes back with a message its tags count it
-twice until the next profile switch or restart.
+contribution is still there, and when a received unread message in its main scope brings it back
+and makes it unread again, its tags count it twice until the next profile switch or restart.
 
 The two counter updates are not optional extras. `markChatItemsRead` subtracts
 unconditionally — `decreaseUnreadCounter(..., chat.chatStats.unreadCount - unreadCount)`
@@ -214,7 +214,7 @@ separate change.
   `removeChat` decrements neither — it removes the chat's preset tags, but not those two;
   a cleared mention can leave `unreadMentions` behind. Both are recorded as GAP-10.
   Before this change this branch added nothing to either counter, so the tag drift is
-  newly reachable here and the profile-counter drift grows by the arriving item, even
+  newly reachable here and the profile-counter drift grows by the arriving item when it is a received unread item, even
   though the defect is not new.
 - **A message that arrives while the profile or remote host is being switched can be
   counted twice.** `changeActiveUser_` refills `users` from `listUsers` and only then
