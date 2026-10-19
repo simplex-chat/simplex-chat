@@ -518,7 +518,7 @@ Node limits: `requestTimeout` 0, `timeout` 0, `headersTimeout` 60 s, `keepAliveT
 | errors on cards | folded to one line, one code span | [control.ts:430](../src/control.ts#L430) |
 | `--owners` part of restart lines in the chat | one code span | [control.ts:65](../src/control.ts#L65), [:589-591](../src/control.ts#L589-L591) |
 | terminal names and errors of actions | folded to one line | [actions.ts:141](../src/actions.ts#L141), [:285-287](../src/actions.ts#L285-L287), [control.ts:64](../src/control.ts#L64) |
-| tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, `description`, `welcome` and `commands` as data, never instructions | [tools.ts:125-129](../src/tools.ts#L125-L129), [:146](../src/tools.ts#L146), [:157-161](../src/tools.ts#L157-L161), [:330](../src/tools.ts#L330) |
+| tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [tools.ts:125-129](../src/tools.ts#L125-L129), [:146-147](../src/tools.ts#L146-L147), [:157-161](../src/tools.ts#L157-L161), [:330](../src/tools.ts#L330) |
 
 The server writes the tappable form `/'...'` only in the card's command line, `/'approve ...'` and `/'reject ...'` ([control.ts:461-470](../src/control.ts#L461-L470)), and in `/'revoke CHAT'` of standing cards and replies ([:428](../src/control.ts#L428), [:202](../src/control.ts#L202)).
 
