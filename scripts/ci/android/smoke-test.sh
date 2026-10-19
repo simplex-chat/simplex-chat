@@ -77,11 +77,12 @@ check() {
   fi
 }
 
-# A crash as Android logs one: AndroidRuntime's FATAL EXCEPTION for the app's process, or a native fatal signal in it.
-# Not any line with "error" or from AndroidRuntime, which logs every uiautomator dump.
+# A crash as Android logs one: AndroidRuntime's FATAL EXCEPTION for the app's process, or a native fatal signal in it,
+# whose line names the process by the last 15 characters of its name. Not any line with "error" or from
+# AndroidRuntime, which logs every uiautomator dump.
 app_running() {
   ! grep -A 1 'FATAL EXCEPTION' "$UI_OUT/app.log" | grep -q "Process: $package," &&
-    ! grep -q "Fatal signal .*($package)" "$UI_OUT/app.log" &&
+    ! grep -q "Fatal signal .*(${package: -15})" "$UI_OUT/app.log" &&
     adb shell pidof "$package" > /dev/null
 }
 
@@ -117,6 +118,7 @@ back_to() {
 first_screen() {
   local deadline=$((SECONDS + 180))
   until "$ui" find "Get started" > /dev/null 2>&1; do
+    app_running || return 1
     if "$ui" find "Read more" > /dev/null 2>&1; then
       echo "NOTE the What's new sheet covered the first onboarding screen" | tee -a "$checks"
       "$ui" shot whats-new-over-onboarding
@@ -257,7 +259,7 @@ check_layout() {
 # runner's 127.0.0.1; developer tools at the debug level put the app's debug log in logcat
 started=$SECONDS
 "$ui" start "$apk" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
-first_screen || fail "no first onboarding screen 180 s after the start"
+first_screen || fail "no first onboarding screen 180 s after the start, or the app stopped: its crashes in logcat are below"
 echo "first screen after $((SECONDS - started)) s"
 "$ui" shot first-screen
 if [ "$cases" = start ]; then
