@@ -153,12 +153,15 @@ public func recvSimpleXMsg<R: ChatAPIResult>(_ ctrl: chat_ctrl? = nil, messageTi
 }
 
 public func parseSimpleXMarkdown(_ s: String) -> [FormattedText]? {
+    parseSimpleXMarkdownText(s)?.formattedText
+}
+
+public func parseSimpleXMarkdownText(_ s: String) -> ParsedMarkdown? {
     var c = s.cString(using: .utf8)!
     if let cjson = chat_parse_markdown(&c) {
         if let d = dataFromCString(cjson) {
             do {
-                let r = try jsonDecoder.decode(ParsedMarkdown.self, from: d)
-                return r.formattedText
+                return try jsonDecoder.decode(ParsedMarkdown.self, from: d)
             } catch {
                 logger.error("parseSimpleXMarkdown jsonDecoder.decode error: \(error.localizedDescription)")
             }
@@ -180,8 +183,9 @@ public func parseBadgeCode(_ s: String) -> String? {
     return canonical.isEmpty ? nil : canonical
 }
 
-struct ParsedMarkdown: Decodable {
-    var formattedText: [FormattedText]?
+public struct ParsedMarkdown: Decodable {
+    public var formattedText: [FormattedText]?
+    public var markdownBlocks: [MarkdownBlock]?
 }
 
 public func parseServerAddress(_ s: String) -> ServerAddress? {
