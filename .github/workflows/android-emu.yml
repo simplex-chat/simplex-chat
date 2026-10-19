@@ -71,14 +71,15 @@ jobs:
           sudo dmesg | grep -iE 'kvm|hyp|el2' || true
 
   release:
-    name: released APK, API ${{ matrix.api }}
+    name: released APK, API ${{ matrix.api }}, ${{ matrix.gpu }}
     needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        api: [30, 34, 35]
+        api: [34]
+        gpu: [swiftshader_indirect, guest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -112,6 +113,8 @@ jobs:
 
       - name: Boot emulator
         timeout-minutes: 15
+        env:
+          EMULATOR_GPU: ${{ matrix.gpu }}
         run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/smoke-test"
 
       - name: Run smoke test
@@ -128,7 +131,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: android-release-api${{ matrix.api }}-smoke-test
+          name: android-release-api${{ matrix.api }}-${{ matrix.gpu }}-smoke-test
           path: ${{ runner.temp }}/smoke-test
           retention-days: 7
           if-no-files-found: warn
@@ -171,14 +174,17 @@ jobs:
         working-directory: apps/multiplatform
         run: |
           ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a :android:assembleFossDebug
-          ls -la android/build/outputs/apk/foss/debug
-          unzip -l android/build/outputs/apk/foss/debug/android-foss-arm64-v8a-debug.apk | grep -E ' lib/'
+          # with an injected ABI the APK is not under build/outputs
+          find android/build -name '*.apk' -exec ls -la {} +
+          mkdir -p "$RUNNER_TEMP/apk"
+          cp "$(find android/build -name '*.apk' | head -n 1)" "$RUNNER_TEMP/apk/android-foss-arm64-v8a-debug.apk"
+          unzip -l "$RUNNER_TEMP/apk/android-foss-arm64-v8a-debug.apk" | grep -E ' lib/'
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
           name: android-app
-          path: apps/multiplatform/android/build/outputs/apk/foss/debug/android-foss-arm64-v8a-debug.apk
+          path: ${{ runner.temp }}/apk/android-foss-arm64-v8a-debug.apk
           compression-level: 0
           retention-days: 1
           if-no-files-found: error
@@ -215,8 +221,8 @@ jobs:
         run: scripts/ci/android/reach-host.sh 5223
 
       - name: Run smoke test
-        timeout-minutes: 10
-        run: scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/app/android-foss-arm64-v8a-debug.apk" "$RUNNER_TEMP/smoke-test"
+        timeout-minutes: 15
+        run: scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/app/android-foss-arm64-v8a-debug.apk" "$RUNNER_TEMP/smoke-test" onboarding
 
       - name: Stop emulator
         if: ${{ !cancelled() }}

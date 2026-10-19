@@ -17,7 +17,7 @@ start() {
   ls -l /dev/kvm
   emulator -accel-check
 
-  local flags=(-avd ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -camera-back none -camera-front none -memory 4096 -cores 4)
+  local flags=(-avd ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu "${EMULATOR_GPU:-swiftshader_indirect}" -camera-back none -camera-front none -memory 4096 -cores 4)
   local help
   help=$(emulator -help 2>&1 || true)
   if grep -q -- '-no-metrics' <<< "$help"; then

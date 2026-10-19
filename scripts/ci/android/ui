@@ -65,10 +65,28 @@ next_file() {
   printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1"
 }
 
+screenshot() {
+  local dir=$state/screenshot png
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  # without a window the emulator composes the screen on the host, where the guest's screencap can't read it
+  adb emu screenrecord screenshot "$dir" > /dev/null || true
+  for _ in $(seq 10); do
+    png=$(find "$dir" -name '*.png' -size +0 | head -n 1)
+    if [ -n "$png" ]; then
+      mv "$png" "$1"
+      return 0
+    fi
+    sleep 0.5
+  done
+  echo "no screenshot from the emulator, using the guest's screencap" >&2
+  adb exec-out screencap -p > "$1"
+}
+
 shot() {
   local f
   f=$(next_file "$1")
-  adb exec-out screencap -p > "$f.png"
+  screenshot "$f.png"
   dump
   cp "$state/ui.xml" "$f.xml"
   python3 "$here/screen-tree.py" "$f.xml" lines > "$f.txt"
