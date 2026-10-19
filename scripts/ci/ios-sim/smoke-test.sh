@@ -4,8 +4,9 @@
 # chat list with the one-hand UI (the default), then the chat list again with the top bar. It leaves the app in the one-hand UI.
 # With BACKEND_DIR, the work dir of the running test backend, it then searches the test directory, whose results
 # must show their avatars and have the Directory header above them in both layouts; then, with a joined channel,
-# the chat list's cards must show while typing and hide under the results; and "Show more" must be disabled while
-# its page loads (a screenshot shows its colour).
+# the chat list's cards must show while typing and hide under the results; a page whose only result is that channel
+# must say so; the channel found by its description must be its chat row, opening it, on the chat list in both layouts
+# and in New chat; and "Show more" must be disabled while its page loads (a screenshot shows its colour).
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir>
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -195,6 +196,95 @@ expect_cards_hidden_by_results() {
   echo "in the $1 layout the cards ($(paste -sd ',' - <<< "$typing")) show while typing, are hidden under the results and come back when the search is cleared"
 }
 
+# the joined channel must not be offered to join again
+expect_no_join_row() {
+  local tree
+  tree=$("$ui" tree)
+  if grep -qF '"#ci_cards"' <<< "$tree" || grep -qF 'Join channel' <<< "$tree"; then
+    echo "error: in $1 the joined ci_cards is a Directory row (#ci_cards, Join channel), not its chat"
+    exit 1
+  fi
+}
+
+# with the space the local filter does not match ci_cards, so the list does not show it, and the directory finds it by its description
+open_known_chat_from_results() {
+  type_search "ci cards"
+  search_directory "ci_cards"
+  "$ui" shot "known-chat-$1"
+  expect_in_tree -F 'StaticText "ci_cards"'
+  expect_no_join_row "the $1 layout (chat list)"
+  "$ui" tap ci_cards
+  "$ui" wait "you are subscriber" 30
+  "$ui" shot "known-chat-opened-$1"
+  "$ui" tap Back
+  clear_search
+  echo "in the $1 layout the directory result for the joined ci_cards is its chat row, which opens the channel"
+}
+
+# the elements labelled exactly $1, one per line
+labelled() {
+  "$ui" tree | grep -F "\"$1\" value=" || true
+}
+
+# the elements labelled $1 that are not among the lines $2
+added_labelled() {
+  local now
+  now=$(labelled "$1")
+  if [ -z "$2" ]; then
+    printf '%s' "$now"
+  else
+    grep -vxF -f <(printf '%s\n' "$2") <<< "$now" || true
+  fi
+}
+
+# the topmost of these tree lines
+topmost() {
+  sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1 &/' <<< "$1" | sort -n | head -n 1 | cut -d ' ' -f 2-
+}
+
+tap_element() {
+  local x y w h
+  read -r x y w h <<< "$(sed -nE 's/.* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/p' <<< "$1")"
+  if [ -z "$h" ]; then
+    echo "error: no on-screen element to tap in: $1"
+    exit 1
+  fi
+  "$ui" tap-xy $((x + w / 2)) $((y + h / 2))
+}
+
+# New chat lists only contacts, so there the joined channel is a contact-style chat row. The chat list behind the sheet
+# may be in the tree too, with its own search field (at the bottom with the one-hand UI) and ci_cards row, so the sheet's
+# field is the topmost one and its row is the ci_cards element the search adds.
+open_known_chat_from_new_chat() {
+  local before row deadline
+  before=$(labelled ci_cards)
+  "$ui" tap Compose
+  "$ui" wait "Create 1-time link" 10
+  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
+  "$ui" type "ci cards"
+  sleep 2
+  "$ui" tap "Search in Directory"
+  if "$ui" wait "Search in Directory?" 10; then
+    "$ui" tap "Search"
+  fi
+  deadline=$((SECONDS + 60))
+  until row=$(added_labelled ci_cards "$before") && [ -n "$row" ]; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      "$ui" shot known-chat-new-chat-missing
+      echo "error: New chat shows no ci_cards row after searching the directory for \"ci cards\""
+      exit 1
+    fi
+    sleep 2
+  done
+  "$ui" shot known-chat-new-chat
+  expect_no_join_row "New chat"
+  tap_element "$row"
+  "$ui" wait "you are subscriber" 30
+  "$ui" shot known-chat-opened-new-chat
+  "$ui" tap Back
+  echo "in New chat the directory result for the joined ci_cards is its chat row ($row), which closes the sheet and opens the channel"
+}
+
 xcrun simctl install "$SIM_UDID" "$app"
 xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
@@ -292,12 +382,18 @@ if grep -qF '"#ci_cards"' <<< "$tree"; then
   exit 1
 fi
 echo "after joining from its Directory row, ci_cards is a chat in the search results and its Directory row is gone"
+# the page's only result is that channel, which the list shows, so the Directory part says the page added none
+expect_in_tree -F '"All results on this page are already in your chats"'
+echo "the Directory part says all results on the page are already in your chats"
 clear_search
 expect_cards_hidden_by_results reachable
+open_known_chat_from_results reachable
 "$ui" layout top
 dismiss_lock_notice
 expect_cards_hidden_by_results top
+open_known_chat_from_results top
 "$ui" layout reachable
+open_known_chat_from_new_chat
 
 # with the directory stopped, the next page waits 10 s before it fails: long enough to see "Show more" while it loads
 type_search "ci avatar"
@@ -308,4 +404,4 @@ search_directory "Show more"
 expect_in_tree -E '^Button "Show more" .* disabled$'
 "$ui" directory start
 clear_search
-echo "smoke test passed: onboarding reaches the chat list in both layouts; the directory search for \"$search_text\" shows #ci_group (Join group) and #ci_channel (Join channel) with their avatars and the Directory header above them; with a chat, the list's cards show while typing and hide under the results; \"Show more\" is disabled while its page loads"
+echo "smoke test passed: onboarding reaches the chat list in both layouts; the directory search for \"$search_text\" shows #ci_group (Join group) and #ci_channel (Join channel) with their avatars and the Directory header above them; with a chat, the list's cards show while typing and hide under the results; a page of chats already listed says so; the joined channel found by its description is its chat row on the chat list in both layouts and in New chat, and opens it; \"Show more\" is disabled while its page loads"

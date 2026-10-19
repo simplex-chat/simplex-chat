@@ -37,7 +37,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | ID | Do | Expect |
 |----|----|--------|
 | D1 | Search for a term that matches listed groups | Spinner in the search field after about 1 s. While loading: **no "Directory" header**, no "No chats found" overlay |
-| D2 | Results arrive | A "Directory" header row, then rows: avatar, `#` name, the directory's SimpleX name (if any), description up to 2 lines, member or subscriber count, and **"Join channel"** for channels or **"Join group"** for groups at the trailing edge |
+| D2 | Results arrive | A "Directory" header row, then rows: avatar, `#` name, the directory's SimpleX name (if any), description up to 2 lines, member or subscriber count, and **"Join channel"** for channels or **"Join group"** for groups at the trailing edge. "Join …" rows are for entries you don't have; an entry you already have is a chat row (U2) |
 | D3 (R1-4) | Long-named entry, small phone, large text | The verb stays on one line; the name and description truncate instead |
 | D4 | Scroll the list, especially in one-hand mode | The "Directory" header scrolls with the rows and is not pinned to the screen edge |
 | D5 | Entry with markdown in its name or description | Shown literally: no bold, no tappable link |
@@ -57,8 +57,9 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | ID | Do | Expect |
 |----|----|--------|
 | U1 | Search for the name of a channel you joined (it is also listed) | It appears once, as your local chat; no Directory row for it |
-| U2 | Search for a word only in that channel's description, so the local list does not show it | It appears in the Directory part; tapping it opens the "already joined" alert for the known channel |
+| U2 | Search for a word only in that channel's description, so the local list does not show it | It appears in the Directory part as your chat's row (as in the chat list: name without `#`, last message, time), with no "Join channel"; tapping it opens the channel, with no alert |
 | U3 | A listed regular group you joined through a different link (or by invitation) | It shows twice, local and Directory. This is the documented limit, not a regression |
+| U4 | Search for the name of a joined channel that is the page's only result, so the list shows it as your chat | Under the "Directory" header: "All results on this page are already in your chats" (grey), and "Show more" when there are more pages (with the one-hand UI it sits right under the header, as in D7); nothing loads more pages by itself |
 
 ## Chat list: names (AC5)
 
@@ -91,6 +92,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | W9 | Close the sheet while a search runs | The spinner stops; the chat list is unaffected |
 | W10 (R1-1) | Sheet open with results, tap a notification from another profile | The results disappear |
 | W11 | New chat → Archived contacts, type and press return | The key is "return", not Search; no online rows; empty states as before |
+| W12 | In New chat, search the directory for a word in the description of a channel or group you joined | In the Directory section it is a chat row like a contact's (avatar, name without `#`, a star if favourite, a mask if incognito), with no "Join …"; tapping it closes the sheet and opens the chat |
 
 ## Regression checks
 

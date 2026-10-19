@@ -3,9 +3,9 @@
 # entries-<layout> (optional) tells that session which directory entries and names its cases use, so none meets an entry already known.
 model: claude-haiku-5-5
 layouts: reachable top
-cases-reachable: the SimpleX names setup, then N1-N11, W4 with names, W7, W8, G1 and the full search (chat list and New chat); after N10, and after the full search joins cinews_digest, check with the search text unchanged that the Names or Directory row you tapped is gone once the chat it opened is listed
-cases-top: N1 and N4 (this layout places the "Connect to …" row and the Names and Directory parts differently) and the full search on the chat list only (New chat looks the same in both layouts); the names setup is already done
-entries-reachable: N7 uses a second profile you add (the first profile has no other); N10 connects to @cialice.testing, which N5, W7 and G1 then use; W8 first connects to @cibobby.testing (Robert) from its Names row; N11 starts its connect from the Directory row #cinews_weekly and cancels its alert; the full search joins the group cinews_digest; leave the channel cinews unopened, as the top-bar session's N1 needs it
-entries-top: the earlier session joined cinews_digest and connected to cialice and Robert; cinews is not opened; N1 and N4 join nothing
-max-turns: 900
-max-budget-usd: 5
+cases-reachable: U1, U2, U4 and W12
+cases-top: U2 and U4 (the list's structure differs in this layout)
+entries-reachable: the smoke test joined the channel ci_cards; U1 and U4 search `ci_cards`, U2 and W12 search `ci cards` (the space keeps the local list from matching it); join nothing else
+entries-top: the same entries: U4 searches `ci_cards`, U2 searches `ci cards`; nothing else is joined
+max-turns: 300
+max-budget-usd: 3
