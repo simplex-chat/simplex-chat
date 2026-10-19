@@ -164,16 +164,19 @@ the in-list branch calls them.
 
 The event says a message arrived; it does not say how many items in that chat are
 unread. The count set here is therefore a floor, corrected by the next reload of the
-list — and, for a chat the user opens, before that: `processLoadedChat` overwrites the
-stats with the backend's, since `ChatPagination.Initial` is a pagination for which the
-core computes them.
+list — and, on Android and desktop, for a chat the user opens, before that:
+`processLoadedChat` overwrites the stats with the backend's, since `ChatPagination.Initial`
+is a pagination for which the core computes them. iOS keeps the listed stats when a chat
+is opened, so reading its older unread items one by one takes the chat's count below zero,
+and a later message in it then shows no badge and does not light the filter until the next
+reload (before this change it was one lower still).
 
 Asking the backend for the real count at this point was tried and rejected. `/_get chat`
 with `ChatPagination.Initial(1)` does return real stats, but using it here mixes an
 absolute count from the backend with the relative `+1` that the in-list branch applies
 to the same chat: a second message arriving during the round trip is added on top of the
-fetched value — deterministically on iOS, where `UnreadCollector` applies its delta a
-second later — so two items can show as three. It also costs a priority store
+fetched value — deterministically on iOS, where `UnreadCollector` applies its deltas one
+second after the last change — so two items can show as three. It also costs a priority store
 transaction per message into a cold chat, whose `NavigationInfo` count over every item
 after the first unread one is computed and then discarded, issued concurrently per chat
 in exactly the scenario this bug is about: thousands of chats coming back online at
@@ -194,13 +197,13 @@ separate change.
   profile counter is a different matter: exactly as on the in-list branch, it is raised
   for any received item, including one in a muted chat, whereas the core excludes muted
   chats when it computes that counter for a profile, and excludes non-mentions in
-  mentions-only groups. On iOS that `+1` cannot be taken back, because
-  `decreaseUnreadCounter(user:chat:)` subtracts `unreadMentions` for a mentions-only
-  chat, which is zero for a non-mention.
+  mentions-only groups. On iOS marking the whole chat read or clearing it does not take that `+1` back,
+  because `decreaseUnreadCounter(user:chat:)` subtracts `unreadMentions` for a
+  mentions-only chat, which is zero for a non-mention; reading the item in the chat does.
 - **`unreadChat`** (a chat marked unread by hand) is not recovered: the received-item
   event carries no such flag, so a chat the user marked unread on another device is
   still added without it.
-- **Counters still drift on paths this change does not touch.** Deleting or leaving a
+- **Counters still drift on paths this change does not touch.** Deleting a
   chat that has unread messages leaves the profile counter and `unreadTags` high, because
   `removeChat` decrements neither — it removes the chat's preset tags, but not those two;
   a cleared mention can leave `unreadMentions` behind. Both are recorded as GAP-10.
@@ -216,7 +219,7 @@ separate change.
   shown is a floor, so `markChatItemsRead` decrements by it while `apiChatRead` clears
   every unread item in the chat: a chat with older unread messages, marked read from the
   list without ever being opened, leaves the profile counter too high by the difference
-  for the session. Opening the chat instead is correct, because `processLoadedChat` replaces
+  for the session. On Android and desktop opening the chat instead is correct, because `processLoadedChat` replaces
   the stats with the backend's first. Closing this needs the chat's true count, which
   only the core has.
 - **`upsertChatItem` has the same defect and is left alone.** Its missing-chat branch

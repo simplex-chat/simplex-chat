@@ -373,8 +373,8 @@ unread state without a matching counter update.
 
 ### Affected Locations
 
-- `ChatModel.kt` -- `removeChat` decrements neither the profile counter nor `unreadTags`, so deleting or
-  leaving a chat that had unread messages leaves both high.
+- `ChatModel.kt` -- `removeChat` decrements neither the profile counter nor `unreadTags`, so deleting a
+  chat that had unread messages leaves both high.
 - `ChatModel.kt` -- `decreaseCounterInPrimaryContext` decrements `unreadCount` but never `unreadMentions`,
   so clearing a mention in a mentions-only group can leave the chat with `unreadCount = 0` and
   `unreadMentions = 1`. `unreadTag` stays true while `ChatPreviewView` draws no badge, so the chat sits in
@@ -418,8 +418,8 @@ addresses a different list than the one it was computed from.
 ### Impact
 
 A message arriving while a reports or member-support view is open can apply a preview and unread update
-to whichever primary chat happens to sit at that index. The secondary context's `chats` list is small and
-its indices rarely line up with the primary one, so this is hard to trigger, but the write is unguarded.
+to whichever primary chat happens to sit at that index: another chat, or the same chat, which then counts
+the message twice.
 
 ### Recommendation
 
