@@ -277,6 +277,7 @@ fun ChatPreviewView(
       MarkdownText(
         text,
         formattedText,
+        if (formattedText == null) null else ci.markdownBlocks,
         sender = when {
           cInfo is ChatInfo.Group && !ci.chatDir.sent && !ci.meta.showGroupAsSender -> ci.memberDisplayName
           else -> null
