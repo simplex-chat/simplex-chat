@@ -7,7 +7,7 @@
 Satu-satunya jaringan pesan tanpa pengenal pengguna apa pun.
 Anda pemilik kontak, grup, dan kanal Anda.
 
-Miliki sebagian darinya. [Berinvestasi di SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
+Miliki sebagian darinya. [Berinvestasilah di SimpleX Chat.](https://wefunder.com/simplex.chat?utm_source=home)
 
 **3M**Unduhan
 
