@@ -177,7 +177,7 @@ ChatTagsModel (singleton -- filter state)
 | `addChat(_ chat:)` | Add chat to list | [L610](../Shared/Model/ChatModel.swift#L610) |
 | `updateChatInfo(_ cInfo:)` | Update chat metadata | [L624](../Shared/Model/ChatModel.swift#L624) |
 | `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L676](../Shared/Model/ChatModel.swift#L676) |
-| `addChatItem(_ chatInfo:, _ cItem:)` | Update chat preview and unread state for a received item; when the chat is not in the list it is created and the item's unread count is queued through `unreadCollector`, landing on its next flush | [L702-L752](../Shared/Model/ChatModel.swift#L702-L752) |
+| `addChatItem(_ chatInfo:, _ cItem:)` | Update chat preview and unread state for a received item; when the chat is not in the list it is created and, for a received unread (`rcvNew`) item in the main scope, the item's unread count is queued through `unreadCollector`, landing on its next flush | [L702-L752](../Shared/Model/ChatModel.swift#L702-L752) |
 | `removeChat(_ id:)` | Remove chat from list | [L1330](../Shared/Model/ChatModel.swift#L1330) |
 | `popChat(_ id:)` | Move chat to top of list | [L1297](../Shared/Model/ChatModel.swift#L1297) |
 | `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1197](../Shared/Model/ChatModel.swift#L1197) |
