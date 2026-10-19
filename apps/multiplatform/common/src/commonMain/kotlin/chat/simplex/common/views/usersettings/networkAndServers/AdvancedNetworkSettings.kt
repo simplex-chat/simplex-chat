@@ -30,7 +30,7 @@ import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.views.usersettings.SettingsPreferenceItem
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.text.DecimalFormat
 
 @Composable

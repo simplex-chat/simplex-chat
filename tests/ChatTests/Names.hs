@@ -16,6 +16,9 @@ import Test.Hspec hiding (it)
 chatNamesTests :: SpecWith TestParams
 chatNamesTests = do
   it "connect by resolved name" testConnectByName
+  it "profile update without the name keeps the name" testUpdateProfileKeepsName
+  it "stopping address sharing removes the name" testAddressSharingOffRemovesName
+  it "deleting the address removes the name" testAddressDeleteRemovesName
   it "connect by name not claimed in link profile is rejected" testConnectByNameNotClaimed
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name fails to resolve" testConnectByNameNotFound
@@ -28,7 +31,7 @@ chatNamesTests = do
   it "connect by name resolving to business (primary) and channel" testConnectByNameBusinessAndChannel
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
-testConnectByName ps = withSmpServerAndNames $ \reg ->
+testConnectByName ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
@@ -62,8 +65,125 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
       _ <- getTermLine bob
       pure ()
 
+testUpdateProfileKeepsName :: HasCallStack => TestParams -> IO ()
+testUpdateProfileKeepsName ps = withSmpServerAndNames ps $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      alice ##> "/ad"
+      (shortLink, _) <- getContactLinks alice True
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
+      alice ##> "/_set domain 1 alice.simplex"
+      alice <## "new contact address set"
+      bob ##> "/c @alice.simplex"
+      bob <## "alice: connection started"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice ##> ("/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"shortDescr\": \"new bio\", \"contactLink\": \"" <> shortLink <> "\"}")
+      alice <## "user bio changed to new bio (your 1 contacts are notified)"
+      bob <## "contact alice updated bio: new bio"
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      _ <- getTermLine bob
+      bob <## "SimpleX name: @alice.simplex (verified)"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      _ <- getTermLine bob
+      pure ()
+
+testAddressSharingOffRemovesName :: HasCallStack => TestParams -> IO ()
+testAddressSharingOffRemovesName ps = withSmpServerAndNames ps $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      alice ##> "/ad"
+      (shortLink, _) <- getContactLinks alice True
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
+      alice ##> "/_set domain 1 alice.simplex"
+      alice <## "new contact address set"
+      bob ##> "/c @alice.simplex"
+      bob <## "alice: connection started"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice ##> "/pa off"
+      alice <## "contact address removed"
+      bob <## "alice removed contact address"
+      checkNoName bob
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+      bob <## "alice set new contact address, use /info alice to view"
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      _ <- getTermLine bob
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      _ <- getTermLine bob
+      pure ()
+
+testAddressDeleteRemovesName :: HasCallStack => TestParams -> IO ()
+testAddressDeleteRemovesName ps = withSmpServerAndNames ps $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      alice ##> "/ad"
+      (shortLink, _) <- getContactLinks alice True
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
+      alice ##> "/_set domain 1 alice.simplex"
+      alice <## "new contact address set"
+      bob ##> "/c @alice.simplex"
+      bob <## "alice: connection started"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice ##> "/da"
+      alice <## "Your chat address is deleted - accepted contacts will remain connected."
+      alice <## "To create a new chat address use /ad"
+      bob <## "alice removed contact address"
+      checkNoName bob
+
+checkNoName :: HasCallStack => TestCC -> IO ()
+checkNoName bob = do
+  bob ##> "/i alice"
+  bob <## "contact ID: 2"
+  bob <## "receiving messages via: localhost"
+  bob <## "sending messages via: localhost"
+  bob <## "you've shared main profile with this contact"
+  bob <## "connection not verified, use /code command to see security code"
+  bob <## "quantum resistant end-to-end encryption"
+  _ <- getTermLine bob
+  pure ()
+
 testConnectByNameNotClaimed :: HasCallStack => TestParams -> IO ()
-testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
+testConnectByNameNotClaimed ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
@@ -76,7 +196,7 @@ testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
       bob <## "SimpleX name alice.simplex is not included in the connection link's profile"
 
 testConnectByNameKnownContactNotClaimed :: HasCallStack => TestParams -> IO ()
-testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames $ \reg ->
+testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
@@ -99,7 +219,7 @@ testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames $ \reg ->
       bob <## "SimpleX name alice.simplex is not included in the connection link's profile"
 
 testConnectByNameNotFound :: HasCallStack => TestParams -> IO ()
-testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
+testConnectByNameNotFound ps = withSmpServerAndNames ps $ \_reg ->
   testChat2 aliceProfile bobProfile test ps
   where
     test _alice bob = do
@@ -108,7 +228,7 @@ testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
       bob .<## "smpErr = NAME {nameErr = NOT_FOUND}}"
 
 testSetNameNotOwnAddress :: HasCallStack => TestParams -> IO ()
-testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
+testSetNameNotOwnAddress ps = withSmpServerAndNames ps $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
@@ -124,7 +244,7 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
 
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
-testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
+testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -144,7 +264,7 @@ testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
 testChannelDomainVerify :: HasCallStack => TestParams -> IO ()
-testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
+testChannelDomainVerify ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -174,7 +294,7 @@ testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
 testConnectByChannelName :: HasCallStack => TestParams -> IO ()
-testConnectByChannelName ps = withSmpServerAndNames $ \reg ->
+testConnectByChannelName ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -208,7 +328,7 @@ testConnectByChannelName ps = withSmpServerAndNames $ \reg ->
 -- first and succeeds (bob has joined #team), so it is the primary (planSimplexName); otherSimplexName
 -- is the direct contact @team.simplex, shown as "You can also connect to @team.simplex in direct chat".
 testConnectByNameChannelAndContact :: HasCallStack => TestParams -> IO ()
-testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
+testConnectByNameChannelAndContact ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -247,7 +367,7 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
 -- channel #acme, shown as "You can also join channel #acme". The channel link is a real, fetchable
 -- #acme channel, so the failure is the faithful "channel does not claim this domain" case, not a broken link.
 testConnectByNameContactAndChannel :: HasCallStack => TestParams -> IO ()
-testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
+testConnectByNameContactAndChannel ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -266,7 +386,7 @@ testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
     acmeName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
 
 testConnectByNameBusinessAndChannel :: HasCallStack => TestParams -> IO ()
-testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
+testConnectByNameBusinessAndChannel ps = withSmpServerAndNames ps $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do

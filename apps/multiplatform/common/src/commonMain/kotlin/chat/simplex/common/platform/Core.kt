@@ -8,7 +8,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
 import chat.simplex.common.views.helpers.DatabaseUtils.randomDatabasePassword
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import java.io.File
 import java.nio.ByteBuffer
