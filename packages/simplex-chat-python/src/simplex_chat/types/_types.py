@@ -3071,9 +3071,10 @@ class SecurityCode(TypedDict):
     securityCode: str
     verifiedAt: str  # ISO-8601 timestamp
 
-class SegmentRange(TypedDict):
-    from: int  # int
-    to: int  # int
+SegmentRange = TypedDict("SegmentRange", {
+    "from": int,  # int
+    "to": int,  # int
+})
 
 class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
