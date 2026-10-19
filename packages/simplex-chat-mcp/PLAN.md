@@ -1,6 +1,6 @@
 # SimpleX MCP server v0.1: plan
 
-Status: draft · 2026-10-17 · person-facing manual: `README.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11, which `simplex-chat` 7.1.0-beta.6.x loads). Pending decisions: section Open.
+Status: draft · 2026-10-17 · person-facing manual: `README.md`, in full `REFERENCE.md`. Code references: master `139ce5f8c` (`/code/simplex-chat-6`), unless marked `9711dcfc9` (core 7.1.0.11, which `simplex-chat` 7.1.0-beta.6.x loads). Pending decisions: section Open.
 
 ## Scope
 

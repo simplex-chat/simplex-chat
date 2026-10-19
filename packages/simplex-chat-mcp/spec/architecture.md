@@ -3,7 +3,7 @@
 > System structure, modules, state, process lifecycle, approval model and security boundaries of `@simplex-chat/mcp` 0.1.0.
 >
 > Related specs: [README](README.md) | [Flows](flows.md) | [API](api.md)
-> Related docs: [README](../README.md) | [PLAN](../PLAN.md)
+> Related docs: [README](../README.md) | [Reference](../REFERENCE.md) | [PLAN](../PLAN.md)
 
 **Source:** [`cli.ts`](../src/cli.ts) | [`serve.ts`](../src/serve.ts) | [`http.ts`](../src/http.ts) | [`tools.ts`](../src/tools.ts) | [`actions.ts`](../src/actions.ts) | [`control.ts`](../src/control.ts) | [`messages.ts`](../src/messages.ts) | [`files.ts`](../src/files.ts) | [`register.ts`](../src/register.ts) | [`log.ts`](../src/log.ts)
 
@@ -68,7 +68,7 @@ flowchart LR
 
 Data flow of a tool call:
 
-1. Claude Code runs the `headersHelper` command of its entry ([`register.ts:47`](../src/register.ts#L47)) and sends the `Authorization` header it prints ([README](../README.md#add-the-agent-to-claude-code)).
+1. Claude Code runs the `headersHelper` command of its entry ([`register.ts:47`](../src/register.ts#L47)) and sends the `Authorization` header it prints ([Reference](../REFERENCE.md#add-the-agent-to-claude-code)).
 2. The server checks Host, Origin, token and path, then passes the request to the SDK handler ([`http.ts:18-26`](../src/http.ts#L18-L26)).
 3. An `McpServer` is built from the factory for each request, and the arguments are validated against the input schema by the SDK ([`serve.ts:108-112`](../src/serve.ts#L108-L112), [`mcp-BumlNux0.cjs:1777-1791`](../node_modules/@modelcontextprotocol/server/dist/mcp-BumlNux0.cjs#L1777-L1791)).
 4. The handler result is returned by `AgentTools.call` as `structuredContent` and as JSON text ([`tools.ts:367-374`](../src/tools.ts#L367-L374)).
