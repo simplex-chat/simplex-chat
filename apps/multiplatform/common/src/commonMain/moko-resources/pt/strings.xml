@@ -966,8 +966,6 @@
     <string name="badges_continue">Continuar</string>
     <string name="badges_preview_my_nickname">O meu nome de utilizador</string>
     <string name="badges_purchase_error">Erro na compra</string>
-    <string name="badges_choose_your_level">Escolher o seu nível</string>
-    <string name="badges_purchase_pending">Compra pendente</string>
     <string name="badges_error_invalid_code">Este código não é válido.</string>
     <string name="badges_error_code_invalid">Código não reconhecido.</string>
     <string name="this_device">Este dispositivo</string>
@@ -995,7 +993,6 @@
     <string name="channel_full_name_field">Nome completo do canal:</string>
     <string name="simplex_name_not_found">Nome não encontrado</string>
     <string name="connection_error_blocked">Conexão bloqueada</string>
-    <string name="badges_error_network">Erro de conexão. Por favor verifique a ligação da rede.</string>
     <string name="info_row_connection_failed">Conexão falhou</string>
     <string name="error_synchronizing_connection">Erro ao sincronizar a conexão</string>
     <string name="error_updating_chat_tags">Erro ao actualizar a lista de conversas</string>
@@ -1052,7 +1049,6 @@
     <string name="connected_to_desktop">Conectado ao computador</string>
     <string name="connected_to_mobile">Conectado ao telemóvel</string>
     <string name="v6_4_connect_faster">Ligue-se mais rápido! 🚀</string>
-    <string name="connect_via_link_incognito">Ligue-se no modo incógnito</string>
     <string name="no_contacts_to_add">Sem contactos a adicionar</string>
     <string name="onboarding_notifications_mode_periodic">Periódico</string>
     <string name="periodic_notifications">Notificações periódicas</string>
@@ -1138,7 +1134,6 @@
     <string name="color_mode_system">Sistema</string>
     <string name="notification_preview_mode_hidden">Escondido</string>
     <string name="v4_4_french_interface">Interface francesa</string>
-    <string name="to_share_with_your_contact">(para partilhar com o seu contacto)</string>
     <string name="only_stored_on_members_devices">(apenas guardado por membros do grupo)</string>
     <string name="server_no_sub">sem subscrição</string>
     <string name="how_it_works">Como funciona</string>
@@ -1164,7 +1159,6 @@
     <string name="scan_paste_link">Colar endereço / Digitalização</string>
     <string name="v5_5_simpler_connect_ui">Colar endereço para conectar!</string>
     <string name="badges_redeem_code_body">Colar o código do seu recibo.</string>
-    <string name="invalid_QR_code">Código QR inválido</string>
     <string name="invalid_qr_code">Código QR inválido</string>
     <string name="invalid_relay_address">Endereço de relé inválido!</string>
     <string name="invalid_relay_name">Nome do relé inválido!</string>

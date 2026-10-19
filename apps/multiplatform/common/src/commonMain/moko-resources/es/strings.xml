@@ -2856,12 +2856,9 @@
     <string name="badges_how_it_works_p1">Una insignia no es una cuenta. Es una credencial firmada almacenada en tu dispositivo. No te identifica, y nadie guarda un registro de quién tiene qué insignia.</string>
     <string name="badges_period_annual">Anual</string>
     <string name="badges_error_title">No se puede canjear el código</string>
-    <string name="badges_choose_your_level">Elige tu nivel</string>
-    <string name="badges_error_network">Error de conexión. Por favor, comprueba la conexión de red.</string>
     <string name="badge_expired">La insignia del contacto ha caducado.</string>
     <string name="badge_verification_failed">La verificación de la insignia del contacto ha fallado.</string>
     <string name="badges_continue">Continuar</string>
-    <string name="badges_dont_show_again">No mostrar de nuevo</string>
     <string name="badges_ends">Finaliza</string>
     <string name="badges_billing_footer_one_month">Finaliza el %1$s.</string>
     <string name="info_row_file_expires">Archivo disponible hasta</string>
@@ -2870,7 +2867,6 @@
     <string name="info_row_file_expired">El archivo estuvo disponible hasta</string>
     <string name="file_error_expired">El archivo estuvo disponible hasta %1$s</string>
     <string name="badges_banner_subtitle">Obtener insignia + archivos de hasta 5 GB</string>
-    <string name="badges_get_your_code">Obtén tu código</string>
     <string name="v7_1_supporter_badge_body">Ayuda a mantener la red en funcionamiento: envía archivos de hasta 2 GB.</string>
     <string name="badges_how_it_works_title">Cómo funcionan las insignias privadas</string>
     <string name="badges_how_it_works_button">Cómo funcionan las insignias privadas</string>
@@ -2883,8 +2879,6 @@
     <string name="badges_preview_my_nickname">Mi nombre</string>
     <string name="badge_no_key">No hay clave para verificar la insignia del contacto.</string>
     <string name="badges_price_unavailable">No disponible</string>
-    <string name="badges_level_supporter_tagline">Insignia de perfil opcional\ny archivos de 2 GB</string>
-    <string name="badges_level_legend_tagline">Insignia de perfil opcional\ny archivos de 5 GB</string>
     <string name="badges_redeem_code_body">Pega el código del recibo.</string>
     <string name="badges_pay_once">Pagar %1$s</string>
     <string name="badges_pay_monthly">Pagar %1$s/mes</string>
@@ -2892,16 +2886,12 @@
     <string name="badges_how_it_works_p3">El pago y la insignia se mantienen separados. El pago es un paso; la insignia se emite en otro, bajo una clave que existe solo para esa insignia. Quien gestiona el pago no puede ver dónde termina la insignia.</string>
     <string name="badges_prepaid_footer">Los meses prepagados no tienen fecha de facturación. La insignia se vuelve a emitir cada mes a partir del saldo que ya has pagado, y finaliza cuando este se agota.</string>
     <string name="badges_purchase_error">Error en la compra</string>
-    <string name="badges_purchase_pending">Compra pendiente</string>
-    <string name="badges_purchase_successful">Compra completada</string>
     <string name="badges_redeem">Canjear</string>
     <string name="badges_redeem_code_button">Canjear código de insignia</string>
     <string name="badges_redeem_code_title">Canjear código</string>
     <string name="badges_remind_me_later">Recordar más tarde</string>
     <string name="badges_billing_footer_subscribe">Se renueva el %1$s. Cancela en cualquier momento.</string>
     <string name="badges_savings">Guardar %1$s</string>
-    <string name="badges_level_supporter_files">Envía archivos de 2GB</string>
-    <string name="badges_level_legend_files">Envía archivos de 5GB</string>
     <string name="badges_shown_on_your_profile">mostrado en tu perfil</string>
     <string name="badges_support_simplex_body">SimpleX no vende anuncios ni datos. Se financia a través de sus usuarios e inversores que comparten la misión. Puedes apoyar el proyecto mostrando una insignia en tu perfil.</string>
     <string name="badges_support_ended">Soporte finalizado</string>
@@ -2911,12 +2901,10 @@
     <string name="supporter_perks">Ventajas para patrocinadores</string>
     <string name="badges_support_simplex_title">Patrocina SimpleX</string>
     <string name="badges_banner_title">Patrocina SimpleX</string>
-    <string name="badges_error_service_failed">Servicio de insignias no disponible. Por favor, inténtalo más tarde.</string>
     <string name="badges_error_bad_service_response">El servicio de insignias ha enviado una respuesta inesperada.</string>
     <string name="badges_error_unknown">El código no puede ser canjeado.</string>
     <string name="badges_error_badge_ended">El código fue aceptado, pero la insignia que otorga ya ha finalizado.</string>
     <string name="badges_code_you_scanned_is_not_badge_code">El código escaneado no es código de insignia.</string>
-    <string name="badges_purchase_pending_desc">Compra pendiente de aprobación. Esta versión no entrega compras aprobadas posteriormente.</string>
     <string name="badges_error_service_not_configured">Esta versión no puede canjear códigos de insignia.</string>
     <string name="badges_error_credential_not_verified">Esta versión no puede verificar la insignia. Por favor, actualiza la aplicación.</string>
     <string name="badges_error_unsupported_version">Esta versión es anticuada para el servicio de insignias. Por favor, actualiza la aplicación.</string>
@@ -2932,6 +2920,5 @@
     <string name="badges_your_badge">Tu insignia</string>
     <string name="your_badge_expired">Tu insignia ha caducado.</string>
     <string name="badges_how_it_works_p2">Tus contactos ven la insignia y su fecha de caducidad, nada más. La insignia no contiene ningún identificador, por lo que no puede usarse para averiguar quién eres ni para vincularte entre diferentes chats.</string>
-    <string name="badges_your_level_title">Tu nivel</string>
     <string name="badges_support_ended_on">Tu patrocinio terminó el %1$s.</string>
 </resources>

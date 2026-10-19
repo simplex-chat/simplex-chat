@@ -2856,8 +2856,6 @@
     <string name="badges_support_simplex_body">SimpleX 不卖广告或数据。它的资金来自其用户和认同其理念的投资者。您可支持本项目并在个人资料上显示徽章。</string>
     <string name="badges_how_it_works_p2">联系人会看到徽章及其到期日，不显示其他信息。徽章没有标识符，不能用来找出你是谁或在不同聊天中匹配身份。</string>
     <string name="badges_error_already_active">此个人资料已有徽章。在其他个人资料中兑换这个代码，或者等这个徽章到期后兑换。</string>
-    <string name="badges_error_network">连接错误。请检查网络连接。</string>
-    <string name="badges_purchase_pending_desc">该购买正在等待批准。此版本之后不发送获批的购买。</string>
     <string name="v7_1_supporter_badge_body">帮助保持网络运行— 发送最大 2 GB 的文件。</string>
     <string name="badges_error_badge_ended">代码被接受，但其授予的徽章已过期。</string>
     <string name="badges_price_monthly">%1$s/月</string>
@@ -2867,13 +2865,10 @@
     <string name="badges_period_one_month">1个月</string>
     <string name="badges_period_annual">年度</string>
     <string name="badges_error_title">无法兑换代码</string>
-    <string name="badges_choose_your_level">选择您的等级</string>
     <string name="badges_continue">继续</string>
-    <string name="badges_dont_show_again">不再显示</string>
     <string name="badges_ends">结束</string>
     <string name="badges_billing_footer_one_month">结束于 %1$s。</string>
     <string name="badges_banner_subtitle">获得徽章+最大 5 GB 文件</string>
-    <string name="badges_get_your_code">获得代码</string>
     <string name="badges_how_it_works_button">私密徽章工作方式</string>
     <string name="badges_how_it_works_title">私密徽章工作方式</string>
     <string name="badges_type_investor">投资人</string>
@@ -2882,22 +2877,16 @@
     <string name="badges_period_monthly">月度</string>
     <string name="badges_preview_my_nickname">我的昵称</string>
     <string name="badges_price_unavailable">不可用</string>
-    <string name="badges_level_supporter_tagline">可选的个人资料徽章\n和 2 GB 文件</string>
-    <string name="badges_level_legend_tagline">可选的个人资料徽章\n和 5 GB 文件</string>
     <string name="badges_redeem_code_body">从收据粘贴代码。</string>
     <string name="badges_pay_once">支付 %1$s</string>
     <string name="badges_pay_monthly">支付 %1$s/月</string>
     <string name="badges_pay_annual">支付 %1$s/年</string>
     <string name="badges_purchase_error">购买错误</string>
-    <string name="badges_purchase_pending">待购买</string>
-    <string name="badges_purchase_successful">购买成功</string>
     <string name="badges_redeem">兑换</string>
     <string name="badges_redeem_code_title">兑换代码</string>
     <string name="badges_remind_me_later">稍后提醒</string>
     <string name="badges_billing_footer_subscribe">%1$s 续费。随时取消。</string>
     <string name="badges_savings">节省 %1$s</string>
-    <string name="badges_level_supporter_files">发送 2 GB 文件</string>
-    <string name="badges_level_legend_files">发送 5 GB 文件</string>
     <string name="badges_shown_on_your_profile">在个人资料页上展示</string>
     <string name="badges_support_ended">支持已结束</string>
     <string name="badges_level_supporter">支持者</string>
@@ -2905,7 +2894,6 @@
     <string name="supporter_perks">支持者福利</string>
     <string name="badges_support_simplex_title">支持 SimpleX</string>
     <string name="badges_banner_title">支持 SimpleX</string>
-    <string name="badges_error_service_failed">徽章服务不可用。请稍后重试。</string>
     <string name="badges_error_bad_service_response">徽章服务发送了意料之外的响应。</string>
     <string name="badges_error_unknown">无法兑换此代码。</string>
     <string name="badges_code_you_scanned_is_not_badge_code">你扫描的代码不是徽章代码。</string>
@@ -2918,7 +2906,6 @@
     <string name="badges_why_simplex_is_built">为何打造 SimpleX。</string>
     <string name="badges_banner_dismiss_message">你可以之后在设置中支持 SimpleX。</string>
     <string name="badges_your_badge">你的徽章</string>
-    <string name="badges_your_level_title">你的等级</string>
     <string name="badges_redeem_code_button">兑换徽章代码</string>
     <string name="badges_support_ended_on">你的支持结束于 %1$s。</string>
 </resources>

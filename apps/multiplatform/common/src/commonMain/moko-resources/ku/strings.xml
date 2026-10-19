@@ -813,7 +813,6 @@
     <string name="migrate_from_device_start_chat">Siḧbetê bide destpêkirin</string>
     <string name="countdown_hrs_min_sec">%1$02d st %2$02d dq %3$02d sn</string>
     <string name="chat_link_from_owner">(ji xwedî)</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(skan bike yan jî bizeliqîne)</string>
     <string name="only_stored_on_members_devices">(tenê ji endamên komê tê qeydkirin)</string>
     <string name="callstate_received_answer">cewab stand…</string>
     <string name="callstate_received_confirmation">tesdîqkirin stand…</string>
@@ -904,7 +903,6 @@
     <string name="appearance_zoom">Zoom</string>
     <string name="voice_messages">Mesajên deng</string>
     <string name="recent_history">Tarîxa xuya</string>
-    <string name="available_in_v51">\nDi v5.1 de li ber destan</string>
     <string name="feature_off">girtî</string>
     <string name="voice_prohibited_in_this_chat">Mesajên deng li vê siḧbetê nayên qebûlkirin.</string>
     <string name="voice_messages_are_prohibited">Mesajên deng nayên qebûlkirin.</string>
@@ -1083,7 +1081,6 @@
     <string name="close_behavior_dialog_close">Aplîkasyonê bigire</string>
     <string name="badge_supports_simplex">%s pişt dide Simple Chatê.</string>
     <string name="connect_plan_open_new_chat">Siḧbeta nû veke</string>
-    <string name="tap_to_start_new_chat">Pêl vir bike ji bo destpêkirina siḧbeteke nû</string>
     <string name="new_message">Mesaja nû</string>
     <string name="smp_servers_new_server">Servera nû</string>
     <string name="new_1_time_link">Lînkeke 1-carê ya nû</string>

@@ -2869,14 +2869,10 @@
     <string name="badges_how_it_works_p1">Un distintivo non è un account. È una credenziale firmata memorizzata sul dispositivo. Non ti identifica, e nessuno tiene un registro di chi ha un distintivo.</string>
     <string name="badges_period_annual">Annuale</string>
     <string name="badges_error_title">Impossibile riscattare il codice</string>
-    <string name="badges_choose_your_level">Scegli il tuo livello</string>
-    <string name="badges_error_network">Errore di connessione. Controlla la connessione di rete.</string>
     <string name="badges_continue">Continua</string>
-    <string name="badges_dont_show_again">Non mostrare più</string>
     <string name="badges_ends">Termina</string>
     <string name="badges_billing_footer_one_month">Termina il %1$s.</string>
     <string name="badges_banner_subtitle">Distintivo + file fino a 5GB</string>
-    <string name="badges_get_your_code">Ottieni un codice</string>
     <string name="v7_1_supporter_badge_body">Aiuta a mantenere la rete in attività — invia file fino a 2 GB.</string>
     <string name="badges_how_it_works_button">Come funzionano i distintivi privati</string>
     <string name="badges_how_it_works_title">Come funzionano i distintivi privati</string>
@@ -2886,8 +2882,6 @@
     <string name="badges_period_monthly">Mensile</string>
     <string name="badges_preview_my_nickname">Il mio nickname</string>
     <string name="badges_price_unavailable">Non disponibile</string>
-    <string name="badges_level_supporter_tagline">Distintivo facoltativo\ne file fino a 2GB</string>
-    <string name="badges_level_legend_tagline">Distintivo facoltativo\ne file fino a 5GB</string>
     <string name="badges_redeem_code_body">Incolla il codice dalla tua ricevuta.</string>
     <string name="badges_pay_once">Paga %1$s</string>
     <string name="badges_pay_monthly">Paga %1$s/mese</string>
@@ -2895,16 +2889,12 @@
     <string name="badges_how_it_works_p3">Il pagamento e il distintivo sono tenuti separati. Il pagamento è un passo; il distintivo viene rilasciato in un altro, sotto una chiave che esiste solo per quel distintivo. Chi gestisce il pagamento non può vedere dove finisce il distintivo.</string>
     <string name="badges_prepaid_footer">I mesi prepagati non hanno data di fatturazione. Il distintivo viene ricreato ogni mese dal saldo che hai già pagato e termina quando si esaurisce.</string>
     <string name="badges_purchase_error">Errore di acquisto</string>
-    <string name="badges_purchase_pending">Acquisto in attesa</string>
-    <string name="badges_purchase_successful">Acquisto riuscito</string>
     <string name="badges_redeem">Riscatta</string>
     <string name="badges_redeem_code_button">Riscatta codice del distintivo</string>
     <string name="badges_redeem_code_title">Riscatta codice</string>
     <string name="badges_remind_me_later">Ricordamelo più tardi</string>
     <string name="badges_billing_footer_subscribe">Si rinnova il %1$s. Annulla quando vuoi.</string>
     <string name="badges_savings">Risparmia %1$s</string>
-    <string name="badges_level_supporter_files">Invia file di 2GB</string>
-    <string name="badges_level_legend_files">Invia file di 5GB</string>
     <string name="badges_shown_on_your_profile">mostrato sul tuo profilo</string>
     <string name="badges_support_simplex_body">SimpleX non vende annunci o dati. È finanziato dai suoi utenti e dagli investitori che condividono la missione. Puoi sostenere il progetto e mostrare un distintivo sul tuo profilo.</string>
     <string name="badges_support_ended">Sostegno terminato</string>
@@ -2912,12 +2902,10 @@
     <string name="v7_1_supporter_badge_title">Distintivo sostenitore ❤️</string>
     <string name="badges_support_simplex_title">Sostieni SimpleX</string>
     <string name="badges_banner_title">Sostieni SimpleX</string>
-    <string name="badges_error_service_failed">Il servizio dei distintivi non è disponibile. Riprova più tardi.</string>
     <string name="badges_error_bad_service_response">Il servizio dei distintivi ha inviato una risposta imprevista.</string>
     <string name="badges_error_unknown">Impossibile riscattare il codice.</string>
     <string name="badges_error_badge_ended">Il codice è stato accettato, ma il distintivo che concede è già terminato.</string>
     <string name="badges_code_you_scanned_is_not_badge_code">Il codice che hai scansionato non è un codice di distintivo.</string>
-    <string name="badges_purchase_pending_desc">L\'acquisto è in attesa di approvazione. Questa versione non consegna gli acquisti approvati in seguito.</string>
     <string name="badges_error_service_not_configured">Questa versione dell\'app non può riscattare i codici dei distintivi.</string>
     <string name="badges_error_credential_not_verified">Questa versione dell\'app non può verificare questo distintivo. Aggiorna l\'app.</string>
     <string name="badges_error_unsupported_version">Questa versione dell\'app è troppo vecchia per il servizio distintivi. Aggiorna l\'app.</string>
@@ -2931,7 +2919,6 @@
     <string name="badges_banner_dismiss_message">Puoi sostenere SimpleX in seguito nelle Impostazioni.</string>
     <string name="badges_your_badge">Il tuo distintivo</string>
     <string name="badges_how_it_works_p2">I tuoi contatti vedono il distintivo e la sua data di scadenza, nient\'altro. Il distintivo non porta alcun identificatore, quindi non può essere usato per scoprire chi sei o per trovarti tra le chat.</string>
-    <string name="badges_your_level_title">Il tuo livello</string>
     <string name="badges_support_ended_on">Il tuo sostegno è finito il %1$s.</string>
     <string name="supporter_perks">Vantaggi dei sostenitori</string>
 </resources>

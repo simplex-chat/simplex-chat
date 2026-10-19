@@ -2834,16 +2834,12 @@
     <string name="badges_how_it_works_p1">Um selo não é uma conta. É uma credencial assinada, armazenada no seu dispositivo. Ele não identifica você, e ninguém mantém um registro de quem tem cada selo.</string>
     <string name="badges_period_annual">Anual</string>
     <string name="badges_error_title">Não foi possível resgatar o código</string>
-    <string name="badges_choose_your_level">Escolha o seu nível</string>
-    <string name="badges_error_network">Erro de conexão. Por favor, verifique sua conexão de rede.</string>
     <string name="badge_expired">O selo do contato expirou.</string>
     <string name="badge_verification_failed">Não foi possível verificar o selo do contato.</string>
     <string name="badges_continue">Continuar</string>
-    <string name="badges_dont_show_again">Não mostrar novamente</string>
     <string name="badges_ends">Termina</string>
     <string name="badges_billing_footer_one_month">Termina em %1$s.</string>
     <string name="badges_banner_subtitle">Obtenha seu selo e envie arquivos de até 5 GB</string>
-    <string name="badges_get_your_code">Obtenha seu código</string>
     <string name="v7_1_supporter_badge_body">Ajude a manter a rede funcionando e envie arquivos de até 2 GB.</string>
     <string name="badges_how_it_works_button">Como funcionam os selos privados</string>
     <string name="badges_how_it_works_title">Como funcionam os selos privados</string>
@@ -2871,20 +2867,14 @@
     <string name="info_row_file_expired">Arquivo ficou disponível até</string>
     <string name="file_error_expired">O arquivo ficou disponível até %1$s.</string>
     <string name="forwarded_from">Encaminhado de</string>
-    <string name="badges_level_supporter_tagline">Selo opcional no perfil\ne arquivos de até 2 GB</string>
-    <string name="badges_level_legend_tagline">Selo opcional no perfil\ne arquivos de até 5 GB</string>
     <string name="badges_prepaid_footer">Os meses pré-pagos não têm uma data de cobrança fixa. O selo é renovado a cada mês, usando o saldo que você já pagou, e deixa de valer quando esse saldo acaba.</string>
     <string name="badges_purchase_error">Erro na compra</string>
-    <string name="badges_purchase_pending">Pagamento pendente</string>
-    <string name="badges_purchase_successful">Compra realizada com sucesso</string>
     <string name="badges_redeem">Resgatar</string>
     <string name="badges_redeem_code_button">Resgatar código do selo</string>
     <string name="badges_redeem_code_title">Resgatar código</string>
     <string name="badges_remind_me_later">Lembrar mais tarde</string>
     <string name="badges_billing_footer_subscribe">Renova em %1$s. Cancele quando quiser.</string>
     <string name="badges_savings">Salvo %1$s</string>
-    <string name="badges_level_supporter_files">Envie arquivos de até 2 GB</string>
-    <string name="badges_level_legend_files">Envie arquivos de até 5 GB</string>
     <string name="simplex_name_sales">A venda de nomes no SimpleX começa em</string>
     <string name="badges_support_ended">O período de apoio terminou</string>
     <string name="badges_level_supporter">Apoiador</string>
@@ -2893,12 +2883,10 @@
     <string name="supporter_perks">Benefícios para apoiadores</string>
     <string name="badges_support_simplex_title">Apoie o SimpleX</string>
     <string name="badges_banner_title">Apoie o SimpleX</string>
-    <string name="badges_error_service_failed">O serviço de selos está indisponível no momento. Tente novamente mais tarde.</string>
     <string name="badges_error_bad_service_response">O serviço de selos respondeu de forma inesperada.</string>
     <string name="badges_error_unknown">Não foi possível resgatar o código.</string>
     <string name="badges_error_badge_ended">O código foi aceito, mas o selo correspondente já expirou.</string>
     <string name="badges_code_you_scanned_is_not_badge_code">O código escaneado não é um código de selo.</string>
-    <string name="badges_purchase_pending_desc">A compra está aguardando aprovação. Esta versão do aplicativo não libera compras aprovadas posteriormente.</string>
     <string name="badges_error_service_not_configured">Esta versão do aplicativo não permite resgatar códigos de selo.</string>
     <string name="badges_error_credential_not_verified">Esta versão do aplicativo não consegue verificar este selo. Atualize o aplicativo para continuar.</string>
     <string name="badges_error_unsupported_version">Esta versão do aplicativo está desatualizada para usar o serviço de selos. Atualize o aplicativo para continuar.</string>
@@ -2915,6 +2903,5 @@
     <string name="large_file_requires_badge">Você precisa de %1$s para enviar arquivos com mais de %2$s.</string>
     <string name="badges_your_badge">Seu selo</string>
     <string name="your_badge_expired">Seu selo expirou.</string>
-    <string name="badges_your_level_title">Seu nível</string>
     <string name="badges_support_ended_on">Seu período de apoio terminou em %1$s.</string>
 </resources>
