@@ -424,6 +424,8 @@ object ChatModel {
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
     // set listener here that will be notified on every add/delete of a chat item
     val chatState = ActiveChatState()
+    private var sndStatusesChatId: String? = null
+    private val sndStatusesBeforeAdd = mutableMapOf<Long, CIStatus>()
 
     fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
     fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
@@ -631,12 +633,18 @@ object ChatModel {
       // add to current scope
       withContext(Dispatchers.Main) {
         if (chatItemBelongsToScope(cInfo, cItem)) {
+          val keptStatus = sndStatusesBeforeAdd.remove(cItem.id)
+          val ci = if (keptStatus != null && shouldKeepOldSndCIStatus(keptStatus, cItem.meta.itemStatus)) {
+            cItem.copy(meta = cItem.meta.copy(itemStatus = keptStatus))
+          } else {
+            cItem
+          }
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+              addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), ci)
             } else {
-              addToChatItems(cItem)
+              addToChatItems(ci)
             }
           }
         }
@@ -699,10 +707,18 @@ object ChatModel {
               cItem
             }
             items[itemIndex] = ci
-          } else if (cItem.id > maxOf(lastItemId ?: 0, items.maxOfOrNull { it.id } ?: 0)) {
-            // an update of an earlier item that is not loaded is not added, it is shown when loaded
+          } else if (
+            (chatState.splits.value.isEmpty() || chatState.splits.value.first() != items.lastOrNull()?.id)
+            && cItem.id > maxOf(lastItemId ?: 0, items.maxOfOrNull { it.id } ?: 0)
+          ) {
             addToChatItems(cItem)
             itemAdded = true
+          } else if (cItem.chatDir.sent && cItem.meta.itemStatus !is CIStatus.SndRcvd) {
+            if (sndStatusesChatId != cInfo.id) {
+              sndStatusesChatId = cInfo.id
+              sndStatusesBeforeAdd.clear()
+            }
+            sndStatusesBeforeAdd[cItem.id] = cItem.meta.itemStatus
           }
         }
       }

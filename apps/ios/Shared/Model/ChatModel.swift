@@ -85,6 +85,8 @@ class ItemsModel: ObservableObject {
     }
 
     let chatState = ActiveChatState()
+    var sndStatusesChatId: ChatId? = nil
+    var sndStatusesBeforeAdd: [Int64: CIStatus] = [:]
 
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
@@ -744,7 +746,12 @@ final class ChatModel: ObservableObject {
         }
         // add to current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            _ = _upsertChatItem(ciIM, cInfo, cItem, add: true)
+            var ci = cItem
+            if let keptStatus = ciIM.sndStatusesBeforeAdd.removeValue(forKey: cItem.id),
+               shouldKeepOldSndCIStatus(oldStatus: keptStatus, newStatus: cItem.meta.itemStatus) {
+                ci.meta.itemStatus = keptStatus
+            }
+            _ = _upsertChatItem(ciIM, cInfo, ci, add: true)
         }
     }
 
@@ -779,7 +786,7 @@ final class ChatModel: ObservableObject {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
                     lastItemId = pItem.id
-                    if pItem.id == cItem.id || (chatId == cInfo.id && cItem.id > max(pItem.id, im.reversedChatItems.lazy.map(\.id).max() ?? 0)) {
+                    if pItem.id == cItem.id || (chatId == cInfo.id && im.lastItemsLoaded && cItem.id > max(pItem.id, im.reversedChatItems.lazy.map(\.id).max() ?? 0)) {
                         chat.chatItems = [cItem]
                     }
                 } else {
@@ -795,8 +802,7 @@ final class ChatModel: ObservableObject {
         }
         // update current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            // an update of an earlier item that is not loaded is not added, it is shown when loaded
-            let add = cItem.id > max(lastItemId, ciIM.reversedChatItems.lazy.map(\.id).max() ?? 0)
+            let add = ciIM.lastItemsLoaded && cItem.id > max(lastItemId, ciIM.reversedChatItems.lazy.map(\.id).max() ?? 0)
             itemAdded = _upsertChatItem(ciIM, cInfo, cItem, add: add)
         }
         return itemAdded
@@ -820,6 +826,13 @@ final class ChatModel: ObservableObject {
             ChatItemDummyModel.shared.sendUpdate()
             return true
         } else {
+            if cItem.chatDir.sent && !cItem.meta.itemStatus.isSndRcvd {
+                if ciIM.sndStatusesChatId != cInfo.id {
+                    ciIM.sndStatusesChatId = cInfo.id
+                    ciIM.sndStatusesBeforeAdd.removeAll()
+                }
+                ciIM.sndStatusesBeforeAdd[cItem.id] = cItem.meta.itemStatus
+            }
             return false
         }
 
