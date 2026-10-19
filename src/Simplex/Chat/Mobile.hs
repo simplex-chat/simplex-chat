@@ -328,7 +328,7 @@ defaultMobileConfig =
           M.mapKeys fromIntegral entitlementIssuerKeys,
       badgeServiceAddress =
         Just . either (Prelude.error . ("bad badge service address: " <>)) id . strDecode $
-          B.pack "https://smp5.simplex.im/a#e_vpk3OojLuzbwjRjI5smFrFjYd0RVsMl8pR0XWwQw4"
+          B.pack "https://smp5.simplex.im/a#iSEBXpdy8LZtr2qDYoCOIxGrMM788G90RKGXrHsVvcM"
     }
 
 getActiveUser_ :: DBStore -> IO (Maybe User)

@@ -78,7 +78,7 @@ defaultChatConfig =
       badgePublicKeys =
         let testIssuerKey = fromRight (error "bad test issuer key") . strDecode $ B.pack "kbK5FntscOKkMdzYt75TnfnBdP-OJUeQeLYHZp3-javAZSMNl9x4G4Ijak4iPcLgD-FUMix1ZH8hjGfH06QDXTsx9ap1HRVryV0WRHzxfgYVQG6Fgn8ulODsbra7Y6dv"
          in M.insert 9 testIssuerKey $ M.mapKeys fromIntegral entitlementIssuerKeys,
-      badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#e_vpk3OojLuzbwjRjI5smFrFjYd0RVsMl8pR0XWwQw4",
+      badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#iSEBXpdy8LZtr2qDYoCOIxGrMM788G90RKGXrHsVvcM",
       badgeCurrentTime = getCurrentTime,
       badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
       badgeConsecutiveRetries = 3,
