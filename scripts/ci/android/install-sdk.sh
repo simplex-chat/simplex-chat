@@ -1,50 +1,45 @@
 #!/bin/bash
 
-# Installs a pinned emulator, platform-tools and Google APIs x86_64 system image from Google's repository, each
-# checked against the SHA-1 its repository manifest lists, and creates the AVD "ci" for that image.
-# Usage: scripts/ci/android/install-sdk.sh <api level> <sdk dir>
+# Installs a pinned emulator, platform-tools and the Google APIs x86_64 system image of API 34 from Google's repository,
+# each checked against the SHA-1 its repository manifest lists and the SHA-256 recorded when it was pinned, and creates
+# the AVD "ci" for that image.
+# Usage: scripts/ci/android/install-sdk.sh <sdk dir>
 # Puts ANDROID_SDK_ROOT, ANDROID_HOME and ANDROID_AVD_HOME in GITHUB_ENV and the emulator and adb on GITHUB_PATH.
 
 set -euo pipefail
 
-api=$1
-mkdir -p "$2"
-sdk=$(cd "$2" && pwd)
+mkdir -p "$1"
+sdk=$(cd "$1" && pwd)
 repo=https://dl.google.com/android/repository
-
-case "$api" in
-  30) image=x86_64-30_r16.zip image_sha1=6ae21030eaadc041078444d3798e4b399f3e787d ;;
-  34) image=x86_64-34_r14.zip image_sha1=e0f6c9a0691aa27bd597d0deb1bcfdc943ac8ca7 ;;
-  35) image=x86_64-35_r09.zip image_sha1=0103e6dab21290c4b9d16550a3ce99476f884eef ;;
-  *)
-    echo "error: no pinned system image for API $api"
-    exit 1
-    ;;
-esac
+api=34
 
 fetch() {
-  local url=$1 sha1=$2 file
+  local url=$1 sha1=$2 sha256=$3 file
   file=$sdk/downloads/$(basename "$url")
   mkdir -p "$sdk/downloads"
   curl --proto '=https' --tlsv1.2 -sSfL --retry 3 -o "$file" "$url"
   echo "$sha1  $file" | sha1sum -c >&2
-  echo "sha256 $(sha256sum "$file" | cut -d ' ' -f 1) $(basename "$url")" >&2
+  echo "$sha256  $file" | sha256sum -c >&2
   echo "$file"
 }
 
 install() {
   local dest=$1 zip
-  zip=$(fetch "$2" "$3")
+  zip=$(fetch "$2" "$3" "$4")
   mkdir -p "$dest"
   unzip -q "$zip" -d "$dest"
   rm "$zip"
 }
 
 # emulator 37.2.12 and platform-tools 37.0.1, the stable channel on 2026-10-19
-install "$sdk" "$repo/emulator-linux_x64-16428233.zip" cd7362ea55dfb86a418958138dc396e74165dd01
-install "$sdk" "$repo/platform-tools_r37.0.1-linux.zip" 477254aa5f903c15cf51001717bdf347fb6b53e0
-install "$sdk/system-images/android-$api/google_apis" "$repo/sys-img/google_apis/$image" "$image_sha1"
+install "$sdk" "$repo/emulator-linux_x64-16428233.zip" \
+  cd7362ea55dfb86a418958138dc396e74165dd01 b08fc43d8608d2955f607f1b287beb525041e730086bdca3af152accac3af9c1
+install "$sdk" "$repo/platform-tools_r37.0.1-linux.zip" \
+  477254aa5f903c15cf51001717bdf347fb6b53e0 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1
+install "$sdk/system-images/android-$api/google_apis" "$repo/sys-img/google_apis/x86_64-34_r14.zip" \
+  e0f6c9a0691aa27bd597d0deb1bcfdc943ac8ca7 783a40134baf4f3012d4464fbe1571b1612a0dbd2e7a44d14bd8328923443833
 
+# avdmanager needs the package.xml that only sdkmanager writes
 avd_home=$sdk/avd
 mkdir -p "$avd_home/ci.avd"
 cat > "$avd_home/ci.ini" << EOF

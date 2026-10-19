@@ -2,19 +2,28 @@
 
 # Drives the Android app in the emulator with adb, for the scripted cases and for an agent on the runner.
 # Text and positions come from uiautomator's accessibility tree; coordinates are screen pixels, as in the screenshots.
-# Screenshots, trees and a log of every command (steps.log) go to UI_OUT.
+# Screenshots, trees and a log of every command (steps.log) go to UI_OUT, and logcat to UI_OUT/app.log.
 #
-#   ui launch                     start the app and print how long its activity took to show
-#   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.xml (the tree), and print the text on screen
+#   ui start <apk> [<setting>=<value>...]
+#                                 install the app, give a debug build the settings (OneHandUI, NetworkSMPProxyMode,
+#                                 DeveloperTools, LogLevel), and start it with logcat
+#   ui shot <name>                save UI_OUT/NN-<name>.png, NN-<name>.xml (the tree) and NN-<name>.txt, and print the text on screen
 #   ui text                       print the text on screen, one element per line after its centre x,y
+#   ui tree                       print the elements that have a text or can be used: class, text, bounds and states
 #   ui find <text>                print "x y left top right bottom", the element's centre and bounds; fail if it is not on screen
 #   ui wait <text> [secs]         wait up to secs (30) until the text is on screen
 #   ui click <x> <y>              tap at x,y
 #   ui click-text <text> [secs]   wait up to secs (20) for the text and tap its centre
-#   ui type <text>                type into the focused field
-#   ui key <key>...               press keys by their Android names without KEYCODE_ (ENTER, BACK, DEL)
+#   ui scroll <x> <y> <up|down> [times]
+#                                 swipe at x,y to move the content up or down, 3 times unless given
+#   ui type <text>                type ASCII text into the focused field, waiting up to 10 s for a field to have the focus
+#   ui key <key>...               press keys by their Android names without KEYCODE_ (BACK, ENTER, DEL)
+#   ui layout <reachable|top>     restart the app with the reachable toolbar (the one-hand UI, the default) or the top bar
+#   ui relaunch                   restart the app and wait for the chat list
+#   ui text-size <scale>          set the system font scale: 1 is the default, 1.3 and 2 are larger
 #   ui do <command> [args] -- <command> [args] ...
 #                                 run the commands in order, stopping at the first that fails
+#   ui stop                       stop the app and logcat
 #
 # Text is compared ignoring case, spaces and punctuation; an element that is exactly the text wins over one that contains it.
 
@@ -23,13 +32,25 @@ set -euo pipefail
 unset CLAUDE_CODE_OAUTH_TOKEN
 
 : "${UI_OUT:?UI_OUT must be the output directory}"
+# Claude Code's Bash tool builds its own PATH, without the SDK that install-sdk.sh put on the job's
+PATH=${ANDROID_HOME:?ANDROID_HOME must be the SDK from install-sdk.sh}/platform-tools:$PATH
 package=chat.simplex.app
+prefs_file=$package.SIMPLEX_APP_PREFS.xml
+# the button that opens New chat, in the toolbar or floating, whenever the chat list shows
+chat_list_button="Start new chat"
 state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
 here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$UI_OUT" "$state"
 
 log() {
   echo "$(date -u +%H:%M:%S) $*" | tee -a "$UI_OUT/steps.log"
+}
+
+number() {
+  if ! [[ "$1" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    echo "error: \"$1\" is not a number"
+    exit 1
+  fi
 }
 
 # uiautomator fails while the screen is changing ("could not get idle state"), so a dump is retried
@@ -70,8 +91,8 @@ screenshot() {
   rm -rf "$dir"
   mkdir -p "$dir"
   # without a window the emulator composes the screen on the host, where the guest's screencap can't read it
-  adb emu screenrecord screenshot "$dir" > /dev/null || true
-  for _ in $(seq 10); do
+  adb emu screenrecord screenshot "$dir" > /dev/null
+  for _ in $(seq 20); do
     png=$(find "$dir" -name '*.png' -size +0 | head -n 1)
     if [ -n "$png" ]; then
       mv "$png" "$1"
@@ -79,12 +100,16 @@ screenshot() {
     fi
     sleep 0.5
   done
-  echo "no screenshot from the emulator, using the guest's screencap" >&2
-  adb exec-out screencap -p > "$1"
+  echo "error: no screenshot from the emulator"
+  return 1
 }
 
 shot() {
   local f
+  if ! [[ "$1" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    echo "error: a shot name has only letters, digits, - and _"
+    return 1
+  fi
   f=$(next_file "$1")
   screenshot "$f.png"
   dump
@@ -98,17 +123,123 @@ shot() {
 
 launch() {
   local activity
-  activity=$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER "$package" | tr -d '\r' | tail -n 1)
-  adb shell am start -W -n "$activity" | tr -d '\r'
+  activity=$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER "$package" | tail -n 1)
+  adb shell am start -W -n "$activity"
+}
+
+# A debug build lets run-as rewrite its preferences while the app is stopped; the file is read back to check the write.
+set_prefs() {
+  adb shell am force-stop "$package"
+  adb shell "run-as $package cat shared_prefs/$prefs_file 2> /dev/null" > "$state/prefs.xml" || true
+  python3 "$here/prefs.py" "$state/prefs.xml" "$@" > "$state/prefs-new.xml"
+  adb shell "run-as $package sh -c 'mkdir -p shared_prefs && cat > shared_prefs/$prefs_file'" < "$state/prefs-new.xml"
+  if ! adb shell "run-as $package cat shared_prefs/$prefs_file" | cmp -s - "$state/prefs-new.xml"; then
+    echo "error: the app's preferences are not what was written"
+    return 1
+  fi
+}
+
+start() {
+  local apk=$1 started=$SECONDS
+  shift
+  adb install -r -t -g "$apk"
+  log "installed in $((SECONDS - started)) s"
+  if [ $# -gt 0 ]; then
+    # a release build isn't debuggable, so run-as can't reach its preferences
+    if adb shell run-as "$package" true 2> /dev/null; then
+      set_prefs "$@"
+    else
+      log "start: $package is not debuggable, so it keeps its default settings, not $*"
+    fi
+  fi
+  adb logcat -c
+  setsid adb logcat -v threadtime < /dev/null >> "$UI_OUT/app.log" 2>&1 &
+  echo $! > "$state/logcat.pid"
+  launch
+}
+
+relaunch() {
+  adb shell am force-stop "$package"
+  launch
+  if ! wait_for "$chat_list_button" 90 > /dev/null; then
+    echo "error: no chat list 90 s after the restart"
+    return 1
+  fi
+}
+
+layout() {
+  local one_hand
+  case "$1" in
+    reachable) one_hand=true ;;
+    top) one_hand=false ;;
+    *)
+      echo "error: layout is reachable or top"
+      return 1
+      ;;
+  esac
+  set_prefs "OneHandUI=$one_hand"
+  relaunch
+}
+
+# Typed text goes to the device's shell as one single-quoted word, so neither shell interprets it; input text reads %s as a space.
+type_text() {
+  local deadline=$((SECONDS + 10)) text=${1// /%s}
+  until screen focused; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: no text field has the focus"
+      return 1
+    fi
+    sleep 1
+  done
+  adb shell "input text '${text//\'/\'\\\'\'}'"
+}
+
+scroll() {
+  local x=$1 y=$2 times=$4 to i
+  number "$x"
+  number "$y"
+  number "$times"
+  case "$3" in
+    up) to=$((y + 600)) ;;
+    down) to=$((y - 600)) ;;
+    *)
+      echo "error: scroll up or down, not \"$3\""
+      return 1
+      ;;
+  esac
+  for ((i = 0; i < times; i++)); do
+    adb shell input swipe "$x" "$y" "$x" "$to" 300
+  done
+}
+
+key() {
+  local k
+  for k in "$@"; do
+    if ! [[ "$k" =~ ^[A-Z0-9_]+$ ]]; then
+      echo "error: \"$k\" is not a key name such as BACK or ENTER"
+      return 1
+    fi
+    adb shell input keyevent "KEYCODE_$k"
+  done
+}
+
+stop() {
+  adb shell am force-stop "$package"
+  if [ -f "$state/logcat.pid" ]; then
+    kill "$(cat "$state/logcat.pid")" 2> /dev/null || true
+    rm -f "$state/logcat.pid"
+  fi
 }
 
 case "${1:-}" in
-  launch)
-    log "launch"
-    launch
+  start)
+    shift
+    log "start $*"
+    start "$@"
     ;;
   shot) shot "$2" ;;
   text) screen lines ;;
+  tree) screen tree ;;
   find)
     if ! pos=$(screen find "$2"); then
       log "find \"$2\": not on screen" >&2
@@ -119,6 +250,7 @@ case "${1:-}" in
     ;;
   wait)
     secs=${3:-30}
+    number "$secs"
     if ! pos=$(wait_for "$2" "$secs"); then
       log "wait \"$2\": not on screen after $secs s"
       exit 1
@@ -127,11 +259,14 @@ case "${1:-}" in
     log "wait \"$2\": at $x,$y"
     ;;
   click)
+    number "$2"
+    number "$3"
     adb shell input tap "$2" "$3"
     log "click $2,$3"
     ;;
   click-text)
     secs=${3:-20}
+    number "$secs"
     if ! pos=$(wait_for "$2" "$secs"); then
       log "click-text \"$2\": not on screen after $secs s"
       exit 1
@@ -140,17 +275,31 @@ case "${1:-}" in
     adb shell input tap "$x" "$y"
     log "click-text \"$2\" at $x,$y"
     ;;
+  scroll)
+    scroll "$2" "$3" "$4" "${5:-3}"
+    log "scroll $4 at $2,$3, ${5:-3} times"
+    ;;
   type)
-    # input text takes %s for a space, and the device shell would interpret the rest
-    adb shell input text "$(printf '%q' "${2// /%s}")"
+    type_text "$2"
     log "type \"$2\""
     ;;
   key)
     shift
-    for k in "$@"; do
-      adb shell input keyevent "KEYCODE_$k"
-    done
+    key "$@"
     log "key $*"
+    ;;
+  layout)
+    layout "$2"
+    log "layout $2"
+    ;;
+  relaunch)
+    relaunch
+    log "relaunch"
+    ;;
+  text-size)
+    number "$2"
+    adb shell settings put system font_scale "$2"
+    log "text-size $2"
     ;;
   do)
     shift
@@ -163,6 +312,10 @@ case "${1:-}" in
         command=()
       fi
     done
+    ;;
+  stop)
+    stop
+    log "stop"
     ;;
   *)
     sed -n '3,/^$/s/^# \{0,1\}//p' "$0"

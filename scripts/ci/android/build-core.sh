@@ -3,9 +3,8 @@
 # Builds the arm64 Android core (libsimplex.so with the libraries it needs, and libsupport.so) with Nix, as
 # scripts/android/build-android.sh does, and packs them as scripts/android/download-libs.sh lays them out.
 # Usage: scripts/ci/android/build-core.sh <output .tar.gz>
-#        scripts/ci/android/build-core.sh --dry-run    lists what Nix would build and what it would fetch
 # Installs the Nix version that build-android.sh pins, in single-user mode, with the zw3rk Hydra's cache, which
-# builds these jobs for master.
+# builds these jobs for master: without it, the toolchain and every dependency would be compiled too.
 
 set -euo pipefail
 
@@ -17,13 +16,8 @@ install_nix() {
   local tmp
   tmp=$(mktemp -d)
   sudo mkdir -p /nix
-  # the toolchains need tens of GB, which the runner's temporary disk has
-  if mountpoint -q /mnt; then
-    sudo mkdir -p /mnt/nix
-    sudo mount --bind /mnt/nix /nix
-  fi
   sudo chown "$USER" /nix
-  df -h / /nix
+  df -h /
   # the Nix sandbox needs user namespaces, which Ubuntu 24.04 restricts
   sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
   curl --proto '=https' --tlsv1.2 -sSf -o "$tmp/install" "https://releases.nixos.org/nix/$nix_ver/install"
@@ -43,21 +37,9 @@ EOF
   nix --version
 }
 
-install_nix
-if [ "$1" = --dry-run ]; then
-  for job in "${jobs[@]}"; do
-    echo "::group::$job"
-    nix build --dry-run -L "$job" 2>&1 | tee "$RUNNER_TEMP/dry-run.txt"
-    echo "::endgroup::"
-    echo "$job: $(grep -cE '^ +/nix/store/.*\.drv$' "$RUNNER_TEMP/dry-run.txt" || true) derivations to build;" \
-      "$(grep -E 'will be fetched' "$RUNNER_TEMP/dry-run.txt" || echo 'nothing to fetch')"
-    grep -A 1000 'will be built' "$RUNNER_TEMP/dry-run.txt" | grep -E 'ghc|simplex|iserv|cross' | head -n 40 || true
-  done
-  exit 0
-fi
-
 mkdir -p "$(dirname "$1")"
 out="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+install_nix
 pkg=$(mktemp -d)
 for job in "${jobs[@]}"; do
   echo "::group::nix build $job"
