@@ -898,11 +898,9 @@ window.addEventListener('click',(e)=>{
 <li><a href="#abstract">Abstract</a></li>
 <li><a href="#conventions">Conventions</a></li>
 <li><a href="#terms">Terms</a></li>
-<li><a href="#link-relation-types">Link relation types</a>
+<li><a href="#link-relation-type">Link relation type</a>
 <ul>
-<li><a href="#simplex-channel">simplex-channel</a></li>
-<li><a href="#simplex-group">simplex-group</a></li>
-<li><a href="#simplex-contact">simplex-contact</a></li>
+<li><a href="#simplex">simplex</a></li>
 <li><a href="#owners-and-described-addresses">Owner's and described addresses</a></li>
 <li><a href="#target-attributes">Target attributes</a></li>
 <li><a href="#html">HTML</a></li>
@@ -921,7 +919,7 @@ window.addEventListener('click',(e)=>{
 <li><a href="#privacy-considerations">Privacy considerations</a></li>
 <li><a href="#iana-considerations">IANA considerations</a>
 <ul>
-<li><a href="#link-relation-types-registration">Link relation types registration</a></li>
+<li><a href="#link-relation-type-registration">Link relation type registration</a></li>
 <li><a href="#well-known-uri-registration">Well-known URI registration</a></li>
 </ul>
 </li>
@@ -931,7 +929,7 @@ window.addEventListener('click',(e)=>{
 <h2 id="abstract" tabindex="-1">Abstract</h2>
 <p>This document defines how a website publishes SimpleX channels, groups and contact addresses:</p>
 <ul>
-<li>the link relation types <code>simplex-channel</code>, <code>simplex-group</code> and <code>simplex-contact</code>, for the HTML elements <code>link</code>, <code>a</code> and <code>area</code>, and for the HTTP <code>Link</code> header field. Their targets are the addresses of the website's owner, or the addresses a page describes, such as the entries of a directory;</li>
+<li>the link relation type <code>simplex</code>, for the HTML elements <code>link</code>, <code>a</code> and <code>area</code>, and for the HTTP <code>Link</code> header field. Its targets are the addresses of the website's owner, or the addresses a page describes, such as the entries of a directory;</li>
 <li>the well-known URI <code>simplex.json</code>: a JSON document with the owner's channels, groups and contact addresses, their audience, the update frequency of each channel, and the kind and the protocols of each contact address.</li>
 </ul>
 <p>People and software agents subscribe to a channel to receive updates, join a group to take part in its conversations, and connect to a contact address to send requests. <a href="/docs/protocol/agent-protocols.html">Agent protocols over SimpleX</a> defines the requests an agent sends to a contact address, and an <code>llms.txt</code> section with the same addresses.</p>
@@ -940,40 +938,36 @@ window.addEventListener('click',(e)=>{
 <p>JSON schemas use JSON Type Definition [RFC8927].</p>
 <h2 id="terms" tabindex="-1">Terms</h2>
 <ul>
-<li><strong>SimpleX link</strong>: a connection link of the SimpleX Agent protocol, in the full or the short syntax, with the <code>https</code> or the <code>simplex</code> scheme [AGENT].</li>
-<li><strong>Channel link</strong>: a short SimpleX link of type <code>c</code>, for example <code>https://smp12.simplex.im/c#&lt;key&gt;</code>.</li>
-<li><strong>Group link</strong>: a short SimpleX link of type <code>g</code>, for example <code>https://smp12.simplex.im/g#&lt;key&gt;</code>, or a full SimpleX link of a group.</li>
-<li><strong>Contact address link</strong>: a short SimpleX link of type <code>a</code>, for example <code>https://smp12.simplex.im/a#&lt;key&gt;</code>, or a full SimpleX link of type <code>contact</code>.</li>
+<li><strong>SimpleX link</strong>: a short connection link of the SimpleX Agent protocol, with the <code>https</code> or the <code>simplex</code> scheme [AGENT]. The type in the link is the kind of the address.</li>
+<li><strong>Channel link</strong>: a SimpleX link of type <code>c</code>, for example <code>https://smp12.simplex.im/c#&lt;key&gt;</code>.</li>
+<li><strong>Group link</strong>: a SimpleX link of type <code>g</code>, for example <code>https://smp12.simplex.im/g#&lt;key&gt;</code>.</li>
+<li><strong>Contact address link</strong>: a SimpleX link of type <code>a</code>, for example <code>https://smp12.simplex.im/a#&lt;key&gt;</code>.</li>
 <li><strong>SimpleX name</strong>: a name in the SimpleX name service [NAMES]. <code>#example.simplex</code> is the name of a channel, <code>@example.simplex</code> the name of a contact address.</li>
 <li><strong>Owner</strong>: the person or organization that publishes the website.</li>
 </ul>
-<h2 id="link-relation-types" tabindex="-1">Link relation types</h2>
-<h3 id="simplex-channel" tabindex="-1">simplex-channel</h3>
-<p>The target of a <code>simplex-channel</code> link is a SimpleX channel of the owner of the link context, or a SimpleX channel described by the link context. The target MUST be a channel link.</p>
-<h3 id="simplex-group" tabindex="-1">simplex-group</h3>
-<p>The target of a <code>simplex-group</code> link is a SimpleX group of the owner of the link context, or a SimpleX group described by the link context. The target MUST be a group link.</p>
-<h3 id="simplex-contact" tabindex="-1">simplex-contact</h3>
-<p>The target of a <code>simplex-contact</code> link is a SimpleX contact address of the owner of the link context, or a SimpleX contact address described by the link context. The target MUST be a contact address link.</p>
+<h2 id="link-relation-type" tabindex="-1">Link relation type</h2>
+<h3 id="simplex" tabindex="-1">simplex</h3>
+<p>The target of a <code>simplex</code> link is a SimpleX channel, group or contact address of the owner of the link context, or described by the link context. The target MUST be a channel link, a group link or a contact address link. The type in the link tells which.</p>
 <h3 id="owners-and-described-addresses" tabindex="-1">Owner's and described addresses</h3>
-<p>A page that describes the addresses of others, such as a directory or a catalogue, uses the relation types on its entries. The owner's own addresses are listed in the <a href="#well-known-uri">well-known document</a>.</p>
+<p>A page that describes the addresses of others, such as a directory or a catalogue, uses the relation type on its entries. The owner's own addresses are listed in the <a href="#well-known-uri">well-known document</a>.</p>
 <h3 id="target-attributes" tabindex="-1">Target attributes</h3>
 <ul>
 <li><code>title</code>: the name of the channel, the group or the address, for display. In HTTP, a title with non-ASCII characters is sent as <code>title*</code> [RFC8187].</li>
 <li><code>hreflang</code>: the language of the channel's posts, or of the conversations [BCP47].</li>
 </ul>
-<p>A link context MAY have several links of one relation type. Their order is the owner's order of preference: document order in HTML, and the order of link values in HTTP.</p>
+<p>A link context MAY have several <code>simplex</code> links of one kind. Their order is the owner's order of preference: document order in HTML, and the order of link values in HTTP.</p>
 <h3 id="html" tabindex="-1">HTML</h3>
 <p>In the document head:</p>
-<pre><code class="language-html">&lt;link rel=&quot;simplex-channel&quot; href=&quot;https://smp12.simplex.im/c#…&quot; hreflang=&quot;en&quot; title=&quot;Ridgeline updates&quot;&gt;
-&lt;link rel=&quot;simplex-contact&quot; href=&quot;https://smp12.simplex.im/a#…&quot; hreflang=&quot;en&quot; title=&quot;Ask Ridgeline&quot;&gt;
+<pre><code class="language-html">&lt;link rel=&quot;simplex&quot; href=&quot;https://smp12.simplex.im/c#…&quot; hreflang=&quot;en&quot; title=&quot;Acme news&quot;&gt;
+&lt;link rel=&quot;simplex&quot; href=&quot;https://smp12.simplex.im/a#…&quot; hreflang=&quot;en&quot; title=&quot;Ask Acme&quot;&gt;
 </code></pre>
-<p>In the document body, the relation types are used on visible links, for example on the entries of a directory:</p>
-<pre><code class="language-html">&lt;a rel=&quot;simplex-contact&quot; href=&quot;https://smp12.simplex.im/a#…&quot;&gt;Chat with us&lt;/a&gt;
-&lt;a rel=&quot;simplex-group&quot; href=&quot;https://smp12.simplex.im/g#…&quot;&gt;Ridgeline hikers&lt;/a&gt;
+<p>In the document body, the relation type is used on visible links, for example on the entries of a directory:</p>
+<pre><code class="language-html">&lt;a rel=&quot;simplex&quot; href=&quot;https://smp12.simplex.im/a#…&quot;&gt;Chat with us&lt;/a&gt;
+&lt;a rel=&quot;simplex&quot; href=&quot;https://smp12.simplex.im/g#…&quot;&gt;Acme customers&lt;/a&gt;
 </code></pre>
 <h3 id="http" tabindex="-1">HTTP</h3>
-<pre><code>Link: &lt;https://smp12.simplex.im/c#…&gt;; rel=&quot;simplex-channel&quot;; hreflang=&quot;en&quot;; title=&quot;Ridgeline updates&quot;
-Link: &lt;https://smp12.simplex.im/a#…&gt;; rel=&quot;simplex-contact&quot;; hreflang=&quot;en&quot;; title=&quot;Ask Ridgeline&quot;
+<pre><code>Link: &lt;https://smp12.simplex.im/c#…&gt;; rel=&quot;simplex&quot;; hreflang=&quot;en&quot;; title=&quot;Acme news&quot;
+Link: &lt;https://smp12.simplex.im/a#…&gt;; rel=&quot;simplex&quot;; hreflang=&quot;en&quot;; title=&quot;Ask Acme&quot;
 </code></pre>
 <h2 id="well-known-uri" tabindex="-1">Well-known URI</h2>
 <h3 id="retrieval" tabindex="-1">Retrieval</h3>
@@ -1026,8 +1020,8 @@ Link: &lt;https://smp12.simplex.im/a#…&gt;; rel=&quot;simplex-contact&quot;; h
   &quot;channels&quot;: [
     {
       &quot;link&quot;: &quot;https://smp12.simplex.im/c#…&quot;,
-      &quot;name&quot;: &quot;#ridgeline.simplex&quot;,
-      &quot;title&quot;: &quot;Ridgeline updates&quot;,
+      &quot;name&quot;: &quot;#acme.simplex&quot;,
+      &quot;title&quot;: &quot;Acme news&quot;,
       &quot;lang&quot;: &quot;en&quot;,
       &quot;audience&quot;: [&quot;people&quot;, &quot;agents&quot;],
       &quot;changeFrequency&quot;: &quot;weekly&quot;
@@ -1036,15 +1030,15 @@ Link: &lt;https://smp12.simplex.im/a#…&gt;; rel=&quot;simplex-contact&quot;; h
   &quot;groups&quot;: [
     {
       &quot;link&quot;: &quot;https://smp12.simplex.im/g#…&quot;,
-      &quot;title&quot;: &quot;Ridgeline hikers&quot;,
+      &quot;title&quot;: &quot;Acme customers&quot;,
       &quot;lang&quot;: &quot;en&quot;
     }
   ],
   &quot;contacts&quot;: [
     {
       &quot;link&quot;: &quot;https://smp12.simplex.im/a#…&quot;,
-      &quot;name&quot;: &quot;@ridgeline.simplex&quot;,
-      &quot;title&quot;: &quot;Ask Ridgeline&quot;,
+      &quot;name&quot;: &quot;@acme.simplex&quot;,
+      &quot;title&quot;: &quot;Ask Acme&quot;,
       &quot;lang&quot;: &quot;en&quot;,
       &quot;audience&quot;: [&quot;agents&quot;],
       &quot;business&quot;: true,
@@ -1056,7 +1050,7 @@ Link: &lt;https://smp12.simplex.im/a#…&gt;; rel=&quot;simplex-contact&quot;; h
 <h2 id="processing" tabindex="-1">Processing</h2>
 <ul>
 <li>A consumer MUST ignore unknown fields and unknown <code>audience</code> values.</li>
-<li>A consumer MUST ignore a link of a type other than the one its relation type or its list requires.</li>
+<li>A consumer MUST ignore a <code>simplex</code> link that is not a channel, group or contact address link, and an entry of <code>simplex.json</code> whose link is of a type other than its list requires.</li>
 <li>The values on the website are hints. The data retrieved with the link is authoritative: an audience, an update frequency, the business flag or protocols declared there [AGENTS] take precedence over the website's values.</li>
 <li>A consumer MAY connect by <code>link</code> or by <code>name</code>. Resolving a name reveals interest in it to one names router, and verifies that the name's record and the profile's claim match [NAMES].</li>
 </ul>
@@ -1069,49 +1063,17 @@ Link: &lt;https://smp12.simplex.im/a#…&gt;; rel=&quot;simplex-contact&quot;; h
 </ul>
 <h2 id="privacy-considerations" tabindex="-1">Privacy considerations</h2>
 <ul>
-<li>The relation types and the well-known document are intended for owners who want to be reachable, such as channels, communities, businesses and services, and for pages that describe them, such as directories.</li>
+<li>The relation type and the well-known document are intended for owners who want to be reachable, such as channels, communities, businesses and services, and for pages that describe them, such as directories.</li>
 <li>A subscriber or a requester connects through the SimpleX network, without contacting the website. Retrieving a page or the well-known document is an ordinary web request.</li>
 </ul>
 <h2 id="iana-considerations" tabindex="-1">IANA considerations</h2>
-<h3 id="link-relation-types-registration" tabindex="-1">Link relation types registration</h3>
-<p>Three registrations in the &quot;Link Relation Types&quot; registry [RFC8288]:</p>
+<h3 id="link-relation-type-registration" tabindex="-1">Link relation type registration</h3>
+<p>One registration in the &quot;Link Relation Types&quot; registry [RFC8288]:</p>
 <ul>
-<li>
-<p>Relation Name: <code>simplex-channel</code></p>
-</li>
-<li>
-<p>Description: Refers to a SimpleX channel of the owner of the link context, or described by the link context.</p>
-</li>
-<li>
-<p>Reference: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-channel">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-channel</a></p>
-</li>
-<li>
-<p>Notes: The target is a SimpleX channel link [AGENT], with the <code>https</code> scheme or the provisionally registered <code>simplex</code> scheme.</p>
-</li>
-<li>
-<p>Relation Name: <code>simplex-group</code></p>
-</li>
-<li>
-<p>Description: Refers to a SimpleX group of the owner of the link context, or described by the link context.</p>
-</li>
-<li>
-<p>Reference: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-group">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-group</a></p>
-</li>
-<li>
-<p>Notes: The target is a SimpleX group link [AGENT], with the <code>https</code> scheme or the provisionally registered <code>simplex</code> scheme.</p>
-</li>
-<li>
-<p>Relation Name: <code>simplex-contact</code></p>
-</li>
-<li>
-<p>Description: Refers to a SimpleX contact address of the owner of the link context, or described by the link context.</p>
-</li>
-<li>
-<p>Reference: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-contact">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-contact</a></p>
-</li>
-<li>
-<p>Notes: The target is a SimpleX contact address link [AGENT], with the <code>https</code> scheme or the provisionally registered <code>simplex</code> scheme.</p>
-</li>
+<li>Relation Name: <code>simplex</code></li>
+<li>Description: Refers to a SimpleX channel, group or contact address of the owner of the link context, or described by the link context.</li>
+<li>Reference: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex</a></li>
+<li>Notes: The target is a SimpleX short link [AGENT] of a channel, a group or a contact address, with the <code>https</code> scheme or the provisionally registered <code>simplex</code> scheme.</li>
 </ul>
 <h3 id="well-known-uri-registration" tabindex="-1">Well-known URI registration</h3>
 <p>One registration in the &quot;Well-Known URIs&quot; registry [RFC8615]:</p>
@@ -1123,75 +1085,19 @@ Link: &lt;https://smp12.simplex.im/a#…&gt;; rel=&quot;simplex-contact&quot;; h
 <li>Related Information: SimpleX link syntax [AGENT].</li>
 </ul>
 <h2 id="html-link-type-extensions" tabindex="-1">HTML link type extensions</h2>
-<p>The HTML standard requires extension link types to be registered on the microformats page &quot;existing-rel-values&quot; [HTML] [MF-REL]. The entries:</p>
+<p>The HTML standard requires extension link types to be registered on the microformats page &quot;existing-rel-values&quot; [HTML] [MF-REL]. The entry:</p>
 <ul>
-<li>
-<p>Keyword: <code>simplex-channel</code></p>
-</li>
-<li>
-<p>Effect on <code>link</code>: Hyperlink</p>
-</li>
-<li>
-<p>Effect on <code>a</code>, <code>area</code>: Hyperlink</p>
-</li>
-<li>
-<p>Effect on <code>form</code>: not allowed</p>
-</li>
-<li>
-<p>Brief description: Refers to a SimpleX channel of the page's owner, or described by the page.</p>
-</li>
-<li>
-<p>Specification: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-channel">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-channel</a></p>
-</li>
-<li>
-<p>Status: proposed</p>
-</li>
-<li>
-<p>Keyword: <code>simplex-group</code></p>
-</li>
-<li>
-<p>Effect on <code>link</code>: Hyperlink</p>
-</li>
-<li>
-<p>Effect on <code>a</code>, <code>area</code>: Hyperlink</p>
-</li>
-<li>
-<p>Effect on <code>form</code>: not allowed</p>
-</li>
-<li>
-<p>Brief description: Refers to a SimpleX group of the page's owner, or described by the page.</p>
-</li>
-<li>
-<p>Specification: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-group">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-group</a></p>
-</li>
-<li>
-<p>Status: proposed</p>
-</li>
-<li>
-<p>Keyword: <code>simplex-contact</code></p>
-</li>
-<li>
-<p>Effect on <code>link</code>: Hyperlink</p>
-</li>
-<li>
-<p>Effect on <code>a</code>, <code>area</code>: Hyperlink</p>
-</li>
-<li>
-<p>Effect on <code>form</code>: not allowed</p>
-</li>
-<li>
-<p>Brief description: Refers to a SimpleX contact address of the page's owner, or described by the page.</p>
-</li>
-<li>
-<p>Specification: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-contact">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-contact</a></p>
-</li>
-<li>
-<p>Status: proposed</p>
-</li>
+<li>Keyword: <code>simplex</code></li>
+<li>Effect on <code>link</code>: Hyperlink</li>
+<li>Effect on <code>a</code>, <code>area</code>: Hyperlink</li>
+<li>Effect on <code>form</code>: not allowed</li>
+<li>Brief description: Refers to a SimpleX channel, group or contact address of the page's owner, or described by the page.</li>
+<li>Specification: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex</a></li>
+<li>Status: proposed</li>
 </ul>
 <h2 id="references" tabindex="-1">References</h2>
 <ul>
-<li>[AGENT] SimpleX Agent protocol, connection links: <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md#connection-link-1-time-invitation-and-contact-address">https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md#connection-link-1-time-invitation-and-contact-address</a></li>
+<li>[AGENT] SimpleX Agent protocol, short connection links: <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md#short-connection-link-syntax">https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md#short-connection-link-syntax</a></li>
 <li>[AGENTS] Agent protocols over SimpleX: <a href="/docs/protocol/agent-protocols.html">agent-protocols.md</a></li>
 <li>[BCP47] Tags for Identifying Languages: <a href="https://www.rfc-editor.org/info/bcp47">https://www.rfc-editor.org/info/bcp47</a></li>
 <li>[BUSINESS] Using SimpleX Chat in business: <a href="/docs/business.html">BUSINESS.md</a></li>

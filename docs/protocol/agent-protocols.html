@@ -937,7 +937,7 @@ window.addEventListener('click',(e)=>{
 <h2 id="abstract" tabindex="-1">Abstract</h2>
 <p>This document defines how software agents find SimpleX addresses and call the tools of other agents and bots over SimpleX:</p>
 <ul>
-<li>an <code>llms.txt</code> section with communication addresses, beside the link relation types and the well-known document of <a href="/docs/protocol/web-discovery.html">Publishing SimpleX addresses on websites</a>;</li>
+<li>an <code>llms.txt</code> section with communication addresses, beside the link relation type and the well-known document of <a href="/docs/protocol/web-discovery.html">Publishing SimpleX addresses on websites</a>;</li>
 <li>declarations: the protocols a profile serves and their transports, the peer types a channel or a contact address is made for, and the update frequency of a channel;</li>
 <li>the chat transport: the command <code>/_call</code> in a conversation;</li>
 <li>the Service RPC transport: one request and one response, without a conversation, in a generic envelope;</li>
@@ -997,10 +997,10 @@ window.addEventListener('click',(e)=>{
 <p>For SimpleX entries, the type <code>updates</code> requires a channel link, the type <code>group</code> a group link, and the types <code>contact</code> and <code>business contact</code> a contact address link [WEB]. The link text is the title of the address.</p>
 <pre><code>## Communications
 
-- [Ridgeline updates](https://smp12.simplex.im/c#…): SimpleX updates for people and agents, weekly. Trail conditions and closures.
-- [Ridgeline hikers](https://smp12.simplex.im/g#…): SimpleX group for people. Routes and meetups.
-- [Ask Ridgeline](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP. Bookings and availability.
-- [Ridgeline support](mailto:help@ridgeline.example): Email contact for people.
+- [Acme news](https://smp12.simplex.im/c#…): SimpleX updates for people and agents, weekly. Product news and offers.
+- [Acme customers](https://smp12.simplex.im/g#…): SimpleX group for people. Questions and tips from customers.
+- [Ask Acme](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP. Orders and availability.
+- [Acme support](mailto:support@acme.example): Email contact for people.
 </code></pre>
 <h2 id="profile-declarations" tabindex="-1">Profile declarations</h2>
 <p>A profile or a group declares the protocols it serves in its preferences. A channel or a public group declares its audience in its public group record, and a channel also its update frequency. A contact address declares the peers it serves in its link data.</p>
@@ -1115,7 +1115,7 @@ window.addEventListener('click',(e)=>{
 <pre><code>/_service_request &lt;userId&gt; &lt;target&gt; [timeout=&lt;seconds&gt;] [sign_key=&lt;key&gt;] &lt;json&gt;
 </code></pre>
 <ul>
-<li><code>&lt;target&gt;</code>: a contact address link, full or short, or the SimpleX name of a contact address [NAMES].</li>
+<li><code>&lt;target&gt;</code>: a contact address link, or the SimpleX name of a contact address [NAMES].</li>
 <li><code>timeout</code>: how long the requester waits for the response. The default is 30 seconds.</li>
 <li><code>sign_key</code>: the requester's Ed25519 private key, for a <a href="#signed-requests">signed request</a>.</li>
 <li><code>&lt;json&gt;</code>: the <a href="#request">request</a>, a JSON object.</li>
@@ -1227,11 +1227,11 @@ window.addEventListener('click',(e)=>{
     &quot;tools&quot;: [
       {
         &quot;name&quot;: &quot;availability&quot;,
-        &quot;description&quot;: &quot;Rooms available on a date&quot;,
+        &quot;description&quot;: &quot;Items in stock&quot;,
         &quot;inputSchema&quot;: {
           &quot;type&quot;: &quot;object&quot;,
-          &quot;properties&quot;: {&quot;date&quot;: {&quot;type&quot;: &quot;string&quot;}},
-          &quot;required&quot;: [&quot;date&quot;]
+          &quot;properties&quot;: {&quot;item&quot;: {&quot;type&quot;: &quot;string&quot;}},
+          &quot;required&quot;: [&quot;item&quot;]
         }
       }
     ],
@@ -1249,7 +1249,7 @@ window.addEventListener('click',(e)=>{
     &quot;method&quot;: &quot;tools/call&quot;,
     &quot;params&quot;: {
       &quot;name&quot;: &quot;availability&quot;,
-      &quot;arguments&quot;: {&quot;date&quot;: &quot;2026-11-02&quot;},
+      &quot;arguments&quot;: {&quot;item&quot;: &quot;anvil&quot;},
       &quot;_meta&quot;: {
         &quot;io.modelcontextprotocol/protocolVersion&quot;: &quot;2026-07-28&quot;,
         &quot;io.modelcontextprotocol/clientCapabilities&quot;: {}
@@ -1265,7 +1265,7 @@ window.addEventListener('click',(e)=>{
     &quot;id&quot;: 1,
     &quot;result&quot;: {
       &quot;resultType&quot;: &quot;complete&quot;,
-      &quot;content&quot;: [{&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;Three rooms are available on 2026-11-02.&quot;}],
+      &quot;content&quot;: [{&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;12 anvils are in stock.&quot;}],
       &quot;isError&quot;: false
     }
   }
