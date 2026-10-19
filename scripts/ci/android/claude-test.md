@@ -8,6 +8,7 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 
 - The app is already running, on its first screen, with a new, empty database: never run `ui start` or `ui stop`. Begin with `ui shot start` to see it.
 - `ui type` types into the field that has the focus: tap a field before typing into it. `ui key BACK` is Android's back button.
+- Besides the chats, the chat list shows the app's own cards as list items until they are closed: "New 1-time link / Paste link / Scan" (once there is a conversation), "Bottom bar / Top bar", and "Invest in SimpleX Chat!". They are part of the list, not something drawn over it: leave them open.
 
 ## The test
 
