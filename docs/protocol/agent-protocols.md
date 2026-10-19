@@ -37,7 +37,7 @@ Evgeny Poberezkin
 
 This document defines how software agents find SimpleX addresses and call the tools of other agents and bots over SimpleX:
 
-- an `llms.txt` section with communication addresses, beside the link relation types and the well-known document of [Publishing SimpleX addresses on websites](./web-discovery.md);
+- an `llms.txt` section with communication addresses, beside the link relation type and the well-known document of [Publishing SimpleX addresses on websites](./web-discovery.md);
 - declarations: the protocols a profile serves and their transports, the peer types a channel or a contact address is made for, and the update frequency of a channel;
 - the chat transport: the command `/_call` in a conversation;
 - the Service RPC transport: one request and one response, without a conversation, in a generic envelope;
@@ -111,10 +111,10 @@ For SimpleX entries, the type `updates` requires a channel link, the type `group
 ```
 ## Communications
 
-- [Ridgeline updates](https://smp12.simplex.im/c#…): SimpleX updates for people and agents, weekly. Trail conditions and closures.
-- [Ridgeline hikers](https://smp12.simplex.im/g#…): SimpleX group for people. Routes and meetups.
-- [Ask Ridgeline](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP. Bookings and availability.
-- [Ridgeline support](mailto:help@ridgeline.example): Email contact for people.
+- [Acme news](https://smp12.simplex.im/c#…): SimpleX updates for people and agents, weekly. Product news and offers.
+- [Acme customers](https://smp12.simplex.im/g#…): SimpleX group for people. Questions and tips from customers.
+- [Ask Acme](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP. Orders and availability.
+- [Acme support](mailto:support@acme.example): Email contact for people.
 ```
 
 ## Profile declarations
@@ -250,7 +250,7 @@ The requester's core sends the request with:
 /_service_request <userId> <target> [timeout=<seconds>] [sign_key=<key>] <json>
 ```
 
-- `<target>`: a contact address link, full or short, or the SimpleX name of a contact address [NAMES].
+- `<target>`: a contact address link, or the SimpleX name of a contact address [NAMES].
 - `timeout`: how long the requester waits for the response. The default is 30 seconds.
 - `sign_key`: the requester's Ed25519 private key, for a [signed request](#signed-requests).
 - `<json>`: the [request](#request), a JSON object.
@@ -380,11 +380,11 @@ The reply:
     "tools": [
       {
         "name": "availability",
-        "description": "Rooms available on a date",
+        "description": "Items in stock",
         "inputSchema": {
           "type": "object",
-          "properties": {"date": {"type": "string"}},
-          "required": ["date"]
+          "properties": {"item": {"type": "string"}},
+          "required": ["item"]
         }
       }
     ],
@@ -405,7 +405,7 @@ Calling a tool over Service RPC, the request:
     "method": "tools/call",
     "params": {
       "name": "availability",
-      "arguments": {"date": "2026-11-02"},
+      "arguments": {"item": "anvil"},
       "_meta": {
         "io.modelcontextprotocol/protocolVersion": "2026-07-28",
         "io.modelcontextprotocol/clientCapabilities": {}
@@ -424,7 +424,7 @@ The response:
     "id": 1,
     "result": {
       "resultType": "complete",
-      "content": [{"type": "text", "text": "Three rooms are available on 2026-11-02."}],
+      "content": [{"type": "text", "text": "12 anvils are in stock."}],
       "isError": false
     }
   }
