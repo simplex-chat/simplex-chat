@@ -6,7 +6,7 @@ Issue #7755.
 
 `ChatModel.addTerminalItem(item, maxItems)` reads `terminalItems.value` for the size check, twice on the `subList` line (the list and its size), and again for the append, without a lock. While no chat console is open, it runs on the caller's thread: `sendCmd` on the IO dispatcher, the receiver loop, and the migration receivers, several at once. (With a console open, writes are posted to the main thread.)
 
-Two concurrent calls can:
+Concurrent calls can:
 - crash with `IndexOutOfBoundsException: toIndex = 201` in `subList`: another thread appended between the two reads of `terminalItems.value` in the `subList` line;
 - lose a row: both read the same list and the second write replaces the first;
 - keep the list above the cap.
