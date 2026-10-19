@@ -2513,7 +2513,7 @@ fun BoxScope.ChatItemsList(
       return mergedItems.value.items.getOrNull(index)?.let { index to it }
     }
     if (selectedChatItems.value != null) return@pinned
-    val memberAtTop = remember { derivedStateOf(sameMemberPolicy) { topItem()?.let { (it.second.newest().item.chatDir as? CIDirection.GroupRcv)?.groupMember } } }
+    val memberAtTop = remember { derivedStateOf { topItem()?.let { (it.second.newest().item.chatDir as? CIDirection.GroupRcv)?.groupMember } } }
     val member = memberAtTop.value ?: return@pinned
     Box(
       Modifier
@@ -3860,11 +3860,6 @@ private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
     current.chatDir is CIDirection.ChannelRcv -> older == null || !oldIsGroupRcv || !sameMember
     else -> false
   }
-}
-
-// messages of one sender can carry different snapshots of the member
-private val sameMemberPolicy = object : SnapshotMutationPolicy<GroupMember?> {
-  override fun equivalent(a: GroupMember?, b: GroupMember?): Boolean = a?.memberId == b?.memberId
 }
 
 // the list under the stand-in avatar still gets the drags and wheel events that scroll it
