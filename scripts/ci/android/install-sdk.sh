@@ -13,19 +13,13 @@ sdk=$(cd "$1" && pwd)
 repo=https://dl.google.com/android/repository
 api=34
 
-fetch() {
-  local url=$1 sha1=$2 sha256=$3 file
-  file=$sdk/downloads/$(basename "$url")
-  mkdir -p "$sdk/downloads"
-  curl --proto '=https' --tlsv1.2 -sSfL --retry 3 -o "$file" "$url"
-  echo "$sha1  $file" | sha1sum -c >&2
-  echo "$sha256  $file" | sha256sum -c >&2
-  echo "$file"
-}
-
 install() {
-  local dest=$1 zip
-  zip=$(fetch "$2" "$3" "$4")
+  local dest=$1 url=$2 sha1=$3 sha256=$4 zip
+  zip=$sdk/downloads/$(basename "$url")
+  mkdir -p "$sdk/downloads"
+  curl --proto '=https' --tlsv1.2 -sSfL --retry 3 -o "$zip" "$url"
+  echo "$sha1  $zip" | sha1sum -c
+  echo "$sha256  $zip" | sha256sum -c
   mkdir -p "$dest"
   unzip -q "$zip" -d "$dest"
   rm "$zip"

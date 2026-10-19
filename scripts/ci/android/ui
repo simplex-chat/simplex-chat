@@ -15,7 +15,7 @@
 #   ui click <x> <y>              tap at x,y
 #   ui click-text <text> [secs]   wait up to secs (20) for the text and tap its centre
 #   ui scroll <x> <y> <up|down> [times]
-#                                 swipe at x,y to move the content up or down, 3 times unless given
+#                                 swipe at x,y to scroll towards the top (up) or bottom (down) of the content, 3 times unless given
 #   ui type <text>                type ASCII text into the focused field, waiting up to 10 s for a field to have the focus
 #   ui key <key>...               press keys by their Android names without KEYCODE_ (BACK, ENTER, DEL)
 #   ui layout <reachable|top>     restart the app with the reachable toolbar (the one-hand UI, the default) or the top bar

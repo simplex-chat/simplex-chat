@@ -54,7 +54,7 @@ finish() {
     "$ui" shot final || true
   fi
   echo "::group::the core and crashes in logcat"
-  grep -E 'ndk_translation|SIMPLEX *: (start|chat)|FATAL EXCEPTION|Process: |Fatal signal' "$UI_OUT/app.log" | head -n 100 || true
+  grep -E 'ndk_translation|SIMPLEX *: start|AndroidRuntime: (FATAL EXCEPTION|Process: )|Fatal signal' "$UI_OUT/app.log" | head -n 100 || true
   echo "::endgroup::"
   report_checks
   exit "$status"
@@ -114,12 +114,12 @@ back_to() {
 }
 
 # On a first start the chat list can show for a moment before onboarding, long enough to open its What's new sheet over
-# the first screen (seen with the released APK in run 39237969497): it is closed and noted, not failed.
+# the first screen: it is closed and noted, not failed.
 first_screen() {
   local deadline=$((SECONDS + 180))
   until "$ui" find "Get started" > /dev/null 2>&1; do
     app_running || return 1
-    if "$ui" find "Read more" > /dev/null 2>&1; then
+    if "$ui" find "New in" > /dev/null 2>&1; then
       echo "NOTE the What's new sheet covered the first onboarding screen" | tee -a "$checks"
       "$ui" shot whats-new-over-onboarding
       "$ui" click-text OK
@@ -172,7 +172,7 @@ open_settings() {
 green_before() {
   local x y l t r b png
   read -r x y l t r b < <("$ui" find "$1") || return 1
-  "$ui" shot "$2" > /dev/null
+  "$ui" shot "$2" > /dev/null || return 1
   png=$(find "$UI_OUT" -maxdepth 1 -name "*-$2.png" | sort | tail -n 1)
   convert "$png" -alpha off -crop "${l}x$((b - t))+0+$t" +repage -fuzz 20% -fill black +opaque 'rgb(77,218,103)' \
     -fill white -opaque 'rgb(77,218,103)' -colorspace Gray -format '%[fx:round(mean*w*h)]' info:
@@ -188,7 +188,9 @@ server_tested() {
     fi
     green=$(green_before 127.0.0.1 server-test) || return 1
     echo "green pixels before the test server's host: $green"
-    [ "$green" -lt 50 ] || return 0
+    if [ "$green" -ge 50 ]; then
+      return 0
+    fi
     sleep 2
   done
   return 1
