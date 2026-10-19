@@ -14,7 +14,7 @@ An unencrypted database with a non-random passphrase flag is possible: archives 
 
 "Chat backup" section in Settings → Chat data → Database passphrase & export, between "Chat database" and "Run chat", with the "Enable iCloud backup" toggle (`DEFAULT_ICLOUD_BACKUP`, off by default; the choice persists).
 
-The app group container is included in backup when the toggle is on and `iCloudBackupBlock` returns `nil`. Otherwise the toggle is disabled and shown off, and the footer states the reason:
+The app group container is included in backup when the toggle is on and `iCloudBackupBlock` returns `nil`. When `iCloudBackupBlock` returns a reason, the toggle is disabled and shown off (it shows the container's actual state, so in the share-extension gap below it can still show on), and the footer states the reason:
 
 | Reason | Footer |
 |---|---|
