@@ -51,17 +51,17 @@ Each is a separate change:
 
 ## Testing
 
-Desktop, master build vs PR build. The active count is not visible here (no tray, and the picker shows other profiles), so read it through #7340's filter button on #7340 vs #7340 merged with this PR: lit means count > 0.
-- A message in a muted chat: lit on master, grey on the PR.
-- Mute a chat with unread: lit on master, grey on the PR.
-- Delete a chat with unread: lit on master, grey on the PR.
-- A mentions-only group: a plain message leaves the PR grey, a mention lights both.
-- After a restart, mark a muted chat read, then receive a message in another (unmuted) chat: grey on master (negative count), lit on the PR.
-- After a restart, unmute a chat with unread: grey on master, lit on the PR.
-- Mentions-only group, a mention deleted by the sender: the Unread filter keeps the group on master and clears it on the PR.
+Desktop. The active count is not visible here (no tray, and the picker shows other profiles), so read it through #7340's filter button on #7340 vs #7340 merged with this PR: lit means count > 0.
+- A message in a muted chat: lit on #7340, grey with this PR.
+- Mute a chat with unread: lit on #7340, grey with this PR.
+- Delete a chat with unread: lit on #7340, grey with this PR.
+- A mentions-only group: a plain message leaves the button grey with this PR, and a mention to the profile lights it.
+- After a restart, mark a muted chat read, then receive a message in another (unmuted) chat: grey on #7340 (negative count), lit with this PR.
+- After a restart, unmute a chat with unread: grey on #7340, lit with this PR.
+- Master vs this PR, mentions-only group, a mention deleted by the sender: the Unread filter keeps the group on master and clears it on the PR.
 
-Regression on both builds: unread badges and mark read/unread, mute and favorite, list chip dots, clear, "keep conversation" delete, a second profile's picker badge, the chat item TTL change, the Unread filter.
+Regression on master and the PR: unread badges and mark read/unread, mute and favorite, list chip dots, clear, "keep conversation" delete, a second profile's picker badge, the chat item TTL change, the Unread filter.
 
-Android: on resume after new messages, the chat list shows them and the other profile's picker badge includes its new message, on both builds (the app stays alive in the background, so the re-read on resume is not exercised); no crashes.
+Android: on resume after new messages, the chat list shows them and the other profile's picker badge includes its new message, on both builds (the app stays alive in the background, so events keep the counts right on both builds and the re-read on resume has nothing to correct); no crashes.
 
 iOS: reviewed by reading, not built.
