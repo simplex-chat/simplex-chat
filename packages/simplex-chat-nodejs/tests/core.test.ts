@@ -1,6 +1,5 @@
 import {execFile, spawnSync} from "child_process";
 import * as fs from "fs";
-import * as os from "os";
 import * as path from "path";
 import {core} from "../src/index";
 import * as libs from "../src/libs";
@@ -18,7 +17,7 @@ describe("Core tests", () => {
   }, 300000);
   const tmpDir = "./tests/tmp";
   const dbPath = path.join(tmpDir, "simplex_v1");
-  const templateDir = path.join(os.tmpdir(), `simplex-core-test-${process.pid}`);
+  const templateDir = "./tests/template";
   const templateDbPath = path.join(templateDir, "simplex_v1");
 
   beforeAll(async () => {
