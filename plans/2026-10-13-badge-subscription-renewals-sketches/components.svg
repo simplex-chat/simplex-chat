@@ -19,8 +19,8 @@
   <text x="38" y="203" font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge subscription &lt;state&gt;</text>
   <text x="38" y="230" font-size="12" fill="#1a2030">Your badge: Renews, Payment</text>
   <text x="38" y="248" font-size="12" fill="#1a2030">problem, Ends; Manage subscription</text>
-  <text x="38" y="275" font-size="12" fill="#1a2030">Check your order: disclosure,</text>
-  <text x="38" y="293" font-size="12" fill="#1a2030">Restore purchases</text>
+  <text x="38" y="275" font-size="12" fill="#1a2030">Check your order: disclosure, links</text>
+  <text x="38" y="293" font-size="12" fill="#1a2030">Support SimpleX: Restore purchases</text>
   <text x="38" y="320" font-size="12" fill="#1a2030">One chat-list banner per alert</text>
   <text x="38" y="342" font-size="11.5" fill="#5b6577">Desktop: state only, no store rows</text>
 

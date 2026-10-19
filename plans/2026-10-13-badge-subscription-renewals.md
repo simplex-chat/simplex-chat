@@ -1,6 +1,6 @@
 # Plan: store subscription renewals for supporter badges
 
-Diagrams of the code as built in PR #7716 are in [`2026-10-13-badge-subscription-renewals-sketches/README.md`](2026-10-13-badge-subscription-renewals-sketches/README.md). Where they and this plan differ, the diagrams show the code.
+For reviewers: a summary of the code as built in PR #7716, with diagrams, is in [`2026-10-13-badge-subscription-renewals-sketches/summary.md`](2026-10-13-badge-subscription-renewals-sketches/summary.md). Where it and this plan differ, the summary describes the code.
 
 Run: 001-badge-subscriptions · Base branch: `f/badge-subscriptions`, cut from `badge-in-app-checkout` once `f/badge-store-verifiers` is merged into it · Repos: simplex-chat-2 · Estimated diff: ~1700 changed lines (~900 code and docs, ~800 tests), one PR in eight slices
 

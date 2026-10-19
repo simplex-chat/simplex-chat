@@ -65,7 +65,7 @@
 
   <rect x="316" y="374" width="320" height="54" rx="8" fill="#fff4e0" stroke="#e7c48a"/>
   <text x="330" y="394" font-size="11.5" fill="#1a2030">provider_unavailable, or the store's refusal,</text>
-  <text x="330" y="410" font-size="11.5" fill="#1a2030">retryAfter at least an hour; only the stamp written.</text>
+  <text x="330" y="410" font-size="11.5" fill="#1a2030">retryAfter, if any, ≥ 1 h; only the stamp written.</text>
 
   <rect x="316" y="446" width="320" height="104" rx="8" fill="#e7f4ec" stroke="#8cc6a3"/>
   <text x="330" y="466" font-size="11.5" fill="#1a2030">One transaction, after signing the month:</text>

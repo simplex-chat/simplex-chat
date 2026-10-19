@@ -21,9 +21,10 @@
   <rect x="404" y="124" width="140" height="30" rx="15" fill="#e7f4ec" stroke="#8cc6a3"/>
   <text x="474" y="144" font-size="12.5" font-weight="600" fill="#11713f" text-anchor="middle">renewing</text>
   <line x1="546" y1="139" x2="576" y2="139" stroke="#5b6577" stroke-width="1.4" marker-end="url(#s-arr)"/>
-  <text x="588" y="123" font-size="11.5" fill="#1a2030">Your badge: “Renews {date} · {price}”</text>
-  <text x="588" y="141" font-size="11.5" fill="#1a2030">Banner, annual plans only, 3 days before:</text>
-  <text x="588" y="159" font-size="11.5" fill="#1a2030">“Your badge renews soon”</text>
+  <text x="588" y="119" font-size="11.5" fill="#1a2030">Your badge: “Renews {date} · {price}”, then “Renewing”</text>
+  <text x="588" y="134" font-size="11.5" fill="#1a2030">past paidThrough, until the store charges</text>
+  <text x="588" y="149" font-size="11.5" fill="#1a2030">Banner, annual plans only, 3 days before:</text>
+  <text x="588" y="164" font-size="11.5" fill="#1a2030">“Your badge renews soon”</text>
 
   <!-- row 2: cancelled -->
   <rect x="24" y="186" width="932" height="74" rx="8" fill="#ffffff" stroke="#d9dde5"/>
