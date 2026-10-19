@@ -39,8 +39,8 @@ The channel's link data lives on one SMP server, the link server, which already 
 | Optional parts | left out: invitation cancel, field-by-field profile merge, equal-version tie-break, retiring the root key |
 | Server command | sends only the new user data and keys (room for about 50 owners) |
 | Relays and owner actions | as today, not checked against the link: owners are trusted, and relays cannot forge their actions |
-| A removal at the moment of a promotion | the removal wins everywhere (recommended; open question 6) |
-| Blocking and unblocking | not ordered, as in groups today (recommended; open question 7) |
+| A removal at the moment of a promotion | the promotion wins: devices that applied the removal follow the link |
+| Blocking and unblocking | not ordered, as in groups today |
 
 ## Trade-offs users notice
 
@@ -48,7 +48,7 @@ The channel's link data lives on one SMP server, the link server, which already 
 - **Edits over a changed profile are refused**, and the current profile is shown.
 - **A new owner's device connects to the link server directly**, revealing its IP address to that server's operator; the invitation says so, and private-routing settings need an explicit confirmation. Link reads stay private.
 - **The link server learns when owners act and how many there are.**
-- **An admin's removal wins over a promotion at the same moment**: owners apply it if it reached them within a day of the promotion, and every device follows the link. If the promoting owner leaves within seconds, before the removal reaches it, the channel can be left without a working owner.
+- **A promotion wins over a removal at the same moment**: devices that applied the removal first take the member as an owner at their next link read. If the member's own device applied it first, it has left, and the member stays listed as an owner without a device until another owner removes it.
 - **Old apps and servers.** Promotion needs every relay and the link server upgraded; subscribers on older apps reject a new owner's actions until they upgrade.
 - **A new owner's profile reaches every subscriber**; the member is told before it accepts.
 
@@ -59,7 +59,6 @@ None of these is a race between honest parties:
 - **A link server that ignores the compare-and-swap** can make honest owners lose writes or diverge on roles. It cannot forge anything.
 - **A removed owner running modified software**, until a relay learns of the removal (the remover's announcement, normally seconds, or the relay's 15-minute link check), can act through that relay as an owner, including role changes numbered so high that later ones are dropped there and at its members; afterwards the relay accepts from it only its departure and role changes up to the link's roster version. With a colluding link server it can serve forged link data.
 - **Any current owner can destroy the channel or lock the others out**: removal is administration, not a defence.
-- **An admin running modified software** can remove an owner within a day of that owner's promotion.
 - **A role change can be abandoned** when no relay serves it: its author's device is lost in the second after recording it, its author is removed before any relay got it, or only a relay that then failed got it. While a lost author is an owner the others cannot change roles until they remove it; then they wait up to a day, and devices that applied part of the lost version return to the abandoning owner's roster. An owner that also missed that author's earlier changes drops them too.
 - **A remover crashing right after its removal landed** sends no announcement; devices apply it at their next link read, relays at their next check.
 - **Blocking and unblocking a member is not ordered**, as today.
@@ -68,4 +67,4 @@ None of these is a race between honest parties:
 
 ## Not verified, size
 
-App code and Postgres tests run only on the host. The 50-owner headroom is computed from the encoders (the first slices test it); catch-up for 100,000 members (about 2,000 messages) is an estimate. Five new chat events and one changed; five optional link-data fields; nine columns, no new table; one SMP command and one error.
+App code and Postgres tests run only on the host. The 50-owner headroom is computed from the encoders (the first slices test it); catch-up for 100,000 members (about 2,000 messages) is an estimate. Five new chat events and one changed; five optional link-data fields; eight columns, no new table; one SMP command and one error.

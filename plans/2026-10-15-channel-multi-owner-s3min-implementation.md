@@ -1,6 +1,6 @@
 # Channel multi-owner (S3-min) — implementation plan
 
-Branch: `f/channel-multi-owner` · Repos: simplexmq (from pinned `cba13823`), simplex-chat · Estimated diff: ~2,290 production Haskell lines (simplexmq ~490, chat ~1,800) plus tests, and ~380 lines per app platform.
+Branch: `f/channel-multi-owner` · Repos: simplexmq (from pinned `cba13823`), simplex-chat · Estimated diff: ~2,260 production Haskell lines (simplexmq ~490, chat ~1,770) plus tests, and ~380 lines per app platform.
 
 The overview, `2026-10-15-channel-multi-owner-s3min.md`, says what owners can do and why; this file says what to build. Anchors are simplex-chat paths under `src/Simplex/Chat/` and simplexmq paths under `src/Simplex/Messaging/` at `cba13823`.
 
@@ -14,11 +14,11 @@ A channel has several equal owners. Any owner can do what the single owner does 
 | AC2 | Promotion is refused for an unverified member, a relay below `multiOwnerVersion`, a link server below SMP v24 | T2 |
 | AC3 | The creator promotes M and leaves; M does every owner action; a later joiner sees M as owner and the creator departed, verifies the roster, gets the creator's history unsigned | T3 |
 | AC4 | An owner removes another; the removed owner's writes and `DEL` get `AUTH`; its device erases its keys; relays, members and joiners treat it as departed | T4, T15 |
-| AC5 | Concurrent writes both land or one is refused; an edit over a changed profile is refused; concurrent role changes reach every relay and member, none reverted; mutual removal and the last two leaving leave one owner; a removal racing a promotion removes the member everywhere | T5–T8, T14, T18 |
+| AC5 | Concurrent writes both land or one is refused; an edit over a changed profile is refused; concurrent role changes reach every relay and member, none reverted; mutual removal and the last two leaving leave one owner; parties that applied a removal racing a promotion take the member as owner at their next read | T5–T8, T14, T18 |
 | AC6 | A role change made just before its author leaves reaches every device | T9, T15, T22 |
 | AC7 | A new owner pulls the member list from a relay; the count keeps updating after the creator leaves | T10, T11 |
 | AC8 | An older profile event or link read never replaces a newer profile | T12 |
-| AC9 | Background work (promotion, relay publication, count, removal wins, roster recovery) completes once after an outage or a restart | T16, T17 |
+| AC9 | Background work (promotion, relay publication, count, roster recovery) completes once after an outage or a restart | T16, T17 |
 | AC10 | `LSWP` swaps data and keys atomically on every store; a restart replays both | §7 simplexmq |
 | AC11 | Single-owner channels behave as today: `-m "channels"` passes | §7 |
 
@@ -123,12 +123,12 @@ Only the command row is carried between steps; every decision comes from the lat
 |---|---|---|---|
 | `CLCProfile base new` | the profile, whole | read = `new` → no write (landed); read ≠ `base` → `CLEChangedByOwner` | user commands only |
 | `CLCAddOwner member ownerAuth` | entry after the signer's; key into the set | member revoked or departed → refuse; already in the chain → no write | a member has `owner_inv_accepted = 1` → §4.6 step 3 |
-| `CLCRevokeOwner memberId` | memberId into `revokedOwners`; its key out | already revoked → no write; no other current owner would remain → `CLELastOwner` | a member held departed is a non-revoked chain entry → none (§4.8) |
+| `CLCRevokeOwner memberId` | memberId into `revokedOwners`; its key out | already revoked → no write; no other current owner would remain → `CLELastOwner` | user commands only |
 | `CLCRelays added removed` | read relays + added − removed − relays held as left | no change → no write | an acknowledged relay (`RSAcknowledgedRoster`) missing, or a left one listed → `activateGroupRelays` (§4.13) |
 | `CLCCount n` | `publicGroupData.publicMemberCount = n` | not the first current chain entry, or read count = `n` → no write | `members_catchup = 0`, tally ≠ read count → none |
 | `CLCRoster claim` | `roster` (§4.10) | §4.10 | §4.10 rules (b), (c) → rule (a) |
 
-Triggers: acceptance (§4.6); removal wins (§4.8); a relay's acknowledgement or own leave (§4.13); the count timer (§4.11); a relay connection ready or resuming, relay set-up (§4.10, `LSResign`); a user write or channel open whose read shows pending work; chat start (§4.15).
+Triggers: acceptance (§4.6); a relay's acknowledgement or own leave (§4.13); the count timer (§4.11); a relay connection ready or resuming, relay set-up (§4.10, `LSResign`); a user write or channel open whose read shows pending work; chat start (§4.15).
 
 Chain rules: signing order is kept (`validateLinkOwners`); the creator signs new entries with the root key (`Commands.hs:2757`), others with their member key (`mkOwnerAuth`); a revoked entry is dropped once no current entry depends on it, transitively, except the writer's own entry in its leave write (a non-root writer must be in the chain, `Agent/Protocol.hs:1996-2001`).
 
@@ -137,7 +137,7 @@ Chain rules: signing order is kept (`validateLinkOwners`); the creator signs new
 1. A read whose `linkVersion` (absent = 0) is below `link_data_version` is ignored; else store it.
 2. Profile and count as `updateGroupFromLinkData` (`Internal.hs:1633-1654`).
 3. `revokedOwners`: each held member becomes departed (`GSMemLeft`) at whatever role it is held; unknown memberIds get departed rows. A relay keeps a departed owner's connection (§4.13). Own memberId listed while the membership is current: complete the departure (§4.9 step 3).
-4. Non-revoked chain entries: a member not held as owner becomes owner with `ownerKey` (created with a placeholder profile if unknown), a departed one included (`GSMemUnknown`, §4.3), so non-owners follow the link; owners instead revoke a departed one (§4.8); its own entry with its own key and a current membership: become owner (§4.6); with another key: alert item, stay a subscriber. A read only adds owners and marks revoked ones departed, so one older than a promotion cannot undo it.
+4. Non-revoked chain entries: a member not held as owner becomes owner with `ownerKey` (created with a placeholder profile if unknown), a departed one included (`GSMemUnknown`, §4.3), so every party follows the link (§4.8); its own entry with its own key and a current membership: become owner (§4.6); with another key: alert item, stay a subscriber. A read only adds owners and marks revoked ones departed, so one older than a promotion cannot undo it.
 5. `roster` → `link_roster_version`; `link_roster_seen_at` = now when the version changes.
 6. Owners: join each listed relay without a relay member (`connectToRelayAsync`, `Internal.hs:1606-1616`); `RSInactive` for active `group_relays` rows missing from the list (as `Subscriber.hs:1466-1477`). When the read `roster.version` is above `stored_roster_version`, `XGrpRosterRequest` to every current relay (§4.10).
 
@@ -177,9 +177,9 @@ It sends `x.grp.owner.inv {memberId}` and stores the message's shared msg id in 
 
 1. Re-check M (current, not departed or revoked) and the relays' versions; a failure that persists clears the invitation and is shown. The creator's first swap also writes its own fields and roster commitment (§4.4 step 3; the stored roster is rebuilt without M, `buildGroupRoster`).
 2. `CLCAddOwner M (mkOwnerAuth …)`.
-3. Callback, when a read shows M's entry with M's key while M's `owner_inv_accepted = 1` (a repeated read finds it cleared and sends nothing): clear `owner_inv_msg_id` and `owner_inv_accepted`; M's role owner (its key is the chain key), `owner_since` = now; send `x.grp.owner.add {memberId, memberKey, profile}` with M's redacted profile (`redactedMemberProfile`, `Internal.hs:1361`); item `SGEMemberRole … GROwner`; `CEvtMemberRole`.
+3. Callback, when a read shows M's entry with M's key while M's `owner_inv_accepted = 1` (a repeated read finds it cleared and sends nothing): clear `owner_inv_msg_id` and `owner_inv_accepted`; M's role owner (its key is the chain key); send `x.grp.owner.add {memberId, memberKey, profile}` with M's redacted profile (`redactedMemberProfile`, `Internal.hs:1361`); item `SGEMemberRole … GROwner`; `CEvtMemberRole`.
 
-**Commit.** Relays, members and owners apply `x.grp.owner.add` when the sender is a current owner and `memberId` is not held as departed: role owner, `member_pub_key = memberKey` (warning if it replaces a different key), the member created from `profile` if unknown, `owner_since` = the commit's arrival (§4.8), the role item as `xGrpMemRole` creates it; relays send their capabilities (§4.13). An owner holding `memberId` as departed enqueues a link sync (§4.8). It is not `x.grp.mem.role … owner`, so older clients ignore it and no relay-asserted key is promoted (`Subscriber.hs:3465-3468`).
+**Commit.** Relays, members and owners apply `x.grp.owner.add` when the sender is a current owner and `memberId` is not held as departed: role owner, `member_pub_key = memberKey` (warning if it replaces a different key), the member created from `profile` if unknown, the role item as `xGrpMemRole` creates it; relays send their capabilities (§4.13). A party holding `memberId` as departed takes it as owner at its next read (§4.8). It is not `x.grp.mem.role … owner`, so older clients ignore it and no relay-asserted key is promoted (`Subscriber.hs:3465-3468`).
 
 **M becomes owner** when it applies the commit about itself or reads its own entry (§4.4), with its own key and a current membership: role owner, item `RGEUserRole GROwner`, `members_catchup = 1`, member catch-up (§4.7). It stores no credential: each write builds them.
 
@@ -194,8 +194,7 @@ It sends `x.grp.owner.inv {memberId}` and stores the message's shared msg id in 
 - **Command.** `APIRemoveMembers` with a current owner as the only target, by a current owner, in a channel: `writeChannelLink` with `CLCRevokeOwner X`; callback: mark X removed (rows kept, §4.14), send `x.grp.mem.del X False Nothing` (`deleteMemsSend`, `Commands.hs:3191-3229`). Removing oneself is a leave. After a crash between swap and callback, parties learn from link reads.
 - **Receivers** apply it as today (`checkRole`, `Subscriber.hs:3783-3786`); a relay forwards it to X first, then deletes X's connection (`:3755-3761`).
 - **The removed owner's device** applies it on receipt (own-membership branch, `Subscriber.hs:3734-3746`), as it does a read showing itself revoked (§4.4 step 3): membership removed, keys erased (§4.9 step 3), catch-up stopped.
-- **A removal racing a promotion** reaches parties in either order. One that applied the removal refuses the commit (§4.6); one that applied the commit refuses an admin's removal of an owner as today (`checkRole`, `Subscriber.hs:3783-3786`), except other owners: they apply one arriving less than `promotionRaceWindow` (1 day) after `owner_since` (unset for owners learned from the chain; `checkRole` gains this case in `xGrpMemDel`'s other-member branch) and revoke the member (below). Both times are arrivals at the owner's own queue server, the outer `brokerTs` of `xGrpMsgForward` (`Subscriber.hs:4009`), which the commit and `xGrpMemDel` must get instead of the relay-set `msgTs` (`:4058`); a relay can only delay its copy, and the first copy wins. A relay that applied the removal first forwarded it to the owners at once. Every other party, the removing admin's and M's devices included, follows the link at its next read (§4.4 steps 3–4).
-- **Removal wins.** An owner that holds M departed and receives a commit about M, or applies an `x.grp.mem.del` or `x.grp.leave` of a member it held as an owner, enqueues a link sync, which revokes M if the read still lists it. No announcement: other parties follow the link.
+- **A removal racing a promotion** reaches parties in either order, and the promotion wins, with nothing done for it. A party that applied the removal first refuses the commit and takes M as owner at its next read (§4.4 step 4); one that applied the commit refuses an admin's removal of an owner as today (`checkRole`, `Subscriber.hs:3783-3786`). If M's own device applied the removal first, it has left (`Subscriber.hs:3736-3741`), and relays that applied it first have deleted their connection to M: M stays listed as an owner until an owner removes it. A member that leaves while being promoted ends the same way.
 - Mutual removal: the first swap removes the other's key; the second gets `AUTH`, or `CONFLICT` and a read showing itself revoked.
 
 ### 4.9 Leaving
@@ -281,8 +280,8 @@ In multi-owner mode the owner branch of `updatePublicGroupData` (`Internal.hs:16
 | item | `RGEOwnerInvitation {invStatus :: OwnerInvitationStatus}` | `OISPending`, `OISAccepted` |
 | command function | `CFChannelLinkSync`, `CFChannelLinkResign`, `CFChannelLinkSwap` | text `channel_link_sync`, `channel_link_resign`, `channel_link_swap` |
 | columns on `groups` | `link_data_version INTEGER`; `link_roster_version INTEGER`, `link_roster_seen_at TEXT` (`TIMESTAMPTZ`); `members_catchup INTEGER NOT NULL DEFAULT 0`; `roster_pending_msg_id INTEGER` | highest `linkVersion` read, written or applied; last roster commitment and when it first appeared; catch-up pending; own roster's last chunk not yet `SENT` |
-| columns on `group_members` | `owner_inv_msg_id BLOB` (`BYTEA`), `owner_inv_accepted INTEGER NOT NULL DEFAULT 0`; `owner_since TEXT` (`TIMESTAMPTZ`); `relay_web_domain TEXT` | promoter's pending invitation, accepted; the commit's arrival (§4.8); relay capability without the relay's row |
-| config | `channelLinkWriteAttempts = 5`, `channelCountPublishInterval = 60 s`, `rosterAbandonTTL = 1 day`, `rosterRequestTimeout = 5 min`, `memberCatchupTimeout = 1 min`, `channelOwnerWaitTimeout = 30 s`, `promotionRaceWindow = 1 day` | `ChatConfig` |
+| columns on `group_members` | `owner_inv_msg_id BLOB` (`BYTEA`), `owner_inv_accepted INTEGER NOT NULL DEFAULT 0`; `relay_web_domain TEXT` | promoter's pending invitation, accepted; relay capability without the relay's row |
+| config | `channelLinkWriteAttempts = 5`, `channelCountPublishInterval = 60 s`, `rosterAbandonTTL = 1 day`, `rosterRequestTimeout = 5 min`, `memberCatchupTimeout = 1 min`, `channelOwnerWaitTimeout = 30 s` | `ChatConfig` |
 | hook | `channelLinkWriteHook :: Maybe (GroupInfo -> IO ())` | `ChatHooks`, between a link read and its apply: in a user write and at channel open outside the group lock, in a link sync on the event thread; tests |
 | state | `linkWriters :: TMap GroupId Lock`, `linkSyncSwaps :: TMap GroupId Int`, `countPublishPending :: TMap GroupId ()`, `memberCatchups :: TMap GroupId (Int, Maybe MemberId)`, `rosterRequests :: TMap GroupId UTCTime`, `mainApp :: TVar Bool` | `ChatController` |
 
@@ -300,7 +299,7 @@ One migration `M20261015_channel_multi_owner` with `down_m20261015_channel_multi
 | A role change just before leaving, or in flight when its author is removed | the claim; the leaver's re-sign and wait (§4.9, §4.10) | departed authors' roster messages accepted; a blob no relay got is abandoned after a day |
 | Two profile edits | the editor's check, the swap, `linkVersion` (§4.12) | the later refused if the profile changed; devices keep the newer |
 | A relay added while another is removed | the swap (§4.13) | both kept |
-| A member removed (by an owner or an admin) or leaving while promoted | owners applying it; removal wins (§4.8) | the member ends departed, unless no other owner remained to apply it (§9, question 6) |
+| A member removed (by an owner or an admin) or leaving while promoted | the link (§4.4 step 4, §4.8) | the promotion wins; if the member's device applied the removal or left first, it stays listed as an owner until an owner removes it |
 | A user's role change and a sync on one device | the link writer lock (§4.10 rule (a)) | no claim taken for a lost one |
 | A single-owner write queued before the creator's first swap | `LSET` refused in the store on a multi-key queue (§4.1) | `AUTH` |
 
@@ -312,9 +311,9 @@ One migration `M20261015_channel_multi_owner` with `down_m20261015_channel_multi
 - **Older parties.** Promotion needs every relay at chat v23 and the link server at SMP v24 (link servers, presets included, upgrade first). Older members ignore `x.grp.owner.add` and reject the new owner's signed messages until they upgrade; older joiners take every chain entry as an owner, including revoked ones, whose keys authorise nothing on the link queue.
 - **Adversary.**
   - Relay: cannot forge owner-signed events, commits, acceptances or removals; can withhold or reorder as today (link reads and the roster gap request converge); can replay old signed events, which the roster gate, the `linkVersion` gate and departed rows stop; cannot substitute a promoted member's key (verified code); can fabricate subscribers in a page, never privileged ones.
-  - Link server: cannot forge link data; a stale read is ignored by `linkVersion` and otherwise only adds owners, so a non-owner can take a removed owner as current until its next read (an honest removed device sends nothing); ignoring the compare-and-swap brings back lost writes and roster divergence, no forgery.
+  - Link server: cannot forge link data; a stale read is ignored by `linkVersion` and otherwise only adds owners, so a party can take a removed owner as current until its next read (an honest removed device sends nothing); ignoring the compare-and-swap brings back lost writes and roster divergence, no forgery.
   - Owners and removed owners are trusted (non-goal). The link orders profile edits, roster role changes and removals, owner additions and removals, leaving, destroying and the relay list: honest software sends these only after its link write lands (destroy: after its read and `DEL`). Posts, moderation, blocks, subscriber removals, relay invitations and owner invitations are sent as today. Until a relay learns of a removal (the remover's announcement, or its link check every 15 minutes), a removed device running modified software can act there as an owner, including role events at inflated versions that stop later role changes at that relay and its members; afterwards the relay accepts from it only its departure, roster transfers and role events up to the link's roster version, new ones at that version included, which members accept above their gate. With a colluding link server it can serve forged link data to readers.
-  - Any current owner can destroy the channel or replace the key set with `RKEY`. An admin can remove an owner within `promotionRaceWindow` of its promotion reaching the other owners (§4.8).
+  - Any current owner can destroy the channel or replace the key set with `RKEY`.
 - **Privacy.** A promoted owner connects directly to the link server (recipient commands are not proxied), with the consent and refusals of §4.6; link commands use a session of their own, link reads stay proxied. The link server learns when owners act and how many there are; the member-page cursor is a memberId. A pending async swap keeps the owner's keys in the agent's command table (the encrypted database of its queue keys) until it completes or its mailbox goes.
 
 ## 6. Slices
@@ -331,10 +330,10 @@ Each slice compiles and passes its tests on its own. simplexmq: `cabal test simp
 | S6 | link writes: locks, `writeChannelLink`, `applyChannelLinkData`, `currentOwner`, multi-owner mode, `linkVersion`, `XGrpInfo` gating, durable rows, intro guard, relay reads and tolerant invitation | ~200 | existing tests |
 | S7 | link syncs with no pending kinds yet: mailbox, continuations, `LDATA`/`OK`/`ERR` dispatch, coalescing, refusal bound, main-app gating, chat start | ~170 | existing tests |
 | S8 | callers: profile check (core; the editors' rule is in S14–S17), relays (activation, publication, removal, owner joins, capabilities), count publisher and threshold | ~190 | existing tests, single-owner relay and count behaviour unchanged |
-| S9 | promotion: invite, accept with the direct-connection check, `CLCAddOwner` in syncs with the creator's first-swap fields, commit, M becomes owner | ~220 | T1 (without the role change), T2, T5 (profile, relays), T12, T13, T17 (without removal wins), T20 |
+| S9 | promotion: invite, accept with the direct-connection check, `CLCAddOwner` in syncs with the creator's first-swap fields, commit, M becomes owner | ~220 | T1 (without the role change), T2, T5 (profile, relays), T12, T13, T17, T20 |
 | S10 | member catch-up with watchdog | ~120 | T10 |
 | S11 | roster: claim from the complete roster, owners' early requests, owners outside the roster, stored-blob rules, departed authors on owners, members and relays, sync rules (a)–(c), abandonment, relays serving owners, the undelivered-roster column and triggers | ~250 | T1 role change, T5 roles, T21, T22 (without the leave case) |
-| S12 | removal and leave: removal, removed device, removal wins, admin-removal window, leave with re-sign and wait, destroy | ~200 | T3 (without the history check), T4, T6–T9, T11, T14–T16, T17 removal wins, T18, T19, T22 leave case |
+| S12 | removal and leave: removal, removed device, leave with re-sign and wait, destroy | ~170 | T3 (without the history check), T4, T6–T9, T11, T14–T16, T18, T19, T22 leave case |
 | S13 | guards: group-link commands, share signing, connect plan, history | ~60 | existing tests, T3's history check |
 | S14 | iOS core-facing (§6.1): API, types, errors, the invitation item, strings | ~180 | host build |
 | S15 | iOS views (§6.1): role picker, remove, leave, link screen, channel open, editors, composer, relays | ~200 | host build, manual checks |
@@ -380,7 +379,7 @@ Same file split, names and branch order on both platforms.
 | T5 | the hook holds O1 between read and swap: O2's profile edit lands, O1's is refused, as is O1's edit before O2's `XGrpInfo` reaches it; O1 adds and O2 removes relays, both kept; O1 and O2 change roles of different members (O1 retrying after `CLERosterSyncing`), all end with both; O2 changes two members in one command and O1, holding one delta, is refused until it has the blob, which it completes from the second relay when the first stops after the header |
 | T6 | mutual removal: one owner remains |
 | T7 | the last two owners leave: one refused |
-| T8 | removal wins: O2 removes subscriber M while the hook holds O1's promotion of M; M ends departed everywhere, revoked in the link |
+| T8 | an owner's removal racing a promotion: O2 removes subscriber M while the hook holds O1's promotion of M; M's device leaves, every other party, O2 included, takes M as owner at its next read, and O1 then removes M as an owner |
 | T9 | O1 demotes the only admin and leaves while O2 is offline; O2 returns and gets O1's roster from a relay; members receiving O1's role events after its leave apply them; a joiner gets the roster; the demotion holds |
 | T10 | catch-up: earlier subscribers appear on M with keys (it verifies and promotes one); a restart restarts and skips held members; a silent relay is replaced after the timeout, no member skipped |
 | T11 | count: after the creator leaves, joins and leaves change the count within the (shortened) interval, from the first chain entry only |
@@ -389,8 +388,8 @@ Same file split, names and branch order on both platforms.
 | T14 | chain dependency: creator → M → N; M leaves (its entry stays as N's signer); N leaves; writes keep validating |
 | T15 | a relay reads the creator's departure before processing its queued blob and still accepts it; a role event from that connection above the link's roster version is refused |
 | T16 | a leave stopped after its swap (hook) completes at the next chat start; a departed author's undelivered version is abandoned after the (shortened) TTL and an unanswered request |
-| T17 | an acceptance processed while the link server is down promotes once it is back; a restart between swap and read sends the commit once; a relay acknowledgement publishes the relay and a join changes the count; removal wins completes after a restart; a sync whose mailbox was removed is redone at chat start; a server answering every swap `CONFLICT` stops the sync at the bound |
-| T18 | an admin removes M while the hook holds O1's promotion of M: M ends departed everywhere after O1's revocation, relays and M's device receiving both in either order, a relay offline across both included; an admin's removal later than the (shortened) window is refused by owners, and the admin's device takes M as owner at its next read |
+| T17 | an acceptance processed while the link server is down promotes once it is back; a restart between swap and read sends the commit once; a relay acknowledgement publishes the relay and a join changes the count; a sync whose mailbox was removed is redone at chat start; a server answering every swap `CONFLICT` stops the sync at the bound |
+| T18 | an admin removes M while the hook holds O1's promotion of M, one relay processing the removal before the commit and the other after: the first relay, its members and the admin's device take M as owner at their next read, the second relay refuses the removal, and M, receiving the commit first, stays an owner |
 | T19 | a device that left after its swap destroys without `x.grp.del`; the creator's destroy is refused while its read fails; a destroy racing a removal of its owner: one fails |
 | T20 | a channel-open read held (hook) across a promotion is applied after the commit: M stays an owner everywhere |
 | T21 | O2 adds a relay right after O1's role change, and O1 one right after its own: each relay gets the current blob, acknowledges and is published |
@@ -407,12 +406,10 @@ Existing tests that must stay green: the whole `-m "channels"` group, `ProtocolT
 
 ## 9. Open questions
 
-Questions 1–3 are decided (overview, Decisions).
+Questions 1–3, 6 and 7 are decided (overview, Decisions).
 
 4. `LSWP` sends only the user data. Recommended: as planned; otherwise owners are capped at about 6.
 5. `LSET` is refused on queues with several recipient keys (a server behaviour change at v24). Recommended: as planned; it is what stops stale or downgraded single-owner writes from erasing other owners.
-6. An admin's removal of a member wins over a concurrent promotion of it: owners apply an admin's removal of an owner that reached them less than `promotionRaceWindow` (1 day) after the promotion and revoke it, and every party follows the link. If the promoter leaves at once and no other owner applies it, the member stays an owner without the relays that applied it first, or, if its device did, no working owner remains. Recommended: as planned; otherwise devices that applied the promotion first keep the member as an owner and the others keep it removed, until an owner removes it.
-7. Blocking and unblocking a member stay unordered between owners, admins and moderators, as in groups today. Recommended: as planned (parity; admins and moderators block too and cannot write the link); otherwise owners' restrictions carry the roster version and are claimed through the link.
 
 ## 10. Out of scope
 
