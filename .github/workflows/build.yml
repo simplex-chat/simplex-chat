@@ -1111,6 +1111,14 @@ jobs:
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Mount RAM disk for tests
+        if: matrix.arch == 'aarch64'
+        shell: bash
+        run: |
+          disk=$(hdiutil attach -nomount ram://1048576 | tr -d '[:space:]')
+          diskutil erasevolume HFS+ tests "$disk"
+          ln -s /Volumes/tests tests/tmp
+
       - name: Run tests
         if: matrix.arch == 'aarch64'
         timeout-minutes: 120
