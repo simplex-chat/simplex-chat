@@ -1,0 +1,30 @@
+name: android-emu
+
+# A placeholder, so that the Android app test workflow can be started by hand on a branch that has its full
+# version: GitHub dispatches only workflows whose file is on the default branch. On master it does nothing.
+on:
+  workflow_dispatch:
+    inputs:
+      claude:
+        description: Also run the Claude job
+        type: boolean
+        default: false
+      backend:
+        description: Also start the test backend
+        type: boolean
+        default: false
+      release:
+        description: Also test the latest release's onboarding
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Nothing to run here
+        run: echo "This branch has only the placeholder of android-emu; start it on a branch with the full workflow."
