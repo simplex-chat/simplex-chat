@@ -46,7 +46,7 @@ Each is a separate change:
 - If a new item arrives between a chat load's query and its stats replacement on Android and desktop, the downward move can drop the count below the database until the next seed.
 - A settings change computes its move from the chat's settings when the call started. If another settings call on the same chat, a chat load or a reseed applies the new setting while the call is in flight, the count moves twice and ends off until the next seed.
 - iOS unread tag counts on a settings change still read the chat after the call, so they miss the change when an event already applied the new setting (pre-existing; the Kotlin side now uses the same before/after pair as the count).
-- iOS: an item's delta waits about a second in `unreadCollector`, which a resume refresh does not clear, so an item that arrives just before the refresh is counted by both the refreshed count and the queued delta, until the next seed.
+- The resume re-read can race with deltas in flight: on iOS a delta waits about a second in `unreadCollector`, which a resume refresh does not clear, so an item that arrives (or is read) just before the refresh is counted twice (or subtracted twice); on Android an open chat's reads are applied in the app before the API call commits, so a re-read in between counts them again. The count is off until the next seed.
 - "Mark unread" is not counted, by design: the seed does not count it either.
 - The Unread filter change (groups with unread support chats) will be a separate PR stacked on this one.
 
