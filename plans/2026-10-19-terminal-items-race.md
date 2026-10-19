@@ -11,7 +11,7 @@ Two concurrent calls can:
 - lose a row: both read the same list and the second write replaces the first;
 - keep the list above the cap.
 
-When it happens in `sendCmd`, the exception is not caught there: on Android it shows "View crashed", and the command is not sent (when logging the command) or its result is lost (when logging the response). On the receiver and migration paths it is caught and logged, and the received event is dropped.
+When it happens in `sendCmd`, the exception is not caught there, and most callers don't catch it either: on Android it then shows "View crashed", and the command is not sent (when logging the command) or its result is lost (when logging the response). On the receiver and migration paths it is caught and logged, and the received event is dropped.
 
 ## Fix
 
@@ -21,7 +21,7 @@ When it happens in `sendCmd`, the exception is not caught there: on Android it s
 
 - The issue's diff (a lock field plus a single snapshot trimmed with `drop`): also correct, but it adds a field and changes trimming: after developer tools are turned off (cap 500 → 200) it cuts the log to 200 at once, where master keeps the log at that size (trimming one row per new row) until the app restarts.
 - Always posting the write to the main thread: correct, but every command and event would pay a coroutine and main-thread post while the console is closed, during the event bursts that trigger this.
-- A lock-free compare-and-set or `MutableStateFlow.update`: no precedent in this code, changes the reader or the type.
+- A lock-free compare-and-set or `MutableStateFlow.update`: needs `terminalItems` to become an `AtomicReference` or a `MutableStateFlow`, which changes its type and its reader (`TerminalView.kt`).
 - Clamping the `subList` bounds: stops the crash but still loses rows.
 
 ## Not included
