@@ -15,7 +15,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `plan` | reads the inputs, finds earlier core and backend builds | 10 s |
 | `core` | `build-core.sh`: `lib:simplex-chat` and `lib:support` for aarch64-android with Nix, as `scripts/android/build-android.sh` builds them | skipped when reused, about 27 min not |
 | `app` | the debug APK (`:android:assembleFossDebug` for arm64-v8a only), the emulator, `smoke-test.sh` | about 13 min: APK 7–8, emulator 1.5, smoke test 3.5 (4 with the backend case, after 2.5 to start the backend) |
-| `claude` (opt-in) | after `app` passed: its APK in a new emulator at the first screen, then Claude Code drives it | not measured yet |
+| `claude` (opt-in) | after `app` passed: its APK in a new emulator at the first screen, then Claude Code drives it | about 5 min, Claude 2.5 |
 | `backend` (opt-in) | desktop-linux's `build-backend.sh` | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 4 min |
 
@@ -49,4 +49,4 @@ It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OA
 
 ## Cost
 
-The runners are free for this public repository. A Claude run spends the subscription's usage limits, which interactive sessions share.
+The runners are free for this public repository. A Claude run spends the subscription's usage limits, which interactive sessions share: Haiku 5.5 did this smoke path in 24 turns, 0.01 USD estimated at API prices (Claude Code's estimate, not a bill on a subscription).
