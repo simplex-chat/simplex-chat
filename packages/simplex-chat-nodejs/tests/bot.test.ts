@@ -3,11 +3,11 @@ import * as fs from "fs"
 import * as assert from "assert"
 import {CEvt, T} from "@simplex-chat/types"
 import {api, bot, util} from ".."
-import {SmpServer, startSmpServer} from "./smpServer"
+import {SmpServer, describeIfSmpServerAvailable, startSmpServer} from "./smpServer"
 
 const CT = T.ChatType
 
-describe("Bot tests (use local SMP server)", () => {
+describeIfSmpServerAvailable("Bot tests (use local SMP server)", () => {
   const tmpDir = "./tests/tmp"
   const botPath = path.join(tmpDir, "bot")
   const alicePath = path.join(tmpDir, "alice")

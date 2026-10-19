@@ -9,7 +9,10 @@ import {dirname, join} from "path"
 const tlsFixtures = join(__dirname, "fixtures/tls")
 const smpServerRelease = "v7.1.0-beta.3"
 const releaseArch: Record<string, string | undefined> = {x64: "x86-64", arm64: "aarch64"}
+const downloadArch = process.platform === "linux" ? releaseArch[process.arch] : undefined
 const downloadAttempts = 4
+
+export const describeIfSmpServerAvailable = process.env.SMP_SERVER || downloadArch ? describe : describe.skip
 
 export interface SmpServer {
   address: string
@@ -55,11 +58,10 @@ async function smpServerExecutable(): Promise<string> {
 }
 
 async function downloadSmpServer(path: string): Promise<void> {
-  const arch = releaseArch[process.arch]
-  if (process.platform !== "linux" || !arch) {
+  if (!downloadArch) {
     throw new Error(`smp-server release binaries are not available for ${process.platform} ${process.arch}, set SMP_SERVER to the smp-server path`)
   }
-  const url = `https://github.com/simplex-chat/simplexmq/releases/download/${smpServerRelease}/smp-server-ubuntu-22_04-${arch}`
+  const url = `https://github.com/simplex-chat/simplexmq/releases/download/${smpServerRelease}/smp-server-ubuntu-22_04-${downloadArch}`
   const data = await downloadWithRetries(url)
   mkdirSync(dirname(path), {recursive: true})
   writeFileSync(`${path}.download`, data, {mode: 0o755})
