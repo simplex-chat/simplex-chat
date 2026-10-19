@@ -4,7 +4,7 @@
 
 ## Running it
 
-The workflow runs only when asked, on any branch, by a run tag in the pushed commit's message or by hand from the Actions tab: [App tests on GitHub's runners](../README.md) lists the tags and inputs.
+The workflow runs only when asked: by a run tag in a commit pushed to an `f/…` branch, or by hand from the Actions tab on any branch. [App tests on GitHub's runners](../README.md) lists the tags and inputs.
 
 Results: the job logs, the Claude job's summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log), `ios-sim-backend-logs` and `ios-sim-claude-test` (the Claude job's smoke test in `smoke-test/`, and per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
 

@@ -3,7 +3,8 @@ name: ios-sim
 on:
   push:
     branches:
-      - '**'
+      # only f/ branches, so other branches' pull requests don't list skipped runs; elsewhere, run it by hand
+      - 'f/*'
       # a squash merge's message lists the merged commits' subjects, with their tags
       - '!master'
       - '!stable'
