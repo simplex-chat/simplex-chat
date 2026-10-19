@@ -42,7 +42,7 @@ Rejected:
 ## Known limitations
 
 - If the run's last message is the last one of a day, the avatar stops at the bottom of the date separator below it, not at the bubble.
-- In selection mode, a run whose first message can't be deleted has its pinned avatar offset horizontally; in right-to-left languages the existing row selection offset is not mirrored, so the avatar shifts sideways when the stand-in takes over.
+- In selection mode, a run whose first message can't be deleted has its pinned avatar offset horizontally; in right-to-left languages the existing row selection offset is not mirrored, and the pinned avatar moves with the rows.
 - In selection mode, tapping a pinned avatar can open member info instead of selecting the message under it (Android/desktop while the run's first row is still in the list).
 - iOS: no pinned avatar in a pending member's "Chat with admins", where a title bar is drawn over the top of the list.
 - iOS: SwiftUI may draw the overlay a frame after UIKit moves the cells, so the avatar can trail by one frame of scroll when it pins, unpins or is pushed up. When the avatar is pushed out at the bar, its last 4pt can disappear a frame early, and the row's own avatar can reappear blurred under the translucent bar once the next sender's messages reach it.
