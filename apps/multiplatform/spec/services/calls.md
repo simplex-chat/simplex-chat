@@ -43,6 +43,7 @@ enum class CallState {
   AnswerReceived,      // SDP answer received from peer
   Negotiated,          // ICE negotiation in progress
   Connected,           // Media flowing
+  Reconnecting,        // Connection lost, waiting for ICE to recover
   Ended;               // Call terminated
 }
 ```
@@ -52,6 +53,8 @@ enum class CallState {
 **Incoming call flow**: `InvitationAccepted` -> `OfferReceived` -> `Negotiated` -> `Connected` -> `Ended`
 
 State transitions are driven by `WCallResponse` messages from the WebRTC layer. Each transition typically triggers a corresponding API command (e.g., `apiSendCallInvitation`, `apiSendCallOffer`).
+
+**Reconnection**: `Connected` -> `Reconnecting` -> `Connected` or `Ended`. When a connected call loses its WebRTC connection, `call.js` reports `"reconnecting"` connection state instead of ending the call. The app sets `CallState.Reconnecting` and plays the connecting sound; this state is not sent to the core with `apiCallStatus`, so the call item duration is not affected, and `connectedAt` is kept. The party that sent the initial offer (callee) restarts ICE every 10 seconds until reconnected: the restart offer and the answer are sent as `WCallResponse.Ice` / `WCallCommand.Ice` with `session`, via `apiSendCallExtraInfo` (`x.call.extra` with `rtcSession`). If the connection is not restored in 30 seconds, `call.js` reports `"disconnected"` and ends the call.
 
 ---
 
@@ -140,7 +143,7 @@ Defined in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/com
 | `apiRejectCall` | [L1854](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1854) | Reject an incoming call |
 | `apiSendCallOffer` | [L1859](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1859) | Send SDP offer with ICE candidates and capabilities |
 | `apiSendCallAnswer` | [L1866](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1866) | Send SDP answer with ICE candidates |
-| `apiSendCallExtraInfo` | [L1872](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1872) | Send additional ICE candidates discovered after initial exchange |
+| `apiSendCallExtraInfo` | [L2156](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2156) | Send additional ICE candidates discovered after initial exchange, or ICE restart offer/answer in `rtcSession` |
 | `apiEndCall` | [L1878](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1878) | Terminate a call |
 | `apiCallStatus` | [L1883](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1883) | Report WebRTC connection status to the backend |
 
