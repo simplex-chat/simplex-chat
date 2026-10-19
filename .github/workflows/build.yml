@@ -226,13 +226,6 @@ jobs:
             os_underscore: 22_04
             arch: x86_64
             runner: "ubuntu-22.04"
-            ghc: "8.10.7"
-            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
-            should_run: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
-          - os: 22.04
-            os_underscore: 22_04
-            arch: x86_64
-            runner: "ubuntu-22.04"
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
@@ -629,7 +622,7 @@ jobs:
 
       - name: Setup Node.js
         id: setup-node
-        if: ${{ !cancelled() && ((needs.maybe-release.outputs.core_changed && steps.build-lib.outcome == 'success') || (matrix.libs && (needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish))) }}
+        if: ${{ !cancelled() && matrix.libs && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
         uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -642,11 +635,11 @@ jobs:
           python-version: "3.12"
 
       - name: Package tests (pull request)
-        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.core_changed }}
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && github.event_name == 'pull_request' && steps.build-lib.outcome != 'failure' }}
         timeout-minutes: 30
         shell: bash
         env:
-          SIMPLEX_LIBS_DIR: ${{ github.workspace }}/release-libs/simplex-chat-libs-linux-${{ matrix.arch }}/libs
+          SIMPLEX_LIBS_DIR: ${{ steps.build-lib.outcome == 'success' && format('{0}/release-libs/simplex-chat-libs-linux-{1}/libs', github.workspace, matrix.arch) || '' }}
         run: |
           scripts/ci/package-tests.sh build linux-${{ matrix.arch }}
           scripts/ci/package-tests.sh test
@@ -755,6 +748,31 @@ jobs:
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:68434214381cb38287104e629fe8ee720167dd98cbb36ab1cbbab342515fa6ab'
+    steps: *linux-steps
+
+  build-linux-ghc8:
+    name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
+    needs: [maybe-release, variables]
+    if: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+      packages: write
+    env:
+      image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      source_hashes: dist-newstyle/sources.sha256
+    concurrency: *linux-concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 22.04
+            os_underscore: 22_04
+            arch: x86_64
+            runner: "ubuntu-22.04"
+            ghc: "8.10.7"
+            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
+            should_run: true
     steps: *linux-steps
 
 # =================================
@@ -1141,7 +1159,7 @@ jobs:
 
       - name: Setup Node.js
         id: setup-node
-        if: ${{ !cancelled() && (needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
         uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -1152,6 +1170,14 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+
+      - name: Package tests (pull request)
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && github.event_name == 'pull_request' }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh build macos-${{ matrix.arch }}
+          scripts/ci/package-tests.sh test
 
       - name: Add-on
         if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
@@ -1402,7 +1428,7 @@ jobs:
 
       - name: Setup Node.js
         id: setup-node
-        if: ${{ !cancelled() && (needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
         uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -1413,6 +1439,14 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+
+      - name: Package tests (pull request)
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && github.event_name == 'pull_request' }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh build windows-x86_64
+          scripts/ci/package-tests.sh test
 
       - name: Add-on
         if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
