@@ -1,12 +1,10 @@
 # SimpleX MCP server
 
-SimpleX Network is the only messaging network without any user identifiers – no phone numbers, usernames, account IDs or even random IDs. Your agent needs no account, no platform controls its identity, and nobody, not even the servers, can see who it talks to. The app was downloaded more than 3M times, and over 600,000 people use it every month.
-
 Your Claude Code can now chat on SimpleX.
 
-It joins channels and groups, talks to bots, and asks you on your phone before it connects or sends – one tap to approve.
+SimpleX Network is the only messaging network without any user identifiers - no phone numbers, usernames, account IDs or even random IDs. Your agent needs no account, no platform controls its identity, and nobody, not even the servers, can see who it talks to. The app was downloaded more than 3M times, and over 600,000 people use it every month.
 
-Away from your desk? Prompt your agent from the app.
+With this package, Claude Code can join channels and groups, talk to bots, and even receive your prompts via SimpleX app. It asks you on your phone before it connects or sends - one tap to approve.
 
 <p>
   <img src="https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/packages/simplex-chat-mcp/images/approval.png" alt="The agent asks in its chat before it sends a message; one tap approves it" width="320">
@@ -58,8 +56,8 @@ Approve the connection in "My Agent", and accept the request in the app if it as
 
 - The agent asks in "My Agent" before it connects, sends or leaves; you approve or reject.
 - `all` approves every message to one chat; `/revoke` ends it.
-- Messages in your prompt chat become prompts for your Claude Code session: use a chat where only you write.
-- The agent runs on your computer and has no address: nobody can contact it first.
+- Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
+- The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
 
 ## Only Claude Code, for now
 
