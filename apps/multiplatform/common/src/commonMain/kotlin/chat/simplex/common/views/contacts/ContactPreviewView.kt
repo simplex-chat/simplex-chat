@@ -62,7 +62,7 @@ fun ContactPreviewView(
                         color = textColor
                     )
                 }
-            is ChatInfo.ContactRequest ->
+            is ChatInfo.ContactRequest, is ChatInfo.Group ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     NameWithBadge(
                         cInfo.chatViewName,

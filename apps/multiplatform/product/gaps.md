@@ -14,7 +14,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 8. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-08-desktop-emoji-picker-without-skin-tones-and-localized-search)
-9. [Online Search: Groups Joined Through Another Link Still Appear as Directory Results](#gap-09-online-search-groups-joined-through-another-link-still-appear-as-directory-results)
+9. [Online Search: Groups Joined Through Another Link Are Not Recognised](#gap-09-online-search-groups-joined-through-another-link-are-not-recognised)
 10. [Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address](#gap-10-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address)
 11. [Online Search: New Chat Does Not Narrow Contacts by Name While Typing](#gap-11-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing)
 
@@ -322,7 +322,7 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ---
 
-## GAP-09: Online Search: Groups Joined Through Another Link Still Appear as Directory Results
+## GAP-09: Online Search: Groups Joined Through Another Link Are Not Recognised
 
 **Severity:** Low
 **Category:** UI / UX
@@ -330,7 +330,9 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ### Description
 
-A directory entry is matched to a local chat by a store-only lookup of its link (`apiConnectPlan` with `PlanResolveMode.PRMNever`, then `planLocalChatId`). A regular group's entry carries the directory's own group link (short link only), so a group the user joined through a different link, through the directory's full link, or by invitation is not found and is shown again in the Directory part. Tapping it goes through `planAndConnect`, which handles the known group.
+A directory entry is matched to a local chat by a store-only lookup of its link (`apiConnectPlan` with `PlanResolveMode.PRMNever`, then `planLocalChatId`). An entry the app finds this way opens as a chat: the screen's chat row is drawn in place of the entry. A regular group's entry carries the directory's own group link (short link only), so a group the user joined through a different link, through the directory's full link, or by invitation is not found and still shows as a directory entry with "Join group". Tapping it goes through `planAndConnect`, which handles the known group. Accepted.
+
+Related: the note "All results on this page are already in your chats" is not shown when a page's only results are hidden because a name search resolved to the same link (that row is on screen, but not one of the user's chats); the Directory part then shows only "Show more" when there are more pages, and is not shown otherwise.
 
 ### Affected Locations
 

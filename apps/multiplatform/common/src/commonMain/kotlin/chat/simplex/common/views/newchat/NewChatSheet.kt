@@ -209,18 +209,26 @@ private fun ModalData.NewChatSheetLayout(
         }
       }
     }
-    if (rows.directory.isNotEmpty() || rows.footer != null) {
+    if (rows.directory.isNotEmpty() || rows.pageInChats || rows.footer != null) {
       item { SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false) }
       searchPart(MR.strings.online_search_directory, oneHandUI.value, header = { OnlineSearchHeader(it) }) {
         items(rows.directory, key = { it.id }) { result ->
-          val view = LocalMultiplatformView()
-          DirectorySearchRow(
-            result.entry,
-            Modifier.clickable {
-              hideKeyboard(view)
-              withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = close, cleanup = null) }
-            }
-          )
+          val chat = result.localChatId?.let { chatModel.getChat(it) }
+          if (chat != null) {
+            ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = true)
+          } else {
+            val view = LocalMultiplatformView()
+            DirectorySearchRow(
+              result.entry,
+              Modifier.clickable {
+                hideKeyboard(view)
+                withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = close, cleanup = null) }
+              }
+            )
+          }
+        }
+        if (rows.pageInChats) {
+          item { DirectoryPageInChatsRow() }
         }
         when (rows.footer) {
           DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }

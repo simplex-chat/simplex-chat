@@ -532,17 +532,25 @@ private fun LazyListScope.nameRows(names: List<NameSearchResult>, onlineSearch: 
 }
 
 private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: OnlineSearchModel, oneHandUI: Boolean) {
-  if (rows.directory.isNotEmpty() || rows.footer != null) {
+  if (rows.directory.isNotEmpty() || rows.pageInChats || rows.footer != null) {
     searchPart(MR.strings.online_search_directory, oneHandUI) {
       items(rows.directory, key = { it.id }) { result ->
-        val view = LocalMultiplatformView()
-        DirectorySearchRow(
-          result.entry,
-          Modifier.clickable {
-            hideKeyboard(view)
-            withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = null, cleanup = { withApi { onlineSearch.refreshLocalChatIds() } }) }
-          }
-        )
+        val chat = result.localChatId?.let { chatModel.getChat(it) }
+        if (chat != null) {
+          ChatListNavLinkView(chat, remember { mutableStateOf(false) })
+        } else {
+          val view = LocalMultiplatformView()
+          DirectorySearchRow(
+            result.entry,
+            Modifier.clickable {
+              hideKeyboard(view)
+              withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = null, cleanup = { withApi { onlineSearch.refreshLocalChatIds() } }) }
+            }
+          )
+        }
+      }
+      if (rows.pageInChats) {
+        item { DirectoryPageInChatsRow() }
       }
       when (rows.footer) {
         DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }

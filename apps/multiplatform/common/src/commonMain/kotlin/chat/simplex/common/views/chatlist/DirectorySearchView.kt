@@ -49,6 +49,7 @@ class OnlineSearchModel {
     private set
 
   private var cursor by mutableStateOf<JsonObject?>(null)
+  private var lastPageIds by mutableStateOf<Set<String>>(emptySet())
   private var searchedText = ""
   // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
   private var generation = 0
@@ -63,6 +64,7 @@ class OnlineSearchModel {
     names = emptyList()
     directory = emptyList()
     cursor = null
+    lastPageIds = emptySet()
     loading = false
     resolvingNames = false
     failed = false
@@ -102,6 +104,7 @@ class OnlineSearchModel {
     if (text == searchedText) {
       directory = emptyList()
       cursor = null
+      lastPageIds = emptySet()
       failed = false
       searched = false
     } else {
@@ -130,10 +133,15 @@ class OnlineSearchModel {
     val nameLinks = names.mapNotNull { it.resolvedLink }.toSet()
     fun isAmong(ids: Set<ChatId>, id: ChatId?): Boolean =
       id?.let { ids.contains(it) } ?: false
+    val lastPage = directory.filter { lastPageIds.contains(it.id) }
     return OnlineSearchRows(
       names = names.filter { !isAmong(shownChatIds, it.localChatId) },
       directory = directory.filter {
         !isAmong(shownChatIds, it.localChatId) && !isAmong(nameChatIds, it.localChatId) && !nameLinks.contains(it.entry.link)
+      },
+      // a result hidden only because a name resolved to its link is on screen, but not one of your chats
+      pageInChats = lastPage.isNotEmpty() && lastPage.all {
+        isAmong(shownChatIds, it.localChatId) || isAmong(nameChatIds, it.localChatId)
       },
       footer = footer
     )
@@ -202,6 +210,7 @@ class OnlineSearchModel {
     }
     cursor = r.cursor
     directory = if (append) directory + page else page
+    lastPageIds = page.map { it.id }.toSet()
   }
 
   private fun updateSpinner() {
@@ -312,6 +321,17 @@ fun NameSearchRow(result: NameSearchResult, modifier: Modifier = Modifier) {
         Text(descr, color = MaterialTheme.colors.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
       }
     }
+  }
+}
+
+@Composable
+fun DirectoryPageInChatsRow() {
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
+  ) {
+    Text(stringResource(MR.strings.directory_search_page_in_chats), color = MaterialTheme.colors.secondary)
   }
 }
 

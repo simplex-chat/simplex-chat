@@ -520,6 +520,7 @@
   <string name="directory_search_n_members">%1$d members</string>
   <string name="directory_search_show_more">Show more</string>
   <string name="directory_search_failed_retry">Search failed, tap to retry</string>
+  <string name="directory_search_page_in_chats">All results on this page are already in your chats</string>
   <string name="searching_directory">Searching directory…</string>
   <string name="online_search_names">Names</string>
   <string name="online_search_directory">Directory</string>
