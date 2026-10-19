@@ -119,7 +119,8 @@ The document MUST conform to this JSON Type Definition schema [RFC8927]:
         "title": {"type": "string"},
         "lang": {"type": "string"},
         "audience": {"elements": {"type": "string"}},
-        "updateFrequency": {"type": "string"}
+        "changeFrequency": {"enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"]},
+        "protocols": {"elements": {"type": "string"}}
       },
       "additionalProperties": true
     }
@@ -134,7 +135,8 @@ The document MUST conform to this JSON Type Definition schema [RFC8927]:
 - `title`: the name of the channel or the address, for display.
 - `lang`: the language of the channel's posts or of the conversations [BCP47].
 - `audience`: who the channel or the address serves: `people`, `agents`, or both.
-- `updateFrequency`: in `channels` only, how often the channel is updated. The values are the `changefreq` values of the Sitemaps protocol [SITEMAPS]: `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly`, `never`.
+- `changeFrequency`: in `channels` only, how often the channel is updated. The values are the `changefreq` values of the Sitemaps protocol [SITEMAPS]: `always`, `hourly`, `daily`, `weekly`, `monthly`, `yearly`, `never`.
+- `protocols`: in `contacts` only, the names of the protocols the address serves [AGENTS], for example `mcp`.
 
 A site with only channels or only contact addresses omits the other list.
 
@@ -149,7 +151,7 @@ A site with only channels or only contact addresses omits the other list.
       "title": "Ridgeline updates",
       "lang": "en",
       "audience": ["people", "agents"],
-      "updateFrequency": "weekly"
+      "changeFrequency": "weekly"
     }
   ],
   "contacts": [
@@ -158,7 +160,8 @@ A site with only channels or only contact addresses omits the other list.
       "name": "@ridgeline.simplex",
       "title": "Ask Ridgeline",
       "lang": "en",
-      "audience": ["agents"]
+      "audience": ["agents"],
+      "protocols": ["mcp"]
     }
   ]
 }
@@ -166,9 +169,9 @@ A site with only channels or only contact addresses omits the other list.
 
 ## Processing
 
-- A consumer MUST ignore unknown fields, unknown `audience` values and unknown `updateFrequency` values.
+- A consumer MUST ignore unknown fields and unknown `audience` values.
 - A consumer MUST ignore an entry without `link`, and a link of a type other than the one its relation type or its list requires.
-- The values on the website are hints. The profile retrieved with the link is authoritative: an audience or an update frequency in the profile [AGENTS] takes precedence over the website's value.
+- The values on the website are hints. The data retrieved with the link is authoritative: an audience, an update frequency or protocols declared there [AGENTS] take precedence over the website's values.
 - A consumer MAY connect by `link` or by `name`. Resolving a name reveals interest in it to one names router, and verifies that the name's record and the profile's claim match [NAMES].
 
 ## Security considerations
