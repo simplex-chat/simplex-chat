@@ -37,7 +37,7 @@ Evgeny Poberezkin
 
 This document defines how software agents find SimpleX addresses and call the tools of other agents and bots over SimpleX:
 
-- an `llms.txt` section with communication addresses, beside the link relation types and the well-known document of [Publishing SimpleX addresses on websites](./web-discovery.md);
+- an `llms.txt` section with communication addresses, beside the link relation type and the well-known document of [Publishing SimpleX addresses on websites](./web-discovery.md);
 - declarations: the protocols a profile serves and their transports, the peer types a channel or a contact address is made for, and the update frequency of a channel;
 - the chat transport: the command `/_call` in a conversation;
 - the Service RPC transport: one request and one response, without a conversation, in a generic envelope;
@@ -250,7 +250,7 @@ The requester's core sends the request with:
 /_service_request <userId> <target> [timeout=<seconds>] [sign_key=<key>] <json>
 ```
 
-- `<target>`: a contact address link, full or short, or the SimpleX name of a contact address [NAMES].
+- `<target>`: a contact address link, or the SimpleX name of a contact address [NAMES].
 - `timeout`: how long the requester waits for the response. The default is 30 seconds.
 - `sign_key`: the requester's Ed25519 private key, for a [signed request](#signed-requests).
 - `<json>`: the [request](#request), a JSON object.
