@@ -203,7 +203,7 @@ The secondary context is used for:
 ### Key Operations
 
 - `addChat(chat)` -- adds chat at index 0, triggers pop animation
-- [`addChatItem(rhId, cInfo, cItem)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L573-L656) -- updates the chat preview and unread state for a received item; when the chat is not in this context it is created from the event, counting that item as unread in the primary context only -- a secondary context keeps default stats, because `ChatView` reads the count of the chat its context was opened for. [GAP-11] the in-list branch takes its index from this context but reads and writes the primary list
+- [`addChatItem(rhId, cInfo, cItem)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L573-L656) -- updates the chat preview and unread state for a received item; when the chat is not in this context it is created from the event, counting the item as unread if it is a received unread (`RcvNew`) item in the main scope, in the primary context only -- a secondary context keeps default stats, because `ChatView` reads the count of the chat its context was opened for. [GAP-11] the in-list branch takes its index from this context but reads and writes the primary list
 - `reorderChat(chat, toIndex)` -- reorders chat list (e.g., when a chat receives a new message)
 - `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods

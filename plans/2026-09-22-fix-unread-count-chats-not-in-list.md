@@ -9,8 +9,8 @@ As reported, on desktop, their unread state appears only after restarting the ap
 
 ## Solution summary
 
-In the branch of `addChatItem` that creates a chat from a received event, count that
-item as unread instead of leaving the new chat's stats at their defaults, and raise the
+In the branch of `addChatItem` that creates a chat from a received event, count the
+item as unread when it is a received unread (`RcvNew`) item in the main scope, instead of leaving the new chat's stats at their defaults, and raise the
 profile unread counter and the chat tag counts with it — the same bookkeeping the branch
 for chats already in the list does. The count is a floor until the list is reloaded,
 because the event does not say how many items in that chat are unread; asking the
