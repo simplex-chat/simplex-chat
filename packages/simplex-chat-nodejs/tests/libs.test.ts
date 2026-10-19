@@ -249,6 +249,33 @@ describe("installLibs", () => {
     expect(leftovers()).toEqual([])
   })
 
+  it("rejects a symlink entry and cleans up", async () => {
+    const zip = storedZip({[`libs/${LIB}`]: "lib", "libs/link": {content: "../../outside", mode: 0o120777}})
+    routes["/symlink.zip"] = res => res.writeHead(200).end(zip)
+    const target = path.join(tmp, "sqlite")
+    await expect(installLibs(`${base}/symlink.zip`, sha256(zip), target, LIB)).rejects.toThrow("zip entry is a symlink: libs/link")
+    expect(leftovers()).toEqual([])
+    expect(fs.existsSync(target)).toBe(false)
+  })
+
+  it("rejects an entry outside the target folder and cleans up", async () => {
+    const zip = storedZip({[`libs/${LIB}`]: "lib", "libs/../../outside": "x"})
+    routes["/outside.zip"] = res => res.writeHead(200).end(zip)
+    await expect(installLibs(`${base}/outside.zip`, sha256(zip), path.join(tmp, "sqlite"), LIB)).rejects.toThrow("libs/../../outside")
+    expect(leftovers()).toEqual([])
+    expect(fs.existsSync(path.join(tmp, "outside"))).toBe(false)
+    expect(fs.existsSync(path.join(path.dirname(tmp), "outside"))).toBe(false)
+  })
+
+  it("keeps the file mode of an entry", async () => {
+    const zip = storedZip({[`libs/${LIB}`]: {content: "lib", mode: 0o100755}, "libs/data": {content: "x", mode: 0o100644}})
+    routes["/modes.zip"] = res => res.writeHead(200).end(zip)
+    const target = path.join(tmp, "sqlite")
+    await installLibs(`${base}/modes.zip`, sha256(zip), target, LIB)
+    expect(fs.statSync(path.join(target, LIB)).mode & 0o777).toBe(0o755)
+    expect(fs.statSync(path.join(target, "data")).mode & 0o777).toBe(0o644)
+  })
+
   it("times out a request without a response", async () => {
     await expect(installLibs(`${base}/hang.zip`, GOOD_SHA, path.join(tmp, "sqlite"), LIB, 200)).rejects.toThrow("timeout")
     expect(leftovers()).toEqual([])
