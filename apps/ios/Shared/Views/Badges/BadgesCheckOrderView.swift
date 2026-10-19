@@ -100,7 +100,7 @@ struct BadgesCheckOrderView: View {
         Text(text)
             .font(.footnote)
             .foregroundColor(theme.colors.secondary)
-            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
     }
 

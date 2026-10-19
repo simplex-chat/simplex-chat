@@ -96,8 +96,7 @@ private fun Footnote(text: String) {
   Text(
     text,
     style = MaterialTheme.typography.body2,
-    color = MaterialTheme.colors.secondary,
-    textAlign = TextAlign.Center
+    color = MaterialTheme.colors.secondary
   )
 }
 
@@ -147,11 +146,14 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
 val badgeStoreLane: Boolean get() = badgeStoreAvailable && chatModel.remoteHostId() == null
 
 @Composable
-fun RestorePurchasesButton(modifier: Modifier = Modifier) {
+fun RestorePurchasesButton() {
   val restoring = remember { mutableStateOf(false) }
-  TextButton({ restoreBadgePurchases(restoring) }, modifier, enabled = !restoring.value) {
-    Text(stringResource(MR.strings.badges_restore_purchases), style = MaterialTheme.typography.body2)
-  }
+  Text(
+    stringResource(MR.strings.badges_restore_purchases),
+    Modifier.clickable(enabled = !restoring.value) { restoreBadgePurchases(restoring) },
+    style = MaterialTheme.typography.body2,
+    color = MaterialTheme.colors.primary
+  )
 }
 
 fun restoreBadgePurchases(restoring: MutableState<Boolean>) {
