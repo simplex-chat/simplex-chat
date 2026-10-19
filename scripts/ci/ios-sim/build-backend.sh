@@ -12,7 +12,6 @@ openssl_dir=$(brew --prefix openssl@3)
 
 ghc --version
 cabal --version
-du -sh ~/.cabal/store dist-newstyle || true
 
 cat > cabal.project.local <<EOF
 ignore-project: False
