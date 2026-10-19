@@ -71,7 +71,7 @@ fun BadgesSupportSimplexView(modalManager: ModalManager, unwindToDepth: Int) {
         } else {
           RedeemCodeButton(modalManager, unwindToDepth)
         }
-        RestorePurchasesButton(Modifier.padding(top = 10.dp))
+        RestorePurchasesButton()
         Text(
           stringResource(MR.strings.badges_restore_purchases_footnote),
           style = MaterialTheme.typography.body2,

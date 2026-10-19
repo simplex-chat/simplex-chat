@@ -57,6 +57,7 @@ struct BadgesSupportSimplexView: View {
                     }
                     .frame(height: 22)
                     RestorePurchasesButton()
+                        .frame(height: 22)
                         .padding(.top, 10)
                     Text("If you were charged but have no badge, this adds it.")
                         .font(.footnote)
