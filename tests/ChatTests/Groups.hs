@@ -305,6 +305,7 @@ chatGroupTests = do
       it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfiles
       it "overflow profile batch is sent without notification flag" testChannelOverflowProfileNotification
       it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
+      it "owner, relay and subscriber store address and peer type of promoted member" testChannelMemberAddressPeerType
     describe "channel operations" $ do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
@@ -8441,6 +8442,12 @@ testUpdatedMentionNames = do
       `shouldBe` "hello @'Alice Jones' @robert"
     test (mm [("alice", Just "alice"), ("cath", Just "alice")]) "hello @alice @cath"
       `shouldBe` "hello @alice @alice_1"
+  it "replace changed names outside code" $ \_ -> do
+    let t = "- hello\n| x | @bob |\n|---|---|\n```\n@bob\n```"
+        t' = "- hello\n| x | @robert |\n|---|---|\n```\n@bob\n```"
+        (mc', ft', _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) (mm [("bob", Just "robert")])
+    msgContentText mc' `shouldBe` t'
+    ft' `shouldBe` parseMaybeMarkdownList t'
   where
     test mentionsMap t =
       let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentionsMap
@@ -10233,6 +10240,53 @@ testChannelProfileUpdateNoRePrepend ps =
           dan <# "#team kate> hi again [>>]"
           threadDelay 500000
           memberIntroducedTo bob "kate" "dan"
+
+testChannelMemberAddressPeerType :: HasCallStack => TestParams -> IO ()
+testChannelMemberAddressPeerType ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathBotProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          _ <- setupRelay alice bob
+          alice ##> "/_public group 1 1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"support\": {\"enable\": \"off\"}}}"
+          alice <## "group #team is created"
+          alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+          concurrentlyN_
+            [ do
+                alice <## "#team: group link relays updated, current relays:"
+                alice <## "  - relay id 1: active"
+                alice <## "group link:"
+                void $ getTermLine alice,
+              bob <## "#team: you joined the group as relay"
+            ]
+          alice ##> "/show link #team"
+          (shortLink, fullLink) <- getGroupLinks alice "team" GRObserver False
+
+          cath ##> "/ad"
+          _ <- getContactLinks cath True
+          cath ##> "/pa on"
+          cath <## "new contact address set"
+
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          promoteChannelMember "team" alice bob cath [dan]
+
+          cath #> "#team hi from cath"
+          bob <# "#team cath> hi from cath"
+          alice <# "#team cath> hi from cath [>>]"
+          dan <### [EndsWith "updated to cath"]
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> hi from cath [>>]"
+
+          Just cathAddress <- withCCUser cath $ \User {profile = LocalProfile {contactLink}} -> pure contactLink
+          mapM (`memberAddressPeerType` "cath") [alice, bob, dan] `shouldReturn` replicate 3 [(Just cathAddress, Just CPTBot)]
+  where
+    cathBotProfile = (cathProfile :: Profile) {peerType = Just CPTBot}
+
+memberAddressPeerType :: TestCC -> T.Text -> IO [(Maybe ConnLinkContact, Maybe ChatPeerType)]
+memberAddressPeerType cc name =
+  withCCTransaction cc $ \db ->
+    DB.query db "SELECT p.contact_link, p.chat_peer_type FROM group_members m JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id WHERE m.local_display_name = ?" (Only name)
 
 testChannelMultiSendersIndependent :: HasCallStack => TestParams -> IO ()
 testChannelMultiSendersIndependent ps =
@@ -12590,13 +12644,7 @@ testChannelMessageFile ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-            -- the roster arrives as a file before this one; Postgres assigns it a new id and does not
-            -- reuse it on delete (SQLite does), so the received message file is id 2 here, 1 on SQLite.
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12642,11 +12690,7 @@ testChannelMessageFileCancel ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12822,11 +12866,7 @@ testChannelOwnerFileTransferAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -12974,11 +13014,7 @@ testChannelFileBadgeProof ps = do
           withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
             addTestBadge alice =<< issueTestBadge sk futureDate
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -13041,11 +13077,7 @@ testChannelOwnerFileCancelAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -13421,17 +13453,9 @@ testChannelSignedFile ps =
             xftpCLI ["rand", testfile, "1mb"] `shouldReturn` ["File created: " <> testfile]
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
-            -- roster serves arrive as files that Postgres deletes without reusing the id (SQLite reuses
-            -- it), so ids run higher here. cath's send and the subscribers' (dan, eve) receive both
-            -- follow only their join roster (id 2). The relay (bob) also received the roster re-served
-            -- on cath's promotion, so its file is id 3. The owner (alice) has no roster file, so id 1.
-#if defined(dbPostgres)
+            -- roster files are deleted after the transfer, so ids run higher: cath, dan and eve use id 2, the relay (bob) id 3, the owner (alice) id 1.
             let fileId = 2 :: Int
                 relayFileId = 3 :: Int
-#else
-            let fileId = 1 :: Int
-                relayFileId = 1 :: Int
-#endif
 
             -- cath's first (signed) message introduces her to dan/eve
             cath ##> "/_send #1 sign=on text hi"

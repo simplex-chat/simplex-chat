@@ -136,7 +136,12 @@ abstract class NtfManager {
     return if (md != null) {
       var res = ""
       for (ft in md) {
-        res += if (ft.format is Format.Secret) "..." else ft.text
+        res += when (ft.format) {
+          is Format.Secret -> "..."
+          is Format.Markup -> ft.format.token.previewText
+          is Format.Escape -> ""
+          else -> ft.text
+        }
       }
       res
     } else {
