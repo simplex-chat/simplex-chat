@@ -4,7 +4,7 @@
 
 The "Chat with admins" row in group info (Android/desktop `GroupChatInfoView.kt`, iOS `GroupChatInfoView.swift`) is shown only while `membership.memberActive`, which is false after the user left, was removed or rejected, or the group was deleted. The core keeps the user's own support chat and its items, and the profile unread count (`getUsersInfo`) includes unread support items. So messages received there before the user stopped being active stay unread:
 
-- iOS: there is no way to open that chat; the profile badge stays until the whole profile is marked read.
+- iOS: there is no way to open that chat; the profile badge stays until they are cleared (Clear chat, deleting the group, or `/read user` in the chat console).
 - Android/desktop: for members below moderator, the "N messages" bar at the top of the group chat opens the support chat while it has unread items, but once they are read the history can no longer be opened.
 
 For a member removed while pending review, the removal notice itself is in that support chat.
@@ -26,4 +26,4 @@ Show the row whenever the user has a support chat (`membership.supportChat != nu
 
 ## Testing
 
-Desktop AppImage, master vs this PR, with a CLI owner (member admission review, support on): the app joins, the owner messages it in the support chat and removes it — master: no "Chat with admins" row; PR: the row with the unread badge, the chat opens read-only. The same after leaving; after reading via the top bar the PR row still opens the history. Regression: active member with support on/off, with and without a support chat; a moderator; a removed member who never had a support chat. iOS: not built here.
+Desktop AppImage, master vs this PR, with a CLI owner (support on): the app joins by invitation, the owner messages it in the support chat and removes it — master: no "Chat with admins" row (the top bar opens the chat while it has unread messages); PR: the row with the unread badge, the chat opens read-only, and after the messages are read the row stays and still opens the history. After leaving: master no row, PR the row with the badge. Regression: an active member with support on and no support chat, support off without and with a support chat; a moderator with a support chat; a removed member who never had a support chat. Android (Waydroid), with member admission review, removed while pending: master no row; PR the row with badge 2, opening the chat read-only. iOS: not built here.
