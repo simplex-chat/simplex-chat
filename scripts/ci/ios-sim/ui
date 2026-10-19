@@ -1,0 +1,237 @@
+#!/bin/bash
+
+# Drives the app in the simulator SIM_UDID with AXe, for the scripted cases and for an agent on the runner.
+# Screenshots and accessibility trees go to UI_OUT.
+#
+#   ui tap <label> [secs]           tap the element with this exact accessibility label, waiting up to secs (10) for it
+#   ui tap-value <text> [secs]      tap the element with this exact value: text fields have no label, only their placeholder or text
+#   ui tap-xy <x> <y>               tap this point (points, as in the tree)
+#   ui swipe <x1> <y1> <x2> <y2>    swipe from one point to the other, e.g. to scroll a list
+#   ui type <text>                  type into the focused field (US keyboard characters only)
+#   ui clipboard <text>             put the text on the clipboard, to paste it with the text field's Paste menu
+#   ui key <return|delete> [count]  press a keyboard key: return submits the field (the Search key), delete erases a character
+#   ui wait <text> [secs]           wait up to secs (30) until a label or value contains the text (case-sensitive)
+#   ui find <text>                  print the elements whose label or value contains the text (any case)
+#   ui shot <name>                  save UI_OUT/NN-<name>.png, a smaller NN-<name>-view.jpg and NN-<name>.json, and print the tree
+#   ui tree                         print the tree, one element per line: type, label, value, top-left corner and size in points,
+#                                   and "disabled" for a disabled element
+#   ui point <x> <y>                print the element at this point, also when it belongs to a system alert that the tree misses
+#   ui layout <reachable|top>       restart the app with the one-hand UI (reachable toolbar) or the top bar
+#   ui relaunch                     restart the app
+#   ui text-size <category>         set Dynamic Type: medium (the default), large, extra-large, extra-extra-large,
+#                                   extra-extra-extra-large, accessibility-medium ... accessibility-extra-extra-extra-large
+#   ui directory <stop|start>       stop or start the test directory (searches fail while it is stopped)
+#   ui listings                     the groups and channels listed in the test directory
+#   ui requests                     how many directory searches the app sent and how many were answered (needs APP_LOG)
+
+set -euo pipefail
+
+# nothing this helper runs needs the token of the Claude session that calls it
+unset CLAUDE_CODE_OAUTH_TOKEN
+
+: "${SIM_UDID:?SIM_UDID must be the simulator UDID}"
+
+bundle_id=chat.simplex.app
+app_group=group.chat.simplex.app
+# the toolbar's new chat button: shown with and without conversations, unlike the search field
+toolbar_button=Compose
+
+# Elements below the screen, such as the keyboard's keys, are counted rather than listed; the screen is the first
+# element's frame, or the given height.
+compact_tree() {
+  jq -r --argjson screen "${1:-null}" '($screen // .[0].frame.height // 100000) as $h
+    | [.. | objects | select(.AXLabel or .AXValue)]
+    | (.[] | select((.frame.y // 0) < $h)
+        | "\(.type) \(.AXLabel | tojson) value=\(.AXValue | tojson) at \(.frame.x // 0 | round),\(.frame.y // 0 | round) size \(.frame.width // 0 | round)x\(.frame.height // 0 | round)\(if .enabled == false then " disabled" else "" end)"),
+      (map(select((.frame.y // 0) >= $h)) | length | select(. > 0) | "(\(.) elements below the screen not listed, such as keyboard keys)")'
+}
+
+# describe-ui failed once while a system alert was appearing, and read the tree a few seconds later (run 38895987656)
+describe() {
+  local attempt
+  for attempt in 1 2 3 4; do
+    if axe describe-ui --udid "$SIM_UDID" "$@"; then
+      return
+    fi
+    sleep 2
+  done
+  axe describe-ui --udid "$SIM_UDID" "$@"
+}
+
+tree() {
+  describe | compact_tree
+}
+
+point() {
+  number "$1"
+  number "$2"
+  describe --point "$1,$2" | compact_tree 100000
+}
+
+wait_for() {
+  local text=$1 secs=${2:-30}
+  local deadline=$((SECONDS + secs)) t
+  until t=$(tree 2> /dev/null) && grep -qF -- "$text" <<< "$t"; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: \"$text\" not shown after $secs s"
+      return 1
+    fi
+    sleep 2
+  done
+}
+
+find_text() {
+  local t
+  t=$(tree)
+  if ! grep -iF -- "$1" <<< "$t"; then
+    echo "no element contains \"$1\""
+    return 1
+  fi
+}
+
+shot() {
+  : "${UI_OUT:?UI_OUT must be the output directory}"
+  if ! [[ "$1" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    echo "error: a shot name has only letters, digits, - and _"
+    return 1
+  fi
+  mkdir -p "$UI_OUT"
+  local n f
+  n=$(find "$UI_OUT" -maxdepth 1 -name '*.png' | wc -l)
+  f=$(printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1")
+  xcrun simctl io "$SIM_UDID" screenshot "$f.png" > /dev/null
+  sips -Z 1000 -s format jpeg -s formatOptions 70 "$f.png" --out "$f-view.jpg" > /dev/null
+  describe > "$f.json"
+  echo "::group::accessibility tree: $1"
+  echo "saved $f.png, and $f-view.jpg to look at"
+  compact_tree < "$f.json"
+  echo "::endgroup::"
+}
+
+number() {
+  if ! [[ "$1" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    echo "error: \"$1\" is not a number"
+    exit 1
+  fi
+}
+
+key() {
+  local code count=${2:-1} i
+  case "$1" in
+    return) code=40 ;;
+    delete) code=42 ;;
+    *)
+      echo "error: key is return or delete"
+      return 1
+      ;;
+  esac
+  number "$count"
+  for ((i = 0; i < count; i++)); do
+    axe key "$code" --udid "$SIM_UDID"
+  done
+  sleep 1
+}
+
+launch() {
+  xcrun simctl terminate "$SIM_UDID" "$bundle_id" 2> /dev/null || true
+  "$@"
+  xcrun simctl launch "$SIM_UDID" "$bundle_id" > /dev/null
+  wait_for "$toolbar_button" 90
+}
+
+toolbar_y() {
+  tree | grep -F "Button \"$toolbar_button\" " | sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1/' | head -n 1
+}
+
+# The preference is set in the app group's defaults while the app is not running; Settings shows the same switch.
+layout() {
+  local one_hand
+  case "$1" in
+    reachable) one_hand=true ;;
+    top) one_hand=false ;;
+    *)
+      echo "error: layout is reachable or top"
+      return 1
+      ;;
+  esac
+  local prefs
+  prefs=$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" "$app_group")/Library/Preferences/$app_group
+  launch xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" oneHandUI -bool "$one_hand"
+  local y
+  y=$(toolbar_y)
+  if { [ "$one_hand" = true ] && [ "$y" -lt 437 ]; } || { [ "$one_hand" = false ] && [ "$y" -ge 437 ]; }; then
+    echo "error: the toolbar is at y=$y, not where the $1 layout puts it"
+    return 1
+  fi
+  echo "layout $1: the toolbar is at y=$y"
+}
+
+text_size() {
+  case "$1" in
+    medium | large | extra-large | extra-extra-large | extra-extra-extra-large | accessibility-medium | accessibility-large | accessibility-extra-large | accessibility-extra-extra-large | accessibility-extra-extra-extra-large) ;;
+    *)
+      echo "error: unknown text size \"$1\""
+      return 1
+      ;;
+  esac
+  xcrun simctl ui "$SIM_UDID" content_size "$1"
+  sleep 2
+}
+
+backend() {
+  : "${BACKEND_DIR:?BACKEND_DIR must be the work dir of the test backend}"
+  "$(dirname "$0")/backend.sh" "$@" "$BACKEND_DIR"
+}
+
+directory() {
+  case "$1" in
+    stop) backend directory-stop ;;
+    start) backend directory-start ;;
+    *)
+      echo "error: directory stop or directory start"
+      return 1
+      ;;
+  esac
+  echo "test directory: $1"
+}
+
+requests() {
+  : "${APP_LOG:?APP_LOG must be the app log}"
+  local sent answered results
+  sent=$(grep -c 'chatSendCmd apiSendServiceRequest$' "$APP_LOG" || true)
+  results=$(grep -c 'chatSendCmd apiSendServiceRequest: ' "$APP_LOG" || true)
+  answered=$(grep -c 'chatSendCmd apiSendServiceRequest: serviceResponse' "$APP_LOG" || true)
+  echo "directory searches sent: $sent, answered: $answered, failed: $((results - answered)), waiting: $((sent - results))"
+}
+
+case "${1:-}" in
+  tap) axe tap --label "$2" --wait-timeout "${3:-10}" --post-delay 2 --udid "$SIM_UDID" ;;
+  tap-value) axe tap --value "$2" --wait-timeout "${3:-10}" --post-delay 2 --udid "$SIM_UDID" ;;
+  tap-xy)
+    number "$2"
+    number "$3"
+    axe tap -x "$2" -y "$3" --post-delay 2 --udid "$SIM_UDID"
+    ;;
+  swipe)
+    for n in "$2" "$3" "$4" "$5"; do number "$n"; done
+    axe swipe --start-x "$2" --start-y "$3" --end-x "$4" --end-y "$5" --duration 0.5 --post-delay 1 --udid "$SIM_UDID"
+    ;;
+  type) axe type "$2" --udid "$SIM_UDID" ;;
+  clipboard) printf '%s' "$2" | xcrun simctl pbcopy "$SIM_UDID" ;;
+  key) key "$2" "${3:-1}" ;;
+  wait) wait_for "$2" "${3:-30}" ;;
+  find) find_text "$2" ;;
+  shot) shot "$2" ;;
+  tree) tree ;;
+  point) point "$2" "$3" ;;
+  layout) layout "$2" ;;
+  relaunch) launch true ;;
+  text-size) text_size "$2" ;;
+  directory) directory "$2" ;;
+  listings) backend listings ;;
+  requests) requests ;;
+  *)
+    sed -n '3,26s/^# \{0,1\}//p' "$0"
+    exit 1
+    ;;
+esac

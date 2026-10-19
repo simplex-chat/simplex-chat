@@ -21,7 +21,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
 import chat.simplex.common.views.chat.item.openBrowserAlert
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*

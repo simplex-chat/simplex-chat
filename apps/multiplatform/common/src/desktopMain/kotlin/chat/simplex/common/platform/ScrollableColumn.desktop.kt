@@ -64,6 +64,9 @@ actual fun LazyColumnWithScrollBar(
   }
   val state = state ?: handler.listState
   val connection = handler.connection
+  LaunchedEffect(state, handler) {
+    snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }.collect { handler.contentVersion.value++ }
+  }
   // When scroll bar is dragging, there is no scroll event in nested scroll modifier. So, listen for changes on lazy column state
   // (only first visible row is useful because LazyColumn doesn't have absolute scroll position, only relative to row)
   val scrollBarDraggingState = remember { mutableStateOf(false) }
@@ -202,6 +205,9 @@ actual fun ColumnWithScrollBar(
       }
   }
   val state = state ?: handler.scrollState
+  LaunchedEffect(state, handler) {
+    snapshotFlow { state.value }.collect { handler.contentVersion.value++ }
+  }
   val connection = handler.connection
   // When scroll bar is dragging, there is no scroll event in nested scroll modifier. So, listen for changes on column state
   // (exact scroll position is available but in Int, not Float)

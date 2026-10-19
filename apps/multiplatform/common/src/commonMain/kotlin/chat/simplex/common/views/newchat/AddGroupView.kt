@@ -29,7 +29,7 @@ import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.usersettings.*
 import androidx.compose.ui.layout.ContentScale
 import chat.simplex.common.BuildConfigCommon
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.*
