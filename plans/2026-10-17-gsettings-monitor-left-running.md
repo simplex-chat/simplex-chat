@@ -2,13 +2,13 @@
 
 ## Problem
 
-Every run of the desktop app on Linux left a `gsettings monitor org.gnome.desktop.interface gtk-theme` process running after the app exited, reparented to PID 1. Each one holds a D-Bus connection. On a test machine 228 of them accumulated and exhausted the per-user D-Bus connection limit (256), after which other programs failed to connect to D-Bus ("No buffer space available").
+Every run of the desktop app on Linux left a `gsettings monitor org.gnome.desktop.interface gtk-theme` process running after the app exited, reparented to PID 1. Each one holds two D-Bus connections, one to the session bus and one to the system bus. On a test machine 228 of them accumulated and exhausted the system bus's per-user connection limit (256), after which other programs failed to connect to D-Bus ("No buffer space available").
 
 Reproduced with the master AppImage: each launch and clean quit added one such process.
 
 ## Cause
 
-`Theme.desktop.kt` registers a listener on jSystemThemeDetector 3.8's `OsThemeDetector`. On Linux the library always uses `GnomeThemeDetector`, whose `registerListener` starts a daemon thread that runs `Runtime.exec("gsettings monitor org.gnome.desktop.interface gtk-theme")` and reads its output with a blocking `readLine()`. The library destroys the process only when the thread is interrupted and then reads another line; nothing does that on JVM exit. `gsettings` does not notice that its parent is gone until it writes, which happens only on the next theme change (it then gets SIGPIPE).
+`Theme.desktop.kt` registers a listener on jSystemThemeDetector 3.8's `OsThemeDetector`. On Linux the library always uses `GnomeThemeDetector`, whose `registerListener` starts a daemon thread that runs `Runtime.exec("gsettings monitor org.gnome.desktop.interface gtk-theme")` and reads its output with a blocking `readLine()`. The library destroys the process only when the thread is interrupted and then reads another line; nothing does that on JVM exit. `gsettings` never notices that its parent is gone: GLib ignores SIGPIPE and `g_print` ignores write errors, so it keeps running through theme changes with nobody reading its output, and it does not read stdin. It exits only when signalled or when the session bus closes, at logout. A leftover with its output closed survived three theme changes and exited when its session bus was stopped.
 
 ## Fix
 
@@ -23,7 +23,8 @@ Alternatives considered:
 - `detector.removeListener` on exit: only interrupts the thread, which is blocked in `readLine()`; the process is not destroyed.
 - Destroying all children: kills the `.deb` installer opened by the updater and other handlers.
 - Stopping it at `exitProcess(0)` in `DesktopApp.kt`: misses SIGTERM/SIGHUP (session logout).
-- Upgrading the library: its current master still does not stop the monitor on exit.
+- Upgrading the library: no release or its master stops the monitor on exit (upstream issue #42; the fix proposed there, PR #43, is the same shutdown hook, unmerged). 3.9.x also loops at full CPU once the monitor has exited (#52).
+- Covering SIGKILL and crashes too needs the app to start the monitor itself: a `sh` wrapper that kills it when the app's pipe closes (tested), `setpriv --pdeathsig` (fires when the spawning thread exits, so it needs a dedicated thread), or polling `gsettings get` instead of a monitor. Each replaces part of the library for exits where a leftover lasts only until logout.
 
 Not covered (no in-process code runs): SIGKILL, JVM crashes, native `exit()`. Ctrl-C in a terminal does not need it: the monitor is in the terminal's foreground process group, gets the SIGINT itself and exits; the app does not quit on the first Ctrl-C (the Haskell runtime takes it) and exits natively on a second one.
 
