@@ -220,42 +220,44 @@ fun UserPicker(
 
     @Composable
     fun SecondSection() {
-      UserPickerOptionRow(
-        painterResource(MR.images.ic_qr_code),
-        if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
-        showCustomModal { it, close ->
-          val user = it.currentUser.value
-          if (user != null) {
-            UserAddressView(it, shareViaProfile = user.addressShared, close = close)
-          } else {
-            val modal = this
-            LaunchedEffect(modal, ModalManager.start.modalCount.value) {
-              if (ModalManager.start.isLastModal(modal)) close()
-            }
-          }
-        }, disabled = stopped,
-        uiKey = Ui.UserPicker.Address
-      )
-      UserPickerOptionRow(
-        painterResource(MR.images.ic_toggle_on),
-        stringResource(MR.strings.chat_preferences),
-        click = if (stopped) null else ({
-          showCustomModal { m, close ->
-            val user = m.currentUser.value
+      if (!chatModel.desktopNoUserNoRemote) {
+        UserPickerOptionRow(
+          painterResource(MR.images.ic_qr_code),
+          if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
+          showCustomModal { it, close ->
+            val user = it.currentUser.value
             if (user != null) {
-              PreferencesView(m, user, close)
+              UserAddressView(it, shareViaProfile = user.addressShared, close = close)
             } else {
               val modal = this
               LaunchedEffect(modal, ModalManager.start.modalCount.value) {
                 if (ModalManager.start.isLastModal(modal)) close()
               }
             }
-          }()
-        }),
-        disabled = stopped
-      )
+          }, disabled = stopped,
+          uiKey = Ui.UserPicker.Address
+        )
+        UserPickerOptionRow(
+          painterResource(MR.images.ic_toggle_on),
+          stringResource(MR.strings.chat_preferences),
+          click = if (stopped) null else ({
+            showCustomModal { m, close ->
+              val user = m.currentUser.value
+              if (user != null) {
+                PreferencesView(m, user, close)
+              } else {
+                val modal = this
+                LaunchedEffect(modal, ModalManager.start.modalCount.value) {
+                  if (ModalManager.start.isLastModal(modal)) close()
+                }
+              }
+            }()
+          }),
+          disabled = stopped
+        )
+      }
       if (appPlatform.isDesktop) {
-        Divider(Modifier.padding(DEFAULT_PADDING))
+        if (!chatModel.desktopNoUserNoRemote) Divider(Modifier.padding(DEFAULT_PADDING))
 
         val inactiveUsers = users.filter { !it.user.activeUser }
 

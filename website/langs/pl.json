@@ -262,7 +262,13 @@
     "about-and-contact-us": "O nas i Kontakt",
     "index-hero-h1": "Bądź<br>Wolny",
     "index-hero-h2": "W Swojej Sieci",
-    "index-hero-p1": "Pierwsza sieć bez identyfikatorów użytkowników.<br>Twoje kontakty, grupy i kanały należą do Ciebie.",
+    "index-hero-p1": "<span class=\"nowrap\">Jedyna sieć komunikacyjna</span> <span class=\"nowrap\">bez żadnych identyfikatorów użytkowników.</span><br>Twoje kontakty, grupy i kanały należą do Ciebie.",
+    "index-hero-own-part": "Miej w niej udział.",
+    "index-hero-invest": "Zainwestuj w SimpleX Chat.",
+    "index-hero-downloads": "Pobrań",
+    "index-hero-monthly-users": "Użytkowników miesięcznie",
+    "index-hero-countdown-lead": "Start domen SimpleX",
+    "index-hero-countdown-done": "Zdobądź domenę SimpleX",
     "index-hero-download-desktop-btn-title": "Pobierz Aplikację SimpleX na Komputer",
     "index-testflight-title": "SimpleX iOS beta-wydanie na TestFlight",
     "index-f-droid-title": "SimpleX app z F-Droid",
@@ -300,7 +306,7 @@
     "index-roadmap-3-title": "Spraw, aby Twoje społeczności Rosły",
     "index-roadmap-3-desc": "Narzędzia do promowania Twoich społeczności",
     "index-directory-h2": "Dołącz do Społeczności SimpleX",
-    "index-directory-p1": "Ponad 2 miliony osób pobrało aplikacje SimpleX.",
+    "index-directory-p1": "Ponad 3 miliony osób pobrało aplikacje SimpleX.",
     "index-directory-p2": "Znajdź swoje kanały i społeczności w katalogu i stwórz własne!",
     "index-directory-cta": "Zobacz katalog SimpleX",
     "index-directory-users-group-title": "Grupa użytkowników SimpleX",
@@ -372,5 +378,6 @@
     "file-proto-h-4": "Niezależne routery danych",
     "file-proto-p-4": "Gdy plik jest dzielony na fragmenty, jest on wysyłany przez routery sieciowe obsługiwane przez niezależne podmioty. Żaden operator nie może zobaczyć rzeczywistego rozmiaru ani nazwy pliku. Nawet jeśli router zostanie naruszony, może on zobaczyć tylko zaszyfrowane fragmenty o stałym rozmiarze. Fragmenty plików są przechowywane w pamięci podręcznej routerów sieciowych przez około 48 godzin.",
     "file-proto-spec": "Zapoznaj się ze specyfikacją protokołu XFTP →",
-    "send-file": "Wyślij plik"
+    "send-file": "Wyślij plik",
+    "why-film": "Obejrzyj 2-minutowy film na YouTube"
 }

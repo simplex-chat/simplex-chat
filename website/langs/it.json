@@ -260,7 +260,12 @@
     "about-and-contact-us": "Informazioni e contatti",
     "directory": "Directory",
     "index-hero-h2": "nella tua rete",
-    "index-hero-p1": "La prima rete senza ID utente.<br>I tuoi contatti, gruppi e canali sono tuoi.",
+    "index-hero-p1": "<span class=\"nowrap\">L'unica rete di messaggistica</span> <span class=\"nowrap\">senza alcun identificatore utente.</span><br>I tuoi contatti, gruppi e canali sono tuoi.",
+    "index-hero-own-part": "Possiedine una parte.",
+    "index-hero-downloads": "Download",
+    "index-hero-monthly-users": "Utenti mensili",
+    "index-hero-countdown-lead": "Lancio dei domini SimpleX",
+    "index-hero-countdown-done": "Ottieni un dominio SimpleX",
     "index-hero-download-desktop-btn-title": "Scarica l'app desktop di SimpleX",
     "index-testflight-title": "Anteprima pubblica per iOS su TestFlight",
     "index-f-droid-title": "SimpleX via F-Droid",
@@ -299,7 +304,7 @@
     "index-roadmap-3-title": "Fare crescere le tue comunità",
     "index-roadmap-3-desc": "Strumenti per promuovere le tue comunità",
     "index-directory-h2": "Unisciti alle comunità di SimpleX",
-    "index-directory-p1": "Più di 2 milioni di persone hanno scaricato le app SimpleX.",
+    "index-directory-p1": "Più di 3 milioni di persone hanno scaricato le app SimpleX.",
     "index-directory-p2": "Trova i tuoi canali e le comunità nella directory e creane di tuoi!",
     "index-directory-cta": "Vedi la directory di SimpleX",
     "index-directory-users-group-title": "Gruppo utenti SimpleX",
@@ -378,5 +383,6 @@
     "links-all-languages": "Tutte le lingue",
     "docs-dropdown-16": "Ospita un relay di chat",
     "index-hero-invest": "Investi in SimpleX Chat.",
-    "index-hero-invest-cta": "Scopri di più su Wefunder."
+    "index-hero-invest-cta": "Scopri di più su Wefunder.",
+    "why-film": "Guarda il film di 2 minuti su YouTube"
 }

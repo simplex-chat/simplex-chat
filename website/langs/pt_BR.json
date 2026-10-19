@@ -262,7 +262,13 @@
     "navbar-token": "Token",
     "index-hero-h1": "Seja<br>Livre",
     "index-hero-h2": "Na Sua Rede",
-    "index-hero-p1": "A primeira rede sem IDs de usuário.<br>Seus contatos, grupos e canais pertencem a você.",
+    "index-hero-p1": "<span class=\"nowrap\">A única rede de mensagens</span> <span class=\"nowrap\">sem nenhum identificador de usuário.</span><br>Seus contatos, grupos e canais pertencem a você.",
+    "index-hero-own-part": "Seja dono de uma parte dela.",
+    "index-hero-invest": "Invista no SimpleX Chat.",
+    "index-hero-downloads": "Downloads",
+    "index-hero-monthly-users": "Usuários mensais",
+    "index-hero-countdown-lead": "Lançamento de domínios SimpleX",
+    "index-hero-countdown-done": "Obtenha um domínio SimpleX",
     "index-hero-download-desktop-btn-title": "Baixe o aplicativo SimpleX Desktop",
     "index-testflight-title": "SimpleX iOS - versão beta no TestFlight",
     "index-f-droid-title": "Aplicativo SimpleX no F-Droid",
@@ -300,7 +306,7 @@
     "index-roadmap-3-title": "Faça Suas Comunidades Crescerem",
     "index-roadmap-3-desc": "Ferramentas para promover suas comunidades",
     "index-directory-h2": "Participe das Comunidades SimpleX",
-    "index-directory-p1": "Mais de 2 milhões de pessoas baixaram os aplicativos SimpleX.",
+    "index-directory-p1": "Mais de 3 milhões de pessoas baixaram os aplicativos SimpleX.",
     "index-directory-p2": "Encontre seus canais e comunidades no diretório e crie os seus próprios!",
     "index-directory-cta": "Ver diretório do SimpleX",
     "how-secure-comparison-title": "Comparação da segurança da criptografia de ponta a ponta em diferentes mensageiros",
@@ -318,5 +324,6 @@
     "messengers-comparison-section-list-point-6": "O acordo de chaves pós-quântico é 'esparso' &mdash; ele protege apenas algumas das etapas da catraca (ratchet).",
     "navbar-old-site": "Site antigo",
     "index-directory-users-group-title": "Grupos de usuários do SimpleX",
-    "send-file": "Enviar arquivo"
+    "send-file": "Enviar arquivo",
+    "why-footer-link": "Por que a estamos construindo"
 }
