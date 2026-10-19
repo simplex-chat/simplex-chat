@@ -1,6 +1,6 @@
 {
   "name": "simplex-chat",
-  "version": "7.1.0-beta.6.4",
+  "version": "7.1.0-beta.6.6",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "gypfile": false,
@@ -24,16 +24,17 @@
     "docs": "typedoc"
   },
   "dependencies": {
-    "@simplex-chat/types": "^7.1.0-beta.6.1",
-    "extract-zip": "^2.0.1",
-    "fast-deep-equal": "^3.1.3"
+    "@simplex-chat/types": "^7.1.0-beta.6.2",
+    "fast-deep-equal": "^3.1.3",
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.5",
-    "jest": "^30.2.0",
+    "@types/yauzl": "^3.4.0",
+    "jest": "^30.5.2",
     "node-addon-api": "^8.5.0",
-    "ts-jest": "^29.4.6",
+    "ts-jest": "^29.4.15",
     "typedoc": "^0.28.15",
     "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.9.3"
