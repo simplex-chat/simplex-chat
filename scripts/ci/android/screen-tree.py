@@ -4,7 +4,7 @@
 #   screen-tree.py <dump .xml> lines         the elements with a text or a content description, one per line: "x,y text", the element's centre
 #   screen-tree.py <dump .xml> find <text>   "x y left top right bottom" of the element with the text, or exits 1
 #   screen-tree.py <dump .xml> tree          the elements that have a text or can be used: class, text, bounds and states
-#   screen-tree.py <dump .xml> focused       exits 1 unless a text field has the focus
+#   screen-tree.py <dump .xml> focused [<text>]   exits 1 unless a text field has the focus, and shows the text exactly
 # Text is compared as the desktop ui helper compares it: letters and digits only, any case. An element that is exactly
 # the text wins over one that contains it, and then one inside a clickable element (Compose puts a button's text in a
 # child of the clickable view) over a title with the same text.
@@ -60,7 +60,8 @@ def main():
             if label(node) or node.get("class") in WIDGETS or any(node.get(s) == "true" for s in ["clickable", "checkable", "scrollable"]):
                 print(tree_line(node, bounds))
     elif command == "focused":
-        if not any(n.get("class") == FIELD and n.get("focused") == "true" for n, _, _ in found):
+        text = " ".join(sys.argv[3].split()) if len(sys.argv) > 3 else ""
+        if not any(n.get("class") == FIELD and n.get("focused") == "true" and text in label(n) for n, _, _ in found):
             sys.exit(1)
     elif command == "find":
         target = normalise(sys.argv[3])

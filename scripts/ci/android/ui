@@ -16,7 +16,8 @@
 #   ui click-text <text> [secs]   wait up to secs (20) for the text and tap its centre
 #   ui scroll <x> <y> <up|down> [times]
 #                                 swipe at x,y to scroll towards the top (up) or bottom (down) of the content, 3 times unless given
-#   ui type <text>                type ASCII text into the focused field, waiting up to 10 s for a field to have the focus
+#   ui type <text>                type ASCII text into the focused field, waiting up to 10 s for a field to have the focus;
+#                                 fail unless the field then shows the text
 #   ui key <key>...               press keys by their Android names without KEYCODE_ (BACK, ENTER, DEL)
 #   ui layout <reachable|top>     restart the app with the reachable toolbar (the one-hand UI, the default) or the top bar
 #   ui relaunch                   restart the app and wait for the chat list
@@ -181,9 +182,11 @@ layout() {
   relaunch
 }
 
-# Typed text goes to the device's shell as one single-quoted word, so neither shell interprets it; input text reads %s as a space.
+# The app, slowed by the ARM translation, drops characters typed faster than it takes them, so the text is typed a few
+# characters at a time, each part checked on the field. Each part goes to the device's shell as one single-quoted word,
+# so neither shell interprets it; input text reads %s as a space.
 type_text() {
-  local deadline=$((SECONDS + 10)) text=${1// /%s}
+  local text=$1 typed="" part deadline=$((SECONDS + 10))
   until screen focused; do
     if [ "$SECONDS" -ge "$deadline" ]; then
       echo "error: no text field has the focus"
@@ -191,7 +194,21 @@ type_text() {
     fi
     sleep 1
   done
-  adb shell "input text '${text//\'/\'\\\'\'}'"
+  while [ -n "$text" ]; do
+    part=${text:0:8}
+    text=${text:8}
+    typed+=$part
+    part=${part// /%s}
+    adb shell "input text '${part//\'/\'\\\'\'}'"
+    deadline=$((SECONDS + 10))
+    until screen focused "$typed"; do
+      if [ "$SECONDS" -ge "$deadline" ]; then
+        echo "error: the field doesn't show \"$typed\""
+        return 1
+      fi
+      sleep 1
+    done
+  done
 }
 
 scroll() {
