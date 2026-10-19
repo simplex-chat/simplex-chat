@@ -19,7 +19,7 @@ struct ChatInfoImage: View {
         let iconColor = if case .local = chat.chatInfo { theme.appColors.primaryVariant2 } else { color }
         return ProfileImage(
             imageStr: chat.chatInfo.image,
-            iconName: chatIconName(chat.chatInfo),
+            icon: chatIcon(chat.chatInfo),
             size: size,
             color: iconColor
         )
