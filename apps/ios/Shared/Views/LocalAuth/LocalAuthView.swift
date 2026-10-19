@@ -62,7 +62,6 @@ struct LocalAuthView: View {
                      * */
                     chatCloseStore()
                 }
-                excludeAppDataFromBackup(true)
                 deleteAppDatabaseAndFiles()
                 // Clear sensitive data on screen just in case app fails to hide its views while new database is created
                 m.chatId = nil

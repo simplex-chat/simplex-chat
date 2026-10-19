@@ -83,7 +83,7 @@ struct DatabaseView: View {
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_CHAT_ARCHIVE_NAME) private var chatArchiveName: String?
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
-    @AppStorage(DEFAULT_ICLOUD_BACKUP) private var iCloudBackup = true
+    @AppStorage(DEFAULT_ICLOUD_BACKUP) private var iCloudBackup = false
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
@@ -284,7 +284,7 @@ struct DatabaseView: View {
                         set: { iCloudBackup = $0; updateAppDataBackup() }
                     ))
                 }
-                .disabled(backupBlock != nil || m.chatDbChanged)
+                .disabled(progressIndicator || backupBlock != nil || m.chatDbChanged)
             } header: {
                 Text("Chat backup")
                     .foregroundColor(theme.colors.secondary)
@@ -562,7 +562,6 @@ struct DatabaseView: View {
                 progressIndicator.wrappedValue = true
             }
             do {
-                await MainActor.run { ChatModel.shared.chatDbChanged = true }
                 excludeAppDataFromBackup(true)
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
@@ -718,8 +717,6 @@ func stopChatAsync() async throws {
 }
 
 func deleteChatAsync() async throws {
-    await MainActor.run { ChatModel.shared.chatDbChanged = true }
-    excludeAppDataFromBackup(true)
     try await apiDeleteStorage()
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)

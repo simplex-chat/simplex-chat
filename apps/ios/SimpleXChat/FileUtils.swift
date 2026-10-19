@@ -163,6 +163,7 @@ public func deleteTempFiles() {
     do {
         try fm.removeItem(at: getTempFilesDirectory())
         try fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+        setExcludedFromBackup([getTempFilesDirectory()], true)
     } catch {
         logger.error("FileUtils deleteTempFiles error: \(error.localizedDescription)")
     }

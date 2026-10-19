@@ -179,7 +179,6 @@ struct DatabaseEncryptionView: View {
             updateAppDataBackup()
             return true
         } catch let error {
-            excludeNonAppDataFromBackup()
             if case .errorDatabase(.errorExport(.errorNotADatabase)) = error as? ChatError {
                 await operationEnded(.currentPassphraseError)
             } else {

@@ -121,7 +121,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CHAT_V3_DB_MIGRATION: V3DBMigrationState.offer.rawValue,
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
-    DEFAULT_ICLOUD_BACKUP: true,
+    DEFAULT_ICLOUD_BACKUP: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
     DEFAULT_CHAT_ITEM_TAIL: true,

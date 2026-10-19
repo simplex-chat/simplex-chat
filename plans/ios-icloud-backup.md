@@ -12,7 +12,7 @@ An unencrypted database with a non-random passphrase flag is possible: archives 
 
 ## Fix
 
-"Chat backup" section in Settings → Chat data → Database passphrase & export, between "Chat database" and "Run chat", with the "Enable iCloud backup" toggle (`DEFAULT_ICLOUD_BACKUP`, on by default; turning it off persists).
+"Chat backup" section in Settings → Chat data → Database passphrase & export, between "Chat database" and "Run chat", with the "Enable iCloud backup" toggle (`DEFAULT_ICLOUD_BACKUP`, off by default; the choice persists).
 
 The app group container is included in backup when the toggle is on and `iCloudBackupBlock` returns `nil`. Otherwise the toggle is disabled and shown off, and the footer states the reason:
 
@@ -22,14 +22,15 @@ The app group container is included in backup when the toggle is on and `iCloudB
 | the database is not encrypted | Database is not encrypted. Set passphrase to enable iCloud backup. |
 | the database uses the initial random passphrase | Database is encrypted using a random passphrase. Set passphrase to enable iCloud backup. |
 
-`excludeAppDataFromBackup(_:)` always excludes the Documents directory (legacy database, exported archives, migration files), `temp_files` (decrypted copies of files) and the `.bak` copies of the database (made by the core on passphrase changes and migrations, possibly unencrypted or with an old passphrase). It clears the attribute on the database files, because restoring a backup in `DatabaseErrorView` copies them from the excluded `.bak` files with `FileManager.copyItem`, which keeps the attribute; the restore also excludes the app data, as the restored copy may be unencrypted, until the database is opened.
+`excludeAppDataFromBackup(_:)` always excludes the Documents directory (legacy database, exported archives, migration files), `temp_files` (decrypted copies of files) and the `.bak` copies of the database (made by the core on passphrase changes and migrations, possibly unencrypted or with an old passphrase). It clears the attribute on the database files, because restoring a backup in `DatabaseErrorView` copies them from the excluded `.bak` files with `FileManager.copyItem`, which keeps the attribute.
 
-The rule is applied when the database is opened (after the file paths are set, as the core re-creates `temp_files`), after a passphrase change, when the toggle changes, and at launch, before the database is opened. Launch never includes the app data, because encryption is only known after opening (a passphrase stored in the keychain is saved before it is verified, e.g. after restoring a backup): it excludes it when the toggle is off, the database is in Documents or uses the random passphrase, or the passphrase is stored in the keychain without a key (an unencrypted database — importing an archive removes the key); otherwise it keeps the decision applied at the last open. This is skipped while protected data is unavailable (the device is locked). Deleting or importing a database excludes the app data before the old database is removed, until the new one is opened, and the toggle is disabled until the chat is started again, as it would be based on the old database.
+The rule is applied when the database is opened (after the file paths are set, as the core re-creates `temp_files`), after a passphrase change, when the toggle changes, and at launch, before the database is opened. Launch never includes the app data, because encryption is only known after opening (a passphrase stored in the keychain is saved before it is verified, e.g. after restoring a backup): it excludes it when the toggle is off, the database is in Documents or uses the random passphrase, or the passphrase is stored in the keychain without a key (an unencrypted database — importing an archive removes the key); otherwise it keeps the decision applied at the last open. This is skipped while protected data is unavailable (the device is locked). Importing a database excludes the app data before the old database is removed, until the new one is opened. Deleting a database needs no exclusion: nothing of it remains, and the new database is excluded when it is opened (random passphrase) or at launch (no key is stored). The toggle is disabled while an import or deletion is in progress (`progressIndicator`), and after it until the chat is started again, as it would be based on the old database. "Delete temp data" (Developer → Storage) re-applies the exclusion to the `temp_files` directory it re-creates.
 
 ## Accepted gaps
 
 - `.bak` copies made during a passphrase change or migration, and `temp_files` re-created by the NSE or SE, are excluded at the next update.
 - Files in `app_files` are backed up as stored; they are unencrypted when "Encrypt local files" is off.
+- `/db decrypt` in the developer console (it needs the chat stopped) removes the database encryption without updating `chatDbEncrypted` or the keychain, so it can leave the container included while the database is unencrypted, and the toggle can still include it in that session. The launch rule does not detect it (the keychain still holds the old passphrase, or the passphrase is not stored), and opening the database with the old passphrase fails before the rule is applied, so the container is excluded only when the app next opens the database successfully.
 
 ## Verification
 
