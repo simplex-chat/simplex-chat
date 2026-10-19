@@ -1119,11 +1119,16 @@ jobs:
         id: mac_lib_build
         if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
         shell: bash
+        env:
+          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
+          APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
+          APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
         run: |
           SKIP_VLC=1 scripts/desktop/build-lib-mac.sh
           name=simplex-chat-libs-macos-${{ matrix.arch }}
           mkdir -p release-libs/$name/libs
           find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          scripts/ci/sign-libs-mac.sh release-libs/$name/libs
           (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Upload library
