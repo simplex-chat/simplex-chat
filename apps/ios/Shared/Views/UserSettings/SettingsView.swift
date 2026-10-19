@@ -13,6 +13,8 @@ import SimpleXChat
 
 let simplexTeamURL = URL(string: "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im")!
 
+let simplexNewsURL = URL(string: "simplex:/c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA?h=smp18.simplex.im")!
+
 let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
@@ -47,6 +49,7 @@ let DEFAULT_SHOULD_IMPORT_APP_SETTINGS = "shouldImportAppSettings"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_ENCRYPTION_STARTED = "encryptionStarted"
 let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
+let DEFAULT_SHOULD_DELETE_DATABASE_BACKUPS = "shouldDeleteDatabaseBackups"
 let DEFAULT_ACCENT_COLOR_RED = "accentColorRed" // deprecated, only used for migration
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for migration
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
@@ -56,6 +59,10 @@ let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
 let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
+let DEFAULT_SUPPORTER_BANNER_SHOWN = "supporterBannerShown"
+let DEFAULT_SUPPORTER_BANNER_TAPPED = "supporterBannerTapped"
+let DEFAULT_GET_STAKE_BANNER_TAPPED = "getStakeBannerTapped"
+let DEFAULT_GET_STAKE_BANNER_DISMISSED = "getStakeBannerDismissed"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -77,6 +84,7 @@ let DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
 let DEFAULT_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
 let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 let DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE = "showSubscriptionPercentage"
+let DEFAULT_MARKDOWN_FILE_TEXT_VIEW = "markdownFileTextView"
 
 let DEFAULT_CURRENT_THEME = "currentTheme"
 let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
@@ -117,6 +125,10 @@ let appDefaults: [String: Any] = [
     DEFAULT_CHAT_ITEM_TAIL: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
+    DEFAULT_SUPPORTER_BANNER_SHOWN: false,
+    DEFAULT_SUPPORTER_BANNER_TAPPED: false,
+    DEFAULT_GET_STAKE_BANNER_TAPPED: false,
+    DEFAULT_GET_STAKE_BANNER_DISMISSED: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
@@ -134,6 +146,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_DELETE_CONTACT_NOTICE: true,
     DEFAULT_SHOW_SENT_VIA_RPOXY: false,
     DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE: false,
+    DEFAULT_MARKDOWN_FILE_TEXT_VIEW: false,
     ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
 
     DEFAULT_THEME_OVERRIDES: "{}",
@@ -148,6 +161,10 @@ let hintDefaults = [
     DEFAULT_LA_NOTICE_SHOWN,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN,
+    DEFAULT_SUPPORTER_BANNER_SHOWN,
+    DEFAULT_SUPPORTER_BANNER_TAPPED,
+    DEFAULT_GET_STAKE_BANNER_TAPPED,
+    DEFAULT_GET_STAKE_BANNER_DISMISSED,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
     DEFAULT_SIGN_MESSAGE_ALERT_SHOWN,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
@@ -192,6 +209,8 @@ let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey
 let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED)
 
 let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED_AT)
+
+let shouldDeleteDatabaseBackupsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOULD_DELETE_DATABASE_BACKUPS)
 
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
 
@@ -341,6 +360,22 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                NavigationLink {
+                    BadgesView()
+                        .modifier(ThemedBackground())
+                } label: {
+                    let badgeType = chatModel.currentUser?.profile.localBadge?.badge.badgeType ?? .supporter
+                    ZStack(alignment: .leading) {
+                        Image(badgeImageName(badgeType))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                        Text("Supporter perks").padding(.leading, indent)
+                    }
+                }
+            }
+
             Section(header: Text("Advanced settings").foregroundColor(theme.colors.secondary)) {
                 NavigationLink {
                     NetworkAndServers()
@@ -375,7 +410,7 @@ struct SettingsView: View {
                 NavigationLink {
                     VersionView()
                         .navigationBarTitle("App version")
-                        .modifier(ThemedBackground())
+                        .modifier(ThemedBackground(grouped: true))
                 } label: {
                     Text(verbatim: "v\(appVersion ?? "?")")
                 }
@@ -384,7 +419,7 @@ struct SettingsView: View {
             if isInUS {
                 Section(header: Text("You can now invest in SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
-                        GetStakeView(fromSettings: true)
+                        GetStakeView(fromSettings: true, showFirstImage: true)
                             .navigationBarTitle("", displayMode: .inline)
                     } label: {
                         settingsRow("dollarsign.circle", color: theme.colors.secondary) { Text("Crowdfunding on Wefunder") }
@@ -434,6 +469,15 @@ struct SettingsView: View {
             }
 
             Section(header: Text("Contact").foregroundColor(theme.colors.secondary)) {
+                settingsRow("antenna.radiowaves.left.and.right", color: theme.colors.secondary) {
+                    Button("Follow SimpleX Network News") {
+                        dismiss()
+                        DispatchQueue.main.async {
+                            ChatModel.shared.appOpenUrl = simplexNewsURL
+                        }
+                    }
+                }
+                .disabled(chatModel.chatRunning != true)
                 settingsRow("number", color: theme.colors.secondary) {
                     Button("Send questions and ideas") {
                         dismiss()

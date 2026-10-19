@@ -21,13 +21,12 @@ struct CIFileView: View {
     @ObservedObject var chat: Chat
     let file: CIFile?
     let meta: CIMeta
-    let senderProfile: LocalProfile?
     var smallViewSize: CGFloat?
 
     var body: some View {
         if smallViewSize != nil {
             fileIndicator()
-            .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
         } else {
             // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
             let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
@@ -57,7 +56,7 @@ struct CIFileView: View {
             .padding(.bottom, 6)
             .padding(.leading, 10)
             .padding(.trailing, 12)
-            .simultaneousGesture(TapGesture().onEnded(fileAction))
+            .simultaneousGesture(TapGesture().onEnded { fileAction(file) })
             .disabled(!itemInteractive)
         }
     }
@@ -86,24 +85,21 @@ struct CIFileView: View {
         return false
     }
 
-    private func fileAction() {
+    private func fileAction(_ file: CIFile?) {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
             case .rcvInvitation, .rcvAborted:
-                if fileSizeValid(file, senderProfile) {
+                if let prohibited = file.fileProhibited {
+                    showProhibitedFileAlert(file, prohibited)
+                } else {
+                    m.openWhenReceived(file) { fileAction($0) }
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
                             await receiveFile(user: user, fileId: file.fileId)
                         }
                     }
-                } else {
-                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol, senderProfile), countStyle: .binary)
-                    AlertManager.shared.showAlertMsg(
-                        title: "Large file!",
-                        message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
-                    )
                 }
             case .rcvAccepted:
                 switch file.fileProtocol {
@@ -122,7 +118,7 @@ struct CIFileView: View {
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
@@ -133,12 +129,12 @@ struct CIFileView: View {
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case .sndComplete:
                 logger.debug("CIFileView fileAction - in .sndComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    openFile(file, fileSource)
                 }
             case let .sndError(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndError")
@@ -148,6 +144,14 @@ struct CIFileView: View {
                 showFileErrorAlert(sndFileError, temporary: true)
             default: break
             }
+        }
+    }
+
+    private func openFile(_ file: CIFile, _ fileSource: CryptoFile) {
+        if isMarkdownFile(file) {
+            showMarkdownFile(file)
+        } else {
+            saveCryptoFile(fileSource)
         }
     }
 
@@ -171,7 +175,7 @@ struct CIFileView: View {
             case .sndError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .sndWarning: fileIcon("doc.fill", innerIcon: "exclamationmark.triangle.fill", innerIconSize: 10)
             case .rcvInvitation:
-                if !fileSizeValid(file, senderProfile) {
+                if !fileSizeValid(file) {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 } else if file.expired {
                     fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
@@ -235,11 +239,25 @@ struct CIFileView: View {
     }
 }
 
-func fileSizeValid(_ file: CIFile?, _ senderProfile: LocalProfile?) -> Bool {
+// the core decides whether a received file is above the size the sender's badge allows
+func fileSizeValid(_ file: CIFile?) -> Bool {
     if let file = file {
-        return file.fileSize <= getMaxFileSize(file.fileProtocol, senderProfile)
+        return file.fileProhibited == nil
     }
     return false
+}
+
+func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
+    let badgeIssue = switch prohibited.badgeStatus {
+    case .none, .some(.active): ""
+    case .some(.expired), .some(.expiredOld): NSLocalizedString("Contact's badge expired.", comment: "file alert")
+    case .some(.failed): NSLocalizedString("Contact's badge verification failed.", comment: "file alert")
+    case .some(.unknownKey): NSLocalizedString("No key to verify contact's badge.", comment: "file alert")
+    }
+    showAlert(
+        NSLocalizedString("Large file!", comment: "file alert title"),
+        message: largeFileMessage(file.fileSize, badgeIssue: badgeIssue)
+    )
 }
 
 func saveCryptoFile(_ fileSource: CryptoFile) {

@@ -271,7 +271,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 |---|---|
 | `ChatView.kt` | Main chat view, ChatLayout, ChatItemsList, ChatInfoToolbar |
 | `ChatInfoView.kt` | Contact info modal |
-| `ChatItemInfoView.kt` | Individual message delivery/read info |
+| `ChatItemInfoView.kt` | Individual message delivery/read info; below a file's expiry, for a user without a badge, a button opening the badges view |
 | `ChatItemsLoader.kt` | Pagination and message loading logic |
 | `ChatItemsMerger.kt` | MergedItems grouping of consecutive events |
 | `CommandsMenuView.kt` | Bot `/command` menu popup |
@@ -313,9 +313,10 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `EmojiItemView.kt` | Large emoji-only message |
 | `FramedItemView.kt` | Message bubble frame (quoted item, text, media) |
 | `ImageFullScreenView.kt` | Fullscreen image gallery |
+| `MarkdownFileView.kt` | Markdown file viewer, formatted or as text |
 | `IntegrityErrorItemView.kt` | Message integrity error |
 | `MarkedDeletedItemView.kt` | Marked-as-deleted / moderated message |
-| `TextItemView.kt` | Plain text message with markdown |
+| `TextItemView.kt` | Plain text message with markdown; blocks of `markdownBlocks` drawn as a column of views by `MarkdownBlocks` (`MarkdownBlocks.kt`) |
 
 ### `views/chat/group/`
 

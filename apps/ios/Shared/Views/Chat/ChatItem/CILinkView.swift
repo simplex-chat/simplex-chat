@@ -52,7 +52,7 @@ struct CILinkView: View {
 func openBrowserAlert(uri: String) {
     let (url, err) = sanitizeUri(uri)
     if let url {
-        let uriStr = url.uri.absoluteString
+        let uriStr = displayedUri(url.uri.absoluteString)
         showAlert(
             NSLocalizedString("Open link?", comment: "alert title"),
             message: uriStr.count > 160 ? "\(uriStr.prefix(160))…" : uriStr,
@@ -90,15 +90,34 @@ func openBrowserAlert(uri: String) {
 
 func showInvalidLinkAlert(_ uri: String, error: String? = nil) {
     let message = if let error, !error.isEmpty {
-        error + "\n" + uri
+        error + "\n" + displayedUri(uri)
     } else {
-        uri
+        displayedUri(uri)
     }
     showAlert(
         NSLocalizedString("Invalid link", comment: "alert title"),
         message: message,
         actions: {[okAlertAction]}
     )
+}
+
+func unicodeMarker(_ s: Unicode.Scalar) -> String {
+    String(format: "[U+%04X]", s.value)
+}
+
+func displayedUri(_ uri: String) -> String {
+    let authorityStart = uri.range(of: "://")?.upperBound ?? uri.startIndex
+    let authority = authorityStart ..< (uri[authorityStart...].firstIndex(where: { "/?#".contains($0) }) ?? uri.endIndex)
+    var shown = ""
+    for i in uri.unicodeScalars.indices {
+        let s = uri.unicodeScalars[i]
+        if s.properties.generalCategory == .format || (!s.isASCII && authority.contains(i)) {
+            shown += unicodeMarker(s)
+        } else {
+            shown.unicodeScalars.append(s)
+        }
+    }
+    return shown
 }
 
 func sanitizeUri(_ s: String) -> (url: (uri: URL, sanitizedUri: URL?)?, error: String?) {
