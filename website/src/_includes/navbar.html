@@ -67,12 +67,12 @@
 
                 <ul class="sub-menu">
                     <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
-                        target="_blank">Whitepaper
+                        target="_blank" rel="noopener">Whitepaper
                         <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                     </a></li>
                     <li><a href="/privacy">{{ "terms-and-privacy-policy" | i18n({}, lang ) | safe }}</a></li>
                     <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
-                        target="_blank">{{ "smp-protocol" | i18n({}, lang ) | safe }}
+                        target="_blank" rel="noopener">{{ "smp-protocol" | i18n({}, lang ) | safe }}
                         <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                     </a></li>
                     <li><a href="/docs/protocol/simplex-chat.html">{{ "chat-protocol" | i18n({}, lang ) | safe }}</a></li>
@@ -93,16 +93,16 @@
                     >{{ "docs-dropdown-2" | i18n({}, lang ) | safe }}
                     </a></li>
                     <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
-                        target="_blank">{{ "chat-bot-example" | i18n({}, lang ) | safe }}
+                        target="_blank" rel="noopener">{{ "chat-bot-example" | i18n({}, lang ) | safe }}
                         <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                     </a></li>
                     <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
-                        target="_blank">TypeScript SDK
+                        target="_blank" rel="noopener">TypeScript SDK
                         <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                     </a></li>
                     <li><a href="/docs/cli.html">{{ "terminal-cli" | i18n({}, lang ) | safe }}</a></li>
                     <li><a href="https://github.com/simplex-chat/simplexmq"
-                        target="_blank">SimpleXMQ
+                        target="_blank" rel="noopener">SimpleXMQ
                         <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                     </a></li>
                 </ul>
@@ -126,7 +126,7 @@
 
     <div class="right-links">
         {% if ('/crowdfunding/' not in page.url) %}
-            <a class="box-btn token md:hidden" href="/crowdfunding/">
+            <a class="box-btn token md:hidden" href="https://wefunder.com/simplex.chat?utm_source={{ 'home' if active_home else 'website' }}" target="_blank" rel="noopener">
                 {{ 'invest' | i18n({}, lang) }}
             </a>
         {% endif %}
@@ -148,7 +148,7 @@
             </svg>
         </button>
 
-        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('credits' not in page.url) and ('file' not in page.url) and ('links' not in page.url) and ('news' not in page.url) and ('crowdfunding' not in page.url) and ('livestream' not in page.url) %}
+        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('credits' not in page.url) and ('file' not in page.url) and ('links' not in page.url) and ('news' not in page.url) and ('crowdfunding' not in page.url) and ('livestream' not in page.url) and ('subscribe' not in page.url) %}
         <div class="nav-link flag-container">
             <a href="javascript:void(0);">
                 {% for language in languages.languages %}
@@ -162,7 +162,7 @@
             </a>
 
             <ul class="sub-menu">
-                {% if ("docs" in page.url) or ('downloads' in page.url) or ('security' in page.url) or ('reproduce' in page.url) or ('transparency' in page.url) or ('jobs' in page.url) or ('faq' in page.url) %}
+                {% if ("docs" in page.url) or ('security' in page.url) or ('reproduce' in page.url) or ('transparency' in page.url) or ('jobs' in page.url) or ('faq' in page.url) %}
                     {% for supportedLang in supportedLangsForDoc %}
                         {% for language in languages.languages %}
                             {% if language.label == supportedLang %}
@@ -176,7 +176,7 @@
                     {% endfor %}
                 {% else %}
                     {% for language in languages.languages %}
-                        {% if language.enabled and (language.home or (page.url != '/' and page.url != '/' + lang + '/')) and (language.why or ('why' not in page.url)) %}
+                        {% if language.enabled and (language.label | translated(page.url)) %}
                             <li>
                                 <a href="{% completeRoute {url: page.url, lang: language.label} %}">
                                     <p>{{ language.name }}</p>
@@ -209,6 +209,16 @@
     </button>
 </div>
 
+
+<script>{% include "utm.js" %}</script>
+
+{% if not noEvents %}
+<script type="module">
+import { init, track } from '/js/page.js';
+{% include "events.js" %}
+init(pageEvents);
+</script>
+{% endif %}
 
 <script>
 // switch theme

@@ -65,6 +65,7 @@ struct WhySimpleX: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var m: ChatModel
     var onboarding: Bool
+    var titleColor: Color? = nil
     @Binding var createProfileNavLinkActive: Bool
 
     var body: some View {
@@ -74,6 +75,7 @@ struct WhySimpleX: View {
                     Text("You were born without an account")
                         .font(.title)
                         .bold()
+                        .foregroundColor(titleColor)
                         .padding(.top)
                     Text("Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life.")
                     Text("Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible.")

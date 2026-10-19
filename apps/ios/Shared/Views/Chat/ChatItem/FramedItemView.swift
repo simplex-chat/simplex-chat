@@ -155,7 +155,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, _):
-                CIImageView(chatItem: chatItem, senderProfile: ciSenderProfile(chatItem, chat.chatInfo), scrollToItem: scrollToItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
+                CIImageView(chatItem: chatItem, scrollToItem: scrollToItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -170,7 +170,7 @@ struct FramedItemView: View {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, _, duration):
-                CIVideoView(chatItem: chatItem, senderProfile: ciSenderProfile(chatItem, chat.chatInfo), preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
+                CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -334,7 +334,7 @@ struct FramedItemView: View {
 
     @inline(__always)
     private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int, stripLink: String? = nil, prefix: NSAttributedString? = nil) -> some View {
-        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline, prefix: prefix, stripLink: stripLink)
+        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, markdownBlocks: qi.markdownBlocks, textStyle: .subheadline, prefix: prefix, stripLink: stripLink)
             .lineLimit(lines)
             .padding(.bottom, 6)
     }
@@ -364,13 +364,16 @@ struct FramedItemView: View {
             chat: chat,
             text: text,
             formattedText: ft,
+            markdownBlocks: text == "" ? nil : ci.markdownBlocks,
             textStyle: .body,
             meta: ci.meta,
             mentions: ci.mentions,
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
             prefix: txtPrefix,
-            stripLink: stripLink
+            stripLink: stripLink,
+            blockLayout: true,
+            cardColor: ci.chatDir.sent ? theme.appColors.sentQuote : theme.appColors.receivedQuote
         )
         .environment(\.containerBackground, UIColor(chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)
@@ -387,7 +390,7 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
-        CIFileView(chat: chat, file: chatItem.file, meta: chatItem.meta, senderProfile: ciSenderProfile(chatItem, chat.chatInfo))
+        CIFileView(chat: chat, file: chatItem.file, meta: chatItem.meta)
             .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem)

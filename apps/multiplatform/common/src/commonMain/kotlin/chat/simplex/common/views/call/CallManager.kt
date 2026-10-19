@@ -1,5 +1,6 @@
 package chat.simplex.common.views.call
 
+import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.withBGApi
@@ -51,13 +52,12 @@ class CallManager(val chatModel: ChatModel) {
         callUUID = invitation.callUUID,
         callState = CallState.InvitationAccepted,
         initialCallType = invitation.callType.media,
-        sharedKey = invitation.sharedKey,
+        hasSharedKey = invitation.sharedKey != null,
         androidCallState = platform.androidCreateActiveCallState()
       )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
       val iceServers = getIceServers()
-      Log.d(TAG, "answerIncomingCall iceServers: $iceServers")
       callCommand.add(WCallCommand.Start(
         media = invitation.callType.media,
         aesKey = invitation.sharedKey,
@@ -79,6 +79,7 @@ class CallManager(val chatModel: ChatModel) {
 
       // Don't destroy WebView if you plan to accept next call right after this one
       if (!switchingCall.value) {
+        AppLock.appWasHidden()
         showCallView.value = false
         activeCall.value?.androidCallState?.close()
         activeCall.value = null
