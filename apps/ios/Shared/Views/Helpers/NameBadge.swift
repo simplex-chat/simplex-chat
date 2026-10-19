@@ -166,8 +166,13 @@ func showBadgeInfoAlert(_ name: String, _ badge: LocalBadge) {
                 } else {
                     String.localizedStringWithFormat(NSLocalizedString("%@ supports SimpleX Chat.", comment: "badge alert"), name)
                 }
-            let v7 = NSLocalizedString("You can support SimpleX starting from v7 of the app.", comment: "badge alert")
-            showAlert(title, message: supports + "\n\n" + v7)
+            if noShownBadge() {
+                showAlert(title, message: supports) {
+                    [ supportSimpleXAlertAction, okAlertAction ]
+                }
+            } else {
+                showAlert(title, message: supports)
+            }
         }
     }
 }

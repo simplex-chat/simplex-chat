@@ -246,7 +246,12 @@ Continue?'
   for arch in $ARCHES; do
     case "$arch" in
       armv7a)
-        build_tag="${tag}-armv7a"
+        # Releases made before the master-android branch was merged have armv7a in a separate tag.
+        if git -C "$build_directory" rev-parse -q --verify "refs/tags/${tag}-armv7a" > /dev/null; then
+          build_tag="${tag}-armv7a"
+        else
+          build_tag="${tag}"
+        fi
         ;;
       aarch64)
         build_tag="${tag}"

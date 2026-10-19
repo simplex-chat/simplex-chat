@@ -306,7 +306,7 @@ User-defined tags for organizing conversations. CRUD via `ApiCreateChatTag`, `Ap
 The real-time communication framework used for audio and video calls. The app uses WebRTC for peer-to-peer media streams, with SMP used only for call signaling (offer/answer/ICE candidates).
 
 ### Call (data class)
-Represents an active call session. Fields: `remoteHostId`, `userProfile`, `contact`, `callUUID`, `callState` (CallState enum), `initialCallType` (Audio/Video), `localMediaSources`, `localCapabilities`, `peerMediaSources`, `sharedKey` (for E2E call encryption), `connectionInfo`, `connectedAt`.
+Represents an active call session. Fields: `remoteHostId`, `userProfile`, `contact`, `callUUID`, `callState` (CallState enum), `initialCallType` (Audio/Video), `localMediaSources`, `localCapabilities`, `peerMediaSources`, `hasSharedKey` (whether an E2E call encryption key was agreed), `connectionInfo`, `connectedAt`.
 
 *See:* `common/src/commonMain/kotlin/chat/simplex/common/views/call/WebRTC.kt:14`
 

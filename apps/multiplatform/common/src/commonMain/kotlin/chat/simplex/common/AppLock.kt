@@ -10,7 +10,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 
 // Spec: spec/client/navigation.md#AppLock
@@ -269,6 +269,11 @@ object AppLock {
   fun elapsedRealtime(): Long = System.nanoTime() / 1_000_000
 
   fun recheckAuthState() {
+    if (ChatModel.showCallView.value) {
+      // BiometricPrompt drops a prompt requested while MainActivity is stopped (call on lock screen), so request it again
+      if (userAuthorized.value == false) runAuthenticate()
+      return
+    }
     val enteredBackgroundVal = enteredBackground.value
     val delay = ChatController.appPrefs.laLockDelay.get()
     if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= delay * 1000) {

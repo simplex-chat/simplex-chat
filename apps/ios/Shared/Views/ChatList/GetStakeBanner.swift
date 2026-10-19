@@ -22,11 +22,11 @@ struct GetStakeBanner: View {
             Button(action: onTap) {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Get a stake in SimpleX Chat!")
+                        Text("Invest in SimpleX Chat!")
                             .font(.headline)
                             .foregroundColor(theme.colors.primary)
                             .lineLimit(2)
-                        Text("Invest on Wefunder from $100")
+                        Text("Crowdfunding on Wefunder")
                             .font(.subheadline)
                             .foregroundColor(theme.colors.onBackground)
                             .lineLimit(2)

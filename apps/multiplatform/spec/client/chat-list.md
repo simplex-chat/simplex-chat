@@ -145,7 +145,7 @@ The `filteredChats` function (line ~1474) applies filters in this order:
    - `PresetTag`: Matches chat type and characteristics (e.g., `CONTACTS` filters `ChatInfo.Direct`, `GROUPS` filters `ChatInfo.Group`).
    - `UserTag`: Matches chats whose `chatTags` contain the tag ID.
    - `Unread`: Matches chats with `unreadCount > 0` or `unreadChat == true`. These come from the
-     in-memory list only, which holds at most 5000 chats ([GAP-10]); a chat created from a received
+     in-memory list only, which holds at most 5000 chats ([GAP-12]); a chat created from a received
      event is counted as having that one item unread until the list is reloaded.
 
 ### Search Bar
@@ -281,6 +281,9 @@ fun UserPicker(
 - **Android:** Renders as a slide-up overlay panel on the chat list, triggered by tapping the user profile button in the toolbar.
 - **Desktop:** Rendered inline in the left column of `DesktopScreen`, always accessible.
 - Closes automatically when any `ModalManager.start` modal opens.
+- On Desktop, when there is no active user and no mobile is in use (`desktopNoUserNoRemote`), the SimpleX address and Chat preferences rows and the divider below them are hidden.
+- The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal draws nothing and closes itself when it is the top modal (`ModalManager.start.isLastModal`); if another screen covers it, it closes when the user goes back to it.
+- The Chat preferences row closes its modal the same way when there is no active user.
 
 ### Content
 
@@ -338,7 +341,7 @@ Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfun
 | Chat list | in `ChatList`'s `LazyColumn`, after `ToggleChatListCard` and before the chats | `Box(Modifier.zIndex(1f).padding(16.dp))` |
 | Onboarding | inside `ConnectOnboardingView` (`views/newchat/OnboardingCards.kt`), below the pager, so it shares the pages' width limit on desktop and their dimming while a start modal is open; opens the page in `ModalManager.center` on desktop, `ModalManager.start` on Android | `padding(start/end = DEFAULT_PADDING, bottom = 8.dp)`, in a `Column` where the pager takes `weight(1f)` |
 
-The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded()`), the pitch, then the Wefunder banner. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeExpired`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alert has no such check: it takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`.
+The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded()`), the renewal-failure alert (`badgeIssueFailed()`), the pitch, then the Wefunder banner. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeExpired`, `BadgeIssueFailed`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alerts have no such check: an alert takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`.
 
 `crowdfundingAvailable()` launches an effect to load the store country, so both call sites read it in the composable body rather than inside the `LazyColumn` builder.
 
@@ -348,6 +351,10 @@ The list has a single banner slot, filled by an `if`/`else if` chain in priority
 |------------|--------|--------|
 | `getStakeBannerTapped` | `openGetStake()` | the dismiss X appears from then on, while there are chats |
 | `getStakeBannerDismissed` | the dismiss X | hides the banner in both placements |
+| `supporterBannerTapped` | tapping the supporter pitch | the pitch's dismiss X appears from then on |
+| `supporterBannerShown` | the pitch's dismiss X, through its "You can support SimpleX later in Settings." alert, and a successful code redemption | hides the pitch |
+
+The two badge alert banners always offer the X; only the pitch waits to be tapped once, so a user who has not looked at it cannot dismiss it unseen.
 
 Both are in `AppPreferences.hintPreferences`, so "Reset all hints" restores the banner. The X is never offered below the onboarding cards, so the banner cannot be dismissed before the user has a chat.
 

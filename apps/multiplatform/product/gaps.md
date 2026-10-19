@@ -13,9 +13,11 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
-8. [Unread Counters Drift](#gap-08-unread-counters-drift)
-9. [addChatItem Writes the Primary List Using the Current Context's Index](#gap-09-addchatitem-writes-the-primary-list-using-the-current-contexts-index)
-10. [Chat List: Silent 5000-Chat Limit](#gap-10-chat-list-silent-5000-chat-limit)
+8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
+9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
+10. [Unread Counters Drift](#gap-10-unread-counters-drift)
+11. [addChatItem Writes the Primary List Using the Current Context's Index](#gap-11-addchatitem-writes-the-primary-list-using-the-current-contexts-index)
+12. [Chat List: Silent 5000-Chat Limit](#gap-12-chat-list-silent-5000-chat-limit)
 
 ---
 
@@ -295,7 +297,65 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 ---
 
-## GAP-08: Unread Counters Drift
+## GAP-08: Desktop: App Link Registration
+
+**Severity:** Low
+**Category:** Platform
+**Platform:** Desktop only
+
+### Description
+
+Desktop registers the `simplexchat:` scheme so the badge page can return to the app, and the `simplex:` scheme so connection links open in it. The registration has known limits:
+
+- Uninstalling or deleting the app leaves the per-user registration behind: the HKCU keys on Windows (the scheme keys, the ProgIds, `Capabilities` and the `RegisteredApplications` entry) and the hidden AppImage desktop entry on Linux. A later link then points at a missing program. On Windows, if the app was installed into a folder other users can write to (for example a custom folder at the root of `C:\`), another user could put a program at that path and have it run on the next link; the default Program Files install is not affected. This risk is accepted.
+- A Flatpak counts as registered without a check, as it cannot query the host's default handler. It works only once the Flathub release pins a commit with the desktop file's MimeType line and its wrapper passes `"$@"` to the app.
+- On macOS a second copy of the app does not forward a link to the running one; macOS delivers the link to the running bundle itself.
+- With two installations (a deb and an AppImage, or two installed copies of the Windows app), the scheme stays with whichever registered first while it is installed; the other gets `app=desktop`. On Windows, when several apps registered through `Capabilities` handle a scheme and none was picked, Windows chooses or asks; the app cannot set `UserChoice` itself.
+- The link arrives as a command-line argument, which other local users can read through `/proc` on Linux. This risk is accepted.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt` -- registration and its result for the badge page
+- `common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt` -- forwarding to a running instance
+
+### Impact
+
+A stale registration or an unregistered Flatpak sends the user back to a link that opens nothing; the badge page's *Show code* and the Redeem code screen remain.
+
+### Recommendation
+
+1. Remove the registration in an uninstaller where one exists (MSI), and on AppImage when the entry's file is gone.
+2. Removing the command-line exposure needs the page to encrypt the code to a key the app passes in the URL fragment.
+
+---
+
+## GAP-09: Desktop: Emoji Picker Without Skin Tones and Localized Search
+
+**Severity:** Low
+**Category:** Feature / Platform
+**Platform:** Desktop only
+
+### Description
+
+The desktop compose emoji picker lists emoji without skin tone variants, and its search matches English Unicode emoji names only.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/views/chat/ComposeEmojiPicker.desktop.kt`
+- `scripts/desktop/generate-emoji-data.py` (`../../scripts/desktop/` relative to `apps/multiplatform/`) -- drops skin tone variants
+
+### Impact
+
+Desktop users cannot pick a skin tone in the picker, and search in other languages finds nothing.
+
+### Recommendation
+
+1. Keep the skin tone variants in the generated data, grouped by base emoji, and add a skin tone choice to the picker.
+2. Add localized names (CLDR annotations) to the generated data for search.
+
+---
+
+## GAP-10: Unread Counters Drift
 
 **Severity:** Low
 **Category:** State
@@ -328,7 +388,7 @@ unread state without a matching counter update.
 
 The unread badge on the profile and on tags can be too high (or, in the secondary-context case, negative)
 until the user switches profile or restarts. A chat that is inside the loaded window has its own count
-corrected by the next chat-list reload; a chat outside it (GAP-10) does not.
+corrected by the next chat-list reload; a chat outside it (GAP-12) does not.
 
 ### Recommendation
 
@@ -338,7 +398,7 @@ and guard `markChatItemsRead` on `secondaryContextFilter` like its siblings. Lon
 
 ---
 
-## GAP-09: addChatItem Writes the Primary List Using the Current Context's Index
+## GAP-11: addChatItem Writes the Primary List Using the Current Context's Index
 
 **Severity:** Low
 **Category:** State
@@ -368,7 +428,7 @@ updated.
 
 ---
 
-## GAP-10: Chat List: Silent 5000-Chat Limit
+## GAP-12: Chat List: Silent 5000-Chat Limit
 
 **Severity:** Low
 **Category:** Chat List

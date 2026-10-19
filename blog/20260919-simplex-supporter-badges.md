@@ -11,7 +11,7 @@ permalink: "/blog/20260919-simplex-supporter-badges.html"
 
 **Published:** Sep 19, 2026
 
-You can now support SimpleX Chat and get a supporter badge, larger files and longer file storage &mdash; from v7.1 beta[^beta]. Watch <a href="https://youtu.be/7D1tI5sQWFU" target="_blank">how to buy a badge</a>.
+You can now support SimpleX Chat and get a supporter badge, larger files and longer file storage &mdash; from v7.1 beta[^beta]. Watch <a href="https://youtu.be/7D1tI5sQWFU" target="_blank" rel="noopener">how to buy a badge</a>.
 
 ## A paid feature that cannot identify you
 
@@ -28,7 +28,7 @@ Read more about badges in the [whitepaper](https://github.com/simplex-chat/simpl
 
 ## How to get a badge
 
-<a href="https://youtu.be/7D1tI5sQWFU" target="_blank"><img src="./images/20260919-buy-badge.jpg" width="40%" class="float-to-right"></a>
+<a href="https://youtu.be/7D1tI5sQWFU" target="_blank" rel="noopener"><img src="./images/20260919-buy-badge.jpg" width="40%" class="float-to-right"></a>
 
 Buy a code on [simplex.chat/badges](https://simplex.chat/badges/), paying by card, Bitcoin or Monero, and redeem it in the app: open Settings, tap **Supporter perks**, and enter the code. The badge appears on your profile. The badge does not renew by itself, and no account is created.
 
@@ -55,10 +55,10 @@ Investors in our [equity crowdfunding on Wefunder](https://wefunder.com/simplex.
 | $2,500 | supporter, 12 months, or legend, 3 months |
 | $10,000 | legend, 12 months |
 
-If you invest $500 or more by September 22, you will also receive [a public SimpleX name](https://simplex.domains?utm_source=blog) for 7 years[^name].
+If you invest $500 or more by November 22, you will also receive [a public SimpleX name](https://simplex.domains?utm_source=blog) for 5 years[^name].
 
 Learn more and invest on Wefunder: [https://wefunder.com/simplex.chat](https://wefunder.com/simplex.chat?utm_source=blog)
 
-[^name]: After September 22, investors of $500 or more receive a name for 5 years as early bird investors, and for 3 years after that &mdash; ahead of the public launch of names on December 12.
+[^name]: Investors of $500 or more by September 22 receive a name for 7 years, and after November 22 for 3 years &mdash; ahead of the public launch of names on December 12.
 
 [^beta]: v7.1 beta is available via [Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app) (Android beta), [TestFlight](https://testflight.apple.com/join/DWuT2LQu) (iOS), our [F-Droid repo](https://simplex.chat/fdroid/) and [GitHub](https://github.com/simplex-chat/simplex-chat/releases) (Android and desktop).

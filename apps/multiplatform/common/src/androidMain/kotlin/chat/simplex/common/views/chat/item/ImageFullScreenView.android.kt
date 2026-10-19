@@ -13,7 +13,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
 import chat.simplex.common.platform.VideoPlayer
 import chat.simplex.common.platform.androidAppContext
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder

@@ -1,10 +1,11 @@
-import {ChatResponse, T} from "@simplex-chat/types"
+import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
 import * as api from "../src/api"
 import * as core from "../src/core"
 
 const user = {userId: 1} as T.User
 
 async function chatWithResponse(response: object): Promise<api.ChatApi> {
+  jest.spyOn(core, "loadLibrary").mockResolvedValue()
   jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
   jest.spyOn(core, "chatSendCmd").mockResolvedValue(response as ChatResponse)
   return api.ChatApi.init({type: "sqlite", filePrefix: "unused"})
@@ -30,6 +31,13 @@ describe("documented success responses", () => {
     await expect(chat.apiSetProfileAddress(1, true)).resolves.toEqual({updateSuccesses: 0, updateFailures: 0, changedContacts: []})
   })
 
+  it("apiSetUserDomain sets and removes the name", async () => {
+    const chat = await chatWithResponse({type: "userProfileNoChange", user})
+    await expect(chat.apiSetUserDomain(1, "calc.simplex")).resolves.toEqual(user)
+    await expect(chat.apiSetUserDomain(1)).resolves.toEqual(user)
+    expect(jest.mocked(core.chatSendCmd).mock.calls.map(([, cmd]) => cmd)).toEqual(["/_set domain 1 calc.simplex", "/_set domain 1"])
+  })
+
   it("apiReceiveFile reports a file cancelled by sender", async () => {
     const chat = await chatWithResponse({type: "rcvFileAcceptedSndCancelled", user, rcvFileTransfer: {}})
     await expect(chat.apiReceiveFile(3)).rejects.toThrow("file cancelled by sender")
@@ -38,6 +46,7 @@ describe("documented success responses", () => {
 
 describe("startChat lifecycle", () => {
   function chatWithResponses(...responses: object[]): Promise<api.ChatApi> {
+    jest.spyOn(core, "loadLibrary").mockResolvedValue()
     jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
     jest.spyOn(core, "chatRecvMsgWait").mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(undefined), 10)))
     const send = jest.spyOn(core, "chatSendCmd")
@@ -94,9 +103,49 @@ describe("startChat lifecycle", () => {
     await chat.stopChat()
   })
 
+  it("passes the chat api to event subscribers", async () => {
+    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatStopped"})
+    jest.mocked(core.chatRecvMsgWait).mockResolvedValueOnce({type: "hostConnected"} as ChatEvent)
+    const subscriberChat = new Promise(resolve => chat.on("hostConnected", (_event, c) => resolve(c)))
+    await chat.startChat()
+    await expect(subscriberChat).resolves.toBe(chat)
+    await chat.stopChat()
+  })
+
+  it("passes event errors to chatError subscribers", async () => {
+    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatStopped"})
+    const chatError = {type: "errorStore", storeError: {type: "connectionNotFound", agentConnId: "Y29ubg=="}} as T.ChatError
+    jest.mocked(core.chatRecvMsgWait).mockRejectedValueOnce(new core.ChatAPIError("Chat event error (see chatError property)", chatError))
+    const received = new Promise(resolve => chat.on("chatError", event => resolve(event)))
+    await chat.startChat()
+    await expect(received).resolves.toEqual({type: "chatError", chatError})
+    await chat.stopChat()
+  })
+
   it("receives with a 500 ms wait", async () => {
     const chat = await chatWithResponses()
     await chat.recvChatEvent()
     expect(core.chatRecvMsgWait).toHaveBeenCalledWith(BigInt(1), 500_000)
+  })
+})
+
+describe("ChatApi.init", () => {
+  it("loads the library for the configured backend before opening the database", async () => {
+    let loaded!: () => void
+    const load = jest.spyOn(core, "loadLibrary").mockReturnValue(new Promise(resolve => { loaded = resolve }))
+    const migrate = jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
+    const init = api.ChatApi.init({type: "postgres", connectionString: "postgres://unused"})
+    await new Promise(setImmediate)
+    expect(load).toHaveBeenCalledWith("postgres")
+    expect(migrate).not.toHaveBeenCalled()
+    loaded()
+    await init
+    expect(migrate).toHaveBeenCalled()
+  })
+
+  it("rejects an invalid config before loading the library", async () => {
+    const load = jest.spyOn(core, "loadLibrary").mockResolvedValue()
+    await expect(api.ChatApi.init({type: "mysql"} as unknown as api.DbConfig)).rejects.toThrow('Invalid DbConfig: {"type":"mysql"}')
+    expect(load).not.toHaveBeenCalled()
   })
 })

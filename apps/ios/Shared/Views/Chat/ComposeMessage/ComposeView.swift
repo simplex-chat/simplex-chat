@@ -338,6 +338,18 @@ enum UploadContent: Equatable {
     }
 }
 
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+func showLargeFileAlert(_ fileSize: Int64, incognito: Bool, senderProfile: LocalProfile?) {
+    let title = NSLocalizedString("Large file!", comment: "file alert title")
+    let message = largeFileMessage(fileSize, incognito: incognito, badgeIssue: expiredBadgeReason(fileSize, senderProfile))
+    if !incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge() {
+        showAlert(title, message: message) { [supportSimpleXAlertAction, okAlertAction] }
+    } else {
+        showAlert(title, message: message)
+    }
+}
+
 // Spec: spec/client/compose.md#ComposeView
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -668,10 +680,7 @@ struct ComposeView: View {
                         fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        showAlert(
-                            NSLocalizedString("Large file!", comment: "file alert title"),
-                            message: largeFileMessage(Int64(fileSize ?? 0), incognito: sendIncognito, badgeIssue: expiredBadgeReason(Int64(fileSize ?? 0), sendProfile))
-                        )
+                        showLargeFileAlert(Int64(fileSize ?? 0), incognito: sendIncognito, senderProfile: sendProfile)
                     }
                 } catch {
                     logger.error("ComposeView fileImporter error \(error.localizedDescription)")
@@ -758,6 +767,7 @@ struct ComposeView: View {
         let connectedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
         let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
         let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
+        guard total > 0 || chatModel.membersLoaded else { return nil }
         let noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
         return (hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
     }

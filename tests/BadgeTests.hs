@@ -9,32 +9,43 @@
 
 module BadgeTests (badgeTests) where
 
-import BadgeService.Service (badgeErrorRetryAfter)
+import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
+import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
+import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
+import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically)
+import Control.Exception (SomeAsyncException, SomeException, catch, fromException, throwIO)
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Base64.URL as B64U
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import Data.Maybe (fromMaybe, isNothing, maybeToList)
+import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
+import Simplex.Chat.Badges.Types (BadgeIssueFailure (..))
 import Simplex.Chat (defaultChatConfig)
-import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeRetryAfter, badgeStalledInterval)
+import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, storeTransactionRef)
+import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Protocol (BrokerErrorType (..), NetworkError (..))
+import Simplex.Messaging.Protocol (BrokerErrorType (..), ErrorType (AUTH), NetworkError (..))
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version.Internal (Version (..))
 import Test.Hspec
 
@@ -49,7 +60,9 @@ badgeTests = do
   it "should accept unknown badge types" testUnknownBadgeType
   it "credential serializes to a paste-able token and back" testCredentialSerialization
   it "presentation headers encode and decode" testPresHeaderEncoding
+  it "presentation headers with binary bytes round-trip through JSON" testPresHeaderJSON
   it "should reject a proof presented under another chat binding" testOtherChatBinding
+  it "should accept a profile proof only with the header of its chat" testProfileProofHeader
   describe "redemption codes" $ do
     it "a generated code reads back" testCodeRoundTrip
     it "reads a code as typed - any case, separators, ambiguous characters" testCodeNormalisation
@@ -83,11 +96,25 @@ badgeTests = do
     it "backs off to the cap" testRetryBackoff
     it "floors the wait a service asks for, and honours anything above it" testServiceRetryFloor
     it "sends retryAfter with the transient service codes and no other" testServiceRetryAfter
+  describe "recording a failed renewal" $ do
+    it "records the agent error a request failed with, not the chat error around it" testIssueFailureClassification
+    it "waits for the credential to lapse on internal, as on a refusal the service marks transient" testServiceErrorTransience
+    it "stores every failure so that it reads back, whatever the service called its code" testIssueFailureEncoding
+    it "bounds and strips a code this version does not know" testServiceErrorCodeBounded
   describe "service protocol JSON" $ do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
+    it "purchaseBadge request matches the schema" testPurchaseRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
     it "error response matches the schema" testErrorResponseJSON
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
+  describe "store purchases" $ do
+    it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
+    it "shows a service request in the terminal as its type alone" testShownServiceRequest
+    it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
+    it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
+    it "has the dev mock vouch for the transaction its claim names, as a production purchase" testMockVouchesForClaim
+  describe "badge service request loop" $ do
+    it "survives a request that throws, and still stops when cancelled" testSurviveRequestFailure
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -199,8 +226,27 @@ testPresHeaderEncoding =
       PHFileInv {chatBinding = aliceBinding, fileSize = 139737},
       PHFileDescr {chatBinding = aliceBinding, fileSize = 139737, descrHash = "descr-hash", fileExpires = Nothing},
       PHFileDescr {chatBinding = aliceBinding, fileSize = 139737, descrHash = "descr-hash", fileExpires = Just futureTime},
+      PHRequest requestCode,
+      PHLink "link-key",
       PHUnknown 'Z' "payload"
     ]
+
+testPresHeaderJSON :: IO ()
+testPresHeaderJSON =
+  mapM_
+    ( \ph -> do
+        J.eitherDecode (J.encode ph) `shouldBe` Right ph
+        J.toJSON ph `shouldBe` J.toJSON (BBSPresHeader $ strEncode ph)
+    )
+    [ PHChat binaryBytes,
+      PHFileInv {chatBinding = binaryBytes, fileSize = 139737},
+      PHFileDescr {chatBinding = binaryBytes, fileSize = 139737, descrHash = binaryBytes, fileExpires = Just futureTime},
+      PHRequest binaryBytes,
+      PHLink binaryBytes,
+      PHUnknown 'Z' binaryBytes
+    ]
+  where
+    binaryBytes = "\0\1\31\34\92\127\128\195\255"
 
 testOtherChatBinding :: IO ()
 testOtherChatBinding = do
@@ -210,11 +256,32 @@ testOtherChatBinding = do
   verifyBadge (keysFor pk) (BadgeProof idx (BBSPresHeader $ strEncode ph) p info) >>= (`shouldBe` Just True)
   verifyBadge (keysFor pk) (BadgeProof idx (BBSPresHeader $ strEncode otherPh) p info) >>= (`shouldBe` Just False)
 
+testProfileProofHeader :: IO ()
+testProfileProofHeader = do
+  (pk, unbound) <- issueBadgeProof BTSupporter futureTime
+  (pk', bound) <- issueBadgeProofHeader BTSupporter futureTime (PHChat aliceBinding)
+  (pk'', requested) <- issueBadgeProofHeader BTSupporter futureTime (PHRequest requestCode)
+  acceptedProof Nothing unbound `shouldBe` True
+  acceptedProof (Just $ PHChat aliceBinding) unbound `shouldBe` True
+  acceptedProof (Just $ PHChat aliceBinding) bound `shouldBe` True
+  acceptedProof (Just $ PHChat bobBinding) bound `shouldBe` False
+  acceptedProof (Just $ PHRequest aliceBinding) bound `shouldBe` False
+  acceptedProof Nothing bound `shouldBe` False
+  acceptedProof (Just $ PHRequest requestCode) requested `shouldBe` True
+  acceptedProof (Just $ PHRequest "other-request-code") requested `shouldBe` False
+  acceptedProof (Just $ PHChat requestCode) requested `shouldBe` False
+  verifyBadge (keysFor pk) unbound >>= (`shouldBe` Just True)
+  verifyBadge (keysFor pk') bound >>= (`shouldBe` Just True)
+  verifyBadge (keysFor pk'') requested >>= (`shouldBe` Just True)
+
 aliceBinding :: ByteString
 aliceBinding = "Galice-member-id"
 
 bobBinding :: ByteString
 bobBinding = "Gbob-member-id"
+
+requestCode :: ByteString
+requestCode = "request-code"
 
 issueBadgeProof :: BadgeType -> UTCTime -> IO (BBSPublicKey, BadgeProof)
 issueBadgeProof bt expiry = issueBadgeProofHeader bt expiry (PHTest "test-nonce")
@@ -675,7 +742,69 @@ testServiceRetryAfter = do
   badgeErrorRetryAfter BSEInternal `shouldBe` Nothing
   mapM_
     (\code -> badgeErrorRetryAfter code `shouldBe` Nothing)
-    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEUnknown "future_code"]
+    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEProviderNotConfigured, BSETestPurchase, BSEUnknown "future_code"]
+
+-- The app shows the recorded failure in a sentence, so an agent error is stored as the agent
+-- error and not as the chat error wrapping it, whether or not it can clear on its own.
+testIssueFailureClassification :: IO ()
+testIssueFailureClassification = do
+  let failureFor = badgeIssueFailure . chatErrorAgent
+      timeout = BROKER "localhost" TIMEOUT
+      auth = SMP "localhost" AUTH
+  failureFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` BIFServiceTimeout
+  failureFor timeout `shouldBe` BIFNetwork {agentError = tshow timeout}
+  failureFor auth `shouldBe` BIFUnexpected {message = tshow auth}
+  badgeIssueFailure (ChatError (CECommandError "unexpected badge service response")) `shouldBe` BIFUnexpected {message = "unexpected badge service response"}
+  badgeIssueFailure (ChatError (CEBadgeRedeemError BREUnknownKeyIndex)) `shouldBe` BIFInvalidCredential
+  badgeIssueFailure (ChatError (CEBadgeRedeemError BRECredentialNotVerified)) `shouldBe` BIFInvalidCredential
+
+-- A refusal the service marks transient is not worth a word before the credential lapses. Internal
+-- comes without retryAfter so that a failing service is not pressed, not because the fault is
+-- final, so it waits the same way; any other refusal is told at once.
+testServiceErrorTransience :: IO ()
+testServiceErrorTransience = do
+  badgeFailureTransient BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = BSEInternal, retryable = False} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False} `shouldBe` False
+  badgeFailureTransient BIFServiceError {code = BSEUnknown "future_code", retryable = False} `shouldBe` False
+  badgeFailureTransient BIFServiceError {code = BSEUnknown "future_code", retryable = True} `shouldBe` True
+
+-- The failure is stored as text and read back by getBadgePurchase, so every value this version
+-- writes must read back as itself, and any other value must still read: a row it cannot parse
+-- would otherwise fail every read of the purchase.
+testIssueFailureEncoding :: IO ()
+testIssueFailureEncoding = do
+  mapM_
+    (\f -> strDecode (strEncode f) `shouldBe` Right f)
+    [ BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False},
+      BIFServiceError {code = BSERateLimited, retryable = True},
+      BIFServiceError {code = BSEUnknown "future_code", retryable = True},
+      BIFServiceError {code = BSEUnknown "code with spaces", retryable = False},
+      BIFServiceError {code = BSEUnknown "", retryable = False},
+      BIFServiceTimeout,
+      BIFNetwork {agentError = "BROKER \"smp://x\" NETWORK"},
+      BIFInvalidCredential,
+      BIFUnexpected {message = "unexpected badge service response"},
+      BIFUnexpected {message = "several words and : punctuation"}
+    ]
+  -- the row the CLI prints, and what a reader of the database sees
+  strEncode BIFServiceError {code = BSECodeUsed, retryable = False} `shouldBe` "service_error final code_used"
+  strEncode BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` "service_error retry rate_limited"
+  strEncode BIFServiceTimeout `shouldBe` "service_timeout"
+  -- a row a later version wrote, or one edited by hand, still reads - as the text it holds
+  strDecode "future_failure with text" `shouldBe` Right BIFUnexpected {message = "future_failure with text"}
+  strDecode "service_timeout trailing" `shouldBe` Right BIFUnexpected {message = "service_timeout trailing"}
+  strDecode "service_error maybe code_used" `shouldBe` Right BIFUnexpected {message = "service_error maybe code_used"}
+
+-- The text of a code this version does not know is chosen by the service, and the app shows it in
+-- a sentence of its own - so it is bounded and stripped of anything but a code before it is stored.
+testServiceErrorCodeBounded :: IO ()
+testServiceErrorCodeBounded = do
+  badgeServiceErrorText BSECodeUsed `shouldBe` "code_used"
+  badgeServiceErrorText (BSEUnknown "future_code") `shouldBe` "future_code"
+  badgeServiceErrorText (BSEUnknown "two words") `shouldBe` "twowords"
+  badgeServiceErrorText (BSEUnknown (T.replicate 100 "a")) `shouldBe` T.replicate 32 "a"
+  badgeServiceErrorText (BSEUnknown "Visit evil.example.com!") `shouldBe` "isitevilexamplecom"
 
 -- The client replicates entry_credit_type / entry_debit_type verbatim, so a stored tag that
 -- disagreed with the wire tag would put a different row on each side.
@@ -686,12 +815,18 @@ testEntryTypeColumns = do
       debits = [SDRefund, SDUpgrade k, SDTransferOut k, SDSupport, SDBadge, SDLapse]
   mapM_ (\c -> wireTag (J.toJSON (SECredit c)) "credit" `shouldBe` Just (creditTypeTag c)) credits
   mapM_ (\d -> wireTag (J.toJSON (SEDebit d)) "debit" `shouldBe` Just (debitTypeTag d)) debits
-  -- the three types this version writes survive a round trip through the columns
+  -- the types this version writes survive a round trip through the columns, a payment credit
+  -- through the payment its row references
   mapM_
-    (\t -> uncurry3 entryTypeFromColumns (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
+    (\t -> uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
     [SECredit SCCode, SEDebit SDBadge, SEDebit SDLapse]
+  let storeCredit = SECredit (SCPayment Nothing)
+      invoiceCredit = SECredit (SCPayment (Just (InvoiceId "inv1")))
+  uncurry3 (entryTypeFromColumns (Just Nothing)) (entryTypeColumns storeCredit) `shouldSatisfy` sameEntryType storeCredit
+  uncurry3 (entryTypeFromColumns (Just (Just (InvoiceId "inv1")))) (entryTypeColumns invoiceCredit) `shouldSatisfy` sameEntryType invoiceCredit
   -- a type that needs a reference column is not silently read back as something else
-  uncurry3 entryTypeFromColumns (entryTypeColumns (SECredit (SCCharge "ch1"))) `shouldSatisfy` isNothing
+  uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` isNothing
+  uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns (SECredit (SCCharge "ch1"))) `shouldSatisfy` isNothing
   -- which is why every type is stored as its own JSON as well, and read from that first: the
   -- columns alone would answer a row naming an invoice or a purchase as no row at all
   mapM_ roundTrips credits
@@ -722,6 +857,106 @@ testRedeemRequestJSON = do
   J.toJSON BadgeServiceRequest {version = Version 1, purchaseKey = Nothing, request = BSCGetBadgeCatalog}
     `shouldBe` J.object ["version" J..= (1 :: Int), "request" J..= J.object ["type" J..= ("getBadgeCatalog" :: T.Text)]]
   roundTrips req
+
+testPurchaseRequestJSON :: IO ()
+testPurchaseRequestJSON = do
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  let payment = SPGoogle {productId = "badge_supporter_01", token = "token"}
+      req = BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request = BSCPurchaseBadge {masterKey = mk, payment, upgrade = Nothing}}
+  -- the client states its master key and the store's evidence, and nothing a receipt already decides
+  J.toJSON req
+    `shouldBe` J.object
+      [ "version" J..= (1 :: Int),
+        "purchaseKey" J..= k,
+        "request"
+          J..= J.object
+            [ "type" J..= ("purchaseBadge" :: T.Text),
+              "masterKey" J..= mk,
+              "payment" J..= J.object ["type" J..= ("google" :: T.Text), "productId" J..= ("badge_supporter_01" :: T.Text), "token" J..= ("token" :: T.Text)]
+            ]
+      ]
+  J.toJSON SPApple {jws = "a.b.c"} `shouldBe` J.object ["type" J..= ("apple" :: T.Text), "jws" J..= ("a.b.c" :: T.Text)]
+  roundTrips req
+
+testStoreTransactionRef :: IO ()
+testStoreTransactionRef = do
+  let jws transactionId signature = T.intercalate "." [part "{\"alg\":\"ES256\"}", part ("{\"transactionId\":\"" <> transactionId <> "\",\"productId\":\"BADGE_SUPPORTER_01\"}"), signature]
+      part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      apple = storeTransactionRef . SPApple
+  -- the store may sign the same transaction again, and a retry must find the keys it stashed
+  apple (jws "2000000812345671" "c2lnbmVkIG9uY2U") `shouldBe` Just (StoreTransactionRef PPApple "2000000812345671")
+  apple (jws "2000000812345671" "c2lnbmVkIGFnYWlu") `shouldBe` apple (jws "2000000812345671" "c2lnbmVkIG9uY2U")
+  apple (jws "2000000812345672" "c2lnbmVkIG9uY2U") `shouldNotBe` apple (jws "2000000812345671" "c2lnbmVkIG9uY2U")
+  apple "not.a-jws" `shouldBe` Nothing
+  apple (T.intercalate "." [part "{}", part "{\"productId\":\"BADGE_SUPPORTER_01\"}", "sig"]) `shouldBe` Nothing
+  -- a Play token is a bearer secret, so it is kept only as its hash
+  let google = storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
+  google `shouldSatisfy` maybe False (\(StoreTransactionRef provider ref) -> provider == PPGoogle && ref /= "play-token")
+  google `shouldBe` storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
+  storeTransactionRef SPInvoice {invoiceId = InvoiceId "inv"} `shouldBe` Nothing
+
+testShownServiceRequest :: IO ()
+testShownServiceRequest = do
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  let shown request = case J.toJSON BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request} of
+        J.Object o -> J.Object (shownServiceRequest o)
+        _ -> J.Null
+      typeOnly t = J.object ["request" J..= J.object ["type" J..= (t :: T.Text)]]
+  shown BSCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge"
+  shown BSCRedeemBadgeCode {masterKey = mk, code = "SB-00000-00000-00000-00001"} `shouldBe` typeOnly "redeemBadgeCode"
+
+testGoogleProductIdPath :: IO ()
+testGoogleProductIdPath = do
+  let refused productId = case toStoreReceipt uncalledVerifier SPGoogle {productId, token = validPlayToken} of
+        Just (Left SRInvalid {}) -> True
+        _ -> False
+  mapM_ (\p -> refused p `shouldBe` True) ["badge_legend_01/tokens/other?", "badge_legend_01?x", "badge_legend_01#x", "..", "../badge_legend_01", "Badge_legend_01", ""]
+  case toStoreReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token = validPlayToken} of
+    Just (Right StoreReceipt {txRef = StoreTransactionRef {provider}}) -> provider `shouldBe` PPGoogle
+    _ -> expectationFailure "a valid product id and token were refused"
+
+testGoogleTokenPath :: IO ()
+testGoogleTokenPath = do
+  let unsent token = case toStoreReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token} of
+        Just (Left SRUnreachable {}) -> True
+        _ -> False
+  mapM_ (\t -> unsent t `shouldBe` True) ["a/b", "../x", "t?x", "t#x", "t x", ""]
+
+uncalledVerifier :: StoreVerifier
+uncalledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", acknowledgeGoogle = Nothing, verifyTimeout = 500000}
+
+validPlayToken :: T.Text
+validPlayToken = "fake-play-token.AO-J1Oz9x2kqE7wYt3"
+
+testMockVouchesForClaim :: IO ()
+testMockVouchesForClaim = do
+  let part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      signed = T.intercalate "." [part "{\"alg\":\"ES256\"}", part "{\"transactionId\":\"2000000812345671\",\"productId\":\"BADGE_SUPPORTER_01\"}", "c2lnbmVk"]
+      vouchesForClaim payment = case toStoreReceipt mockStoreVerifier payment of
+        Just (Right StoreReceipt {txRef = StoreTransactionRef {transactionRef = providerRef}, verifyReceipt}) ->
+          verifyReceipt >>= \case
+            Right VerifiedStoreTransaction {transactionRef, testPurchase} -> (transactionRef, testPurchase) `shouldBe` (providerRef, False)
+            Left refusal -> expectationFailure ("the mock refused: " <> show refusal)
+        _ -> expectationFailure "refused before the mock was asked"
+  vouchesForClaim SPApple {jws = signed}
+  vouchesForClaim SPGoogle {productId = "badge_supporter_01", token = "fake-play-token.AO-J1Oz9x2kqE7wYt3"}
+
+testSurviveRequestFailure :: IO ()
+testSurviveRequestFailure = do
+  survive "a request" (throwIO $ userError "failed") `shouldReturn` ()
+  started <- newEmptyMVar
+  stopped <- newEmptyMVar
+  t <- forkIO $ survive "a request" (putMVar started () >> threadDelay 10000000) `catch` (putMVar stopped . asyncException)
+  takeMVar started
+  killThread t
+  takeMVar stopped `shouldReturn` True
+  where
+    asyncException :: SomeException -> Bool
+    asyncException e = isJust (fromException e :: Maybe SomeAsyncException)
 
 testCredentialResponseJSON :: IO ()
 testCredentialResponseJSON = do

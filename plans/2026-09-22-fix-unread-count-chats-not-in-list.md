@@ -185,7 +185,7 @@ separate change.
 - **The 5000 limit is not addressed.** With more chats than that, the UI still silently
   loads only the most recently active 5000: the rest are not shown, not searched, and
   missing from the in-memory tag counts, until one of them receives a message. Recorded
-  as GAP-10.
+  as GAP-12.
 - **`addPresetChatTags` is not called** for the newly added chat, as it is not today, so
   the preset tag counts stay low by one for such a chat until they are recomputed —
   which only `getUserChatData` does, not every chat-list reload.
@@ -203,7 +203,7 @@ separate change.
 - **Counters still drift on paths this change does not touch.** Deleting or leaving a
   chat that has unread messages leaves the profile counter and `unreadTags` high, because
   `removeChat` decrements neither — it removes the chat's preset tags, but not those two;
-  a cleared mention can leave `unreadMentions` behind. Both are recorded as GAP-08.
+  a cleared mention can leave `unreadMentions` behind. Both are recorded as GAP-10.
   Before this change such a chat contributed nothing to either counter, so the drift is
   newly reachable here even though the defect is not new.
 - **A message that arrives while the profile or remote host is being switched can be
@@ -229,7 +229,7 @@ separate change.
 - **The guard covers this add path only.** When the chat is already in the list,
   `addChatItem` writes stats into the primary list without a context check, using an
   index it took from the current context's list. That is existing behaviour, recorded as
-  GAP-09.
+  GAP-11.
 - `addChatItem`'s branch for items in a group chat scope, which adds the chat with no
   items, is unchanged. It keeps an existing asymmetry: for a chat already in the list
   that function also counts a scoped item when the user is a pending member, while this
@@ -274,7 +274,7 @@ has no counterpart there.
 4. `product/views/chat-list.md` and its iOS counterpart: record what a user sees for a
    chat outside the loaded window.
 5. `product/gaps.md` (and the iOS catalogue): record the defects this work surfaced but
-   does not fix — GAP-08, GAP-09, GAP-10 — and annotate them in the spec and product
+   does not fix — GAP-10, GAP-11, GAP-12 — and annotate them in the spec and product
    documents they belong to.
 
 ## Verification
