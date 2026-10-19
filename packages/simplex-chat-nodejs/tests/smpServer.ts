@@ -9,6 +9,7 @@ import {dirname, join} from "path"
 const tlsFixtures = join(__dirname, "fixtures/tls")
 const smpServerRelease = "v7.1.0-beta.3"
 const releaseArch: Record<string, string | undefined> = {x64: "x86-64", arm64: "aarch64"}
+const downloadAttempts = 4
 
 export interface SmpServer {
   address: string
@@ -59,11 +60,25 @@ async function downloadSmpServer(path: string): Promise<void> {
     throw new Error(`smp-server release binaries are not available for ${process.platform} ${process.arch}, set SMP_SERVER to the smp-server path`)
   }
   const url = `https://github.com/simplex-chat/simplexmq/releases/download/${smpServerRelease}/smp-server-ubuntu-22_04-${arch}`
+  const data = await downloadWithRetries(url)
+  mkdirSync(dirname(path), {recursive: true})
+  writeFileSync(`${path}.download`, data, {mode: 0o755})
+  renameSync(`${path}.download`, path)
+}
+
+async function downloadWithRetries(url: string): Promise<Buffer> {
+  for (let attempt = 1; attempt < downloadAttempts; attempt++) {
+    const data = await download(url).catch(() => undefined)
+    if (data) return data
+    await new Promise(resolve => setTimeout(resolve, attempt * 5000))
+  }
+  return download(url)
+}
+
+async function download(url: string): Promise<Buffer> {
   const response = await fetch(url)
   if (!response.ok) throw new Error(`error downloading ${url}: ${response.status}`)
-  mkdirSync(dirname(path), {recursive: true})
-  writeFileSync(`${path}.download`, Buffer.from(await response.arrayBuffer()), {mode: 0o755})
-  renameSync(`${path}.download`, path)
+  return Buffer.from(await response.arrayBuffer())
 }
 
 function caFingerprint(caFile: string): string {

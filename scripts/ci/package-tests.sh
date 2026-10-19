@@ -26,7 +26,11 @@ build_package() {
 }
 
 test_nodejs() {
-  (cd "$nodejs" && npx jest --forceExit --testNamePattern '^(?!.*use preset servers)')
+  if [ "$(node -p process.platform)" = linux ]; then
+    (cd "$nodejs" && npx jest --forceExit)
+  else
+    (cd "$nodejs" && npx jest --forceExit --testNamePattern '^(?!.*use local SMP server)')
+  fi
 }
 
 test_python() {
