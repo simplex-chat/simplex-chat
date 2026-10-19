@@ -174,7 +174,7 @@ struct ContactListNavLink: View {
             }
         } label: {
             chatPreview(
-                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: 30),
+                ChatInfoImage(chat: chat, size: 30),
                 NameWithBadge(Text(chat.chatInfo.chatViewName).foregroundColor(theme.colors.onBackground), chat.chatInfo.nameBadge)
                     .lineLimit(1)
             )
