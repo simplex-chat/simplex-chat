@@ -2172,7 +2172,7 @@ viewGroupDescription GroupInfo {groupProfile = GroupProfile {description}} =
   maybe ["No welcome message!"] ((bold' "Welcome message:" :) . map plain . T.lines) description
 
 bold' :: String -> StyledString
-bold' = styled Bold
+bold' = styled (Bold $ BoolDef False)
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated ct@Contact {profile = LocalProfile {localAlias}}

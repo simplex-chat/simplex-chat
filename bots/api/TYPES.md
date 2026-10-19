@@ -18,6 +18,7 @@ This file is generated automatically.
 - [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
+- [BlockToken](#blocktoken)
 - [BlockingInfo](#blockinginfo)
 - [BlockingReason](#blockingreason)
 - [BrokerErrorType](#brokererrortype)
@@ -131,8 +132,10 @@ This file is generated automatically.
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
+- [ListEntry](#listentry)
 - [LocalBadge](#localbadge)
 - [LocalProfile](#localprofile)
+- [MarkdownBlock](#markdownblock)
 - [MemberCriteria](#membercriteria)
 - [MsgChatLink](#msgchatlink)
 - [MsgContent](#msgcontent)
@@ -182,6 +185,7 @@ This file is generated automatically.
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
 - [SecurityCode](#securitycode)
+- [SegmentRange](#segmentrange)
 - [SimplePreference](#simplepreference)
 - [SimplexDomain](#simplexdomain)
 - [SimplexDomainClaim](#simplexdomainclaim)
@@ -201,6 +205,7 @@ This file is generated automatically.
 - [SubscriptionStatus](#subscriptionstatus)
 - [SupportGroupPreference](#supportgrouppreference)
 - [SwitchPhase](#switchphase)
+- [TableAlign](#tablealign)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
 - [TransportError](#transporterror)
@@ -514,6 +519,64 @@ CredentialNotVerified:
 - "supporter"
 - "legend"
 - "investor"
+
+
+---
+
+## BlockToken
+
+**Discriminated union type**:
+
+LineBreak:
+- type: "lineBreak"
+
+SoftBreak:
+- type: "softBreak"
+
+HardBreak:
+- type: "hardBreak"
+
+ParagraphBreak:
+- type: "paragraphBreak"
+- lineBreaks: int
+
+Indent:
+- type: "indent"
+
+HeadingMark:
+- type: "headingMark"
+- level: int
+
+HeadingClose:
+- type: "headingClose"
+
+HeadingUnderline:
+- type: "headingUnderline"
+- level: int
+
+ListMark:
+- type: "listMark"
+- number: string?
+
+QuoteMark:
+- type: "quoteMark"
+
+FenceMark:
+- type: "fenceMark"
+- language: string?
+
+RowMark:
+- type: "rowMark"
+
+CellMark:
+- type: "cellMark"
+
+DelimiterRow:
+- type: "delimiterRow"
+- columns: [[TableAlign](#tablealign)]
+
+RuleMark:
+- type: "ruleMark"
 
 
 ---
@@ -1010,6 +1073,7 @@ GroupLink:
 - sentAt: UTCTime
 - content: [MsgContent](#msgcontent)
 - formattedText: [[FormattedText](#formattedtext)]?
+- markdownBlocks: [[MarkdownBlock](#markdownblock)]?
 
 
 ---
@@ -1508,6 +1572,7 @@ ContactConnection:
 - content: [CIContent](#cicontent)
 - mentions: {string : [CIMention](#cimention)}
 - formattedText: [[FormattedText](#formattedtext)]?
+- markdownBlocks: [[MarkdownBlock](#markdownblock)]?
 - quotedItem: [CIQuote](#ciquote)?
 - reactions: [[CIReactionCount](#cireactioncount)]
 - file: [CIFile](#cifile)?
@@ -1548,6 +1613,7 @@ Search:
 - "human"
 - "bot"
 - "business"
+- "agent"
 
 
 ---
@@ -2285,10 +2351,13 @@ NO_FILE:
 
 ## Format
 
+The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars.
+
 **Discriminated union type**:
 
 Bold:
 - type: "bold"
+- singleStar: bool
 
 Italic:
 - type: "italic"
@@ -2341,6 +2410,13 @@ Email:
 
 Phone:
 - type: "phone"
+
+Escape:
+- type: "escape"
+
+Markup:
+- type: "markup"
+- token: [BlockToken](#blocktoken)
 
 
 ---
@@ -2881,6 +2957,16 @@ Unknown:
 
 ---
 
+## ListEntry
+
+**Record type**:
+- number: string?
+- content: [SegmentRange](#segmentrange)
+- items: [[ListEntry](#listentry)]
+
+
+---
+
 ## LocalBadge
 
 **Record type**:
@@ -2906,6 +2992,45 @@ Unknown:
 - localAlias: string
 - contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 - contactDomainVerified: bool?
+
+
+---
+
+## MarkdownBlock
+
+**Discriminated union type**:
+
+Paragraph:
+- type: "paragraph"
+- content: [SegmentRange](#segmentrange)
+
+Heading:
+- type: "heading"
+- level: int
+- content: [SegmentRange](#segmentrange)
+
+CodeBlock:
+- type: "codeBlock"
+- language: string?
+- content: [SegmentRange](#segmentrange)
+
+Quote:
+- type: "quote"
+- content: [SegmentRange](#segmentrange)
+
+List:
+- type: "list"
+- items: [[ListEntry](#listentry)]
+
+Table:
+- type: "table"
+- columns: [[TableAlign](#tablealign)]
+- header: [[SegmentRange](#segmentrange)]
+- rows: [[[SegmentRange](#segmentrange)]]
+
+Rule:
+- type: "rule"
+- mark: [SegmentRange](#segmentrange)
 
 
 ---
@@ -3791,6 +3916,15 @@ A_SERVICE:
 
 ---
 
+## SegmentRange
+
+**Record type**:
+- from: int
+- to: int
+
+
+---
+
 ## SimplePreference
 
 **Record type**:
@@ -4408,6 +4542,17 @@ NoSub:
 - "confirmed"
 - "secured"
 - "completed"
+
+
+---
+
+## TableAlign
+
+**Enum type**:
+- "none"
+- "left"
+- "center"
+- "right"
 
 
 ---
