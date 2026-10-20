@@ -4573,13 +4573,13 @@ chat item action */
 "Sending receipts is disabled for %lld contacts" = "Het verzenden van ontvangst bevestiging is uitgeschakeld voor %lld-contactpersonen";
 
 /* No comment provided by engineer. */
-"Sending receipts is disabled for %lld groups" = "Het verzenden van bevestigingen is uitgeschakeld voor %LLD -groepen";
+"Sending receipts is disabled for %lld groups" = "Het verzenden van bevestigingen is uitgeschakeld voor %lld groepen";
 
 /* No comment provided by engineer. */
 "Sending receipts is enabled for %lld contacts" = "Het verzenden van ontvangst bevestiging is ingeschakeld voor %lld-contactpersonen";
 
 /* No comment provided by engineer. */
-"Sending receipts is enabled for %lld groups" = "Het verzenden van bevestigingen is ingeschakeld voor %LLD -groepen";
+"Sending receipts is enabled for %lld groups" = "Het verzenden van bevestigingen is ingeschakeld voor %lld groepen";
 
 /* No comment provided by engineer. */
 "Sending via" = "Verzenden via";

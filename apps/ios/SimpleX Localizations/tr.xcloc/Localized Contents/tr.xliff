@@ -85,7 +85,7 @@
       </trans-unit>
       <trans-unit id="%@ at %@:" xml:space="preserve">
         <source>%1$@ at %2$@:</source>
-        <target>1$@, %2$@'de:</target>
+        <target>%1$@, %2$@'de:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ connected" xml:space="preserve">
@@ -11702,7 +11702,7 @@ marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
         <source>changed role of %1$@ to %2$@</source>
-        <target>1$@ rolünü %2$@ olarak değiştirdi</target>
+        <target>%1$@ rolünü %2$@ olarak değiştirdi</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="changed your role to %@" xml:space="preserve">

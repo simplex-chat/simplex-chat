@@ -101,7 +101,7 @@
 "%@ and %@ connected" = "%@ ve %@ bağlandı";
 
 /* copied message info, <sender> at <time> */
-"%@ at %@:" = "1$@, %2$@'de:";
+"%@ at %@:" = "%1$@, %2$@'de:";
 
 /* No comment provided by engineer. */
 "%@ connected" = "%@ bağlandı";
@@ -1053,7 +1053,7 @@ set passcode view */
 "changed address for you" = "senin için adres değiştirildi";
 
 /* rcv group event chat item */
-"changed role of %@ to %@" = "1$@ rolünü %2$@ olarak değiştirdi";
+"changed role of %@ to %@" = "%1$@ rolünü %2$@ olarak değiştirdi";
 
 /* rcv group event chat item */
 "changed your role to %@" = "rolünü %@ olarak değiştirdi";

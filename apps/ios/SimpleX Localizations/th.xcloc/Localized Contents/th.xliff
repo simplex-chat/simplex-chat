@@ -307,7 +307,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve">
         <source>%lld contact(s) selected</source>
-        <target>% ผู้ติดต่อ LLD ที่เลือกไว้</target>
+        <target>%lld ผู้ติดต่อที่เลือกไว้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">

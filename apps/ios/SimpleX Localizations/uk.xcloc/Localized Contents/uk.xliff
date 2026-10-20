@@ -182,17 +182,17 @@
       </trans-unit>
       <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
         <source>%d file(s) are still being downloaded.</source>
-        <target>%их файл(ів) ще досі завантажуються.</target>
+        <target>%d файл(ів) ще досі завантажуються.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) failed to download." xml:space="preserve">
         <source>%d file(s) failed to download.</source>
-        <target>%их файлів не вийшло завантажити.</target>
+        <target>%d файлів не вийшло завантажити.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were deleted." xml:space="preserve">
         <source>%d file(s) were deleted.</source>
-        <target>%их файл(ів) було видалено.</target>
+        <target>%d файл(ів) було видалено.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
@@ -10989,7 +10989,7 @@ alert title</note>
       </trans-unit>
       <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve">
         <source>You are already connecting via this one-time link!</source>
-        <target>Ви вже підключаєтеся до %@.Ви вже підключаєтеся за цим одноразовим посиланням!</target>
+        <target>Ви вже підключаєтеся за цим одноразовим посиланням!</target>
         <note>new chat sheet message</note>
       </trans-unit>
       <trans-unit id="You are already in group %@." xml:space="preserve">

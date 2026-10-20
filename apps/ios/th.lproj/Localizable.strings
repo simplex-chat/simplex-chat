@@ -104,7 +104,7 @@
 "%lld %@" = "%lld %@";
 
 /* No comment provided by engineer. */
-"%lld contact(s) selected" = "% ผู้ติดต่อ LLD ที่เลือกไว้";
+"%lld contact(s) selected" = "%lld ผู้ติดต่อที่เลือกไว้";
 
 /* No comment provided by engineer. */
 "%lld file(s) with total size of %@" = "%lld ไฟล์ที่มีขนาดรวม %@";

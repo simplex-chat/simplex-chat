@@ -8474,7 +8474,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sending receipts is disabled for %lld groups" xml:space="preserve">
         <source>Sending receipts is disabled for %lld groups</source>
-        <target>Het verzenden van bevestigingen is uitgeschakeld voor %LLD -groepen</target>
+        <target>Het verzenden van bevestigingen is uitgeschakeld voor %lld groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
@@ -8484,7 +8484,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld groups" xml:space="preserve">
         <source>Sending receipts is enabled for %lld groups</source>
-        <target>Het verzenden van bevestigingen is ingeschakeld voor %LLD -groepen</target>
+        <target>Het verzenden van bevestigingen is ingeschakeld voor %lld groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">

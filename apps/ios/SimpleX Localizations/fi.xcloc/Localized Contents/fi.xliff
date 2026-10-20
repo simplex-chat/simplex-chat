@@ -60,7 +60,7 @@
       </trans-unit>
       <trans-unit id="%@ (current):" xml:space="preserve">
         <source>%@ (current):</source>
-        <target>% (nykyinen):</target>
+        <target>%@ (nykyinen):</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%@ / %@" xml:space="preserve">

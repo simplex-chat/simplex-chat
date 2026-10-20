@@ -59,7 +59,7 @@
 "%@ (current)" = "%@ (nykyinen)";
 
 /* copied message info */
-"%@ (current):" = "% (nykyinen):";
+"%@ (current):" = "%@ (nykyinen):";
 
 /* No comment provided by engineer. */
 "%@ / %@" = "%@ / % @";

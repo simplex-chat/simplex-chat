@@ -3357,7 +3357,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve">
         <source>Desktop app version %@ is not compatible with this app.</source>
-        <target>La versión de aplicación del ordenador %" no es compatible con esta aplicación.</target>
+        <target>La versión de aplicación del ordenador %@ no es compatible con esta aplicación.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Desktop devices" xml:space="preserve">
