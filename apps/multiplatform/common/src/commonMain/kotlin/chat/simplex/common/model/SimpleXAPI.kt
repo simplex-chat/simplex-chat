@@ -1534,7 +1534,7 @@ object ChatController {
   }
 
   suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo, ctrl: ChatCtrl): Boolean =
-    sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo), ctrl)
+    sendCmd(null, CC.APISetNetworkInfo(networkInfo), ctrl).result is CR.CmdOk
 
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(rh, CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
