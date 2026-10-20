@@ -156,6 +156,8 @@ data ChatConfig = ChatConfig
     badgeRetryInterval :: RetryInterval,
     -- attempts a store receipt gets in one turn before its next one waits for the stored schedule
     badgeConsecutiveRetries :: Int,
+    -- set only by builds for a dev badge service: allows /_badge request, sent off the shared schedule
+    badgeDevRequests :: Bool,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -674,6 +676,7 @@ data ChatCommand
   -- episode is last because it is free text: it is the value that makes one occurrence of an
   -- alert distinct from the next, and the app returns whatever it was given
   | APIAckBadgeAlert {userId :: UserId, badgePurchaseId :: Int64, alertKind :: BadgeAlertKind, snooze :: Bool, episode :: Text}
+  | APIRequestBadge {userId :: UserId} -- dev builds only: send a badge request now and run the badge pass on its answer
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
@@ -777,6 +780,7 @@ allowRemoteCommand = \case
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
+  APIRequestBadge {} -> False
   _ -> True
 
 data RelayConnectionResult = RelayConnectionResult

@@ -221,6 +221,7 @@ badgeServiceTests = do
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should retire a subscription badge the service answers ended while its ledger still covers, and credit a new subscription after it" testSubscriptionEndsWhileCovered
     it "should retire a subscription badge the device reports ended without asking, and credit a one-time purchase after it" testDeviceEndedRetires
+    it "should send a badge request at once only in a dev build, keep a covered badge, and retire one the answer says ended" testRequestBadgeNow
     it "should keep a subscription badge when a due request's answer renews it, though the device reported it ended" testFreshAnswerOverridesDeviceEnded
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
@@ -2831,6 +2832,35 @@ testDeviceEndedRetires ps =
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
       inAnyOrder alice [["1: supporter", invoicePurchase "" invoiceId], creditedLines "" invoiceId "2: supporter"]
       waitShownBadge (chatController alice) (Just 2)
+
+testRequestBadgeNow :: HasCallStack => TestParams -> IO ()
+testRequestBadgeNow ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsController = ChatController {chatStore}, bsStore = store} -> do
+    withNewTestChatCfg ps bsClientCfg {badgeDevRequests = True} "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let cc = chatController alice
+          ended = Predicate (\l -> "1: supporter, 0 months left" `isPrefixOf` l && ", subscription ended" `isInfixOf` l)
+      shown <- shownBadgeId cc
+      checks <- subscriptionChecks store
+      -- while covered the service answers with the credential already shown
+      alice ##> "/_badge request 1"
+      alice <##. "1: supporter"
+      ledgerRows cc "badge_ledger" `shouldReturn` rows
+      shownBadgeId cc `shouldReturn` shown
+      issueErrorRow cc `shouldReturn` (Nothing, Nothing)
+      subscriptionChecks store `shouldReturn` checks
+      -- stands in for a store check that found it ended: only this request can carry it to the client now
+      withTransaction chatStore $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET subscription_state = 'ended'"
+      alice ##> "/_badge request 1"
+      alice <### [ended, ended]
+      waitShownBadge cc Nothing
+      subscriptionStatuses cc `shouldReturn` [Just "ended"]
+      subscriptionChecks store `shouldReturn` checks
+      alice ##> "/_badge request 1"
+      alice <## "bad chat command: no badge is shown"
+    withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+      bob ##> "/_badge request 1"
+      bob <## "bad chat command: /_badge request is only available in builds for a dev badge service"
 
 testFreshAnswerOverridesDeviceEnded :: HasCallStack => TestParams -> IO ()
 testFreshAnswerOverridesDeviceEnded ps =

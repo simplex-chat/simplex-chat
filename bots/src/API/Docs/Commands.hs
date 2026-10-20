@@ -423,6 +423,7 @@ undocumentedCommands =
     "APIRejectCall",
     "APIReorderChatTags",
     "APIReportMessage",
+    "APIRequestBadge",
     "APIRotateAddressRatchetKeys",
     "APISaveAppSettings",
     "APISendCallAnswer",

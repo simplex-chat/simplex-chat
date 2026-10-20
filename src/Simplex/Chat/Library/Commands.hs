@@ -3644,6 +3644,9 @@ processChatCommand cxt nm = \case
     -- after the write, so the pass it signals reads the ack rather than raising the alert again
     lift $ startBadgeWork user
     badgeStateResponse user
+  APIRequestBadge userId -> withUserId userId $ \user -> do
+    unlessM (asks $ badgeDevRequests . config) $ throwCmdError "/_badge request is only available in builds for a dev badge service"
+    requestBadgeNow user
   SetBotCommands commands -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
@@ -5498,6 +5501,16 @@ badgeNow = asks (badgeCurrentTime . config) >>= liftIO
 startBadgeWork :: User -> CM' ()
 startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker user
 
+-- | Off the shared expiry every client requests at, which is why only dev builds send it.
+requestBadgeNow :: User -> CM ChatResponse
+requestBadgeNow user@User {userId} =
+  withStore' (`getUserBadgePurchase` user) >>= \case
+    Just p@UserBadgePurchase {shown = True} -> do
+      void $ requestBadgeIssue userId p =<< badgeNow
+      lift $ startBadgeWork user
+      badgeStateResponse user
+    _ -> throwCmdError "no badge is shown"
+
 -- | Exactly one caller starts the thread and the rest wait for it: the lookup and the create cannot
 -- be one transaction, because starting a thread is not STM.
 getBadgeWorker :: User -> CM' BadgeWorker
@@ -6525,6 +6538,7 @@ chatCommandP =
       "/_badge state " *> (APIGetBadgeState <$> A.decimal),
       "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
       "/_badge ack " *> (APIAckBadgeAlert <$> A.decimal <* A.space <*> A.decimal <* A.space <*> badgeAlertKindP <* A.space <*> onOffP <* A.space <*> textP),
+      "/_badge request " *> (APIRequestBadge <$> A.decimal),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
