@@ -28,7 +28,7 @@ Base: `f/badge-subscriptions` at 26f846e1a (line numbers at that commit). `SVC/`
 
 **Schema.**
 
-- Service: `badge_ledger.from_purchase_id`, `badge_ledger.to_purchase_id`; `payments.rebound_at`; charge index `UNIQUE(charge_id)` → `UNIQUE(badge_purchase_id, charge_id)`.
+- Service: `badge_ledger.from_purchase_id`, `badge_ledger.to_purchase_id`; `payments.rebound_at` (when the payment was last moved to another key, for the monthly limit); charge index `UNIQUE(charge_id)` → `UNIQUE(badge_purchase_id, charge_id)`.
 - Client: `badge_store_receipts.hold_kind` (purchase, transfer, tier change).
 - Later, receipts: `badge_purchases.receipt_hash` (service), `badge_purchases.receipt` (client).
 
@@ -111,19 +111,16 @@ The worker sends `transferBadge` for transfer records. On success the record lin
 
 ## Slices
 
-Three PRs, each after the one before it; T3 and R2 also after the same-install resume. Each slice runs `cabal build --enable-tests` and the suites named.
+One PR, built in these slices in order; T3 and R2 need the same-install resume on the branch first. Each slice runs `cabal build --enable-tests` and the suites named.
 
 | Slice | Change | Tests | Lines |
 |---|---|---|---|
-| **PR1** | | | |
 | L1 | service reference columns + migration; rebuild the three types | `testEntryTypeColumns`, `testTransferEntriesRoundTrip`, schema down/up (`-m "Supporter badges" -m "badge service schema" -m "badge service store"`) | ~150 |
 | L2 | `debitEntry`, tier-aware `grantEntry`/`chargeEntries`, client check | `testDebitRowsVerify`, `testTierChangeRowsVerify` (`-m "Supporter badges"`) | ~200 |
 | T1 | grant other tier at renewal; update `current_badge_type` both sides | `testSubscriptionTierChangeAtRenewal`; drop the other-tier case from `testSubscriptionChargeNotGranted` and from the resume's bounded test (`-m "SimpleX badge service e2e/subscriptions/"`) | ~200 |
-| **PR2** | | | |
 | S0 | move `storePlan` to shared code (structural) | existing suites | ~60 |
 | T2 | `upgradeBadgeSubscription` handler, renewal lane | `testSubscriptionUpgradeNow`, `testUpgradeRequestRefused`, `testStoreRouting` | ~250 |
 | T3 | `productId`, `hold_kind` migration, tier-change hold and worker send | `testAppleTierChangeHandOver`, `testAppleTierChangeStoreLags` | ~300 |
-| **PR3** | | | |
 | R1a | `rebound_at`, charge index, move-binding store function | schema down/up (down refuses after a re-bind), store test | ~150 |
 | R1b | `transferBadge` handler, `ended` after `transferOut`, docs | `testStoreRebind`, `testStoreRebindCapped`, `testStoreRebindOldKeyEnded`, `testStoreRebindStaleAppleTransaction`, `testTransferUncredited`, `testTransferReplayAnswered`, `testTransferKnownKeyRefused` | ~300 |
 | R2 | `SRORestored` and the restore cases in core | `testRestoreOnNewDevice`, `testRestoreOnOtherProfile`, `testRestoreAfterUnfinishedPass` | ~300 |
@@ -139,13 +136,16 @@ Final checks: `-m "badge"` here; the full suite (query plans) and the Postgres b
 - **Apple behaviour from documentation:** an upgrade is immediate, the old plan is refunded pro rata, and the subscription keeps its original id; a downgrade waits for renewal; `currentEntitlements` returns the latest transaction. Confirm in Sandbox before sale. If upgrades are not refunded, the `upgrade` debit becomes a conversion instead.
 - A restore right after a renewal may be refused by the monthly limit or the latest-transaction rule; the app shows the retry date.
 
+## Decided
+
+- One Apple subscription group for all four subscription products, so users can change tier in the store and this plan grants it.
+
 ## Open questions (the slices assume the recommended answers)
 
-1. **One Apple subscription group, or one per tier?** Recommended: keep one group (the model requires it for upgrades in the store). Splitting must happen before launch; it would drop T2 and T3.
-2. **The move limit.** Recommended: once per payment per calendar month. Once per billing period would mean once a year for annual plans.
-3. **Re-issue the current month on a store restore.** Recommended: yes. Otherwise a monthly subscriber, or an App Reviewer, sees nothing until the next renewal.
-4. **Require the latest Apple transaction for a restore.** Recommended: yes.
-5. **Keep a tier change on the same key**, where the model's §2.10 uses new keys. Recommended: the same key. The service sees changes made in the store's settings without the client, and only the client can make keys.
+1. **The move limit.** Recommended: once per payment per calendar month. Once per billing period would mean once a year for annual plans.
+2. **Re-issue the current month on a store restore.** Recommended: yes. Otherwise a monthly subscriber, or an App Reviewer, sees nothing until the next renewal.
+3. **Require the latest Apple transaction for a restore.** Recommended: yes.
+4. **Keep a tier change on the same key**, where the model's §2.10 uses new keys. Recommended: the same key. The service sees changes made in the store's settings without the client, and only the client can make keys.
 
 ## Rejected alternatives
 
