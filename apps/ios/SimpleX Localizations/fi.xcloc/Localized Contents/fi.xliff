@@ -375,9 +375,9 @@ channel relay bar</note>
         <target state="translated">%lld minuuttia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld new interface languages" xml:space="preserve">
+      <trans-unit id="%lld new interface languages" xml:space="preserve" approved="no">
         <source>%lld new interface languages</source>
-        <target>%lld uutta käyttöliittymän kieltä</target>
+        <target state="translated">%lld uutta käyttöliittymän kieltä</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld seconds" xml:space="preserve" approved="no">
@@ -2640,9 +2640,9 @@ This is your own one-time link!</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
-        <target>Luo uusi profiili [työpöytäsovelluksessa](https://simplex.chat/downloads/). 💻</target>
+        <target state="translated">Luo uusi profiili [työpöytäsovelluksessa](https://simplex.chat/downloads/). 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve" approved="no">
@@ -3365,9 +3365,9 @@ alert button</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Discover and join groups" xml:space="preserve">
+      <trans-unit id="Discover and join groups" xml:space="preserve" approved="no">
         <source>Discover and join groups</source>
-        <target>Löydä ryhmiä ja liity niihin</target>
+        <target state="translated">Löydä ryhmiä ja liity niihin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Discover via local network" xml:space="preserve">
