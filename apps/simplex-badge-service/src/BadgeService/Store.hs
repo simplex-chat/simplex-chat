@@ -335,8 +335,7 @@ getCurrentIssuance db purchaseId now = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- | creditPaymentId_ names the payment behind a payment credit among the rows. A purchase a row names must
--- exist before the row is written, or the reference is stored as NULL and the row cannot be read back.
+-- | creditPaymentId_ names the payment behind a payment credit among the rows.
 appendLedgerPlan :: DB.Connection -> Int64 -> Maybe Text -> [StatementEntry] -> Maybe (StatementEntry, StatementEntry, BadgeCredential) -> IO ()
 appendLedgerPlan db purchaseId creditPaymentId_ rows issuance_ = do
   mapM_ appendRow rows
@@ -364,6 +363,8 @@ appendLedgerPlan db purchaseId creditPaymentId_ rows issuance_ = do
             SEDebit SDUpgrade {toPurchaseKey} -> (Nothing, Nothing, Nothing, Just toPurchaseKey)
             SEDebit SDTransferOut {toPurchaseKey} -> (Nothing, Nothing, Nothing, Just toPurchaseKey)
             _ -> (Nothing, Nothing, Nothing, Nothing)
+      fromPurchaseId_ <- mapM purchaseIdOf fromKey_
+      toPurchaseId_ <- mapM purchaseIdOf toKey_
       DB.execute
         db
         [sql|
@@ -371,12 +372,15 @@ appendLedgerPlan db purchaseId creditPaymentId_ rows issuance_ = do
             (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,
              balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type, payment_id, charge_id,
              from_purchase_id, to_purchase_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-            (SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?),
-            (SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?))
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType, paymentId_, chargeId_) :. (fromKey_, toKey_))
+        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType, paymentId_, chargeId_) :. (fromPurchaseId_, toPurchaseId_))
       insertedRowId db
+    -- a row whose reference is lost can never be read back, so the write fails and its transaction rolls back
+    purchaseIdOf :: C.PublicKeyEd25519 -> IO Int64
+    purchaseIdOf key =
+      maybeFirstRow fromOnly (DB.query db "SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?" (Only key))
+        >>= maybe (fail "badge ledger row names a purchase key with no purchase") pure
 
 -- The claim takes one use before adding the purchase, so a concurrent revoke or redemption waits on this row and sees the new count.
 -- Run it in the credential's transaction.
