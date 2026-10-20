@@ -682,9 +682,9 @@ time interval</note>
         <target state="translated">中止地址更改？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX Chat" xml:space="preserve">
+      <trans-unit id="About SimpleX Chat" xml:space="preserve" approved="no">
         <source>About SimpleX Chat</source>
-        <target>关于SimpleX Chat</target>
+        <target state="translated">关于SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About operators" xml:space="preserve" approved="no">
@@ -2515,9 +2515,9 @@ This is your own one-time link!</source>
         <target state="translated">联系人已隐藏：</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Contact is connected" xml:space="preserve">
+      <trans-unit id="Contact is connected" xml:space="preserve" approved="no">
         <source>Contact is connected</source>
-        <target>联系已连接</target>
+        <target state="translated">联系已连接</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Contact is deleted." xml:space="preserve" approved="no">
@@ -2525,9 +2525,9 @@ This is your own one-time link!</source>
         <target state="translated">联系人被删除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact name" xml:space="preserve">
+      <trans-unit id="Contact name" xml:space="preserve" approved="no">
         <source>Contact name</source>
-        <target>联系人姓名</target>
+        <target state="translated">联系人姓名</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact preferences" xml:space="preserve" approved="no">
@@ -2575,9 +2575,9 @@ This is your own one-time link!</source>
         <target state="translated">对话已删除！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Copy" xml:space="preserve">
+      <trans-unit id="Copy" xml:space="preserve" approved="no">
         <source>Copy</source>
-        <target>复制</target>
+        <target state="translated">复制</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Copy code" xml:space="preserve" approved="no">
@@ -2590,9 +2590,9 @@ This is your own one-time link!</source>
         <target state="translated">复制错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Core version: v%@" xml:space="preserve">
+      <trans-unit id="Core version: v%@" xml:space="preserve" approved="no">
         <source>Core version: v%@</source>
-        <target>核心版本: v%@</target>
+        <target state="translated">核心版本: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Corner" xml:space="preserve" approved="no">
@@ -2635,14 +2635,14 @@ This is your own one-time link!</source>
         <target state="translated">建群</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create group link" xml:space="preserve">
+      <trans-unit id="Create group link" xml:space="preserve" approved="no">
         <source>Create group link</source>
-        <target>创建群组链接</target>
+        <target state="translated">创建群组链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create link" xml:space="preserve">
+      <trans-unit id="Create link" xml:space="preserve" approved="no">
         <source>Create link</source>
-        <target>创建链接</target>
+        <target state="translated">创建链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create list" xml:space="preserve" approved="no">
@@ -4770,9 +4770,9 @@ Error: %2$@</source>
         <target state="translated">群组显示名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group full name (optional)" xml:space="preserve">
+      <trans-unit id="Group full name (optional)" xml:space="preserve" approved="no">
         <source>Group full name (optional)</source>
-        <target>群组全名（可选）</target>
+        <target state="translated">群组全名（可选）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group image" xml:space="preserve" approved="no">
@@ -7307,9 +7307,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target state="translated">协议后台超时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol timeout" xml:space="preserve">
+      <trans-unit id="Protocol timeout" xml:space="preserve" approved="no">
         <source>Protocol timeout</source>
-        <target>协议超时</target>
+        <target state="translated">协议超时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout per KB" xml:space="preserve" approved="no">
@@ -12511,9 +12511,9 @@ last received msg: %2$@</source>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
-      <trans-unit id="CFBundleDisplayName" xml:space="preserve">
+      <trans-unit id="CFBundleDisplayName" xml:space="preserve" approved="no">
         <source>SimpleX NSE</source>
-        <target>SimpleX NSE</target>
+        <target state="translated">SimpleX NSE</target>
         <note>Bundle display name</note>
       </trans-unit>
       <trans-unit id="CFBundleName" xml:space="preserve" approved="no">
