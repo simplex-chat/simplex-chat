@@ -9,21 +9,21 @@ import java.net.*
 import kotlin.concurrent.thread
 
 // JVM has no network change notifications, so the addresses the routing table would use for outgoing
-// connections are polled instead - unlike the addresses of all interfaces, they only change when the
-// network the connections are made via changes.
+// connections are polled instead - unlike the addresses of all interfaces, they change when the
+// network the connections are made via changes, or when the address the connections are made from changes.
 class NetworkObserver {
   // the network info and the addresses the core was last told about, plus the addresses added since
-  // (sentAddresses null - the chat controller used now accepted nothing; sentInfo is also cleared
-  // after a suspend, so that the network is reported again), and the IPv6 address used for the
-  // connections when the core accepted the last report
+  // (sentAddresses null - nothing was accepted since the observer was last restarted; sentInfo is also cleared
+  // after a suspend, so that the network is reported again), and the IPv6 address the connections are
+  // made from (recorded with the last accepted report, or when IPv6 was added after it)
   @Volatile private var sentAddresses: Set<String>? = null
   @Volatile private var sentInfo: UserNetworkInfo? = null
   @Volatile private var sentAddress6: InetAddress? = null
   @Volatile private var observer: Thread? = null
 
   @Synchronized fun restartNetworkObserver() {
-    // the chat controller is created anew, and the report the observer that is stopping delivered to it
-    // while it was being replaced is not recorded, so the network info is reported to it again
+    // the chat controller is created anew, and what was recorded, including a report the observer that is
+    // stopping delivered to it while it was being replaced, is cleared, so the network info is reported to it again
     sentAddresses = null
     sentInfo = null
     sentAddress6 = null
@@ -61,14 +61,17 @@ class NetworkObserver {
     if (!info.online && sentAddresses == null) return
     // the reported addresses are compared, so that the report that was not accepted is repeated,
     // and an added address (e.g. IPv6 configured after IPv4) does not affect the connections, a removed does
-    val report = info != sentInfo || !addresses.containsAll(sentAddresses ?: emptySet()) || sentAddress6Removed()
-    if (report) sendNetworkInfo(info, addresses, sourceAddress(PROBE_IPV6)) else setSentInfo(info, addresses)
+    val address6 = sourceAddress(PROBE_IPV6)
+    val report = info != sentInfo || !addresses.containsAll(sentAddresses ?: emptySet()) || sentAddress6Removed(address6)
+    if (report) sendNetworkInfo(info, addresses, address6) else setSentInfo(info, addresses, sentAddress6 ?: address6)
   }
 
   // the network prefix stays the same when an IPv6 temporary address is deleted, while the connections
-  // made via it are dead
-  private fun sentAddress6Removed(): Boolean =
-    sentAddress6?.let { a -> runCatching { NetworkInterface.getByInetAddress(a) == null }.getOrDefault(false) } ?: false
+  // made via it are dead; the address that is still used is not deleted, so it is not looked up
+  private fun sentAddress6Removed(address6: InetAddress?): Boolean {
+    val sent = sentAddress6 ?: return false
+    return sent != address6 && runCatching { NetworkInterface.getByInetAddress(sent) == null }.getOrDefault(false)
+  }
 
   private fun localAddresses(): Set<String> =
     setOfNotNull(localAddress(PROBE_IPV4), localAddress(PROBE_IPV6)).ifEmpty { usableAddresses() }
@@ -83,10 +86,10 @@ class NetworkObserver {
     return if (addresses.isEmpty()) addresses else addresses + NO_ROUTE
   }
 
-  // a socket is used once - a reused one keeps the address it was bound to on the platforms
-  // that do not reset it when the socket is disconnected
   private fun localAddress(remoteHost: String): String? = sourceAddress(remoteHost)?.let(::addressKey)
 
+  // a socket is used once - a reused one keeps the address it was bound to on the platforms
+  // that do not reset it when the socket is disconnected
   private fun sourceAddress(remoteHost: String): InetAddress? =
     try {
       DatagramSocket().use { socket ->
@@ -112,16 +115,14 @@ class NetworkObserver {
     Log.d(TAG, "Network changed: $info")
     val ctrl = controller.currentCtrl()
     val sent = ctrl != null && runBlocking { controller.apiSetNetworkInfo(info, ctrl) }
-    if (sent) {
-      setSentInfo(info, addresses)
-      sentAddress6 = address6
-    }
+    if (sent) setSentInfo(info, addresses, address6)
   }
 
-  @Synchronized private fun setSentInfo(info: UserNetworkInfo, addresses: Set<String>) {
+  @Synchronized private fun setSentInfo(info: UserNetworkInfo, addresses: Set<String>, address6: InetAddress?) {
     if (observer !== Thread.currentThread()) return
     sentAddresses = addresses
     sentInfo = info
+    sentAddress6 = address6
     chatModel.networkInfo.value = info
   }
 
