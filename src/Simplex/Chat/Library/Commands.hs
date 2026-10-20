@@ -5505,7 +5505,9 @@ requestBadgeNow user@User {userId} = do
   unlessM (asks $ badgeDevRequests . config) $ throwCmdError "/_badge request is only available in builds for a dev badge service"
   withStore' (`getUserBadgePurchase` user) >>= \case
     Just p@UserBadgePurchase {shown = True} -> do
-      void $ requestBadgeIssue userId p =<< badgeNow
+      badgeNow >>= requestBadgeIssue userId p >>= \case
+        Right (_, Just SSEnded) -> void $ retireBadge user p
+        _ -> pure ()
       lift $ startBadgeWork user
       badgeStateResponse user
     _ -> throwCmdError "no badge is shown"
@@ -5692,8 +5694,9 @@ updateUserBadge userId emitted now = do
         Just balance -> do
           -- No months come after a prepaid purchase's paidThrough, so it is retired before asking, as
           -- retirement needs no service and an unbounded retry would not return before it. A subscription's come
-          -- from the store, so it is asked about first, and retired once its store says it ended, by the service's answer
-          -- or the device's report, or once the window has passed since the first answer after which nothing was covered.
+          -- from the store, so it is asked about first, and retired once its store says it ended: at once by the service's answer,
+          -- by the stored state (the device's report) only past paidThrough, as StoreKit can report expired during a billing retry
+          -- that still recovers; or once the window has passed since the first answer after which nothing was covered.
           retiredBefore <- case purchaseKind of
             PKPrepaid | L.paidThrough balance <= now -> retireBadge user p
             _ -> pure False
@@ -5717,7 +5720,9 @@ updateUserBadge userId emitted now = do
                 | otherwise = unrenewedRun
               windowPassedSince t = subscriptionRecoveryWindow `addUTCTime` t <= now
               ended = case purchaseKind of
-                PKSubscription BadgeSubscription {status} -> (subscription_ <|> status) == Just SSEnded
+                PKSubscription BadgeSubscription {status} -> case subscription_ of
+                  Just answered -> answered == SSEnded
+                  Nothing -> status == Just SSEnded && L.paidThrough balance' <= now
                 PKPrepaid -> False
           when (unrenewedRun' /= unrenewedRun) $ withStore' $ \db -> setBadgeUnrenewedRun db badgePurchaseId unrenewedRun'
           retired <-
@@ -5991,7 +5996,8 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
       storedAt <- badgeNow
       let -- past the asserted coverage the state is the store's, except within an hour of an earlier check, when it can be
           -- the last successful check's (a later fresh answer or device report corrects it); before then it can be a year old.
-          -- Ended is never stale: the service writes it only from a store check, after which it grants nothing
+          -- Ended is never stale: the service writes it only from a store check, after which it grants nothing.
+          -- Its receiver must retire on it: a pass reads a stored ended with the badge still shown as the device's report
           storedSubscription = boundedSubscriptionState <$> find (\s -> L.paidThrough lastEntry <= now || s == SSEnded) subscription
       (applied, balance_) <- withStore' $ \db -> do
         applied <- applyBadgeStatement db g badgePurchaseId badgeType statement verifiedCred_ storedAt
