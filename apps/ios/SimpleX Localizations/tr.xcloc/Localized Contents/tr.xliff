@@ -115,14 +115,14 @@
         <target>%@ onaylandı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ server" xml:space="preserve">
+      <trans-unit id="%@ server" xml:space="preserve" approved="no">
         <source>%@ server</source>
-        <target>%@ sunucu</target>
+        <target state="translated">%@ sunucu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve">
+      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
         <source>%@ servers</source>
-        <target>%@ sunucular</target>
+        <target state="translated">%@ sunucular</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ supports SimpleX Chat." xml:space="preserve">
@@ -480,9 +480,9 @@ channel relay bar</note>
         <target state="translated">**Önerilen**: cihaz tokeni ve bildirimler SimpleX Chat bildirim sunucularına gönderilir, ama mesajın içeriği, boyutu veya kimden geldiği gönderilmez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve">
+      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve" approved="no">
         <source>**Scan / Paste link**: to connect via a link you received.</source>
-        <target>edindiğiniz bağlantı aracılığıyla bağlanmak için **Linki tarayın/yapıştırın**.</target>
+        <target state="translated">edindiğiniz bağlantı aracılığıyla bağlanmak için **Linki tarayın/yapıştırın**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Test relay** to retrieve its name." xml:space="preserve">
@@ -601,9 +601,9 @@ time interval</note>
         <target state="translated">1 yıl</target>
         <note>delete after time</note>
       </trans-unit>
-      <trans-unit id="1-time link" xml:space="preserve">
+      <trans-unit id="1-time link" xml:space="preserve" approved="no">
         <source>1-time link</source>
-        <target>tek kullanımlık bağlantı</target>
+        <target state="translated">tek kullanımlık bağlantı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1-time link can be used *with one contact only* - share in person or via any messenger." xml:space="preserve" approved="no">
@@ -685,9 +685,9 @@ time interval</note>
         <target state="translated">SimpleX Chat hakkında</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About operators" xml:space="preserve">
+      <trans-unit id="About operators" xml:space="preserve" approved="no">
         <source>About operators</source>
-        <target>Operatörler hakkında</target>
+        <target state="translated">Operatörler hakkında</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve" approved="no">
@@ -713,9 +713,9 @@ swipe action</note>
         <target state="translated">Gözlemci olarak kabul et</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Accept conditions" xml:space="preserve">
+      <trans-unit id="Accept conditions" xml:space="preserve" approved="no">
         <source>Accept conditions</source>
-        <target>Koşulları kabul et</target>
+        <target state="translated">Koşulları kabul et</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
@@ -744,9 +744,9 @@ swipe action</note>
         <target state="translated">Üyeyi kabul et</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Accepted conditions" xml:space="preserve">
+      <trans-unit id="Accepted conditions" xml:space="preserve" approved="no">
         <source>Accepted conditions</source>
-        <target>Kabul edilmiş koşullar</target>
+        <target state="translated">Kabul edilmiş koşullar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
@@ -789,9 +789,9 @@ swipe action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add friends" xml:space="preserve">
+      <trans-unit id="Add friends" xml:space="preserve" approved="no">
         <source>Add friends</source>
-        <target>Arkadaş ekle</target>
+        <target state="translated">Arkadaş ekle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add list" xml:space="preserve" approved="no">
@@ -834,9 +834,9 @@ swipe action</note>
         <target>Karekod taratarak sunucuları ekleyin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add team members" xml:space="preserve">
+      <trans-unit id="Add team members" xml:space="preserve" approved="no">
         <source>Add team members</source>
-        <target>Takım üyesi ekle</target>
+        <target state="translated">Takım üyesi ekle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add this code to your webpage. It will display the preview of your channel / group." xml:space="preserve">
@@ -859,19 +859,19 @@ swipe action</note>
         <target>Karşılama mesajı ekleyin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve" approved="no">
         <source>Add your team members to the conversations.</source>
-        <target>Takım üyelerini konuşmalara ekle.</target>
+        <target state="translated">Takım üyelerini konuşmalara ekle.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Added media &amp; file servers" xml:space="preserve">
+      <trans-unit id="Added media &amp; file servers" xml:space="preserve" approved="no">
         <source>Added media &amp; file servers</source>
-        <target>medya ve dosya sunucuları eklendi</target>
+        <target state="translated">medya ve dosya sunucuları eklendi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Added message servers" xml:space="preserve">
+      <trans-unit id="Added message servers" xml:space="preserve" approved="no">
         <source>Added message servers</source>
-        <target>Mesaj sunucuları eklendi</target>
+        <target state="translated">Mesaj sunucuları eklendi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Additional accent" xml:space="preserve" approved="no">
@@ -899,14 +899,14 @@ swipe action</note>
         <target>Adres değişikliği iptal edilecek. Eski alıcı adresi kullanılacaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address or 1-time link?" xml:space="preserve">
+      <trans-unit id="Address or 1-time link?" xml:space="preserve" approved="no">
         <source>Address or 1-time link?</source>
-        <target>adres mi yoksa tek kullanımlık bağlantı mı?</target>
+        <target state="translated">adres mi yoksa tek kullanımlık bağlantı mı?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address settings" xml:space="preserve">
+      <trans-unit id="Address settings" xml:space="preserve" approved="no">
         <source>Address settings</source>
-        <target>Adres seçenekleri</target>
+        <target state="translated">Adres seçenekleri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can block a member for all." xml:space="preserve">
@@ -1625,14 +1625,14 @@ in your network</source>
         <target state="translated">Bulgarca, Fince, Tayca ve Ukraynaca - kullanıcılara ve [Weblate] e teşekkürler! (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Business address" xml:space="preserve">
+      <trans-unit id="Business address" xml:space="preserve" approved="no">
         <source>Business address</source>
-        <target>İş adresi</target>
+        <target state="translated">İş adresi</target>
         <note>chat link info line</note>
       </trans-unit>
-      <trans-unit id="Business chats" xml:space="preserve">
+      <trans-unit id="Business chats" xml:space="preserve" approved="no">
         <source>Business chats</source>
-        <target>İş konuşmaları</target>
+        <target state="translated">İş konuşmaları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Business connection" xml:space="preserve">
@@ -1752,9 +1752,9 @@ new chat action</note>
         <target state="translated">Otomatik mesaj silme değiştirilsin mi?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Change chat profiles" xml:space="preserve">
+      <trans-unit id="Change chat profiles" xml:space="preserve" approved="no">
         <source>Change chat profiles</source>
-        <target>Sohbet profillerini değiştir</target>
+        <target state="translated">Sohbet profillerini değiştir</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
@@ -1889,19 +1889,19 @@ alert subtitle</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat" xml:space="preserve">
+      <trans-unit id="Chat" xml:space="preserve" approved="no">
         <source>Chat</source>
-        <target>Sohbet</target>
+        <target state="translated">Sohbet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat already exists" xml:space="preserve">
+      <trans-unit id="Chat already exists" xml:space="preserve" approved="no">
         <source>Chat already exists</source>
-        <target>Sohbet zaten mevcut</target>
+        <target state="translated">Sohbet zaten mevcut</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat already exists!" xml:space="preserve">
+      <trans-unit id="Chat already exists!" xml:space="preserve" approved="no">
         <source>Chat already exists!</source>
-        <target>Sohbet zaten mevcut!</target>
+        <target state="translated">Sohbet zaten mevcut!</target>
         <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve" approved="no">
@@ -2004,14 +2004,14 @@ alert subtitle</note>
         <target state="translated">Sohbet teması</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for all members - this cannot be undone!</source>
-        <target>Sohbet bütün üyeler için silinecek - bu geri alınamaz!</target>
+        <target state="translated">Sohbet bütün üyeler için silinecek - bu geri alınamaz!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for you - this cannot be undone!</source>
-        <target>Sohbet senden silinecek - bu geri alınamaz!</target>
+        <target state="translated">Sohbet senden silinecek - bu geri alınamaz!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat with admins" xml:space="preserve" approved="no">
@@ -2055,14 +2055,14 @@ chat toolbar</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Check messages every 20 min." xml:space="preserve">
+      <trans-unit id="Check messages every 20 min." xml:space="preserve" approved="no">
         <source>Check messages every 20 min.</source>
-        <target>Her 20 dakikada mesajları kontrol et.</target>
+        <target state="translated">Her 20 dakikada mesajları kontrol et.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Check messages when allowed." xml:space="preserve">
+      <trans-unit id="Check messages when allowed." xml:space="preserve" approved="no">
         <source>Check messages when allowed.</source>
-        <target>İzin verildiğinde mesajları kontrol et.</target>
+        <target state="translated">İzin verildiğinde mesajları kontrol et.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check relay address and try again." xml:space="preserve">
@@ -2180,14 +2180,14 @@ chat toolbar</note>
         <target state="translated">Tamamlandı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions accepted on: %@." xml:space="preserve">
+      <trans-unit id="Conditions accepted on: %@." xml:space="preserve" approved="no">
         <source>Conditions accepted on: %@.</source>
-        <target>Şuradaki koşullar kabul edildi: %@.</target>
+        <target state="translated">Şuradaki koşullar kabul edildi: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions are accepted for the operator(s): **%@**." xml:space="preserve">
+      <trans-unit id="Conditions are accepted for the operator(s): **%@**." xml:space="preserve" approved="no">
         <source>Conditions are accepted for the operator(s): **%@**.</source>
-        <target>Koşullar operatör(ler) için kabul edildi: **%@**.</target>
+        <target state="translated">Koşullar operatör(ler) için kabul edildi: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve" approved="no">
