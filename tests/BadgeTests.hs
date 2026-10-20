@@ -39,7 +39,7 @@ import Simplex.Chat.Badges.Types (BadgeAlertKind (..), BadgeIssueError (..), Bad
 import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, storeTransactionRef)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, resumableCharge, resumeHoldEnded, storeTransactionRef)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts, appleTransactionRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import qualified Simplex.Chat.Store.Badges as SB
@@ -120,6 +120,7 @@ badgeTests = do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
     it "reads an Apple transaction's id, purchase and expiry dates, revocation and type from its unverified payload" testAppleTransactionFacts
+    it "resumes a retired subscription only with an Apple charge whose paid period runs, dated less than a day ahead" testResumableCharge
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
@@ -1028,6 +1029,36 @@ testAppleTransactionFacts = do
   appleTransactionFacts (jws $ take 1 renewal <> ["type" J..= ("Consumable" :: T.Text)]) `shouldBe` facts Nothing False False
   appleTransactionFacts (jws $ drop 1 renewal) `shouldBe` Nothing
   appleTransactionFacts "not.a-jws" `shouldBe` Nothing
+
+testResumableCharge :: IO ()
+testResumableCharge = do
+  let nowSeconds = 1770000000 :: Integer
+      now = posixSecondsToUTCTime $ fromInteger nowSeconds
+      secondsAhead s = addUTCTime (fromInteger s) now
+      epochMs s = (nowSeconds + s) * 1000
+      oneDay = 86400
+      oneMonth = 30 * oneDay
+      jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
+      part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      ofType t fields = SPApple {jws = jws $ ["transactionId" J..= ("2000000900000002" :: T.Text), "type" J..= (t :: T.Text)] <> fields}
+      renewalWith = ofType "Auto-Renewable Subscription"
+      dated bought expires = renewalWith ["purchaseDate" J..= epochMs bought, "expiresDate" J..= epochMs expires]
+  resumableCharge now (dated 0 oneMonth) `shouldBe` Just now
+  resumableCharge now (dated 60 oneMonth) `shouldBe` Just (secondsAhead 60)
+  resumableCharge now (dated (oneDay - 1) oneMonth) `shouldBe` Just (secondsAhead (oneDay - 1))
+  -- dated as far ahead as the allowed skew or further, as a forged payload can be
+  resumableCharge now (dated oneDay oneMonth) `shouldBe` Nothing
+  resumableCharge now (dated (365 * oneDay) (400 * oneDay)) `shouldBe` Nothing
+  -- the paid period it bought has ended
+  resumableCharge now (dated (-oneMonth) 1) `shouldBe` Just (secondsAhead (-oneMonth))
+  resumableCharge now (dated (-oneMonth) 0) `shouldBe` Nothing
+  resumableCharge now (renewalWith ["purchaseDate" J..= epochMs 0, "expiresDate" J..= epochMs oneMonth, "revocationDate" J..= epochMs 0]) `shouldBe` Nothing
+  resumableCharge now (ofType "Non-Renewing Subscription" ["purchaseDate" J..= epochMs 0, "expiresDate" J..= epochMs oneMonth]) `shouldBe` Nothing
+  resumableCharge now (renewalWith ["expiresDate" J..= epochMs oneMonth]) `shouldBe` Nothing
+  resumableCharge now (renewalWith ["purchaseDate" J..= epochMs 0]) `shouldBe` Nothing
+  resumableCharge now SPGoogle {productId = "subscr_badge_supporter_01", token = "fake-play-token"} `shouldBe` Nothing
+  resumeHoldEnded (secondsAhead oneDay) now `shouldBe` True
+  resumeHoldEnded (secondsAhead (oneDay - 1)) now `shouldBe` False
 
 testShownServiceRequest :: IO ()
 testShownServiceRequest = do

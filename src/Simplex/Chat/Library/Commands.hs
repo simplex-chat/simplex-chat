@@ -5377,12 +5377,12 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
       case status of
         RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
         RSCredited {badgePurchaseId, refusalRecorded} -> do
-          resumed <- case resumableCharge now payment of
+          answeredHeld <- case resumableCharge now payment of
             -- a charge refused after its hold is answered from the record, or the app's sweep would hold it again at every launch
             Just purchasedAt | not (refusalRecorded && resumeHoldEnded now purchasedAt) ->
               withStore' $ \db -> reholdStoreReceipt db owner receiptId badgePurchaseId payment now
             _ -> pure False
-          if resumed
+          if answeredHeld
             then lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
             else do
               cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
@@ -5732,7 +5732,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
         Right (Right (balance, stored)) ->
           withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
             Just cred@(BadgeCredential _ _ _ info)
-              | L.paidThrough balance > answeredAt && stored /= Just SSEnded -> do
+              | L.paidThrough balance > answeredAt && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
                   user' <- withStore $ \db -> do
                     liftIO $ showResumedPurchase db user receiptId badgePurchaseId stored
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))

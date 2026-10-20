@@ -50,7 +50,7 @@ module Simplex.Chat.Store.Badges
 where
 
 import Control.Concurrent.STM (TVar, atomically)
-import Control.Monad (forM, forM_, join)
+import Control.Monad (forM, forM_, join, when)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
@@ -298,20 +298,22 @@ settleStoreReceipt db receiptId =
     "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL WHERE badge_store_receipt_id = ?"
     (Only receiptId)
 
--- | Holds a credited record again for a later charge of its subscription while its purchase is its owner's newest,
--- a subscription and not shown, and no other receipt of the owner is held: the receipt worker would credit that one
--- first, and then skip this one while its badge is shown.
+-- | Whether a later charge of a credited record's subscription is answered as held: its purchase must be its owner's
+-- newest, a subscription and not shown. The record is held again only while no other receipt of the owner is held,
+-- which the receipt worker would credit first and then skip this one while its badge is shown; until then the app
+-- keeps the charge unfinished and hands it over again.
 reholdStoreReceipt :: DB.Connection -> User -> Int64 -> Int64 -> ServicePayment -> UTCTime -> IO Bool
 reholdStoreReceipt db owner receiptId badgePurchaseId payment now = do
   newest_ <- getUserBadgePurchase db owner
   pending <- getPendingStoreReceipts db owner
   case newest_ of
     Just UserBadgePurchase {badgePurchaseId = newestId, shown = False, purchaseKind = PKSubscription _}
-      | newestId == badgePurchaseId && null pending -> do
-          DB.execute
-            db
-            "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment IS NULL"
-            (safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, receiptId)
+      | newestId == badgePurchaseId -> do
+          when (null pending) $
+            DB.execute
+              db
+              "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment IS NULL"
+              (safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, receiptId)
           pure True
     _ -> pure False
 

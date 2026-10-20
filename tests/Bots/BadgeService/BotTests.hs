@@ -233,8 +233,9 @@ badgeServiceTests = do
     it "should resolve an Apple renewal to the subscription's record, and credit a held record that adopted it once the subscription's hourly check allows" testAppleRenewalResolvesToPurchase
     it "should adopt into a held Apple record only another transaction bought later and not revoked" testAppleAdoptionRules
     it "should present an adopted Apple transaction at once though the attempt with the one before it failed, and credit it once the subscription's hourly check allows" testAdoptedReceiptNotOverwritten
-    it "should resume a retired Apple subscription on the same purchase when its store charges it again, retired past or within its coverage" testAppleResubscribeResumes
-    it "should answer an Apple resubscription from the record when it cannot resume, and refuse one the service does not grant once its hold ends" testAppleResubscribeBounded
+    it "should resume a retired Apple subscription on the same purchase when its store charges it again" testAppleResubscribeResumes
+    it "should resume an Apple subscription retired within its coverage, with the state the service ended it with cleared" testAppleResubscribeResumesWithinCoverage
+    it "should answer an Apple resubscription from the record when it cannot resume, refuse a held one that stops being resumable or that the service does not grant within its hold, and keep one behind another held receipt unfinished" testAppleResubscribeBounded
     it "should ask the App Store about a subscription claim at most once an hour, whoever presents it and as any of its transactions" testApplePurchaseChecksBounded
     it "should ask Play about a subscription token at most once an hour, whoever presents it, credited to another key or not" testPlayPurchaseChecksBounded
     it "should keep at most the maximum of purchase checks, asking without recording once full, and drop expired ones" testPurchaseChecksBounded
@@ -3150,7 +3151,7 @@ testAppleRenewalResolvesToPurchase ps =
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) <$> ledgerRows (chatController alice) "badge_ledger" `shouldReturn` [(1, 1, Just "charge"), (-1, 0, Just "badge")]
 
 testAppleResubscribeResumes :: HasCallStack => TestParams -> IO ()
-testAppleResubscribeResumes ps = do
+testAppleResubscribeResumes ps =
   -- retired past its coverage on the service's answer that it ended, then charged again for the same tier
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
@@ -3168,7 +3169,11 @@ testAppleResubscribeResumes ps = do
       map (\(_, _, _, _, _, t) -> t) <$> ledgerRows (chatController alice) "badge_ledger" `shouldReturn` [Just "charge", Just "badge", Just "charge", Just "badge"]
       [retiredExpiry, resumedExpiry] <- issuedExpiries (chatController alice)
       resumedExpiry `shouldSatisfy` (> retiredExpiry)
+      waitShownIssued (chatController alice)
       subscriptionStatuses (chatController alice) `shouldReturn` [Just "renewing"]
+
+testAppleResubscribeResumesWithinCoverage :: HasCallStack => TestParams -> IO ()
+testAppleResubscribeResumesWithinCoverage ps =
   -- retired within its coverage on an ended answer, as clocks that disagree give
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = ChatController {chatStore}, bsStore = store@FakeStore {appleSubscriptionJWS}} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
@@ -3207,14 +3212,27 @@ testAppleResubscribeBounded ps =
             heldStoreReceipts (chatController alice) `shouldReturn` 0
       -- a charge whose paid period has ended
       answeredFromRecord $ appleTransactionDated "2000000812345692" (addUTCTime (-40 * nominalDay) requestAt) (addUTCTime (-10 * nominalDay) requestAt)
-      -- a charge of another tier, which the service does not grant, dated a minute ahead of the client's clock
+      -- the store charges another tier, which the service does not grant
       let resubscribedAt = addUTCTime 7200 requestAt
-          otherTier = appleResubscription "2000000812345693" (addUTCTime 60 resubscribedAt)
+          handOverHeld jws = do
+            handOver jws
+            expectLinesWithin 30 alice ["1: supporter", "badge alert: subscription_ended ", openPurchase ""] ["subscribed "]
+            heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
       setClockAt bsClock resubscribedAt
       appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_LEGEND_MONTH_01" resubscribedAt 1) {chargeRef = "apple.legend"}
-      handOver otherTier
-      expectLinesWithin 30 alice ["1: supporter", "badge alert: subscription_ended ", openPurchase ""] ["subscribed "]
-      heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      -- a charge whose paid period ends while it is held is refused before it is sent again
+      handOverHeld $ appleTransactionDated "2000000812345695" resubscribedAt (addUTCTime 7200 resubscribedAt)
+      checks <- subscriptionChecks store
+      setClockAt bsClock $ addUTCTime 10800 resubscribedAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
+      storeReceiptCreditErrors (chatController alice) `shouldReturn` ["service_error final receipt_invalid"]
+      subscriptionChecks store `shouldReturn` checks
+      shownBadgeId (chatController alice) `shouldReturn` Nothing
+      -- a later charge is held again though a resume was refused, while its own hold, from its purchase date, runs
+      let otherTier = appleResubscription "2000000812345693" (addUTCTime 60 resubscribedAt)
+      handOverHeld otherTier
       setClockAt bsClock $ addUTCTime (resumeHoldLimit + 120) resubscribedAt
       alice ##> "/_app activate"
       alice <## "ok"
@@ -3223,13 +3241,14 @@ testAppleResubscribeBounded ps =
       shownBadgeId (chatController alice) `shouldReturn` Nothing
       answeredFromRecord otherTier
       invoiceId <- createInvoice alice 1
-      -- while another receipt of the owner is held
+      -- while another receipt of the owner is held, a resubscription is answered held and left unfinished, not held here
       setGoogleDown store True
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
-      expectLinesWithin 30 alice ["1: supporter", "badge alert: subscription_ended ", invoicePurchase "" invoiceId] ["subscribed "]
+      let heldLines = expectLinesWithin 30 alice ["1: supporter", "badge alert: subscription_ended ", invoicePurchase "" invoiceId] ["subscribed "]
+      heldLines
       now <- serviceNow env
       handOver $ appleResubscription "2000000812345694" now
-      alice <## "badge already redeemed"
+      heldLines
       heldStoreReceipts (chatController alice) `shouldReturn` 1
 
 -- | A monthly Apple subscription bought an hour into its first period and retired past its coverage, at its request
