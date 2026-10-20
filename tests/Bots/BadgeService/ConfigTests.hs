@@ -54,6 +54,9 @@ badgeConfigTests = describe "badge service config" $ do
   it "reads accept_unverified_store_receipts = on" testDevUnverifiedReceiptsOn
   it "reads accept_unverified_store_receipts = off" testDevUnverifiedReceiptsOff
   it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
+  it "defaults check_store_during_coverage to off" testDevStoreChecksDefault
+  it "reads check_store_during_coverage = on and off beside accept_unverified_store_receipts = on" testDevStoreChecksOnOff
+  it "refuses check_store_during_coverage = on without accept_unverified_store_receipts = on" testDevStoreChecksWithoutMock
   it "configures no store verifier when [apple] and [google] are absent" testStoresAbsent
   it "reads [apple] and [google], defaulting Google's endpoints" testStoresRead
   it "refuses an incomplete [apple] or [google], naming the key" testStoresIncomplete
@@ -385,6 +388,26 @@ testDevUnverifiedReceiptsNotBoolean :: IO ()
 testDevUnverifiedReceiptsNotBoolean = withDev "accept_unverified_store_receipts = yes\n" $ \r -> case r of
   Left e -> e `shouldContain` "accept_unverified_store_receipts"
   Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently arm the mock"
+
+testDevStoreChecksDefault :: IO ()
+testDevStoreChecksDefault = do
+  withIni fullIni $ \p -> do
+    Right cfg <- readServiceConfig p
+    devCheckStoreDuringCoverage cfg `shouldBe` False
+  withDev "accept_unverified_store_receipts = on\n" $ \r -> devCheckStoreDuringCoverage <$> r `shouldBe` Right False
+
+testDevStoreChecksOnOff :: IO ()
+testDevStoreChecksOnOff =
+  forM_ [("on", True), ("off", False)] $ \(v, expected) ->
+    withDev ("accept_unverified_store_receipts = on\ncheck_store_during_coverage = " <> v <> "\n") $ \r ->
+      devCheckStoreDuringCoverage <$> r `shouldBe` Right expected
+
+testDevStoreChecksWithoutMock :: IO ()
+testDevStoreChecksWithoutMock =
+  forM_ ["", "accept_unverified_store_receipts = off\n"] $ \mock ->
+    withDev (mock <> "check_store_during_coverage = on\n") $ \case
+      Left e -> e `shouldContain` "check_store_during_coverage"
+      Right _ -> expectationFailure "only the mock may be asked while coverage runs"
 
 withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
 withDev keys act = withIni (fullIni <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act

@@ -1,5 +1,7 @@
 # Plan: store subscription renewals for supporter badges
 
+For reviewers: a summary of the code as built in PR #7716, with diagrams, is in [`2026-10-13-badge-subscription-renewals-sketches/summary.md`](2026-10-13-badge-subscription-renewals-sketches/summary.md). Where it and this plan differ, the summary describes the code.
+
 Run: 001-badge-subscriptions · Base branch: `f/badge-subscriptions`, cut from `badge-in-app-checkout` once `f/badge-store-verifiers` is merged into it · Repos: simplex-chat-2 · Estimated diff: ~1700 changed lines (~900 code and docs, ~800 tests), one PR in eight slices
 
 This run makes App Store and Google Play subscriptions renew badges: in the badge service, including its real connections to Apple's App Store Server API and Google Play's subscriptions API, and in the shared app core. It changes no iOS or Android screens, so nothing here puts a subscription on sale.

@@ -104,9 +104,9 @@ final class BadgeStore: ObservableObject {
     // set once presentUnfinished has read the store: until then, an Ask to Buy approved while the app was
     // closed, or a purchase it died before handing over, are both unknown, so canBuy refuses to buy again
     @Published private var reconciledOnce = false
-    // Apple folds a new subscription of an Apple ID that subscribed before into the earlier one, whose record
-    // here is already credited or refused, so the buyer would pay for nothing; nil until load() has checked
-    @Published private(set) var subscribedBefore: Bool? = nil
+    // the original ids of the Apple ID's subscriptions; nil until load() has read them. Apple folds a new subscription
+    // of an Apple ID that subscribed before into the earlier one, which core resumes only for the profile it retired
+    @Published private(set) var priorSubscriptions: Set<String>? = nil
     // the sweep has no buyer waiting and runs at four triggers, so a failure that cannot clear is told once a run
     private var sweepFailureShown = false
     private var transactionUpdates: Task<Void, Never>? = nil
@@ -139,12 +139,26 @@ final class BadgeStore: ObservableObject {
         return storePurchases.purchases
     }
 
-    func forSale(_ period: BadgePeriod) -> Bool {
+    func forSale(_ level: BadgeLevel, _ period: BadgePeriod) -> Bool {
         switch period {
         case .oneMonth: true
-        case .monthly, .annual: subscribedBefore == false
+        case .monthly, .annual: priorSubscriptions?.allSatisfy { $0 == resumableSubscription(level) } ?? false
         }
     }
+
+    // a subscription of an Apple ID that subscribed before resumes only the active profile's newest purchase,
+    // once its badge is retired and only at its own level, as the service grants a new charge only of the same tier
+    private func resumableSubscription(_ level: BadgeLevel) -> String? {
+        let badgeModel = BadgeModel.shared
+        guard badgeModel.userId == ChatModel.shared.currentUser?.userId,
+              let badgeState = badgeModel.badgeState,
+              !badgeState.shown,
+              badgeState.badgeType == level.badgeType
+        else { return nil }
+        return badgeState.subscription?.transactionRef
+    }
+
+    var subscribedBefore: Bool { priorSubscriptions?.isEmpty == false }
 
     func price(_ level: BadgeLevel, _ period: BadgePeriod, compact: Bool = true) -> BadgePrice {
         switch state {
@@ -179,10 +193,10 @@ final class BadgeStore: ObservableObject {
                 let storefront = await Storefront.current
                 logger.warning("BadgeStore.load: no product returned for \(missing.joined(separator: ", ")) - bundle \(Bundle.main.bundleIdentifier ?? "?"), storefront \(storefront?.countryCode ?? "none"), canMakePayments \(AppStore.canMakePayments)")
             }
-            let subscribed = await hasSubscribedBefore()
+            let prior = await subscriptionOriginalIds()
             await MainActor.run {
                 products = byId
-                subscribedBefore = subscribed
+                priorSubscriptions = prior
                 state = .loaded
             }
         } catch let error {
@@ -198,10 +212,11 @@ final class BadgeStore: ObservableObject {
             throw BadgeStoreError.productUnavailable(productId: productId)
         }
         // another device on this Apple ID may have subscribed since load(), and Apple would fold this purchase into that one
-        if product.type == .autoRenewable, await hasSubscribedBefore() {
-            await MainActor.run { subscribedBefore = true }
+        if product.type == .autoRenewable {
+            let prior = await subscriptionOriginalIds()
+            await MainActor.run { priorSubscriptions = priorSubscriptions?.union(prior) }
         }
-        guard await MainActor.run(body: { forSale(period) }) else {
+        guard await MainActor.run(body: { forSale(level, period) }) else {
             throw BadgeStoreError.subscribedBefore
         }
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else {
@@ -215,7 +230,9 @@ final class BadgeStore: ObservableObject {
             let outcome = try await storePurchase(product, invoiceId)
             if product.type == .autoRenewable {
                 switch outcome {
-                case .purchased, .pending: await MainActor.run { subscribedBefore = true }
+                case let .purchased(receipt): await MainActor.run { _ = priorSubscriptions?.insert(String(receipt.transaction.originalID)) }
+                // StoreKit lists no deferred purchase, so subscriptions stay shut for this run
+                case .pending: await MainActor.run { priorSubscriptions = nil }
                 case .cancelled: break
                 }
             }
@@ -353,7 +370,7 @@ final class BadgeStore: ObservableObject {
     private func reconcile(_ verification: VerificationResult<Transaction>, listed: Bool) async throws {
         let receipt = storeReceipt(verification)
         let t = receipt.transaction
-        if t.productType == .autoRenewable { await MainActor.run { subscribedBefore = true } }
+        if t.productType == .autoRenewable { await MainActor.run { _ = priorSubscriptions?.insert(String(t.originalID)) } }
         if t.productType == .autoRenewable && t.revocationDate != nil {
             // the service refuses a revoked charge as invalid, and that would refuse the whole subscription's record
             await t.finish()
@@ -367,7 +384,7 @@ final class BadgeStore: ObservableObject {
     // The service asks the store only once the paid period ends, so a cancellation or a failed charge before
     // then is seen only here. Sent with the latest transaction, which names the subscription as its first one did.
     func reportSubscriptionStates() async {
-        guard await hasSubscribedBefore() else { return }
+        guard !(await subscriptionOriginalIds()).isEmpty else { return }
         await load()
         guard let subscription = await MainActor.run(body: { products.values.first { $0.type == .autoRenewable }?.subscription }) else { return }
         do {
@@ -409,6 +426,8 @@ final class BadgeStore: ObservableObject {
 
     // Hands over as the device's own whatever the store lists, so a purchase no record here has is claimed by this profile.
     // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
+    // Reading currentEntitlements would not restore a subscription on another install or profile: the service credited
+    // the payment to the purchase key of the install that bought it, and answers any other key receipt_used.
     func restorePurchases() async throws -> Bool {
         try await AppStore.sync()
         var handOverError: Error? = nil
@@ -439,11 +458,13 @@ final class BadgeStore: ObservableObject {
     }
 
     // an unverified transaction counts too: Apple, not this check, decides what a new subscription folds into
-    private func hasSubscribedBefore() async -> Bool {
+    private func subscriptionOriginalIds() async -> Set<String> {
+        var ids: Set<String> = []
         for await verification in Transaction.all {
-            if verification.unsafePayloadValue.productType == .autoRenewable { return true }
+            let t = verification.unsafePayloadValue
+            if t.productType == .autoRenewable { ids.insert(String(t.originalID)) }
         }
-        return false
+        return ids
     }
 
     @MainActor

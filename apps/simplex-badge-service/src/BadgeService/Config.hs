@@ -146,7 +146,9 @@ data ServiceConfig = ServiceConfig
     issuer :: Maybe BadgeIssuerKey,
     group :: Maybe GroupConfig,
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
-    devAcceptUnverifiedStoreReceipts :: Bool
+    devAcceptUnverifiedStoreReceipts :: Bool,
+    -- Local testing only, beside the mock; every issue request for a subscription asks it and banks the months it charges.
+    devCheckStoreDuringCoverage :: Bool
   }
   deriving (Eq, Show)
 
@@ -210,7 +212,7 @@ knownSettings =
     ("apple", ["bundle_id", "root_certificates", "api_key_id", "api_issuer_id", "api_private_key_file", "api_host"]),
     ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
-    ("dev", ["accept_unverified_store_receipts"]),
+    ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage"]),
     ("issuer", ["index", "private_key"])
   ]
 
@@ -247,6 +249,9 @@ parseConfig ini = do
   devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
   when (devUnverifiedReceipts && (isJust apple || isJust google)) $
     Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
+  devCheckStoreDuringCoverage <- bool "dev" "check_store_during_coverage" False
+  when (devCheckStoreDuringCoverage && not devUnverifiedReceipts) $
+    Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts = on, as only the mock may be asked while coverage runs"
   pure
     ServiceConfig
       { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
@@ -257,7 +262,8 @@ parseConfig ini = do
         playStore = google,
         issuer = iss,
         group = grp,
-        devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts
+        devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts,
+        devCheckStoreDuringCoverage
       }
   where
     hasSection s = s `elem` sections ini

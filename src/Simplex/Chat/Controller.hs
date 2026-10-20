@@ -156,6 +156,8 @@ data ChatConfig = ChatConfig
     badgeRetryInterval :: RetryInterval,
     -- attempts a store receipt gets in one turn before its next one waits for the stored schedule
     badgeConsecutiveRetries :: Int,
+    -- set only by builds for a dev badge service: allows /_badge request, sent off the shared schedule
+    badgeDevRequests :: Bool,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -667,13 +669,14 @@ data ChatCommand
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
   | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, origin :: StoreReceiptOrigin, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
-  | APISetBadgeSubscriptionStatus {status :: SubscriptionState, payment :: ServicePayment} -- the device store's view of a credited subscription, which changes only what is shown and alerted
+  | APISetBadgeSubscriptionStatus {status :: SubscriptionState, payment :: ServicePayment} -- the device store's view of a credited subscription, which changes what is shown and alerted, and retires its badge once ended
   | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
   | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
   -- episode is last because it is free text: it is the value that makes one occurrence of an
   -- alert distinct from the next, and the app returns whatever it was given
   | APIAckBadgeAlert {userId :: UserId, badgePurchaseId :: Int64, alertKind :: BadgeAlertKind, snooze :: Bool, episode :: Text}
+  | APIRequestBadge {userId :: UserId}
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
@@ -777,6 +780,7 @@ allowRemoteCommand = \case
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
+  APIRequestBadge {} -> False
   _ -> True
 
 data RelayConnectionResult = RelayConnectionResult

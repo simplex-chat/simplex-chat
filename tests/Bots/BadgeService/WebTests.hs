@@ -1024,7 +1024,8 @@ testServiceConfig staticDir trustForwarded =
       playStore = Nothing,
       issuer = Nothing,
       group = Nothing,
-      devAcceptUnverifiedStoreReceipts = False
+      devAcceptUnverifiedStoreReceipts = False,
+      devCheckStoreDuringCoverage = False
     }
 
 testServeWebappOff :: IO ()

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="566" viewBox="0 0 980 566" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Request lanes: requestLane sends codes, invoices, App Store one-time purchases and issue requests not due a check to the main lane, which asks no store; Play purchases and App Store subscription purchases to the purchase lane, where subscriptions are limited per claim to once an hour and Play subscriptions to 300 checks a minute, and Play one-time purchases are not limited; issue requests due a store check to the renewal lane, limited to once an hour per subscription.">
+  <defs>
+    <marker id="l-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
+  </defs>
+  <rect width="980" height="566" fill="#f7f8fb"/>
+
+  <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Request lanes and the store limits on each</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">requestLane reads the request, and for issueBadge the purchase, and never writes. Each lane answers one request at a time.</text>
+
+  <!-- incoming -->
+  <rect x="24" y="86" width="166" height="384" rx="10" fill="#ffffff" stroke="#c9cfdb"/>
+  <text x="38" y="110" font-size="13" font-weight="600" fill="#334155">Service requests</text>
+  <text x="38" y="127" font-size="11" fill="#5b6577">one queue, as they arrive</text>
+  <g font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="38" y="166">redeemBadgeCode</text>
+    <text x="38" y="196">getBadgeInvoice</text>
+    <text x="38" y="226">purchaseBadge</text>
+    <text x="38" y="256">purchaseBadge</text>
+    <text x="38" y="286">purchaseBadge</text>
+    <text x="38" y="336">issueBadge</text>
+    <text x="38" y="380">issueBadge</text>
+  </g>
+  <g font-size="10.5" fill="#5b6577">
+    <text x="38" y="240">Apple, one-time</text>
+    <text x="38" y="270">Apple, auto-renewable</text>
+    <text x="38" y="300">Google, any product</text>
+    <text x="38" y="350">not due a store check</text>
+    <text x="38" y="394">due a store check</text>
+  </g>
+
+  <line x1="190" y1="278" x2="212" y2="278" stroke="#5b6577" stroke-width="1.5" marker-end="url(#l-arr)"/>
+
+  <!-- router -->
+  <rect x="214" y="246" width="122" height="64" rx="8" fill="#ffffff" stroke="#8a93a6"/>
+  <text x="275" y="273" font-size="12" font-weight="600" fill="#1a2030" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">requestLane</text>
+  <text x="275" y="292" font-size="10.5" fill="#5b6577" text-anchor="middle">Service.hs:334</text>
+
+  <path d="M336,278 H352 V131 H370" fill="none" stroke="#5b6577" stroke-width="1.5" marker-end="url(#l-arr)"/>
+  <path d="M336,278 H370" fill="none" stroke="#5b6577" stroke-width="1.5" marker-end="url(#l-arr)"/>
+  <path d="M336,278 H352 V414 H370" fill="none" stroke="#5b6577" stroke-width="1.5" marker-end="url(#l-arr)"/>
+
+  <!-- main lane -->
+  <rect x="372" y="86" width="420" height="92" rx="10" fill="#f1f3f7" stroke="#cfd5df"/>
+  <text x="388" y="109" font-size="13" font-weight="600" fill="#334155">Main lane</text>
+  <text x="388" y="129" font-size="11.5" fill="#1a2030">codes, invoices, App Store one-time purchases (verified offline),</text>
+  <text x="388" y="145" font-size="11.5" fill="#1a2030">issue requests whose subscription is not due a store check</text>
+  <rect x="388" y="154" width="112" height="18" rx="9" fill="#ffffff" stroke="#cfd5df"/>
+  <text x="444" y="167" font-size="10.5" fill="#334155" text-anchor="middle">asks no store</text>
+
+  <!-- purchase lane -->
+  <rect x="372" y="196" width="420" height="146" rx="10" fill="#eceefe" stroke="#c5c8f0"/>
+  <text x="388" y="219" font-size="13" font-weight="600" fill="#3a3fa6">Purchase lane</text>
+  <text x="388" y="239" font-size="11.5" fill="#1a2030">Play purchases, and App Store purchases whose unverified</text>
+  <text x="388" y="255" font-size="11.5" fill="#1a2030">payload says auto-renewable. Play one-time: no limit</text>
+  <rect x="388" y="266" width="390" height="38" rx="6" fill="#ffffff" stroke="#c5c8f0"/>
+  <text x="398" y="281" font-size="10.5" fill="#1a2030">Subscriptions, per claim: once an hour, whoever presents it (App</text>
+  <text x="398" y="296" font-size="10.5" fill="#1a2030">Store by original id after the offline check, Play by token hash)</text>
+  <rect x="388" y="310" width="390" height="22" rx="6" fill="#ffffff" stroke="#c5c8f0"/>
+  <text x="398" y="325" font-size="10.5" fill="#1a2030">Play subscriptions: ≤ 300 checks a minute, then rate_limited</text>
+
+  <!-- renewal lane -->
+  <rect x="372" y="360" width="420" height="110" rx="10" fill="#e3f1f3" stroke="#b5dadd"/>
+  <text x="388" y="383" font-size="13" font-weight="600" fill="#0f5f69">Renewal lane</text>
+  <text x="388" y="403" font-size="11.5" fill="#1a2030">issueBadge signed by the key it names, its subscription due a</text>
+  <text x="388" y="419" font-size="11.5" fill="#1a2030">store check judged 60 s ahead, or whose routing read failed</text>
+  <rect x="388" y="428" width="390" height="34" rx="6" fill="#ffffff" stroke="#b5dadd"/>
+  <text x="398" y="442" font-size="10.5" fill="#1a2030">Per subscription: once an hour, stamped before asking, failures</text>
+  <text x="398" y="456" font-size="10.5" fill="#1a2030">included; requests in between are answered from the stored state</text>
+
+  <!-- stores -->
+  <rect x="830" y="196" width="126" height="274" rx="10" fill="#ffffff" stroke="#c9cfdb"/>
+  <text x="893" y="218" font-size="12" font-weight="600" fill="#334155" text-anchor="middle">Stores</text>
+  <rect x="842" y="232" width="102" height="50" rx="6" fill="#e9f1fc" stroke="#8db4e8"/>
+  <text x="893" y="253" font-size="11" font-weight="600" fill="#0b5cbf" text-anchor="middle">App Store</text>
+  <text x="893" y="268" font-size="11" font-weight="600" fill="#0b5cbf" text-anchor="middle">Server API</text>
+  <rect x="842" y="292" width="102" height="50" rx="6" fill="#e7f4ec" stroke="#8cc6a3"/>
+  <text x="893" y="313" font-size="11" font-weight="600" fill="#11713f" text-anchor="middle">Play</text>
+  <text x="893" y="328" font-size="11" font-weight="600" fill="#11713f" text-anchor="middle">Developer API</text>
+  <text x="893" y="372" font-size="10.5" fill="#5b6577" text-anchor="middle">each call up to</text>
+  <text x="893" y="386" font-size="10.5" fill="#5b6577" text-anchor="middle">verifyTimeout, 10 s</text>
+
+  <line x1="792" y1="252" x2="828" y2="252" stroke="#5b6577" stroke-width="1.5" marker-end="url(#l-arr)"/>
+  <line x1="792" y1="414" x2="828" y2="414" stroke="#5b6577" stroke-width="1.5" marker-end="url(#l-arr)"/>
+
+  <!-- note -->
+  <rect x="24" y="490" width="932" height="52" rx="8" fill="#eef1f5"/>
+  <text x="40" y="510" font-size="12" fill="#1a2030">A ledger is appended from the main and renewal lanes. Each write re-reads the tip, which is enough while transactions run one</text>
+  <text x="40" y="527" font-size="12" fill="#1a2030">at a time: SQLite, or Postgres at --pool-size 1. A larger Postgres pool needs a row lock on the purchase, which is not built.</text>
+</svg>

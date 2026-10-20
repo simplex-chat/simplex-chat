@@ -358,6 +358,8 @@ public struct BadgeSubscription: Decodable, Hashable {
     public var planMonths: Int
     // nil until the service or the device's store has been asked
     public var status: BadgeSubscriptionState?
+    // the store's reference: Apple's original transaction id, or a hash of Play's token
+    public var transactionRef: String?
 }
 
 // the store's state as last observed; a newer core may know a state this version does not

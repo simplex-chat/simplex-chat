@@ -611,7 +611,7 @@ object ChatController {
     }
   }
 
-  // the device store's view of a subscription it charges, which changes only what is shown and alerted
+  // the device store's view of a subscription it charges, which changes what is shown and alerted, and retires its badge once ended
   suspend fun apiSetBadgeSubscriptionStatus(rh: Long?, status: BadgeSubscriptionState, payment: ServicePayment) {
     val r = sendCmd(rh, CC.ApiSetBadgeSubscriptionStatus(status, payment), log = false)
     if (r is API.Result && r.res is CR.CmdOk) return

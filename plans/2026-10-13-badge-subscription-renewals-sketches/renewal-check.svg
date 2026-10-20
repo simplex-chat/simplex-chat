@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="786" viewBox="0 0 980 786" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="The renewal check: while paid coverage runs, issueBadge asks no store; once it has ended, the service asks the store at most once an hour, stamping the check first; a grantable charge is written with the issued month in one transaction that re-reads the tip; otherwise the charge and state are recorded and the answer carries no credential.">
+  <defs>
+    <marker id="r-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
+  </defs>
+  <rect width="980" height="786" fill="#f7f8fb"/>
+
+  <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">The service's renewal check</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">issueBadge for a purchase a subscription funds (BadgeService/Service.hs:703-790). The store is asked only after paid coverage ends.</text>
+
+  <!-- left column: the decision path -->
+  <rect x="40" y="84" width="220" height="36" rx="18" fill="#ffffff" stroke="#8a93a6"/>
+  <text x="150" y="107" font-size="12" fill="#1a2030" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">issueBadge {lastEntry}</text>
+
+  <rect x="40" y="148" width="220" height="50" rx="8" fill="#ffffff" stroke="#9aa0e0"/>
+  <text x="150" y="168" font-size="12.5" font-weight="600" fill="#1a2030" text-anchor="middle">Coverage still runs?</text>
+  <text x="150" y="187" font-size="10.5" fill="#5b6577" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">paidThrough tip &gt; now</text>
+
+  <rect x="40" y="228" width="220" height="50" rx="8" fill="#ffffff" stroke="#9aa0e0"/>
+  <text x="150" y="248" font-size="12.5" font-weight="600" fill="#1a2030" text-anchor="middle">Checked within the hour?</text>
+  <text x="150" y="267" font-size="10.5" fill="#5b6577" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">subscription_checked_at</text>
+
+  <rect x="40" y="308" width="220" height="40" rx="8" fill="#ffffff" stroke="#8a93a6"/>
+  <text x="150" y="325" font-size="12" fill="#1a2030" text-anchor="middle">Stamp the check time first,</text>
+  <text x="150" y="340" font-size="12" fill="#1a2030" text-anchor="middle">in its own write</text>
+
+  <rect x="40" y="376" width="220" height="50" rx="8" fill="#ffffff" stroke="#8a93a6"/>
+  <text x="150" y="396" font-size="12.5" font-weight="600" fill="#1a2030" text-anchor="middle">Ask the store, ≤ 10 s</text>
+  <text x="150" y="414" font-size="10.5" fill="#5b6577" text-anchor="middle">Apple by original id · Play by token</text>
+
+  <rect x="40" y="456" width="220" height="50" rx="8" fill="#ffffff" stroke="#9aa0e0"/>
+  <text x="150" y="476" font-size="12.5" font-weight="600" fill="#1a2030" text-anchor="middle">Charge grantable now?</text>
+  <text x="150" y="495" font-size="10.5" fill="#5b6577" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">grantableCharge, fundsMonthNow</text>
+
+  <g stroke="#5b6577" stroke-width="1.5" fill="none">
+    <line x1="150" y1="120" x2="150" y2="146" marker-end="url(#r-arr)"/>
+    <line x1="150" y1="198" x2="150" y2="226" marker-end="url(#r-arr)"/>
+    <line x1="150" y1="278" x2="150" y2="306" marker-end="url(#r-arr)"/>
+    <line x1="150" y1="348" x2="150" y2="374" marker-end="url(#r-arr)"/>
+    <line x1="150" y1="426" x2="150" y2="454" marker-end="url(#r-arr)"/>
+    <line x1="260" y1="173" x2="314" y2="173" marker-end="url(#r-arr)"/>
+    <line x1="260" y1="253" x2="314" y2="253" marker-end="url(#r-arr)"/>
+    <line x1="260" y1="401" x2="314" y2="401" marker-end="url(#r-arr)"/>
+    <line x1="260" y1="481" x2="314" y2="481" marker-end="url(#r-arr)"/>
+    <path d="M150,506 V594 H314" marker-end="url(#r-arr)"/>
+  </g>
+  <g font-size="11" fill="#5b6577">
+    <text x="158" y="216">no</text>
+    <text x="158" y="296">no</text>
+    <text x="158" y="444">answered</text>
+    <text x="287" y="167" text-anchor="middle">yes</text>
+    <text x="287" y="247" text-anchor="middle">yes</text>
+    <text x="287" y="395" text-anchor="middle">fails</text>
+    <text x="287" y="475" text-anchor="middle">yes</text>
+    <text x="158" y="588">no</text>
+  </g>
+
+  <!-- outcomes -->
+  <rect x="316" y="146" width="320" height="54" rx="8" fill="#f1f3f7" stroke="#cfd5df"/>
+  <text x="330" y="166" font-size="11.5" fill="#1a2030">Unchanged path: lapse, then issue a due month</text>
+  <text x="330" y="182" font-size="11.5" fill="#1a2030">or answer the current credential. No store call.</text>
+
+  <rect x="316" y="226" width="320" height="54" rx="8" fill="#f1f3f7" stroke="#cfd5df"/>
+  <text x="330" y="246" font-size="11.5" fill="#1a2030">Answer from what it last read: no new</text>
+  <text x="330" y="262" font-size="11.5" fill="#1a2030">credential, the stored subscription state.</text>
+
+  <rect x="316" y="374" width="320" height="54" rx="8" fill="#fff4e0" stroke="#e7c48a"/>
+  <text x="330" y="394" font-size="11.5" fill="#1a2030">provider_unavailable, or the store's refusal,</text>
+  <text x="330" y="410" font-size="11.5" fill="#1a2030">retryAfter, if any, ≥ 1 h; only the stamp written.</text>
+
+  <rect x="316" y="446" width="320" height="104" rx="8" fill="#e7f4ec" stroke="#8cc6a3"/>
+  <text x="330" y="466" font-size="11.5" fill="#1a2030">One transaction, after signing the month:</text>
+  <text x="330" y="483" font-size="11.5" fill="#1a2030">re-read the tip (moved → internal); insert the</text>
+  <text x="330" y="500" font-size="11.5" fill="#1a2030">charge; lapse to the store's period start, grant</text>
+  <text x="330" y="517" font-size="11.5" fill="#1a2030">there, lapse to now; issue the month; set the state.</text>
+  <text x="330" y="538" font-size="11.5" font-weight="600" fill="#11713f">→ credential + subscription</text>
+
+  <rect x="316" y="566" width="320" height="58" rx="8" fill="#f1f3f7" stroke="#cfd5df"/>
+  <text x="330" y="586" font-size="11.5" fill="#1a2030">Record the charge, if any, and the state;</text>
+  <text x="330" y="603" font-size="11.5" fill="#1a2030">no ledger row. → no credential + subscription</text>
+
+  <!-- reasons -->
+  <rect x="676" y="446" width="280" height="178" rx="8" fill="#ffffff" stroke="#c9cfdb"/>
+  <text x="690" y="468" font-size="12" font-weight="600" fill="#334155">Not grantable when</text>
+  <g font-size="11.5" fill="#1a2030">
+    <text x="690" y="490">the state is ended, or there is no charge</text>
+    <text x="690" y="507">the charge was revoked, or is in an offer</text>
+    <text x="690" y="524">its plan is not sold, or is another tier</text>
+    <text x="690" y="541">its period has not started, or is over</text>
+    <text x="690" y="558">its months from the period start ran out</text>
+    <text x="690" y="575">a ledger row already grants it</text>
+  </g>
+  <text x="690" y="600" font-size="11" fill="#5b6577">A period that ends before it starts:</text>
+  <text x="690" y="615" font-size="11" fill="#5b6577">internal, logged.</text>
+  <line x1="636" y1="594" x2="674" y2="594" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="3 3"/>
+
+  <!-- the app -->
+  <rect x="24" y="648" width="932" height="116" rx="8" fill="#eef1f5"/>
+  <text x="40" y="670" font-size="12.5" font-weight="600" fill="#1a2030">What the app does with the answer</text>
+  <g font-size="11" fill="#1a2030">
+    <text x="40" y="692" font-weight="600">A credential</text>
+    <text x="40" y="708">stored, shown when the</text>
+    <text x="40" y="723">current one expires; the</text>
+    <text x="40" y="738">unrenewed run ends</text>
+
+    <text x="270" y="692" font-weight="600">No credential, or an error</text>
+    <text x="270" y="708">the unrenewed run starts or grows;</text>
+    <text x="270" y="723">badge kept until 67 days after the</text>
+    <text x="270" y="738">run started; asked again at the</text>
+    <text x="270" y="753">next daily moment of its expiry</text>
+
+    <text x="500" y="692" font-weight="600">subscription: ended</text>
+    <text x="500" y="708">badge retired in the same pass;</text>
+    <text x="500" y="723">alert subscription_ended;</text>
+    <text x="500" y="738">nothing more is asked</text>
+
+    <text x="730" y="692" font-weight="600">No reply (timeout)</text>
+    <text x="730" y="708">nothing retired; the run and the</text>
+    <text x="730" y="723">ledger untouched; the worker</text>
+    <text x="730" y="738">records the failure and retries</text>
+    <text x="730" y="753">on its backoff, 30 s to an hour</text>
+  </g>
+</svg>

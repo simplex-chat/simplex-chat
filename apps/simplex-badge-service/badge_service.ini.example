@@ -97,3 +97,6 @@ idle_seconds = 60
 ; so Play refunds a licence tester's subscription once its acknowledgement window lapses.
 [dev]
 accept_unverified_store_receipts = off
+; only beside accept_unverified_store_receipts = on: every issue request for a subscription asks the
+; mock, while coverage runs too, and banks the months each check charges, to watch a renewal by hand.
+check_store_during_coverage = off

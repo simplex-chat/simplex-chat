@@ -438,6 +438,8 @@ object BadgeStore {
 
   // Hands over as the device's own whatever the store lists, so a purchase no record here has is claimed by this profile.
   // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
+  // Play's list does include the subscription, yet it is not restored on another install or profile: the service credited
+  // the payment to the purchase key of the install that bought it, and answers any other key receipt_used.
   suspend fun restorePurchases(): Boolean {
     var handOverError: Exception? = null
     val purchases = if (useBadgeTestProducts) emptyList() else platform.androidUnfinishedBadgePurchases()

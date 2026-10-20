@@ -14,9 +14,12 @@ struct BadgesCheckOrderView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject private var store = BadgeStore.shared
+    // store.forSale reads the active profile's badge
+    @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
     let period: BadgePeriod
     @State private var purchasing = false
+    @State private var privacyPolicyActive = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
     @State private var alert: SomeAlert?
 
@@ -53,8 +56,8 @@ struct BadgesCheckOrderView: View {
                         }
                     }
 
-                    if !store.forSale(period) && store.subscribedBefore == true {
-                        footnote("This Apple ID subscribed before. Subscribing again is not available in the app yet.")
+                    if !store.forSale(level, period) && store.subscribedBefore {
+                        footnote("This Apple ID subscribed before. In the app, it can subscribe again only to continue this profile's last purchase, when that was a subscription to this badge.")
                     }
 
                     Spacer(minLength: 20)
@@ -65,14 +68,21 @@ struct BadgesCheckOrderView: View {
                         BadgeBillingFooter(period: period)
                         HStack(spacing: 20) {
                             Link("Terms of use", destination: appleStandardEULAURL)
-                            Link("Privacy policy", destination: conditionsURL)
+                            ZStack {
+                                Button("Privacy policy") { privacyPolicyActive = true }
+                                NavigationLink(isActive: $privacyPolicyActive) {
+                                    ConditionsTextView()
+                                        .padding(.horizontal, 25)
+                                        .navigationTitle("Privacy policy")
+                                        .modifier(ThemedBackground())
+                                } label: {
+                                    EmptyView()
+                                }
+                                .frame(width: 1, height: 1)
+                                .hidden()
+                            }
                         }
                         .font(.footnote)
-                        // hidden: the unfinished-transaction sweep already re-presents a charged purchase,
-                        // leaving only another profile's purchase to claim
-                        // RestorePurchasesButton()
-                        //     .padding(.top, 10)
-                        // footnote("Adds an App Store purchase of this Apple ID that no profile here has yet. A purchase still being added on another device may be added here instead.")
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -92,7 +102,7 @@ struct BadgesCheckOrderView: View {
         Text(text)
             .font(.footnote)
             .foregroundColor(theme.colors.secondary)
-            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -110,7 +120,7 @@ struct BadgesCheckOrderView: View {
 
     private func payButton() -> some View {
         let price = store.price(level, period, compact: false)
-        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(period)
+        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(level, period)
         return Button {
             purchase()
         } label: {
@@ -140,6 +150,8 @@ struct BadgesCheckOrderView: View {
                 logger.error("BadgesCheckOrderView.purchase: \(String(describing: error))")
                 await MainActor.run {
                     purchasing = false
+                    // thrown when the purchase sheet or its sign-in prompt is dismissed, which needs no alert
+                    if case .userCancelled? = error as? StoreKitError { return }
                     alert = SomeAlert(
                         alert: Alert(
                             title: Text("Purchase error"),
@@ -167,6 +179,7 @@ struct RestorePurchasesButton: View {
                 await MainActor.run { restoring = false }
             }
         }
+        .font(.footnote)
         .disabled(restoring)
     }
 

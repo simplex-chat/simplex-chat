@@ -302,7 +302,8 @@ data BadgeState = BadgeState
 -- | A store subscription funding the purchase: the latest charge's plan, and the store's state as last observed.
 data BadgeSubscription = BadgeSubscription
   { planMonths :: Int,
-    status :: Maybe SubscriptionState
+    status :: Maybe SubscriptionState,
+    transactionRef :: Maybe Text -- the store receipt's: Apple's original transaction id, or a hash of Play's token
   }
   deriving (Eq, Show)
 

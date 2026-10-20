@@ -10,7 +10,7 @@
 module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
-import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
+import BadgeService.StoreReceipts (StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -39,7 +39,7 @@ import Simplex.Chat.Badges.Types (BadgeAlertKind (..), BadgeIssueError (..), Bad
 import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (BadgeRedeemError (..), ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, storeTransactionRef)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRenewal, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, boundedSubscriptionState, derivedBadgeAlert, resumableCharge, resumeHoldEnded, storeTransactionRef)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts, appleTransactionRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import qualified Simplex.Chat.Store.Badges as SB
@@ -119,7 +119,8 @@ badgeTests = do
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
-    it "reads an Apple transaction's id, purchase date, revocation and type from its unverified payload" testAppleTransactionFacts
+    it "reads an Apple transaction's id, purchase and expiry dates, revocation and type from its unverified payload" testAppleTransactionFacts
+    it "resumes a retired subscription only with an Apple charge whose paid period runs, dated less than a day ahead" testResumableCharge
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
@@ -1016,8 +1017,10 @@ testAppleTransactionFacts = do
   let jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
       part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
       renewal = ["transactionId" J..= ("2000000900000002" :: T.Text), "type" J..= ("Auto-Renewable Subscription" :: T.Text)]
-      facts purchaseDate revoked autoRenewable = Just AppleTransactionFacts {transactionId = "2000000900000002", purchaseDate, revoked, autoRenewable}
+      facts purchaseDate revoked autoRenewable = Just AppleTransactionFacts {transactionId = "2000000900000002", purchaseDate, expiresDate = Nothing, revoked, autoRenewable}
   appleTransactionFacts (jws $ ("purchaseDate" J..= (1769904000000 :: Int)) : renewal) `shouldBe` facts (Just 1769904000000) False True
+  appleTransactionFacts (jws $ ("expiresDate" J..= (1772582400000 :: Int)) : renewal) `shouldBe` ((\f -> f {expiresDate = Just 1772582400000}) <$> facts Nothing False True)
+  appleTransactionFacts (jws $ ("expiresDate" J..= ("next month" :: T.Text)) : renewal) `shouldBe` facts Nothing False True
   -- the service reads a null revocationDate as not revoked, and so does the client
   appleTransactionFacts (jws $ ("revocationDate" J..= J.Null) : renewal) `shouldBe` facts Nothing False True
   appleTransactionFacts (jws $ ("revocationDate" J..= (1770000000000 :: Int)) : renewal) `shouldBe` facts Nothing True True
@@ -1026,6 +1029,36 @@ testAppleTransactionFacts = do
   appleTransactionFacts (jws $ take 1 renewal <> ["type" J..= ("Consumable" :: T.Text)]) `shouldBe` facts Nothing False False
   appleTransactionFacts (jws $ drop 1 renewal) `shouldBe` Nothing
   appleTransactionFacts "not.a-jws" `shouldBe` Nothing
+
+testResumableCharge :: IO ()
+testResumableCharge = do
+  let nowSeconds = 1770000000 :: Integer
+      now = posixSecondsToUTCTime $ fromInteger nowSeconds
+      secondsAhead s = addUTCTime (fromInteger s) now
+      epochMs s = (nowSeconds + s) * 1000
+      oneDay = 86400
+      oneMonth = 30 * oneDay
+      jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
+      part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      ofType t fields = SPApple {jws = jws $ ["transactionId" J..= ("2000000900000002" :: T.Text), "type" J..= (t :: T.Text)] <> fields}
+      renewalWith = ofType "Auto-Renewable Subscription"
+      dated bought expires = renewalWith ["purchaseDate" J..= epochMs bought, "expiresDate" J..= epochMs expires]
+  resumableCharge now (dated 0 oneMonth) `shouldBe` Just now
+  resumableCharge now (dated 60 oneMonth) `shouldBe` Just (secondsAhead 60)
+  resumableCharge now (dated (oneDay - 1) oneMonth) `shouldBe` Just (secondsAhead (oneDay - 1))
+  -- dated as far ahead as the allowed skew or further, as a forged payload can be
+  resumableCharge now (dated oneDay oneMonth) `shouldBe` Nothing
+  resumableCharge now (dated (365 * oneDay) (400 * oneDay)) `shouldBe` Nothing
+  -- the paid period it bought has ended
+  resumableCharge now (dated (-oneMonth) 1) `shouldBe` Just (secondsAhead (-oneMonth))
+  resumableCharge now (dated (-oneMonth) 0) `shouldBe` Nothing
+  resumableCharge now (renewalWith ["purchaseDate" J..= epochMs 0, "expiresDate" J..= epochMs oneMonth, "revocationDate" J..= epochMs 0]) `shouldBe` Nothing
+  resumableCharge now (ofType "Non-Renewing Subscription" ["purchaseDate" J..= epochMs 0, "expiresDate" J..= epochMs oneMonth]) `shouldBe` Nothing
+  resumableCharge now (renewalWith ["expiresDate" J..= epochMs oneMonth]) `shouldBe` Nothing
+  resumableCharge now (renewalWith ["purchaseDate" J..= epochMs 0]) `shouldBe` Nothing
+  resumableCharge now SPGoogle {productId = "subscr_badge_supporter_01", token = "fake-play-token"} `shouldBe` Nothing
+  resumeHoldEnded (secondsAhead oneDay) now `shouldBe` True
+  resumeHoldEnded (secondsAhead (oneDay - 1)) now `shouldBe` False
 
 testShownServiceRequest :: IO ()
 testShownServiceRequest = do
@@ -1057,7 +1090,7 @@ testGoogleTokenPath = do
   mapM_ (\t -> unsent t `shouldBe` True) ["a/b", "../x", "t?x", "t#x", "t x", ""]
 
 uncalledVerifier :: StoreVerifier
-uncalledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 500000}
+uncalledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 500000, storeChecks = ChecksAfterCoverage}
 
 validPlayToken :: T.Text
 validPlayToken = "fake-play-token.AO-J1Oz9x2kqE7wYt3"
@@ -1133,12 +1166,18 @@ testBadgeSubscriptionJSON = do
         J.Object o -> KM.lookup "subscription" o
         _ -> Nothing
   subscriptionField (badgeState Nothing) `shouldBe` Nothing
-  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 12, status = Just SSCancelled})
+  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 12, status = Just SSCancelled, transactionRef = Nothing})
     `shouldBe` Just (J.object ["planMonths" J..= (12 :: Int), "status" J..= ("cancelled" :: T.Text)])
   -- not yet observed: the field is left out rather than sent as null
-  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 1, status = Nothing})
+  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 1, status = Nothing, transactionRef = Nothing})
     `shouldBe` Just (J.object ["planMonths" J..= (1 :: Int)])
-  let renewal status = badgeRenewal futureTime $ Just BadgeSubscription {planMonths = 1, status}
+  let withRef = BadgeSubscription {planMonths = 1, status = Just SSRenewing, transactionRef = Just "2000000812345680"}
+  subscriptionField (badgeState $ Just withRef)
+    `shouldBe` Just (J.object ["planMonths" J..= (1 :: Int), "status" J..= ("renewing" :: T.Text), "transactionRef" J..= ("2000000812345680" :: T.Text)])
+  J.fromJSON (J.toJSON withRef) `shouldBe` J.Success withRef
+  -- as an older core sends it
+  J.fromJSON (J.object ["planMonths" J..= (1 :: Int)]) `shouldBe` J.Success BadgeSubscription {planMonths = 1, status = Nothing, transactionRef = Nothing}
+  let renewal status = badgeRenewal futureTime $ Just BadgeSubscription {planMonths = 1, status, transactionRef = Nothing}
   renewal (Just SSRenewing) `shouldBe` (Just futureTime, True)
   mapM_ (\s -> renewal s `shouldBe` (Nothing, False)) [Nothing, Just SSCancelled, Just SSBillingRetry, Just SSEnded, Just (SSUnknown "renewing soon")]
   badgeRenewal futureTime Nothing `shouldBe` (Nothing, False)
@@ -1161,7 +1200,7 @@ testSubscriptionAlertDerivation = do
       early = addUTCTime (-10 * nominalDay) ends
       soon = addUTCTime (-nominalDay) ends
       past = addUTCTime nominalDay ends
-      subscription months st = SB.PKSubscription BadgeSubscription {planMonths = months, status = st}
+      subscription months st = SB.PKSubscription BadgeSubscription {planMonths = months, status = st, transactionRef = Nothing}
       alertOf t kind' isShown err =
         let p = SB.UserBadgePurchase {badgePurchaseId = 1, purchaseKey = k, purchasePrivKey = pk, masterKey = mk, badgeType = BTSupporter, shown = isShown, alertAcked = Nothing, alertSnoozeUntil = Nothing, issueError = err, nextWakeAt = Nothing, unrenewedRun = Nothing, purchaseKind = kind'}
          in (\BT.BadgeAlert {kind, date} -> (kind, date)) <$> derivedBadgeAlert t p Nothing balance

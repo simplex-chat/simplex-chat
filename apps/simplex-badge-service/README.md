@@ -51,7 +51,7 @@ simplex-badge-service --help
   `simplex-directory-service --run-cli`). This mode is the chat/RPC side and the `//` commands
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
-  revoked. `[apple]`, `[google]` and `[dev] accept_unverified_store_receipts` apply to it.
+  revoked. `[apple]`, `[google]` and `[dev]` apply to it.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -84,7 +84,7 @@ Other options:
 - `--service-config INI_FILE`: path to `badge_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
   `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
-  uses only its `[issuer]`, `[apple]` and `[google]` sections and `[dev] accept_unverified_store_receipts`. An issuer key is
+  uses only its `[issuer]`, `[apple]`, `[google]` and `[dev]` sections. An issuer key is
   still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
 - `--client-service`: use the client service certificate.
@@ -301,6 +301,24 @@ acknowledgement window lapses.
 With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
 That is harmless only while this deployment signs with an issuer key released apps do not carry, so
 they refuse what it signs — never turn it on where the key is one those apps trust.
+
+```ini
+[dev]
+accept_unverified_store_receipts = on
+check_store_during_coverage = on
+```
+
+With `check_store_during_coverage` on as well, the service asks the mock at every `issueBadge` for a
+subscription, while its paid coverage runs too, rather than once coverage has ended and at most once
+an hour. A charge it reports during coverage is banked: a charge row, the plan's months added to
+what is left and a later paid-through date, and those months are issued once coverage reaches them.
+So a renewal shows at once, though its credential waits for the paid month to end on the service's
+clock, and after a restart the mock answers the subscription ended at once. The mock charges anew
+at every check, so every such request banks the plan's months again; space requests over a minute
+apart, as the mock dates a charge a minute back and the app fails a ledger row dated before the one
+it follows. Off by default, and the service refuses to start with it on unless
+`accept_unverified_store_receipts` is on: a real store has not started its next charge while
+coverage runs, and asking it then would spend the quota every subscriber shares.
 
 ## Issuing codes
 
