@@ -1907,6 +1907,7 @@ data class Contact(
   val active get() = contactStatus == ContactStatus.Active
   override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
+  val callReconnectSupported get() = (activeConn?.peerChatVRange?.maxVersion ?: 0) >= CALL_RECONNECT_VERSION
   override val nextConnectPrepared get() = active && preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
   override val profileChangeProhibited get() = activeConn != null
   val nextAcceptContactRequest get() =
