@@ -80,9 +80,9 @@
         <target state="translated">%@ と %@ は接続中</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ at %@:" xml:space="preserve">
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
         <source>%1$@ at %2$@:</source>
-        <target>%1$@ at %2$@:</target>
+        <target state="translated">%1$@ at %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ connected" xml:space="preserve">
@@ -268,9 +268,9 @@ channel subscriber relay bar</note>
         <target></target>
         <note>channel subscriber count</note>
       </trans-unit>
-      <trans-unit id="%d weeks" xml:space="preserve">
+      <trans-unit id="%d weeks" xml:space="preserve" approved="no">
         <source>%d weeks</source>
-        <target>%d 週</target>
+        <target state="translated">%d 週</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active" xml:space="preserve">
@@ -939,9 +939,9 @@ swipe action</note>
         <target>すべて</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All app data is deleted." xml:space="preserve">
+      <trans-unit id="All app data is deleted." xml:space="preserve" approved="no">
         <source>All app data is deleted.</source>
-        <target>すべてのアプリデータが削除されます。</target>
+        <target state="translated">すべてのアプリデータが削除されます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
@@ -1204,9 +1204,9 @@ swipe action</note>
         <target state="translated">常にリレーを経由する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve">
+      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve" approved="no">
         <source>An empty chat profile with the provided name is created, and the app opens as usual.</source>
-        <target>指定された名前の空のチャット プロファイルが作成され、アプリが通常どおり開きます。</target>
+        <target state="translated">指定された名前の空のチャット プロファイルが作成され、アプリが通常どおり開きます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Another reason" xml:space="preserve">
@@ -1254,9 +1254,9 @@ swipe action</note>
         <target state="translated">アプリのパスコード</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve">
+      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
         <source>App passcode is replaced with self-destruct passcode.</source>
-        <target>アプリのパスコードは自己破壊パスコードに置き換えられます。</target>
+        <target state="translated">アプリのパスコードは自己破壊パスコードに置き換えられます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App session" xml:space="preserve">
@@ -1792,14 +1792,14 @@ new chat action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct mode" xml:space="preserve">
+      <trans-unit id="Change self-destruct mode" xml:space="preserve" approved="no">
         <source>Change self-destruct mode</source>
-        <target>自己破壊モードの変更</target>
+        <target state="translated">自己破壊モードの変更</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
         <source>Change self-destruct passcode</source>
-        <target>自己破壊パスコードを変更する</target>
+        <target state="translated">自己破壊パスコードを変更する</target>
         <note>authentication reason
 set passcode view</note>
       </trans-unit>
@@ -3635,14 +3635,14 @@ chat item action</note>
         <target state="translated">定期的な通知を有効にしますか？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct" xml:space="preserve">
+      <trans-unit id="Enable self-destruct" xml:space="preserve" approved="no">
         <source>Enable self-destruct</source>
-        <target>自己破壊モードを有効にする</target>
+        <target state="translated">自己破壊モードを有効にする</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
         <source>Enable self-destruct passcode</source>
-        <target>自己破壊パスコードを有効にする</target>
+        <target state="translated">自己破壊パスコードを有効にする</target>
         <note>set passcode view</note>
       </trans-unit>
       <trans-unit id="Enabled" xml:space="preserve">
@@ -4007,6 +4007,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
         <source>Error enabling delivery receipts!</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve" approved="no">
@@ -4171,6 +4172,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
         <source>Error setting delivery receipts!</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sharing address" xml:space="preserve">
@@ -4983,9 +4985,9 @@ Error: %2$@</source>
         <target state="translated">アプリを開くときにこのパスコードを入力すると、アプリのすべてのデータが元に戻せないように削除されます！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve">
+      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
         <source>If you enter your self-destruct passcode while opening the app:</source>
-        <target>アプリを開いているときに自己破壊パスコードを入力した場合:</target>
+        <target state="translated">アプリを開いているときに自己破壊パスコードを入力した場合:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you joined or created channels, they will stop working permanently." xml:space="preserve">
@@ -5780,6 +5782,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Message delivery receipts!" xml:space="preserve">
         <source>Message delivery receipts!</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message delivery warning" xml:space="preserve">
@@ -7370,6 +7373,7 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receive errors" xml:space="preserve">
@@ -7387,9 +7391,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target state="translated">受信: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Received message" xml:space="preserve">
+      <trans-unit id="Received message" xml:space="preserve" approved="no">
         <source>Received message</source>
-        <target>受信したメッセージ</target>
+        <target state="translated">受信したメッセージ</target>
         <note>message info title</note>
       </trans-unit>
       <trans-unit id="Received messages" xml:space="preserve">
@@ -8201,24 +8205,24 @@ chat item action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct" xml:space="preserve">
+      <trans-unit id="Self-destruct" xml:space="preserve" approved="no">
         <source>Self-destruct</source>
-        <target>自己破壊</target>
+        <target state="translated">自己破壊</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode" xml:space="preserve" approved="no">
         <source>Self-destruct passcode</source>
-        <target>自己破壊パスコード</target>
+        <target state="translated">自己破壊パスコード</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode changed!</source>
-        <target>自己破壊パスコードが変更されました！</target>
+        <target state="translated">自己破壊パスコードが変更されました！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode enabled!</source>
-        <target>自己破壊パスコードが有効になりました！</target>
+        <target state="translated">自己破壊パスコードが有効になりました！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve" approved="no">
@@ -8238,6 +8242,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
         <source>Send delivery receipts to</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send direct message to connect" xml:space="preserve" approved="no">
@@ -8297,6 +8302,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send receipts" xml:space="preserve">
         <source>Send receipts</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send request" xml:space="preserve">
@@ -8346,10 +8352,12 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve" approved="no">
@@ -8359,18 +8367,22 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is disabled for %lld contacts</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is disabled for %lld groups" xml:space="preserve">
         <source>Sending receipts is disabled for %lld groups</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is enabled for %lld contacts</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld groups" xml:space="preserve">
         <source>Sending receipts is enabled for %lld groups</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve" approved="no">
@@ -8393,9 +8405,9 @@ chat item action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent message" xml:space="preserve">
+      <trans-unit id="Sent message" xml:space="preserve" approved="no">
         <source>Sent message</source>
-        <target>送信</target>
+        <target state="translated">送信</target>
         <note>message info title</note>
       </trans-unit>
       <trans-unit id="Sent messages" xml:space="preserve">
@@ -8563,9 +8575,9 @@ chat item action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passcode" xml:space="preserve">
+      <trans-unit id="Set passcode" xml:space="preserve" approved="no">
         <source>Set passcode</source>
-        <target>パスコードを設定する</target>
+        <target state="translated">パスコードを設定する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase" xml:space="preserve">
@@ -9674,6 +9686,7 @@ your contacts and groups.</source>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
         <source>This group has over %lld members, delivery receipts are not sent.</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve" approved="no">
