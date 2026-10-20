@@ -66,6 +66,33 @@ You can run it with: `npx ts-node ./examples/squaring-bot.ts`
 
 A larger example, with a business address and commands as keys: [SimpleX Calculator](../../apps/simplex-calculator-bot/).
 
+## Live messages
+
+Live messages are shown to recipients while they are written, e.g. a streamed reply of a language model.
+
+`onMessage` handler for `bot.run` that streams a reply:
+
+```javascript
+const {api, util} = require("simplex-chat")
+
+async function onMessage(ci, content, chat) {
+  const {chatType, chatId} = util.chatInfoRef(ci.chatInfo)
+  const live = new api.LiveMessage(chat, chatType, chatId)
+  let text = ""
+  for await (const delta of streamReply(content.text)) {
+    text += delta
+    live.update(text)
+  }
+  await live.end()
+}
+```
+
+`streamReply` stands for your function that returns text fragments as an async iterable.
+
+`update` sends the first text at once, and then updates the message at most once per 3 seconds (`interval` parameter). `end` finalizes the message; a message without text is deleted.
+
+The underlying commands: `apiSendMessages` with `liveMessage = true` sends a live message, `apiUpdateChatItem` with `liveMessage = true` updates it, and with `liveMessage = false` finalizes it.
+
 ## Native library
 
 `libsimplex` and the prebuilt Node.js add-on are downloaded on first use into the user cache (`$XDG_CACHE_HOME/simplex-chat` or `~/.cache/simplex-chat` on Linux, `~/Library/Caches/simplex-chat` on macOS, `%LOCALAPPDATA%\simplex-chat` on Windows), shared with the Python library. To download them ahead of time, for example in a Dockerfile, run as the user that runs the app:
@@ -121,9 +148,26 @@ Library provides types and functions to:
 - create and accept invitations or connect with the contacts.
 - create and manage long-term user address, accepting connection requests automatically.
 - send, receive, delete and update messages, and add message reactions.
+- send live messages, e.g. streamed replies.
 - create, join and manage group.
 - send and receive files.
 - etc.
+
+## Tests
+
+```sh
+npm install
+npm run build
+npm test
+```
+
+To run one test file: `npm test -- tests/core.test.ts`.
+
+A local SMP server is started for the API and bot tests. On Linux x86-64 and arm64, `smp-server` is downloaded from [simplexmq releases](https://github.com/simplex-chat/simplexmq/releases) to `node_modules/.cache/smp-server`. To use another build, or on other systems, set `SMP_SERVER` to the path of `smp-server`:
+
+```sh
+SMP_SERVER=/path/to/smp-server npm test
+```
 
 ## License
 
