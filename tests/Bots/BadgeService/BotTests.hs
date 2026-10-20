@@ -221,6 +221,7 @@ badgeServiceTests = do
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
     it "should retire a subscription badge the service answers ended while its ledger still covers, and credit a new subscription after it" testSubscriptionEndsWhileCovered
     it "should retire a subscription badge the device reports ended without asking, and credit a one-time purchase after it" testDeviceEndedRetires
+    it "should keep a subscription badge when a due request's answer renews it, though the device reported it ended" testFreshAnswerOverridesDeviceEnded
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
     it "should keep the device store's view of a credited subscription, except renewing over billing retry, and nothing for any other transaction" testSubscriptionStateFromStore
@@ -2795,7 +2796,8 @@ testSubscriptionEndsWhileCovered ps =
       inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
       waitWakeArmed (chatController alice)
       rows <- ledgerRows (chatController alice) "badge_ledger"
-      -- the state a store check leaves when the service's clock is past the coverage the client's still sees
+      -- stands in for an ended answer while the client's ledger still covers, as clocks that disagree give;
+      -- month 2 is issued only because of the stand-in, as a store check that finds ended grants nothing
       withTransaction chatStore $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET subscription_state = 'ended'"
       checks <- subscriptionChecks store
       setClockAt bsClock $ fst $ renewalMoments rows
@@ -2828,6 +2830,20 @@ testDeviceEndedRetires ps =
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
       inAnyOrder alice [["1: supporter", invoicePurchase "" invoiceId], creditedLines "" invoiceId "2: supporter"]
       waitShownBadge (chatController alice) (Just 2)
+
+testFreshAnswerOverridesDeviceEnded :: HasCallStack => TestParams -> IO ()
+testFreshAnswerOverridesDeviceEnded ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (firstStart, rows) <- clientSubscribedMonthly env alice
+      storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 1
+      setClockAt bsClock $ fst $ renewalMoments rows
+      let stateLine st = Predicate (\l -> "1: supporter" `isPrefixOf` l && (", subscription " <> st) `isInfixOf` l)
+      alice ##> ("/_badge subscription ended " <> paymentArg subscriptionPlay)
+      alice <### ["ok", stateLine "ended", stateLine "renewing"]
+      _ <- waitLedgerRows (chatController alice) 4
+      subscriptionStatuses (chatController alice) `shouldEventuallyReturn` [Just "renewing"]
+      shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
 
 subscriptionStatuses :: ChatController -> IO [Maybe Text]
 subscriptionStatuses ChatController {chatStore} =
