@@ -5,9 +5,9 @@
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
-      <trans-unit id=" (can be copied)" xml:space="preserve">
+      <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
         <source> (can be copied)</source>
-        <target> (lze kopírovat)</target>
+        <target state="translated"> (lze kopírovat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
@@ -30,9 +30,9 @@
         <target state="translated">## Odpovídáno</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="#secret#" xml:space="preserve">
+      <trans-unit id="#secret#" xml:space="preserve" approved="no">
         <source>#secret#</source>
-        <target>#tajný#</target>
+        <target state="translated">#tajný#</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve" approved="no">
@@ -50,9 +50,9 @@
         <target state="translated">%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ %@" xml:space="preserve">
+      <trans-unit id="%@ %@" xml:space="preserve" approved="no">
         <source>%@ %@</source>
-        <target>%@ %@</target>
+        <target state="translated">%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
@@ -243,9 +243,9 @@ channel subscriber relay bar</note>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d sec" xml:space="preserve">
+      <trans-unit id="%d sec" xml:space="preserve" approved="no">
         <source>%d sec</source>
-        <target>%d sek</target>
+        <target state="translated">%d sek</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
@@ -253,9 +253,9 @@ channel subscriber relay bar</note>
         <target state="translated">%d sekund</target>
         <note>delete after time</note>
       </trans-unit>
-      <trans-unit id="%d skipped message(s)" xml:space="preserve">
+      <trans-unit id="%d skipped message(s)" xml:space="preserve" approved="no">
         <source>%d skipped message(s)</source>
-        <target>%d přeskočené zprávy</target>
+        <target state="translated">%d přeskočené zprávy</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="%d subscriber" xml:space="preserve" approved="no">
