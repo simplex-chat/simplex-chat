@@ -160,11 +160,9 @@ class NetworkObserver {
 
   private suspend fun sendNetworkInfo(info: UserNetworkInfo, network: Network?, removals: Int, ctrlGen: Int): Boolean {
     if (ctrlGen != ctrlGeneration) return false
-    // the controller is passed, so that replacing it while the report is sent does not fail the command
     val ctrl = controller.currentCtrl() ?: return false.also { reportFailed(ctrlGen) }
     // a failed command must not be recorded as sent, and it throws when the response cannot be parsed
     val sent = try { controller.apiSetNetworkInfo(info, ctrl) } catch (e: Throwable) { Log.e(TAG, "Error reporting network info: ${e.stackTraceToString()}"); false }
-    // when it was not sent the network info is reported again when the next event is received
     if (sent) setSentInfo(info, network, removals, ctrlGen) else reportFailed(ctrlGen)
     return sent
   }

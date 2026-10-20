@@ -52,7 +52,6 @@ class NetworkObserver {
         // the interface is compared too - a VPN that reconnected as another one can have the same
         // address, and an interface being configured has none yet
         let pathChanged = interface != prevInterface || lost(prevGateways, gateways) || lost(prevAddresses, addresses)
-        // the report that was not accepted is repeated when the next path update is received
         if prevInfo != info || (info.online && pathChanged) {
             prevInfo = setNetworkInfo(info) ? info : nil
         }
