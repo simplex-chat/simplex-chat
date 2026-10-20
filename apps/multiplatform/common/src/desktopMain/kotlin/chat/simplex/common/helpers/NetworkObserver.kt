@@ -25,7 +25,7 @@ class NetworkObserver {
 
   @Synchronized fun restartNetworkObserver() {
     // the chat controller is created anew, and what was recorded, including a report the observer that is
-    // stopping delivered to it while it was being replaced, is cleared, so the network info is reported to it again
+    // stopping delivered to it while it was being replaced, is cleared, so the network is reported to it again once it is online
     sentAddresses = null
     sentInfo = null
     sentAddress6 = null
