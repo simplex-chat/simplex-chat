@@ -5705,7 +5705,7 @@ updateUserBadge userId emitted now = do
               requestDue = due && isNothing heldUntil
           (balance', subscription_) <-
             if requestDue
-              then fromMaybe (balance, Nothing) <$> requestBadgeIssue userId p now
+              then fromRight (balance, Nothing) <$> requestBadgeIssue userId p now
               else pure (balance, Nothing)
           let -- the answers after which nothing was covered, each within a window of the one before: an absence or an outage that
               -- long may hide a renewal, so the next such answer starts a new run
@@ -5954,63 +5954,67 @@ badgeFailureTransient = \case
   BIFUnexpected {} -> False
 
 -- | Only a failure that can clear on its own is repeated; every other throw is terminal, and
--- repeating it would spin. Service errors are classified by retryAfter in requestBadgeIssue.
+-- repeating it would spin. Service errors are classified by retryAfter in sendBadgeIssue.
 badgeErrorRetry :: ChatError -> Bool
 badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 
 -- | Ask the service for the month that is due and apply the response. A timeout stores no ledger row,
--- so the same request is sent again on the next pass. 'Nothing' is a service error, already reported,
+-- so the same request is sent again on the next pass. 'Left' is a service error, already reported,
 -- since a service error is answered rather than thrown. Any request that
 -- ends without a credential the ledger still owes is recorded on the purchase as a failed renewal;
 -- nothing else records one.
-requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Maybe (StatementEntry, Maybe SubscriptionState))
-requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
+requestBadgeIssue userId p now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
-  withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
-    user <- withStore $ \db -> getUser db userId
-    lastEntry <- withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no entry to assert") pure
-    let req =
-          BadgeServiceRequest
-            { version = currentBadgeServiceVersion,
-              purchaseKey = Just purchaseKey,
-              request = BSCIssueBadge {balance = BadgeBalance {lastEntry}}
-            }
-    respData <-
-      sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
-        `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
-    case J.fromJSON (J.Object respData) of
-      J.Success BSPBadgeCredential {credential = sentCred_, statement, subscription} -> do
-        verifiedCred_ <- verifyIssuedCredential masterKey sentCred_
-        g <- asks random
-        -- read again: now was taken before a lock wait and an untimed request, and the check reads
-        -- it as the client's clock against the timestamps the service put on the rows
-        storedAt <- badgeNow
-        let -- past the asserted coverage the state is the store's, except within an hour of an earlier check, when it can be
-            -- the last successful check's (a later fresh answer or device report corrects it); before then it can be a year old.
-            -- Ended is never stale: the service writes it only from a store check, after which it grants nothing
-            storedSubscription = boundedSubscriptionState <$> find (\s -> L.paidThrough lastEntry <= now || s == SSEnded) subscription
-        (applied, balance_) <- withStore' $ \db -> do
-          applied <- applyBadgeStatement db g badgePurchaseId badgeType statement verifiedCred_ storedAt
-          forM_ storedSubscription $ setBadgeSubscriptionStatus db badgePurchaseId
-          (applied,) <$> getBadgeLedgerLastEntry db badgePurchaseId
-        -- the statement is applied either way, so a month can be spent with nothing to show for it
-        case (sentCred_, verifiedCred_, applied) of
-          (Just _, Nothing, _) -> recordFailure BIFInvalidCredential
-          (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
-          -- no credential is the service saying nothing is owed - the months ran out, or a subscription
-          -- waits for its store to charge - which its statement then shows
-          (Nothing, _, _) | maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
-          _ -> pure ()
-        maybe (throwCmdError "badge ledger has no balance") (pure . Just . (,storedSubscription)) balance_
-      J.Success BSPError {code, retryAfter} -> do
-        eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
-        -- retryAfter only marks the failure as one that can clear: the retry waits a stall like any request that
-        -- issued nothing, since a shorter wait would let the service choose how often activations reach it
-        recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
-        pure Nothing
-      _ -> do
-        recordFailure BIFUnexpected {message = unexpectedResponse}
-        throwCmdError $ T.unpack unexpectedResponse
+  withEntityLock "badgeIssue" (CLBadgeUser userId) $ sendBadgeIssue sendTarget userId p now
+
+-- | 'requestBadgeIssue' for a caller that already holds the owner's badge lock, which is not reentrant.
+sendBadgeIssue :: ConnectTarget 'CMContact -> UserId -> UserBadgePurchase -> UTCTime -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
+sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
+  user <- withStore $ \db -> getUser db userId
+  lastEntry <- withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no entry to assert") pure
+  let req =
+        BadgeServiceRequest
+          { version = currentBadgeServiceVersion,
+            purchaseKey = Just purchaseKey,
+            request = BSCIssueBadge {balance = BadgeBalance {lastEntry}}
+          }
+  respData <-
+    sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
+      `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
+  case J.fromJSON (J.Object respData) of
+    J.Success BSPBadgeCredential {credential = sentCred_, statement, subscription} -> do
+      verifiedCred_ <- verifyIssuedCredential masterKey sentCred_
+      g <- asks random
+      -- read again: now was taken before a lock wait and an untimed request, and the check reads
+      -- it as the client's clock against the timestamps the service put on the rows
+      storedAt <- badgeNow
+      let -- past the asserted coverage the state is the store's, except within an hour of an earlier check, when it can be
+          -- the last successful check's (a later fresh answer or device report corrects it); before then it can be a year old.
+          -- Ended is never stale: the service writes it only from a store check, after which it grants nothing
+          storedSubscription = boundedSubscriptionState <$> find (\s -> L.paidThrough lastEntry <= now || s == SSEnded) subscription
+      (applied, balance_) <- withStore' $ \db -> do
+        applied <- applyBadgeStatement db g badgePurchaseId badgeType statement verifiedCred_ storedAt
+        forM_ storedSubscription $ setBadgeSubscriptionStatus db badgePurchaseId
+        (applied,) <$> getBadgeLedgerLastEntry db badgePurchaseId
+      -- the statement is applied either way, so a month can be spent with nothing to show for it
+      case (sentCred_, verifiedCred_, applied) of
+        (Just _, Nothing, _) -> recordFailure BIFInvalidCredential
+        (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
+        -- no credential is the service saying nothing is owed - the months ran out, or a subscription
+        -- waits for its store to charge - which its statement then shows
+        (Nothing, _, _) | maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
+        _ -> pure ()
+      maybe (throwCmdError "badge ledger has no balance") (pure . Right . (,storedSubscription)) balance_
+    J.Success BSPError {code, retryAfter} -> do
+      eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
+      -- retryAfter only marks the failure as one that can clear: the retry waits a stall like any request that
+      -- issued nothing, since a shorter wait would let the service choose how often activations reach it
+      recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
+      pure $ Left (code, retryAfter)
+    _ -> do
+      recordFailure BIFUnexpected {message = unexpectedResponse}
+      throwCmdError $ T.unpack unexpectedResponse
   where
     unexpectedResponse = "unexpected badge service response"
     recordUnexpected message = do
