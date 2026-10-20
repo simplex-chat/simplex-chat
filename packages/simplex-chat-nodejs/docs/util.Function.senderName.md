@@ -8,7 +8,7 @@
 
 > **senderName**(`cInfo`, `chatDir`): `string`
 
-Defined in: [src/util.ts:37](../src/util.ts#L37)
+Defined in: [src/util.ts:37](../util.ts#L37)
 
 ## Parameters
 
